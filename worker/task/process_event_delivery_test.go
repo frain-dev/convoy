@@ -445,7 +445,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
-						TargetURL: "https://google.com?source=giphy",
+						Url:       "https://google.com?source=giphy",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
 						},
@@ -708,7 +708,7 @@ func TestProcessEventDelivery(t *testing.T) {
 							{Value: "secret"},
 						},
 						RateLimit:         10,
-						TargetURL:         "https://google.com",
+						Url:               "https://google.com",
 						RateLimitDuration: 60,
 						Status:            datastore.PendingEndpointStatus,
 					}, nil).Times(1)

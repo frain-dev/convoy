@@ -389,8 +389,8 @@ type Endpoint struct {
 	UID                string  `json:"uid" db:"id"`
 	ProjectID          string  `json:"project_id" db:"project_id"`
 	OwnerID            string  `json:"owner_id,omitempty" db:"owner_id"`
-	TargetURL          string  `json:"target_url" db:"target_url"`
-	Title              string  `json:"title" db:"title"`
+	Url                string  `json:"url" db:"url"`
+	Name               string  `json:"name" db:"name"`
 	Secrets            Secrets `json:"secrets" db:"secrets"`
 	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
 	Description        string  `json:"description" db:"description"`

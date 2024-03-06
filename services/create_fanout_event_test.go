@@ -50,14 +50,14 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return([]datastore.Endpoint{
 					{
-						Title:        "test_app",
+						Name:         "test_app",
 						UID:          "123",
 						ProjectID:    "abc",
 						SupportEmail: "test_app@gmail.com",
 					},
 
 					{
-						Title:        "test_app",
+						Name:         "test_app",
 						UID:          "12345",
 						ProjectID:    "abc",
 						SupportEmail: "test_app@gmail.com",

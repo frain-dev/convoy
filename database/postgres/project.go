@@ -190,7 +190,7 @@ const (
 	updateProjectEndpointStatus = `
 	UPDATE convoy.endpoints SET status = ?, updated_at = NOW()
 	WHERE project_id = ? AND status IN (?) AND deleted_at IS NULL RETURNING
-	id, title, status, owner_id, target_url,
+	id, name, status, owner_id, url,
     description, http_timeout, rate_limit, rate_limit_duration,
     advanced_signatures, slack_webhook_url, support_email,
     app_id, project_id, secrets, created_at, updated_at,

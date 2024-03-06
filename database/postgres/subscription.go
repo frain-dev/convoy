@@ -79,10 +79,10 @@ const (
 
 	COALESCE(em.secrets,'[]') AS "endpoint_metadata.secrets",
 	COALESCE(em.id,'') AS "endpoint_metadata.id",
-	COALESCE(em.title,'') AS "endpoint_metadata.title",
+	COALESCE(em.name,'') AS "endpoint_metadata.name",
 	COALESCE(em.project_id,'') AS "endpoint_metadata.project_id",
 	COALESCE(em.support_email,'') AS "endpoint_metadata.support_email",
-	COALESCE(em.target_url,'') AS "endpoint_metadata.target_url",
+	COALESCE(em.url,'') AS "endpoint_metadata.url",
 	COALESCE(em.status, '') AS "endpoint_metadata.status",
 	COALESCE(em.owner_id, '') AS "endpoint_metadata.owner_id",
 

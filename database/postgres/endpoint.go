@@ -29,7 +29,7 @@ var (
 const (
 	createEndpoint = `
 	INSERT INTO convoy.endpoints (
-		id, title, status, secrets, owner_id, target_url, description, http_timeout,
+		id, name, status, secrets, owner_id, url, description, http_timeout,
 		rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
 		support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
 		authentication_type_api_key_header_value
@@ -43,8 +43,8 @@ const (
 
 	baseEndpointFetch = `
 	SELECT
-	e.id, e.title, e.status, e.owner_id,
-	e.target_url, e.description, e.http_timeout,
+	e.id, e.name, e.status, e.owner_id,
+	e.url, e.description, e.http_timeout,
 	e.rate_limit, e.rate_limit_duration, e.advanced_signatures,
 	e.slack_webhook_url, e.support_email, e.app_id,
 	e.project_id, e.secrets, e.created_at, e.updated_at,
@@ -64,20 +64,20 @@ const (
 	fetchEndpointsByOwnerId = baseEndpointFetch + ` AND e.project_id = $1 AND e.owner_id = $2 GROUP BY e.id ORDER BY e.id;`
 
 	fetchEndpointByTargetURL = `
-    SELECT e.id, e.title, e.status, e.owner_id, e.target_url,
+    SELECT e.id, e.name, e.status, e.owner_id, e.url,
     e.description, e.http_timeout, e.rate_limit, e.rate_limit_duration,
     e.advanced_signatures, e.slack_webhook_url, e.support_email,
     e.app_id, e.project_id, e.secrets, e.created_at, e.updated_at,
     e.authentication_type AS "authentication.type",
     e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
     e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
-    FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.target_url = $1 AND e.project_id = $2;
+    FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.url = $1 AND e.project_id = $2;
     `
 
 	updateEndpoint = `
 	UPDATE convoy.endpoints SET
-	title = $3, status = $4, owner_id = $5,
-	target_url = $6, description = $7, http_timeout = $8,
+	name = $3, status = $4, owner_id = $5,
+	url = $6, description = $7, http_timeout = $8,
 	rate_limit = $9, rate_limit_duration = $10, advanced_signatures = $11,
 	slack_webhook_url = $12, support_email = $13,
 	authentication_type = $14, authentication_type_api_key_header_name = $15,
@@ -89,7 +89,7 @@ const (
 	updateEndpointStatus = `
 	UPDATE convoy.endpoints SET status = $3
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL RETURNING
-	id, title, status, owner_id, target_url,
+	id, name, status, owner_id, url,
     description, http_timeout, rate_limit, rate_limit_duration,
     advanced_signatures, slack_webhook_url, support_email,
     app_id, project_id, secrets, created_at, updated_at,
@@ -102,7 +102,7 @@ const (
 	UPDATE convoy.endpoints SET
 	    secrets = $3, updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL RETURNING
-	id, title, status, owner_id, target_url,
+	id, name, status, owner_id, url,
     description, http_timeout, rate_limit, rate_limit_duration,
     advanced_signatures, slack_webhook_url, support_email,
     app_id, project_id, secrets, created_at, updated_at,
@@ -128,8 +128,8 @@ const (
 
 	baseFetchEndpointsPaged = `
 	SELECT
-	e.id, e.title, e.status, e.owner_id,
-	e.target_url, e.description, e.http_timeout,
+	e.id, e.name, e.status, e.owner_id,
+	e.url, e.description, e.http_timeout,
 	e.rate_limit, e.rate_limit_duration, e.advanced_signatures,
 	e.slack_webhook_url, e.support_email, e.app_id,
 	e.project_id, e.secrets, e.created_at, e.updated_at,
@@ -140,7 +140,7 @@ const (
 	WHERE e.deleted_at IS NULL
 	AND e.project_id = :project_id
 	AND (e.owner_id = :owner_id OR :owner_id = '')
-	AND (e.title ILIKE :title OR :title = '')`
+	AND (e.name ILIKE :name OR :name = '')`
 
 	fetchEndpointsPagedForward = `
 	%s
@@ -169,7 +169,7 @@ const (
 	FROM convoy.endpoints s
 	WHERE s.deleted_at IS NULL
 	AND s.project_id = :project_id
-	AND (s.title ILIKE :title OR :title = '')
+	AND (s.name ILIKE :name OR :name = '')
 	AND s.id > :cursor
 	GROUP BY s.id
 	ORDER BY s.id DESC
@@ -193,7 +193,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 	ac := endpoint.GetAuthConfig()
 
 	args := []interface{}{
-		endpoint.UID, endpoint.Title, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.TargetURL,
+		endpoint.UID, endpoint.Name, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
 		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
@@ -284,7 +284,7 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 
-	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Title, endpoint.Status, endpoint.OwnerID, endpoint.TargetURL,
+	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Name, endpoint.Status, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
 		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets,
@@ -408,7 +408,7 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		"limit":        pageable.Limit(),
 		"cursor":       pageable.Cursor(),
 		"endpoint_ids": filter.EndpointIDs,
-		"title":        q,
+		"name":         q,
 	}
 
 	var query, filterQuery string
