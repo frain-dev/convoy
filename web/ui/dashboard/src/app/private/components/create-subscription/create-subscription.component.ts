@@ -9,6 +9,7 @@ import { CreateSourceComponent } from '../create-source/create-source.component'
 import { CreateSubscriptionService } from './create-subscription.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
+import { CreateProjectComponentService } from '../create-project-component/create-project-component.service';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -76,8 +77,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	showTransformDialog = false;
 	sourceURL!: string;
 	subscription!: SUBSCRIPTION;
+	eventTypes!: string[];
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private createProjectService: CreateProjectComponentService) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -96,6 +98,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
 		if (!(await this.rbacService.userCanAccess('Subscriptions|MANAGE'))) this.subscriptionForm.disable();
+		if (this.projectType === 'outgoing') this.getEventTypesFromCatalogue();
 	}
 
 	toggleConfig(configValue: string) {
@@ -279,6 +282,16 @@ export class CreateSubscriptionComponent implements OnInit {
 	getFunction(subscriptionFunction: any) {
 		if (subscriptionFunction) this.subscriptionForm.get('function')?.patchValue(subscriptionFunction);
 		this.showTransformDialog = false;
+	}
+
+	async getEventTypesFromCatalogue() {
+		try {
+			const response = await this.createProjectService.getEventCatalogue();
+			const { events } = response.data;
+			this.eventTypes = events.map((event: any) => event.Name);
+			console.log(response);
+			console.log(this.eventTypes);
+		} catch {}
 	}
 
 	get shouldShowBorder(): number {

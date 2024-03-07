@@ -17,7 +17,7 @@ import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { PrismModule } from 'src/app/private/components/prism/prism.module';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
-import { FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { EventsService } from '../events/events.service';
@@ -25,6 +25,9 @@ import { PaginationComponent } from 'src/app/private/components/pagination/pagin
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { EventDeliveryFilterComponent } from 'src/app/private/components/event-delivery-filter/event-delivery-filter.component';
+import { InputDirective, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { CreateProjectComponentService } from 'src/app/private/components/create-project-component/create-project-component.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
 	selector: 'convoy-event-logs',
@@ -32,7 +35,6 @@ import { EventDeliveryFilterComponent } from 'src/app/private/components/event-d
 	imports: [
 		CommonModule,
 		RouterModule,
-		FormsModule,
 		StatusColorModule,
 		PrismModule,
 		LoaderModule,
@@ -53,13 +55,19 @@ import { EventDeliveryFilterComponent } from 'src/app/private/components/event-d
 		ListItemComponent,
 		DropdownOptionDirective,
 		DialogDirective,
-		EventDeliveryFilterComponent
+		EventDeliveryFilterComponent,
+		InputFieldDirective,
+		InputDirective,
+		LabelComponent,
+		ReactiveFormsModule
 	],
 	templateUrl: './event-logs.component.html',
 	styleUrls: ['./event-logs.component.scss']
 })
 export class EventLogsComponent implements OnInit {
 	@ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('previewCatalog', { static: true }) previewCatalog!: ElementRef<HTMLDialogElement>;
+
 	eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
 	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
@@ -88,10 +96,29 @@ export class EventLogsComponent implements OnInit {
 	queryParams: FILTER_QUERY_PARAM = {};
 	enableTailMode = false;
 	sortOrder: 'asc' | 'desc' = 'desc';
+	eventName = '';
+	showEventForm = false;
+	portalLinkUrl!: string;
 
-	constructor(private eventsLogService: EventLogsService, public generalService: GeneralService, public route: ActivatedRoute, private router: Router, public privateService: PrivateService, private eventsService: EventsService) {}
+	eventsForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		description: ['']
+	});
 
-	ngOnInit() {}
+	constructor(
+		private eventsLogService: EventLogsService,
+		public generalService: GeneralService,
+		public route: ActivatedRoute,
+		private router: Router,
+		public privateService: PrivateService,
+		private eventsService: EventsService,
+		private createProjectService: CreateProjectComponentService,
+		private formBuilder: FormBuilder
+	) {}
+
+	ngOnInit() {
+		if (this.privateService.getProjectDetails?.type === 'outgoing') this.getPortalTokens();
+	}
 
 	ngOnDestroy() {
 		clearInterval(this.getEventsInterval);
@@ -242,5 +269,33 @@ export class EventLogsComponent implements OnInit {
 		if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
 
 		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
+	}
+
+	async addEventToEventCatalogue(event_id: string) {
+		if (this.eventsForm.invalid) return this.eventsForm.markAllAsTouched();
+
+		const payload = {
+			event_id,
+			...this.eventsForm.value
+		};
+		try {
+			const response = await this.createProjectService.addEventToEventCatalogue(payload);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.eventsForm.reset();
+			this.showEventForm = false;
+			this.previewCatalog.nativeElement.showModal();
+		} catch {}
+	}
+
+	async getPortalTokens() {
+		try {
+			const response = await this.privateService.getPortalLinks();
+			const portalLinkToken = response.data.content.length ? response.data.content[0].token : '';
+			this.portalLinkUrl = `${environment.production ? location.origin : 'http://localhost:5005'}/ui/portal/events?token=${portalLinkToken}`;
+		} catch {}
+	}
+
+	previewEventCatalog() {
+		// this.router.navigateByUrl(`/portal/events?token=${this.portalLinkToken}`);
 	}
 }

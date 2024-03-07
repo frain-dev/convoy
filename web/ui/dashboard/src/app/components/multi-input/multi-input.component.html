@@ -1,19 +1,27 @@
-<label for="input" class="text-12 text-new.gray-400 mt-24px flex items-center justify-between" *ngIf="label">
-	<div class="flex items-center">
-		{{ label }}
-		<convoy-tooltip size="sm" position="top-right" class="ml-4px" *ngIf="tooltip">{{ tooltip }}</convoy-tooltip>
-	</div>
-	<span *ngIf="required === 'true'" class="text-10 text-new.gray-400 px-6px rounded-22px font-medium bg-new.gray-100">required</span>
-</label>
+<div convoy-dropdown size="full" position="center">
+	<label for="input" class="text-12 text-new.gray-400 mt-24px flex items-center justify-between" *ngIf="label">
+		<div class="flex items-center">
+			{{ label }}
+			<convoy-tooltip size="sm" position="top-right" class="ml-4px" *ngIf="tooltip">{{ tooltip }}</convoy-tooltip>
+		</div>
+		<span *ngIf="required === 'true'" class="text-10 text-new.gray-400 px-6px rounded-22px font-medium bg-new.gray-100">required</span>
+	</label>
 
-<div (click)="focusInput()" class="w-full font-medium text-14 text-new.gray-800 border border-new.primary-25 outline-none rounded-4px bg-white-100 pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
-	<div *ngFor="let key of keys" class="border border-new.gray-200 py-4px px-8px font-medium text-12 text-new.gray-400 mr-1 mb-1 rounded-22px flex items-center">
-		{{ key === '*' ? 'All Events' : key }}
-		<button convoy-button (click)="removeKey(key)" fill="text" type="button" class="py-0 px-0 ml-4px">
-			<svg width="14" height="14" class="fill-grey-40">
-				<use xlink:href="#close-icon-2"></use>
-			</svg>
-		</button>
+	<div (click)="focusInput()" dropdownTrigger class="w-full font-medium text-14 text-new.gray-800 border border-new.primary-25 outline-none rounded-4px bg-white-100 pt-12px pb-8px px-12px mt-8px relative flex flex-row flex-wrap items-center">
+		<div *ngFor="let key of keys" class="border border-new.gray-200 py-4px px-8px font-medium text-12 text-new.gray-400 mr-1 mb-1 rounded-22px flex items-center">
+			{{ key === '*' ? 'All Events' : key }}
+			<button convoy-button (click)="removeKey(key)" fill="text" type="button" class="py-0 px-0 ml-4px">
+				<svg width="14" height="14" class="fill-grey-40">
+					<use xlink:href="#close-icon-2"></use>
+				</svg>
+			</button>
+		</div>
+		<input type="text" id="input" (input)="addKey()" required class="text-12 bg-transparent focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
 	</div>
-	<input type="text" id="input" (input)="addKey()" required class="text-12 bg-transparent focus:outline-none focus:border-none" [readonly]="action === 'view'" autocomplete="off" />
+
+    <div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto overflow-y-auto">
+        <li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25">
+            <button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option }}</button>
+        </li>
+    </div>
 </div>

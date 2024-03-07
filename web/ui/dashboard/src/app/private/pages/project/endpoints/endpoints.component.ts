@@ -148,7 +148,37 @@ export class EndpointsComponent implements OnInit {
 
 	async sendTestEvent() {
 		const testEvent = {
-			data: { data: 'test event from Convoy', convoy: 'https://getconvoy.io', amount: 1000 },
+			data: {
+				data: {
+					id: 'b67416b1-8b44-40d8-9842-6c457acc4bf8',
+					from: 'John Doe',
+					checks: [],
+					clearAt: '2025-01-01T00:00:00Z',
+					imageUrl: 'https://placekitten.com/200/300',
+					location: {
+						id: '70a3d702-bf1d-4153-8eb2-d3d889aff7f0',
+						type: 'cmra',
+						address: {
+							city: 'San Francisco',
+							line1: '123 Main St',
+							line2: 'Suite #1000',
+							state: 'CA',
+							postalCode: '94105'
+						},
+						onboarding: {
+							status: 'complete'
+						}
+					},
+					scanDetails: {
+						status: 'completed',
+						imageUrl: 'https://placekitten.com/400/300',
+						ocrResultUrl: null
+					},
+					businessRecipient: 'Acme Inc',
+					individualRecipient: null
+				},
+				eventType: 'mailItem.scan.completed'
+			},
 			endpoint_id: this.selectedEndpoint?.uid,
 			event_type: 'test.convoy'
 		};

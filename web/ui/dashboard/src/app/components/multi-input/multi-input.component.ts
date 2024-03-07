@@ -1,17 +1,20 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TooltipComponent } from '../tooltip/tooltip.component';
+import { DropdownComponent, DropdownOptionDirective } from '../dropdown/dropdown.component';
+import { ButtonComponent } from '../button/button.component';
 
 @Component({
 	selector: 'convoy-multi-input',
 	standalone: true,
-	imports: [CommonModule, TooltipComponent],
+	imports: [CommonModule, TooltipComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent],
 	templateUrl: './multi-input.component.html',
 	styleUrls: ['./multi-input.component.scss']
 })
 export class MultiInputComponent implements OnInit {
 	@Output() inputValues = new EventEmitter<string[]>();
 	@Input('prefilledKeys') prefilledKeys?: string[];
+	@Input('options') options?: string[];
 	@Input('label') label?: string;
 	@Input('tooltip') tooltip?: string;
 	@Input('required') required: 'true' | 'false' = 'false'
@@ -58,4 +61,6 @@ export class MultiInputComponent implements OnInit {
 	focusInput() {
 		document.getElementById('input')?.focus();
 	}
+
+    selectOption(option?: any) {}
 }
