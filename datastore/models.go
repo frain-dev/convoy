@@ -1525,9 +1525,10 @@ func (s EventDataCatalogues) Value() (driver.Value, error) {
 }
 
 type EventDataCatalogue struct {
-	Name    string
-	EventID string
-	Data    json.RawMessage
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	EventID     string          `json:"event_id"`
+	Data        json.RawMessage `json:"data"`
 }
 
 type Password struct {

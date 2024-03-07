@@ -426,7 +426,10 @@
 						},
 						"type": "array"
 					},
-					"eventID": {
+					"description": {
+						"type": "string"
+					},
+					"event_id": {
 						"type": "string"
 					},
 					"name": {
@@ -918,6 +921,10 @@
 			},
 			"models.AddEventToCatalogue": {
 				"properties": {
+					"description": {
+						"description": "A short description of the event, e.g details of a newly crated invoice.",
+						"type": "string"
+					},
 					"event_id": {
 						"description": "EventID for the event to be added to the event catalogue",
 						"type": "string"

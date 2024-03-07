@@ -11,6 +11,9 @@ type AddEventToCatalogue struct {
 
 	// The name of this event in the catalogue e.g. invoice.paid
 	Name string `json:"name" valid:"required~please provide a name for this event type"`
+
+	// A short description of the event, e.g details of a newly crated invoice.
+	Description string `json:"description"`
 }
 
 func (ds *AddEventToCatalogue) Validate() error { return util.Validate(ds) }

@@ -39,9 +39,10 @@ func (c *AddEventToCatalogueService) Run(ctx context.Context) (*datastore.EventC
 		}
 
 		catalogue.Events = append(catalogue.Events, datastore.EventDataCatalogue{
-			Name:    c.CatalogueEvent.Name,
-			EventID: event.UID,
-			Data:    event.Data,
+			Name:        c.CatalogueEvent.Name,
+			EventID:     event.UID,
+			Data:        event.Data,
+			Description: c.CatalogueEvent.Description,
 		})
 
 		err = c.CatalogueRepo.UpdateEventCatalogue(ctx, catalogue)
