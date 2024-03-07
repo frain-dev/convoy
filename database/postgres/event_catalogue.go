@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -36,6 +37,7 @@ const (
 var (
 	ErrEventCatalogueNotCreated = errors.New("event catalogue could not be created")
 	ErrEventCatalogueNotUpdated = errors.New("event catalogue could not be updated")
+	ErrEventCatalogueExists     = errors.New("this project already has a catalogue")
 )
 
 func (e *eventCatalogueRepo) CreateEventCatalogue(ctx context.Context, catalogue *datastore.EventCatalogue) error {
@@ -45,6 +47,9 @@ func (e *eventCatalogueRepo) CreateEventCatalogue(ctx context.Context, catalogue
 		catalogue.CreatedAt, catalogue.UpdatedAt,
 	)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate") {
+			return ErrEventCatalogueExists
+		}
 		return err
 	}
 
