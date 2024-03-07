@@ -53,9 +53,9 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 				log.WithError(err).Errorf("failed to tokenize events for project with id %s", p.Id)
 				continue
 			}
-			fmt.Printf("done tokenizing events for %+v with %v events\n", p.Id, p.EventsCount)
+			log.Printf("done tokenizing events for %+v with %v events\n", p.Id, p.EventsCount)
 		}
-		fmt.Println("done tokenizing events in the interval")
+		log.Println("done tokenizing events in the interval")
 
 		return nil
 	}
@@ -74,6 +74,7 @@ func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.Job
 		if err != nil {
 			return err
 		}
+		log.Printf("done tokenizing events in the last %d hours for project with id %s", params.Interval, params.ProjectID)
 
 		return nil
 	}
@@ -108,7 +109,7 @@ func tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo 
 		return err
 	}
 
-	// if a job is not currently running start a new job
+	// if a job is not currently running, start a new job
 	err = eventRepo.CopyRows(ctx, projectId, interval)
 	if err != nil {
 		err = jobRepo.MarkJobAsFailed(ctx, job.UID, projectId)
