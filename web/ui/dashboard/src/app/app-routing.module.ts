@@ -26,7 +26,11 @@ const routes: Routes = [
 	{
 		path: '',
 		loadChildren: () => import('./public/public.module').then(m => m.PublicModule)
-	}
+	},
+    {
+		path: 'portal/events',
+		loadComponent: () => import('./public/events-catalogue/events-catalogue.component').then(m => m.EventsCatalogueComponent)
+	},
 ];
 
 @NgModule({

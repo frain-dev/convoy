@@ -1,0 +1,43 @@
+<div>
+	<div class="max-w-[1000px] w-full mx-auto px-20px">
+		<div class="my-40px">
+			<h2 class="font-semibold text-18 text-new.gray-600">Events Catalogue</h2>
+			<p class="text-14 text-new.gray-500 mb-30px">This is the list of event types we currently send.</p>
+		</div>
+
+		<ng-container *ngIf="fetchingCatalogue">
+			<div *ngFor="let i of [1, 2]">
+				<convoy-skeleton-loader className="w-120px h-20px mb-10px"></convoy-skeleton-loader>
+				<convoy-skeleton-loader className="max-w-220px w-full h-16px mb-16px"></convoy-skeleton-loader>
+
+				<div class="grid grid-cols-1 xs:grid-cols-2 gap-40px flex-wrap items-start mb-40px border-b border-new.primary-25">
+					<div>
+						<div *ngFor="let i of [1, 2, 3]" class="border-b border-new.primary-25 last-of-type:border-none py-16px">
+							<div class="flex items-center gap-x-10px">
+								<svg width="24" height="24" class="fill-new.gray-700 scale-75">
+									<use xlink:href="#arrow-right-icon"></use>
+								</svg>
+								<convoy-skeleton-loader className="w-100px h-16px"></convoy-skeleton-loader>
+								<convoy-skeleton-loader className="w-60px h-20px"></convoy-skeleton-loader>
+							</div>
+							<convoy-skeleton-loader className="max-w-200px w-full h-10px ml-32px mt-10px"></convoy-skeleton-loader>
+						</div>
+					</div>
+					<convoy-skeleton-loader className="w-full h-156px"></convoy-skeleton-loader>
+				</div>
+			</div>
+		</ng-container>
+
+		<ng-container *ngIf="!fetchingCatalogue">
+			<div *ngFor="let catalog of eventsCatalogue; let i = index">
+				<div class="text-16 font-semibold text-new.gray-600 mb-10px">{{ catalog.name }}</div>
+				<p class="text-14 text-new.gray-500 mb-10px" *ngIf="catalog.description">{{ catalog.description }}</p>
+
+				<div class="grid grid-cols-1 xs:grid-cols-2 gap-40px flex-wrap items-start mb-40px border-new.primary-25" [ngClass]="{ 'border-b': i !== eventsCatalogue.length - 1 }">
+					<convoy-catalogue [catalog]="catalog.properties"></convoy-catalogue>
+					<prism language="json" [code]="generalService.getCodeSnippetString('event_data', catalog.sample_json)" className="!max-w-[600px] !w-full"></prism>
+				</div>
+			</div>
+		</ng-container>
+	</div>
+</div>
