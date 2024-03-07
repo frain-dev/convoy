@@ -8,7 +8,6 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CreatePortalLinkComponent } from 'src/app/private/components/create-portal-link/create-portal-link.component';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { PortalLinksService } from './portal-links.service';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { DeleteModalComponent } from 'src/app/private/components/delete-modal/delete-modal.component';
@@ -70,7 +69,7 @@ export class PortalLinksComponent implements OnInit {
 	@ViewChild('linksEndpointFilter', { static: true }) linksEndpointFilter!: ElementRef;
 	linksEndpointFilter$!: Observable<ENDPOINT[]>;
 
-	constructor(public privateService: PrivateService, public router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService) {}
+	constructor(public privateService: PrivateService, public router: Router, private route: ActivatedRoute, private generalService: GeneralService) {}
 
 	ngOnInit() {
 		this.getPortalLinks();
@@ -96,7 +95,7 @@ export class PortalLinksComponent implements OnInit {
 		this.isLoadingPortalLinks = true;
 
 		try {
-			const response = await this.portalLinksService.getPortalLinks({ ...requestDetails, endpointId: this.linkEndpoint });
+			const response = await this.privateService.getPortalLinks({ ...requestDetails, endpointId: this.linkEndpoint });
 			this.portalLinks = response.data;
 			if ((this.portalLinks?.pagination?.total || 0) > 0) this.activeLink = this.portalLinks?.content.find(link => link.uid === this.route.snapshot.queryParams?.id);
 			this.isLoadingPortalLinks = false;
@@ -110,7 +109,7 @@ export class PortalLinksComponent implements OnInit {
 
 		this.isRevokingLink = true;
 		try {
-			const response = await this.portalLinksService.revokePortalLink({ linkId: this.activeLink?.uid });
+			const response = await this.privateService.revokePortalLink({ linkId: this.activeLink?.uid });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.isRevokingLink = false;
 			this.deleteDialog.nativeElement.close();

@@ -1,22 +1,22 @@
-<form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled id="project-form">
-	<div class="mt-24px flex gap-100px" [class]="action !== 'update' ? 'rounded-8px p-24px my-24px block border border-new.primary-50' : ''">
-		<ng-container *ngIf="action === 'update'">
-			<div class="min-w-[170px]">
-				<h3 class="mb-24px text-12 text-new.gray-800 font-semibold">Project Settings</h3>
-				<ul class="flex gap-24px flex-col w-full border-l-2 border-l-new.gray-200">
-					<li *ngFor="let tab of tabs" class="!list-none last-of-type:mr-0 -ml-2px">
-						<button class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all" [class]="activeTab.label === tab.label ? 'border-l-new.primary-400' : ''" type="button" (click)="switchTab(tab)">
-							<svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activeTab === tab ? tab.svg + '-new.primary-400' : tab.svg + '-new.gray-600'">
-								<use [attr.xlink:href]="'#' + tab.icon + '-icon'"></use>
-							</svg>
-							<span class="text-12 text-left capitalize tracking-[0.02em] mobile:min-w-[80px] !font-medium" [class]="activeTab === tab ? 'text-new.primary-400 !font-semibold' : 'text-new.gray-600'">{{ tab.label }}</span>
-						</button>
-					</li>
-				</ul>
-			</div>
-		</ng-container>
+<div class="mt-24px flex gap-100px" [class]="action !== 'update' ? 'rounded-8px p-24px my-24px block border border-new.primary-50' : ''">
+	<ng-container *ngIf="action === 'update'">
+		<div class="min-w-[170px]">
+			<h3 class="mb-24px text-12 text-new.gray-800 font-semibold">Project Settings</h3>
+			<ul class="flex gap-24px flex-col w-full border-l-2 border-l-new.gray-200">
+				<li *ngFor="let tab of tabs" class="!list-none last-of-type:mr-0 -ml-2px">
+					<button class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all" [class]="activeTab.label === tab.label ? 'border-l-new.primary-400' : ''" type="button" (click)="switchTab(tab)">
+						<svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activeTab === tab ? tab.svg + '-new.primary-400' : tab.svg + '-new.gray-600'">
+							<use [attr.xlink:href]="'#' + tab.icon + '-icon'"></use>
+						</svg>
+						<span class="text-12 text-left capitalize tracking-[0.02em] mobile:min-w-[80px] !font-medium" [class]="activeTab === tab ? 'text-new.primary-400 !font-semibold' : 'text-new.gray-600'">{{ tab.label }}</span>
+					</button>
+				</li>
+			</ul>
+		</div>
+	</ng-container>
 
-		<div class="w-full">
+	<div class="w-full">
+		<form [formGroup]="projectForm" (submit)="action === 'update' ? updateProject() : createProject()" disabled id="project-form">
 			<ng-container *ngIf="activeTab.label === 'project config'">
 				<h3 class="text-16 font-bold text-new.gray-600 mb-24px" *ngIf="action === 'update'">Project Configurations</h3>
 
@@ -180,7 +180,7 @@
 						</div>
 					</div>
 
-					<div class="flex gap-24px items-center" *ngIf="shouldShowBorder < configurations.length">
+					<div class="flex gap-24px items-center mb-24px" *ngIf="shouldShowBorder < configurations.length">
 						<ng-container *ngFor="let config of configurations; let i = index">
 							<ng-container *ngIf="!config.show">
 								<convoy-config-button *ngIf="i < 3 || this.projectForm.controls['type'].value === 'outgoing'" (onClick)="toggleConfigForm(config.uid)" convoy-permission="Project Settings|MANAGE">{{ config.name }}</convoy-config-button>
@@ -305,18 +305,80 @@
 					</button>
 				</div>
 			</ng-container>
+
+			<div class="flex justify-end" *ngIf="activeTab.label !== 'signature history' && activeTab.label !== 'endpoints config' && activeTab.label !== 'secrets' && activeTab.label !== 'events catalogue'">
+				<button convoy-button [disabled]="isCreatingProject || projectForm.disabled">
+					{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
+					<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="action !== 'update'">
+						<use xlink:href="#arrow-right-icon"></use>
+					</svg>
+				</button>
+			</div>
+		</form>
+
+		<ng-container *ngIf="activeTab.label === 'events catalogue'">
+			<div class="flex justify-between items-start">
+				<div>
+					<h3 class="text-16 font-bold text-new.gray-600">Event Catalogue</h3>
+					<p class="text-12 font-normal text-new.gray-400 mt-10px mb-24px w-full max-w-[400px]">Events catalogues enables you specify the event types you receive or send in order for your user to understand your events structure.</p>
+				</div>
+				<div class="flex gap-12px">
+					<button *ngIf="showEventsButton" type="button" size="sm" convoy-button (click)="showEventsForm = true">Add event type</button>
+					<button *ngIf="showOpenApi" type="button" size="sm" convoy-button (click)="showUploadEvents = true">Add Open API SPec</button>
+				</div>
+			</div>
+
+			<form [formGroup]="eventsForm" (submit)="addEventToCatalogue()" class="overflow-hidden duration-300" [ngClass]="showEventsForm ? 'max-h-320px pt-20px' : 'max-h-0'">
+				<hr class="border-new.gray-200 mb-24px" />
+				<h3 class="mt-24px mb-16px font-medium text-new.gray-600 text-14">Event Configuration</h3>
+
+				<div class="grid grid-cols-2 gap-24px">
+					<convoy-input-field className="mb-0">
+						<label for="event_name" convoy-label required="true">Event Name</label>
+						<input type="text" id="event_name" convoy-input autocomplete="event_name" placeholder="Enter event name" formControlName="name" />
+						<convoy-input-error *ngIf="eventsForm.get('name')?.touched && eventsForm.get('name')?.invalid">Please enter an event name</convoy-input-error>
+					</convoy-input-field>
+					<convoy-input-field className="mb-0">
+						<label for="event_id" convoy-label required="true">Event ID</label>
+						<input type="text" id="event_id" convoy-input autocomplete="event_id" placeholder="Enter event ID" formControlName="event_id" />
+						<convoy-input-error *ngIf="eventsForm.get('event_id')?.touched && eventsForm.get('event_id')?.invalid">Please enter event ID</convoy-input-error>
+					</convoy-input-field>
+				</div>
+                <convoy-input-field>
+                    <label for="event_description" convoy-label>Event description</label>
+                    <input type="text" id="event_description" convoy-input autocomplete="Event description" placeholder="Enter event description" formControlName="description" />
+                </convoy-input-field>
+
+				<div class="flex justify-end">
+					<button type="button" convoy-button (click)="addEventToCatalogue()">
+						Add Event
+						<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="action !== 'update'">
+							<use xlink:href="#arrow-right-icon"></use>
+						</svg>
+					</button>
+				</div>
+			</form>
+		</ng-container>
+	</div>
+</div>
+<ng-container *ngIf="showUploadEvents">
+	<div class="fixed h-screen w-screen top-0 left-0 backdrop-blur-[10px] bg-white-4 z-10"></div>
+	<div class="fixed w-full h-full bg-white-100 z-50 top-[50%] left-[50%] -translate-x-2/4 -translate-y-2/4">
+		<convoy-upload-events (close)="closeOpenAPIDialog($event)"></convoy-upload-events>
+	</div>
+</ng-container>
+
+<dialog #previewCatalog convoy-dialog position="center" size="sm">
+	<div class="px-20px py-30px">
+		<p class="text-14 font-bold text-black mb-8px">Confirm Action</p>
+		<p class="text-12 font-medium text-grey-40 mb-24px">Would you like to preview the events catalog?</p>
+		<div class="flex items-center">
+			<button convoy-button color="primary" class="mr-12px px-16px" (click)="previewEventCatalog()">Yes, Preview</button>
+			<button convoy-button fill="clear" color="danger" class="font-semibold" (click)="previewCatalog.close()">Cancel</button>
 		</div>
 	</div>
+</dialog>
 
-	<div class="flex justify-end" *ngIf="activeTab.label !== 'signature history' && activeTab.label !== 'endpoints config' && activeTab.label !== 'secrets'">
-		<button convoy-button [disabled]="isCreatingProject || projectForm.disabled">
-			{{ action === 'update' ? 'Save Changes ' : 'Create Project' }}
-			<svg width="24" height="24" class="ml-8px fill-white-100" *ngIf="action !== 'update'">
-				<use xlink:href="#arrow-right-icon"></use>
-			</svg>
-		</button>
-	</div>
-</form>
 
 <dialog #tokenDialog convoy-dialog position="center" size="sm">
 	<convoy-token-modal

@@ -59,4 +59,51 @@ export class CreateProjectComponentService {
 			}
 		});
 	}
+
+	addEventToEventCatalogue(requestDetails: any): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/catalogue/add_event`,
+					method: 'post',
+					body: requestDetails,
+					level: 'org_project'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	addOpenApiSpecToCatalogue(requestDetails: { open_api_spec: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/catalogue/add_openapi_spec`,
+					method: 'post',
+					body: requestDetails,
+					level: 'org_project'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getEventCatalogue(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/catalogue`,
+					method: 'get',
+					level: 'org_project'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

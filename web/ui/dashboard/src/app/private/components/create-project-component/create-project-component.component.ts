@@ -24,6 +24,7 @@ export class CreateProjectComponent implements OnInit {
 	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('previewCatalog', { static: true }) previewCatalog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
 	projectForm: FormGroup = this.formBuilder.group({
@@ -62,9 +63,16 @@ export class CreateProjectComponent implements OnInit {
 		encoding: [null],
 		hash: [null]
 	});
+	eventsForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		event_id: ['', Validators.required],
+		description: ['']
+	});
 	isCreatingProject = false;
 	enableMoreConfig = false;
 	regeneratingKey = false;
+	showUploadEvents = false;
+	showEventsForm = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512'];
 	retryLogicTypes = [
@@ -92,11 +100,18 @@ export class CreateProjectComponent implements OnInit {
 	];
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
+	showOpenApi = false;
+	showEventsButton = false;
+	confirmPreviewCatalogue = false;
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
-		if (this.action === 'update') this.getProjectDetails();
+		if (this.privateService.getProjectDetails?.type === 'outgoing') this.tabs.push({ label: 'events catalogue', svg: 'stroke', icon: 'meta-events' });
+		if (this.action === 'update') {
+			this.getProjectDetails();
+			this.getEventsCatalog();
+		}
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
 		if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
 	}
@@ -310,6 +325,46 @@ export class CreateProjectComponent implements OnInit {
 		const queryParams: any = {};
 		queryParams.activePage = this.activeTab.label;
 		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
+	}
+
+	async addEventToCatalogue() {
+		if (this.eventsForm.invalid) return this.eventsForm.markAllAsTouched();
+
+		try {
+			const response = await this.createProjectService.addEventToEventCatalogue(this.eventsForm.value);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.eventsForm.reset();
+		} catch {}
+	}
+
+	async getEventsCatalog() {
+		try {
+			const response = await this.createProjectService.getEventCatalogue();
+			const { data } = response;
+			if (data.events && data.events.length > 0) {
+				this.showOpenApi = false;
+				this.showEventsButton = true;
+			} else if (data.open_api_spec && data.open_api_spec !== null) {
+				this.showOpenApi = true;
+				this.showEventsButton = false;
+			} else {
+				this.showOpenApi = true;
+				this.showEventsButton = true;
+			}
+			console.log(response);
+		} catch {
+			this.showOpenApi = true;
+			this.showEventsButton = true;
+		}
+	}
+
+	closeOpenAPIDialog(e?: any) {
+		if (e === 'apiSpecAdded') this.previewCatalog.nativeElement.showModal();
+		this.showUploadEvents = false;
+	}
+
+	previewEventCatalog() {
+		this.router.navigate([`/portal/events`]);
 	}
 
 	get shouldShowBorder(): number {
