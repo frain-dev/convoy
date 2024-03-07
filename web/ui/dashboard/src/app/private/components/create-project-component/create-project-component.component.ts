@@ -6,6 +6,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateProjectComponentService } from './create-project-component.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { environment } from 'src/environments/environment';
 
 interface TAB {
 	label: string;
@@ -103,6 +104,7 @@ export class CreateProjectComponent implements OnInit {
 	showOpenApi = false;
 	showEventsButton = false;
 	confirmPreviewCatalogue = false;
+	portalLinkUrl!: string;
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) {}
 
@@ -149,6 +151,8 @@ export class CreateProjectComponent implements OnInit {
 	async getProjectDetails() {
 		try {
 			this.projectDetails = this.privateService.getProjectDetails;
+
+			if (this.projectDetails?.type === 'outgoing') this.getPortalTokens();
 
 			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
 
@@ -356,6 +360,14 @@ export class CreateProjectComponent implements OnInit {
 			this.showOpenApi = true;
 			this.showEventsButton = true;
 		}
+	}
+
+	async getPortalTokens() {
+		try {
+			const response = await this.privateService.getPortalLinks();
+			const portalLinkToken = response.data.content.length ? response.data.content[0].token : '';
+			this.portalLinkUrl = `${environment.production ? location.origin : 'http://localhost:5005'}/portal/events?token=${portalLinkToken}`;
+		} catch {}
 	}
 
 	closeOpenAPIDialog(e?: any) {
