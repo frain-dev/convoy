@@ -66,7 +66,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Title:           "endpoint",
+				Name:            "endpoint",
 				SupportEmail:    "endpoint@test.com",
 				SlackWebhookURL: "https://google.com",
 				ProjectID:       project.UID,
@@ -74,7 +74,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					{Value: "1234"},
 				},
 				AdvancedSignatures: true,
-				TargetURL:          "https://google.com",
+				Url:                "https://google.com",
 				Description:        "test_endpoint",
 				RateLimit:          5000,
 				Status:             datastore.ActiveEndpointStatus,
@@ -114,11 +114,11 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			},
 			wantEndpoint: &datastore.Endpoint{
 				ProjectID: project.UID,
-				Title:     "endpoint",
+				Name:      "endpoint",
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
 				},
-				TargetURL:          "https://google.com",
+				Url:                "https://google.com",
 				AdvancedSignatures: true,
 				Description:        "test_endpoint",
 				RateLimit:          100,

@@ -61,7 +61,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 				endpoint := &datastore.Endpoint{
 					UID:    "endpoint-id-1",
-					Title:  "testing-1",
+					Name:   "testing-1",
 					Status: datastore.ActiveEndpointStatus,
 					Secrets: datastore.Secrets{
 						{

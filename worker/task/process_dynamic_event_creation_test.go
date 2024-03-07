@@ -65,7 +65,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 				endpoint := &datastore.Endpoint{
 					UID:    "endpoint-id-1",
-					Title:  "testing-1",
+					Name:   "testing-1",
 					Status: datastore.ActiveEndpointStatus,
 					Secrets: datastore.Secrets{
 						{
@@ -140,8 +140,8 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "project-id-1").Times(1).Return(&datastore.Endpoint{
 					UID:                "endpoint-id-1",
 					ProjectID:          project.UID,
-					Title:              fmt.Sprintf("endpoint-%s", ulid.Make().String()),
-					TargetURL:          "https:/google.com",
+					Name:               fmt.Sprintf("endpoint-%s", ulid.Make().String()),
+					Url:                "https:/google.com",
 					RateLimit:          convoy.RATE_LIMIT,
 					HttpTimeout:        convoy.HTTP_TIMEOUT,
 					AdvancedSignatures: true,

@@ -134,7 +134,7 @@ func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), endpoint.Title, dbEndpoint.Title)
+	require.Equal(s.T(), endpoint.Name, dbEndpoint.Name)
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
