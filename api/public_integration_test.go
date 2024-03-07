@@ -130,7 +130,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), endpoint.Title, dbEndpoint.Title)
+	require.Equal(s.T(), endpoint.Name, dbEndpoint.Name)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_WithPersonalAPIKey() {
@@ -159,7 +159,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_With
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), endpoint.Title, dbEndpoint.Title)
+	require.Equal(s.T(), endpoint.Name, dbEndpoint.Name)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
@@ -246,8 +246,8 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointTitle, dbEndpoint.Title)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
+	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIKey() {
@@ -278,8 +278,8 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIK
 	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
 	dbApp, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointTitle, dbApp.Title)
-	require.Equal(s.T(), endpointURL, dbApp.TargetURL)
+	require.Equal(s.T(), endpointTitle, dbApp.Name)
+	require.Equal(s.T(), endpointURL, dbApp.Url)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
@@ -359,9 +359,9 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), title, dbEndpoint.Title)
+	require.Equal(s.T(), title, dbEndpoint.Name)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPIKey() {
@@ -401,9 +401,9 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPI
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), title, dbEndpoint.Title)
+	require.Equal(s.T(), title, dbEndpoint.Name)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_DeleteEndpoint() {
@@ -490,8 +490,8 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Aut
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	require.Equal(s.T(), title, endpoint.Title)
-	require.Equal(s.T(), endpointURL, endpoint.TargetURL)
+	require.Equal(s.T(), title, endpoint.Name)
+	require.Equal(s.T(), endpointURL, endpoint.Url)
 	require.Equal(s.T(), datastore.EndpointAuthenticationType("api_key"), endpoint.Authentication.Type)
 	require.Equal(s.T(), "x-api-key", endpoint.Authentication.ApiKey.HeaderName)
 	require.Equal(s.T(), "testapikey", endpoint.Authentication.ApiKey.HeaderValue)
@@ -761,7 +761,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 	// Create an Endpoint with an app ID
 	endpoint := &datastore.Endpoint{
 		UID:       endpointID,
-		Title:     fmt.Sprintf("TestEndpoint-%s", endpointID),
+		Name:      fmt.Sprintf("TestEndpoint-%s", endpointID),
 		ProjectID: s.DefaultProject.UID,
 		AppID:     appID,
 		Secrets: datastore.Secrets{
