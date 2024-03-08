@@ -215,6 +215,10 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	mb := telemetry.NewmixpanelBackend()
 
 	configuration, err := configRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		a.Logger.WithError(err).Fatal("Failed to instance configuration")
+		return err
+	}
 
 	newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
 		telemetry.OptionTracker(counter),
