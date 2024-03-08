@@ -124,7 +124,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
-			log.Debugf("endpoint %s already merged with message %s\n", endpoint.TargetURL, eventDelivery.UID)
+			log.Debugf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID)
 			return nil
 		}
 
@@ -134,7 +134,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				return &EndpointError{Err: err, delay: delayDuration}
 			}
 
-			log.Debugf("endpoint %s is inactive, failing to send.", endpoint.TargetURL)
+			log.Debugf("endpoint %s is inactive, failing to send.", endpoint.Url)
 			return nil
 		}
 
@@ -144,9 +144,9 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		targetURL := endpoint.TargetURL
+		targetURL := endpoint.Url
 		if !util.IsStringEmpty(eventDelivery.URLQueryParams) {
-			targetURL, err = url.ConcatQueryParams(endpoint.TargetURL, eventDelivery.URLQueryParams)
+			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
 			if err != nil {
 				log.WithError(err).Error("failed to concat url query params")
 				return &EndpointError{Err: err, delay: delayDuration}

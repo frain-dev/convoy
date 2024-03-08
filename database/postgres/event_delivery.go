@@ -53,10 +53,10 @@ const (
         COALESCE(ed.device_id,'') AS "device_id",
         COALESCE(ed.endpoint_id,'') AS "endpoint_id",
         COALESCE(ep.id, '') AS "endpoint_metadata.id",
-        COALESCE(ep.title, '') AS "endpoint_metadata.title",
+        COALESCE(ep.name, '') AS "endpoint_metadata.name",
         COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
         COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
-        COALESCE(ep.target_url, '') AS "endpoint_metadata.target_url",
+        COALESCE(ep.url, '') AS "endpoint_metadata.url",
         ev.id AS "event_metadata.id",
         ev.event_type AS "event_metadata.event_type",
 		COALESCE(ed.latency,'') AS latency,
@@ -581,8 +581,8 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			Endpoint: &datastore.Endpoint{
 				UID:          ev.Endpoint.UID.ValueOrZero(),
 				ProjectID:    ev.Endpoint.ProjectID.ValueOrZero(),
-				TargetURL:    ev.Endpoint.TargetURL.ValueOrZero(),
-				Title:        ev.Endpoint.Title.ValueOrZero(),
+				Url:          ev.Endpoint.URL.ValueOrZero(),
+				Name:         ev.Endpoint.Name.ValueOrZero(),
 				SupportEmail: ev.Endpoint.SupportEmail.ValueOrZero(),
 			},
 			Source: &datastore.Source{
@@ -787,8 +787,8 @@ func padIntervals(intervals []datastore.EventInterval, duration time.Duration, p
 
 type EndpointMetadata struct {
 	UID          null.String `db:"id"`
-	Title        null.String `db:"title"`
-	TargetURL    null.String `db:"target_url"`
+	Name         null.String `db:"name"`
+	URL          null.String `db:"url"`
 	ProjectID    null.String `db:"project_id"`
 	SupportEmail null.String `db:"support_email"`
 }

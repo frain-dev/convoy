@@ -360,7 +360,7 @@ func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoi
 	return &datastore.Subscription{
 		ProjectID:  project.UID,
 		UID:        ulid.Make().String(),
-		Name:       fmt.Sprintf("%s-subscription", endpoint.Title),
+		Name:       fmt.Sprintf("%s-subscription", endpoint.Name),
 		Type:       datastore.SubscriptionTypeAPI,
 		EndpointID: endpoint.UID,
 		FilterConfig: &datastore.FilterConfiguration{

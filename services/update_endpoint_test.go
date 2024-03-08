@@ -57,9 +57,9 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				project:  project,
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Title:             "Endpoint2",
+				Name:              "Endpoint2",
 				Description:       "test_endpoint",
-				TargetURL:         "https://fb.com",
+				Url:               "https://fb.com",
 				RateLimit:         10000,
 				RateLimitDuration: 60,
 				HttpTimeout:       20,
