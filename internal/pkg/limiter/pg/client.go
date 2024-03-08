@@ -7,25 +7,25 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-type TokenBucketRateLimiter struct {
+type SlidingWindowRateLimiter struct {
 	db database.Database
 }
 
-func NewRateLimiter(db database.Database) *TokenBucketRateLimiter {
-	return &TokenBucketRateLimiter{db: db}
+func NewRateLimiter(db database.Database) *SlidingWindowRateLimiter {
+	return &SlidingWindowRateLimiter{db: db}
 }
 
-func (p *TokenBucketRateLimiter) Allow(ctx context.Context, key string, rate int, bucketSize int) error {
+func (p *SlidingWindowRateLimiter) Allow(ctx context.Context, key string, rate int, bucketSize int) error {
 	return p.takeToken(ctx, key, rate, bucketSize)
 }
 
-// TakeToken tries to take a token from the bucket.
+// TakeToken is a sliding window rate limiter that tries to take a token from the bucket
 //
 // Creates the bucket if it doesn't exist and returns false if it is not successful.
 // Returns true otherwise
-func (p *TokenBucketRateLimiter) takeToken(ctx context.Context, key string, rate int, bucketSize int) error {
+func (p *SlidingWindowRateLimiter) takeToken(ctx context.Context, key string, rate int, windowSize int) error {
 	// if one of rate and bucket size if zero, we skip processing
-	if rate == 0 || bucketSize == 0 {
+	if rate == 0 || windowSize == 0 {
 		return nil
 	}
 
@@ -35,7 +35,7 @@ func (p *TokenBucketRateLimiter) takeToken(ctx context.Context, key string, rate
 	}
 
 	var allowed bool
-	err = tx.QueryRowContext(ctx, `select convoy.take_token($1, $2, $3)::bool;`, key, rate, bucketSize).Scan(&allowed)
+	err = tx.QueryRowContext(ctx, `select convoy.take_token($1, $2, $3)::bool;`, key, rate, windowSize).Scan(&allowed)
 	if err != nil {
 		return err
 	}
