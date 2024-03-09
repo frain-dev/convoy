@@ -45,7 +45,7 @@ type EventDelivery struct {
 }
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
+	projectRepo datastore.ProjectRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
@@ -75,11 +75,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		subscription, err := subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
-
 		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -91,16 +86,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		ec := &EventDeliveryConfig{subscription: subscription, project: project, endpoint: endpoint}
-		rlc := ec.rateLimitConfig()
-
-		err = rateLimiter.Allow(ctx, endpoint.UID, rlc.Rate, rlc.BucketSize)
+		err = rateLimiter.Allow(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
-			log.FromContext(ctx).WithFields(map[string]interface{}{"id": data.EventDeliveryID}).
+			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery id": data.EventDeliveryID}).
 				WithError(err).
-				Error(fmt.Errorf("too many events to %s, limit of %v reqs/min has been reached", endpoint.TargetURL, rlc.Rate))
+				Error(fmt.Errorf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second))
 
-			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
+			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
@@ -362,14 +354,6 @@ func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 
 	rlc.Rate = ec.endpoint.RateLimit
 	rlc.BucketSize = int(ec.endpoint.RateLimitDuration)
-
-	//if ec.subscription.RateLimitConfig != nil {
-	//	rlc.Count = ec.subscription.RateLimitConfig.Count
-	//	rlc.Duration = time.Minute * time.Duration(ec.subscription.RateLimitConfig.Duration)
-	//} else {
-	//	rlc.Count = ec.project.Config.RateLimit.Count
-	//	rlc.Duration = time.Minute * time.Duration(ec.project.Config.RateLimit.Duration)
-	//}
 
 	return rlc
 }

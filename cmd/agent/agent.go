@@ -208,7 +208,6 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
-		subRepo,
 		a.Queue,
 		rateLimiter))
 
