@@ -8,13 +8,11 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/config"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -24,27 +22,15 @@ type ProjectService struct {
 	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	limiter           limiter.RateLimiter
 	cache             cache.Cache
 }
 
 func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) (*ProjectService, error) {
-	cfg, err := config.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	rlimiter, err := limiter.NewLimiter(cfg.Redis)
-	if err != nil {
-		return nil, err
-	}
-
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
-		limiter:           rlimiter,
 		cache:             cache,
 	}, nil
 }

@@ -4,18 +4,17 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/uptrace/opentelemetry-go-extra/otelsql"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 	"io"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/uptrace/opentelemetry-go-extra/otelsql"
-	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
-
-	"github.com/frain-dev/convoy/config"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/newrelic/go-agent/v3/integrations/nrpq"
+	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 )
 
 const pkgName = "postgres"
