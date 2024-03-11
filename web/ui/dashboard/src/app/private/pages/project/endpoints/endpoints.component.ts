@@ -81,7 +81,7 @@ export class EndpointsComponent implements OnInit {
 	action: 'create' | 'update' = 'create';
 	userSearch = false;
 
-	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
+	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) { }
 
 	ngOnInit() {
 		const urlParam = this.route.snapshot.params.id;
@@ -100,7 +100,7 @@ export class EndpointsComponent implements OnInit {
 		try {
 			const response = await this.privateService.getEndpoints({ ...requestDetails, q: requestDetails?.search || this.endpointSearchString });
 			this.endpoints = response.data;
-			this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
+			if(response.data.content) this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
 			this.isLoadingEndpoints = false;
 		} catch {
 			this.isLoadingEndpoints = false;
