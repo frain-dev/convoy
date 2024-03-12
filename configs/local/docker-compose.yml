@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.4
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -18,9 +18,10 @@ services:
         depends_on:
             - postgres
             - redis_server
+            - pgbouncer
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.4
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -30,7 +31,7 @@ services:
                 condition: service_healthy
 
     stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.4
         command: ["./cmd", "stream", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -40,7 +41,7 @@ services:
                 condition: service_healthy
 
     ingest:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.4
         command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -49,13 +50,27 @@ services:
             web:
                 condition: service_healthy
 
+    pgbouncer:
+        image: bitnami/pgbouncer:latest
+        hostname: pgbouncer
+        restart: unless-stopped
+        depends_on:
+            - postgres
+        env_file:
+            - ./conf/.env
+        volumes:
+            - ./conf/:/bitnami/pgbouncer/conf/
+            - ./conf/userlists.txt:/bitnami/userlists.txt
+        ports:
+            - 6432:6432
+
     postgres:
         image: postgres:15.2-alpine
         restart: unless-stopped
         environment:
             POSTGRES_DB: convoy
             POSTGRES_USER: convoy
-            POSTGRES_PASSWORD: convoy
+            POSTGRES_PASSWORD: pg_password
             PGDATA: /data/postgres
         volumes:
           - postgres_data:/data/postgres
