@@ -1,311 +1,342 @@
 <div class="flex justify-between items-end mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-18 font-bold text-grey-80 mr-10px">Events Log</h1>
-	</div>
+    <div class="flex items-center">
+        <h1 class="text-18 font-bold text-grey-80 mr-10px">Events Log</h1>
+    </div>
 </div>
 
 <!-- filters  -->
-<convoy-event-delivery-filter type="logs" (filter)="fetchEventLogs($event)" (tail)="handleTailing($event)" (batchRetry)="fetchRetryCount($event)"></convoy-event-delivery-filter>
+<convoy-event-delivery-filter type="logs" (filter)="fetchEventLogs($event)" (tail)="handleTailing($event)"
+    (batchRetry)="fetchRetryCount($event)"></convoy-event-delivery-filter>
 
 <!-- empty state  -->
-<div class="py-80px" convoy-card *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0); else eventsList">
-	<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]" description="You currently do not have any event logs"></convoy-empty-state>
+<div class="py-80px" convoy-card
+    *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0); else eventsList">
+    <convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]"
+        description="You currently do not have any event logs"></convoy-empty-state>
 </div>
 
 <!-- list of events  -->
 <ng-template #eventsList>
-	<div class="flex gap-24px border-t border-t-new.primary-50">
-		<div class="w-full overflow-hidden relative">
-			<convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead" *ngIf="isloadingEvents"></convoy-table-loader>
+    <div class="flex gap-24px border-t border-t-new.primary-50">
+        <div class="w-full overflow-hidden relative">
+            <convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead"
+                *ngIf="isloadingEvents"></convoy-table-loader>
 
-			<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
-				<table convoy-table>
-					<thead convoy-table-head>
-						<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</th>
-					</thead>
-					<tbody>
-						<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
-							<tr convoy-table-row [forDate]="true">
-								<td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
-								<td convoy-table-cell [forDate]="true"></td>
-								<td convoy-table-cell [forDate]="true"></td>
-							</tr>
-							<tr
-								convoy-table-row
-								class="group"
-								*ngFor="let event of eventGroup.content; let index = index"
-								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event); showEventForm = false; eventName = ''"
-								class="cursor-pointer rounded-8px border-b border-b-new.primary-25"
-								[active]="event.uid === eventsDetailsItem?.uid"
-							>
-								<td convoy-table-cell class="w-380px pl-16px pr-30px relative rounded-l-8px">
-									<div convoy-tag color="gray" class="mr-8px w-[260px] !gap-16px truncate flex items-center">
-										{{ event.uid }}
-										<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" [text]="event.uid"></convoy-copy-button>
-									</div>
-								</td>
+            <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container"
+                *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
+                <table convoy-table>
+                    <thead convoy-table-head>
+                        <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''"
+                            *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</th>
+                    </thead>
+                    <tbody>
+                        <ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
+                            <tr convoy-table-row [forDate]="true">
+                                <td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
+                                <td convoy-table-cell [forDate]="true"></td>
+                                <td convoy-table-cell [forDate]="true"></td>
+                            </tr>
+                            <tr convoy-table-row class="group"
+                                *ngFor="let event of eventGroup.content; let index = index"
+                                (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event); showEventForm = false; eventName = ''"
+                                class="cursor-pointer rounded-8px border-b border-b-new.primary-25"
+                                [active]="event.uid === eventsDetailsItem?.uid">
+                                <td convoy-table-cell class="w-380px pl-16px pr-30px relative rounded-l-8px">
+                                    <div convoy-tag color="gray"
+                                        class="mr-8px w-[260px] !gap-16px truncate flex items-center">
+                                        {{ event.uid }}
+                                        <convoy-copy-button size="sm"
+                                            notificationText="Event ID has been copied to clipboard"
+                                            [text]="event.uid"></convoy-copy-button>
+                                    </div>
+                                </td>
 
-								<td convoy-table-cell>
-									<div class="max-w-[300px] w-full overflow-hidden overflow-ellipsis">
-										<span (click)="viewSource(event?.source_metadata?.uid)" [ngClass]="{ 'underline text-primary-100': !portalToken && event.source_metadata.name }">
-											{{ event.source_metadata.name || 'Rest API' }}
-										</span>
-									</div>
-								</td>
+                                <td convoy-table-cell>
+                                    <div class="max-w-[300px] w-full overflow-hidden overflow-ellipsis">
+                                        <span (click)="viewSource(event?.source_metadata?.uid)"
+                                            [ngClass]="{ 'underline text-primary-100': !portalToken && event.source_metadata.name }">
+                                            {{ event.source_metadata.name || 'Rest API' }}
+                                        </span>
+                                    </div>
+                                </td>
 
-								<td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
+                                <td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
 
-								<td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
-									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag color="gray" size="sm">Duplicate</div>
+                                <td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
+                                    <div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag
+                                        color="gray" size="sm">Duplicate</div>
 
-									<button convoy-button fill="clear" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)">
-										<svg width="20" height="20" class="fill-new.gray-400">
-											<use xlink:href="#arrow-right-icon"></use>
-										</svg>
-									</button>
-								</td>
-							</tr>
-						</ng-container>
-					</tbody>
-				</table>
-			</div>
+                                    <button convoy-button fill="clear" size="sm" class="pr-20px"
+                                        (click)="viewEventDeliveries(event)">
+                                        <svg width="20" height="20" class="fill-new.gray-400">
+                                            <use xlink:href="#arrow-right-icon"></use>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </ng-container>
+                    </tbody>
+                </table>
+            </div>
 
-			<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event to show here" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
-		</div>
+            <convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]"
+                description="No event to show here"
+                *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
+        </div>
 
-		<div class="w-[1px] bg-new.primary-50"></div>
+        <div class="w-[1px] bg-new.primary-50"></div>
 
-		<div class="max-w-[472px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative pt-16px">
-			<!-- event details loader  -->
-			<ng-container *ngIf="isloadingEvents">
-				<div class="border-b border-new.primary-25 pb-24px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-				</div>
-				<div class="flex justify-between border-y border-new.primary-25 py-24px mb-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-				</div>
-			</ng-container>
+        <div class="max-w-[472px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative pt-16px">
+            <!-- event details loader  -->
+            <ng-container *ngIf="isloadingEvents">
+                <div class="border-b border-new.primary-25 pb-24px">
+                    <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+                </div>
+                <div class="flex justify-between border-y border-new.primary-25 py-24px mb-20px">
+                    <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+                    <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+                </div>
+            </ng-container>
 
-			<!-- event details  -->
-			<ng-container *ngIf="!isloadingEvents && displayedEvents">
-				<div class="border-b border-new.primary-25 pb-24px">
-					<div class="flex gap-x-16px">
-						<button convoy-button size="xs" fill="soft" (click)="replayEvent({ eventId: eventsDetailsItem.uid })" [disabled]="isRetrying">
-							<svg width="16" height="16" class="mr-10px scale-75 stroke-new.primary-400">
-								<use xlink:href="#refresh-icon"></use>
-							</svg>
-							Replay
-						</button>
-						<button convoy-button size="xs" fill="soft" (click)="showEventForm = !showEventForm" [disabled]="isRetrying" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
-							<svg width="16" height="16" class="mr-10px scale-75 stroke-new.primary-400">
-								<use xlink:href="#plus-icon"></use>
-							</svg>
-							Add to Event Catalogue
-						</button>
-					</div>
-					<div class="flex flex-col">
-						<form class="overflow-hidden duration-300" [ngClass]="showEventForm ? 'max-h-70 pt-20px' : 'max-h-0'" [formGroup]="eventsForm" >
-							<div class="flex flex-col">
-								<convoy-input-field>
-									<label for="event_name" convoy-label required="true">Event name</label>
-									<input type="text" id="event_name" convoy-input autocomplete="Event name" placeholder="Enter event name" formControlName="name" />
-								</convoy-input-field>
-								<convoy-input-field>
-									<label for="event_description" convoy-label>Event description</label>
-									<input type="text" id="event_description" convoy-input autocomplete="Event description" placeholder="Enter event description" formControlName="description" />
-								</convoy-input-field>
-							</div>
-							<div class="flex justify-end">
-								<button convoy-button size="sm" class="whitespace-nowrap" (click)="addEventToEventCatalogue(eventsDetailsItem.uid)">Add Event</button>
-							</div>
-						</form>
-					</div>
-				</div>
+            <!-- event details  -->
+            <ng-container *ngIf="!isloadingEvents && displayedEvents">
+                <div class="border-b border-new.primary-25 pb-24px">
+                    <div class="flex gap-x-16px">
+                        <button convoy-button size="xs" fill="soft"
+                            (click)="replayEvent({ eventId: eventsDetailsItem.uid })" [disabled]="isRetrying">
+                            <svg width="16" height="16" class="mr-10px scale-75 stroke-new.primary-400">
+                                <use xlink:href="#refresh-icon"></use>
+                            </svg>
+                            Replay
+                        </button>
+                        <button convoy-button size="xs" fill="soft" (click)="showEventForm = !showEventForm"
+                            [disabled]="isRetrying" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
+                            <svg width="16" height="16" class="mr-10px scale-75 stroke-new.primary-400">
+                                <use xlink:href="#plus-icon"></use>
+                            </svg>
+                            Add to Event Catalogue
+                        </button>
+                    </div>
+                    <div class="flex flex-col">
+                        <form class="overflow-hidden duration-300"
+                            [ngClass]="showEventForm ? 'max-h-70 pt-20px' : 'max-h-0'" [formGroup]="eventsForm">
+                            <div class="flex flex-col">
+                                <convoy-input-field>
+                                    <label for="event_name" convoy-label required="true">Event name</label>
+                                    <input type="text" id="event_name" convoy-input autocomplete="Event name"
+                                        placeholder="Enter event name" formControlName="name" />
+                                </convoy-input-field>
+                                <convoy-input-field>
+                                    <label for="event_description" convoy-label>Event description</label>
+                                    <input type="text" id="event_description" convoy-input
+                                        autocomplete="Event description" placeholder="Enter event description"
+                                        formControlName="description" />
+                                </convoy-input-field>
+                            </div>
+                            <div class="flex justify-end">
+                                <button convoy-button size="sm" class="whitespace-nowrap"
+                                    (click)="addEventToEventCatalogue(eventsDetailsItem.uid)">Add Event</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
 
-				<div class="flex items-center border-b border-new.primary-25 py-24px text-12">
-					<p class="text-new.gray-400 mr-24px">Idempotency Key</p>
-					<p class="text-new.gray-600 w-280px overflow-hidden overflow-ellipsis">{{ eventsDetailsItem?.idempotency_key || '-' }}</p>
-				</div>
-			</ng-container>
+                <div class="flex items-center border-b border-new.primary-25 py-24px text-12">
+                    <p class="text-new.gray-400 mr-24px">Idempotency Key</p>
+                    <p class="text-new.gray-600 w-280px overflow-hidden overflow-ellipsis">{{
+                        eventsDetailsItem?.idempotency_key || '-' }}</p>
+                </div>
+            </ng-container>
 
-			<ng-container *ngIf="eventsDetailsItem?.is_duplicate_event">
-				<div *ngIf="isFetchingDuplicateEvents" class="mt-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
+            <ng-container *ngIf="eventsDetailsItem?.is_duplicate_event">
+                <div *ngIf="isFetchingDuplicateEvents" class="mt-20px">
+                    <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
 
-					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
-					</div>
-					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
-					</div>
-				</div>
+                    <div class="flex justify-between mb-20px">
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+                    </div>
+                    <div class="flex justify-between mb-20px">
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+                    </div>
+                </div>
 
-				<!-- duplicate events -->
-				<ng-container *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event">
-					<p class="text-12 text-new.gray-600 font-medium my-16px">Duplicate Events</p>
+                <!-- duplicate events -->
+                <ng-container
+                    *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event">
+                    <p class="text-12 text-new.gray-600 font-medium my-16px">Duplicate Events</p>
 
-					<ul *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event" class="border-b border-new.primary-25 mb-16px">
-						<li convoy-list-item *ngFor="let event of duplicateEvents" class="cursor-pointer border-none flex mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px">
-							<div class="w-1/3 flex items-center">
-								<div convoy-tag color="gray" class="overflow-hidden text-ellipsis mr-8px">{{ event.uid }}</div>
-								<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
-							</div>
+                    <ul *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event"
+                        class="border-b border-new.primary-25 mb-16px">
+                        <li convoy-list-item *ngFor="let event of duplicateEvents"
+                            class="cursor-pointer border-none flex mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px">
+                            <div class="w-1/3 flex items-center">
+                                <div convoy-tag color="gray" class="overflow-hidden text-ellipsis mr-8px">{{ event.uid
+                                    }}</div>
+                                <convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard"
+                                    className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block"
+                                    [text]="event.uid"></convoy-copy-button>
+                            </div>
 
-							<div class="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-12 text-new.gray-600 pr-8px">
-								{{ event.source_metadata.name || 'Rest API' }}
-							</div>
-							<div class="w-1/5">
-								<div convoy-tag color="gray" size="sm" *ngIf="event.is_duplicate_event">Duplicate</div>
-							</div>
-							<div class="flex items-center justify-end text-new.gray-400 text-12">
-								{{ event.created_at | date : 'shortTime' }}
-							</div>
-						</li>
-					</ul>
-				</ng-container>
-			</ng-container>
+                            <div
+                                class="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-12 text-new.gray-600 pr-8px">
+                                {{ event.source_metadata.name || 'Rest API' }}
+                            </div>
+                            <div class="w-1/5">
+                                <div convoy-tag color="gray" size="sm" *ngIf="event.is_duplicate_event">Duplicate</div>
+                            </div>
+                            <div class="flex items-center justify-end text-new.gray-400 text-12">
+                                {{ event.created_at | date : 'shortTime' }}
+                            </div>
+                        </li>
+                    </ul>
+                </ng-container>
+            </ng-container>
 
-			<ng-container *ngIf="!eventsDetailsItem?.is_duplicate_event">
-				<p class="text-12 text-new.gray-600 font-medium mb-16px mt-16px">Deliveries Overview</p>
+            <ng-container *ngIf="!eventsDetailsItem?.is_duplicate_event">
+                <p class="text-12 text-new.gray-600 font-medium mb-16px mt-16px">Deliveries Overview</p>
 
-				<!-- event deliveries loader  -->
-				<div *ngIf="isLoadingSidebarDeliveries">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
+                <!-- event deliveries loader  -->
+                <div *ngIf="isLoadingSidebarDeliveries">
+                    <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
 
-					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
-					</div>
-					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
-					</div>
-					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
-					</div>
-				</div>
+                    <div class="flex justify-between mb-20px">
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+                    </div>
+                    <div class="flex justify-between mb-20px">
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+                    </div>
+                    <div class="flex justify-between mb-20px">
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+                        <div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+                    </div>
+                </div>
 
-				<!-- event deliveries empty state  -->
-				<div class="border-b border-new.primary-25 mb-24px p-24px font-normal pl-0 w-full text-12 text-new.gray-400" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">
-					No event delivery attempt for this event yet.
-				</div>
+                <!-- event deliveries empty state  -->
+                <div class="border-b border-new.primary-25 mb-24px p-24px font-normal pl-0 w-full text-12 text-new.gray-400"
+                    *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">
+                    No event delivery attempt for this event yet.
+                </div>
 
-				<!-- event delieveries -->
-				<ul *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length > 0" class="border-b border-new.primary-25 mb-24px">
-					<li
-						convoy-list-item
-						*ngFor="let delivery of sidebarEventDeliveries"
-						[routerLink]="['../events/event-deliveries/' + delivery.uid]"
-						[relativeTo]="route"
-						class="cursor-pointer border-none flex !justify-between mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px"
-					>
-						<div class="flex items-center">
-							<div class="flex items-center mr-12px">
-								<div convoy-tag [color]="delivery.status | statuscolor" className="mr-20px">{{ delivery.status }}</div>
-								<svg width="16" height="14" class="mr-4px" *ngIf="delivery.device_id">
-									<use xlink:href="#cli-icon"></use>
-								</svg>
-							</div>
+                <!-- event delieveries -->
+                <ul *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length > 0"
+                    class="border-b border-new.primary-25 mb-24px">
+                    <li convoy-list-item *ngFor="let delivery of sidebarEventDeliveries"
+                        [routerLink]="['../events/event-deliveries/' + delivery.uid]" [relativeTo]="route"
+                        class="cursor-pointer border-none flex !justify-between mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px">
+                        <div class="flex items-center">
+                            <div class="flex items-center mr-12px">
+                                <div convoy-tag [color]="delivery.status | statuscolor" className="mr-20px">{{
+                                    delivery.status }}</div>
+                                <svg width="16" height="14" class="mr-4px" *ngIf="delivery.device_id">
+                                    <use xlink:href="#cli-icon"></use>
+                                </svg>
+                            </div>
 
-							<div class="whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center text-12">
-								<div class="flex items-center" *ngIf="!delivery?.device_id">
-									<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
-										<div class="max-w-[100px] truncate">
-											{{ delivery?.source_metadata?.name || 'Rest API' }}
-										</div>
+                            <div
+                                class="whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center text-12">
+                                <div class="flex items-center" *ngIf="!delivery?.device_id">
+                                    <ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
+                                        <div class="max-w-[100px] truncate">
+                                            {{ delivery?.source_metadata?.name || 'Rest API' }}
+                                        </div>
 
-										<div class="px-16px font-light">→</div>
-									</ng-container>
+                                        <div class="px-16px font-light">→</div>
+                                    </ng-container>
 
-									<div [title]="delivery?.endpoint_metadata?.target_url || ''" [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
-										{{ delivery.endpoint_metadata.title }}
-									</div>
-								</div>
+                                    <div [title]="delivery?.endpoint_metadata?.target_url || ''"
+                                        [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
+                                        {{ delivery.endpoint_metadata.title }}
+                                    </div>
+                                </div>
 
-								<span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
-							</div>
-						</div>
+                                <span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
+                            </div>
+                        </div>
 
-						<div class="flex items-center justify-end text-new.gray-400 text-12 self-end">
-							{{ delivery.created_at | date : 'shortTime' }}
+                        <div class="flex items-center justify-end text-new.gray-400 text-12 self-end">
+                            {{ delivery.created_at | date : 'shortTime' }}
 
-							<button convoy-button fill="clear" size="xs" class="pr-0">
-								<svg width="24" height="24" class="fill-new.gray-400">
-									<use xlink:href="#arrow-right-icon"></use>
-								</svg>
-							</button>
-						</div>
-					</li>
-				</ul>
-			</ng-container>
+                            <button convoy-button fill="clear" size="xs" class="pr-0">
+                                <svg width="24" height="24" class="fill-new.gray-400">
+                                    <use xlink:href="#arrow-right-icon"></use>
+                                </svg>
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </ng-container>
 
-			<!-- events payload and headers loader  -->
-			<ng-container *ngIf="isloadingEvents">
-				<div class="bg-grey-10 rounded-8px animate-pulse h-120px w-full mr-40px mb-20px"></div>
-				<div class="bg-grey-10 rounded-8px animate-pulse h-120px w-full mr-40px"></div>
-			</ng-container>
+            <!-- events payload and headers loader  -->
+            <ng-container *ngIf="isloadingEvents">
+                <div class="bg-grey-10 rounded-8px animate-pulse h-120px w-full mr-40px mb-20px"></div>
+                <div class="bg-grey-10 rounded-8px animate-pulse h-120px w-full mr-40px"></div>
+            </ng-container>
 
-			<!-- event payload and headers  -->
-			<ng-container *ngIf="displayedEvents && displayedEvents.length > 0">
-				<prism title="Event" language="json" [code]="generalService.getCodeSnippetString('event_data', eventsDetailsItem?.data || eventsDetailsItem?.metadata?.data)"></prism>
-				<prism *ngIf="eventsDetailsItem?.headers" title="Headers" language="json" type="headers" [code]="eventsDetailsItem?.headers"></prism>
-			</ng-container>
+            <!-- event payload and headers  -->
+            <ng-container *ngIf="displayedEvents && displayedEvents.length > 0">
+                <prism title="Event" language="json"
+                    [code]="generalService.getCodeSnippetString('event_data', eventsDetailsItem?.data || eventsDetailsItem?.metadata?.data)">
+                </prism>
+                <prism *ngIf="eventsDetailsItem?.headers" title="Headers" language="json" type="headers"
+                    [code]="eventsDetailsItem?.headers"></prism>
+            </ng-container>
 
-			<!-- event empty state  -->
-			<convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]" description="No event details to show here" *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
-		</div>
-	</div>
+            <!-- event empty state  -->
+            <convoy-empty-state type="table" imgSrc="/assets/img/empty-state.svg" className="min-h-[70vh]"
+                description="No event details to show here"
+                *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0)"></convoy-empty-state>
+        </div>
+    </div>
 </ng-template>
 
-<convoy-pagination *ngIf="events?.pagination?.has_next_page || events?.pagination?.has_prev_page" [pagination]="events?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
+<convoy-pagination *ngIf="events?.pagination?.has_next_page || events?.pagination?.has_prev_page"
+    [pagination]="events?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
 
 <!-- bacth retry modal -->
 <dialog #batchDialog convoy-dialog position="center" size="sm">
-	<div class="text-center py-30px">
-		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
-		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
-		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
-		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchReplayEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="batchDialog.close()">No, Cancel</button>
-	</div>
+    <div class="text-center py-30px">
+        <img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
+        <div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
+        <div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ?
+            's' : '' }}</div>
+        <button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto"
+            (click)="batchReplayEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
+        <button convoy-button fill="clear" class="font-semibold m-auto" (click)="batchDialog.close()">No,
+            Cancel</button>
+    </div>
 </dialog>
 
 <dialog #previewCatalog convoy-dialog position="center" size="sm">
-	<div class="px-20px py-30px">
-		<p class="text-14 font-semibold">Preview events catalog</p>
-		<p class="text-12 text-new.gray-400 mb-12px">Copy the url below to preview your events catalog.</p>
+    <div class="px-20px py-30px">
+        <p class="text-14 font-semibold">Preview events catalog</p>
+        <p class="text-12 text-new.gray-400 mb-24px">Copy the url below to preview your events catalog.</p>
 
-		<div class="mb-24px">
-			<convoy-copy-button [text]="portalLinkUrl" color="primary" show-icon="false" notificationText="Preview link has been copied to clipboard">
-				<div convoy-tag color="primary" class="flex items-center !gap-12px">
-					<span class="max-w-[230px] truncate">{{ portalLinkUrl }}</span>
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
-						<path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M10 6H14C16 6 16 5 16 4C16 2 15 2 14 2H10C9 2 8 2 8 4C8 6 9 6 10 6Z" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
-						<path
-							d="M16 4.01953C19.33 4.19953 21 5.42953 21 9.99953V15.9995C21 19.9995 20 21.9995 15 21.9995H9C4 21.9995 3 19.9995 3 15.9995V9.99953C3 5.43953 4.67 4.19953 8 4.01953"
-							stroke="#292D32"
-							stroke-width="1.5"
-							stroke-miterlimit="10"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-					</svg>
-				</div>
-			</convoy-copy-button>
-		</div>
-		<div class="flex justify-end">
-			<button convoy-button color="primary" class="mr-12px px-16px" (click)="previewCatalog.close()">Close</button>
-		</div>
-	</div>
+        <div class="flex justify-end gap-12px">
+            <button convoy-button color="primary" (click)="catalog.showModal(); showCatalogPreview = true">Preview
+                Catalog</button>
+            <button convoy-button color="primary" fill="outline" class="px-16px"
+                (click)="previewCatalog.close()">Close</button>
+        </div>
+    </div>
+</dialog>
+
+
+<dialog #catalog convoy-dialog position="full">
+    <ng-container *ngIf="showCatalogPreview">
+        <div convoy-dialog-header (closeDialog)="catalog.close(); showCatalogPreview = false">
+            <h2 class="font-semibold text-14 capitalize">Events Catalog</h2>
+        </div>
+        <div class="p-20px h-full max-w-[810px] m-auto">
+            <convoy-event-catalogue></convoy-event-catalogue>
+        </div>
+    </ng-container>
 </dialog>

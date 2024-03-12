@@ -3,107 +3,108 @@ import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { HttpService } from 'src/app/services/http/http.service';
 
 @Injectable({
-	providedIn: 'root'
+    providedIn: 'root'
 })
 export class CreateProjectComponentService {
-	constructor(private http: HttpService) {}
+    constructor(private http: HttpService) { }
 
-	createProject(requestDetails: { name: string; strategy: { duration: string; retry_count: string; type: string }; signature: { header: string; hash: string }; disable_endpoint: boolean; rate_limit: number; rate_limit_duration: string }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `/projects`,
-					body: requestDetails,
-					method: 'post',
-					level: 'org'
-				});
+    createProject(requestDetails: { name: string; strategy: { duration: string; retry_count: string; type: string }; signature: { header: string; hash: string }; disable_endpoint: boolean; rate_limit: number; rate_limit_duration: string }): Promise<HTTP_RESPONSE> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await this.http.request({
+                    url: `/projects`,
+                    body: requestDetails,
+                    method: 'post',
+                    level: 'org'
+                });
 
-				localStorage.setItem('CONVOY_PROJECT', JSON.stringify(response.data.project));
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
+                localStorage.setItem('CONVOY_PROJECT', JSON.stringify(response.data.project));
+                return resolve(response);
+            } catch (error) {
+                return reject(error);
+            }
+        });
+    }
 
-	updateProject(requestDetails: { name: string; strategy: { duration: string; retry_count: string; type: string }; signature: { header: string; hash: string }; disable_endpoint: boolean; rate_limit: number; rate_limit_duration: string }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: ``,
-					body: requestDetails,
-					method: 'put',
-					level: 'org_project'
-				});
+    updateProject(requestDetails: { name: string; strategy: { duration: string; retry_count: string; type: string }; signature: { header: string; hash: string }; disable_endpoint: boolean; rate_limit: number; rate_limit_duration: string }): Promise<HTTP_RESPONSE> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await this.http.request({
+                    url: ``,
+                    body: requestDetails,
+                    method: 'put',
+                    level: 'org_project'
+                });
 
-				localStorage.setItem('CONVOY_PROJECT', JSON.stringify(response.data));
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
+                localStorage.setItem('CONVOY_PROJECT', JSON.stringify(response.data));
+                return resolve(response);
+            } catch (error) {
+                return reject(error);
+            }
+        });
+    }
 
-	regenerateKey(): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `/security/keys/regenerate`,
-					method: 'put',
-					body: null,
-					level: 'org_project'
-				});
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
+    regenerateKey(): Promise<HTTP_RESPONSE> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await this.http.request({
+                    url: `/security/keys/regenerate`,
+                    method: 'put',
+                    body: null,
+                    level: 'org_project'
+                });
+                return resolve(response);
+            } catch (error) {
+                return reject(error);
+            }
+        });
+    }
 
-	addEventToEventCatalogue(requestDetails: any): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `/catalogue/add_event`,
-					method: 'post',
-					body: requestDetails,
-					level: 'org_project'
-				});
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
+    addEventToEventCatalogue(requestDetails: any): Promise<HTTP_RESPONSE> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await this.http.request({
+                    url: `/catalogue/add_event`,
+                    method: 'post',
+                    body: requestDetails,
+                    level: 'org_project'
+                });
+                return resolve(response);
+            } catch (error) {
+                return reject(error);
+            }
+        });
+    }
 
-	addOpenApiSpecToCatalogue(requestDetails: { open_api_spec: any }): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `/catalogue/add_openapi_spec`,
-					method: 'post',
-					body: requestDetails,
-					level: 'org_project'
-				});
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
+    addOpenApiSpecToCatalogue(requestDetails: { open_api_spec: any }): Promise<HTTP_RESPONSE> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await this.http.request({
+                    url: `/catalogue/add_openapi_spec`,
+                    method: 'post',
+                    body: requestDetails,
+                    level: 'org_project'
+                });
+                return resolve(response);
+            } catch (error) {
+                return reject(error);
+            }
+        });
+    }
 
-	getEventCatalogue(): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `/catalogue`,
-					method: 'get',
-					level: 'org_project'
-				});
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
+    getEventCatalogue(): Promise<HTTP_RESPONSE> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const response = await this.http.request({
+                    url: `/catalogue`,
+                    method: 'get',
+                    level: 'org_project',
+                    hideNotification: true
+                });
+                return resolve(response);
+            } catch (error) {
+                return reject(error);
+            }
+        });
+    }
 }

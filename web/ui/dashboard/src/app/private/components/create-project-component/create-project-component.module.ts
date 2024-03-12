@@ -17,6 +17,7 @@ import { PermissionDirective } from '../permission/permission.directive';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { UploadEventsComponent } from '../upload-events/upload-events.component';
+import { EventCatalogueComponent } from '../event-catalogue/event-catalogue.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
@@ -48,7 +49,8 @@ import { UploadEventsComponent } from '../upload-events/upload-events.component'
 		DialogDirective,
 		NotificationComponent,
 		ConfigButtonComponent,
-        UploadEventsComponent
+        UploadEventsComponent,
+        EventCatalogueComponent
 	],
 	exports: [CreateProjectComponent]
 })

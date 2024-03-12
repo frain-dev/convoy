@@ -5,62 +5,67 @@ import { DropdownComponent, DropdownOptionDirective } from '../dropdown/dropdown
 import { ButtonComponent } from '../button/button.component';
 
 @Component({
-	selector: 'convoy-multi-input',
-	standalone: true,
-	imports: [CommonModule, TooltipComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent],
-	templateUrl: './multi-input.component.html',
-	styleUrls: ['./multi-input.component.scss']
+    selector: 'convoy-multi-input',
+    standalone: true,
+    imports: [CommonModule, TooltipComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent],
+    templateUrl: './multi-input.component.html',
+    styleUrls: ['./multi-input.component.scss']
 })
 export class MultiInputComponent implements OnInit {
-	@Output() inputValues = new EventEmitter<string[]>();
-	@Input('prefilledKeys') prefilledKeys?: string[];
-	@Input('options') options?: string[];
-	@Input('label') label?: string;
-	@Input('tooltip') tooltip?: string;
-	@Input('required') required: 'true' | 'false' = 'false'
-	@Input('action') action!: 'view' | 'create' | 'update';
+    @Output() inputValues = new EventEmitter<string[]>();
+    @Input('prefilledKeys') prefilledKeys?: string[];
+    @Input('options') options?: string[];
+    @Input('label') label?: string;
+    @Input('tooltip') tooltip?: string;
+    @Input('required') required: 'true' | 'false' = 'false'
+    @Input('action') action!: 'view' | 'create' | 'update';
 
-	keys: string[] = [];
+    keys: string[] = [];
 
-	constructor() {}
+    constructor() {}
 
-	ngOnInit(): void {
-		if (this.prefilledKeys?.length) this.keys = this.prefilledKeys;
-	}
+    ngOnInit() {
+        if (this.prefilledKeys?.length) this.keys = this.prefilledKeys;
+    }
 
-	addKey() {
-		const inputField = document.getElementById('input');
-		const inputValue = document.getElementById('input') as HTMLInputElement;
+    addKey() {
+        const inputField = document.getElementById('input');
+        const inputValue = document.getElementById('input') as HTMLInputElement;
 
-		inputField?.addEventListener('keydown', e => {
-			const key = e.keyCode || e.charCode;
-			if (key == 8) {
-				e.stopImmediatePropagation();
-				if (this.keys?.length > 0 && !inputValue?.value) this.keys.splice(-1);
-			}
-			if (e.which === 188 || e.key == ' ') {
-				if (this.keys?.includes(inputValue?.value)) {
-					inputValue.value = '';
-					this.keys = this.keys?.filter(e => String(e).trim());
-				} else {
-					this.keys.push(inputValue?.value);
-					inputValue.value = '';
-					this.keys = this.keys.filter(e => String(e).trim());
-					this.inputValues.emit(this.keys);
-				}
-				e.preventDefault();
-			}
-		});
-	}
+        inputField?.addEventListener('keydown', e => {
+            const key = e.keyCode || e.charCode;
+            if (key == 8) {
+                e.stopImmediatePropagation();
+                if (this.keys?.length > 0 && !inputValue?.value) this.keys.splice(-1);
+            }
+            if (e.which === 188 || e.key == ' ') {
+                if (this.keys?.includes(inputValue?.value)) {
+                    inputValue.value = '';
+                    this.keys = this.keys?.filter(e => String(e).trim());
+                } else {
+                    this.keys.push(inputValue?.value);
+                    inputValue.value = '';
+                    this.keys = this.keys.filter(e => String(e).trim());
+                    this.inputValues.emit(this.keys);
+                }
+                e.preventDefault();
+            }
+        });
+    }
 
-	removeKey(key: string) {
-		this.keys = this.keys.filter(e => e !== key);
-		this.inputValues.emit(this.keys);
-	}
+    removeKey(key: string) {
+        this.keys = this.keys.filter(e => e !== key);
+        this.inputValues.emit(this.keys);
+    }
 
-	focusInput() {
-		document.getElementById('input')?.focus();
-	}
+    focusInput() {
+        document.getElementById('input')?.focus();
+    }
 
-    selectOption(option?: any) {}
+    selectOption(option?: any) {
+        const selectOption = this.keys?.find((item: any) => item === option);
+        if (!selectOption) this.keys.push(option);
+        this.keys = this.keys.filter(e => String(e).trim());
+        this.inputValues.emit(this.keys);
+    }
 }

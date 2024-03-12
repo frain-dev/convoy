@@ -27,273 +27,262 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 import { EventDeliveryFilterComponent } from 'src/app/private/components/event-delivery-filter/event-delivery-filter.component';
 import { InputDirective, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { CreateProjectComponentService } from 'src/app/private/components/create-project-component/create-project-component.service';
-import { environment } from 'src/environments/environment';
+import { EventCatalogueComponent } from 'src/app/private/components/event-catalogue/event-catalogue.component';
 
 @Component({
-	selector: 'convoy-event-logs',
-	standalone: true,
-	imports: [
-		CommonModule,
-		RouterModule,
-		StatusColorModule,
-		PrismModule,
-		LoaderModule,
-		CardComponent,
-		ButtonComponent,
-		EmptyStateComponent,
-		TagComponent,
-		TableLoaderModule,
-		TableComponent,
-		TableHeadComponent,
-		TableRowComponent,
-		TableHeadCellComponent,
-		TableCellComponent,
-		DatePickerComponent,
-		DropdownComponent,
-		PaginationComponent,
-		CopyButtonComponent,
-		ListItemComponent,
-		DropdownOptionDirective,
-		DialogDirective,
-		EventDeliveryFilterComponent,
-		InputFieldDirective,
-		InputDirective,
-		LabelComponent,
-		ReactiveFormsModule
-	],
-	templateUrl: './event-logs.component.html',
-	styleUrls: ['./event-logs.component.scss']
+    selector: 'convoy-event-logs',
+    standalone: true,
+    imports: [
+        CommonModule,
+        RouterModule,
+        StatusColorModule,
+        PrismModule,
+        LoaderModule,
+        CardComponent,
+        ButtonComponent,
+        EmptyStateComponent,
+        TagComponent,
+        TableLoaderModule,
+        TableComponent,
+        TableHeadComponent,
+        TableRowComponent,
+        TableHeadCellComponent,
+        TableCellComponent,
+        DatePickerComponent,
+        DropdownComponent,
+        PaginationComponent,
+        CopyButtonComponent,
+        ListItemComponent,
+        DropdownOptionDirective,
+        DialogDirective,
+        EventDeliveryFilterComponent,
+        InputFieldDirective,
+        InputDirective,
+        LabelComponent,
+        ReactiveFormsModule,
+        EventCatalogueComponent
+    ],
+    templateUrl: './event-logs.component.html',
+    styleUrls: ['./event-logs.component.scss']
 })
 export class EventLogsComponent implements OnInit {
-	@ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
-	@ViewChild('previewCatalog', { static: true }) previewCatalog!: ElementRef<HTMLDialogElement>;
+    @ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
+    @ViewChild('previewCatalog', { static: true }) previewCatalog!: ElementRef<HTMLDialogElement>;
 
-	eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
-	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
-	eventSource?: string;
-	isloadingEvents: boolean = false;
-	eventDetailsTabs = [
-		{ id: 'data', label: 'Event' },
-		{ id: 'response', label: 'Response' },
-		{ id: 'request', label: 'Request' }
-	];
-	displayedEvents: { date: string; content: EVENT[] }[] = [];
-	events?: { pagination: PAGINATION; content: EVENT[] };
-	duplicateEvents!: EVENT[];
-	eventDetailsActiveTab = 'data';
-	eventsDetailsItem: any;
-	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
-	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-	portalToken = this.route.snapshot.params?.token;
-	filterSources: SOURCE[] = [];
-	isLoadingSidebarDeliveries = true;
-	fetchingCount = false;
-	isRetrying = false;
-	isFetchingDuplicateEvents = false;
-	batchRetryCount: any;
-	getEventsInterval: any;
-	queryParams: FILTER_QUERY_PARAM = {};
-	enableTailMode = false;
-	sortOrder: 'asc' | 'desc' = 'desc';
-	eventName = '';
-	showEventForm = false;
-	portalLinkUrl!: string;
+    eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
+    eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
+    dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
+    eventSource?: string;
+    isloadingEvents: boolean = false;
+    eventDetailsTabs = [
+        { id: 'data', label: 'Event' },
+        { id: 'response', label: 'Response' },
+        { id: 'request', label: 'Request' }
+    ];
+    displayedEvents: { date: string; content: EVENT[] }[] = [];
+    events?: { pagination: PAGINATION; content: EVENT[] };
+    duplicateEvents!: EVENT[];
+    eventDetailsActiveTab = 'data';
+    eventsDetailsItem: any;
+    sidebarEventDeliveries: EVENT_DELIVERY[] = [];
+    @ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
+    portalToken = this.route.snapshot.params?.token;
+    filterSources: SOURCE[] = [];
+    isLoadingSidebarDeliveries = true;
+    fetchingCount = false;
+    isRetrying = false;
+    isFetchingDuplicateEvents = false;
+    batchRetryCount: any;
+    getEventsInterval: any;
+    queryParams: FILTER_QUERY_PARAM = {};
+    enableTailMode = false;
+    sortOrder: 'asc' | 'desc' = 'desc';
+    eventName = '';
+    showEventForm = false;
+    showCatalogPreview = false;
 
-	eventsForm: FormGroup = this.formBuilder.group({
-		name: ['', Validators.required],
-		description: ['']
-	});
+    eventsForm: FormGroup = this.formBuilder.group({
+        name: ['', Validators.required],
+        description: ['']
+    });
 
-	constructor(
-		private eventsLogService: EventLogsService,
-		public generalService: GeneralService,
-		public route: ActivatedRoute,
-		private router: Router,
-		public privateService: PrivateService,
-		private eventsService: EventsService,
-		private createProjectService: CreateProjectComponentService,
-		private formBuilder: FormBuilder
-	) {}
+    constructor(
+        private eventsLogService: EventLogsService,
+        public generalService: GeneralService,
+        public route: ActivatedRoute,
+        private router: Router,
+        public privateService: PrivateService,
+        private eventsService: EventsService,
+        private createProjectService: CreateProjectComponentService,
+        private formBuilder: FormBuilder
+    ) { }
 
-	ngOnInit() {
-		if (this.privateService.getProjectDetails?.type === 'outgoing') this.getPortalTokens();
-	}
+    ngOnInit() { }
 
-	ngOnDestroy() {
-		clearInterval(this.getEventsInterval);
-	}
+    ngOnDestroy() {
+        clearInterval(this.getEventsInterval);
+    }
 
-	fetchEventLogs(requestDetails: FILTER_QUERY_PARAM) {
-		const data = requestDetails;
-		this.queryParams = data;
-		this.getEventLogs({ ...data, showLoader: true });
-	}
+    fetchEventLogs(requestDetails: FILTER_QUERY_PARAM) {
+        const data = requestDetails;
+        this.queryParams = data;
+        this.getEventLogs({ ...data, showLoader: true });
+    }
 
-	handleTailing(tailDetails: { data: FILTER_QUERY_PARAM; tailModeConfig: boolean }) {
-		this.queryParams = tailDetails.data;
+    handleTailing(tailDetails: { data: FILTER_QUERY_PARAM; tailModeConfig: boolean }) {
+        this.queryParams = tailDetails.data;
 
-		clearInterval(this.getEventsInterval);
-		if (tailDetails.tailModeConfig) this.getEventsAtInterval(tailDetails.data);
-	}
+        clearInterval(this.getEventsInterval);
+        if (tailDetails.tailModeConfig) this.getEventsAtInterval(tailDetails.data);
+    }
 
-	getEventsAtInterval(data: FILTER_QUERY_PARAM) {
-		this.getEventsInterval = setInterval(() => {
-			this.getEventLogs(data);
-		}, 5000);
-	}
+    getEventsAtInterval(data: FILTER_QUERY_PARAM) {
+        this.getEventsInterval = setInterval(() => {
+            this.getEventLogs(data);
+        }, 5000);
+    }
 
-	paginateEvents(event: CURSOR) {
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...event });
-		this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
-		this.getEventLogs({ ...this.queryParams, showLoader: true });
-	}
+    paginateEvents(event: CURSOR) {
+        this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...event });
+        this.handleTailing({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
+        this.getEventLogs({ ...this.queryParams, showLoader: true });
+    }
 
-	checkIfTailModeIsEnabled() {
-		const tailModeConfig = localStorage.getItem('EVENT_LOGS_TAIL_MODE');
-		return tailModeConfig ? JSON.parse(tailModeConfig) : false;
-	}
+    checkIfTailModeIsEnabled() {
+        const tailModeConfig = localStorage.getItem('EVENT_LOGS_TAIL_MODE');
+        return tailModeConfig ? JSON.parse(tailModeConfig) : false;
+    }
 
-	async getEventLogs(requestDetails?: FILTER_QUERY_PARAM) {
-		if (requestDetails?.showLoader) this.isloadingEvents = true;
+    async getEventLogs(requestDetails?: FILTER_QUERY_PARAM) {
+        if (requestDetails?.showLoader) this.isloadingEvents = true;
 
-		try {
-			const cleanedQuery = JSON.parse(JSON.stringify(requestDetails));
-			delete cleanedQuery.showLoader;
-			const eventsResponse = await this.eventsService.getEvents(cleanedQuery);
-			this.events = eventsResponse.data;
+        try {
+            const cleanedQuery = JSON.parse(JSON.stringify(requestDetails));
+            delete cleanedQuery.showLoader;
+            const eventsResponse = await this.eventsService.getEvents(cleanedQuery);
+            this.events = eventsResponse.data;
 
-			this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content, this.queryParams?.sort || 'desc');
-			this.isloadingEvents = false;
+            this.displayedEvents = await this.generalService.setContentDisplayed(eventsResponse.data.content, this.queryParams?.sort || 'desc');
+            this.isloadingEvents = false;
 
-			if (this.eventsDetailsItem) return;
-			else {
-				this.eventsDetailsItem = this.events?.content[0];
-				if (this.eventsDetailsItem?.uid) {
-					this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
-					this.getDuplicateEvents(this.eventsDetailsItem);
-				} else this.isLoadingSidebarDeliveries = false;
-			}
+            if (this.eventsDetailsItem) return;
+            else {
+                this.eventsDetailsItem = this.events?.content[0];
+                if (this.eventsDetailsItem?.uid) {
+                    this.getEventDeliveriesForSidebar(this.eventsDetailsItem.uid);
+                    this.getDuplicateEvents(this.eventsDetailsItem);
+                } else this.isLoadingSidebarDeliveries = false;
+            }
 
-			return eventsResponse;
-		} catch (error: any) {
-			this.isloadingEvents = false;
-			return error;
-		}
-	}
+            return eventsResponse;
+        } catch (error: any) {
+            this.isloadingEvents = false;
+            return error;
+        }
+    }
 
-	async getDuplicateEvents(event: EVENT) {
-		if (!event.is_duplicate_event || !event.idempotency_key) return;
+    async getDuplicateEvents(event: EVENT) {
+        if (!event.is_duplicate_event || !event.idempotency_key) return;
 
-		this.isFetchingDuplicateEvents = true;
-		try {
-			const eventsResponse = await this.eventsService.getEvents({
-				idempotencyKey: event?.idempotency_key
-			});
-			this.duplicateEvents = eventsResponse.data.content;
-			this.isFetchingDuplicateEvents = false;
-		} catch {
-			this.isFetchingDuplicateEvents = false;
-		}
-	}
+        this.isFetchingDuplicateEvents = true;
+        try {
+            const eventsResponse = await this.eventsService.getEvents({
+                idempotencyKey: event?.idempotency_key
+            });
+            this.duplicateEvents = eventsResponse.data.content;
+            this.isFetchingDuplicateEvents = false;
+        } catch {
+            this.isFetchingDuplicateEvents = false;
+        }
+    }
 
-	async getEventDeliveriesForSidebar(eventId: string) {
-		this.isLoadingSidebarDeliveries = true;
-		this.sidebarEventDeliveries = [];
+    async getEventDeliveriesForSidebar(eventId: string) {
+        this.isLoadingSidebarDeliveries = true;
+        this.sidebarEventDeliveries = [];
 
-		try {
-			const response = await this.eventsService.getEventDeliveries({ eventId });
-			this.sidebarEventDeliveries = response.data.content;
-			this.isLoadingSidebarDeliveries = false;
+        try {
+            const response = await this.eventsService.getEventDeliveries({ eventId });
+            this.sidebarEventDeliveries = response.data.content;
+            this.isLoadingSidebarDeliveries = false;
 
-			return;
-		} catch (error) {
-			this.isLoadingSidebarDeliveries = false;
-			return error;
-		}
-	}
+            return;
+        } catch (error) {
+            this.isLoadingSidebarDeliveries = false;
+            return error;
+        }
+    }
 
-	async fetchRetryCount(data: FILTER_QUERY_PARAM) {
-		this.queryParams = data;
+    async fetchRetryCount(data: FILTER_QUERY_PARAM) {
+        this.queryParams = data;
 
-		if (!data) return;
-		const page = this.route.snapshot.queryParams.page || 1;
-		this.fetchingCount = true;
-		try {
-			const response = await this.eventsLogService.getRetryCount(data);
+        if (!data) return;
+        const page = this.route.snapshot.queryParams.page || 1;
+        this.fetchingCount = true;
+        try {
+            const response = await this.eventsLogService.getRetryCount(data);
 
-			this.batchRetryCount = response.data.num;
-			this.fetchingCount = false;
-			this.batchDialog.nativeElement.showModal();
-		} catch (error) {
-			this.fetchingCount = false;
-		}
-	}
+            this.batchRetryCount = response.data.num;
+            this.fetchingCount = false;
+            this.batchDialog.nativeElement.showModal();
+        } catch (error) {
+            this.fetchingCount = false;
+        }
+    }
 
-	async replayEvent(requestDetails: { eventId: string }) {
-		this.isRetrying = true;
-		try {
-			const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId });
-			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.isRetrying = false;
-			return;
-		} catch (error) {
-			this.isRetrying = true;
-			return error;
-		}
-	}
+    async replayEvent(requestDetails: { eventId: string }) {
+        this.isRetrying = true;
+        try {
+            const response = await this.eventsLogService.retryEvent({ eventId: requestDetails.eventId });
+            this.generalService.showNotification({ message: response.message, style: 'success' });
+            this.isRetrying = false;
+            return;
+        } catch (error) {
+            this.isRetrying = true;
+            return error;
+        }
+    }
 
-	async batchReplayEvent() {
-		this.isRetrying = true;
+    async batchReplayEvent() {
+        this.isRetrying = true;
 
-		try {
-			const response = await this.eventsLogService.batchRetryEvent(this.queryParams);
+        try {
+            const response = await this.eventsLogService.batchRetryEvent(this.queryParams);
 
-			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.batchDialog.nativeElement.close();
-			this.isRetrying = false;
-		} catch (error) {
-			this.isRetrying = false;
-		}
-	}
+            this.generalService.showNotification({ message: response.message, style: 'success' });
+            this.batchDialog.nativeElement.close();
+            this.isRetrying = false;
+        } catch (error) {
+            this.isRetrying = false;
+        }
+    }
 
-	viewSource(sourceId?: string) {
-		if (!sourceId || this.portalToken) return;
-		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/sources/${sourceId}`]);
-	}
+    viewSource(sourceId?: string) {
+        if (!sourceId || this.portalToken) return;
+        this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/sources/${sourceId}`]);
+    }
 
-	viewEventDeliveries(event: EVENT, filterByIdempotencyKey?: boolean) {
-		const queryParams: any = {
-			eventId: event.uid
-		};
-		if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
+    viewEventDeliveries(event: EVENT, filterByIdempotencyKey?: boolean) {
+        const queryParams: any = {
+            eventId: event.uid
+        };
+        if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
 
-		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
-	}
+        this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
+    }
 
-	async addEventToEventCatalogue(event_id: string) {
-		if (this.eventsForm.invalid) return this.eventsForm.markAllAsTouched();
+    async addEventToEventCatalogue(event_id: string) {
+        if (this.eventsForm.invalid) return this.eventsForm.markAllAsTouched();
 
-		const payload = {
-			event_id,
-			...this.eventsForm.value
-		};
-		try {
-			const response = await this.createProjectService.addEventToEventCatalogue(payload);
-			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.eventsForm.reset();
-			this.showEventForm = false;
-			this.previewCatalog.nativeElement.showModal();
-		} catch {}
-	}
-
-	async getPortalTokens() {
-		try {
-			const response = await this.privateService.getPortalLinks();
-			const portalLinkToken = response.data.content.length ? response.data.content[0].token : '';
-			this.portalLinkUrl = `${environment.production ? location.origin : 'http://localhost:5005'}/portal/events?token=${portalLinkToken}`;
-		} catch {}
-	}
-
-
+        const payload = {
+            event_id,
+            ...this.eventsForm.value
+        };
+        try {
+            const response = await this.createProjectService.addEventToEventCatalogue(payload);
+            this.generalService.showNotification({ message: response.message, style: 'success' });
+            this.eventsForm.reset();
+            this.showEventForm = false;
+            this.previewCatalog.nativeElement.showModal();
+        } catch { }
+    }
 }
