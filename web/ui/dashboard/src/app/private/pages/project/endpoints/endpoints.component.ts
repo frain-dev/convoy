@@ -101,7 +101,7 @@ export class EndpointsComponent implements OnInit {
 		try {
 			const response = await this.privateService.getEndpoints({ ...requestDetails, q: requestDetails?.search || this.endpointSearchString });
 			this.endpoints = response.data;
-			this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
+			if(response.data.content) this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
 			this.isLoadingEndpoints = false;
 		} catch {
 			this.isLoadingEndpoints = false;
