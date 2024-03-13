@@ -73,7 +73,7 @@
 							[id]="'endpoint' + i" class="border-b border-b-new.primary-25"
 							(click)="selectedEndpoint = endpoint">
 							<td convoy-table-cell class="w-[450px]">
-								<div class="truncate max-w-[440px] pl-16px">{{ endpoint.title }}</div>
+								<div class="truncate max-w-[440px] pl-16px">{{ endpoint.name }}</div>
 							</td>
 							<td convoy-table-cell class="w-100px">
 								<convoy-tag *ngIf="endpoint.status" [color]="endpoint.status | statuscolor"
@@ -84,7 +84,7 @@
 									class="mr-8px w-[260px] !gap-16px truncate flex items-center">
 									{{ endpoint.uid }}
 									<convoy-copy-button size="sm"
-										[notificationText]="endpoint.title + ' ID has been copied to clipboard'"
+										[notificationText]="endpoint.name + ' ID has been copied to clipboard'"
 										[text]="endpoint.uid"></convoy-copy-button>
 								</div>
 							</td>
@@ -212,6 +212,6 @@
 
 <!-- delete modal  -->
 <dialog #deleteDialog convoy-dialog position="center" size="sm">
-	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.title + '”'"
+	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.name + '”'"
 		(closeModal)="deleteDialog.close()" (deleteData)="deleteEndpoint()"></app-delete-modal>
 </dialog>

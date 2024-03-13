@@ -49,7 +49,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 		try {
 			const endpointDetails = await this.endpointService.addNewEndpoint({ body: endpointFormValue });
-			const subscriptionDetails = await this.subscriptionService.createSubscription({ ...this.createSubscriptionForm.subscriptionForm.value, name: `${endpointDetails?.data.title}'s Subscription`, endpoint_id: endpointDetails?.data.uid });
+			const subscriptionDetails = await this.subscriptionService.createSubscription({ ...this.createSubscriptionForm.subscriptionForm.value, name: `${endpointDetails?.data.name}'s Subscription`, endpoint_id: endpointDetails?.data.uid });
 			this.generalService.showNotification({ message: 'Endpint created successfully', style: 'success' });
 			this.onAction.emit({ action: 'create', data: subscriptionDetails });
 			this.isCreatingEndpoint = false;
@@ -73,7 +73,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 			await this.endpointService.editEndpoint({ endpointId: this.endpoint?.uid || '', body: endpointFormValue });
 			const subscriptionDetails = this.endpoint?.subscription?.uid
 				? await this.subscriptionService.updateSubscription({ data: { ...subscriptionData, endpoint_id: this.endpoint?.uid || '' }, id: this.endpoint?.subscription?.uid || '' })
-				: await this.subscriptionService.createSubscription({ ...subscriptionData, endpoint_id: this.endpoint?.uid || '', name: `${this.endpoint?.title}'s Subscription` });
+				: await this.subscriptionService.createSubscription({ ...subscriptionData, endpoint_id: this.endpoint?.uid || '', name: `${this.endpoint?.name}'s Subscription` });
 			this.generalService.showNotification({ message: 'Endpint updated successfully', style: 'success' });
 			this.onAction.emit({ action: 'create', data: subscriptionDetails });
 			this.isCreatingEndpoint = false;

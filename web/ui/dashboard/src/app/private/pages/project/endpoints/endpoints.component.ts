@@ -139,7 +139,7 @@ export class EndpointsComponent implements OnInit {
 					if (response.data.uid === endpoint.uid) endpoint.status = response.data.status;
 				});
 			});
-			this.generalService.showNotification({ message: `${this.selectedEndpoint?.title} status updated successfully`, style: 'success' });
+			this.generalService.showNotification({ message: `${this.selectedEndpoint?.name} status updated successfully`, style: 'success' });
 			this.isTogglingEndpoint = false;
 		} catch {
 			this.isTogglingEndpoint = false;

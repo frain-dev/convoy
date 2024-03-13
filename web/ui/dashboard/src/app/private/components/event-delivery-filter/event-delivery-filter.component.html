@@ -145,7 +145,7 @@
 			<div class="flex gap-x-2px" *ngIf="eventDeliveriesEndpoint">
 				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Endpoint</div>
 				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
-					{{ eventDeliveriesEndpointData?.title || eventDeliveriesEndpoint }}
+					{{ eventDeliveriesEndpointData?.name || eventDeliveriesEndpoint }}
 
 					<button convoy-button (click)="clearFilters('endpointId'); toggleFilter('endpoint', false)" fill="text" type="button" class="py-0 px-0 ml-4px">
 						<svg width="14" height="14" class="fill-grey-40">

@@ -20,10 +20,10 @@
 				flex-wrap
 			"
 		>
-			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
+			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue }}</span>
 			<ng-container *ngIf="multiple">
 				<div *ngFor="let option of selectedOptions" class="border border-new.gray-200 py-4px px-8px font-medium text-12 text-new.gray-400 mr-1 mb-1 rounded-22px flex items-center">
-					{{ option.name || option.title || option }}
+					{{ option.name || option }}
 					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
 						<svg width="14" height="14" class="fill-grey-40">
 							<use xlink:href="#close-icon-2"></use>
