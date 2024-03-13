@@ -73,12 +73,9 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			// block the main thread.
-			// trap Ctrl+C and call cancel on the context
-
 			select {
 			case <-quit:
-				cancel()
+				return nil
 			case <-ctx.Done():
 			}
 
