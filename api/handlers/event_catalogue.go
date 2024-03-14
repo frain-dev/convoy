@@ -2,11 +2,8 @@ package handlers
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/oklog/ulid/v2"
-
 	"github.com/go-chi/chi/v5"
 
 	"github.com/frain-dev/convoy/database/postgres"
@@ -100,21 +97,14 @@ func (h *Handler) CreateOpenAPISpecCatalogue(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if project.Type != datastore.OutgoingProject {
-		_ = render.Render(w, r, util.NewErrorResponse("event catalogue is only available to outgoing projects", http.StatusBadRequest))
-		return
+	adc := services.CreateOpenAPISpecCatalogueService{
+		CatalogueRepo:        postgres.NewEventCatalogueRepo(h.A.DB, h.A.Cache),
+		EventRepo:            postgres.NewEventRepo(h.A.DB, h.A.Cache),
+		CatalogueOpenAPISpec: &catalogueOpenAPISpec,
+		Project:              project,
 	}
 
-	catalogue := &datastore.EventCatalogue{
-		UID:         ulid.Make().String(),
-		ProjectID:   project.UID,
-		Type:        datastore.OpenAPICatalogueType,
-		OpenAPISpec: catalogueOpenAPISpec.OpenAPISpec,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
-	}
-
-	err = postgres.NewEventCatalogueRepo(h.A.DB, h.A.Cache).CreateEventCatalogue(r.Context(), catalogue)
+	catalogue, err := adc.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

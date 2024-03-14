@@ -1045,10 +1045,7 @@
 				"properties": {
 					"open_api_spec": {
 						"description": "An openapi 3.0+ specification in YAML format. Convoy use the webhook section of the specification.\nto render the event catalogue. See https://github.com/OAI/OpenAPI-Specification/blob/main/examples/v3.1/webhook-example.yaml\nhttps://redocly.com/blog/document-webhooks-with-openapi/",
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
+						"type": "string"
 					}
 				},
 				"type": "object"

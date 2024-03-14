@@ -22,7 +22,7 @@ type CatalogueOpenAPISpec struct {
 	// An openapi 3.0+ specification in YAML format. Convoy use the webhook section of the specification.
 	// to render the event catalogue. See https://github.com/OAI/OpenAPI-Specification/blob/main/examples/v3.1/webhook-example.yaml
 	// https://redocly.com/blog/document-webhooks-with-openapi/
-	OpenAPISpec []byte `json:"open_api_spec" valid:"required~please provide an openapi spec"`
+	OpenAPISpec string `json:"open_api_spec" valid:"required~please provide an openapi spec"`
 }
 
 func (ds *CatalogueOpenAPISpec) Validate() error { return util.Validate(ds) }
