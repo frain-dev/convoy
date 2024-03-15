@@ -416,4 +416,40 @@ export class PrivateService {
 			}
 		});
 	}
+
+    getPortalLinks(requestDetails?: CURSOR & { endpointId?: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				if (!requestDetails?.next_page_cursor && !requestDetails?.prev_page_cursor) requestDetails = { next_page_cursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF", direction: 'next', endpointId: requestDetails?.endpointId };
+
+				const response = await this.http.request({
+					url: `/portal-links`,
+					method: 'get',
+					level: 'org_project',
+					query: requestDetails
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	revokePortalLink(requestDetails: { linkId: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/portal-links/${requestDetails.linkId}/revoke`,
+					method: 'put',
+					body: null,
+					level: 'org_project'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

@@ -86,7 +86,7 @@
 					</button>
 				</div>
 
-				<convoy-multi-input [prefilledKeys]="eventTags" (inputValues)="eventTags = $event; subscriptionForm.patchValue({ filter_config: { event_types: $event } })"></convoy-multi-input>
+				<convoy-multi-input [prefilledKeys]="eventTags" [options]="eventTypes" (inputValues)="eventTags = $event; subscriptionForm.patchValue({ filter_config: { event_types: $event } })"></convoy-multi-input>
 
 				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">Separate event types with comma (,) or space</span>
 			</div>
