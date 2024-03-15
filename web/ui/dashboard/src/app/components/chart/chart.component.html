@@ -1,7 +1,7 @@
 <div class="w-full">
 	<div class="flex justify-between h-100px" *ngIf="isLoading">
 		<div class="loader mr-2px last-of-type:mr-0 flex items-end relative w-full h-full" *ngFor="let size of loaderSizes">
-			<div class="min-h-[4px] w-full bg-grey-10 rounded-4px animate-pulse hover:cursor-pointer transition-all duration-300" [ngStyle]="{ height: size + 'px' }"></div>
+			<div class="min-h-[4px] w-full bg-neutral-a3 rounded-4px animate-pulse hover:cursor-pointer transition-all duration-300" [ngStyle]="{ height: size + 'px' }"></div>
 		</div>
 	</div>
 
@@ -9,7 +9,7 @@
 		<div class="flex gap-x-1 justify-end">
 			<div class="mr-2px last-of-type:mr-0 w-full group" *ngFor="let data of paginatedData; let i = index">
 				<div class="flex items-end h-100px hover:cursor-pointer">
-					<div [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70 rounded-tl-8px rounded-tr-8px' : 'bg-grey-10 rounded-4px group-hover:bg-grey-40'" class="min-h-[4px] w-full transition-all duration-300 relative" [ngStyle]="{ height: data.size }">
+					<div [class]="data.data > 0 ? 'bg-primary-100 bg-opacity-70 rounded-tl-8px rounded-tr-8px' : 'bg-neutral-a3 rounded-4px group-hover:bg-neutral-10'" class="min-h-[4px] w-full transition-all duration-300 relative" [ngStyle]="{ height: data.size }">
 						<div
 							class="
 								absolute
@@ -45,7 +45,7 @@
 								after:left-1/2
 								after:-translate-x-1/2
 								after:border-[12px] after:border-t-white-100 after:border-b-transparent after:border-x-transparent
-								after:outline-1 after:outline-grey-20
+								after:outline-1 after:outline-neutral-4
 							"
 							[ngClass]="{ 'before:hidden': data.data === 0 }"
 						>
@@ -57,10 +57,10 @@
 			</div>
 		</div>
 
-		<div class="line flex items-center justify-between mt-14px border-t border-grey-10 pt-4px">
-			<div class="text-grey-40 text-10">{{ paginatedData[0].label }}</div>
-			<div class="text-grey-40 text-10">{{ paginatedData[15].label }}</div>
-			<div class="text-grey-40 text-10">{{ paginatedData[paginatedData.length - 1].label }}</div>
+		<div class="line flex items-center justify-between mt-14px border-t border-neutral-a3 pt-4px">
+			<div class="text-neutral-11 text-10">{{ paginatedData[0].label }}</div>
+			<div class="text-neutral-11 text-10">{{ paginatedData[15].label }}</div>
+			<div class="text-neutral-11 text-10">{{ paginatedData[paginatedData.length - 1].label }}</div>
 		</div>
 
 		<div class="flex items-center justify-end mt-16px" [class]="pages === 1 ? 'hidden' : 'flex'">

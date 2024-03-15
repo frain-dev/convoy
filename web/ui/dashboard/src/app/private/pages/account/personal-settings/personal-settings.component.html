@@ -14,7 +14,7 @@
 
 <!-- personal access tken header  -->
 <div class="flex justify-between items-center mb-28px" *ngIf="!showCreateNewTokenForm && personalAccessKeys?.content?.length > 0">
-	<h3 class="text-16 font-bold text-new.gray-600">Personal Access Tokens</h3>
+	<h3 class="text-16 font-bold text-neutral-10">Personal Access Tokens</h3>
 
 	<button convoy-button size="sm" (click)="showCreateNewTokenForm = true">
 		<svg width="16" height="16" class="mr-8px fill-white-100">
@@ -26,13 +26,13 @@
 
 <!-- personal access token  -->
 <ng-container *ngIf="!isFetchingKeys && personalAccessKeys && !showCreateNewTokenForm">
-	<div class="flex justify-between items-center py-12px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of personalAccessKeys?.content">
+	<div class="flex justify-between items-center py-12px border-b border-b-neutral-a3 last-of-type:border-none" *ngFor="let key of personalAccessKeys?.content">
 		<div>
 			<div class="flex items-center">
 				<p class="font-medium text-12 mr-14px">{{ key.name }}</p>
 				<convoy-tag [color]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 			</div>
-			<p class="text-grey-40 text-10 mt-8px">
+			<p class="text-neutral-11 text-10 mt-8px">
 				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'mediumDate' }})</span>
 			</p>
 		</div>

@@ -24,7 +24,7 @@
 <ng-container *ngIf="linkEndpoint || (!isLoadingPortalLinks && portalLinks?.content?.length)">
 	<div class="flex justify-between items-end mb-24px">
 		<div class="flex items-center">
-			<h1 class="text-18 font-bold text-grey-80 mr-10px">Portal Links</h1>
+			<h1 class="text-18 font-bold text-neutral-12 mr-10px">Portal Links</h1>
 			<!-- <convoy-tooltip tooltipContent="Portals links allows you to view and debug webhook events sent to selected endpoints on a streamlined dashboard. On a portal page only events sent to the endpoints you've selected will be shown." position="right"></convoy-tooltip> -->
 		</div>
 	</div>
@@ -35,7 +35,7 @@
 			<!-- <div class="flex items-center">
                 <form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
                     <img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-                    <input type="search" placeholder="Search links" class="w-full text-grey-40 text-14 outline-none" [(ngModel)]="linkSearchString" (keyup)="searchLinks({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
+                    <input type="search" placeholder="Search links" class="w-full text-neutral-11 text-14 outline-none" [(ngModel)]="linkSearchString" (keyup)="searchLinks({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
                     <button convoy-button *ngIf="linkSearchString && linkSearchString.length > 0" class="transition-all duration-200" fill="text" size="sm">
                         <img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
                     </button>
@@ -45,10 +45,10 @@
 			<convoy-endpoint-filter [endpoint]="linkEndpoint" (set)="updateEndpointFilter($event)">
 				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 whitespace-nowrap justify-between" [ngClass]="{ 'text-primary-100 !bg-primary-500': linkEndpoint }">
 					<div class="flex items-center gap-10px">
-						<svg width="18" height="18" class="transition-all scale-75" [class]="linkEndpoint ? 'stroke-new.primary-400' : 'stroke-new.gray-600'">
+						<svg width="18" height="18" class="transition-all scale-75" [class]="linkEndpoint ? 'stroke-new.primary-400' : 'stroke-neutral-10'">
 							<use xlink:href="#endpoints-icon"></use>
 						</svg>
-						<span class="text-grey-40">Endpoints</span>
+						<span class="text-neutral-11">Endpoints</span>
 
 						<button type="button" *ngIf="linkEndpoint" (click)="clearEndpointFilter()">
 							<svg width="10" height="10" class="fill-primary-100">
@@ -71,11 +71,11 @@
 			</a>
 
 			<div convoy-card hover="true" class="w-full max-w-[440px] min-w-[300px]" *ngFor="let link of portalLinks?.content; let i = index" [id]="'portal-link' + i">
-				<div class="px-24px py-20px border-b border-b-grey-10">
+				<div class="px-24px py-20px border-b border-b-neutral-a3">
 					<div class="flex justify-between items-center">
 						<div class="text-14 font-medium overflow-hidden max-w-[260px] text-ellipsis whitespace-nowrap">
 							<div>{{ link.name }}</div>
-							<div class="mt-4px text-12 text-grey-40">
+							<div class="mt-4px text-12 text-neutral-11">
 								<span>{{ link.endpoint_count }} Endpoint{{ link.endpoint_count > 1 ? 's' : '' }}</span>
 							</div>
 						</div>
@@ -88,7 +88,7 @@
 							<ul dropdownOptions class="p-10px">
 								<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
 									<button convoy-dropdown-option convoy-button color="grey" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + link?.uid">
-										<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
+										<svg width="17" height="16" class="fill-neutral-10 mr-8px">
 											<use xlink:href="#edit-icon"></use>
 										</svg>
 										Edit
@@ -130,9 +130,9 @@
 				<!-- <div class="mx-24px flex justify-between items-center">
 					<div class="my-12px">
 						<span class="text-12 font-medium">{{ link.endpoint_count }}</span>
-						<span class="text-12 text-grey-40 pl-8px">Endpoint(s)</span>
+						<span class="text-12 text-neutral-11 pl-8px">Endpoint(s)</span>
 					</div>
-					<div class="bg-grey-10 w-2px min-h-[60px]"></div>
+					<div class="bg-neutral-a3 w-2px min-h-[60px]"></div>
 					<convoy-copy-button [text]="link.url" color="primary" className="ml-2px my-12px flex items-center" notificationText="URL has been copied to clipboard"><span class="text-12 ml-8px font-medium">Copy Portal Link</span></convoy-copy-button>
 				</div> -->
 			</div>

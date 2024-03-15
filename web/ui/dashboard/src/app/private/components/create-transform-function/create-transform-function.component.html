@@ -17,16 +17,16 @@
 </div>
 
 <div class="max-w-[1192px] m-auto mt-40px mb-100px flex" convoy-card>
-	<div class="flex flex-col w-full border-r border-r-new.gray-100">
+	<div class="flex flex-col w-full border-r border-r-neutral-4">
 		<div>
-			<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tl-8px">Input</div>
+			<div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tl-8px">Input</div>
 			<convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
 		</div>
 		<div class="min-h-[370px]">
-			<ul class="flex flex-row w-full border-y-[.5px] border-y-grey-20">
+			<ul class="flex flex-row w-full border-y-[.5px] border-y-neutral-4">
 				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
 					<button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
-						<span class="text-12 text-new.gray-500 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+						<span class="text-12 text-neutral-11 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
 					</button>
 				</li>
 			</ul>
@@ -41,7 +41,7 @@
 		</div>
 	</div>
 	<div class="flex flex-col w-full">
-		<div class="text-12 text-new.gray-500 border-b border-b-grey-20 px-12px py-6px rounded-tr-8px flex items-center justify-between">
+		<div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tr-8px flex items-center justify-between">
 			Transform Function
 			<button convoy-button size="xs" type="button" fill="outline" class="py-0" [disabled]="isTestingFunction" (click)="testTransformFunction()">
 				<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
@@ -60,7 +60,7 @@
 		<div [class]="showConsole ? 'h-[500px]' : 'h-[632px]'">
 			<convoy-monaco className="h-[500px] w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
 		</div>
-		<div class="text-12 text-new.gray-500 border-y border-y-grey-20 px-12px py-6px flex items-center justify-between">
+		<div class="text-12 text-neutral-11 border-y border-y-neutral-4 px-12px py-6px flex items-center justify-between">
 			Console
 			<div class="flex items-center">
 				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px" [disabled]="isTestingFunction" (click)="logs = []">
@@ -90,7 +90,7 @@
 				</button>
 			</div>
 		</div>
-		<div class="bg-new.gray-50 w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'">
+		<div class="bg-neutral-a2 w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'">
 			<ng-container *ngFor="let log of logs">
 				<prism language="javascript" type="display" [code]="generalService.getCodeSnippetString('log', parseLog(log))"></prism>
 			</ng-container>
