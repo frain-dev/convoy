@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	ncache "github.com/frain-dev/convoy/cache/noop"
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
 	"github.com/dchest/uniuri"
@@ -628,6 +631,26 @@ func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore
 	}
 
 	return metaEvent, nil
+}
+
+func SeedCatalogue(db database.Database, project *datastore.Project, t datastore.CatalogueType, openapiSpec []byte, events datastore.EventDataCatalogues) (*datastore.EventCatalogue, error) {
+	c := &datastore.EventCatalogue{
+		UID:         ulid.Make().String(),
+		ProjectID:   project.UID,
+		Type:        t,
+		Events:      events,
+		OpenAPISpec: openapiSpec,
+		CreatedAt:   time.Time{},
+		UpdatedAt:   time.Time{},
+		DeletedAt:   null.Time{},
+	}
+
+	err := postgres.NewEventCatalogueRepo(db, &ncache.NoopCache{}).CreateEventCatalogue(context.TODO(), c)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
 // PurgeDB is run after every test run, and it's used to truncate the DB to have

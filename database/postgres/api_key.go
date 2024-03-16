@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
@@ -240,7 +241,6 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.
 
 		return apiKey, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +261,6 @@ func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 
 		return apiKey, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +281,6 @@ func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datast
 
 		return apiKey, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -438,7 +436,6 @@ func (a *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, projectID string
 
 		return apiKey, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	ncache "github.com/frain-dev/convoy/cache/noop"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
@@ -2711,6 +2713,191 @@ func (s *PublicMetaEventIntegrationTestSuite) Test_GetMetaEvent_Valid_MetaEvent(
 	var respMetaEvent datastore.MetaEvent
 	parseResponse(s.T(), w.Result(), &respMetaEvent)
 	require.Equal(s.T(), metaEvent.UID, respMetaEvent.UID)
+}
+
+func (s *PublicEventIntegrationTestSuite) TestAddEventToCatalogue() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/catalogue/add_event", s.DefaultProject.UID)
+
+	body := `{
+		"name": "invoice.paid",
+		"event_id":"%s"
+	}`
+
+	b := serialize(body, event.UID)
+	req := createRequest(http.MethodPost, url, s.APIKey, b)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var ec datastore.EventCatalogue
+	parseResponse(s.T(), w.Result(), &ec)
+	require.Equal(s.T(), datastore.EventsDataCatalogueType, ec.Type)
+	require.Equal(s.T(), 1, len(ec.Events))
+}
+
+func (s *PublicEventIntegrationTestSuite) TestCreateOpenAPISpecCatalogue() {
+	expectedStatusCode := http.StatusCreated
+
+	url := fmt.Sprintf("/api/v1/projects/%s/catalogue/add_openapi_spec", s.DefaultProject.UID)
+
+	body := `{"open_api_spec":  [111, 112, 101, 110, 97, 112, 105, 58, 32, 51, 46, 49, 46, 48, 10, 105, 110, 102, 111, 58, 10, 32, 32, 116, 105, 116, 108, 101, 58, 32, 87, 101, 98, 104, 111, 111, 107, 32, 69, 120, 97, 109, 112, 108, 101, 10, 32, 32, 118, 101, 114, 115, 105, 111, 110, 58, 32, 49, 46, 48, 46, 48, 10, 35, 32, 83, 105, 110, 99, 101, 32, 79, 65, 83, 32, 51, 46, 49, 46, 48, 32, 116, 104, 101, 32, 112, 97, 116, 104, 115, 32, 101, 108, 101, 109, 101, 110, 116, 32, 105, 115, 110, 39, 116, 32, 110, 101, 99, 101, 115, 115, 97, 114, 121, 46, 32, 78, 111, 119, 32, 97, 32, 118, 97, 108, 105, 100, 32, 79, 112, 101, 110, 65, 80, 73, 32, 68, 111, 99, 117, 109, 101, 110, 116, 32, 99, 97, 110, 32, 100, 101, 115, 99, 114, 105, 98, 101, 32, 111, 110, 108, 121, 32, 112, 97, 116, 104, 115, 44, 32, 119, 101, 98, 104, 111, 111, 107, 115, 44, 32, 111, 114, 32, 101, 118, 101, 110, 32, 111, 110, 108, 121, 32, 114, 101, 117, 115, 97, 98, 108, 101, 32, 99, 111, 109, 112, 111, 110, 101, 110, 116, 115, 10, 119, 101, 98, 104, 111, 111, 107, 115, 58, 10, 32, 32, 35, 32, 69, 97, 99, 104, 32, 119, 101, 98, 104, 111, 111, 107, 32, 110, 101, 101, 100, 115, 32, 97, 32, 110, 97, 109, 101, 10, 32, 32, 105, 110, 118, 111, 105, 99, 101, 46, 112, 97, 105, 100, 58, 10, 32, 32, 32, 32, 35, 32, 84, 104, 105, 115, 32, 105, 115, 32, 97, 32, 80, 97, 116, 104, 32, 73, 116, 101, 109, 32, 79, 98, 106, 101, 99, 116, 44, 32, 116, 104, 101, 32, 111, 110, 108, 121, 32, 100, 105, 102, 102, 101, 114, 101, 110, 99, 101, 32, 105, 115, 32, 116, 104, 97, 116, 32, 116, 104, 101, 32, 114, 101, 113, 117, 101, 115, 116, 32, 105, 115, 32, 105, 110, 105, 116, 105, 97, 116, 101, 100, 32, 98, 121, 32, 116, 104, 101, 32, 65, 80, 73, 32, 112, 114, 111, 118, 105, 100, 101, 114, 10, 32, 32, 32, 32, 112, 111, 115, 116, 58, 10, 32, 32, 32, 32, 32, 32, 114, 101, 113, 117, 101, 115, 116, 66, 111, 100, 121, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 100, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110, 58, 32, 73, 110, 102, 111, 114, 109, 97, 116, 105, 111, 110, 32, 97, 98, 111, 117, 116, 32, 97, 32, 112, 97, 105, 100, 32, 105, 110, 118, 111, 105, 99, 101, 10, 32, 32, 32, 32, 32, 32, 32, 32, 99, 111, 110, 116, 101, 110, 116, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 32, 97, 112, 112, 108, 105, 99, 97, 116, 105, 111, 110, 47, 106, 115, 111, 110, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 115, 99, 104, 101, 109, 97, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 36, 114, 101, 102, 58, 32, 34, 35, 47, 99, 111, 109, 112, 111, 110, 101, 110, 116, 115, 47, 115, 99, 104, 101, 109, 97, 115, 47, 80, 101, 116, 34, 10, 32, 32, 32, 32, 32, 32, 114, 101, 115, 112, 111, 110, 115, 101, 115, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 34, 50, 48, 48, 34, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 32, 100, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110, 58, 32, 82, 101, 116, 117, 114, 110, 32, 97, 32, 50, 48, 48, 32, 115, 116, 97, 116, 117, 115, 32, 116, 111, 32, 105, 110, 100, 105, 99, 97, 116, 101, 32, 116, 104, 97, 116, 32, 116, 104, 101, 32, 100, 97, 116, 97, 32, 119, 97, 115, 32, 114, 101, 99, 101, 105, 118, 101, 100, 32, 115, 117, 99, 99, 101, 115, 115, 102, 117, 108, 108, 121, 10, 32, 32, 105, 110, 118, 111, 105, 99, 101, 46, 99, 114, 101, 97, 116, 101, 100, 58, 10, 32, 32, 32, 32, 35, 32, 84, 104, 105, 115, 32, 105, 115, 32, 97, 32, 80, 97, 116, 104, 32, 73, 116, 101, 109, 32, 79, 98, 106, 101, 99, 116, 44, 32, 116, 104, 101, 32, 111, 110, 108, 121, 32, 100, 105, 102, 102, 101, 114, 101, 110, 99, 101, 32, 105, 115, 32, 116, 104, 97, 116, 32, 116, 104, 101, 32, 114, 101, 113, 117, 101, 115, 116, 32, 105, 115, 32, 105, 110, 105, 116, 105, 97, 116, 101, 100, 32, 98, 121, 32, 116, 104, 101, 32, 65, 80, 73, 32, 112, 114, 111, 118, 105, 100, 101, 114, 10, 32, 32, 32, 32, 112, 101, 116, 58, 10, 32, 32, 32, 32, 32, 32, 114, 101, 113, 117, 101, 115, 116, 66, 111, 100, 121, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 100, 101, 115, 99, 114, 105, 112, 116, 105, 111, 110, 58, 32, 73, 110, 102, 111, 114, 109, 97, 116, 105, 111, 110, 32, 97, 98, 111, 117, 116, 32, 97, 32, 110, 101, 119, 32, 105, 110, 118, 111, 105, 99, 101, 32, 105, 110, 32, 116, 104, 101, 32, 115, 121, 115, 116, 101, 109, 10, 32, 32, 32, 32, 32, 32, 32, 32, 99, 111, 110, 116, 101, 110, 116, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 32, 97, 112, 112, 108, 105, 99, 97, 116, 105, 111, 110, 47, 106, 115, 111, 110, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 115, 99, 104, 101, 109, 97, 58, 10, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 36, 114, 101, 102, 58, 32, 34, 35, 47, 99, 111, 109, 112, 111, 110, 101, 110, 116, 115, 47, 115, 99, 104]}`
+
+	b := serialize(body)
+	req := createRequest(http.MethodPost, url, s.APIKey, b)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var ec datastore.EventCatalogue
+	parseResponse(s.T(), w.Result(), &ec)
+	require.Equal(s.T(), datastore.OpenAPICatalogueType, ec.Type)
+	require.Equal(s.T(), s.DefaultProject.UID, ec.ProjectID)
+	require.Greater(s.T(), len(ec.OpenAPISpec), 1)
+}
+
+func (s *PublicEventIntegrationTestSuite) TestUpdateCatalogue() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	event2, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	catalogue, err := testdb.SeedCatalogue(s.ConvoyApp.A.DB, s.DefaultProject, datastore.EventsDataCatalogueType, nil, datastore.EventDataCatalogues{{
+		Name:    "invoice.paid",
+		EventID: event.UID,
+		Data:    []byte(`{"name":"ref"}`),
+	}})
+	require.NoError(s.T(), err)
+
+	body := `{"events":  [
+        {
+            "name": "invoice.paid",
+            "event_id": "%s",
+            "data": {"name": "ref"}
+        },
+        {
+            "name": "invoice.created",
+            "event_id": "%s",
+            "data": {"name": "ref"}
+        }
+    ]}`
+
+	url := fmt.Sprintf("/api/v1/projects/%s/catalogue/%s", s.DefaultProject.UID, catalogue.UID)
+	b := serialize(body, event.UID, event2.UID)
+	req := createRequest(http.MethodPut, url, s.APIKey, b)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var ec datastore.EventCatalogue
+	parseResponse(s.T(), w.Result(), &ec)
+	require.Equal(s.T(), datastore.EventsDataCatalogueType, ec.Type)
+	require.Equal(s.T(), s.DefaultProject.UID, ec.ProjectID)
+	require.Equal(s.T(), 2, len(ec.Events))
+}
+
+func (s *PublicEventIntegrationTestSuite) TestDeleteCatalogue() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	catalogue, err := testdb.SeedCatalogue(s.ConvoyApp.A.DB, s.DefaultProject, datastore.EventsDataCatalogueType, nil, datastore.EventDataCatalogues{{
+		Name:    "invoice.paid",
+		EventID: event.UID,
+		Data:    []byte(`{"name":"ref"}`),
+	}})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/catalogue/%s", s.DefaultProject.UID, catalogue.UID)
+	req := createRequest(http.MethodDelete, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	_, err = postgres.NewEventCatalogueRepo(s.DB, &ncache.NoopCache{}).FindEventCatalogueByProjectID(context.Background(), s.DefaultProject.UID)
+	require.Equal(s.T(), datastore.ErrCatalogueNotFound, err)
+}
+
+func (s *PublicEventIntegrationTestSuite) TestGetCatalogue() {
+	expectedStatusCode := http.StatusOK
+
+	// Just Before.
+
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	event, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
+	require.NoError(s.T(), err)
+
+	catalogue, err := testdb.SeedCatalogue(s.ConvoyApp.A.DB, s.DefaultProject, datastore.EventsDataCatalogueType, nil, datastore.EventDataCatalogues{{
+		Name:    "invoice.paid",
+		EventID: event.UID,
+		Data:    []byte(`{"name":"ref"}`),
+	}})
+	require.NoError(s.T(), err)
+
+	url := fmt.Sprintf("/api/v1/projects/%s/catalogue", s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	c, err := postgres.NewEventCatalogueRepo(s.DB, &ncache.NoopCache{}).FindEventCatalogueByProjectID(context.Background(), s.DefaultProject.UID)
+
+	c.CreatedAt, c.UpdatedAt = time.Time{}, time.Time{}
+
+	// Deep Assert.
+	var ec datastore.EventCatalogue
+	parseResponse(s.T(), w.Result(), &ec)
+
+	ec.CreatedAt, ec.UpdatedAt = time.Time{}, time.Time{}
+
+	require.Equal(s.T(), *catalogue, ec)
 }
 
 func TestPublicMetaEventIntegrationTestSuite(t *testing.T) {

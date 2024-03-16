@@ -85,6 +85,17 @@
 				},
 				"type": "object"
 			},
+			"datastore.CatalogueType": {
+				"enum": [
+					"events_data",
+					"openapi"
+				],
+				"type": "string",
+				"x-enum-varnames": [
+					"EventsDataCatalogueType",
+					"OpenAPICatalogueType"
+				]
+			},
 			"datastore.CustomResponse": {
 				"properties": {
 					"body": {
@@ -367,6 +378,61 @@
 						"type": "string"
 					},
 					"url_query_params": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.EventCatalogue": {
+				"properties": {
+					"created_at": {
+						"type": "string"
+					},
+					"deleted_at": {
+						"type": "string"
+					},
+					"events": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.EventDataCatalogue"
+						},
+						"type": "array"
+					},
+					"open_api_spec": {
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"project_id": {
+						"type": "string"
+					},
+					"type": {
+						"$ref": "#/components/schemas/datastore.CatalogueType"
+					},
+					"uid": {
+						"type": "string"
+					},
+					"updated_at": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.EventDataCatalogue": {
+				"properties": {
+					"data": {
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"description": {
+						"type": "string"
+					},
+					"event_id": {
+						"type": "string"
+					},
+					"name": {
 						"type": "string"
 					}
 				},
@@ -853,6 +919,23 @@
 				},
 				"type": "object"
 			},
+			"models.AddEventToCatalogue": {
+				"properties": {
+					"description": {
+						"description": "A short description of the event, e.g details of a newly crated invoice.",
+						"type": "string"
+					},
+					"event_id": {
+						"description": "EventID for the event to be added to the event catalogue",
+						"type": "string"
+					},
+					"name": {
+						"description": "The name of this event in the catalogue e.g. invoice.paid",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.AlertConfiguration": {
 				"properties": {
 					"count": {
@@ -953,6 +1036,15 @@
 						"type": "string"
 					},
 					"idempotency_key": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.CatalogueOpenAPISpec": {
+				"properties": {
+					"open_api_spec": {
+						"description": "An openapi 3.0+ specification in YAML format. Convoy use the webhook section of the specification.\nto render the event catalogue. See https://github.com/OAI/OpenAPI-Specification/blob/main/examples/v3.1/webhook-example.yaml\nhttps://redocly.com/blog/document-webhooks-with-openapi/",
 						"type": "string"
 					}
 				},
@@ -1888,6 +1980,23 @@
 				},
 				"type": "object"
 			},
+			"models.UpdateCatalogue": {
+				"properties": {
+					"events": {
+						"items": {
+							"$ref": "#/components/schemas/datastore.EventDataCatalogue"
+						},
+						"type": "array"
+					},
+					"open_api_spec": {
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					}
+				},
+				"type": "object"
+			},
 			"models.UpdateCustomResponse": {
 				"properties": {
 					"body": {
@@ -2082,6 +2191,633 @@
 	},
 	"openapi": "3.0.3",
 	"paths": {
+		"/v1/projects/{projectID}/catalogue": {
+			"get": {
+				"description": "This endpoint Fetches the event catalogue for the current project",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.EventCatalogue"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Fetches the event catalogue for the current project.",
+				"tags": [
+					"Events"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/catalogue/add_event": {
+			"post": {
+				"description": "This endpoint Adds an event to the event catalogue for the current project.",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.AddEventToCatalogue"
+							}
+						}
+					},
+					"description": "Event Details",
+					"required": true,
+					"x-originalParamName": "event"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.EventCatalogue"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Adds an event to the event catalogue for the current project.",
+				"tags": [
+					"Events"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/catalogue/add_openapi_spec": {
+			"post": {
+				"description": "This endpoint Creates an event catalogue for the current project using an openapi spec.",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.CatalogueOpenAPISpec"
+							}
+						}
+					},
+					"description": "Event Details",
+					"required": true,
+					"x-originalParamName": "event"
+				},
+				"responses": {
+					"201": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.EventCatalogue"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Created"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Creates an event catalogue for the current project using an openapi spec.",
+				"tags": [
+					"Events"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/catalogue/{catalogueID}": {
+			"delete": {
+				"description": "This endpoint Deletes the event catalogue for the current project",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "Catalogue ID",
+						"in": "path",
+						"name": "catalogueID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Deletes the event catalogue for the current project.",
+				"tags": [
+					"Events"
+				]
+			},
+			"put": {
+				"description": "This endpoint Adds an openapi spec to the event catalogue for the current project.",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "Catalogue ID",
+						"in": "path",
+						"name": "catalogueID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.UpdateCatalogue"
+							}
+						}
+					},
+					"description": "Event Details",
+					"required": true,
+					"x-originalParamName": "event"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/datastore.EventCatalogue"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Adds an openapi spec to the event catalogue for the current project.",
+				"tags": [
+					"Events"
+				]
+			}
+		},
 		"/v1/projects/{projectID}/endpoints": {
 			"get": {
 				"description": "This endpoint fetches an endpoints",
@@ -4391,11 +5127,11 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.BroadcastEvent"
+								"$ref": "#/components/schemas/models.CreateEvent"
 							}
 						}
 					},
-					"description": "Broadcast Event Details",
+					"description": "Event Details",
 					"required": true,
 					"x-originalParamName": "event"
 				},
@@ -4411,7 +5147,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.EventResponse"
+													"$ref": "#/components/schemas/handlers.Stub"
 												}
 											},
 											"type": "object"
@@ -4721,6 +5457,133 @@
 					}
 				],
 				"summary": "Batch replay events",
+				"tags": [
+					"Events"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/events/broadcast": {
+			"post": {
+				"description": "This endpoint broadcasts an endpoint event to all matching subscriptions",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.BroadcastEvent"
+							}
+						}
+					},
+					"description": "Broadcast Event Details",
+					"required": true,
+					"x-originalParamName": "event"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Create a broadcast event",
 				"tags": [
 					"Events"
 				]

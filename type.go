@@ -19,6 +19,9 @@ var F embed.FS
 //go:embed sql/*.sql
 var MigrationFiles embed.FS
 
+//go:embed js/*.js
+var JSFiles embed.FS
+
 func (t TaskName) SetPrefix(prefix string) TaskName {
 	var name strings.Builder
 	delim := "-"
@@ -100,6 +103,7 @@ const (
 	EndpointCacheKey           CacheKey = "endpoints"
 	UserCacheKey               CacheKey = "users"
 	ApiKeyCacheKey             CacheKey = "api_keys"
+	EventCatalogueCacheKey     CacheKey = "event_catalogue"
 	OrganisationCacheKey       CacheKey = "organisations"
 	OrganisationMemberCacheKey CacheKey = "organisation_members"
 	ProjectsCacheKey           CacheKey = "projects"

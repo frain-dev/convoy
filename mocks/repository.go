@@ -584,6 +584,86 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(ctx, projectID, f int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), ctx, projectID, f)
 }
 
+// MockEventCatalogueRepository is a mock of EventCatalogueRepository interface.
+type MockEventCatalogueRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockEventCatalogueRepositoryMockRecorder
+}
+
+// MockEventCatalogueRepositoryMockRecorder is the mock recorder for MockEventCatalogueRepository.
+type MockEventCatalogueRepositoryMockRecorder struct {
+	mock *MockEventCatalogueRepository
+}
+
+// NewMockEventCatalogueRepository creates a new mock instance.
+func NewMockEventCatalogueRepository(ctrl *gomock.Controller) *MockEventCatalogueRepository {
+	mock := &MockEventCatalogueRepository{ctrl: ctrl}
+	mock.recorder = &MockEventCatalogueRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEventCatalogueRepository) EXPECT() *MockEventCatalogueRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateEventCatalogue mocks base method.
+func (m *MockEventCatalogueRepository) CreateEventCatalogue(arg0 context.Context, arg1 *datastore.EventCatalogue) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateEventCatalogue", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateEventCatalogue indicates an expected call of CreateEventCatalogue.
+func (mr *MockEventCatalogueRepositoryMockRecorder) CreateEventCatalogue(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEventCatalogue", reflect.TypeOf((*MockEventCatalogueRepository)(nil).CreateEventCatalogue), arg0, arg1)
+}
+
+// DeleteEventCatalogue mocks base method.
+func (m *MockEventCatalogueRepository) DeleteEventCatalogue(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEventCatalogue", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEventCatalogue indicates an expected call of DeleteEventCatalogue.
+func (mr *MockEventCatalogueRepositoryMockRecorder) DeleteEventCatalogue(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEventCatalogue", reflect.TypeOf((*MockEventCatalogueRepository)(nil).DeleteEventCatalogue), arg0, arg1, arg2)
+}
+
+// FindEventCatalogueByProjectID mocks base method.
+func (m *MockEventCatalogueRepository) FindEventCatalogueByProjectID(arg0 context.Context, arg1 string) (*datastore.EventCatalogue, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEventCatalogueByProjectID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.EventCatalogue)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEventCatalogueByProjectID indicates an expected call of FindEventCatalogueByProjectID.
+func (mr *MockEventCatalogueRepositoryMockRecorder) FindEventCatalogueByProjectID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventCatalogueByProjectID", reflect.TypeOf((*MockEventCatalogueRepository)(nil).FindEventCatalogueByProjectID), arg0, arg1)
+}
+
+// UpdateEventCatalogue mocks base method.
+func (m *MockEventCatalogueRepository) UpdateEventCatalogue(ctx context.Context, catalogue *datastore.EventCatalogue) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEventCatalogue", ctx, catalogue)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateEventCatalogue indicates an expected call of UpdateEventCatalogue.
+func (mr *MockEventCatalogueRepositoryMockRecorder) UpdateEventCatalogue(ctx, catalogue interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventCatalogue", reflect.TypeOf((*MockEventCatalogueRepository)(nil).UpdateEventCatalogue), ctx, catalogue)
+}
+
 // MockProjectRepository is a mock of ProjectRepository interface.
 type MockProjectRepository struct {
 	ctrl     *gomock.Controller
