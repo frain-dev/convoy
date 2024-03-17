@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/dop251/goja"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -45,8 +47,8 @@ func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer
 }
 
 // Run is the core of the ingester. It does the following in an infinite loop:
-// 1. Loop through the sources at an interval
-// 2. Compares the retrieved sources with the running
+// 1. Loop through the sources at intervals
+// 2. Compare the retrieved sources with the running
 // 3. Cancels deleted sources.
 // 4. Starts new sources.
 func (i *Ingest) Run() {
@@ -63,7 +65,7 @@ func (i *Ingest) Run() {
 			// stop ticker.
 			i.ticker.Stop()
 
-			// other clean up. :)
+			// clean up. :)
 		}
 	}
 }
@@ -119,16 +121,42 @@ func (i *Ingest) run() error {
 }
 
 func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string) error {
-	ev := struct {
+	// unmarshal to an interface{} struct
+	var raw any
+	if err := json.Unmarshal([]byte(msg), &raw); err != nil {
+		return err
+	}
+
+	type ConvoyEvent struct {
 		EndpointID     string            `json:"endpoint_id"`
 		OwnerID        string            `json:"owner_id"`
 		EventType      string            `json:"event_type"`
 		Data           json.RawMessage   `json:"data"`
 		CustomHeaders  map[string]string `json:"custom_headers"`
 		IdempotencyKey string            `json:"idempotency_key"`
-	}{}
+	}
 
-	if err := json.Unmarshal([]byte(msg), &ev); err != nil {
+	var payload any
+	if source.Function.Ptr() != nil && !util.IsStringEmpty(source.Function.String) {
+		t := transform.NewTransformer(goja.New())
+		p, _, err := t.Transform(source.Function.String, raw)
+		if err != nil {
+			return err
+		}
+
+		payload = p
+	} else {
+		payload = raw
+	}
+
+	// transform to required payload
+	pBytes, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	var ev ConvoyEvent
+	if err := json.Unmarshal(pBytes, &ev); err != nil {
 		return err
 	}
 
@@ -157,6 +185,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		Delay:   0,
 	}
 
+	// write to our queue
 	err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		return err

@@ -3,6 +3,8 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"github.com/dop251/goja"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -316,4 +318,42 @@ func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
 	}
 
 	s.URL = fmt.Sprintf("%s/ingest/%s", url, s.MaskID)
+}
+
+// TestSourceFunction
+//
+//	@Summary		Validate source function
+//	@Description	This endpoint validates that a filter will match a certain payload structure.
+//	@Tags			Subscriptions
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string						true	"Project ID"
+//	@Param			filter		body		models.FunctionRequest	true	"Function Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.FunctionResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/subscriptions/test_function [post]
+func (h *Handler) TestSourceFunction(w http.ResponseWriter, r *http.Request) {
+	var test models.FunctionRequest
+	err := util.ReadJSON(r, &test)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	transformer := transform.NewTransformer(goja.New())
+	mutatedPayload, consoleLog, err := transformer.Transform(test.Function, test.Payload)
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to transform function")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	functionResponse := models.FunctionResponse{
+		Payload: mutatedPayload,
+		Log:     consoleLog,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Transformer function run successfully", functionResponse, http.StatusOK))
+
 }

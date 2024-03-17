@@ -38,6 +38,10 @@ type CreateSource struct {
 	// IdempotencyKeys are used to specify parts of a webhook request to uniquely
 	// identify the event in an incoming webhooks project.
 	IdempotencyKeys []string `json:"idempotency_keys"`
+
+	// Function is a javascript function used to mutate the payload
+	// immediately after ingesting an event
+	Function string `json:"function"`
 }
 
 func (cs *CreateSource) Validate() error {
@@ -132,6 +136,7 @@ type UpdateSource struct {
 	Verifier        VerifierConfig       `json:"verifier"`
 	PubSub          *PubSubConfig        `json:"pub_sub"`
 	IdempotencyKeys []string             `json:"idempotency_keys"`
+	Function        string               `json:"function"`
 }
 
 func (us *UpdateSource) Validate() error {

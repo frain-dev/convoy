@@ -1472,22 +1472,6 @@ func (mr *MockSubscriptionRepositoryMockRecorder) TestSubscriptionFilter(ctx, pa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TestSubscriptionFilter", reflect.TypeOf((*MockSubscriptionRepository)(nil).TestSubscriptionFilter), ctx, payload, filter)
 }
 
-// TransformPayload mocks base method.
-func (m *MockSubscriptionRepository) TransformPayload(ctx context.Context, function string, payload map[string]interface{}) (interface{}, []string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TransformPayload", ctx, function, payload)
-	ret0, _ := ret[0].(interface{})
-	ret1, _ := ret[1].([]string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// TransformPayload indicates an expected call of TransformPayload.
-func (mr *MockSubscriptionRepositoryMockRecorder) TransformPayload(ctx, function, payload interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransformPayload", reflect.TypeOf((*MockSubscriptionRepository)(nil).TransformPayload), ctx, function, payload)
-}
-
 // UpdateSubscription mocks base method.
 func (m *MockSubscriptionRepository) UpdateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
 	m.ctrl.T.Helper()
