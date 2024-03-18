@@ -86,7 +86,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 
 		return writeEventDeliveriesToQueue(
 			ctx, subscriptions, event, project, eventDeliveryRepo,
-			subRepo, eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo,
 		)
 	}
 }
