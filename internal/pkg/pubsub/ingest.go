@@ -127,6 +127,8 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		return err
 	}
 
+	log.Infof("raw: %+v\n", raw)
+
 	type ConvoyEvent struct {
 		EndpointID     string            `json:"endpoint_id"`
 		OwnerID        string            `json:"owner_id"`
@@ -154,6 +156,8 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	if err != nil {
 		return err
 	}
+
+	log.Infof("payload: %+v\n", payload)
 
 	var ev ConvoyEvent
 	if err := json.Unmarshal(pBytes, &ev); err != nil {
