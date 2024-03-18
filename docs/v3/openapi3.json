@@ -228,6 +228,9 @@
 					"http_timeout": {
 						"type": "integer"
 					},
+					"name": {
+						"type": "string"
+					},
 					"owner_id": {
 						"type": "string"
 					},
@@ -255,16 +258,13 @@
 					"support_email": {
 						"type": "string"
 					},
-					"target_url": {
-						"type": "string"
-					},
-					"title": {
-						"type": "string"
-					},
 					"uid": {
 						"type": "string"
 					},
 					"updated_at": {
+						"type": "string"
+					},
+					"url": {
 						"type": "string"
 					}
 				},
@@ -1224,6 +1224,9 @@
 					"http_timeout": {
 						"type": "integer"
 					},
+					"name": {
+						"type": "string"
+					},
 					"owner_id": {
 						"type": "string"
 					},
@@ -1251,16 +1254,13 @@
 					"support_email": {
 						"type": "string"
 					},
-					"target_url": {
-						"type": "string"
-					},
-					"title": {
-						"type": "string"
-					},
 					"uid": {
 						"type": "string"
 					},
 					"updated_at": {
+						"type": "string"
+					},
+					"url": {
 						"type": "string"
 					}
 				},

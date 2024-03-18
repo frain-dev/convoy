@@ -7,23 +7,24 @@ import (
 )
 
 func TestCleanEndpoint(t *testing.T) {
-
 	tt := []struct {
-		url      string
-		hasError bool
+		url           string
+		hasError      bool
+		enforceSecure bool
 	}{
-		{"localhost:8080", true},
-		{"https://localhost:8080", true},
-		{"https://google.com", false},
-		{"http://google.com", false},
-		{"https://localhost", true},
-		{"https://LocaLhOsT", true},
-		{"https://127.0.0.1", true},
-		{"https://GOOGLE.COM", false},
+		{"localhost:8080", true, false},
+		{"https://localhost:8080", true, false},
+		{"https://google.com", false, false},
+		{"http://google.com", false, false},
+		{"http://google.com", true, true},
+		{"https://localhost", true, false},
+		{"https://LocaLhOsT", true, false},
+		{"https://127.0.0.1", true, false},
+		{"https://GOOGLE.COM", false, false},
 	}
 
 	for _, v := range tt {
-		url, err := CleanEndpoint(v.url)
+		url, err := CleanEndpoint(v.url, v.enforceSecure)
 		if v.hasError {
 			require.Error(t, err)
 			continue

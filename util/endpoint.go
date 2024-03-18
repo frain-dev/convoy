@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func CleanEndpoint(s string) (string, error) {
+func CleanEndpoint(s string, enforceSecure bool) (string, error) {
 	if IsStringEmpty(s) {
 		return "", errors.New("please provide the endpoint url")
 	}
@@ -17,7 +17,11 @@ func CleanEndpoint(s string) (string, error) {
 	}
 
 	switch u.Scheme {
-	case "http", "https":
+	case "http":
+		if enforceSecure {
+			return "", errors.New("only https endpoints allowed")
+		}
+	case "https":
 	default:
 		return "", errors.New("invalid endpoint scheme")
 	}

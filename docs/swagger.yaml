@@ -151,6 +151,8 @@ definitions:
         type: integer
       http_timeout:
         type: integer
+      name:
+        type: string
       owner_id:
         type: string
       project_id:
@@ -169,13 +171,11 @@ definitions:
         $ref: '#/definitions/datastore.EndpointStatus'
       support_email:
         type: string
-      target_url:
-        type: string
-      title:
-        type: string
       uid:
         type: string
       updated_at:
+        type: string
+      url:
         type: string
     type: object
   datastore.EndpointAuthentication:
@@ -852,6 +852,8 @@ definitions:
         type: integer
       http_timeout:
         type: integer
+      name:
+        type: string
       owner_id:
         type: string
       project_id:
@@ -870,13 +872,11 @@ definitions:
         $ref: '#/definitions/datastore.EndpointStatus'
       support_email:
         type: string
-      target_url:
-        type: string
-      title:
-        type: string
       uid:
         type: string
       updated_at:
+        type: string
+      url:
         type: string
     type: object
   models.EventDeliveryResponse:

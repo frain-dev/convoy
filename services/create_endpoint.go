@@ -26,7 +26,12 @@ type CreateEndpointService struct {
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	url, err := util.CleanEndpoint(a.E.URL)
+	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
+	}
+
+	url, err := util.CleanEndpoint(a.E.URL, project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -38,11 +43,6 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 	if a.E.RateLimitDuration == 0 {
 		a.E.RateLimitDuration = convoy.RATE_LIMIT_DURATION
-	}
-
-	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
 	}
 
 	truthValue := true
