@@ -454,6 +454,6 @@
 <!-- source tranform form   -->
 <dialog open convoy-dialog position="full" *ngIf="showTransformDialog">
 	<div class="w-full h-full overflow-y-auto">
-		<convoy-create-transform-function (close)="showTransformDialog = false" (subscriptionFunction)="getFunction($event)" [transformFunction]="sourceForm.get('function')?.value" transformType="source"></convoy-create-transform-function>
+		<convoy-create-transform-function (close)="showTransformDialog = false" (updatedTransformFunction)="getFunction($event)" [transformFunction]="sourceForm.get('function')?.value" transformType="source"></convoy-create-transform-function>
 	</div>
 </dialog>

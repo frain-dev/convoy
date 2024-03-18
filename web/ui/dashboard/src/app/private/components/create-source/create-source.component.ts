@@ -22,6 +22,7 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
+		function: [null],
 		custom_response: this.formBuilder.group({
 			body: [''],
 			content_type: ['']
@@ -196,7 +197,8 @@ export class CreateSourceComponent implements OnInit {
 			this.sourceForm.patchValue(response.data);
 
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
-			if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
+
+            if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
@@ -277,6 +279,9 @@ export class CreateSourceComponent implements OnInit {
 	async saveSource() {
 		const sourceData = this.checkSourceSetup();
 		await this.runSourceFormValidation();
+
+		console.log(this.sourceForm.valid);
+		console.log(this.sourceForm.controls);
 		if (!this.sourceForm.valid) {
 			this.isloading = false;
 			return this.sourceForm.markAllAsTouched();
@@ -340,7 +345,7 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	async runSourceFormValidation() {
-		if (this.configurations[0].show) {
+		if (this.showConfig('custom_response')) {
 			this.sourceForm.get('custom_response.body')?.addValidators(Validators.required);
 			this.sourceForm.get('custom_response.body')?.updateValueAndValidity();
 			this.sourceForm.get('custom_response.content_type')?.addValidators(Validators.required);

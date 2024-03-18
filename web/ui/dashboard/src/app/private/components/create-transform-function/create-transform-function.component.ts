@@ -72,6 +72,7 @@ function transform(payload) {
 
 		try {
 			const response = this.transformType === 'subscription' ? await this.createSubscriptionService.testTransformFunction(this.transformForm.value) : await this.createSourceService.testTransformFunction(this.transformForm.value);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.output = response.data.payload;
 			this.logs = response.data.log.reverse();
 			if (this.logs.length > 0) this.showConsole = true;
@@ -87,8 +88,8 @@ function transform(payload) {
 		await this.testTransformFunction();
 
 		if (this.isTransformFunctionPassed) {
-			if (this.payloadEditor?.getValue()) localStorage.setItem('PAYLOAD', this.payloadEditor.getValue());
-			if (this.functionEditor?.getValue()) localStorage.setItem('FUNCTION', this.functionEditor.getValue());
+			if (this.payloadEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'PAYLOAD' : 'SOURCE_PAYLOAD', this.payloadEditor.getValue());
+			if (this.functionEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'FUNCTION' : 'SOURCE_PAYLOAD', this.functionEditor.getValue());
 			const updatedTransformFunction = this.functionEditor.getValue();
 			this.updatedTransformFunction.emit(updatedTransformFunction);
 		}
@@ -97,8 +98,8 @@ function transform(payload) {
 	checkForExistingData() {
 		if (this.transformFunction) this.setFunction = this.transformFunction;
 
-		const payload = localStorage.getItem('PAYLOAD');
-		const updatedTransformFunction = localStorage.getItem('FUNCTION');
+		const payload = this.transformType === 'subscription' ? localStorage.getItem('PAYLOAD') : localStorage.getItem('SOURCE_PAYLOAD');
+		const updatedTransformFunction = this.transformType === 'subscription' ? localStorage.getItem('FUNCTION') : localStorage.getItem('SOURCE_FUNCTION');
 		if (payload && payload !== 'undefined') this.payload = JSON.parse(payload);
 		if (updatedTransformFunction && updatedTransformFunction !== 'undefined' && !this.transformFunction) this.setFunction = updatedTransformFunction;
 	}
