@@ -38,6 +38,7 @@ type ProjectConfig struct {
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled"`
 	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint"`
+	SSL                      SSLConfiguration              `json:"ssl"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
@@ -56,11 +57,26 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
 		DisableEndpoint:          pc.DisableEndpoint,
 		AddEventIDTraceHeaders:   pc.AddEventIDTraceHeaders,
+		SSL:                      pc.SSL.transform(),
 		RetentionPolicy:          pc.RetentionPolicy.transform(),
 		RateLimit:                pc.RateLimit.Transform(),
 		Strategy:                 pc.Strategy.transform(),
 		Signature:                pc.Signature.transform(),
 		MetaEvent:                pc.MetaEvent.transform(),
+	}
+}
+
+type SSLConfiguration struct {
+	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints" db:"enforce_secure_endpoints"`
+}
+
+func (r *SSLConfiguration) transform() *datastore.SSLConfiguration {
+	if r == nil {
+		return nil
+	}
+
+	return &datastore.SSLConfiguration{
+		EnforceSecureEndpoints: r.EnforceSecureEndpoints,
 	}
 }
 

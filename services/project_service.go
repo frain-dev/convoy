@@ -56,6 +56,10 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			projectConfig.Strategy = datastore.DefaultProjectConfig.Strategy
 		}
 
+		if projectConfig.SSL == nil {
+			projectConfig.SSL = &datastore.DefaultSSLConfig
+		}
+
 		err := validateMetaEvent(projectConfig)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
