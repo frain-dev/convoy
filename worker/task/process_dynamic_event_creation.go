@@ -85,7 +85,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		return writeEventDeliveriesToQueue(
 			ctx, []datastore.Subscription{*s}, event, project, eventDeliveryRepo,
-			subRepo, eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo,
 		)
 	}
 }
