@@ -8,6 +8,7 @@ import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directiv
 import { CreateSubscriptionService } from '../create-subscription/create-subscription.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { PrismModule } from '../prism/prism.module';
+import { CreateSourceService } from '../create-source/create-source.service';
 
 @Component({
 	selector: 'convoy-create-transform-function',
@@ -21,7 +22,8 @@ export class CreateTransformFunctionComponent implements OnInit {
 	@ViewChild('payloadEditor') payloadEditor!: MonacoComponent;
 	@ViewChild('functionEditor') functionEditor!: MonacoComponent;
 	@Input('transformFunction') transformFunction: any;
-	@Output('subscriptionFunction') subscriptionFunction: EventEmitter<any> = new EventEmitter();
+	@Input('transformType') transformType: 'source' | 'subscription' = 'subscription';
+	@Output('updatedTransformFunction') updatedTransformFunction: EventEmitter<any> = new EventEmitter();
 	tabs = ['output', 'diff'];
 	activeTab = 'output';
 	transformForm: FormGroup = this.formBuilder.group({
@@ -53,7 +55,7 @@ function transform(payload) {
 }`;
 	output: any;
 
-	constructor(private createSubscriptionService: CreateSubscriptionService, public generalService: GeneralService, private formBuilder: FormBuilder) {}
+	constructor(private createSubscriptionService: CreateSubscriptionService, private createSourceService: CreateSourceService, public generalService: GeneralService, private formBuilder: FormBuilder) {}
 
 	ngOnInit(): void {
 		this.checkForExistingData();
@@ -69,7 +71,7 @@ function transform(payload) {
 		});
 
 		try {
-			const response = await this.createSubscriptionService.testTransformFunction(this.transformForm.value);
+			const response = this.transformType === 'subscription' ? await this.createSubscriptionService.testTransformFunction(this.transformForm.value) : await this.createSourceService.testTransformFunction(this.transformForm.value);
 			this.output = response.data.payload;
 			this.logs = response.data.log.reverse();
 			if (this.logs.length > 0) this.showConsole = true;
@@ -87,8 +89,8 @@ function transform(payload) {
 		if (this.isTransformFunctionPassed) {
 			if (this.payloadEditor?.getValue()) localStorage.setItem('PAYLOAD', this.payloadEditor.getValue());
 			if (this.functionEditor?.getValue()) localStorage.setItem('FUNCTION', this.functionEditor.getValue());
-			const subscriptionFunction = this.functionEditor.getValue();
-			this.subscriptionFunction.emit(subscriptionFunction);
+			const updatedTransformFunction = this.functionEditor.getValue();
+			this.updatedTransformFunction.emit(updatedTransformFunction);
 		}
 	}
 
@@ -96,9 +98,9 @@ function transform(payload) {
 		if (this.transformFunction) this.setFunction = this.transformFunction;
 
 		const payload = localStorage.getItem('PAYLOAD');
-		const subscriptionFunction = localStorage.getItem('FUNCTION');
+		const updatedTransformFunction = localStorage.getItem('FUNCTION');
 		if (payload && payload !== 'undefined') this.payload = JSON.parse(payload);
-		if (subscriptionFunction && subscriptionFunction !== 'undefined' && !this.transformFunction) this.setFunction = subscriptionFunction;
+		if (updatedTransformFunction && updatedTransformFunction !== 'undefined' && !this.transformFunction) this.setFunction = updatedTransformFunction;
 	}
 
 	parseLog(log: string) {

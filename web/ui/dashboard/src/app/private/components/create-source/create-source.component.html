@@ -121,56 +121,6 @@
 					</div>
 				</div>
 			</div>
-
-			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
-				<div class="flex justify-between items-center mb-16px">
-					<h4 class="text-12 text-neutral-10 font-semibold">Custom response</h4>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
-						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-							<use xlink:href="#delete-icon2"></use>
-						</svg>
-					</button>
-				</div>
-
-				<div formGroupName="custom_response">
-					<convoy-input-field>
-						<label for="content_type" required="true" convoy-label>Response Content Type</label>
-						<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
-						<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
-					</convoy-input-field>
-
-					<convoy-input-field>
-						<label convoy-label>Response Content</label>
-						<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
-						<convoy-input-error *ngIf="sourceForm.get('custom_response.body')?.touched && sourceForm.get('custom_response.body')?.invalid">Enter reponse content</convoy-input-error>
-					</convoy-input-field>
-				</div>
-			</div>
-
-			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
-				<div class="flex justify-between items-end mb-24px">
-					<p class="text-12 font-semibold text-neutral-10 flex items-center">Idempotency Config</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('idempotency')">
-						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-							<use xlink:href="#delete-icon2"></use>
-						</svg>
-					</button>
-				</div>
-
-				<convoy-multi-input
-					label="Key locations"
-					tooltip="JSON location of idempotency key, add multiple locations for different locations"
-					[prefilledKeys]="sourceDetails && sourceDetails.idempotency_keys ? sourceDetails.idempotency_keys : []"
-					(inputValues)="sourceForm.get('idempotency_keys')?.patchValue($event)"
-				></convoy-multi-input>
-				<span class="text-neutral-10 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
-			</div>
-
-			<div class="flex flex-wrap items-center mt-20px gap-24px">
-				<ng-container *ngFor="let config of configurations">
-					<convoy-config-button *ngIf="!config.show" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
-				</ng-container>
-			</div>
 		</ng-container>
 
 		<div formGroupName="pub_sub" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
@@ -264,7 +214,7 @@
 								<input type="text" id="user" convoy-input autocomplete="user" formControlName="user" placeholder="User" />
 								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.auth.user')?.touched && sourceForm.get('pub_sub.amqp.auth.user')?.invalid">Enter User</convoy-input-error>
 							</convoy-input-field>
-		
+
 							<convoy-input-field [className]="'mb-0'">
 								<label for="password" convoy-label>Password</label>
 								<input type="password" id="password" convoy-input autocomplete="password" formControlName="password" placeholder="Password" />
@@ -287,7 +237,7 @@
 								<input type="text" id="exchange" convoy-input autocomplete="exchange" formControlName="exchange" placeholder="Exchange name" />
 								<convoy-input-error *ngIf="sourceForm.get('pub_sub.amqp.exchange.exchange')?.touched && sourceForm.get('pub_sub.amqp.exchange.exchange')?.invalid">Enter exchange name</convoy-input-error>
 							</convoy-input-field>
-		
+
 							<convoy-input-field [className]="'mb-0'">
 								<label for="routingKey" convoy-label>Routing Key</label>
 								<input type="routingKey" id="routingKey" convoy-input autocomplete="routingKey" formControlName="routingKey" placeholder="Routing Key" />
@@ -298,7 +248,7 @@
 				</div>
 			</ng-container>
 			<!-- AMQP-->
-			
+
 			<ng-container *ngIf="sourceForm.value.pub_sub.type === 'sqs'">
 				<h2 class="font-semibold mb-20px">Configure SQS</h2>
 
@@ -332,6 +282,7 @@
 					</convoy-input-field>
 				</div>
 			</ng-container>
+
 			<ng-container formGroupName="kafka" *ngIf="sourceForm.value.pub_sub.type === 'kafka'">
 				<h2 class="text-16 text-neutral-10 font-semibold mb-20px">Configure Kafka</h2>
 
@@ -404,6 +355,78 @@
 			</ng-container>
 		</div>
 
+		<hr class="border-t border-neutral-4 my-40px" />
+
+		<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
+			<div class="flex justify-between items-center mb-16px">
+				<h4 class="text-12 text-neutral-10 font-semibold">Custom response</h4>
+				<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
+					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+						<use xlink:href="#delete-icon2"></use>
+					</svg>
+				</button>
+			</div>
+
+			<div formGroupName="custom_response">
+				<convoy-input-field>
+					<label for="content_type" required="true" convoy-label>Response Content Type</label>
+					<input type="text" id="content_type" convoy-input autocomplete="content_type" formControlName="content_type" placeholder="application/json, text/plain" />
+					<convoy-input-error *ngIf="sourceForm.get('custom_response.content_type')?.touched && sourceForm.get('custom_response.content_type')?.invalid">Enter content type</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label convoy-label>Response Content</label>
+					<textarea formControlName="body" class="min-h-[20vh]" convoy-input name="body" id="body"></textarea>
+					<convoy-input-error *ngIf="sourceForm.get('custom_response.body')?.touched && sourceForm.get('custom_response.body')?.invalid">Enter reponse content</convoy-input-error>
+				</convoy-input-field>
+			</div>
+		</div>
+
+		<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
+			<div class="flex justify-between items-end mb-24px">
+				<p class="text-12 font-semibold text-neutral-10 flex items-center">Idempotency Config</p>
+				<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('idempotency')">
+					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+						<use xlink:href="#delete-icon2"></use>
+					</svg>
+				</button>
+			</div>
+
+			<convoy-multi-input
+				label="Key locations"
+				tooltip="JSON location of idempotency key, add multiple locations for different locations"
+				[prefilledKeys]="sourceDetails && sourceDetails.idempotency_keys ? sourceDetails.idempotency_keys : []"
+				(inputValues)="sourceForm.get('idempotency_keys')?.patchValue($event)"
+			></convoy-multi-input>
+			<span class="text-neutral-10 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
+		</div>
+
+		<ng-container *ngIf="showConfig('tranform_config')">
+			<div class="border-l-2 border-neutral-3 pl-16px mb-40px flex justify-between items-center">
+				<div>
+					<h4 class="text-neutral-10 font-medium text-12">Transform</h4>
+					<p class="text-10 text-neutral-10 mt-4px">Transform request body of events with a javascript function.</p>
+				</div>
+				<div class="flex items-center">
+					<button convoy-button fill="outline" color="grey" class="!text-neutral-10 border-neutral-5 py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()">Open Editor</button>
+
+					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
+
+					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('tranform_config')">
+						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+							<use xlink:href="#delete-icon2"></use>
+						</svg>
+					</button>
+				</div>
+			</div>
+		</ng-container>
+
+		<div class="flex flex-wrap items-center mt-20px gap-24px">
+			<ng-container *ngFor="let config of configurations">
+				<convoy-config-button *ngIf="!config.show" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
+			</ng-container>
+		</div>
+
 		<div class="empty:hidden">
 			<ng-content></ng-content>
 		</div>
@@ -426,4 +449,11 @@
 <!-- source url modal  -->
 <dialog #sourceURLDialog convoy-dialog position="center">
 	<convoy-source-url [url]="sourceURL" (close)="sourceURLDialog.close(); onAction.emit({ action, data: sourceData })"></convoy-source-url>
+</dialog>
+
+<!-- source tranform form   -->
+<dialog open convoy-dialog position="full" *ngIf="showTransformDialog">
+	<div class="w-full h-full overflow-y-auto">
+		<convoy-create-transform-function (close)="showTransformDialog = false" (subscriptionFunction)="getFunction($event)" [transformFunction]="sourceForm.get('function')?.value" transformType="source"></convoy-create-transform-function>
+	</div>
 </dialog>

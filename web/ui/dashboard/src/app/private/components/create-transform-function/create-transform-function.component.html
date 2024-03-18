@@ -1,6 +1,6 @@
 <div convoy-dialog-header fullscreen="custom" (closeDialog)="close.emit()">
 	<div class="flex items-center justify-between w-full">
-		<h2 class="font-semibold text-14 capitalize">Subscription Transform</h2>
+		<h2 class="font-semibold text-14 capitalize">{{transformType}} Transform</h2>
 		<div class="flex items-center justify-end">
 			<button convoy-button size="sm" type="button" [disabled]="!output || !isTransformFunctionPassed" (click)="saveFunction()">
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
