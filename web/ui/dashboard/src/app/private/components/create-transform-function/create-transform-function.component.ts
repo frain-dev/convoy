@@ -89,7 +89,7 @@ function transform(payload) {
 
 		if (this.isTransformFunctionPassed) {
 			if (this.payloadEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'PAYLOAD' : 'SOURCE_PAYLOAD', this.payloadEditor.getValue());
-			if (this.functionEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'FUNCTION' : 'SOURCE_PAYLOAD', this.functionEditor.getValue());
+			if (this.functionEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'FUNCTION' : 'SOURCE_FUNCTION', this.functionEditor.getValue());
 			const updatedTransformFunction = this.functionEditor.getValue();
 			this.updatedTransformFunction.emit(updatedTransformFunction);
 		}
@@ -99,8 +99,9 @@ function transform(payload) {
 		if (this.transformFunction) this.setFunction = this.transformFunction;
 
 		const payload = this.transformType === 'subscription' ? localStorage.getItem('PAYLOAD') : localStorage.getItem('SOURCE_PAYLOAD');
-		const updatedTransformFunction = this.transformType === 'subscription' ? localStorage.getItem('FUNCTION') : localStorage.getItem('SOURCE_FUNCTION');
 		if (payload && payload !== 'undefined') this.payload = JSON.parse(payload);
+
+		const updatedTransformFunction = this.transformType === 'subscription' ? localStorage.getItem('FUNCTION') : localStorage.getItem('SOURCE_FUNCTION');
 		if (updatedTransformFunction && updatedTransformFunction !== 'undefined' && !this.transformFunction) this.setFunction = updatedTransformFunction;
 	}
 
