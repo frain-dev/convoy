@@ -884,7 +884,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
 	title := "random-name"
 	f := faker.New()
-	endpointURL := f.Internet().URL()
+	endpointURL := "https://cgc.info/povn-awjx.html"
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 
