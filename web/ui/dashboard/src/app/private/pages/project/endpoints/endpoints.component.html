@@ -21,7 +21,7 @@
 <ng-container *ngIf="userSearch || (!isLoadingEndpoints && displayedEndpoints?.length)">
 	<div class="flex justify-between items-end mb-24px">
 		<div class="flex items-center">
-			<h1 class="text-18 font-bold text-grey-80 mr-10px">Endpoints</h1>
+			<h1 class="text-18 font-bold text-neutral-12 mr-10px">Endpoints</h1>
 			<!-- <convoy-tooltip tooltipContent="Endpoints are receivers, they recieve the webhook events from sources it is subscribed to" position="right"></convoy-tooltip> -->
 		</div>
 	</div>
@@ -32,11 +32,8 @@
 				class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100"
 				(ngSubmit)="getEndpoints({ search: endpointSearchString, hideLoader: true })">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-				<input type="search" placeholder="Search endpoints" class="w-full text-grey-40 text-12 outline-none"
-					[(ngModel)]="endpointSearchString" [ngModelOptions]="{ standalone: true }" />
-				<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0"
-					class="transition-all duration-200" fill="text"
-					(click)="getEndpoints({ search: endpointSearchString, hideLoader: true })" size="sm">
+				<input type="search" placeholder="Search endpoints" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="endpointSearchString" [ngModelOptions]="{ standalone: true }" />
+				<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0" class="transition-all duration-200" fill="text" (click)="getEndpoints({ search: endpointSearchString, hideLoader: true })" size="sm">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 				</button>
 			</form>
@@ -119,25 +116,17 @@
 													View Secret
 												</button>
 											</li>
-											<li
-												class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey"
-													class="w-full !justify-start" fill="text" (click)="toggleEndpoint()"
-													[disabled]="isTogglingEndpoint">
-													<svg width="14" height="14" class="stroke-new.gray-600 mr-8px">
-														<use
-															[attr.xlink:href]="selectedEndpoint?.status === 'paused' ? '#play-icon' : '#pause-icon'">
-														</use>
+											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+													<svg width="14" height="14" class="stroke-neutral-10 mr-8px">
+														<use [attr.xlink:href]="selectedEndpoint?.status === 'paused' ? '#play-icon' : '#pause-icon'"></use>
 													</svg>
 													{{ selectedEndpoint?.status === 'paused' ? 'Unpause' : 'Pause' }}
 												</button>
 											</li>
-											<li
-												class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" fill="text"
-													class="w-full !justify-start"
-													[routerLink]="'./' + selectedEndpoint?.uid">
-													<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
+											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+												<button convoy-dropdown-option convoy-button color="grey" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
+													<svg width="17" height="16" class="fill-neutral-10 mr-8px">
 														<use xlink:href="#edit-icon"></use>
 													</svg>
 													Edit
@@ -194,7 +183,6 @@
 		<h2 class="font-semibold text-14 capitalize">{{ action === 'update' ? 'Edit Endpoint' : 'Create Endpoint' }}
 		</h2>
 	</div>
-
 	<div class="h-full w-full">
 		<div class="max-w-[770px] m-auto">
 			<convoy-create-endpoint showAction="true"

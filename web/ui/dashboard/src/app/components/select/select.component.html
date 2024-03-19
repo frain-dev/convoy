@@ -7,7 +7,7 @@
 		<div
 			convoy-input
 			class="
-				peer-disabled:text-new.gray-300 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
+				peer-disabled:text-neutral-4 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
 				py-12px
 				px-16px
 				appearance-none
@@ -25,7 +25,7 @@
 				<div *ngFor="let option of selectedOptions" class="border border-new.gray-200 py-4px px-8px font-medium text-12 text-new.gray-400 mr-1 mb-1 rounded-22px flex items-center">
 					{{ option.name || option }}
 					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="14" height="14" class="fill-grey-40">
+						<svg width="14" height="14" class="fill-neutral-10">
 							<use xlink:href="#close-icon-2"></use>
 						</svg>
 					</button>
@@ -49,7 +49,7 @@
 					</div>
 				</li>
 			</ng-container>
-			<li class="text-14 text-grey-20">Select</li>
+			<li class="text-14 text-neutral-4">Select</li>
 
 			<ng-container *ngIf="multiple">
 				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25">
