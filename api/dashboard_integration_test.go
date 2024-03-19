@@ -3041,6 +3041,9 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
             "duration": 10,
             "retry_count": 2
         },
+         "ssl": {
+            "enforce_secure_endpoints": true
+        },
         "signature": {
             "header": "X-Convoy-Signature",
             "hash": "SHA512"
