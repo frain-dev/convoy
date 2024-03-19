@@ -136,7 +136,7 @@ type UpdateSource struct {
 	Verifier        VerifierConfig       `json:"verifier"`
 	PubSub          *PubSubConfig        `json:"pub_sub"`
 	IdempotencyKeys []string             `json:"idempotency_keys"`
-	Function        string               `json:"function"`
+	Function        *string              `json:"function"`
 }
 
 func (us *UpdateSource) Validate() error {

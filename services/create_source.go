@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -49,6 +50,7 @@ func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error
 			Body:        s.NewSource.CustomResponse.Body,
 			ContentType: s.NewSource.CustomResponse.ContentType,
 		},
+		Function:  null.StringFrom(s.NewSource.Function),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

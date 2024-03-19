@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"github.com/frain-dev/convoy/pkg/log"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
@@ -63,6 +64,10 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 
 	if s.SourceUpdate.CustomResponse.ContentType != nil {
 		s.Source.CustomResponse.ContentType = *s.SourceUpdate.CustomResponse.ContentType
+	}
+
+	if s.SourceUpdate.Function != nil {
+		s.Source.Function = null.StringFrom(*s.SourceUpdate.Function)
 	}
 
 	err := s.SourceRepo.UpdateSource(ctx, s.Project.UID, s.Source)
