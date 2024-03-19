@@ -219,7 +219,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://cgc.info/povn-awjx.html"
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -252,7 +252,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIKey() {
 	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://cgc.info/povn-awjx.html"
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -325,7 +325,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest(
 
 func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://cgc.info/povn-awjx.html"
 	supportEmail := "10xengineer@getconvoy.io"
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
@@ -370,7 +370,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPI
 	isDisabled := randBool()
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://cgc.info/povn-awjx.html"
 
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", isDisabled, datastore.ActiveEndpointStatus)
@@ -457,7 +457,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_DeleteEndpoint_WithPersonalAPI
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
 	title := "random-name"
 	f := faker.New()
-	endpointURL := f.Internet().URL()
+	endpointURL := "https://cgc.info/povn-awjx.html"
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 

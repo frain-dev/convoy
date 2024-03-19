@@ -38,7 +38,7 @@ type ProjectConfig struct {
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled"`
 	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint"`
-	SSL                      SSLConfiguration              `json:"ssl"`
+	SSL                      *SSLConfiguration             `json:"ssl"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy"`
