@@ -22,6 +22,7 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
+		function: [null],
 		custom_response: this.formBuilder.group({
 			body: [''],
 			content_type: ['']
@@ -71,7 +72,7 @@ export class CreateSourceComponent implements OnInit {
 				bindExchange: this.formBuilder.group({
 					exchange: [null],
 					routingKey: ['""']
-				}),
+				})
 			}),
 			kafka: this.formBuilder.group({
 				brokers: [null],
@@ -97,7 +98,7 @@ export class CreateSourceComponent implements OnInit {
 		{ uid: 'google', name: 'Google Pub/Sub' },
 		{ uid: 'kafka', name: 'Kafka' },
 		{ uid: 'sqs', name: 'AWS SQS' },
-		{ uid: 'amqp', name: 'AMQP / RabbitMQ' },
+		{ uid: 'amqp', name: 'AMQP / RabbitMQ' }
 	];
 	httpTypes = [
 		{ value: 'noop', viewValue: 'None' },
@@ -163,18 +164,23 @@ export class CreateSourceComponent implements OnInit {
 	sourceCreated: boolean = false;
 	showSourceUrl = false;
 	sourceData!: SOURCE;
-	configurations = [
-		{ uid: 'custom_response', name: 'Custom Response', show: false },
-		{ uid: 'idempotency', name: 'Idempotency', show: false }
-	];
+	configurations!: { uid: string; name: string; show: boolean }[];
 
 	brokerAddresses: string[] = [];
 	private rbacService = inject(RbacService);
 	sourceURL!: string;
+	showTransformDialog = false;
 
 	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
 
 	async ngOnInit() {
+		if (this.privateService.getProjectDetails.type === 'incoming')
+			this.configurations = [
+				{ uid: 'custom_response', name: 'Custom Response', show: false },
+				{ uid: 'idempotency', name: 'Idempotency', show: false }
+			];
+		else this.configurations = [{ uid: 'tranform_config', name: 'Transform', show: false }];
+
 		if (this.action === 'update') this.getSourceDetails();
 		this.privateService.getProjectDetails?.type === 'incoming' ? this.sourceForm.patchValue({ type: 'http' }) : this.sourceForm.patchValue({ type: 'pub_sub' });
 
@@ -191,14 +197,15 @@ export class CreateSourceComponent implements OnInit {
 			this.sourceForm.patchValue(response.data);
 
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
-			if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
+
+            if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
-    	if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
+			if (response.data.pub_sub.kafka.brokers) this.brokerAddresses = response.data.pub_sub.kafka.brokers;
 
 			if (response.data.pub_sub.kafka.auth?.type) this.addKafkaAuthentication = true;
-			
+
 			if (response.data.pub_sub.amqp.auth?.user) this.addAmqpAuthentication = true;
 
 			if (response.data.pub_sub.amqp.bindedExchange) this.addAmqpQueueBinding = true;
@@ -272,6 +279,9 @@ export class CreateSourceComponent implements OnInit {
 	async saveSource() {
 		const sourceData = this.checkSourceSetup();
 		await this.runSourceFormValidation();
+
+		console.log(this.sourceForm.valid);
+		console.log(this.sourceForm.controls);
 		if (!this.sourceForm.valid) {
 			this.isloading = false;
 			return this.sourceForm.markAllAsTouched();
@@ -327,7 +337,7 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	showConfig(configValue: string): boolean {
-		return this.configurations.find(config => config.uid === configValue)?.show || false;
+		return this.configurations?.find(config => config.uid === configValue)?.show || false;
 	}
 
 	setRegionValue(value: any) {
@@ -335,7 +345,7 @@ export class CreateSourceComponent implements OnInit {
 	}
 
 	async runSourceFormValidation() {
-		if (this.configurations[0].show) {
+		if (this.showConfig('custom_response')) {
 			this.sourceForm.get('custom_response.body')?.addValidators(Validators.required);
 			this.sourceForm.get('custom_response.body')?.updateValueAndValidity();
 			this.sourceForm.get('custom_response.content_type')?.addValidators(Validators.required);
@@ -432,7 +442,7 @@ export class CreateSourceComponent implements OnInit {
 				});
 			}
 
-			const amqpExchange = ['pub_sub.amqp.exchange.routingKey', 'pub_sub.amqp.exchange.exchange']
+			const amqpExchange = ['pub_sub.amqp.exchange.routingKey', 'pub_sub.amqp.exchange.exchange'];
 			if (this.addAmqpQueueBinding) {
 				amqpExchange?.forEach((item: string) => {
 					this.sourceForm.get(item)?.addValidators(Validators.required);
@@ -444,7 +454,6 @@ export class CreateSourceComponent implements OnInit {
 					this.sourceForm.get(item)?.updateValueAndValidity();
 				});
 			}
-			
 		} else {
 			this.sourceForm.get('pub_sub.workers')?.removeValidators(Validators.required);
 			this.sourceForm.get('pub_sub.workers')?.updateValueAndValidity();
@@ -461,5 +470,15 @@ export class CreateSourceComponent implements OnInit {
 				kafka: { brokers }
 			}
 		});
+	}
+
+	setupTransformDialog() {
+		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
+		this.showTransformDialog = true;
+	}
+
+	getFunction(subscriptionFunction: any) {
+		if (subscriptionFunction) this.sourceForm.get('function')?.patchValue(subscriptionFunction);
+		this.showTransformDialog = false;
 	}
 }
