@@ -150,7 +150,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(context.Context, *Source, string) error
+	PubSubHandler    func(context.Context, *Source, string, []byte) error
 	MetaEventType    string
 	HookEventType    string
 )

@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/dop251/goja"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"time"
 
@@ -120,14 +122,12 @@ func (i *Ingest) run() error {
 	return nil
 }
 
-func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string) error {
+func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, headers []byte) error {
 	// unmarshal to an interface{} struct
 	var raw any
 	if err := json.Unmarshal([]byte(msg), &raw); err != nil {
 		return err
 	}
-
-	log.Infof("raw: %+v\n", raw)
 
 	type ConvoyEvent struct {
 		EndpointID     string            `json:"endpoint_id"`
@@ -157,43 +157,94 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		return err
 	}
 
-	log.Infof("payload: %+v\n", payload)
-
 	var ev ConvoyEvent
 	if err := json.Unmarshal(pBytes, &ev); err != nil {
 		return err
 	}
 
-	ce := task.CreateEvent{
-		Params: task.CreateEventTaskParams{
-			UID:            ulid.Make().String(),
-			SourceID:       source.UID,
+	headerMap := map[string]string{}
+	err = msgpack.DecodeMsgPack(headers, &headerMap)
+	if err != nil {
+		return err
+	}
+
+	mergeHeaders(headerMap, ev.CustomHeaders)
+	fmt.Printf("CustomHeaders: %+v\n", headerMap)
+
+	messageType := headerMap["convoy_message_type"]
+	if messageType == "single" {
+		ce := task.CreateEvent{
+			Params: task.CreateEventTaskParams{
+				UID:            ulid.Make().String(),
+				SourceID:       source.UID,
+				ProjectID:      source.ProjectID,
+				EndpointID:     ev.EndpointID,
+				EventType:      ev.EventType,
+				Data:           ev.Data,
+				CustomHeaders:  headerMap,
+				IdempotencyKey: ev.IdempotencyKey,
+			},
+			CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
+		}
+
+		eventByte, err := msgpack.EncodeMsgPack(ce)
+		if err != nil {
+			return err
+		}
+
+		job := &queue.Job{
+			ID:      ce.Params.UID,
+			Payload: eventByte,
+		}
+
+		// write to our queue if it's a normal event
+		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+		if err != nil {
+			return err
+		}
+	} else if messageType == "broadcast" {
+		broadcastEvent := models.BroadcastEvent{
 			ProjectID:      source.ProjectID,
-			EndpointID:     ev.EndpointID,
 			EventType:      ev.EventType,
 			Data:           ev.Data,
-			CustomHeaders:  ev.CustomHeaders,
+			CustomHeaders:  headerMap,
 			IdempotencyKey: ev.IdempotencyKey,
-		},
-		CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
-	}
+		}
 
-	eventByte, err := msgpack.EncodeMsgPack(ce)
-	if err != nil {
-		return err
-	}
+		eventByte, err := msgpack.EncodeMsgPack(broadcastEvent)
+		if err != nil {
+			return err
+		}
 
-	job := &queue.Job{
-		ID:      ce.Params.UID,
-		Payload: eventByte,
-		Delay:   0,
-	}
+		job := &queue.Job{
+			ID:      ulid.Make().String(),
+			Payload: eventByte,
+		}
 
-	// write to our queue
-	err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
-	if err != nil {
-		return err
+		// write to our queue if it's a broadcast event
+		err = i.queue.Write(convoy.CreateBroadcastEventProcessor, convoy.CreateEventQueue, job)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+func mergeHeaders(dest map[string]string, src map[string]string) {
+	if src != nil {
+		for k, v := range src {
+			if _, ok := dest[k]; ok {
+				continue
+			}
+
+			dest[k] = v
+		}
+	}
+
+	_, ok := dest["convoy_message_type"]
+	if !ok {
+		// the message type header wasn't found, set it to a default value
+		dest["convoy_message_type"] = "single"
+	}
 }

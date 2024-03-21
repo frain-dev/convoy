@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -128,6 +129,12 @@ func (k *Kafka) consume() {
 		Dialer:  dialer,
 	})
 
+	//err = r.SetOffset(80)
+	//if err != nil {
+	//	log.WithError(err).Error("failed to set kafka offset")
+	//	return
+	//}
+
 	defer k.handleError(r)
 
 	for {
@@ -141,8 +148,15 @@ func (k *Kafka) consume() {
 				continue
 			}
 
+			var d D = m.Headers
+
 			ctx := context.Background()
-			if err := k.handler(ctx, k.source, string(m.Value)); err != nil {
+			headers, err := msgpack.EncodeMsgPack(d.Map())
+			if err != nil {
+				k.log.WithError(err).Error("failed to marshall message headers")
+			}
+
+			if err := k.handler(ctx, k.source, string(m.Value), headers); err != nil {
 				k.log.WithError(err).Error("failed to write message to create event queue - kafka pub sub")
 			} else {
 				// acknowledge the message
@@ -161,6 +175,24 @@ func (k *Kafka) handleError(reader *kafka.Reader) {
 	}
 
 	if err := recover(); err != nil {
-		k.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", k.source.UID, err)).Error("kafka pubsub source crashed")
+		k.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", k.source.UID, err)).Error("kafka pubsub source crashed")
 	}
+}
+
+type M map[string]any
+
+// D is an array representation of Kafka Headers.
+//
+// Example usage:
+//
+//	D{{"foo", "bar"}, {"hello", "world"}, {"pi", 3.14159}}
+type D []kafka.Header
+
+// Map creates a map from the elements of the D.
+func (d D) Map() M {
+	m := make(M, len(d))
+	for _, e := range d {
+		m[e.Key] = e.Value
+	}
+	return m
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
@@ -79,7 +80,12 @@ func (g *Google) consume() {
 	sub.ReceiveSettings.NumGoroutines = g.workers
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
-		if err := g.handler(ctx, g.source, string(m.Data)); err != nil {
+		attributes, err := msgpack.EncodeMsgPack(m.Attributes)
+		if err != nil {
+			g.log.WithError(err).Error("failed to marshall message headers")
+		}
+
+		if err := g.handler(ctx, g.source, string(m.Data), attributes); err != nil {
 			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")
 		} else {
 			m.Ack()
@@ -98,6 +104,6 @@ func (g *Google) handleError(client *pubsub.Client) {
 	}
 
 	if err := recover(); err != nil {
-		g.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", g.source.UID, err)).Error("google pubsub source crashed")
+		g.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", g.source.UID, err)).Error("google pubsub source crashed")
 	}
 }
