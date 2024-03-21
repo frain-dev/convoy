@@ -22,7 +22,8 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
-		function: [null],
+		body_function: [null],
+		header_function: [null],
 		custom_response: this.formBuilder.group({
 			body: [''],
 			content_type: ['']
@@ -198,7 +199,7 @@ export class CreateSourceComponent implements OnInit {
 
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
 
-            if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
+			if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
@@ -477,8 +478,10 @@ export class CreateSourceComponent implements OnInit {
 		this.showTransformDialog = true;
 	}
 
-	getFunction(subscriptionFunction: any) {
-		if (subscriptionFunction) this.sourceForm.get('function')?.patchValue(subscriptionFunction);
+	getFunction(functionDetails: { updatedTransformFunction: any; type: 'body' | 'header' }) {
+		if (functionDetails.updatedTransformFunction)
+			if (functionDetails.type === 'body') this.sourceForm.get('body_function')?.patchValue(functionDetails.updatedTransformFunction);
+			else this.sourceForm.get('header_function')?.patchValue(functionDetails.updatedTransformFunction);
 		this.showTransformDialog = false;
 	}
 }

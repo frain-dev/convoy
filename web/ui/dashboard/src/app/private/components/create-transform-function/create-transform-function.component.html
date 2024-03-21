@@ -1,6 +1,6 @@
 <div convoy-dialog-header fullscreen="custom" (closeDialog)="close.emit()">
 	<div class="flex items-center justify-between w-full">
-		<h2 class="font-semibold text-14 capitalize">{{transformType}} Transform</h2>
+		<h2 class="font-semibold text-14 capitalize">{{ transformType }} Transform</h2>
 		<div class="flex items-center justify-end">
 			<button convoy-button size="sm" type="button" [disabled]="!output || !isTransformFunctionPassed" (click)="saveFunction()">
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
@@ -9,91 +9,188 @@
 						stroke="white"
 					/>
 				</svg>
-
 				Save Function
 			</button>
 		</div>
 	</div>
 </div>
 
-<div class="max-w-[1192px] m-auto mt-40px mb-100px flex" convoy-card>
-	<div class="flex flex-col w-full border-r border-r-neutral-4">
-		<div>
-			<div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tl-8px">Input</div>
-			<convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
-		</div>
-		<div class="min-h-[370px]">
-			<ul class="flex flex-row w-full border-y-[.5px] border-y-neutral-4">
-				<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
-					<button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
-						<span class="text-12 text-neutral-11 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
-					</button>
-				</li>
-			</ul>
-			<ng-container *ngIf="output && !isTestingFunction">
-				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'output' }">
-					<convoy-monaco className="h-336px w-[96%]" [editorValue]="output"></convoy-monaco>
-				</div>
-				<div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'output' }">
-					<convoy-monaco className="h-336px w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output"></convoy-monaco>
-				</div>
-			</ng-container>
-		</div>
-	</div>
-	<div class="flex flex-col w-full">
-		<div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tr-8px flex items-center justify-between">
-			Transform Function
-			<button convoy-button size="xs" type="button" fill="outline" class="py-0" [disabled]="isTestingFunction" (click)="testTransformFunction()">
-				<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
-					<path
-						d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
-						stroke="#477DB3"
-						stroke-miterlimit="10"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
-				Run
-			</button>
-		</div>
+<div class="max-w-[1192px] m-auto mt-40px mb-100px">
+	<ng-container *ngIf="transformType === 'source'">
+		<ul class="flex flex-row justify-center w-full">
+			<li *ngFor="let tab of eventTabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+				<button class="pb-16px pt-10px flex items-center" [class]="eventActiveTab === tab ? 'active' : ''" (click)="eventActiveTab = tab">
+					<span class="text-14 text-left capitalize text-neutral-11 tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+				</button>
+			</li>
+		</ul>
+	</ng-container>
 
-		<div [class]="showConsole ? 'h-[500px]' : 'h-[632px]'">
-			<convoy-monaco className="h-[500px] w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
-		</div>
-		<div class="text-12 text-neutral-11 border-y border-y-neutral-4 px-12px py-6px flex items-center justify-between">
-			Console
-			<div class="flex items-center">
-				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px" [disabled]="isTestingFunction" (click)="logs = []">
-					<svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path
-							d="M7.90273 4.75233L5.33773 6.31234L4.16773 4.39235C3.74023 3.68735 3.96523 2.75735 4.67023 2.32985C5.37523 1.90235 6.30523 2.12733 6.73273 2.83233L7.90273 4.75233Z"
-							stroke="#667085"
-							stroke-width="0.8"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-						<path
-							d="M9.36436 7.36921L6.99436 8.80924C5.61436 9.64924 5.19435 11.3442 5.86185 12.6942L7.39935 15.8292C7.89435 16.8417 9.09436 17.1942 10.0544 16.6017L14.8769 13.6692C15.8444 13.0842 16.0769 11.8617 15.4094 10.9542L13.3319 8.14924C12.4319 6.93424 10.7444 6.52921 9.36436 7.36921Z"
-							stroke="#667085"
-							stroke-width="0.8"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-						/>
-						<path d="M8.56806 4.32361L4.72461 6.66406L6.28491 9.22636L10.1284 6.88591L8.56806 4.32361Z" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M11.2344 13.1074L12.4719 15.1399" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M9.3125 14.2773L10.55 16.3099" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
-						<path d="M13.1562 11.9375L14.3938 13.97" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
-					</svg>
-				</button>
-				<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px ml-10px" [disabled]="isTestingFunction" (click)="logs = []; showConsole = !showConsole">
-					<img class="w-18px transition-all duration-300" [class]="{ 'rotate-180': !showConsole }" src="/assets/img/angle-down.svg" alt="arrow down icon" />
-				</button>
+	<div [ngClass]="{ 'h-0 overflow-hidden': eventActiveTab === 'body' }">
+		<div class="flex" convoy-card>
+			<div class="flex flex-col w-full border-r border-r-neutral-4">
+				<div>
+					<div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tl-8px">Input</div>
+					<convoy-monaco [editorValue]="payload" className="h-300px w-[96%]" #payloadEditor></convoy-monaco>
+				</div>
+				<div class="min-h-[370px]">
+					<ul class="flex flex-row w-full border-y-[.5px] border-y-neutral-4">
+						<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+							<button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
+								<span class="text-12 text-neutral-11 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+							</button>
+						</li>
+					</ul>
+					<ng-container *ngIf="output && !isTestingFunction">
+						<div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'output' }">
+							<convoy-monaco className="h-336px w-[96%]" [editorValue]="output"></convoy-monaco>
+						</div>
+						<div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'output' }">
+							<convoy-monaco className="h-336px w-[96%]" [editorValue]="payload" [modifiedEditorValue]="output"></convoy-monaco>
+						</div>
+					</ng-container>
+				</div>
+			</div>
+			<div class="flex flex-col w-full">
+				<div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tr-8px flex items-center justify-between">
+					Transform Function
+					<button convoy-button size="xs" type="button" fill="outline" class="py-0" [disabled]="isTestingFunction" (click)="testTransformFunction()">
+						<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
+							<path
+								d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
+								stroke="#477DB3"
+								stroke-miterlimit="10"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						Run
+					</button>
+				</div>
+
+				<div [class]="showConsole ? 'h-[500px]' : 'h-[632px]'">
+					<convoy-monaco className="h-[500px] w-[96%]" format="javascript" [editorValue]="setFunction" #functionEditor></convoy-monaco>
+				</div>
+				<div class="text-12 text-neutral-11 border-y border-y-neutral-4 px-12px py-6px flex items-center justify-between">
+					Console
+					<div class="flex items-center">
+						<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px" [disabled]="isTestingFunction" (click)="logs = []">
+							<svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path
+									d="M7.90273 4.75233L5.33773 6.31234L4.16773 4.39235C3.74023 3.68735 3.96523 2.75735 4.67023 2.32985C5.37523 1.90235 6.30523 2.12733 6.73273 2.83233L7.90273 4.75233Z"
+									stroke="#667085"
+									stroke-width="0.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M9.36436 7.36921L6.99436 8.80924C5.61436 9.64924 5.19435 11.3442 5.86185 12.6942L7.39935 15.8292C7.89435 16.8417 9.09436 17.1942 10.0544 16.6017L14.8769 13.6692C15.8444 13.0842 16.0769 11.8617 15.4094 10.9542L13.3319 8.14924C12.4319 6.93424 10.7444 6.52921 9.36436 7.36921Z"
+									stroke="#667085"
+									stroke-width="0.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								<path d="M8.56806 4.32361L4.72461 6.66406L6.28491 9.22636L10.1284 6.88591L8.56806 4.32361Z" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M11.2344 13.1074L12.4719 15.1399" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M9.3125 14.2773L10.55 16.3099" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M13.1562 11.9375L14.3938 13.97" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</button>
+						<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px ml-10px" [disabled]="isTestingFunction" (click)="logs = []; showConsole = !showConsole">
+							<img class="w-18px transition-all duration-300" [class]="{ 'rotate-180': !showConsole }" src="/assets/img/angle-down.svg" alt="arrow down icon" />
+						</button>
+					</div>
+				</div>
+				<div class="bg-neutral-a2 w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'">
+					<ng-container *ngFor="let log of logs">
+						<prism language="javascript" type="display" [code]="generalService.getCodeSnippetString('log', parseLog(log))"></prism>
+					</ng-container>
+				</div>
 			</div>
 		</div>
-		<div class="bg-neutral-a2 w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'">
-			<ng-container *ngFor="let log of logs">
-				<prism language="javascript" type="display" [code]="generalService.getCodeSnippetString('log', parseLog(log))"></prism>
-			</ng-container>
+	</div>
+
+	<div [ngClass]="{ 'h-0 overflow-hidden': eventActiveTab !== 'body' }">
+		<div class="flex" convoy-card>
+			<div class="flex flex-col w-full border-r border-r-neutral-4">
+				<div>
+					<div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tl-8px">Input</div>
+					<convoy-monaco [editorValue]="headerPayload" className="h-300px w-[96%]" #headerPayloadEditor></convoy-monaco>
+				</div>
+				<div class="min-h-[370px]">
+					<ul class="flex flex-row w-full border-y-[.5px] border-y-neutral-4">
+						<li *ngFor="let tab of tabs" class="mr-24px !list-none first-of-type:ml-24px last-of-type:mr-0">
+							<button class="py-6px flex items-center" [class]="activeTab === tab ? 'active' : ''" (click)="activeTab = tab">
+								<span class="text-12 text-neutral-11 capitalize tracking-[0.02em] mobile:min-w-[80px]">{{ tab }}</span>
+							</button>
+						</li>
+					</ul>
+					<ng-container *ngIf="headerOutput && !isTestingFunction">
+						<div [ngClass]="{ 'h-0 overflow-hidden': activeTab !== 'output' }">
+							<convoy-monaco className="h-336px w-[96%]" [editorValue]="headerOutput"></convoy-monaco>
+						</div>
+						<div [ngClass]="{ 'h-0 overflow-hidden': activeTab === 'output' }">
+							<convoy-monaco className="h-336px w-[96%]" [editorValue]="headerPayload" [modifiedEditorValue]="headerOutput"></convoy-monaco>
+						</div>
+					</ng-container>
+				</div>
+			</div>
+			<div class="flex flex-col w-full">
+				<div class="text-12 text-neutral-11 border-b border-b-neutral-4 px-12px py-6px rounded-tr-8px flex items-center justify-between">
+					Transform Function
+					<button convoy-button size="xs" type="button" fill="outline" class="py-0" [disabled]="isTestingFunction" (click)="testTransformFunction()">
+						<svg width="10" height="11" viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-6px">
+							<path
+								d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
+								stroke="#477DB3"
+								stroke-miterlimit="10"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						</svg>
+						Run
+					</button>
+				</div>
+
+				<div [class]="showConsole ? 'h-[500px]' : 'h-[632px]'">
+					<convoy-monaco className="h-[500px] w-[96%]" format="javascript" [editorValue]="headerSetFunction" #headerFunctionEditor></convoy-monaco>
+				</div>
+				<div class="text-12 text-neutral-11 border-y border-y-neutral-4 px-12px py-6px flex items-center justify-between">
+					Console
+					<div class="flex items-center">
+						<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px" [disabled]="isTestingFunction" (click)="headerLogs = []">
+							<svg width="19" height="19" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path
+									d="M7.90273 4.75233L5.33773 6.31234L4.16773 4.39235C3.74023 3.68735 3.96523 2.75735 4.67023 2.32985C5.37523 1.90235 6.30523 2.12733 6.73273 2.83233L7.90273 4.75233Z"
+									stroke="#667085"
+									stroke-width="0.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								<path
+									d="M9.36436 7.36921L6.99436 8.80924C5.61436 9.64924 5.19435 11.3442 5.86185 12.6942L7.39935 15.8292C7.89435 16.8417 9.09436 17.1942 10.0544 16.6017L14.8769 13.6692C15.8444 13.0842 16.0769 11.8617 15.4094 10.9542L13.3319 8.14924C12.4319 6.93424 10.7444 6.52921 9.36436 7.36921Z"
+									stroke="#667085"
+									stroke-width="0.8"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+								<path d="M8.56806 4.32361L4.72461 6.66406L6.28491 9.22636L10.1284 6.88591L8.56806 4.32361Z" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M11.2344 13.1074L12.4719 15.1399" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M9.3125 14.2773L10.55 16.3099" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M13.1562 11.9375L14.3938 13.97" stroke="#667085" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+						</button>
+						<button convoy-button size="xs" type="button" fill="outline" texture="light" color="grey" class="p-2px ml-10px" [disabled]="isTestingFunction" (click)="headerLogs = []; showConsole = !showConsole">
+							<img class="w-18px transition-all duration-300" [class]="{ 'rotate-180': !showConsole }" src="/assets/img/angle-down.svg" alt="arrow down icon" />
+						</button>
+					</div>
+				</div>
+				<div class="bg-neutral-a2 w-full transition-all ease-in-out duration-300" [class]="showConsole ? 'max-h-132px h-full overflow-auto opacity-100' : 'h-0 overflow-hidden opacity-0'">
+					<ng-container *ngFor="let log of headerLogs">
+						<prism language="javascript" type="display" [code]="generalService.getCodeSnippetString('log', parseLog(log))"></prism>
+					</ng-container>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
