@@ -41,7 +41,11 @@ type CreateSource struct {
 
 	// Function is a javascript function used to mutate the payload
 	// immediately after ingesting an event
-	Function string `json:"function"`
+	BodyFunction string `json:"body_function"`
+
+	// Function is a javascript function used to mutate the headers
+	// immediately after ingesting an event
+	HeaderFunction string `json:"header_function"`
 }
 
 func (cs *CreateSource) Validate() error {
@@ -136,7 +140,8 @@ type UpdateSource struct {
 	Verifier        VerifierConfig       `json:"verifier"`
 	PubSub          *PubSubConfig        `json:"pub_sub"`
 	IdempotencyKeys []string             `json:"idempotency_keys"`
-	Function        *string              `json:"function"`
+	BodyFunction    *string              `json:"body_function"`
+	HeaderFunction  *string              `json:"header_function"`
 }
 
 func (us *UpdateSource) Validate() error {

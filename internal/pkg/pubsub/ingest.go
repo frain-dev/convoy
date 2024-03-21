@@ -1,6 +1,7 @@
 package pubsub
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -122,7 +123,7 @@ func (i *Ingest) run() error {
 	return nil
 }
 
-func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, headers []byte) error {
+func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, metadata []byte) error {
 	// unmarshal to an interface{} struct
 	var raw any
 	if err := json.Unmarshal([]byte(msg), &raw); err != nil {
@@ -139,9 +140,9 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	}
 
 	var payload any
-	if source.Function.Ptr() != nil && !util.IsStringEmpty(source.Function.String) {
+	if source.BodyFunction.Ptr() != nil && !util.IsStringEmpty(source.BodyFunction.String) {
 		t := transform.NewTransformer(goja.New())
-		p, _, err := t.Transform(source.Function.String, raw)
+		p, _, err := t.Transform(source.BodyFunction.String, raw)
 		if err != nil {
 			return err
 		}
@@ -157,19 +158,54 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		return err
 	}
 
-	var ev ConvoyEvent
-	if err := json.Unmarshal(pBytes, &ev); err != nil {
+	var convoyEvent ConvoyEvent
+	decoder := json.NewDecoder(bytes.NewReader(pBytes))
+	decoder.DisallowUnknownFields()
+
+	// check the payload structure to be sure it satisfies what convoy can ingest
+	// else discard and nack it.
+	if err = decoder.Decode(&convoyEvent); err != nil {
+		log.WithError(err).Errorf("the payload is badly formatted, please refer to the documentation or"+
+			" use transfrom functions to properly format it, got: %+v", payload)
 		return err
 	}
 
 	headerMap := map[string]string{}
-	err = msgpack.DecodeMsgPack(headers, &headerMap)
+	err = msgpack.DecodeMsgPack(metadata, &headerMap)
 	if err != nil {
 		return err
 	}
 
-	mergeHeaders(headerMap, ev.CustomHeaders)
-	fmt.Printf("CustomHeaders: %+v\n", headerMap)
+	mergeHeaders(headerMap, convoyEvent.CustomHeaders)
+
+	headers := map[string]string{}
+	if source.HeaderFunction.Ptr() != nil && !util.IsStringEmpty(source.HeaderFunction.String) {
+		t := transform.NewTransformer(goja.New())
+		h, _, err := t.Transform(source.HeaderFunction.String, headerMap)
+		if err != nil {
+			return err
+		}
+
+		_, ok := h.(map[string]any)
+		if !ok {
+			return fmt.Errorf("the headers are badly formatted, want: type of map[string]any, got: %+v, of type %T", h, h)
+		}
+
+		for k, v := range h.(map[string]any) {
+			if _, ok = headers[k]; ok {
+				continue
+			}
+
+			_, ok = v.(string)
+			if !ok {
+				return fmt.Errorf("headers values should be strings, want: type of string, got: %+v, of type %T", v, v)
+			}
+
+			headers[k] = v.(string)
+		}
+	} else {
+		headers = headerMap
+	}
 
 	messageType := headerMap["convoy_message_type"]
 	if messageType == "single" {
@@ -178,13 +214,13 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 				UID:            ulid.Make().String(),
 				SourceID:       source.UID,
 				ProjectID:      source.ProjectID,
-				EndpointID:     ev.EndpointID,
-				EventType:      ev.EventType,
-				Data:           ev.Data,
-				CustomHeaders:  headerMap,
-				IdempotencyKey: ev.IdempotencyKey,
+				EndpointID:     convoyEvent.EndpointID,
+				EventType:      convoyEvent.EventType,
+				Data:           convoyEvent.Data,
+				CustomHeaders:  headers,
+				IdempotencyKey: convoyEvent.IdempotencyKey,
 			},
-			CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
+			CreateSubscription: !util.IsStringEmpty(convoyEvent.EndpointID),
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(ce)
@@ -205,10 +241,10 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	} else if messageType == "broadcast" {
 		broadcastEvent := models.BroadcastEvent{
 			ProjectID:      source.ProjectID,
-			EventType:      ev.EventType,
-			Data:           ev.Data,
-			CustomHeaders:  headerMap,
-			IdempotencyKey: ev.IdempotencyKey,
+			EventType:      convoyEvent.EventType,
+			Data:           convoyEvent.Data,
+			CustomHeaders:  headers,
+			IdempotencyKey: convoyEvent.IdempotencyKey,
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(broadcastEvent)
@@ -232,14 +268,12 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 }
 
 func mergeHeaders(dest map[string]string, src map[string]string) {
-	if src != nil {
-		for k, v := range src {
-			if _, ok := dest[k]; ok {
-				continue
-			}
-
-			dest[k] = v
+	for k, v := range src {
+		if _, ok := dest[k]; ok {
+			continue
 		}
+
+		dest[k] = v
 	}
 
 	_, ok := dest["convoy_message_type"]

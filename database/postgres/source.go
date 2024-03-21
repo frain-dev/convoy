@@ -23,8 +23,8 @@ import (
 const (
 	createSource = `
     INSERT INTO convoy.sources (id,source_verifier_id,name,type,mask_id,provider,is_disabled,forward_headers,project_id,
-                                pub_sub,custom_response_body,custom_response_content_type,idempotency_keys, function)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
+                                pub_sub,custom_response_body,custom_response_content_type,idempotency_keys, body_function, header_function)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
     `
 
 	createSourceVerifier = `
@@ -49,7 +49,8 @@ const (
 	custom_response_body = $10,
 	custom_response_content_type = $11,
 	idempotency_keys = $12,
-	function = $13,
+	body_function = $13,
+	header_function = $14,
 	updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
@@ -81,7 +82,8 @@ const (
 		s.forward_headers,
 		s.idempotency_keys,
 		s.project_id,
-		s.function,
+		s.body_function,
+		s.header_function,
 		COALESCE(s.source_verifier_id, '') AS source_verifier_id,
 		COALESCE(s.custom_response_body, '') AS "custom_response.body",
 		COALESCE(s.custom_response_content_type, '') AS "custom_response.content_type",
@@ -112,7 +114,8 @@ const (
 		is_disabled,
 		forward_headers,
 		idempotency_keys,
-		function,
+		body_function,
+		header_function,
 		project_id,
 		created_at,
 		updated_at
@@ -255,7 +258,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
 		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
 		source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
-		source.IdempotencyKeys, source.Function,
+		source.IdempotencyKeys, source.BodyFunction, source.HeaderFunction,
 	)
 	if err != nil {
 		return err
@@ -295,7 +298,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 		ctx, updateSourceById, source.UID, source.Name, source.Type, source.MaskID,
 		source.Provider, source.IsDisabled, source.ForwardHeaders, projectID,
 		source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
-		source.IdempotencyKeys, source.Function,
+		source.IdempotencyKeys, source.BodyFunction, source.HeaderFunction,
 	)
 	if err != nil {
 		return err

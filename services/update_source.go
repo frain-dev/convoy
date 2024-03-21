@@ -66,8 +66,12 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 		s.Source.CustomResponse.ContentType = *s.SourceUpdate.CustomResponse.ContentType
 	}
 
-	if s.SourceUpdate.Function != nil {
-		s.Source.Function = null.StringFrom(*s.SourceUpdate.Function)
+	if s.SourceUpdate.BodyFunction != nil {
+		s.Source.BodyFunction = null.StringFrom(*s.SourceUpdate.BodyFunction)
+	}
+
+	if s.SourceUpdate.HeaderFunction != nil {
+		s.Source.HeaderFunction = null.StringFrom(*s.SourceUpdate.HeaderFunction)
 	}
 
 	err := s.SourceRepo.UpdateSource(ctx, s.Project.UID, s.Source)

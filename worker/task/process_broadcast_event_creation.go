@@ -59,6 +59,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			ProjectID:        project.UID,
 			Data:             broadcastEvent.Data,
 			IdempotencyKey:   broadcastEvent.IdempotencyKey,
+			Headers:          getCustomHeaders(broadcastEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
 			Raw:              string(broadcastEvent.Data),
 			CreatedAt:        time.Now(),
