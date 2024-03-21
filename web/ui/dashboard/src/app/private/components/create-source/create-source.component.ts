@@ -281,8 +281,6 @@ export class CreateSourceComponent implements OnInit {
 		const sourceData = this.checkSourceSetup();
 		await this.runSourceFormValidation();
 
-		console.log(this.sourceForm.valid);
-		console.log(this.sourceForm.controls);
 		if (!this.sourceForm.valid) {
 			this.isloading = false;
 			return this.sourceForm.markAllAsTouched();
@@ -478,10 +476,9 @@ export class CreateSourceComponent implements OnInit {
 		this.showTransformDialog = true;
 	}
 
-	getFunction(functionDetails: { updatedTransformFunction: any; type: 'body' | 'header' }) {
-		if (functionDetails.updatedTransformFunction)
-			if (functionDetails.type === 'body') this.sourceForm.get('body_function')?.patchValue(functionDetails.updatedTransformFunction);
-			else this.sourceForm.get('header_function')?.patchValue(functionDetails.updatedTransformFunction);
+	getFunction(functionDetails: { body: any; header: any }) {
+		this.sourceForm.get('body_function')?.patchValue(functionDetails.body);
+		this.sourceForm.get('header_function')?.patchValue(functionDetails.header);
 		this.showTransformDialog = false;
 	}
 }

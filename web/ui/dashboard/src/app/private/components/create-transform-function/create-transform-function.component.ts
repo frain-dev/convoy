@@ -37,8 +37,8 @@ export class CreateTransformFunctionComponent implements OnInit {
 	isTransformFunctionPassed = false;
 	isTestingFunction = false;
 	showConsole = true;
-	logs: any;
-	headerLogs: any;
+	logs = [];
+	headerLogs = [];
 	payload: any = {
 		id: 'Sample-1',
 		name: 'Sample 1',
@@ -130,10 +130,14 @@ function transform(payload) {
 			if (this.functionEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'FUNCTION' : 'SOURCE_FUNCTION', this.functionEditor.getValue());
 			if (this.headerFunctionEditor?.getValue()) localStorage.setItem('HEADER_FUNCTION', this.headerFunctionEditor.getValue());
 
-			const updatedTransformFunction = this.eventActiveTab === 'body' ? this.functionEditor.getValue() : this.headerFunctionEditor.getValue();
+			const subscriptionTransformFunction = this.functionEditor.getValue();
+			const sourceTransform = {
+				header: this.headerFunctionEditor.getValue(),
+				body: this.functionEditor.getValue()
+			};
 
-			if (this.transformType === 'source') this.updatedTransformFunction.emit({ updatedTransformFunction, type: this.eventActiveTab });
-			else this.updatedTransformFunction.emit(updatedTransformFunction);
+			if (this.transformType === 'source') this.updatedTransformFunction.emit(sourceTransform);
+			else this.updatedTransformFunction.emit(subscriptionTransformFunction);
 		}
 	}
 
