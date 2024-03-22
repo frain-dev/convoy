@@ -62,6 +62,7 @@ export class CreateTransformFunctionComponent implements OnInit {
 
 function transform(payload) {
     // Transform function here
+    return payload;
 }`;
 	headerSetFunction = `/* 1. While you can write multiple functions, the main function
 called for your transformation is the transform function.
@@ -76,6 +77,7 @@ console.log('%j', logged_item) to get printed in the log below. */
 
 function transform(payload) {
 // Transform function here
+return payload;
 }`;
 
 	output: any;

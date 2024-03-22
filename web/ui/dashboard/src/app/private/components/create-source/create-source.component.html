@@ -307,7 +307,7 @@
 				<div class="border-l border-new.primary-25 pl-16px mt-24px">
 					<div class="flex justify-between items-center mb-24px">
 						<p class="text-14 text-gray-600 font-semibold">Authentication</p>
-						<convoy-toggle [className]="'!mb-0'" (onChange)="addKafkaAuthentication = !addKafkaAuthentication"></convoy-toggle>
+						<convoy-toggle [className]="'!mb-0'" [isChecked]="addKafkaAuthentication" (onChange)="addKafkaAuthentication = !addKafkaAuthentication"></convoy-toggle>
 					</div>
 
 					<ng-container formGroupName="auth" *ngIf="addKafkaAuthentication">
