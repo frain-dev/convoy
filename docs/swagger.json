@@ -57,6 +57,7 @@
                             "Next",
                             "Prev"
                         ],
+                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -98,7 +99,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order e/g   `ASC` or `DESC`",
                         "name": "sort",
                         "in": "query"
                     }
@@ -904,6 +905,7 @@
                             "Next",
                             "Prev"
                         ],
+                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -926,16 +928,19 @@
                     },
                     {
                         "type": "string",
+                        "description": "Event ID to filter by",
                         "name": "eventId",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "EventType to filter by",
                         "name": "event_type",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "IdempotencyKey to filter by",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -963,7 +968,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order e/g   `ASC` or `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -986,6 +991,7 @@
                     },
                     {
                         "type": "string",
+                        "description": "SubscriptionID to filter by",
                         "name": "subscriptionId",
                         "in": "query"
                     }
@@ -1117,6 +1123,7 @@
                             "Next",
                             "Prev"
                         ],
+                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -1139,16 +1146,19 @@
                     },
                     {
                         "type": "string",
+                        "description": "Event ID to filter by",
                         "name": "eventId",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "EventType to filter by",
                         "name": "event_type",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "IdempotencyKey to filter by",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -1176,7 +1186,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order e/g   `ASC` or `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -1199,6 +1209,7 @@
                     },
                     {
                         "type": "string",
+                        "description": "SubscriptionID to filter by",
                         "name": "subscriptionId",
                         "in": "query"
                     }
@@ -1877,6 +1888,7 @@
                             "Next",
                             "Prev"
                         ],
+                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -1899,6 +1911,7 @@
                     },
                     {
                         "type": "string",
+                        "description": "IdempotencyKey to filter by",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -1932,7 +1945,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order e/g   `ASC` or `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -1942,6 +1955,7 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "A list of Source IDs to filter the events by.",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -2190,6 +2204,7 @@
                             "Next",
                             "Prev"
                         ],
+                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -2212,6 +2227,7 @@
                     },
                     {
                         "type": "string",
+                        "description": "IdempotencyKey to filter by",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -2245,7 +2261,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order e/g   `ASC` or `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -2255,6 +2271,7 @@
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "A list of Source IDs to filter the events by.",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -2822,6 +2839,7 @@
                             "Next",
                             "Prev"
                         ],
+                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -2856,7 +2874,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order e/g   `ASC` or `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -3841,6 +3859,7 @@
                             "Next",
                             "Prev"
                         ],
+                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -3875,7 +3894,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order e/g   `ASC` or `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -4459,6 +4478,7 @@
                             "Next",
                             "Prev"
                         ],
+                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -4496,7 +4516,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order e/g   `ASC` or `DESC`",
                         "name": "sort",
                         "in": "query"
                     }
@@ -5491,6 +5511,9 @@
                 "http_timeout": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "owner_id": {
                     "type": "string"
                 },
@@ -5518,16 +5541,13 @@
                 "support_email": {
                     "type": "string"
                 },
-                "target_url": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
                 "uid": {
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }
@@ -6200,6 +6220,7 @@
             "type": "object",
             "properties": {
                 "custom_headers": {
+                    "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -6213,9 +6234,11 @@
                     }
                 },
                 "event_type": {
+                    "description": "Event Type, useful for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
+                    "description": "Specify a key for event deduplication",
                     "type": "string"
                 }
             }
@@ -6272,7 +6295,7 @@
                     "type": "string"
                 },
                 "slack_webhook_url": {
-                    "description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications.",
+                    "description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications on a slack channel.",
                     "type": "string"
                 },
                 "support_email": {
@@ -6289,31 +6312,30 @@
             "type": "object",
             "properties": {
                 "app_id": {
-                    "description": "Deprecated but necessary for backward compatibility",
+                    "description": "Deprecated but necessary for backward compatibility.",
                     "type": "string"
                 },
                 "custom_headers": {
+                    "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+                    "type": "object"
                 },
                 "endpoint_id": {
+                    "description": "Specifies the endpoint to send this event to.",
                     "type": "string"
                 },
                 "event_type": {
+                    "description": "Event Type, useful for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
-                    "type": "string"
-                },
-                "owner_id": {
+                    "description": "Specify a key for event deduplication",
                     "type": "string"
                 }
             }
@@ -6421,33 +6443,40 @@
             "type": "object",
             "properties": {
                 "custom_headers": {
+                    "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "data": {
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "event_type": {
+                    "description": "Event Type, useful for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "event_types": {
+                    "description": "A list of event types for the subscription filter config",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "idempotency_key": {
+                    "description": "Specify a key for event deduplication",
                     "type": "string"
                 },
                 "secret": {
+                    "description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
                     "type": "string"
                 },
                 "url": {
+                    "description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
                     "type": "string"
                 }
             }
@@ -6487,6 +6516,9 @@
                 "http_timeout": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "owner_id": {
                     "type": "string"
                 },
@@ -6514,16 +6546,13 @@
                 "support_email": {
                     "type": "string"
                 },
-                "target_url": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
                 "uid": {
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }
@@ -6670,9 +6699,11 @@
             "type": "object",
             "properties": {
                 "expiration": {
+                    "description": "Amount of time to wait before expiring the old endpoint secret\nIf AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until\nthe old signature is expired.",
                     "type": "integer"
                 },
                 "secret": {
+                    "description": "New Endpoint secret value.",
                     "type": "string"
                 }
             }
@@ -6692,6 +6723,7 @@
             "type": "object",
             "properties": {
                 "custom_headers": {
+                    "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -6705,12 +6737,15 @@
                     }
                 },
                 "event_type": {
+                    "description": "Event Type, useful for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
+                    "description": "Specify a key for event deduplication",
                     "type": "string"
                 },
                 "owner_id": {
+                    "description": "Used for fanout, sends this event to all endpoints with this OwnerID.",
                     "type": "string"
                 }
             }
@@ -6867,18 +6902,22 @@
             "type": "object",
             "properties": {
                 "can_manage_endpoint": {
+                    "description": "Specify with endpoint management can be done through the Portal Link UI",
                     "type": "boolean"
                 },
                 "endpoints": {
+                    "description": "IDs of endpoints in this portal link",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "name": {
+                    "description": "Portal Link Name",
                     "type": "string"
                 },
                 "owner_id": {
+                    "description": "Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID",
                     "type": "string"
                 }
             }
@@ -7165,42 +7204,58 @@
             "type": "object",
             "properties": {
                 "advanced_signatures": {
+                    "description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
                     "type": "boolean"
                 },
                 "authentication": {
-                    "$ref": "#/definitions/models.EndpointAuthentication"
+                    "description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.EndpointAuthentication"
+                        }
+                    ]
                 },
                 "description": {
+                    "description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
                     "type": "string"
                 },
                 "http_timeout": {
+                    "description": "Define endpoint http timeout in seconds.",
                     "type": "integer"
                 },
                 "is_disabled": {
+                    "description": "This is used to manually enable/disable the endpoint.",
                     "type": "boolean"
                 },
                 "name": {
                     "type": "string"
                 },
                 "owner_id": {
+                    "description": "The OwnerID is used to group more than one endpoint together to achieve\n[fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)",
                     "type": "string"
                 },
                 "rate_limit": {
+                    "description": "Rate limit is the total number of requests to be sent to an endpoint in\nthe time duration specified in RateLimitDuration",
                     "type": "integer"
                 },
                 "rate_limit_duration": {
+                    "description": "Rate limit duration specifies the time range for the rate limit.",
                     "type": "integer"
                 },
                 "secret": {
+                    "description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
                     "type": "string"
                 },
                 "slack_webhook_url": {
+                    "description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications on a slack channel.",
                     "type": "string"
                 },
                 "support_email": {
+                    "description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
                     "type": "string"
                 },
                 "url": {
+                    "description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
                     "type": "string"
                 }
             }

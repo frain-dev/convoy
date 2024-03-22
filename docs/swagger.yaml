@@ -151,6 +151,8 @@ definitions:
         type: integer
       http_timeout:
         type: integer
+      name:
+        type: string
       owner_id:
         type: string
       project_id:
@@ -169,13 +171,11 @@ definitions:
         $ref: '#/definitions/datastore.EndpointStatus'
       support_email:
         type: string
-      target_url:
-        type: string
-      title:
-        type: string
       uid:
         type: string
       updated_at:
+        type: string
+      url:
         type: string
     type: object
   datastore.EndpointAuthentication:
@@ -638,6 +638,8 @@ definitions:
       custom_headers:
         additionalProperties:
           type: string
+        description: Specifies custom headers you want convoy to add when the event
+          is dispatched to your endpoint
         type: object
       data:
         description: |-
@@ -647,8 +649,10 @@ definitions:
           type: integer
         type: array
       event_type:
+        description: Event Type, useful for filtering and debugging e.g invoice.paid
         type: string
       idempotency_key:
+        description: Specify a key for event deduplication
         type: string
     type: object
   models.CreateEndpoint:
@@ -702,7 +706,7 @@ definitions:
       slack_webhook_url:
         description: |-
           Slack webhook URL is an alternative method to support email where endpoint developers
-          can receive failure notifications.
+          can receive failure notifications on a slack channel.
         type: string
       support_email:
         description: |-
@@ -718,23 +722,27 @@ definitions:
   models.CreateEvent:
     properties:
       app_id:
-        description: Deprecated but necessary for backward compatibility
+        description: Deprecated but necessary for backward compatibility.
         type: string
       custom_headers:
         additionalProperties:
           type: string
+        description: Specifies custom headers you want convoy to add when the event
+          is dispatched to your endpoint
         type: object
       data:
-        items:
-          type: integer
-        type: array
+        description: |-
+          Data is an arbitrary JSON value that gets sent as the body of the
+          webhook to the endpoints
+        type: object
       endpoint_id:
+        description: Specifies the endpoint to send this event to.
         type: string
       event_type:
+        description: Event Type, useful for filtering and debugging e.g invoice.paid
         type: string
       idempotency_key:
-        type: string
-      owner_id:
+        description: Specify a key for event deduplication
         type: string
     type: object
   models.CreateSource:
@@ -811,22 +819,35 @@ definitions:
       custom_headers:
         additionalProperties:
           type: string
+        description: Specifies custom headers you want convoy to add when the event
+          is dispatched to your endpoint
         type: object
       data:
+        description: |-
+          Data is an arbitrary JSON value that gets sent as the body of the
+          webhook to the endpoints
         items:
           type: integer
         type: array
       event_type:
+        description: Event Type, useful for filtering and debugging e.g invoice.paid
         type: string
       event_types:
+        description: A list of event types for the subscription filter config
         items:
           type: string
         type: array
       idempotency_key:
+        description: Specify a key for event deduplication
         type: string
       secret:
+        description: Endpoint's webhook secret. If not provided, Convoy autogenerates
+          one for the endpoint.
         type: string
       url:
+        description: |-
+          URL is the endpoint's URL prefixed with https. non-https urls are currently
+          not supported.
         type: string
     type: object
   models.EndpointAuthentication:
@@ -852,6 +873,8 @@ definitions:
         type: integer
       http_timeout:
         type: integer
+      name:
+        type: string
       owner_id:
         type: string
       project_id:
@@ -870,13 +893,11 @@ definitions:
         $ref: '#/definitions/datastore.EndpointStatus'
       support_email:
         type: string
-      target_url:
-        type: string
-      title:
-        type: string
       uid:
         type: string
       updated_at:
+        type: string
+      url:
         type: string
     type: object
   models.EventDeliveryResponse:
@@ -976,8 +997,13 @@ definitions:
   models.ExpireSecret:
     properties:
       expiration:
+        description: |-
+          Amount of time to wait before expiring the old endpoint secret
+          If AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until
+          the old signature is expired.
         type: integer
       secret:
+        description: New Endpoint secret value.
         type: string
     type: object
   models.FS:
@@ -992,6 +1018,8 @@ definitions:
       custom_headers:
         additionalProperties:
           type: string
+        description: Specifies custom headers you want convoy to add when the event
+          is dispatched to your endpoint
         type: object
       data:
         description: |-
@@ -1001,10 +1029,14 @@ definitions:
           type: integer
         type: array
       event_type:
+        description: Event Type, useful for filtering and debugging e.g invoice.paid
         type: string
       idempotency_key:
+        description: Specify a key for event deduplication
         type: string
       owner_id:
+        description: Used for fanout, sends this event to all endpoints with this
+          OwnerID.
         type: string
     type: object
   models.FilterConfiguration:
@@ -1107,14 +1139,20 @@ definitions:
   models.PortalLink:
     properties:
       can_manage_endpoint:
+        description: Specify with endpoint management can be done through the Portal
+          Link UI
         type: boolean
       endpoints:
+        description: IDs of endpoints in this portal link
         items:
           type: string
         type: array
       name:
+        description: Portal Link Name
         type: string
       owner_id:
+        description: Alternatively specify OwnerID, the portal link will inherit all
+          the endpoints with this owner ID
         type: string
     type: object
   models.PortalLinkResponse:
@@ -1301,30 +1339,61 @@ definitions:
   models.UpdateEndpoint:
     properties:
       advanced_signatures:
+        description: |-
+          Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+          -- simple or advanced. If left unspecified, we default to false.
         type: boolean
       authentication:
-        $ref: '#/definitions/models.EndpointAuthentication'
+        allOf:
+        - $ref: '#/definitions/models.EndpointAuthentication'
+        description: |-
+          This is used to define any custom authentication required by the endpoint. This
+          shouldn't be needed often because webhook endpoints usually should be exposed to
+          the internet.
       description:
+        description: |-
+          Human-readable description of the endpoint. Think of this as metadata describing
+          the endpoint
         type: string
       http_timeout:
+        description: Define endpoint http timeout in seconds.
         type: integer
       is_disabled:
+        description: This is used to manually enable/disable the endpoint.
         type: boolean
       name:
         type: string
       owner_id:
+        description: |-
+          The OwnerID is used to group more than one endpoint together to achieve
+          [fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)
         type: string
       rate_limit:
+        description: |-
+          Rate limit is the total number of requests to be sent to an endpoint in
+          the time duration specified in RateLimitDuration
         type: integer
       rate_limit_duration:
+        description: Rate limit duration specifies the time range for the rate limit.
         type: integer
       secret:
+        description: Endpoint's webhook secret. If not provided, Convoy autogenerates
+          one for the endpoint.
         type: string
       slack_webhook_url:
+        description: |-
+          Slack webhook URL is an alternative method to support email where endpoint developers
+          can receive failure notifications on a slack channel.
         type: string
       support_email:
+        description: |-
+          Endpoint developers support email. This is used for communicating endpoint state
+          changes. You should always turn this on when disabling endpoints are enabled.
         type: string
       url:
+        description: |-
+          URL is the endpoint's URL prefixed with https. non-https urls are currently
+          not supported.
         type: string
     type: object
   models.UpdateSource:
@@ -1427,7 +1496,8 @@ paths:
         name: projectID
         required: true
         type: string
-      - enum:
+      - description: Go `forward` or `backward` in the records.
+        enum:
         - next
         - prev
         in: query
@@ -1461,7 +1531,7 @@ paths:
         in: query
         name: q
         type: string
-      - description: sort order
+      - description: Sort order e/g   `ASC` or `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -1899,7 +1969,8 @@ paths:
         name: projectID
         required: true
         type: string
-      - enum:
+      - description: Go `forward` or `backward` in the records.
+        enum:
         - next
         - prev
         in: query
@@ -1920,13 +1991,16 @@ paths:
           type: string
         name: endpointId
         type: array
-      - in: query
+      - description: Event ID to filter by
+        in: query
         name: eventId
         type: string
-      - in: query
+      - description: EventType to filter by
+        in: query
         name: event_type
         type: string
-      - in: query
+      - description: IdempotencyKey to filter by
+        in: query
         name: idempotencyKey
         type: string
       - description: A pagination cursor to fetch the next page of a list
@@ -1944,7 +2018,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: sort order
+      - description: Sort order e/g   `ASC` or `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -1961,7 +2035,8 @@ paths:
           type: string
         name: status
         type: array
-      - in: query
+      - description: SubscriptionID to filter by
+        in: query
         name: subscriptionId
         type: string
       produces:
@@ -2273,7 +2348,8 @@ paths:
         name: projectID
         required: true
         type: string
-      - enum:
+      - description: Go `forward` or `backward` in the records.
+        enum:
         - next
         - prev
         in: query
@@ -2294,13 +2370,16 @@ paths:
           type: string
         name: endpointId
         type: array
-      - in: query
+      - description: Event ID to filter by
+        in: query
         name: eventId
         type: string
-      - in: query
+      - description: EventType to filter by
+        in: query
         name: event_type
         type: string
-      - in: query
+      - description: IdempotencyKey to filter by
+        in: query
         name: idempotencyKey
         type: string
       - description: A pagination cursor to fetch the next page of a list
@@ -2318,7 +2397,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: sort order
+      - description: Sort order e/g   `ASC` or `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -2335,7 +2414,8 @@ paths:
           type: string
         name: status
         type: array
-      - in: query
+      - description: SubscriptionID to filter by
+        in: query
         name: subscriptionId
         type: string
       produces:
@@ -2454,7 +2534,8 @@ paths:
         name: projectID
         required: true
         type: string
-      - enum:
+      - description: Go `forward` or `backward` in the records.
+        enum:
         - next
         - prev
         in: query
@@ -2475,7 +2556,8 @@ paths:
           type: string
         name: endpointId
         type: array
-      - in: query
+      - description: IdempotencyKey to filter by
+        in: query
         name: idempotencyKey
         type: string
       - description: A pagination cursor to fetch the next page of a list
@@ -2497,12 +2579,13 @@ paths:
         in: query
         name: query
         type: string
-      - description: sort order
+      - description: Sort order e/g   `ASC` or `DESC`
         example: ASC | DESC
         in: query
         name: sort
         type: string
       - collectionFormat: csv
+        description: A list of Source IDs to filter the events by.
         in: query
         items:
           type: string
@@ -2755,7 +2838,8 @@ paths:
         name: projectID
         required: true
         type: string
-      - enum:
+      - description: Go `forward` or `backward` in the records.
+        enum:
         - next
         - prev
         in: query
@@ -2776,7 +2860,8 @@ paths:
           type: string
         name: endpointId
         type: array
-      - in: query
+      - description: IdempotencyKey to filter by
+        in: query
         name: idempotencyKey
         type: string
       - description: A pagination cursor to fetch the next page of a list
@@ -2798,12 +2883,13 @@ paths:
         in: query
         name: query
         type: string
-      - description: sort order
+      - description: Sort order e/g   `ASC` or `DESC`
         example: ASC | DESC
         in: query
         name: sort
         type: string
       - collectionFormat: csv
+        description: A list of Source IDs to filter the events by.
         in: query
         items:
           type: string
@@ -2994,7 +3080,8 @@ paths:
         name: projectID
         required: true
         type: string
-      - enum:
+      - description: Go `forward` or `backward` in the records.
+        enum:
         - next
         - prev
         in: query
@@ -3023,7 +3110,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: sort order
+      - description: Sort order e/g   `ASC` or `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -3562,7 +3649,8 @@ paths:
         name: projectID
         required: true
         type: string
-      - enum:
+      - description: Go `forward` or `backward` in the records.
+        enum:
         - next
         - prev
         in: query
@@ -3591,7 +3679,7 @@ paths:
         in: query
         name: provider
         type: string
-      - description: sort order
+      - description: Sort order e/g   `ASC` or `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -3907,7 +3995,8 @@ paths:
         name: projectID
         required: true
         type: string
-      - enum:
+      - description: Go `forward` or `backward` in the records.
+        enum:
         - next
         - prev
         in: query
@@ -3938,7 +4027,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: sort order
+      - description: Sort order e/g   `ASC` or `DESC`
         example: ASC | DESC
         in: query
         name: sort

@@ -159,12 +159,18 @@ type QueryListSource struct {
 }
 
 type Pageable struct {
+	// Sort order e/g   `ASC` or `DESC`
 	Sort string `json:"sort"  example:"ASC | DESC"` // sort order
+
 	// The number of items to return per page
-	PerPage   int                     `json:"perPage" example:"20"`
+	PerPage int `json:"perPage" example:"20"`
+
+	// Go `forward` or `backward` in the records.
 	Direction datastore.PageDirection `json:"direction"`
+
 	// A pagination cursor to fetch the previous page of a list
 	PrevCursor string `json:"prev_page_cursor" example:"01H0JATTVCXZK8FRDX1M1JN3QY"`
+
 	// A pagination cursor to fetch the next page of a list
 	NextCursor string `json:"next_page_cursor" example:"01H0JA5MEES38RRK3HTEJC647K"`
 }

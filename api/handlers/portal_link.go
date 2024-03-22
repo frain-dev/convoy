@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -204,7 +205,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
 	portalLink, err := portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
