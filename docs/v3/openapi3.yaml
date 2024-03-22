@@ -1501,8 +1501,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: Go `forward` or `backward` in the records.
-        in: query
+      - in: query
         name: direction
         schema:
           enum:
@@ -1537,7 +1536,7 @@ paths:
         name: q
         schema:
           type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -2021,8 +2020,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: Go `forward` or `backward` in the records.
-        in: query
+      - in: query
         name: direction
         schema:
           enum:
@@ -2074,7 +2072,7 @@ paths:
         name: prev_page_cursor
         schema:
           type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -2435,8 +2433,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: Go `forward` or `backward` in the records.
-        in: query
+      - in: query
         name: direction
         schema:
           enum:
@@ -2488,7 +2485,7 @@ paths:
         name: prev_page_cursor
         schema:
           type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -2638,8 +2635,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: Go `forward` or `backward` in the records.
-        in: query
+      - in: query
         name: direction
         schema:
           enum:
@@ -2686,7 +2682,7 @@ paths:
         name: query
         schema:
           type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -2969,8 +2965,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: Go `forward` or `backward` in the records.
-        in: query
+      - in: query
         name: direction
         schema:
           enum:
@@ -3017,7 +3012,7 @@ paths:
         name: query
         schema:
           type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -3233,8 +3228,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: Go `forward` or `backward` in the records.
-        in: query
+      - in: query
         name: direction
         schema:
           enum:
@@ -3264,7 +3258,7 @@ paths:
         name: prev_page_cursor
         schema:
           type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -3860,8 +3854,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: Go `forward` or `backward` in the records.
-        in: query
+      - in: query
         name: direction
         schema:
           enum:
@@ -3891,7 +3884,7 @@ paths:
         name: provider
         schema:
           type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -4239,8 +4232,7 @@ paths:
         required: true
         schema:
           type: string
-      - description: Go `forward` or `backward` in the records.
-        in: query
+      - in: query
         name: direction
         schema:
           enum:
@@ -4272,7 +4264,7 @@ paths:
         name: prev_page_cursor
         schema:
           type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:

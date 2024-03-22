@@ -57,7 +57,6 @@
                             "Next",
                             "Prev"
                         ],
-                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -99,7 +98,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "Sort order e/g   `ASC` or `DESC`",
+                        "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
                         "name": "sort",
                         "in": "query"
                     }
@@ -905,7 +904,6 @@
                             "Next",
                             "Prev"
                         ],
-                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -968,7 +966,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "Sort order e/g   `ASC` or `DESC`",
+                        "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -1123,7 +1121,6 @@
                             "Next",
                             "Prev"
                         ],
-                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -1186,7 +1183,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "Sort order e/g   `ASC` or `DESC`",
+                        "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -1888,7 +1885,6 @@
                             "Next",
                             "Prev"
                         ],
-                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -1945,7 +1941,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "Sort order e/g   `ASC` or `DESC`",
+                        "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -2204,7 +2200,6 @@
                             "Next",
                             "Prev"
                         ],
-                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -2261,7 +2256,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "Sort order e/g   `ASC` or `DESC`",
+                        "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -2839,7 +2834,6 @@
                             "Next",
                             "Prev"
                         ],
-                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -2874,7 +2868,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "Sort order e/g   `ASC` or `DESC`",
+                        "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -3859,7 +3853,6 @@
                             "Next",
                             "Prev"
                         ],
-                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -3894,7 +3887,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "Sort order e/g   `ASC` or `DESC`",
+                        "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
                         "name": "sort",
                         "in": "query"
                     },
@@ -4478,7 +4471,6 @@
                             "Next",
                             "Prev"
                         ],
-                        "description": "Go `forward` or `backward` in the records.",
                         "name": "direction",
                         "in": "query"
                     },
@@ -4516,7 +4508,7 @@
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "Sort order e/g   `ASC` or `DESC`",
+                        "description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
                         "name": "sort",
                         "in": "query"
                     }

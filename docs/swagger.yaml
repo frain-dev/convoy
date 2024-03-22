@@ -1496,8 +1496,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Go `forward` or `backward` in the records.
-        enum:
+      - enum:
         - next
         - prev
         in: query
@@ -1531,7 +1530,7 @@ paths:
         in: query
         name: q
         type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -1969,8 +1968,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Go `forward` or `backward` in the records.
-        enum:
+      - enum:
         - next
         - prev
         in: query
@@ -2018,7 +2016,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -2348,8 +2346,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Go `forward` or `backward` in the records.
-        enum:
+      - enum:
         - next
         - prev
         in: query
@@ -2397,7 +2394,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -2534,8 +2531,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Go `forward` or `backward` in the records.
-        enum:
+      - enum:
         - next
         - prev
         in: query
@@ -2579,7 +2575,7 @@ paths:
         in: query
         name: query
         type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -2838,8 +2834,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Go `forward` or `backward` in the records.
-        enum:
+      - enum:
         - next
         - prev
         in: query
@@ -2883,7 +2878,7 @@ paths:
         in: query
         name: query
         type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -3080,8 +3075,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Go `forward` or `backward` in the records.
-        enum:
+      - enum:
         - next
         - prev
         in: query
@@ -3110,7 +3104,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -3649,8 +3643,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Go `forward` or `backward` in the records.
-        enum:
+      - enum:
         - next
         - prev
         in: query
@@ -3679,7 +3672,7 @@ paths:
         in: query
         name: provider
         type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         example: ASC | DESC
         in: query
         name: sort
@@ -3995,8 +3988,7 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Go `forward` or `backward` in the records.
-        enum:
+      - enum:
         - next
         - prev
         in: query
@@ -4027,7 +4019,7 @@ paths:
         in: query
         name: prev_page_cursor
         type: string
-      - description: Sort order e/g   `ASC` or `DESC`
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         example: ASC | DESC
         in: query
         name: sort

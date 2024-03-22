@@ -2131,7 +2131,6 @@
 						}
 					},
 					{
-						"description": "Go `forward` or `backward` in the records.",
 						"in": "query",
 						"name": "direction",
 						"schema": {
@@ -2187,7 +2186,7 @@
 						}
 					},
 					{
-						"description": "Sort order e/g   `ASC` or `DESC`",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -3090,7 +3089,6 @@
 						}
 					},
 					{
-						"description": "Go `forward` or `backward` in the records.",
 						"in": "query",
 						"name": "direction",
 						"schema": {
@@ -3173,7 +3171,7 @@
 						}
 					},
 					{
-						"description": "Sort order e/g   `ASC` or `DESC`",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -3338,7 +3336,6 @@
 						}
 					},
 					{
-						"description": "Go `forward` or `backward` in the records.",
 						"in": "query",
 						"name": "direction",
 						"schema": {
@@ -3421,7 +3418,7 @@
 						}
 					},
 					{
-						"description": "Sort order e/g   `ASC` or `DESC`",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -4206,7 +4203,6 @@
 						}
 					},
 					{
-						"description": "Go `forward` or `backward` in the records.",
 						"in": "query",
 						"name": "direction",
 						"schema": {
@@ -4281,7 +4277,7 @@
 						}
 					},
 					{
-						"description": "Sort order e/g   `ASC` or `DESC`",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -4563,7 +4559,6 @@
 						}
 					},
 					{
-						"description": "Go `forward` or `backward` in the records.",
 						"in": "query",
 						"name": "direction",
 						"schema": {
@@ -4638,7 +4633,7 @@
 						}
 					},
 					{
-						"description": "Sort order e/g   `ASC` or `DESC`",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -5282,7 +5277,6 @@
 						}
 					},
 					{
-						"description": "Go `forward` or `backward` in the records.",
 						"in": "query",
 						"name": "direction",
 						"schema": {
@@ -5330,7 +5324,7 @@
 						}
 					},
 					{
-						"description": "Sort order e/g   `ASC` or `DESC`",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -6439,7 +6433,6 @@
 						}
 					},
 					{
-						"description": "Go `forward` or `backward` in the records.",
 						"in": "query",
 						"name": "direction",
 						"schema": {
@@ -6487,7 +6480,7 @@
 						}
 					},
 					{
-						"description": "Sort order e/g   `ASC` or `DESC`",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -7138,7 +7131,6 @@
 						}
 					},
 					{
-						"description": "Go `forward` or `backward` in the records.",
 						"in": "query",
 						"name": "direction",
 						"schema": {
@@ -7189,7 +7181,7 @@
 						}
 					},
 					{
-						"description": "Sort order e/g   `ASC` or `DESC`",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
