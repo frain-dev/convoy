@@ -95,7 +95,7 @@ type RetentionPolicyConfiguration struct {
 	// Specify the number of hours the policy job should go back before deleting events and deliveries.
 	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
 
-	// Specify the hour interval for which the event tokenizer runs
+	// Specify the interval in hours for which the event tokenizer runs
 	SearchPolicy string `json:"search_policy" db:"search_policy"`
 }
 
