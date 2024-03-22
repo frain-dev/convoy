@@ -307,7 +307,7 @@
 				<div class="border-l border-new.primary-25 pl-16px mt-24px">
 					<div class="flex justify-between items-center mb-24px">
 						<p class="text-14 text-gray-600 font-semibold">Authentication</p>
-						<convoy-toggle [className]="'!mb-0'" (onChange)="addKafkaAuthentication = !addKafkaAuthentication"></convoy-toggle>
+						<convoy-toggle [className]="'!mb-0'" [isChecked]="addKafkaAuthentication" (onChange)="checkAuthConfig()"></convoy-toggle>
 					</div>
 
 					<ng-container formGroupName="auth" *ngIf="addKafkaAuthentication">
@@ -446,6 +446,19 @@
 
 <convoy-notification></convoy-notification>
 
+<!-- disable endpoints confirmation prompt -->
+<dialog #disableAuthModal convoy-dialog position="center" size="sm">
+	<div class="flex flex-col p-30px">
+		<h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
+		<p class="text-12 font-medium text-neutral-11 mb-20px">You are about to disable authentication for this Kafka source, this would delete your current configurations.</p>
+
+		<div class="flex gap-16px items-center">
+			<button convoy-button size="sm" (click)="addKafkaAuthentication = false; disableAuthModal.close()">Confirm</button>
+			<button convoy-button fill="text" size="sm" class="font-semibold" (click)="disableAuthModal.close(); addKafkaAuthentication = true">Close</button>
+		</div>
+	</div>
+</dialog>
+
 <!-- source url modal  -->
 <dialog #sourceURLDialog convoy-dialog position="center">
 	<convoy-source-url [url]="sourceURL" (close)="sourceURLDialog.close(); onAction.emit({ action, data: sourceData })"></convoy-source-url>
@@ -454,6 +467,12 @@
 <!-- source tranform form   -->
 <dialog open convoy-dialog position="full" *ngIf="showTransformDialog">
 	<div class="w-full h-full overflow-y-auto">
-		<convoy-create-transform-function (close)="showTransformDialog = false" (updatedTransformFunction)="getFunction($event)" [transformFunction]="sourceForm.get('function')?.value" transformType="source"></convoy-create-transform-function>
+		<convoy-create-transform-function
+			(close)="showTransformDialog = false"
+			(updatedTransformFunction)="getFunction($event)"
+			[transformFunction]="sourceForm.get('body_function')?.value"
+			[headerTransformFunction]="sourceForm.get('header_function')?.value"
+			transformType="source"
+		></convoy-create-transform-function>
 	</div>
 </dialog>

@@ -14,6 +14,8 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 })
 export class CreateSourceComponent implements OnInit {
 	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('disableAuthModal', { static: true }) disableAuthModal!: ElementRef<HTMLDialogElement>;
+
 	@Input('action') action: 'update' | 'create' = 'create';
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
 	@Input('showModal') showModal: 'true' | 'false' = 'false';
@@ -22,7 +24,8 @@ export class CreateSourceComponent implements OnInit {
 		name: ['', Validators.required],
 		is_disabled: [true, Validators.required],
 		type: ['', Validators.required],
-		function: [null],
+		body_function: [null],
+		header_function: [null],
 		custom_response: this.formBuilder.group({
 			body: [''],
 			content_type: ['']
@@ -198,7 +201,7 @@ export class CreateSourceComponent implements OnInit {
 
 			if (this.sourceDetails.custom_response.body || this.sourceDetails.custom_response.content_type) this.toggleConfigForm('custom_response');
 
-            if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
+			if (this.sourceDetails.idempotency_keys?.length) this.toggleConfigForm('idempotency');
 
 			if (this.isCustomSource(sourceProvider)) this.sourceForm.patchValue({ verifier: { type: sourceProvider } });
 
@@ -280,8 +283,6 @@ export class CreateSourceComponent implements OnInit {
 		const sourceData = this.checkSourceSetup();
 		await this.runSourceFormValidation();
 
-		console.log(this.sourceForm.valid);
-		console.log(this.sourceForm.controls);
 		if (!this.sourceForm.valid) {
 			this.isloading = false;
 			return this.sourceForm.markAllAsTouched();
@@ -477,8 +478,14 @@ export class CreateSourceComponent implements OnInit {
 		this.showTransformDialog = true;
 	}
 
-	getFunction(subscriptionFunction: any) {
-		if (subscriptionFunction) this.sourceForm.get('function')?.patchValue(subscriptionFunction);
+	getFunction(functionDetails: { body: any; header: any }) {
+		this.sourceForm.get('body_function')?.patchValue(functionDetails.body);
+		this.sourceForm.get('header_function')?.patchValue(functionDetails.header);
 		this.showTransformDialog = false;
+	}
+
+	checkAuthConfig() {
+		if (this.sourceDetails?.pub_sub?.kafka?.auth?.type && this.addKafkaAuthentication) this.disableAuthModal.nativeElement.showModal();
+		else this.addKafkaAuthentication = !this.addKafkaAuthentication;
 	}
 }

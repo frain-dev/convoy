@@ -20,8 +20,12 @@ import { CreateSourceService } from '../create-source/create-source.service';
 export class CreateTransformFunctionComponent implements OnInit {
 	@Output('close') close: EventEmitter<any> = new EventEmitter();
 	@ViewChild('payloadEditor') payloadEditor!: MonacoComponent;
+	@ViewChild('headerPayloadEditor') headerPayloadEditor!: MonacoComponent;
 	@ViewChild('functionEditor') functionEditor!: MonacoComponent;
+	@ViewChild('headerFunctionEditor') headerFunctionEditor!: MonacoComponent;
 	@Input('transformFunction') transformFunction: any;
+	@Input('headerTransformFunction') headerTransformFunction: any;
+
 	@Input('transformType') transformType: 'source' | 'subscription' = 'subscription';
 	@Output('updatedTransformFunction') updatedTransformFunction: EventEmitter<any> = new EventEmitter();
 	tabs = ['output', 'diff'];
@@ -33,8 +37,14 @@ export class CreateTransformFunctionComponent implements OnInit {
 	isTransformFunctionPassed = false;
 	isTestingFunction = false;
 	showConsole = true;
-	logs: any;
+	logs = [];
+	headerLogs = [];
 	payload: any = {
+		id: 'Sample-1',
+		name: 'Sample 1',
+		description: 'This is sample data #1'
+	};
+	headerPayload = {
 		id: 'Sample-1',
 		name: 'Sample 1',
 		description: 'This is sample data #1'
@@ -52,8 +62,28 @@ export class CreateTransformFunctionComponent implements OnInit {
 
 function transform(payload) {
     // Transform function here
+    return payload;
 }`;
+	headerSetFunction = `/* 1. While you can write multiple functions, the main function
+called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this
+console.log('%j', logged_item) to get printed in the log below. */
+
+function transform(payload) {
+// Transform function here
+return payload;
+}`;
+
 	output: any;
+	headerOutput: any;
+	eventTabs: ['body', 'header'] = ['body', 'header'];
+	eventActiveTab: 'body' | 'header' = 'body';
 
 	constructor(private createSubscriptionService: CreateSubscriptionService, private createSourceService: CreateSourceService, public generalService: GeneralService, private formBuilder: FormBuilder) {}
 
@@ -64,18 +94,26 @@ function transform(payload) {
 	async testTransformFunction() {
 		this.isTransformFunctionPassed = false;
 		this.isTestingFunction = true;
+
 		this.payload = this.generalService.convertStringToJson(this.payloadEditor.getValue());
+		this.headerPayload = this.generalService.convertStringToJson(this.headerPayloadEditor.getValue());
+
 		this.transformForm.patchValue({
-			payload: this.generalService.convertStringToJson(this.payloadEditor.getValue()),
-			function: this.functionEditor.getValue()
+			payload: this.eventActiveTab === 'body' ? this.payload : this.headerPayload,
+			function: this.eventActiveTab === 'body' ? this.functionEditor.getValue() : this.headerFunctionEditor.getValue()
 		});
 
 		try {
 			const response = this.transformType === 'subscription' ? await this.createSubscriptionService.testTransformFunction(this.transformForm.value) : await this.createSourceService.testTransformFunction(this.transformForm.value);
+
 			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.output = response.data.payload;
-			this.logs = response.data.log.reverse();
-			if (this.logs.length > 0) this.showConsole = true;
+
+			this.eventActiveTab === 'body' ? (this.output = response.data.payload) : (this.headerOutput = response.data.payload);
+
+			this.eventActiveTab === 'body' ? (this.logs = response.data.log.reverse()) : (this.headerLogs = response.data.log.reverse());
+
+			if (this.logs.length > 0 || this.headerLogs.length > 0) this.showConsole = true;
+
 			this.isTransformFunctionPassed = true;
 			this.isTestingFunction = false;
 		} catch (error) {
@@ -89,19 +127,34 @@ function transform(payload) {
 
 		if (this.isTransformFunctionPassed) {
 			if (this.payloadEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'PAYLOAD' : 'SOURCE_PAYLOAD', this.payloadEditor.getValue());
+			if (this.headerPayloadEditor?.getValue()) localStorage.setItem('HEADER_PAYLOAD', this.headerPayloadEditor.getValue());
+
 			if (this.functionEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'FUNCTION' : 'SOURCE_FUNCTION', this.functionEditor.getValue());
-			const updatedTransformFunction = this.functionEditor.getValue();
-			this.updatedTransformFunction.emit(updatedTransformFunction);
+			if (this.headerFunctionEditor?.getValue()) localStorage.setItem('HEADER_FUNCTION', this.headerFunctionEditor.getValue());
+
+			const subscriptionTransformFunction = this.functionEditor.getValue();
+			const sourceTransform = {
+				header: this.headerFunctionEditor.getValue(),
+				body: this.functionEditor.getValue()
+			};
+
+			if (this.transformType === 'source') this.updatedTransformFunction.emit(sourceTransform);
+			else this.updatedTransformFunction.emit(subscriptionTransformFunction);
 		}
 	}
 
 	checkForExistingData() {
 		if (this.transformFunction) this.setFunction = this.transformFunction;
+		if (this.headerTransformFunction) this.headerSetFunction = this.headerTransformFunction;
 
-		const payload = this.transformType === 'subscription' ? localStorage.getItem('PAYLOAD') : localStorage.getItem('SOURCE_PAYLOAD');
+		const payload = this.transformType === 'subscription' ? localStorage.getItem('PAYLOAD') : this.eventActiveTab === 'body' ? localStorage.getItem('SOURCE_PAYLOAD') : localStorage.getItem('HEADER_PAYLOAD');
+		const headerPayload = localStorage.getItem('HEADER_PAYLOAD');
+		if (headerPayload && headerPayload !== 'undefined') this.headerPayload = JSON.parse(headerPayload);
 		if (payload && payload !== 'undefined') this.payload = JSON.parse(payload);
 
-		const updatedTransformFunction = this.transformType === 'subscription' ? localStorage.getItem('FUNCTION') : localStorage.getItem('SOURCE_FUNCTION');
+		const updatedTransformFunction = this.transformType === 'subscription' ? localStorage.getItem('FUNCTION') : this.eventActiveTab === 'body' ? localStorage.getItem('SOURCE_FUNCTION') : localStorage.getItem('HEADER_FUNCTION');
+		const headerFunction = localStorage.getItem('HEADER_FUNCTION');
+		if (headerFunction && headerFunction !== 'undefined' && !this.headerTransformFunction) this.headerSetFunction = headerFunction;
 		if (updatedTransformFunction && updatedTransformFunction !== 'undefined' && !this.transformFunction) this.setFunction = updatedTransformFunction;
 	}
 
