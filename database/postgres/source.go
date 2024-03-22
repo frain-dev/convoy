@@ -357,6 +357,12 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 		return err
 	}
 
+	srcCacheKey2 := convoy.SourceCacheKey.Get(source.MaskID).String()
+	err = s.cache.Set(ctx, srcCacheKey2, source, time.Hour*24)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

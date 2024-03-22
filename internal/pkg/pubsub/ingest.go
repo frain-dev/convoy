@@ -26,6 +26,8 @@ type IngestCtxKey string
 
 var ingestCtx IngestCtxKey = "IngestCtx"
 
+const ConvoyMessageTypeHeader = "x-convoy-message-type"
+
 type Ingest struct {
 	ctx     context.Context
 	ticker  *time.Ticker
@@ -124,6 +126,8 @@ func (i *Ingest) run() error {
 }
 
 func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, metadata []byte) error {
+	defer handlePanic(source)
+
 	// unmarshal to an interface{} struct
 	var raw any
 	if err := json.Unmarshal([]byte(msg), &raw); err != nil {
@@ -165,8 +169,8 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	// check the payload structure to be sure it satisfies what convoy can ingest
 	// else discard and nack it.
 	if err = decoder.Decode(&convoyEvent); err != nil {
-		log.WithError(err).Errorf("the payload is badly formatted, please refer to the documentation or"+
-			" use transfrom functions to properly format it, got: %+v", payload)
+		log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
+			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, payload)
 		return err
 	}
 
@@ -181,34 +185,38 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	headers := map[string]string{}
 	if source.HeaderFunction.Ptr() != nil && !util.IsStringEmpty(source.HeaderFunction.String) {
 		t := transform.NewTransformer(goja.New())
-		h, _, err := t.Transform(source.HeaderFunction.String, headerMap)
-		if err != nil {
-			return err
+		h, _, transErr := t.Transform(source.HeaderFunction.String, headerMap)
+		if transErr != nil {
+			return transErr
 		}
 
-		_, ok := h.(map[string]any)
-		if !ok {
-			return fmt.Errorf("the headers are badly formatted, want: type of map[string]any, got: %+v, of type %T", h, h)
-		}
+		switch castedH := h.(type) {
+		case map[string]any:
+			for k, v := range castedH {
+				if _, ok := headers[k]; ok {
+					continue
+				}
 
-		for k, v := range h.(map[string]any) {
-			if _, ok = headers[k]; ok {
-				continue
+				if _, ok := v.(string); !ok {
+					return fmt.Errorf("headers values for %s with id (%s) should be strings, want: type of string, got: %+v, of type %T", source.Name, source.UID, v, v)
+				}
+
+				headers[k] = v.(string)
 			}
-
-			_, ok = v.(string)
-			if !ok {
-				return fmt.Errorf("headers values should be strings, want: type of string, got: %+v, of type %T", v, v)
-			}
-
-			headers[k] = v.(string)
+		case map[string]string:
+			headers = castedH
+		default:
+			return fmt.Errorf("the headers for %s with id (%s) are badly formatted, want: type of map[string]any or map[string]string, got: %+v, of type %T", source.Name, source.UID, castedH, castedH)
 		}
 	} else {
 		headers = headerMap
 	}
 
-	messageType := headerMap["convoy_message_type"]
-	if messageType == "single" {
+	//fmt.Printf("payload: %s\n %+v\n %+v\n\n", source.Name, payload, headers)
+
+	messageType := headers[ConvoyMessageTypeHeader]
+	switch messageType {
+	case "single":
 		ce := task.CreateEvent{
 			Params: task.CreateEventTaskParams{
 				UID:            ulid.Make().String(),
@@ -238,9 +246,10 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		if err != nil {
 			return err
 		}
-	} else if messageType == "broadcast" {
+	case "broadcast":
 		broadcastEvent := models.BroadcastEvent{
 			ProjectID:      source.ProjectID,
+			SourceID:       source.UID,
 			EventType:      convoyEvent.EventType,
 			Data:           convoyEvent.Data,
 			CustomHeaders:  headers,
@@ -262,6 +271,10 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		if err != nil {
 			return err
 		}
+	default:
+		err := fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single and broadcast", messageType)
+		log.Error(err)
+		return err
 	}
 
 	return nil
@@ -276,9 +289,15 @@ func mergeHeaders(dest map[string]string, src map[string]string) {
 		dest[k] = v
 	}
 
-	_, ok := dest["convoy_message_type"]
+	_, ok := dest[ConvoyMessageTypeHeader]
 	if !ok {
 		// the message type header wasn't found, set it to a default value
-		dest["convoy_message_type"] = "single"
+		dest[ConvoyMessageTypeHeader] = "single"
+	}
+}
+
+func handlePanic(source *datastore.Source) {
+	if err := recover(); err != nil {
+		log.Error(fmt.Errorf("sourceID: %s, Error: %s", source.UID, err))
 	}
 }

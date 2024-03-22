@@ -57,6 +57,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			UID:              ulid.Make().String(),
 			EventType:        datastore.EventType(broadcastEvent.EventType),
 			ProjectID:        project.UID,
+			SourceID:         broadcastEvent.SourceID,
 			Data:             broadcastEvent.Data,
 			IdempotencyKey:   broadcastEvent.IdempotencyKey,
 			Headers:          getCustomHeaders(broadcastEvent.CustomHeaders),

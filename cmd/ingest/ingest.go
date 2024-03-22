@@ -75,6 +75,8 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			srv := server.NewServer(cfg.Server.HTTP.IngestPort, func() {})
 			srv.SetHandler(chi.NewMux())
 
+			a.Logger.Info("Starting Convoy Message Broker Ingester...")
+
 			srv.Listen()
 
 			return nil
