@@ -2,10 +2,12 @@ package net
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -38,6 +40,11 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 	if !enforceSecure {
 		tr.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
+		}
+	} else {
+		tr.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			conn, err := tls.Dial(network, addr, &tls.Config{MinVersion: tls.VersionTLS12})
+			return conn, err
 		}
 	}
 
