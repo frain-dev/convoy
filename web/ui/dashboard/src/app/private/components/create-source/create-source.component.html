@@ -307,7 +307,7 @@
 				<div class="border-l border-new.primary-25 pl-16px mt-24px">
 					<div class="flex justify-between items-center mb-24px">
 						<p class="text-14 text-gray-600 font-semibold">Authentication</p>
-						<convoy-toggle [className]="'!mb-0'" [isChecked]="addKafkaAuthentication" (onChange)="addKafkaAuthentication = !addKafkaAuthentication"></convoy-toggle>
+						<convoy-toggle [className]="'!mb-0'" [isChecked]="addKafkaAuthentication" (onChange)="checkAuthConfig()"></convoy-toggle>
 					</div>
 
 					<ng-container formGroupName="auth" *ngIf="addKafkaAuthentication">
@@ -445,6 +445,19 @@
 </form>
 
 <convoy-notification></convoy-notification>
+
+<!-- disable endpoints confirmation prompt -->
+<dialog #disableAuthModal convoy-dialog position="center" size="sm">
+	<div class="flex flex-col p-30px">
+		<h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
+		<p class="text-12 font-medium text-neutral-11 mb-20px">You are about to disable authentication for this Kafka source, this would delete your current configurations.</p>
+
+		<div class="flex gap-16px items-center">
+			<button convoy-button size="sm" (click)="addKafkaAuthentication = false; disableAuthModal.close()">Confirm</button>
+			<button convoy-button fill="text" size="sm" class="font-semibold" (click)="disableAuthModal.close(); addKafkaAuthentication = true">Close</button>
+		</div>
+	</div>
+</dialog>
 
 <!-- source url modal  -->
 <dialog #sourceURLDialog convoy-dialog position="center">

@@ -14,6 +14,8 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 })
 export class CreateSourceComponent implements OnInit {
 	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('disableAuthModal', { static: true }) disableAuthModal!: ElementRef<HTMLDialogElement>;
+
 	@Input('action') action: 'update' | 'create' = 'create';
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
 	@Input('showModal') showModal: 'true' | 'false' = 'false';
@@ -480,5 +482,10 @@ export class CreateSourceComponent implements OnInit {
 		this.sourceForm.get('body_function')?.patchValue(functionDetails.body);
 		this.sourceForm.get('header_function')?.patchValue(functionDetails.header);
 		this.showTransformDialog = false;
+	}
+
+	checkAuthConfig() {
+		if (this.sourceDetails?.pub_sub?.kafka?.auth?.type && this.addKafkaAuthentication) this.disableAuthModal.nativeElement.showModal();
+		else this.addKafkaAuthentication = !this.addKafkaAuthentication;
 	}
 }
