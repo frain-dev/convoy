@@ -1,12 +1,14 @@
 package util
 
 import (
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
 )
 
-func CleanEndpoint(s string, enforceSecure bool) (string, error) {
+func ValidateEndpoint(s string, enforceSecure bool) (string, error) {
 	if IsStringEmpty(s) {
 		return "", errors.New("please provide the endpoint url")
 	}
@@ -22,6 +24,10 @@ func CleanEndpoint(s string, enforceSecure bool) (string, error) {
 			return "", errors.New("only https endpoints allowed")
 		}
 	case "https":
+		_, err = tls.Dial("tcp", u.Host, &tls.Config{MinVersion: tls.VersionTLS12})
+		if err != nil {
+			return "", fmt.Errorf("failed to ping tls endpoint: %v", err)
+		}
 	default:
 		return "", errors.New("invalid endpoint scheme")
 	}

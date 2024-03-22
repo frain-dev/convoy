@@ -208,7 +208,7 @@ func validateMetaEvent(c *datastore.ProjectConfig) error {
 	}
 
 	if metaEvent.Type == datastore.HTTPMetaEvent {
-		url, err := util.CleanEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints)
+		url, err := util.ValidateEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints)
 		if err != nil {
 			return err
 		}
