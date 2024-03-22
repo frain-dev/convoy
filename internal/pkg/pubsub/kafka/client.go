@@ -100,7 +100,7 @@ func (k *Kafka) Verify() error {
 
 	_, err = dialer.DialContext(context.Background(), "tcp", k.Cfg.Brokers[0])
 	if err != nil {
-		log.WithError(err).Error("failed to connect kafka instance %s with id %s", k.source.Name, k.source.UID)
+		log.WithError(err).Errorf("failed to connect kafka instance %s with id %s", k.source.Name, k.source.UID)
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (k *Kafka) Verify() error {
 func (k *Kafka) consume() {
 	dialer, err := k.dialer()
 	if err != nil {
-		log.WithError(err).Error("failed to fetch auth for kafka source %s with id %s", k.source.Name, k.source.UID)
+		log.WithError(err).Errorf("failed to fetch auth for kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
 
