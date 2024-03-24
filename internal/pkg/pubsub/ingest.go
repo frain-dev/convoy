@@ -173,13 +173,13 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		return err
 	}
 
-	if &convoyEvent.EventType == nil || util.IsStringEmpty(convoyEvent.EventType) {
+	if util.IsStringEmpty(convoyEvent.EventType) {
 		err := fmt.Errorf("the payload for %s with id (%s) doesn't include an event type, please refer to the documentation or"+
 			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
 		return err
 	}
 
-	if &convoyEvent.Data == nil || len(convoyEvent.Data) == 0 {
+	if len(convoyEvent.Data) == 0 {
 		err := fmt.Errorf("the payload for %s with id (%s) doesn't include any data, please refer to the documentation or"+
 			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
 		return err
@@ -242,7 +242,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			CreateSubscription: !util.IsStringEmpty(convoyEvent.EndpointID),
 		}
 
-		if &ce.Params.EndpointID == nil || util.IsStringEmpty(ce.Params.EndpointID) {
+		if util.IsStringEmpty(ce.Params.EndpointID) {
 			err := fmt.Errorf("the payload for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
 				" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
 			return err
