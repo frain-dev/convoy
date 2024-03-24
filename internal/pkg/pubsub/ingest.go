@@ -166,11 +166,22 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	decoder := json.NewDecoder(bytes.NewReader(pBytes))
 	decoder.DisallowUnknownFields()
 
-	// check the payload structure to be sure it satisfies what convoy can ingest
-	// else discard and nack it.
+	// check the payload structure to be sure it satisfies what convoy can ingest else discard and nack it.
 	if err = decoder.Decode(&convoyEvent); err != nil {
 		log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
 			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, payload)
+		return err
+	}
+
+	if &convoyEvent.EventType == nil || util.IsStringEmpty(convoyEvent.EventType) {
+		err := fmt.Errorf("the payload for %s with id (%s) doesn't include an event type, please refer to the documentation or"+
+			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+		return err
+	}
+
+	if &convoyEvent.Data == nil || len(convoyEvent.Data) == 0 {
+		err := fmt.Errorf("the payload for %s with id (%s) doesn't include any data, please refer to the documentation or"+
+			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
 		return err
 	}
 
@@ -229,6 +240,12 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 				IdempotencyKey: convoyEvent.IdempotencyKey,
 			},
 			CreateSubscription: !util.IsStringEmpty(convoyEvent.EndpointID),
+		}
+
+		if &ce.Params.EndpointID == nil || util.IsStringEmpty(ce.Params.EndpointID) {
+			err := fmt.Errorf("the payload for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
+				" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+			return err
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(ce)
