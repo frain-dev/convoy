@@ -4594,6 +4594,7 @@
                     "Subscriptions"
                 ],
                 "summary": "List all subscriptions",
+                "operationId": "GetSubscriptions",
                 "parameters": [
                     {
                         "type": "string",
@@ -5100,6 +5101,7 @@
                     "Subscriptions"
                 ],
                 "summary": "Retrieve a subscription",
+                "operationId": "GetSubscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -7653,6 +7655,10 @@
         {
             "description": "Portal Links related APIs",
             "name": "Portal Links"
+        },
+        {
+            "description": "Meta Events related APIs",
+            "name": "Meta Events"
         }
     ]
 }

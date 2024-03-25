@@ -20,6 +20,7 @@ import (
 //
 //	@Summary		List all subscriptions
 //	@Description	This endpoint fetches all the subscriptions
+//	@Id				GetSubscriptions
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -86,6 +87,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Retrieve a subscription
 //	@Description	This endpoint retrieves a single subscription
+//	@Id				GetSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json

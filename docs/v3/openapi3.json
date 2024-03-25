@@ -7365,6 +7365,7 @@
 		"/v1/projects/{projectID}/subscriptions": {
 			"get": {
 				"description": "This endpoint fetches all the subscriptions",
+				"operationId": "GetSubscriptions",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8058,6 +8059,7 @@
 			},
 			"get": {
 				"description": "This endpoint retrieves a single subscription",
+				"operationId": "GetSubscription",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8356,6 +8358,10 @@
 		{
 			"description": "Portal Links related APIs",
 			"name": "Portal Links"
+		},
+		{
+			"description": "Meta Events related APIs",
+			"name": "Meta Events"
 		}
 	]
 }

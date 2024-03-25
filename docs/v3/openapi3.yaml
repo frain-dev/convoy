@@ -4383,6 +4383,7 @@ paths:
   /v1/projects/{projectID}/subscriptions:
     get:
       description: This endpoint fetches all the subscriptions
+      operationId: GetSubscriptions
       parameters:
       - description: Project ID
         in: path
@@ -4621,6 +4622,7 @@ paths:
       - Subscriptions
     get:
       description: This endpoint retrieves a single subscription
+      operationId: GetSubscription
       parameters:
       - description: Project ID
         in: path
@@ -4918,3 +4920,5 @@ tags:
   name: Projects
 - description: Portal Links related APIs
   name: Portal Links
+- description: Meta Events related APIs
+  name: Meta Events
