@@ -312,8 +312,8 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 
 // TestSubscriptionFunction
 //
-//	@Summary		Validate subscription filter
-//	@Description	This endpoint validates that a filter will match a certain payload structure.
+//	@Summary		Test a subscription function
+//	@Description	This endpoint test runs a transform function against a payload.
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json

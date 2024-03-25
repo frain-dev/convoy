@@ -232,11 +232,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
-//	@Param			endpointID	query		[]string			false	"list of endpoint ids"
-//	@Param			request		query		datastore.Pageable	false	"Pagination Params"
-//	@Param			perPage		query		string				false	"results per page"
-//	@Param			page		query		string				false	"page number"
-//	@Param			sort		query		string				false	"sort order"
+//	@Param			request		query		models.QueryListEndpoint	false	"Query Params"
 //	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.PortalLinkResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
@@ -249,11 +245,10 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	endpointIDs := getEndpointIDs(r)
-	ownerId := r.URL.Query().Get("ownerId")
-	filter := &datastore.FilterBy{EndpointIDs: endpointIDs, OwnerID: ownerId}
+	var q *models.QueryListPortalLink
+	data := q.Transform(r)
 
-	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
+	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, data.FilterBy, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Println("an error occurred while fetching portal links")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching portal links", http.StatusBadRequest))

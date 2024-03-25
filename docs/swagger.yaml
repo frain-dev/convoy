@@ -584,8 +584,10 @@ definitions:
   models.AlertConfiguration:
     properties:
       count:
+        description: Count
         type: integer
       threshold:
+        description: Threshold
         type: string
     type: object
   models.AmqpAuth:
@@ -760,14 +762,13 @@ definitions:
         items:
           type: string
         type: array
-      is_disabled:
-        description: This is used to manually enable/disable the source.
-        type: boolean
       name:
         description: Source name.
         type: string
       provider:
-        $ref: '#/definitions/datastore.SourceProvider'
+        allOf:
+        - $ref: '#/definitions/datastore.SourceProvider'
+        description: Use this to specify one of our predefined source types.
       pub_sub:
         allOf:
         - $ref: '#/definitions/models.PubSubConfig'
@@ -777,7 +778,7 @@ definitions:
       type:
         allOf:
         - $ref: '#/definitions/datastore.SourceType'
-        description: Source Type. Currently supported values are - sqs, kafka or pubsub.
+        description: Source Type.
       verifier:
         allOf:
         - $ref: '#/definitions/models.VerifierConfig'
@@ -788,23 +789,37 @@ definitions:
   models.CreateSubscription:
     properties:
       alert_config:
-        $ref: '#/definitions/models.AlertConfiguration'
+        allOf:
+        - $ref: '#/definitions/models.AlertConfiguration'
+        description: Alert configuration
       app_id:
         description: Deprecated but necessary for backward compatibility
         type: string
       endpoint_id:
+        description: Destination endpoint ID
         type: string
       filter_config:
-        $ref: '#/definitions/models.FilterConfiguration'
+        allOf:
+        - $ref: '#/definitions/models.FilterConfiguration'
+        description: Filter configuration
       function:
+        description: |-
+          Convoy support mutating your request payload using a js function. Use this field
+          to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
         type: string
       name:
+        description: Subscription Nme
         type: string
       rate_limit_config:
-        $ref: '#/definitions/models.RateLimitConfiguration'
+        allOf:
+        - $ref: '#/definitions/models.RateLimitConfiguration'
+        description: Rate limit configuration
       retry_config:
-        $ref: '#/definitions/models.RetryConfiguration'
+        allOf:
+        - $ref: '#/definitions/models.RetryConfiguration'
+        description: Retry configuration
       source_id:
+        description: Source Id
         type: string
     type: object
   models.CustomResponse:
@@ -998,7 +1013,7 @@ definitions:
     properties:
       expiration:
         description: |-
-          Amount of time to wait before expiring the old endpoint secret
+          Amount of time to wait before expiring the old endpoint secret.
           If AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until
           the old signature is expired.
         type: integer
@@ -1042,11 +1057,14 @@ definitions:
   models.FilterConfiguration:
     properties:
       event_types:
+        description: List of event types that the subscription should match
         items:
           type: string
         type: array
       filter:
-        $ref: '#/definitions/models.FS'
+        allOf:
+        - $ref: '#/definitions/models.FS'
+        description: Body & Header filters
     type: object
   models.FilterSchema:
     properties:
@@ -1213,13 +1231,20 @@ definitions:
   models.RetryConfiguration:
     properties:
       duration:
+        description: Used to specify a valid Go time duration e.g 10s, 1h3m for long
+          to wait between event delivery retires
         type: string
       interval_seconds:
+        description: Used to specify a time in seconds for how long to wait between
+          event delivery retries,
         type: integer
       retry_count:
+        description: Used to specify the max number of retries
         type: integer
       type:
-        $ref: '#/definitions/datastore.StrategyProvider'
+        allOf:
+        - $ref: '#/definitions/datastore.StrategyProvider'
+        description: Retry Strategy type
     type: object
   models.SQSPubSubConfig:
     properties:
@@ -1317,9 +1342,13 @@ definitions:
   models.TestFilter:
     properties:
       request:
-        $ref: '#/definitions/models.FilterSchema'
+        allOf:
+        - $ref: '#/definitions/models.FilterSchema'
+        description: Same Request & Headers
       schema:
-        $ref: '#/definitions/models.FilterSchema'
+        allOf:
+        - $ref: '#/definitions/models.FilterSchema'
+        description: Sample test schema
     type: object
   models.TestWebhookFunction:
     properties:
@@ -1399,45 +1428,81 @@ definitions:
   models.UpdateSource:
     properties:
       custom_response:
-        $ref: '#/definitions/models.UpdateCustomResponse'
+        allOf:
+        - $ref: '#/definitions/models.UpdateCustomResponse'
+        description: |-
+          Custom response is used to define a custom response for incoming
+          webhooks project sources only.
       forward_headers:
+        description: Soecfy header you want convoy to save from the ingest request
+          and forward to your endpoints when the event is dispatched.
         items:
           type: string
         type: array
       idempotency_keys:
+        description: |-
+          IdempotencyKeys are used to specify parts of a webhook request to uniquely
+          identify the event in an incoming webhooks project.
         items:
           type: string
         type: array
       is_disabled:
+        description: This is used to manually enable/disable the source.
         type: boolean
       name:
+        description: Source name.
         type: string
       pub_sub:
-        $ref: '#/definitions/models.PubSubConfig'
+        allOf:
+        - $ref: '#/definitions/models.PubSubConfig'
+        description: |-
+          PubSub are used to specify message broker sources for outgoing
+          webhooks projects, you only need to speicfy this when the source type is `pub_sub`.
       type:
-        $ref: '#/definitions/datastore.SourceType'
+        allOf:
+        - $ref: '#/definitions/datastore.SourceType'
+        description: Source Type.
       verifier:
-        $ref: '#/definitions/models.VerifierConfig'
+        allOf:
+        - $ref: '#/definitions/models.VerifierConfig'
+        description: |-
+          Verifiers are used to verify webhook events ingested in incoming
+          webhooks projects.
     type: object
   models.UpdateSubscription:
     properties:
       alert_config:
-        $ref: '#/definitions/models.AlertConfiguration'
+        allOf:
+        - $ref: '#/definitions/models.AlertConfiguration'
+        description: Alert configuration
       app_id:
+        description: Deprecated but necessary for backward compatibility
         type: string
       endpoint_id:
+        description: Destination endpoint ID
         type: string
       filter_config:
-        $ref: '#/definitions/models.FilterConfiguration'
+        allOf:
+        - $ref: '#/definitions/models.FilterConfiguration'
+        description: Filter configuration
       function:
+        description: |-
+          Convoy support mutating your request payload using a js function. Use this field
+          to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
         type: string
       name:
+        description: Subscription Nme
         type: string
       rate_limit_config:
-        $ref: '#/definitions/models.RateLimitConfiguration'
+        allOf:
+        - $ref: '#/definitions/models.RateLimitConfiguration'
+        description: Rate limit configuration
       retry_config:
-        $ref: '#/definitions/models.RetryConfiguration'
+        allOf:
+        - $ref: '#/definitions/models.RetryConfiguration'
+        description: Retry configuration
       source_id:
+        description: Source Id
         type: string
     type: object
   models.VerifierConfig:
@@ -2653,12 +2718,12 @@ paths:
         name: projectID
         required: true
         type: string
-      - description: Broadcast Event Details
+      - description: Event Details
         in: body
         name: event
         required: true
         schema:
-          $ref: '#/definitions/models.BroadcastEvent'
+          $ref: '#/definitions/models.CreateEvent'
       produces:
       - application/json
       responses:
@@ -2669,7 +2734,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.EventResponse'
+                  $ref: '#/definitions/handlers.Stub'
               type: object
         "400":
           description: Bad Request
@@ -2942,6 +3007,69 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Batch replay events
+      tags:
+      - Events
+  /v1/projects/{projectID}/events/broadcast:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a event that is broadcast to every endpoint
+        whose subscription matches the given event type.
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Broadcast Event Details
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.BroadcastEvent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.EventResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create an event that is broadcast to every endpoint whose subscription
+        matches the given event type.
       tags:
       - Events
   /v1/projects/{projectID}/events/dynamic:
@@ -3296,13 +3424,6 @@ paths:
         name: projectID
         required: true
         type: string
-      - collectionFormat: csv
-        description: list of endpoint ids
-        in: query
-        items:
-          type: string
-        name: endpointID
-        type: array
       - enum:
         - next
         - prev
@@ -3312,27 +3433,33 @@ paths:
         x-enum-varnames:
         - Next
         - Prev
-      - in: query
+      - description: A pagination cursor to fetch the next page of a list
+        example: 01H0JA5MEES38RRK3HTEJC647K
+        in: query
         name: next_page_cursor
         type: string
-      - in: query
-        name: per_page
-        type: integer
-      - in: query
-        name: prev_page_cursor
+      - description: The owner ID of the endpoint
+        example: 01H0JA5MEES38RRK3HTEJC647K
+        in: query
+        name: ownerId
         type: string
-      - in: query
-        name: sort
-        type: string
-      - description: results per page
+      - description: The number of items to return per page
+        example: 20
         in: query
         name: perPage
-        type: string
-      - description: page number
+        type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        example: 01H0JATTVCXZK8FRDX1M1JN3QY
         in: query
-        name: page
+        name: prev_page_cursor
         type: string
-      - description: sort order
+      - description: The name of the endpoint
+        example: endpoint-1
+        in: query
+        name: q
+        type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        example: ASC | DESC
         in: query
         name: sort
         type: string
@@ -4385,8 +4512,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint validates that a filter will match a certain payload
-        structure.
+      description: This endpoint test runs a transform function against a payload.
       parameters:
       - description: Project ID
         in: path
@@ -4440,7 +4566,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Validate subscription filter
+      summary: Test a subscription function
       tags:
       - Subscriptions
 schemes:

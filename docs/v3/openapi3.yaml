@@ -584,8 +584,10 @@ components:
     models.AlertConfiguration:
       properties:
         count:
+          description: Count
           type: integer
         threshold:
+          description: Threshold
           type: string
       type: object
     models.AmqpAuth:
@@ -760,14 +762,13 @@ components:
           items:
             type: string
           type: array
-        is_disabled:
-          description: This is used to manually enable/disable the source.
-          type: boolean
         name:
           description: Source name.
           type: string
         provider:
-          $ref: '#/components/schemas/datastore.SourceProvider'
+          allOf:
+          - $ref: '#/components/schemas/datastore.SourceProvider'
+          description: Use this to specify one of our predefined source types.
         pub_sub:
           allOf:
           - $ref: '#/components/schemas/models.PubSubConfig'
@@ -777,8 +778,7 @@ components:
         type:
           allOf:
           - $ref: '#/components/schemas/datastore.SourceType'
-          description: Source Type. Currently supported values are - sqs, kafka or
-            pubsub.
+          description: Source Type.
         verifier:
           allOf:
           - $ref: '#/components/schemas/models.VerifierConfig'
@@ -789,23 +789,37 @@ components:
     models.CreateSubscription:
       properties:
         alert_config:
-          $ref: '#/components/schemas/models.AlertConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.AlertConfiguration'
+          description: Alert configuration
         app_id:
           description: Deprecated but necessary for backward compatibility
           type: string
         endpoint_id:
+          description: Destination endpoint ID
           type: string
         filter_config:
-          $ref: '#/components/schemas/models.FilterConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.FilterConfiguration'
+          description: Filter configuration
         function:
+          description: |-
+            Convoy support mutating your request payload using a js function. Use this field
+            to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
           type: string
         name:
+          description: Subscription Nme
           type: string
         rate_limit_config:
-          $ref: '#/components/schemas/models.RateLimitConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.RateLimitConfiguration'
+          description: Rate limit configuration
         retry_config:
-          $ref: '#/components/schemas/models.RetryConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.RetryConfiguration'
+          description: Retry configuration
         source_id:
+          description: Source Id
           type: string
       type: object
     models.CustomResponse:
@@ -999,7 +1013,7 @@ components:
       properties:
         expiration:
           description: |-
-            Amount of time to wait before expiring the old endpoint secret
+            Amount of time to wait before expiring the old endpoint secret.
             If AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until
             the old signature is expired.
           type: integer
@@ -1043,11 +1057,14 @@ components:
     models.FilterConfiguration:
       properties:
         event_types:
+          description: List of event types that the subscription should match
           items:
             type: string
           type: array
         filter:
-          $ref: '#/components/schemas/models.FS'
+          allOf:
+          - $ref: '#/components/schemas/models.FS'
+          description: Body & Header filters
       type: object
     models.FilterSchema:
       properties:
@@ -1214,13 +1231,20 @@ components:
     models.RetryConfiguration:
       properties:
         duration:
+          description: Used to specify a valid Go time duration e.g 10s, 1h3m for
+            long to wait between event delivery retires
           type: string
         interval_seconds:
+          description: Used to specify a time in seconds for how long to wait between
+            event delivery retries,
           type: integer
         retry_count:
+          description: Used to specify the max number of retries
           type: integer
         type:
-          $ref: '#/components/schemas/datastore.StrategyProvider'
+          allOf:
+          - $ref: '#/components/schemas/datastore.StrategyProvider'
+          description: Retry Strategy type
       type: object
     models.SQSPubSubConfig:
       properties:
@@ -1318,9 +1342,13 @@ components:
     models.TestFilter:
       properties:
         request:
-          $ref: '#/components/schemas/models.FilterSchema'
+          allOf:
+          - $ref: '#/components/schemas/models.FilterSchema'
+          description: Same Request & Headers
         schema:
-          $ref: '#/components/schemas/models.FilterSchema'
+          allOf:
+          - $ref: '#/components/schemas/models.FilterSchema'
+          description: Sample test schema
       type: object
     models.TestWebhookFunction:
       properties:
@@ -1400,45 +1428,81 @@ components:
     models.UpdateSource:
       properties:
         custom_response:
-          $ref: '#/components/schemas/models.UpdateCustomResponse'
+          allOf:
+          - $ref: '#/components/schemas/models.UpdateCustomResponse'
+          description: |-
+            Custom response is used to define a custom response for incoming
+            webhooks project sources only.
         forward_headers:
+          description: Soecfy header you want convoy to save from the ingest request
+            and forward to your endpoints when the event is dispatched.
           items:
             type: string
           type: array
         idempotency_keys:
+          description: |-
+            IdempotencyKeys are used to specify parts of a webhook request to uniquely
+            identify the event in an incoming webhooks project.
           items:
             type: string
           type: array
         is_disabled:
+          description: This is used to manually enable/disable the source.
           type: boolean
         name:
+          description: Source name.
           type: string
         pub_sub:
-          $ref: '#/components/schemas/models.PubSubConfig'
+          allOf:
+          - $ref: '#/components/schemas/models.PubSubConfig'
+          description: |-
+            PubSub are used to specify message broker sources for outgoing
+            webhooks projects, you only need to speicfy this when the source type is `pub_sub`.
         type:
-          $ref: '#/components/schemas/datastore.SourceType'
+          allOf:
+          - $ref: '#/components/schemas/datastore.SourceType'
+          description: Source Type.
         verifier:
-          $ref: '#/components/schemas/models.VerifierConfig'
+          allOf:
+          - $ref: '#/components/schemas/models.VerifierConfig'
+          description: |-
+            Verifiers are used to verify webhook events ingested in incoming
+            webhooks projects.
       type: object
     models.UpdateSubscription:
       properties:
         alert_config:
-          $ref: '#/components/schemas/models.AlertConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.AlertConfiguration'
+          description: Alert configuration
         app_id:
+          description: Deprecated but necessary for backward compatibility
           type: string
         endpoint_id:
+          description: Destination endpoint ID
           type: string
         filter_config:
-          $ref: '#/components/schemas/models.FilterConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.FilterConfiguration'
+          description: Filter configuration
         function:
+          description: |-
+            Convoy support mutating your request payload using a js function. Use this field
+            to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
           type: string
         name:
+          description: Subscription Nme
           type: string
         rate_limit_config:
-          $ref: '#/components/schemas/models.RateLimitConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.RateLimitConfiguration'
+          description: Rate limit configuration
         retry_config:
-          $ref: '#/components/schemas/models.RetryConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.RetryConfiguration'
+          description: Retry configuration
         source_id:
+          description: Source Id
           type: string
       type: object
     models.VerifierConfig:
@@ -2769,8 +2833,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/models.BroadcastEvent'
-        description: Broadcast Event Details
+              $ref: '#/components/schemas/models.CreateEvent'
+        description: Event Details
         required: true
         x-originalParamName: event
       responses:
@@ -2782,7 +2846,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/models.EventResponse'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -3082,6 +3146,76 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Batch replay events
+      tags:
+      - Events
+  /v1/projects/{projectID}/events/broadcast:
+    post:
+      description: This endpoint creates a event that is broadcast to every endpoint
+        whose subscription matches the given event type.
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.BroadcastEvent'
+        description: Broadcast Event Details
+        required: true
+        x-originalParamName: event
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.EventResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Create an event that is broadcast to every endpoint whose subscription
+        matches the given event type.
       tags:
       - Events
   /v1/projects/{projectID}/events/dynamic:
@@ -3467,13 +3601,6 @@ paths:
         required: true
         schema:
           type: string
-      - description: list of endpoint ids
-        in: query
-        name: endpointID
-        schema:
-          items:
-            type: string
-          type: array
       - in: query
         name: direction
         schema:
@@ -3484,33 +3611,32 @@ paths:
         x-enum-varnames:
         - Next
         - Prev
-      - in: query
+      - description: A pagination cursor to fetch the next page of a list
+        in: query
         name: next_page_cursor
         schema:
           type: string
-      - in: query
-        name: per_page
-        schema:
-          type: integer
-      - in: query
-        name: prev_page_cursor
+      - description: The owner ID of the endpoint
+        in: query
+        name: ownerId
         schema:
           type: string
-      - in: query
-        name: sort
-        schema:
-          type: string
-      - description: results per page
+      - description: The number of items to return per page
         in: query
         name: perPage
         schema:
-          type: string
-      - description: page number
+          type: integer
+      - description: A pagination cursor to fetch the previous page of a list
         in: query
-        name: page
+        name: prev_page_cursor
         schema:
           type: string
-      - description: sort order
+      - description: The name of the endpoint
+        in: query
+        name: q
+        schema:
+          type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -4668,8 +4794,7 @@ paths:
       - Subscriptions
   /v1/projects/{projectID}/subscriptions/test_function:
     post:
-      description: This endpoint validates that a filter will match a certain payload
-        structure.
+      description: This endpoint test runs a transform function against a payload.
       parameters:
       - description: Project ID
         in: path
@@ -4732,7 +4857,7 @@ paths:
           description: Not Found
       security:
       - ApiKeyAuth: []
-      summary: Validate subscription filter
+      summary: Test a subscription function
       tags:
       - Subscriptions
 servers:

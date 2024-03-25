@@ -97,7 +97,7 @@ type ExpireSecret struct {
 	// New Endpoint secret value.
 	Secret string `json:"secret"`
 
-	// Amount of time to wait before expiring the old endpoint secret
+	// Amount of time to wait before expiring the old endpoint secret.
 	// If AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until
 	// the old signature is expired.
 	Expiration int `json:"expiration"`
