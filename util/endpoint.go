@@ -1,11 +1,15 @@
 package util
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 func ValidateEndpoint(s string, enforceSecure bool) (string, error) {
@@ -24,7 +28,14 @@ func ValidateEndpoint(s string, enforceSecure bool) (string, error) {
 			return "", errors.New("only https endpoints allowed")
 		}
 	case "https":
-		_, err = tls.Dial("tcp", u.Host, &tls.Config{MinVersion: tls.VersionTLS12})
+		client := &http.Client{Timeout: time.Second, Transport: &http.Transport{
+			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				conn, err := tls.Dial(network, addr, &tls.Config{MinVersion: tls.VersionTLS12})
+				return conn, err
+			},
+		}}
+
+		_, err = client.Get(s)
 		if err != nil {
 			return "", fmt.Errorf("failed to ping tls endpoint: %v", err)
 		}
