@@ -729,7 +729,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := "https://cgc.info/povn-awjx.html"
+	endpointURL := "https://www.google.com/webhp"
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -812,7 +812,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 
 func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
-	endpointURL := "https://cgc.info/povn-awjx.html"
+	endpointURL := "https://www.google.com/webhp"
 	supportEmail := "10xengineer@getconvoy.io"
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
@@ -884,7 +884,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
 	title := "random-name"
 	f := faker.New()
-	endpointURL := "https://cgc.info/povn-awjx.html"
+	endpointURL := "https://www.google.com/webhp"
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 
