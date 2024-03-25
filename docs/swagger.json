@@ -39,6 +39,7 @@
                     "Endpoints"
                 ],
                 "summary": "List all endpoints",
+                "operationId": "GetEndpoints",
                 "parameters": [
                     {
                         "type": "string",
@@ -210,6 +211,7 @@
                     "Endpoints"
                 ],
                 "summary": "Create an endpoint",
+                "operationId": "CreateEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -322,6 +324,7 @@
                     "Endpoints"
                 ],
                 "summary": "Retrieve endpoint",
+                "operationId": "GetEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -430,6 +433,7 @@
                     "Endpoints"
                 ],
                 "summary": "Update an endpoint",
+                "operationId": "UpdateEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -547,6 +551,7 @@
                     "Endpoints"
                 ],
                 "summary": "Delete endpoint",
+                "operationId": "DeleteEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -657,6 +662,7 @@
                     "Endpoints"
                 ],
                 "summary": "Roll endpoint secret",
+                "operationId": "ExpireSecret",
                 "parameters": [
                     {
                         "type": "string",
@@ -776,6 +782,7 @@
                     "Endpoints"
                 ],
                 "summary": "Pause endpoint",
+                "operationId": "PauseEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -886,6 +893,7 @@
                     "Event Deliveries"
                 ],
                 "summary": "List all event deliveries",
+                "operationId": "GetEventDeliveriesPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -1103,6 +1111,7 @@
                     "Event Deliveries"
                 ],
                 "summary": "Batch retry event delivery",
+                "operationId": "BatchRetryEventDelivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -1305,6 +1314,7 @@
                     "Event Deliveries"
                 ],
                 "summary": "Force retry event delivery",
+                "operationId": "ForceResendEventDeliveries",
                 "parameters": [
                     {
                         "type": "string",
@@ -1417,6 +1427,7 @@
                     "Event Deliveries"
                 ],
                 "summary": "Retrieve an event delivery",
+                "operationId": "GetEventDelivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -1527,6 +1538,7 @@
                     "Delivery Attempts"
                 ],
                 "summary": "List delivery attempts",
+                "operationId": "GetDeliveryAttempts",
                 "parameters": [
                     {
                         "type": "string",
@@ -1640,6 +1652,7 @@
                     "Delivery Attempts"
                 ],
                 "summary": "Retrieve a delivery attempt",
+                "operationId": "GetDeliveryAttempt",
                 "parameters": [
                     {
                         "type": "string",
@@ -1757,6 +1770,7 @@
                     "Event Deliveries"
                 ],
                 "summary": "Retry event delivery",
+                "operationId": "ResendEventDelivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -1867,6 +1881,7 @@
                     "Events"
                 ],
                 "summary": "List all events",
+                "operationId": "GetEventsPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -2070,6 +2085,7 @@
                     "Events"
                 ],
                 "summary": "Create an event",
+                "operationId": "CreateEndpointEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2182,6 +2198,7 @@
                     "Events"
                 ],
                 "summary": "Batch replay events",
+                "operationId": "BatchReplayEvents",
                 "parameters": [
                     {
                         "type": "string",
@@ -2384,6 +2401,7 @@
                     "Events"
                 ],
                 "summary": "Create a broadcast event",
+                "operationId": "CreateBroadcastEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2496,6 +2514,7 @@
                     "Events"
                 ],
                 "summary": "Dynamic Events",
+                "operationId": "CreateDynamicEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2596,6 +2615,7 @@
                     "Events"
                 ],
                 "summary": "Fan out an event",
+                "operationId": "CreateEndpointFanoutEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2708,6 +2728,7 @@
                     "Events"
                 ],
                 "summary": "Retrieve an event",
+                "operationId": "GetEndpointEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2818,6 +2839,7 @@
                     "Events"
                 ],
                 "summary": "Replay event",
+                "operationId": "ReplayEndpointEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2928,6 +2950,7 @@
                     "Meta Events"
                 ],
                 "summary": "List all meta events",
+                "operationId": "GetMetaEventsPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -3101,6 +3124,7 @@
                     "Meta Events"
                 ],
                 "summary": "Retrieve a meta event",
+                "operationId": "GetMetaEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -3211,6 +3235,7 @@
                     "Meta Events"
                 ],
                 "summary": "Retry meta event",
+                "operationId": "ResendMetaEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -3321,6 +3346,7 @@
                     "Portal Links"
                 ],
                 "summary": "List all portal links",
+                "operationId": "LoadPortalLinksPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -3492,6 +3518,7 @@
                     "Portal Links"
                 ],
                 "summary": "Create a portal link",
+                "operationId": "CreatePortalLink",
                 "parameters": [
                     {
                         "type": "string",
@@ -3604,6 +3631,7 @@
                     "Portal Links"
                 ],
                 "summary": "Retrieve a portal link",
+                "operationId": "GetPortalLink",
                 "parameters": [
                     {
                         "type": "string",
@@ -3712,6 +3740,7 @@
                     "Portal Links"
                 ],
                 "summary": "Update a portal link",
+                "operationId": "UpdatePortalLink",
                 "parameters": [
                     {
                         "type": "string",
@@ -3831,6 +3860,7 @@
                     "Portal Links"
                 ],
                 "summary": "Revoke a portal link",
+                "operationId": "RevokePortalLink",
                 "parameters": [
                     {
                         "type": "string",
@@ -3941,6 +3971,7 @@
                     "Sources"
                 ],
                 "summary": "List all sources",
+                "operationId": "LoadSourcesPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -4112,6 +4143,7 @@
                     "Sources"
                 ],
                 "summary": "Create a source",
+                "operationId": "CreateSource",
                 "parameters": [
                     {
                         "type": "string",
@@ -4224,6 +4256,7 @@
                     "Sources"
                 ],
                 "summary": "Retrieve a source",
+                "operationId": "GetSource",
                 "parameters": [
                     {
                         "type": "string",
@@ -4332,6 +4365,7 @@
                     "Sources"
                 ],
                 "summary": "Update a source",
+                "operationId": "UpdateSource",
                 "parameters": [
                     {
                         "type": "string",
@@ -4449,6 +4483,7 @@
                     "Sources"
                 ],
                 "summary": "Delete a source",
+                "operationId": "DeleteSource",
                 "parameters": [
                     {
                         "type": "string",
@@ -4726,6 +4761,7 @@
                     "Subscriptions"
                 ],
                 "summary": "Create a subscription",
+                "operationId": "CreateSubscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -4838,6 +4874,7 @@
                     "Subscriptions"
                 ],
                 "summary": "Validate subscription filter",
+                "operationId": "TestSubscriptionFilter",
                 "parameters": [
                     {
                         "type": "string",
@@ -4950,6 +4987,7 @@
                     "Subscriptions"
                 ],
                 "summary": "Test a subscription function",
+                "operationId": "TestSubscriptionFunction",
                 "parameters": [
                     {
                         "type": "string",
@@ -5170,6 +5208,7 @@
                     "Subscriptions"
                 ],
                 "summary": "Update a subscription",
+                "operationId": "UpdateSubscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -5287,6 +5326,7 @@
                     "Subscriptions"
                 ],
                 "summary": "Delete subscription",
+                "operationId": "DeleteSubscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -6161,11 +6201,9 @@
             "type": "string",
             "enum": [
                 "linear",
-                "linear",
                 "exponential"
             ],
             "x-enum-varnames": [
-                "DefaultStrategyProvider",
                 "LinearStrategyProvider",
                 "ExponentialStrategyProvider"
             ]

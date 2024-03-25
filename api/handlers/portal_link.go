@@ -23,6 +23,7 @@ import (
 //	@Summary		Create a portal link
 //	@Description	This endpoint creates a portal link
 //	@Tags			Portal Links
+//	@Id				CreatePortalLink
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
@@ -72,6 +73,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Retrieve a portal link
 //	@Description	This endpoint retrieves a portal link by its id.
 //	@Tags			Portal Links
+//	@Id				GetPortalLink
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID		path		string	true	"Project ID"
@@ -123,6 +125,7 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update a portal link
 //	@Description	This endpoint updates a portal link
+//	@Id				UpdatePortalLink
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
@@ -186,6 +189,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Revoke a portal link
 //	@Description	This endpoint revokes a portal link
+//	@Id				RevokePortalLink
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
@@ -229,6 +233,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Summary		List all portal links
 //	@Description	This endpoint fetches multiple portal links
 //	@Tags			Portal Links
+//	@Id				LoadPortalLinksPaged
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string						true	"Project ID"

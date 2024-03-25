@@ -780,12 +780,10 @@
 			"datastore.StrategyProvider": {
 				"enum": [
 					"linear",
-					"linear",
 					"exponential"
 				],
 				"type": "string",
 				"x-enum-varnames": [
-					"DefaultStrategyProvider",
 					"LinearStrategyProvider",
 					"ExponentialStrategyProvider"
 				]
@@ -2220,6 +2218,7 @@
 		"/v1/projects/{projectID}/endpoints": {
 			"get": {
 				"description": "This endpoint fetches an endpoints",
+				"operationId": "GetEndpoints",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -2411,6 +2410,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates an endpoint",
+				"operationId": "CreateEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -2538,6 +2538,7 @@
 		"/v1/projects/{projectID}/endpoints/{endpointID}": {
 			"delete": {
 				"description": "This endpoint deletes an endpoint",
+				"operationId": "DeleteEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -2660,6 +2661,7 @@
 			},
 			"get": {
 				"description": "This endpoint fetches an endpoint",
+				"operationId": "GetEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -2782,6 +2784,7 @@
 			},
 			"put": {
 				"description": "This endpoint updates an endpoint",
+				"operationId": "UpdateEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -2918,6 +2921,7 @@
 		"/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
 			"put": {
 				"description": "This endpoint expires and re-generates the endpoint secret.",
+				"operationId": "ExpireSecret",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3054,6 +3058,7 @@
 		"/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
 			"put": {
 				"description": "This endpoint toggles an endpoint status between the active and paused states",
+				"operationId": "PauseEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3178,6 +3183,7 @@
 		"/v1/projects/{projectID}/eventdeliveries": {
 			"get": {
 				"description": "This endpoint retrieves all event deliveries paginated.",
+				"operationId": "GetEventDeliveriesPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3425,6 +3431,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/batchretry": {
 			"post": {
 				"description": "This endpoint batch retries multiple event deliveries at once.",
+				"operationId": "BatchRetryEventDelivery",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3657,6 +3664,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/forceresend": {
 			"post": {
 				"description": "This endpoint enables you retry a previously successful event delivery",
+				"operationId": "ForceResendEventDeliveries",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3784,6 +3792,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}": {
 			"get": {
 				"description": "This endpoint fetches an event delivery.",
+				"operationId": "GetEventDelivery",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3908,6 +3917,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
 			"get": {
 				"description": "This endpoint fetches an app message's delivery attempts",
+				"operationId": "GetDeliveryAttempts",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4035,6 +4045,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
 			"get": {
 				"description": "This endpoint fetches an app event delivery attempt",
+				"operationId": "GetDeliveryAttempt",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4168,6 +4179,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
 			"put": {
 				"description": "This endpoint retries an event delivery.",
+				"operationId": "ResendEventDelivery",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4292,6 +4304,7 @@
 		"/v1/projects/{projectID}/events": {
 			"get": {
 				"description": "This endpoint fetches app events with pagination",
+				"operationId": "GetEventsPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4521,6 +4534,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates an endpoint event",
+				"operationId": "CreateEndpointEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4648,6 +4662,7 @@
 		"/v1/projects/{projectID}/events/batchreplay": {
 			"post": {
 				"description": "This endpoint replays multiple events at once.",
+				"operationId": "BatchReplayEvents",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4876,6 +4891,7 @@
 		"/v1/projects/{projectID}/events/broadcast": {
 			"post": {
 				"description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.",
+				"operationId": "CreateBroadcastEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5003,6 +5019,7 @@
 		"/v1/projects/{projectID}/events/dynamic": {
 			"post": {
 				"description": "This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events",
+				"operationId": "CreateDynamicEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5118,6 +5135,7 @@
 		"/v1/projects/{projectID}/events/fanout": {
 			"post": {
 				"description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
+				"operationId": "CreateEndpointFanoutEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5245,6 +5263,7 @@
 		"/v1/projects/{projectID}/events/{eventID}": {
 			"get": {
 				"description": "This endpoint retrieves an event",
+				"operationId": "GetEndpointEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5369,6 +5388,7 @@
 		"/v1/projects/{projectID}/events/{eventID}/replay": {
 			"put": {
 				"description": "This endpoint replays an event afresh assuming it is a new event.",
+				"operationId": "ReplayEndpointEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5493,6 +5513,7 @@
 		"/v1/projects/{projectID}/meta-events": {
 			"get": {
 				"description": "This endpoint fetches meta events with pagination",
+				"operationId": "GetMetaEventsPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5686,6 +5707,7 @@
 		"/v1/projects/{projectID}/meta-events/{metaEventID}": {
 			"get": {
 				"description": "This endpoint retrieves a meta event",
+				"operationId": "GetMetaEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5810,6 +5832,7 @@
 		"/v1/projects/{projectID}/meta-events/{metaEventID}/resend": {
 			"put": {
 				"description": "This endpoint retries a meta event",
+				"operationId": "ResendMetaEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5934,6 +5957,7 @@
 		"/v1/projects/{projectID}/portal-links": {
 			"get": {
 				"description": "This endpoint fetches multiple portal links",
+				"operationId": "LoadPortalLinksPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6125,6 +6149,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates a portal link",
+				"operationId": "CreatePortalLink",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6252,6 +6277,7 @@
 		"/v1/projects/{projectID}/portal-links/{portalLinkID}": {
 			"get": {
 				"description": "This endpoint retrieves a portal link by its id.",
+				"operationId": "GetPortalLink",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6374,6 +6400,7 @@
 			},
 			"put": {
 				"description": "This endpoint updates a portal link",
+				"operationId": "UpdatePortalLink",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6510,6 +6537,7 @@
 		"/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke": {
 			"put": {
 				"description": "This endpoint revokes a portal link",
+				"operationId": "RevokePortalLink",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6634,6 +6662,7 @@
 		"/v1/projects/{projectID}/sources": {
 			"get": {
 				"description": "This endpoint fetches multiple sources",
+				"operationId": "LoadSourcesPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6825,6 +6854,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates a source",
+				"operationId": "CreateSource",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6952,6 +6982,7 @@
 		"/v1/projects/{projectID}/sources/{sourceID}": {
 			"delete": {
 				"description": "This endpoint deletes a source",
+				"operationId": "DeleteSource",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7074,6 +7105,7 @@
 			},
 			"get": {
 				"description": "This endpoint retrieves a source by its id",
+				"operationId": "GetSource",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7196,6 +7228,7 @@
 			},
 			"put": {
 				"description": "This endpoint updates a source",
+				"operationId": "UpdateSource",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7518,6 +7551,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates a subscriptions",
+				"operationId": "CreateSubscription",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7645,6 +7679,7 @@
 		"/v1/projects/{projectID}/subscriptions/test_filter": {
 			"post": {
 				"description": "This endpoint validates that a filter will match a certain payload structure.",
+				"operationId": "TestSubscriptionFilter",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7772,6 +7807,7 @@
 		"/v1/projects/{projectID}/subscriptions/test_function": {
 			"post": {
 				"description": "This endpoint test runs a transform function against a payload.",
+				"operationId": "TestSubscriptionFunction",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7899,6 +7935,7 @@
 		"/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
 			"delete": {
 				"description": "This endpoint deletes a subscription",
+				"operationId": "DeleteSubscription",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8143,6 +8180,7 @@
 			},
 			"put": {
 				"description": "This endpoint updates a subscription",
+				"operationId": "UpdateSubscription",
 				"parameters": [
 					{
 						"description": "Project ID",

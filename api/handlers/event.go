@@ -27,6 +27,7 @@ import (
 //	@Summary		Create an event
 //	@Description	This endpoint creates an endpoint event
 //	@Tags			Events
+//	@Id				CreateEndpointEvent
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
@@ -104,6 +105,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 // CreateBroadcastEvent
 //
 //	@Summary		Create a broadcast event
+//	@Id				CreateBroadcastEvent
 //	@Description	This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
 //	@Tags			Events
 //	@Accept			json
@@ -153,6 +155,7 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Fan out an event
 //	@Description	This endpoint uses the owner_id to fan out an event to multiple endpoints.
+//	@Id				CreateEndpointFanoutEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -208,6 +211,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //
 //	@Summary		Dynamic Events
 //	@Description	This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+//	@Id				CreateDynamicEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -256,6 +260,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Replay event
 //	@Description	This endpoint replays an event afresh assuming it is a new event.
+//	@Id				ReplayEndpointEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -292,6 +297,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Batch replay events
 //	@Description	This endpoint replays multiple events at once.
+//	@Id				BatchReplayEvents
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -338,6 +344,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Retrieve an event
 //	@Description	This endpoint retrieves an event
 //	@Tags			Events
+//	@Id				GetEndpointEvent
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
@@ -363,6 +370,7 @@ func (h *Handler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Summary		List all events
 //	@Description	This endpoint fetches app events with pagination
 //	@Tags			Events
+//	@Id				GetEventsPaged
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
