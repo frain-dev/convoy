@@ -23,6 +23,7 @@ export class CreateProjectComponent implements OnInit {
 	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('mutliSubEndpointsDialog', { static: true }) mutliSubEndpointsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
@@ -47,6 +48,7 @@ export class CreateProjectComponent implements OnInit {
 				search_policy: [720]
 			}),
 			disable_endpoint: [false, Validators.required],
+			multiple_endpoint_subscriptions: [false, Validators.required],
 			meta_event: this.formBuilder.group({
 				is_enabled: [true, Validators.required],
 				type: ['http', Validators.required],
@@ -294,10 +296,11 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints') {
+	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
 		const disableValue = event.target.checked;
-		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		if (actionType === 'endpoints') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
 		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
+		if (disableValue && actionType === 'multiEndpoints') this.mutliSubEndpointsDialog.nativeElement.showModal();
 	}
 
 	switchTab(tab: TAB) {
