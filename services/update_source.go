@@ -2,13 +2,11 @@ package services
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/pkg/log"
-	"gopkg.in/guregu/null.v4"
-
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type UpdateSourceService struct {
@@ -67,11 +65,11 @@ func (s *UpdateSourceService) Run(ctx context.Context) (*datastore.Source, error
 	}
 
 	if s.SourceUpdate.BodyFunction != nil {
-		s.Source.BodyFunction = null.StringFrom(*s.SourceUpdate.BodyFunction)
+		s.Source.BodyFunction = s.SourceUpdate.BodyFunction
 	}
 
 	if s.SourceUpdate.HeaderFunction != nil {
-		s.Source.HeaderFunction = null.StringFrom(*s.SourceUpdate.HeaderFunction)
+		s.Source.HeaderFunction = s.SourceUpdate.HeaderFunction
 	}
 
 	err := s.SourceRepo.UpdateSource(ctx, s.Project.UID, s.Source)

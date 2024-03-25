@@ -41,11 +41,11 @@ type CreateSource struct {
 
 	// Function is a javascript function used to mutate the payload
 	// immediately after ingesting an event
-	BodyFunction string `json:"body_function"`
+	BodyFunction *string `json:"body_function"`
 
 	// Function is a javascript function used to mutate the headers
 	// immediately after ingesting an event
-	HeaderFunction string `json:"header_function"`
+	HeaderFunction *string `json:"header_function"`
 }
 
 func (cs *CreateSource) Validate() error {

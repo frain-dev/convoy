@@ -143,9 +143,9 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	}
 
 	var payload any
-	if source.BodyFunction.Ptr() != nil && !util.IsStringEmpty(source.BodyFunction.String) {
+	if source.BodyFunction != nil && !util.IsStringEmpty(*source.BodyFunction) {
 		t := transform.NewTransformer()
-		p, _, err := t.Transform(source.BodyFunction.String, raw)
+		p, _, err := t.Transform(*source.BodyFunction, raw)
 		if err != nil {
 			return err
 		}
@@ -193,9 +193,9 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	mergeHeaders(headerMap, convoyEvent.CustomHeaders)
 
 	headers := map[string]string{}
-	if source.HeaderFunction.Ptr() != nil && !util.IsStringEmpty(source.HeaderFunction.String) {
+	if source.HeaderFunction != nil && !util.IsStringEmpty(*source.HeaderFunction) {
 		t := transform.NewTransformer()
-		h, _, transErr := t.Transform(source.HeaderFunction.String, headerMap)
+		h, _, transErr := t.Transform(*source.HeaderFunction, headerMap)
 		if transErr != nil {
 			return transErr
 		}

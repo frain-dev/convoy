@@ -1057,8 +1057,8 @@ type Source struct {
 	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
 	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
 	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
-	BodyFunction    null.String     `json:"body_function" db:"body_function"`
-	HeaderFunction  null.String     `json:"header_function" db:"header_function"`
+	BodyFunction    *string         `json:"body_function" db:"body_function"`
+	HeaderFunction  *string         `json:"header_function" db:"header_function"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
