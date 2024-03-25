@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"net/http"
 
@@ -341,7 +340,7 @@ func (h *Handler) TestSourceFunction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	transformer := transform.NewTransformer(goja.New())
+	transformer := transform.NewTransformer()
 	mutatedPayload, consoleLog, err := transformer.Transform(test.Function, test.Payload)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to transform function")

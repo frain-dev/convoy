@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"time"
 
@@ -148,7 +147,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			transformer := transform.NewTransformer(goja.New())
+			transformer := transform.NewTransformer()
 			mutated, _, err := transformer.Transform(s.Function.String, payload)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
