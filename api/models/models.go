@@ -134,7 +134,7 @@ type PortalLink struct {
 	// Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID
 	OwnerID string `json:"owner_id"`
 
-	// Specify with endpoint management can be done through the Portal Link UI
+	// Specify whether endpoint management can be done through the Portal Link UI
 	CanManageEndpoint bool `json:"can_manage_endpoint"`
 }
 

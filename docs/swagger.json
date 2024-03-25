@@ -2383,7 +2383,7 @@
                 "tags": [
                     "Events"
                 ],
-                "summary": "Create an event that is broadcast to every endpoint whose subscription matches the given event type.",
+                "summary": "Create a broadcast event",
                 "parameters": [
                     {
                         "type": "string",
@@ -6334,7 +6334,7 @@
                     }
                 },
                 "event_type": {
-                    "description": "Event Type, useful for filtering and debugging e.g invoice.paid",
+                    "description": "Event Type is used for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
@@ -6431,7 +6431,7 @@
                     "type": "string"
                 },
                 "event_type": {
-                    "description": "Event Type, useful for filtering and debugging e.g invoice.paid",
+                    "description": "Event Type is used for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
@@ -6524,7 +6524,7 @@
                     ]
                 },
                 "function": {
-                    "description": "Convoy support mutating your request payload using a js function. Use this field\nto specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more",
+                    "description": "Convoy supports mutating your request payload using a js function. Use this field\nto specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more",
                     "type": "string"
                 },
                 "name": {
@@ -6582,7 +6582,7 @@
                     }
                 },
                 "event_type": {
-                    "description": "Event Type, useful for filtering and debugging e.g invoice.paid",
+                    "description": "Event Type is used for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "event_types": {
@@ -6862,7 +6862,7 @@
                     }
                 },
                 "event_type": {
-                    "description": "Event Type, useful for filtering and debugging e.g invoice.paid",
+                    "description": "Event Type is used for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
@@ -7033,7 +7033,7 @@
             "type": "object",
             "properties": {
                 "can_manage_endpoint": {
-                    "description": "Specify with endpoint management can be done through the Portal Link UI",
+                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
                     "type": "boolean"
                 },
                 "endpoints": {
@@ -7496,7 +7496,7 @@
                     ]
                 },
                 "function": {
-                    "description": "Convoy support mutating your request payload using a js function. Use this field\nto specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more",
+                    "description": "Convoy supports mutating your request payload using a js function. Use this field\nto specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more",
                     "type": "string"
                 },
                 "name": {

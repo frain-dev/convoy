@@ -651,7 +651,7 @@ components:
             type: integer
           type: array
         event_type:
-          description: Event Type, useful for filtering and debugging e.g invoice.paid
+          description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
         idempotency_key:
           description: Specify a key for event deduplication
@@ -741,7 +741,7 @@ components:
           description: Specifies the endpoint to send this event to.
           type: string
         event_type:
-          description: Event Type, useful for filtering and debugging e.g invoice.paid
+          description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
         idempotency_key:
           description: Specify a key for event deduplication
@@ -804,7 +804,7 @@ components:
           description: Filter configuration
         function:
           description: |-
-            Convoy support mutating your request payload using a js function. Use this field
+            Convoy supports mutating your request payload using a js function. Use this field
             to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
           type: string
         name:
@@ -845,7 +845,7 @@ components:
             type: integer
           type: array
         event_type:
-          description: Event Type, useful for filtering and debugging e.g invoice.paid
+          description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
         event_types:
           description: A list of event types for the subscription filter config
@@ -1044,7 +1044,7 @@ components:
             type: integer
           type: array
         event_type:
-          description: Event Type, useful for filtering and debugging e.g invoice.paid
+          description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
         idempotency_key:
           description: Specify a key for event deduplication
@@ -1157,8 +1157,8 @@ components:
     models.PortalLink:
       properties:
         can_manage_endpoint:
-          description: Specify with endpoint management can be done through the Portal
-            Link UI
+          description: Specify whether endpoint management can be done through the
+            Portal Link UI
           type: boolean
         endpoints:
           description: IDs of endpoints in this portal link
@@ -1487,7 +1487,7 @@ components:
           description: Filter configuration
         function:
           description: |-
-            Convoy support mutating your request payload using a js function. Use this field
+            Convoy supports mutating your request payload using a js function. Use this field
             to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
           type: string
         name:
@@ -3214,8 +3214,7 @@ paths:
           description: Not Found
       security:
       - ApiKeyAuth: []
-      summary: Create an event that is broadcast to every endpoint whose subscription
-        matches the given event type.
+      summary: Create a broadcast event
       tags:
       - Events
   /v1/projects/{projectID}/events/dynamic:

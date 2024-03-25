@@ -22,7 +22,7 @@ type CreateSubscription struct {
 	// Destination endpoint ID
 	EndpointID string `json:"endpoint_id" valid:"required~please provide a valid endpoint id"`
 
-	// Convoy support mutating your request payload using a js function. Use this field
+	// Convoy supports mutating your request payload using a js function. Use this field
 	// to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
 	Function string `json:"function"`
 
@@ -56,7 +56,7 @@ type UpdateSubscription struct {
 	// Destination endpoint ID
 	EndpointID string `json:"endpoint_id,omitempty"`
 
-	// Convoy support mutating your request payload using a js function. Use this field
+	// Convoy supports mutating your request payload using a js function. Use this field
 	// to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
 	Function string `json:"function"`
 

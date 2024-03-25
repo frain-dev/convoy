@@ -103,7 +103,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 
 // CreateBroadcastEvent
 //
-//	@Summary		Create an event that is broadcast to every endpoint whose subscription matches the given event type.
+//	@Summary		Create a broadcast event
 //	@Description	This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
 //	@Tags			Events
 //	@Accept			json
@@ -456,16 +456,4 @@ func (h *Handler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
 	eventID := chi.URLParam(r, "eventID")
 	eventRepo := postgres.NewEventRepo(h.A.DB, h.A.Cache)
 	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
-}
-
-func getEndpointIDs(r *http.Request) []string {
-	var endpoints []string
-
-	for _, id := range r.URL.Query()["endpointId"] {
-		if !util.IsStringEmpty(id) {
-			endpoints = append(endpoints, id)
-		}
-	}
-
-	return endpoints
 }

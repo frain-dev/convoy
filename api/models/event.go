@@ -24,7 +24,7 @@ type CreateEvent struct {
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data" valid:"required~please provide your data" swaggertype:"object"`
 
-	// Event Type, useful for filtering and debugging e.g invoice.paid
+	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 
 	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
@@ -55,7 +55,7 @@ type DynamicEvent struct {
 
 	ProjectID string `json:"project_id" swaggerignore:"true"`
 
-	// Event Type, useful for filtering and debugging e.g invoice.paid
+	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 
 	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
@@ -129,7 +129,7 @@ func (ds *DynamicEventStub) Validate() error {
 }
 
 type BroadcastEvent struct {
-	// Event Type, useful for filtering and debugging e.g invoice.paid
+	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 
 	ProjectID string `json:"project_id" swaggerignore:"true"`
@@ -153,7 +153,7 @@ type FanoutEvent struct {
 	// Used for fanout, sends this event to all endpoints with this OwnerID.
 	OwnerID string `json:"owner_id" valid:"required~please provide an owner id"`
 
-	// Event Type, useful for filtering and debugging e.g invoice.paid
+	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
