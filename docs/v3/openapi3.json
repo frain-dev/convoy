@@ -1760,7 +1760,7 @@
 			"models.RetryConfiguration": {
 				"properties": {
 					"duration": {
-						"description": "Used to specify a valid Go time duration e.g 10s, 1h3m for long to wait between event delivery retires",
+						"description": "Used to specify a valid Go time duration e.g 10s, 1h3m for how long to wait between event delivery retries",
 						"type": "string"
 					},
 					"interval_seconds": {

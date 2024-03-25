@@ -1232,7 +1232,7 @@ components:
       properties:
         duration:
           description: Used to specify a valid Go time duration e.g 10s, 1h3m for
-            long to wait between event delivery retires
+            how long to wait between event delivery retries
           type: string
         interval_seconds:
           description: Used to specify a time in seconds for how long to wait between

@@ -144,7 +144,7 @@ type RetryConfiguration struct {
 
 	// TODO(all): remove IntervalSeconds & AlertConfig
 
-	// Used to specify a valid Go time duration e.g 10s, 1h3m for long to wait between event delivery retires
+	// Used to specify a valid Go time duration e.g 10s, 1h3m for how long to wait between event delivery retries
 	Duration string `json:"duration,omitempty" valid:"duration~please provide a valid time duration"`
 
 	// Used to specify a time in seconds for how long to wait between event delivery retries,

@@ -231,7 +231,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			projectID	path		string						true	"Project ID"
 //	@Param			request		query		models.QueryListEndpoint	false	"Query Params"
 //	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.PortalLinkResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
