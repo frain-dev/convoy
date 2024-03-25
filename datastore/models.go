@@ -520,16 +520,17 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
-	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
-	MetaEvent                *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled      bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	AddEventIDTraceHeaders        bool                          `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                          `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                          `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	RetentionPolicy               *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	RateLimit                     *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration        `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration       `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
