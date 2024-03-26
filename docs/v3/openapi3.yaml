@@ -1524,10 +1524,6 @@ components:
       type: object
     util.ServerResponse:
       properties:
-        data:
-          items:
-            type: integer
-          type: array
         message:
           type: string
         status:
