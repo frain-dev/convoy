@@ -3,14 +3,14 @@ package rqm
 import (
 	"context"
 	"fmt"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
-	DEAD_LETTER_EXCHANGE_HEADER = "x-dead-letter-exchange"
+	DeadLetterExchangeHeader = "x-dead-letter-exchange"
 )
 
 type Amqp struct {
@@ -89,7 +89,7 @@ func (k *Amqp) consume() {
 
 	queueArgs := amqp.Table{}
 	if k.Cfg.DeadLetterExchange != nil {
-		queueArgs[DEAD_LETTER_EXCHANGE_HEADER] = *k.Cfg.DeadLetterExchange
+		queueArgs[DeadLetterExchangeHeader] = *k.Cfg.DeadLetterExchange
 	}
 
 	q, err := ch.QueueDeclare(
@@ -114,7 +114,7 @@ func (k *Amqp) consume() {
 		return
 	}
 
-	msgs, err := ch.ConsumeWithContext(
+	messages, err := ch.ConsumeWithContext(
 		k.ctx,
 		q.Name, // queue
 		"",     // consumer
@@ -130,15 +130,19 @@ func (k *Amqp) consume() {
 		return
 	}
 
-	for d := range msgs {
-		if err := k.handler(k.ctx, k.source, string(d.Body)); err != nil {
+	for d := range messages {
+		headers, err := msgpack.EncodeMsgPack(d.Headers)
+		if err != nil {
+			k.log.WithError(err).Error("failed to marshall message headers")
+		}
+
+		if err := k.handler(k.ctx, k.source, string(d.Body), headers); err != nil {
 			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
 			if err := d.Ack(false); err != nil {
 				k.log.WithError(err).Error("failed to ack message")
 			}
-
 		} else {
-			// Reject the mesage and send it to DLQ
+			// Reject the message and send it to DLQ
 			if err := d.Nack(false, false); err != nil {
 				k.log.WithError(err).Error("failed to nack message")
 			}

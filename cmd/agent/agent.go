@@ -226,6 +226,15 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		subRepo,
 		deviceRepo))
 
+	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
+		endpointRepo,
+		eventRepo,
+		projectRepo,
+		eventDeliveryRepo,
+		a.Queue,
+		subRepo,
+		deviceRepo))
+
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 
 	go func() {

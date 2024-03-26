@@ -97,6 +97,7 @@ func (ds *DynamicEventStub) Validate() error {
 type BroadcastEvent struct {
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 	ProjectID string `json:"project_id" swaggerignore:"true"`
+	SourceID  string `json:"source_id" swaggerignore:"true"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints

@@ -33,16 +33,17 @@ func (uP *UpdateProject) Validate() error {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize            uint64                        `json:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled"`
-	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy"`
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature"`
-	MetaEvent                *MetaEventConfiguration       `json:"meta_event"`
+	MaxIngestSize                 uint64                        `json:"max_payload_read_size"`
+	ReplayAttacks                 bool                          `json:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled      bool                          `json:"retention_policy_enabled"`
+	AddEventIDTraceHeaders        bool                          `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                          `json:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                          `json:"multiple_endpoint_subscriptions"`
+	RetentionPolicy               *RetentionPolicyConfiguration `json:"retention_policy"`
+	RateLimit                     *RateLimitConfiguration       `json:"ratelimit"`
+	Strategy                      *StrategyConfiguration        `json:"strategy"`
+	Signature                     *SignatureConfiguration       `json:"signature"`
+	MetaEvent                     *MetaEventConfiguration       `json:"meta_event"`
 }
 
 func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
@@ -51,16 +52,17 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 	}
 
 	return &datastore.ProjectConfig{
-		MaxIngestSize:            pc.MaxIngestSize,
-		ReplayAttacks:            pc.ReplayAttacks,
-		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
-		DisableEndpoint:          pc.DisableEndpoint,
-		AddEventIDTraceHeaders:   pc.AddEventIDTraceHeaders,
-		RetentionPolicy:          pc.RetentionPolicy.transform(),
-		RateLimit:                pc.RateLimit.Transform(),
-		Strategy:                 pc.Strategy.transform(),
-		Signature:                pc.Signature.transform(),
-		MetaEvent:                pc.MetaEvent.transform(),
+		MaxIngestSize:                 pc.MaxIngestSize,
+		ReplayAttacks:                 pc.ReplayAttacks,
+		IsRetentionPolicyEnabled:      pc.IsRetentionPolicyEnabled,
+		DisableEndpoint:               pc.DisableEndpoint,
+		AddEventIDTraceHeaders:        pc.AddEventIDTraceHeaders,
+		MultipleEndpointSubscriptions: pc.MultipleEndpointSubscriptions,
+		RetentionPolicy:               pc.RetentionPolicy.transform(),
+		RateLimit:                     pc.RateLimit.Transform(),
+		Strategy:                      pc.Strategy.transform(),
+		Signature:                     pc.Signature.transform(),
+		MetaEvent:                     pc.MetaEvent.transform(),
 	}
 }
 

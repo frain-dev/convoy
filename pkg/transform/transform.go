@@ -18,7 +18,8 @@ type Transformer struct {
 	rt *goja.Runtime
 }
 
-func NewTransformer(r *goja.Runtime) *Transformer {
+func NewTransformer() *Transformer {
+	r := goja.New()
 	r.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
 	return &Transformer{rt: r}
 }

@@ -58,4 +58,21 @@ export class CreateSourceService {
 			}
 		});
 	}
+
+	testTransformFunction(requestDetails: { payload: any; function: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const projectResponse = await this.http.request({
+					url: `/sources/test_function`,
+					method: 'post',
+					body: requestDetails,
+					level: 'org_project'
+				});
+
+				return resolve(projectResponse);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

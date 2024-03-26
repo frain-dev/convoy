@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
 
 	"github.com/frain-dev/convoy/util"
@@ -137,7 +138,12 @@ func (s *Sqs) consume() {
 
 					defer s.handleError()
 
-					if err := s.handler(context.Background(), s.source, *m.Body); err != nil {
+					headers, err := msgpack.EncodeMsgPack(m.Attributes)
+					if err != nil {
+						s.log.WithError(err).Error("failed to marshall message headers")
+					}
+
+					if err := s.handler(context.Background(), s.source, *m.Body, headers); err != nil {
 						s.log.WithError(err).Error("failed to write message to create event queue")
 					} else {
 						_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
@@ -160,6 +166,6 @@ func (s *Sqs) consume() {
 
 func (s *Sqs) handleError() {
 	if err := recover(); err != nil {
-		s.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", s.source.UID, err)).Error("sqs pubsub source crashed")
+		s.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", s.source.UID, err)).Error("sqs pubsub source crashed")
 	}
 }

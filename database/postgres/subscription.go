@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
@@ -14,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -563,16 +561,6 @@ func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, fi
 	}
 
 	return compare.Compare(p, f)
-}
-
-func (s *subscriptionRepo) TransformPayload(_ context.Context, function string, payload map[string]interface{}) (interface{}, []string, error) {
-	transformer := transform.NewTransformer(goja.New())
-	mutated, consoleLog, err := transformer.Transform(function, payload)
-	if err != nil {
-		return nil, []string{}, err
-	}
-
-	return mutated, consoleLog, nil
 }
 
 var (

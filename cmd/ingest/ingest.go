@@ -75,6 +75,8 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			srv := server.NewServer(cfg.Server.HTTP.IngestPort, func() {})
 			srv.SetHandler(chi.NewMux())
 
+			a.Logger.Info("Starting Convoy Message Broker Ingester...")
+
 			srv.Listen()
 
 			return nil
@@ -83,7 +85,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 
 	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 5009, "Ingest port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "ingest log level")
-	cmd.Flags().IntVar(&interval, "interval", 300, "the time interval, measured in seconds, at which the database should be polled for new pub sub sources")
+	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds, at which the database should be polled for new pub sub sources")
 
 	return cmd
 }
