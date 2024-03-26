@@ -94,8 +94,13 @@ type MessageResponse struct {
 	Data   json.RawMessage `json:"data" bson:"data"`
 }
 type ExpireSecret struct {
-	Secret     string `json:"secret"`
-	Expiration int    `json:"expiration"`
+	// New Endpoint secret value.
+	Secret string `json:"secret"`
+
+	// Amount of time to wait before expiring the old endpoint secret.
+	// If AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until
+	// the old signature is expired.
+	Expiration int `json:"expiration"`
 }
 
 type DashboardSummary struct {
@@ -120,10 +125,17 @@ type CreateEndpointApiKey struct {
 }
 
 type PortalLink struct {
-	Name              string   `json:"name" valid:"required~please provide the name field"`
-	Endpoints         []string `json:"endpoints"`
-	OwnerID           string   `json:"owner_id"`
-	CanManageEndpoint bool     `json:"can_manage_endpoint"`
+	// Portal Link Name
+	Name string `json:"name" valid:"required~please provide the name field"`
+
+	// IDs of endpoints in this portal link
+	Endpoints []string `json:"endpoints"`
+
+	// Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID
+	OwnerID string `json:"owner_id"`
+
+	// Specify whether endpoint management can be done through the Portal Link UI
+	CanManageEndpoint bool `json:"can_manage_endpoint"`
 }
 
 type PortalLinkResponse struct {

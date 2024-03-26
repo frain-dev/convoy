@@ -15,13 +15,11 @@ type CreateSource struct {
 	// Source name.
 	Name string `json:"name" valid:"required~please provide a source name"`
 
-	// Source Type. Currently supported values are - sqs, kafka or pubsub.
+	// Source Type.
 	Type datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
 
+	// Use this to specify one of our predefined source types.
 	Provider datastore.SourceProvider `json:"provider"`
-
-	// This is used to manually enable/disable the source.
-	IsDisabled bool `json:"is_disabled"`
 
 	// Custom response is used to define a custom response for incoming
 	// webhooks project sources only.
@@ -124,14 +122,33 @@ func validateSourceForProvider(newSource *CreateSource) error {
 }
 
 type UpdateSource struct {
-	Name            *string              `json:"name" valid:"required~please provide a source name"`
-	Type            datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled      *bool                `json:"is_disabled"`
-	ForwardHeaders  []string             `json:"forward_headers"`
-	CustomResponse  UpdateCustomResponse `json:"custom_response"`
-	Verifier        VerifierConfig       `json:"verifier"`
-	PubSub          *PubSubConfig        `json:"pub_sub"`
-	IdempotencyKeys []string             `json:"idempotency_keys"`
+	// Source name.
+	Name *string `json:"name" valid:"required~please provide a source name"`
+
+	// Source Type.
+	Type datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+
+	// This is used to manually enable/disable the source.
+	IsDisabled *bool `json:"is_disabled"`
+
+	// Soecfy header you want convoy to save from the ingest request and forward to your endpoints when the event is dispatched.
+	ForwardHeaders []string `json:"forward_headers"`
+
+	// Custom response is used to define a custom response for incoming
+	// webhooks project sources only.
+	CustomResponse UpdateCustomResponse `json:"custom_response"`
+
+	// Verifiers are used to verify webhook events ingested in incoming
+	// webhooks projects.
+	Verifier VerifierConfig `json:"verifier"`
+
+	// PubSub are used to specify message broker sources for outgoing
+	// webhooks projects, you only need to speicfy this when the source type is `pub_sub`.
+	PubSub *PubSubConfig `json:"pub_sub"`
+
+	// IdempotencyKeys are used to specify parts of a webhook request to uniquely
+	// identify the event in an incoming webhooks project.
+	IdempotencyKeys []string `json:"idempotency_keys"`
 }
 
 func (us *UpdateSource) Validate() error {
@@ -159,12 +176,17 @@ type QueryListSource struct {
 }
 
 type Pageable struct {
-	Sort string `json:"sort"  example:"ASC | DESC"` // sort order
+	// Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+	Sort string `json:"sort"  example:"ASC | DESC"`
+
 	// The number of items to return per page
-	PerPage   int                     `json:"perPage" example:"20"`
+	PerPage int `json:"perPage" example:"20"`
+
 	Direction datastore.PageDirection `json:"direction"`
+
 	// A pagination cursor to fetch the previous page of a list
 	PrevCursor string `json:"prev_page_cursor" example:"01H0JATTVCXZK8FRDX1M1JN3QY"`
+
 	// A pagination cursor to fetch the next page of a list
 	NextCursor string `json:"next_page_cursor" example:"01H0JA5MEES38RRK3HTEJC647K"`
 }

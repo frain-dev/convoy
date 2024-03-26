@@ -69,7 +69,7 @@ type ServerResponse struct {
 	Response
 	Status  bool            `json:"status"`
 	Message string          `json:"message"`
-	Data    json.RawMessage `json:"data,omitempty"`
+	Data    json.RawMessage `json:"data,omitempty" swaggerignore:"true"`
 }
 
 func NewServerResponse(msg string, object interface{}, statusCode int) ServerResponse {
