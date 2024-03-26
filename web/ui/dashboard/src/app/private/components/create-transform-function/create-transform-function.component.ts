@@ -147,13 +147,16 @@ return payload;
 
 	checkForExistingData() {
 		if (this.transformType === 'source' && !this.transformFunction)
-			this.setFunction = `/*  1. While you can write multiple functions, the main function called for your transformation is the transform function.
+			this.setFunction = `/*  1. While you can write multiple functions, the main
+   function called for your transformation is the transform function.
 
-2. The only argument acceptable in the transform function is the payload data.
+2. The only argument acceptable in the transform function is the
+ payload data.
 
 3. The transform method must return a value.
 
-4. Console logs lust be written like this console.log('%j', logged_item) to get printed in the log below.
+4. Console logs lust be written like this:
+console.log('%j', logged_item) to get printed in the log below.
 
 5. The output payload from the function should be in this format
     {
@@ -165,11 +168,21 @@ return payload;
         "endpoint_id": "string, depends",
     }
 
-6. The endpoint_id field is only required when sending event to a single endpoint. */
+6. The endpoint_id field is only required when sending event to
+a single endpoint. */
 
 function transform(payload) {
     // Transform function here
-    return payload;
+    return {
+        "endpoint_id": "",
+        "owner_id": "",
+        "event_type": "sample",
+        "data": payload,
+        "custom_headers": {
+            "sample-header": "sample-value"
+        },
+        "idempotency_key": ""
+    }
 }`;
 		if (this.transformFunction) this.setFunction = this.transformFunction;
 		if (this.headerTransformFunction) this.headerSetFunction = this.headerTransformFunction;
