@@ -32,7 +32,8 @@ export class CreateTransformFunctionComponent implements OnInit {
 	activeTab = 'output';
 	transformForm: FormGroup = this.formBuilder.group({
 		payload: [null],
-		function: [null]
+		function: [null],
+		type: ['']
 	});
 	isTransformFunctionPassed = false;
 	isTestingFunction = false;
@@ -100,7 +101,8 @@ return payload;
 
 		this.transformForm.patchValue({
 			payload: this.eventActiveTab === 'body' ? this.payload : this.headerPayload,
-			function: this.eventActiveTab === 'body' ? this.functionEditor.getValue() : this.headerFunctionEditor.getValue()
+			function: this.eventActiveTab === 'body' ? this.functionEditor.getValue() : this.headerFunctionEditor.getValue(),
+			type: this.eventActiveTab === 'body' ? 'body' : 'header'
 		});
 
 		try {
@@ -144,18 +146,43 @@ return payload;
 	}
 
 	checkForExistingData() {
+		if (this.transformType === 'source' && !this.transformFunction)
+			this.setFunction = `/*  1. While you can write multiple functions, the main function called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this console.log('%j', logged_item) to get printed in the log below.
+
+5. The output payload from the function should be in this format
+    {
+        "owner_id": "string, optional",
+        "event_type": "string, required",
+        "data": "object, required",
+        "custom_headers": "object, optional",
+        "idempotency_key": "string, optional"
+        "endpoint_id": "string, depends",
+    }
+
+6. The endpoint_id field is only required when sending event to a single endpoint. */
+
+function transform(payload) {
+    // Transform function here
+    return payload;
+}`;
 		if (this.transformFunction) this.setFunction = this.transformFunction;
 		if (this.headerTransformFunction) this.headerSetFunction = this.headerTransformFunction;
 
-		const payload = this.transformType === 'subscription' ? localStorage.getItem('PAYLOAD') : this.eventActiveTab === 'body' ? localStorage.getItem('SOURCE_PAYLOAD') : localStorage.getItem('HEADER_PAYLOAD');
-		const headerPayload = localStorage.getItem('HEADER_PAYLOAD');
-		if (headerPayload && headerPayload !== 'undefined') this.headerPayload = JSON.parse(headerPayload);
-		if (payload && payload !== 'undefined') this.payload = JSON.parse(payload);
+		// const payload = this.transformType === 'subscription' ? localStorage.getItem('PAYLOAD') : this.eventActiveTab === 'body' ? localStorage.getItem('SOURCE_PAYLOAD') : localStorage.getItem('HEADER_PAYLOAD');
+		// const headerPayload = localStorage.getItem('HEADER_PAYLOAD');
+		// if (headerPayload && headerPayload !== 'undefined') this.headerPayload = JSON.parse(headerPayload);
+		// if (payload && payload !== 'undefined') this.payload = JSON.parse(payload);
 
-		const updatedTransformFunction = this.transformType === 'subscription' ? localStorage.getItem('FUNCTION') : this.eventActiveTab === 'body' ? localStorage.getItem('SOURCE_FUNCTION') : localStorage.getItem('HEADER_FUNCTION');
-		const headerFunction = localStorage.getItem('HEADER_FUNCTION');
-		if (headerFunction && headerFunction !== 'undefined' && !this.headerTransformFunction) this.headerSetFunction = headerFunction;
-		if (updatedTransformFunction && updatedTransformFunction !== 'undefined' && !this.transformFunction) this.setFunction = updatedTransformFunction;
+		// const updatedTransformFunction = this.transformType === 'subscription' ? localStorage.getItem('FUNCTION') : this.eventActiveTab === 'body' ? localStorage.getItem('SOURCE_FUNCTION') : localStorage.getItem('HEADER_FUNCTION');
+		// const headerFunction = localStorage.getItem('HEADER_FUNCTION');
+		// if (headerFunction && headerFunction !== 'undefined' && !this.headerTransformFunction) this.headerSetFunction = headerFunction;
+		// if (updatedTransformFunction && updatedTransformFunction !== 'undefined' && !this.transformFunction) this.setFunction = updatedTransformFunction;
 	}
 
 	parseLog(log: string) {
