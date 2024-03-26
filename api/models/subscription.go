@@ -1,24 +1,41 @@
 package models
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
 	"github.com/lib/pq"
-	"net/http"
-	"time"
 )
 
 type CreateSubscription struct {
-	Name       string `json:"name" valid:"required~please provide a valid subscription name"`
-	SourceID   string `json:"source_id"`
-	AppID      string `json:"app_id"` // Deprecated but necessary for backward compatibility
-	EndpointID string `json:"endpoint_id" valid:"required~please provide a valid endpoint id"`
-	Function   string `json:"function"`
+	// Subscription Nme
+	Name string `json:"name" valid:"required~please provide a valid subscription name"`
 
-	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty"`
-	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty"`
-	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty"`
+	// Source Id
+	SourceID string `json:"source_id"`
+
+	AppID string `json:"app_id"` // Deprecated but necessary for backward compatibility
+
+	// Destination endpoint ID
+	EndpointID string `json:"endpoint_id" valid:"required~please provide a valid endpoint id"`
+
+	// Convoy supports mutating your request payload using a js function. Use this field
+	// to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
+	Function string `json:"function"`
+
+	// Alert configuration
+	AlertConfig *AlertConfiguration `json:"alert_config,omitempty"`
+
+	// Retry configuration
+	RetryConfig *RetryConfiguration `json:"retry_config,omitempty"`
+
+	// Filter configuration
+	FilterConfig *FilterConfiguration `json:"filter_config,omitempty"`
+
+	// Rate limit configuration
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty"`
 }
 
@@ -27,15 +44,32 @@ func (cs *CreateSubscription) Validate() error {
 }
 
 type UpdateSubscription struct {
-	Name       string `json:"name,omitempty"`
-	AppID      string `json:"app_id,omitempty"`
-	SourceID   string `json:"source_id,omitempty"`
-	EndpointID string `json:"endpoint_id,omitempty"`
-	Function   string `json:"function"`
+	// Subscription Nme
+	Name string `json:"name,omitempty"`
 
-	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty"`
-	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty"`
-	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty"`
+	// Deprecated but necessary for backward compatibility
+	AppID string `json:"app_id,omitempty"`
+
+	// Source Id
+	SourceID string `json:"source_id,omitempty"`
+
+	// Destination endpoint ID
+	EndpointID string `json:"endpoint_id,omitempty"`
+
+	// Convoy supports mutating your request payload using a js function. Use this field
+	// to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
+	Function string `json:"function"`
+
+	// Alert configuration
+	AlertConfig *AlertConfiguration `json:"alert_config,omitempty"`
+
+	// Retry configuration
+	RetryConfig *RetryConfiguration `json:"retry_config,omitempty"`
+
+	// Filter configuration
+	FilterConfig *FilterConfiguration `json:"filter_config,omitempty"`
+
+	// Rate limit configuration
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty"`
 }
 
@@ -73,8 +107,11 @@ type FilterSchema struct {
 }
 
 type TestFilter struct {
+	// Same Request & Headers
 	Request FilterSchema `json:"request"`
-	Schema  FilterSchema `json:"schema"`
+
+	// Sample test schema
+	Schema FilterSchema `json:"schema"`
 }
 
 type TestWebhookFunction struct {
@@ -83,7 +120,10 @@ type TestWebhookFunction struct {
 }
 
 type AlertConfiguration struct {
-	Count     int    `json:"count"`
+	// Count
+	Count int `json:"count"`
+
+	// Threshold
 	Threshold string `json:"threshold" valid:"duration~please provide a valid time duration"`
 }
 
@@ -99,10 +139,19 @@ func (ac *AlertConfiguration) Transform() *datastore.AlertConfiguration {
 }
 
 type RetryConfiguration struct {
-	Type            datastore.StrategyProvider `json:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
-	Duration        string                     `json:"duration,omitempty" valid:"duration~please provide a valid time duration"`
-	IntervalSeconds uint64                     `json:"interval_seconds" valid:"int~please provide a valid interval seconds"`
-	RetryCount      uint64                     `json:"retry_count" valid:"int~please provide a valid retry count"`
+	// Retry Strategy type
+	Type datastore.StrategyProvider `json:"type,omitempty" valid:"supported_retry_strategy~please provide a valid retry strategy type"`
+
+	// TODO(all): remove IntervalSeconds & AlertConfig
+
+	// Used to specify a valid Go time duration e.g 10s, 1h3m for how long to wait between event delivery retries
+	Duration string `json:"duration,omitempty" valid:"duration~please provide a valid time duration"`
+
+	// Used to specify a time in seconds for how long to wait between event delivery retries,
+	IntervalSeconds uint64 `json:"interval_seconds" valid:"int~please provide a valid interval seconds"`
+
+	// Used to specify the max number of retries
+	RetryCount uint64 `json:"retry_count" valid:"int~please provide a valid retry count"`
 }
 
 func (rc *RetryConfiguration) Transform() (*datastore.RetryConfiguration, error) {
@@ -126,8 +175,11 @@ func (rc *RetryConfiguration) Transform() (*datastore.RetryConfiguration, error)
 }
 
 type FilterConfiguration struct {
+	// List of event types that the subscription should match
 	EventTypes pq.StringArray `json:"event_types"`
-	Filter     FS             `json:"filter"`
+
+	// Body & Header filters
+	Filter FS `json:"filter"`
 }
 
 func (fc *FilterConfiguration) Transform() *datastore.FilterConfiguration {
@@ -159,14 +211,6 @@ func (fs *FS) Transform() datastore.FilterSchema {
 type SubscriptionFunctionResponse struct {
 	Payload interface{} `json:"payload"`
 	Log     []string    `json:"log"`
-}
-
-type DynamicSubscription struct {
-	Name            string                  `json:"name"`
-	AlertConfig     *AlertConfiguration     `json:"alert_config,omitempty"`
-	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty"`
-	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty"`
-	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty"`
 }
 
 type SubscriptionResponse struct {

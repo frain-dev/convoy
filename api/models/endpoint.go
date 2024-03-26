@@ -40,7 +40,7 @@ type CreateEndpoint struct {
 	IsDisabled bool `json:"is_disabled"`
 
 	// Slack webhook URL is an alternative method to support email where endpoint developers
-	// can receive failure notifications.
+	// can receive failure notifications on a slack channel.
 	SlackWebhookURL string `json:"slack_webhook_url"`
 
 	// Define endpoint http timeout in seconds.
@@ -67,20 +67,54 @@ func (cE *CreateEndpoint) Validate() error {
 }
 
 type UpdateEndpoint struct {
-	URL                string  `json:"url" valid:"required~please provide a url for your endpoint"`
-	Secret             string  `json:"secret"`
-	OwnerID            string  `json:"owner_id"`
-	Description        string  `json:"description"`
-	AdvancedSignatures *bool   `json:"advanced_signatures"`
-	Name               *string `json:"name" valid:"required~please provide your endpointName"`
-	SupportEmail       *string `json:"support_email" valid:"email~please provide a valid email"`
-	IsDisabled         *bool   `json:"is_disabled"`
-	SlackWebhookURL    *string `json:"slack_webhook_url"`
+	// URL is the endpoint's URL prefixed with https. non-https urls are currently
+	// not supported.
+	URL string `json:"url" valid:"required~please provide a url for your endpoint"`
 
-	HttpTimeout       uint64                  `json:"http_timeout" copier:"-"`
-	RateLimit         int                     `json:"rate_limit"`
-	RateLimitDuration uint64                  `json:"rate_limit_duration" copier:"-"`
-	Authentication    *EndpointAuthentication `json:"authentication"`
+	// Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.
+	Secret string `json:"secret"`
+
+	// The OwnerID is used to group more than one endpoint together to achieve
+	// [fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)
+	OwnerID string `json:"owner_id"`
+
+	// Human-readable description of the endpoint. Think of this as metadata describing
+	// the endpoint
+	Description string `json:"description"`
+
+	// Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+	// -- simple or advanced. If left unspecified, we default to false.
+	AdvancedSignatures *bool `json:"advanced_signatures"`
+
+	// Endpoint name.
+
+	Name *string `json:"name" valid:"required~please provide your endpointName"`
+
+	// Endpoint developers support email. This is used for communicating endpoint state
+	// changes. You should always turn this on when disabling endpoints are enabled.
+	SupportEmail *string `json:"support_email" valid:"email~please provide a valid email"`
+
+	// This is used to manually enable/disable the endpoint.
+	IsDisabled *bool `json:"is_disabled"`
+
+	// Slack webhook URL is an alternative method to support email where endpoint developers
+	// can receive failure notifications on a slack channel.
+	SlackWebhookURL *string `json:"slack_webhook_url"`
+
+	// Define endpoint http timeout in seconds.
+	HttpTimeout uint64 `json:"http_timeout" copier:"-"`
+
+	// Rate limit is the total number of requests to be sent to an endpoint in
+	// the time duration specified in RateLimitDuration
+	RateLimit int `json:"rate_limit"`
+
+	// Rate limit duration specifies the time range for the rate limit.
+	RateLimitDuration uint64 `json:"rate_limit_duration" copier:"-"`
+
+	// This is used to define any custom authentication required by the endpoint. This
+	// shouldn't be needed often because webhook endpoints usually should be exposed to
+	// the internet.
+	Authentication *EndpointAuthentication `json:"authentication"`
 }
 
 func (uE *UpdateEndpoint) Validate() error {
