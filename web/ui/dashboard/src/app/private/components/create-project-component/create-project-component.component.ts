@@ -296,11 +296,11 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
+	async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
 		const disableValue = event.target.checked;
-		if (actionType === 'endpoints') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
-		else if (actionType === 'metaEvents') !disableValue ? this.metaEventsDialog.nativeElement.showModal() : this.updateProject();
-		if (disableValue && actionType === 'multiEndpoints') this.mutliSubEndpointsDialog.nativeElement.showModal();
+		if (actionType === 'endpoints') disableValue ? await this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
+		if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
 	}
 
 	switchTab(tab: TAB) {
