@@ -109,7 +109,7 @@ func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project,
 		OrganisationID: orgID,
 		Config: &datastore.ProjectConfig{
 			Strategy: &datastore.StrategyConfiguration{
-				Type:       datastore.DefaultStrategyProvider,
+				Type:       datastore.LinearStrategyProvider,
 				Duration:   10,
 				RetryCount: 2,
 			},

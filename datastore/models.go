@@ -263,7 +263,6 @@ func (k KeyType) IsValid() bool {
 }
 
 const (
-	DefaultStrategyProvider                      = LinearStrategyProvider
 	LinearStrategyProvider      StrategyProvider = "linear"
 	ExponentialStrategyProvider StrategyProvider = "exponential"
 )
@@ -286,7 +285,7 @@ var (
 	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
 
 	DefaultStrategyConfig = StrategyConfiguration{
-		Type:       DefaultStrategyProvider,
+		Type:       LinearStrategyProvider,
 		Duration:   100,
 		RetryCount: 10,
 	}

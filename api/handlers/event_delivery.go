@@ -18,6 +18,7 @@ import (
 
 // GetEventDelivery
 //
+//	@Id				GetEventDelivery
 //	@Summary		Retrieve an event delivery
 //	@Description	This endpoint fetches an event delivery.
 //	@Tags			Event Deliveries
@@ -43,6 +44,7 @@ func (h *Handler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 // ResendEventDelivery
 //
+//	@Id				ResendEventDelivery
 //	@Summary		Retry event delivery
 //	@Description	This endpoint retries an event delivery.
 //	@Tags			Event Deliveries
@@ -91,6 +93,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Batch retry event delivery
 //	@Description	This endpoint batch retries multiple event deliveries at once.
 //	@Tags			Event Deliveries
+//	@Id				BatchRetryEventDelivery
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string							true	"Project ID"
@@ -137,6 +140,7 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 //
 //	@Summary		Force retry event delivery
 //	@Description	This endpoint enables you retry a previously successful event delivery
+//	@Id				ForceResendEventDeliveries
 //	@Tags			Event Deliveries
 //	@Accept			json
 //	@Produce		json
@@ -184,6 +188,7 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 //	@Description	This endpoint retrieves all event deliveries paginated.
 //	@Tags			Event Deliveries
 //	@Accept			json
+//	@Id				GetEventDeliveriesPaged
 //	@Produce		json
 //	@Param			projectID	path		string							true	"Project ID"
 //	@Param			request		query		models.QueryListEventDelivery	false	"Query Params"
