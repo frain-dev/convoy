@@ -69,8 +69,8 @@
 						<tr convoy-table-row *ngFor="let endpoint of endpointGroup.content; let index = index"
 							[id]="'endpoint' + i" class="border-b border-b-new.primary-25"
 							(click)="selectedEndpoint = endpoint">
-							<td convoy-table-cell class="w-[450px]">
-								<div class="truncate max-w-[440px] pl-16px">{{ endpoint.name }}</div>
+							<td convoy-table-cell class="w-[300px]">
+								<div class="truncate max-w-[290px] pl-16px">{{ endpoint.name }}</div>
 							</td>
 							<td convoy-table-cell class="w-100px">
 								<convoy-tag *ngIf="endpoint.status" [color]="endpoint.status | statuscolor"
@@ -79,10 +79,10 @@
 							<td convoy-table-cell class="relative">
 								<div convoy-tag color="gray"
 									class="mr-8px w-[260px] !gap-16px truncate flex items-center">
-									{{ endpoint.uid }}
+									{{ endpoint.url }}
 									<convoy-copy-button size="sm"
-										[notificationText]="endpoint.name + ' ID has been copied to clipboard'"
-										[text]="endpoint.uid"></convoy-copy-button>
+										[notificationText]="endpoint.name + ' Url has been copied to clipboard'"
+										[text]="endpoint.url"></convoy-copy-button>
 								</div>
 							</td>
 
