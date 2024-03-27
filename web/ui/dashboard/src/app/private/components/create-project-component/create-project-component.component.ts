@@ -20,6 +20,7 @@ interface TAB {
 })
 export class CreateProjectComponent implements OnInit {
 	@ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('disableTLSEndpointsDialog', { static: true }) disableTLSEndpointsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
@@ -46,9 +47,12 @@ export class CreateProjectComponent implements OnInit {
 				policy: [720],
 				search_policy: [720]
 			}),
+			ssl: this.formBuilder.group({
+				enforce_secure_endpoints: [true]
+			}),
 			disable_endpoint: [false, Validators.required],
 			meta_event: this.formBuilder.group({
-				is_enabled: [true, Validators.required],
+				is_enabled: [false, Validators.required],
 				type: ['http', Validators.required],
 				event_type: [[], Validators.required],
 				url: ['', Validators.required],
@@ -298,6 +302,11 @@ export class CreateProjectComponent implements OnInit {
 		const disableValue = event.target.checked;
 		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
 		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
+	}
+
+	confirmTLSToggleAction(event: any) {
+		const disableValue = event.target.checked;
+		disableValue ? this.updateProject() : this.disableTLSEndpointsDialog.nativeElement.showModal();
 	}
 
 	switchTab(tab: TAB) {

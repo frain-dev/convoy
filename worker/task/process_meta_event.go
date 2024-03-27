@@ -21,9 +21,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-var (
-	ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")
-)
+var ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")
 
 type MetaEvent struct {
 	MetaEventID string
@@ -123,7 +121,7 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 	}
 
 	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
-	dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
+	dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating http client")
 		return nil, err

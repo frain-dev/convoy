@@ -3,6 +3,9 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"testing"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -12,8 +15,6 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
 )
 
 func TestProcessMetaEvent(t *testing.T) {
@@ -61,6 +62,7 @@ func TestProcessMetaEvent(t *testing.T) {
 						UID: "123",
 						Config: &datastore.ProjectConfig{
 							MetaEvent: &datastore.MetaEventConfiguration{},
+							SSL:       &datastore.DefaultSSLConfig,
 						},
 					}, nil)
 
@@ -101,6 +103,7 @@ func TestProcessMetaEvent(t *testing.T) {
 						UID: "123",
 						Config: &datastore.ProjectConfig{
 							MetaEvent: &datastore.MetaEventConfiguration{},
+							SSL:       &datastore.DefaultSSLConfig,
 						},
 					}, nil)
 

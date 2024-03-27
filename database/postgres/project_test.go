@@ -148,6 +148,7 @@ func Test_UpdateProject(t *testing.T) {
 				Count:    8773,
 				Duration: 7766,
 			},
+			SSL: &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
 			Strategy: &datastore.StrategyConfiguration{
 				Type:       datastore.ExponentialStrategyProvider,
 				Duration:   2434,

@@ -66,14 +66,10 @@
 							<p class="text-12 text-neutral-11">{{ authDetails()?.email }}</p>
 						</li>
 						<li>
-							<ul>
-								<li>
-									<a convoy-dropdown-option routerLink="/user-settings" class="block py-8px text-12 pl-24px text-neutral-11 w-full">My account</a>
-								</li>
-							</ul>
+							<a convoy-dropdown-option routerLink="/user-settings" class="block py-8px text-12 pl-16px text-neutral-11 w-full">My account</a>
 						</li>
 						<li class="border-t border-t-neutral-a3">
-							<button convoy-dropdown-option convoy-button fill="text" color="danger" class="font-medium px-24px py-8px text-12 w-full !justify-start" (click)="logout()">Logout</button>
+							<button convoy-dropdown-option convoy-button fill="text" color="danger" class="font-medium px-16px py-8px text-12 w-full !justify-start" (click)="logout()">Logout</button>
 						</li>
 					</ul>
 				</div>

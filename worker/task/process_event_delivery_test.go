@@ -75,10 +75,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{Config: &datastore.ProjectConfig{
-					RateLimit: &datastore.DefaultRateLimitConfig,
-					Strategy:  &datastore.DefaultStrategyConfig,
-				}}, nil)
+				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{Config: &datastore.DefaultProjectConfig}, nil)
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -146,6 +143,7 @@ func TestProcessEventDelivery(t *testing.T) {
 									},
 								},
 							},
+							SSL: &datastore.DefaultSSLConfig,
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
@@ -227,6 +225,7 @@ func TestProcessEventDelivery(t *testing.T) {
 									},
 								},
 							},
+							SSL: &datastore.DefaultSSLConfig,
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
@@ -309,6 +308,7 @@ func TestProcessEventDelivery(t *testing.T) {
 									},
 								},
 							},
+							SSL: &datastore.DefaultSSLConfig,
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.StrategyProvider("default"),
 								Duration:   60,
@@ -391,6 +391,7 @@ func TestProcessEventDelivery(t *testing.T) {
 									},
 								},
 							},
+							SSL: &datastore.DefaultSSLConfig,
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
@@ -475,6 +476,7 @@ func TestProcessEventDelivery(t *testing.T) {
 									},
 								},
 							},
+							SSL: &datastore.DefaultSSLConfig,
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
@@ -557,6 +559,7 @@ func TestProcessEventDelivery(t *testing.T) {
 									},
 								},
 							},
+							SSL: &datastore.DefaultSSLConfig,
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
@@ -639,6 +642,7 @@ func TestProcessEventDelivery(t *testing.T) {
 									},
 								},
 							},
+							SSL: &datastore.DefaultSSLConfig,
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,
@@ -690,7 +694,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						RateLimit:         10,
 						Url:               "https://google.com",
 						RateLimitDuration: 60,
-						Status:            datastore.PendingEndpointStatus,
+						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
 				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -727,6 +731,7 @@ func TestProcessEventDelivery(t *testing.T) {
 									},
 								},
 							},
+							SSL: &datastore.DefaultSSLConfig,
 							Strategy: &datastore.StrategyConfiguration{
 								Type:       datastore.LinearStrategyProvider,
 								Duration:   60,

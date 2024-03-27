@@ -81,6 +81,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 			Duration:   20,
 			RetryCount: 4,
 		},
+		SSL: &datastore.DefaultSSLConfig,
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
 			Policy: "72h",
 		},
@@ -164,6 +165,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 				},
 			},
 		},
+		SSL: &datastore.DefaultSSLConfig,
 		Strategy: &datastore.StrategyConfiguration{
 			Type:       "linear",
 			Duration:   20,

@@ -275,11 +275,14 @@ var (
 		IsRetentionPolicyEnabled: false,
 		DisableEndpoint:          false,
 		AddEventIDTraceHeaders:   false,
+		SSL:                      &DefaultSSLConfig,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
 		MetaEvent:                &MetaEventConfiguration{IsEnabled: false},
 	}
+
+	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
 
 	DefaultStrategyConfig = StrategyConfiguration{
 		Type:       LinearStrategyProvider,
@@ -524,6 +527,7 @@ type ProjectConfig struct {
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
 	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
+	SSL                      *SSLConfiguration             `json:"ssl" db:"ssl"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
@@ -598,6 +602,10 @@ type MetaEventConfiguration struct {
 	URL       string         `json:"url" db:"url"`
 	Secret    string         `json:"secret" db:"secret"`
 	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub"`
+}
+
+type SSLConfiguration struct {
+	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints" db:"enforce_secure_endpoints"`
 }
 
 type RetentionPolicyConfiguration struct {
