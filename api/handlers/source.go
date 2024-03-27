@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/pkg/transform"
@@ -348,11 +350,49 @@ func (h *Handler) TestSourceFunction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if test.Type == "body" {
+		// transform to required payload
+		pBytes, err := json.Marshal(mutatedPayload)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		convoyEvent := struct {
+			EndpointID     string            `json:"endpoint_id"`
+			OwnerID        string            `json:"owner_id"`
+			EventType      string            `json:"event_type"`
+			Data           json.RawMessage   `json:"data"`
+			CustomHeaders  map[string]string `json:"custom_headers"`
+			IdempotencyKey string            `json:"idempotency_key"`
+		}{}
+
+		decoder := json.NewDecoder(bytes.NewReader(pBytes))
+		decoder.DisallowUnknownFields()
+
+		// check the payload structure to be sure it satisfies what convoy can ingest else discard and nack it.
+		if err = decoder.Decode(&convoyEvent); err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		if util.IsStringEmpty(convoyEvent.EventType) {
+			err := fmt.Errorf("the output payload doesn't include an event type")
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		if len(convoyEvent.Data) == 0 {
+			err := fmt.Errorf("the output payload doesn't include any data")
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
 	functionResponse := models.FunctionResponse{
 		Payload: mutatedPayload,
 		Log:     consoleLog,
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Transformer function run successfully", functionResponse, http.StatusOK))
-
 }

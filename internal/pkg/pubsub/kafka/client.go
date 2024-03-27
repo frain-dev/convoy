@@ -138,7 +138,7 @@ func (k *Kafka) consume() {
 		default:
 			m, err := r.FetchMessage(k.ctx)
 			if err != nil {
-				log.WithError(err).Errorf("failed to fetch message from kafka source %s with id %s from topic %s - kafka", k.Cfg.TopicName, k.source.Name, k.source.UID)
+				log.WithError(err).Errorf("failed to fetch message from kafka source %s with id %s from topic %s - kafka", k.source.Name, k.source.UID, k.Cfg.TopicName)
 				continue
 			}
 

@@ -154,6 +154,7 @@ func (fs *FS) Transform() datastore.FilterSchema {
 type FunctionRequest struct {
 	Payload  map[string]any `json:"payload"`
 	Function string         `json:"function"`
+	Type     string         `json:"type"`
 }
 
 type FunctionResponse struct {
