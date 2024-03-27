@@ -33,7 +33,7 @@
 					</div>
 
 					<div class="days flex flex-wrap text-center mt-10px">
-						<button type="button" class="text-12 w-40px h-40px text-neutral-10" [class]="getDayClassNames(date)" *ngFor="let date of datesForLeftCalendar" (click)="onselectDay(date.timestamp)">
+						<button type="button" class="text-12 max-w-40px h-40px text-neutral-10" [class]="getDayClassNames(date)" *ngFor="let date of datesForLeftCalendar" (click)="onselectDay(date.timestamp)">
 							{{ date.date }}
 						</button>
 					</div>
@@ -71,7 +71,7 @@
 					</div>
 
 					<div class="days flex flex-wrap text-center mt-10px">
-						<button type="button" class="text-12 w-40px h-40px text-neutral-10 empty:hidden" *ngFor="let date of datesForRightCalendar; let i = index" [class]="getDayClassNamesRightCalendar(date)" (click)="onselectDay(date.timestamp)">
+						<button type="button" class="text-12 max-w-40px h-40px text-neutral-10 empty:hidden" *ngFor="let date of datesForRightCalendar; let i = index" [class]="getDayClassNamesRightCalendar(date)" (click)="onselectDay(date.timestamp)">
 							{{ date.date }}
 						</button>
 					</div>
