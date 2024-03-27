@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/pkg/transform"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -297,6 +298,17 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 }
 
 func mergeHeaders(dest map[string]string, src map[string]string) {
+	// convert all the dest header values to lowercase
+	for k, v := range dest {
+		dest[strings.ToLower(k)] = v
+		fmt.Printf("dest lmao: %+v\n", dest)
+	}
+
+	// convert all the src header values to lowercase
+	for k, v := range src {
+		src[strings.ToLower(k)] = v
+	}
+
 	for k, v := range src {
 		if _, ok := dest[k]; ok {
 			continue
@@ -314,6 +326,6 @@ func mergeHeaders(dest map[string]string, src map[string]string) {
 
 func handlePanic(source *datastore.Source) {
 	if err := recover(); err != nil {
-		log.Error(fmt.Errorf("sourceID: %s, Error: %s", source.UID, err))
+		log.Error(fmt.Errorf("recovered from panic, source %s with id: %s crashed with error: %s", source.Name, source.UID, err))
 	}
 }

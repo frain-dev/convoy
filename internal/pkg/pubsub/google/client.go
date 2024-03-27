@@ -82,7 +82,20 @@ func (g *Google) consume() {
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
 		attributes, err := msgpack.EncodeMsgPack(m.Attributes)
 		if err != nil {
-			g.log.WithError(err).Error("failed to marshall message headers")
+			g.log.WithError(err).Error("failed to marshall message attributes")
+			return
+		}
+
+		// Google Pub/Sub sends a slice with a single non UTF-8 value,
+		// looks like this: [192], which can cause a panic when marshaling headers
+		if len(attributes) == 1 && attributes[0] == 192 {
+			emptyMap := map[string]string{}
+			emptyBytes, err := msgpack.EncodeMsgPack(emptyMap)
+			if err != nil {
+				g.log.WithError(err).Error("an error occurred creating an empty attributes map")
+				return
+			}
+			attributes = emptyBytes
 		}
 
 		if err := g.handler(ctx, g.source, string(m.Data), attributes); err != nil {
