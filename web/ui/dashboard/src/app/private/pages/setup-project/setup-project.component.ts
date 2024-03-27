@@ -107,12 +107,9 @@ export class SetupProjectComponent implements OnInit {
 
 		// check subscription form validation
 		if (this.createSubscriptionForm.subscriptionForm.invalid) {
-			console.log(this.createSubscriptionForm.subscriptionForm);
-
 			this.createSubscriptionForm.isCreatingSubscription = false;
 			return this.createSubscriptionForm.subscriptionForm.markAllAsTouched();
 		}
-		console.log(this.createSubscriptionForm.subscriptionForm);
 
 		// create subscription
 		try {
