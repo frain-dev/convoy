@@ -1126,7 +1126,8 @@ type AmqpPubSubConfig struct {
 	Port               string           `json:"port" db:"port"`
 	Queue              string           `json:"queue" db:"queue"`
 	Auth               *AmqpCredentials `json:"auth" db:"auth"`
-	BindedExchange     *string          `json:"bindedExchange" db:"binded_exchange"`
+	BoundExchange      *string          `json:"bindedExchange" db:"binded_exchange"`
+	Vhost              *string          `json:"vhost" db:"vhost"`
 	RoutingKey         string           `json:"routingKey" db:"routing_key"`
 	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
 }

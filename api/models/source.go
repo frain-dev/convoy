@@ -352,7 +352,8 @@ type AmqpPubSubconfig struct {
 	Port               string        `json:"port"`
 	Auth               *AmqpAuth     `json:"auth"`
 	Queue              string        `json:"queue"`
-	BindedExchange     *AmqpExchange `json:"bindExchange"`
+	Vhost              *string       `json:"vhost"`
+	BoundExchange      *AmqpExchange `json:"bindExchange"`
 	DeadLetterExchange *string       `json:"deadLetterExchange"`
 }
 
@@ -376,8 +377,8 @@ func (ac *AmqpPubSubconfig) transform() *datastore.AmqpPubSubConfig {
 		RoutingKey: nil,
 	}
 
-	if ac.BindedExchange != nil {
-		bind = *ac.BindedExchange
+	if ac.BoundExchange != nil {
+		bind = *ac.BoundExchange
 	}
 
 	return &datastore.AmqpPubSubConfig{
@@ -385,7 +386,8 @@ func (ac *AmqpPubSubconfig) transform() *datastore.AmqpPubSubConfig {
 		Host:               ac.Host,
 		Port:               ac.Port,
 		Queue:              ac.Queue,
-		BindedExchange:     bind.Exchange,
+		Vhost:              ac.Vhost,
+		BoundExchange:      bind.Exchange,
 		RoutingKey:         *bind.RoutingKey,
 		Auth:               (*datastore.AmqpCredentials)(ac.Auth),
 		DeadLetterExchange: ac.DeadLetterExchange,
