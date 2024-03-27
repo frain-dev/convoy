@@ -40,7 +40,6 @@ func (uP *UpdateProject) Validate() error {
 }
 
 type ProjectConfig struct {
-
 	// Specifies how many bytes and incoming project should read from the ingest request, and how many bytes an outgoing project should from the response of your endpoints
 	// Defaults to 50KB.
 	MaxIngestSize uint64 `json:"max_payload_read_size"`
@@ -65,6 +64,9 @@ type ProjectConfig struct {
 
 	// Strategy is used to configure the project's retry strategies for failing events.
 	Strategy *StrategyConfiguration `json:"strategy"`
+
+	// SSL is used to configure the project's endpoint ssl enforcement rules
+	SSL *SSLConfiguration
 
 	// Signature is used to configure the project's signature header versions
 	Signature *SignatureConfiguration `json:"signature"`
