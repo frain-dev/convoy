@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -12,20 +13,32 @@ import (
 
 var ErrInvalidInstanceID = errors.New("invalid instance id provided")
 
+type EventsCounter struct{}
+
+func (e *EventsCounter) track(ctx context.Context, instanceID string) (Metric, error) {
+	return Metric{
+		Name:       metricName(EventCounter),
+		Version:    convoy.GetVersion(),
+		InstanceID: instanceID,
+		Count:      1,
+	}, nil
+}
+
 type TotalEventsTracker struct {
 	Orgs        []datastore.Organisation
 	EventRepo   datastore.EventRepository
 	ProjectRepo datastore.ProjectRepository
 }
 
-func (te *TotalEventsTracker) Track(ctx context.Context, instanceID string) (metric, error) {
+func (te *TotalEventsTracker) track(ctx context.Context, instanceID string) (Metric, error) {
 	if util.IsStringEmpty(instanceID) {
-		return metric{}, ErrInvalidInstanceID
+		return Metric{}, ErrInvalidInstanceID
 	}
 
-	mt := metric{
+	mt := Metric{
 		Name:       metricName(DailyEventCount),
 		InstanceID: instanceID,
+		Version:    convoy.GetVersion(),
 	}
 
 	for _, org := range te.Orgs {
@@ -35,14 +48,13 @@ func (te *TotalEventsTracker) Track(ctx context.Context, instanceID string) (met
 			continue
 		}
 
-		for _, project := range projects {
-			count, err := te.EventRepo.CountProjectMessages(ctx, project.UID)
+		for _, p := range projects {
+			count, err := te.EventRepo.CountProjectMessages(ctx, p.UID)
 			if err != nil {
 				log.WithError(err).Error("failed to load events paged")
 				continue
 			}
-
-			mt.Count += uint64(count)
+			mt.Count += uint64(count) + uint64(p.RetainedEvents)
 		}
 	}
 
@@ -55,12 +67,12 @@ type TotalActiveProjectTracker struct {
 	ProjectRepo datastore.ProjectRepository
 }
 
-func (ta *TotalActiveProjectTracker) Track(ctx context.Context, instanceID string) (metric, error) {
+func (ta *TotalActiveProjectTracker) track(ctx context.Context, instanceID string) (Metric, error) {
 	if util.IsStringEmpty(instanceID) {
-		return metric{}, ErrInvalidInstanceID
+		return Metric{}, ErrInvalidInstanceID
 	}
 
-	mt := metric{
+	mt := Metric{
 		Name:       metricName(DailyActiveProjectCount),
 		InstanceID: instanceID,
 	}
