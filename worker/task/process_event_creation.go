@@ -74,6 +74,7 @@ func ProcessEventCreation(
 		} else {
 			event = createEvent.Event
 		}
+		log.FromContext(ctx).WithFields(map[string]interface{}{"event_id": event.UID}).Infof("[asynq]: processing event")
 
 		subscriptions, err := findSubscriptions(ctx, endpointRepo, subRepo, project, event, createEvent.CreateSubscription)
 		if err != nil {
@@ -282,8 +283,13 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
 		if err != nil {
-			log.WithError(err).Error("error find a matching subscription for this source")
+			log.WithEventid(event.UID).WithError(err).Error("error find a matching subscription for this source")
 			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: defaultDelay}
+		}
+
+		if len(subscriptions) == 0 {
+			log.WithEventid(event.UID).Error("error finding a matching subscription for this source")
+			return subscriptions, nil
 		}
 	}
 
@@ -304,9 +310,17 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 			return nil, err
 		}
 
+		if isBodyMatched == false {
+			log.WithEventid(e.UID).Errorf("error matching event with %s body", s.Name)
+		}
+
 		isHeaderMatched, err := subRepo.TestSubscriptionFilter(ctx, e.GetRawHeaders(), s.FilterConfig.Filter.Headers.Map())
 		if err != nil {
 			return nil, err
+		}
+
+		if isHeaderMatched == false {
+			log.WithEventid(e.UID).Errorf("error matching event with %s header", s.Name)
 		}
 
 		isMatched := isHeaderMatched && isBodyMatched
