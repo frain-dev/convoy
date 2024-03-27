@@ -73,11 +73,7 @@ export class CreatePortalLinkComponent implements OnInit {
 	async getEndpoints(searchString?: string) {
 		try {
 			const response = await this.privateService.getEndpoints({ q: searchString });
-			const endpointData = response.data.content;
-			endpointData.forEach((data: ENDPOINT) => {
-				data.name = data.title;
-			});
-			this.endpoints = endpointData;
+			this.endpoints = response.data.content;
 		} catch {}
 	}
 
