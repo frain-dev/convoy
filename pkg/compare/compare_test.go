@@ -3,6 +3,7 @@ package compare
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -938,4 +939,138 @@ func jsonEqual(got, want interface{}) bool {
 
 	diff, _ := jsondiff.Compare(a, b, &jsondiff.Options{})
 	return diff == jsondiff.FullMatch
+}
+
+func BenchmarkCompareNestedArrayOperator(t *testing.B) {
+	payload := map[string]interface{}{
+		"data": []interface{}{
+			map[string]interface{}{
+				"event": "meetup",
+			},
+			map[string]interface{}{
+				"venue": "test",
+			},
+			map[string]interface{}{
+				"speakers": []interface{}{
+					map[string]interface{}{
+						"name": "raymond",
+					},
+					map[string]interface{}{
+						"name": "subomi",
+					},
+				},
+			},
+		},
+		"swag": "hoodies",
+	}
+
+	filter := map[string]interface{}{
+		"data.$.speakers.$.name": "raymond",
+		"swag":                   "hoodies",
+	}
+
+	t.ResetTimer()
+	t.ReportAllocs()
+
+	for i := 0; i < t.N; i++ {
+		p, err := flatten.Flatten(payload)
+		require.NoError(t, err)
+
+		f, err := flatten.Flatten(filter)
+		require.NoError(t, err)
+
+		matched, err := Compare(p, f)
+		require.NoError(t, err)
+
+		if !matched {
+			t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
+		}
+	}
+}
+
+func BenchmarkCompareAndOr(t *testing.B) {
+	payload := map[string]interface{}{
+		"cities": []interface{}{
+			"lagos",
+			"ibadan",
+			"agodi",
+		},
+		"type": "weekly",
+		"temperatures": []interface{}{
+			30,
+			12,
+			39.9,
+			10,
+		},
+		"person": map[string]interface{}{
+			"age": 12,
+		},
+	}
+	filter := map[string]interface{}{
+		"$and": []interface{}{
+			map[string]interface{}{
+				"person.age": map[string]interface{}{
+					"$gte": 10,
+				},
+			},
+			map[string]interface{}{
+				"$or": []interface{}{
+					map[string]interface{}{
+						"type": "weekly",
+					},
+					map[string]interface{}{
+						"cities": "lagos",
+					},
+				},
+			},
+		},
+	}
+
+	t.ResetTimer()
+	t.ReportAllocs()
+
+	for i := 0; i < t.N; i++ {
+		p, err := flatten.Flatten(payload)
+		require.NoError(t, err)
+
+		f, err := flatten.Flatten(filter)
+		require.NoError(t, err)
+
+		matched, err := Compare(p, f)
+		require.NoError(t, err)
+
+		if !matched {
+			t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
+		}
+	}
+}
+
+func BenchmarkCompareRegex(t *testing.B) {
+	payload := map[string]interface{}{
+		"event": "https://admin:admin@mfs-registry-stg.g4.app.cloud.comcast.net/eureka/apps/MFSAGENT/mfsagent:e1432431e46cf610d06e2dbcda13b069?status=UP&lastDirtyTimestamp=1643797857108",
+	}
+
+	filter := map[string]interface{}{
+		"event": map[string]interface{}{
+			"$regex": "^(?P<scheme>[^:\\/?#]+):(?:\\/\\/)?(?:(?:(?P<login>[^:]+)(?::(?P<password>[^@]+)?)?@)?(?P<host>[^@\\/?#:]*)(?::(?P<port>\\d+)?)?)?(?P<path>[^?#]*)(?:\\?(?P<query>[^#]*))?(?:#(?P<fragment>.*))?",
+		},
+	}
+
+	t.ResetTimer()
+	t.ReportAllocs()
+
+	for i := 0; i < t.N; i++ {
+		p, err := flatten.Flatten(payload)
+		require.NoError(t, err)
+
+		f, err := flatten.Flatten(filter)
+		require.NoError(t, err)
+
+		matched, err := Compare(p, f)
+		require.NoError(t, err)
+
+		if !matched {
+			t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
+		}
+	}
 }
