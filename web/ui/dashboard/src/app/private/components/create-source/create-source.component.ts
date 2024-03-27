@@ -68,6 +68,7 @@ export class CreateSourceComponent implements OnInit {
 				port: [''],
 				queue: [''],
 				deadLetterExchange: [null],
+				vhost: [''],
 				auth: this.formBuilder.group({
 					user: [null],
 					password: [null]
