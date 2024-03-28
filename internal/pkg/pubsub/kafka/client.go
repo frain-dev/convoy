@@ -100,7 +100,6 @@ func (k *Kafka) Verify() error {
 
 	_, err = dialer.DialContext(context.Background(), "tcp", k.Cfg.Brokers[0])
 	if err != nil {
-		log.WithError(err).Errorf("failed to connect kafka instance %s with id %s", k.source.Name, k.source.UID)
 		return err
 	}
 
