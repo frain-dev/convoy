@@ -92,7 +92,7 @@ return payload;
 		this.checkForExistingData();
 	}
 
-	async testTransformFunction() {
+	async testTransformFunction(type?: 'body' | 'header') {
 		this.isTransformFunctionPassed = false;
 		this.isTestingFunction = true;
 
@@ -100,9 +100,9 @@ return payload;
 		this.headerPayload = this.generalService.convertStringToJson(this.headerPayloadEditor.getValue());
 
 		this.transformForm.patchValue({
-			payload: this.eventActiveTab === 'body' ? this.payload : this.headerPayload,
-			function: this.eventActiveTab === 'body' ? this.functionEditor.getValue() : this.headerFunctionEditor.getValue(),
-			type: this.eventActiveTab === 'body' ? 'body' : 'header'
+			payload: type === 'body' ? this.payload : this.headerPayload,
+			function: type === 'body' ? this.functionEditor.getValue() : this.headerFunctionEditor.getValue(),
+			type: type === 'body' ? 'body' : 'header'
 		});
 
 		try {
@@ -110,39 +110,50 @@ return payload;
 
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 
-			this.eventActiveTab === 'body' ? (this.output = response.data.payload) : (this.headerOutput = response.data.payload);
+			type === 'body' ? (this.output = response.data.payload) : (this.headerOutput = response.data.payload);
 
-			this.eventActiveTab === 'body' ? (this.logs = response.data.log.reverse()) : (this.headerLogs = response.data.log.reverse());
+			type === 'body' ? (this.logs = response.data.log.reverse()) : (this.headerLogs = response.data.log.reverse());
 
 			if (this.logs.length > 0 || this.headerLogs.length > 0) this.showConsole = true;
 
 			this.isTransformFunctionPassed = true;
 			this.isTestingFunction = false;
+
+			return this.isTransformFunctionPassed;
 		} catch (error) {
 			this.isTestingFunction = false;
 			this.isTransformFunctionPassed = false;
+
+			return this.isTransformFunctionPassed;
 		}
 	}
 
 	async saveFunction() {
-		await this.testTransformFunction();
+		if (this.transformType == 'subscription') {
+			const isTestPassed = await this.testTransformFunction('body');
+			if (isTestPassed) this.proceedToSaveFunction();
+		} else
+			await Promise.all([this.testTransformFunction('body'), this.testTransformFunction('header')]).then(results => {
+				const allTestsPassed = results.every(result => result);
+				if (allTestsPassed) this.proceedToSaveFunction();
+			});
+	}
 
-		if (this.isTransformFunctionPassed) {
-			if (this.payloadEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'PAYLOAD' : 'SOURCE_PAYLOAD', this.payloadEditor.getValue());
-			if (this.headerPayloadEditor?.getValue()) localStorage.setItem('HEADER_PAYLOAD', this.headerPayloadEditor.getValue());
+	proceedToSaveFunction() {
+		if (this.payloadEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'PAYLOAD' : 'SOURCE_PAYLOAD', this.payloadEditor.getValue());
+		if (this.headerPayloadEditor?.getValue()) localStorage.setItem('HEADER_PAYLOAD', this.headerPayloadEditor.getValue());
 
-			if (this.functionEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'FUNCTION' : 'SOURCE_FUNCTION', this.functionEditor.getValue());
-			if (this.headerFunctionEditor?.getValue()) localStorage.setItem('HEADER_FUNCTION', this.headerFunctionEditor.getValue());
+		if (this.functionEditor?.getValue()) localStorage.setItem(this.transformType === 'subscription' ? 'FUNCTION' : 'SOURCE_FUNCTION', this.functionEditor.getValue());
+		if (this.headerFunctionEditor?.getValue()) localStorage.setItem('HEADER_FUNCTION', this.headerFunctionEditor.getValue());
 
-			const subscriptionTransformFunction = this.functionEditor.getValue();
-			const sourceTransform = {
-				header: this.headerFunctionEditor.getValue(),
-				body: this.functionEditor.getValue()
-			};
+		const subscriptionTransformFunction = this.functionEditor.getValue();
+		const sourceTransform = {
+			header: this.headerFunctionEditor.getValue(),
+			body: this.functionEditor.getValue()
+		};
 
-			if (this.transformType === 'source') this.updatedTransformFunction.emit(sourceTransform);
-			else this.updatedTransformFunction.emit(subscriptionTransformFunction);
-		}
+		if (this.transformType === 'source') this.updatedTransformFunction.emit(sourceTransform);
+		else this.updatedTransformFunction.emit(subscriptionTransformFunction);
 	}
 
 	checkForExistingData() {
