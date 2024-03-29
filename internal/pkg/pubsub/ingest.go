@@ -301,7 +301,6 @@ func mergeHeaders(dest map[string]string, src map[string]string) {
 	// convert all the dest header values to lowercase
 	for k, v := range dest {
 		dest[strings.ToLower(k)] = v
-		fmt.Printf("dest lmao: %+v\n", dest)
 	}
 
 	// convert all the src header values to lowercase

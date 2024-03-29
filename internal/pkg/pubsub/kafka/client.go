@@ -175,10 +175,6 @@ func (k *Kafka) handleError(reader *kafka.Reader) {
 type M map[string]any
 
 // D is an array representation of Kafka Headers.
-//
-// Example usage:
-//
-//	D{{"foo", "bar"}, {"hello", "world"}, {"pi", 3.14159}}
 type D []kafka.Header
 
 // Map creates a map from the elements of the D.
