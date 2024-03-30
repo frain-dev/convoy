@@ -23,6 +23,7 @@ import (
 //
 //	@Summary		Create a source
 //	@Description	This endpoint creates a source
+//	@Id				CreateSource
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -86,6 +87,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Retrieve a source
 //	@Description	This endpoint retrieves a source by its id
+//	@Id				GetSource
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -136,6 +138,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update a source
 //	@Description	This endpoint updates a source
+//	@Id				UpdateSource
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -213,6 +216,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Delete a source
 //	@Description	This endpoint deletes a source
+//	@Id				DeleteSource
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -255,6 +259,7 @@ func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		List all sources
 //	@Description	This endpoint fetches multiple sources
+//	@Id				LoadSourcesPaged
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json

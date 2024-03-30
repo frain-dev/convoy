@@ -21,6 +21,7 @@ import (
 //
 //	@Summary		List all subscriptions
 //	@Description	This endpoint fetches all the subscriptions
+//	@Id				GetSubscriptions
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -87,6 +88,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Retrieve a subscription
 //	@Description	This endpoint retrieves a single subscription
+//	@Id				GetSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -122,6 +124,7 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Create a subscription
 //	@Description	This endpoint creates a subscriptions
+//	@Id				CreateSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -174,6 +177,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Delete subscription
 //	@Description	This endpoint deletes a subscription
+//	@Id				DeleteSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -215,6 +219,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update a subscription
 //	@Description	This endpoint updates a subscription
+//	@Id				UpdateSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -274,6 +279,7 @@ func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Reques
 //
 //	@Summary		Validate subscription filter
 //	@Description	This endpoint validates that a filter will match a certain payload structure.
+//	@Id				TestSubscriptionFilter
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -313,8 +319,9 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 
 // TestSubscriptionFunction
 //
-//	@Summary		Validate subscription function
-//	@Description	This endpoint validates that a filter will match a certain payload structure.
+//	@Summary		Test a subscription function
+//	@Description	This endpoint test runs a transform function against a payload.
+//	@Id				TestSubscriptionFunction
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
