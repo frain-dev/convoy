@@ -267,7 +267,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs = matchSubscriptions(string(event.EventType), subs)
 
-			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
+			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs, false)
 			if err != nil {
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
 			}
@@ -290,7 +290,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	return subscriptions, nil
 }
 
-func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription) ([]datastore.Subscription, error) {
+func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription, soft bool) ([]datastore.Subscription, error) {
 	var matched []datastore.Subscription
 	var payload interface{}
 	err := json.Unmarshal(e.Data, &payload)
@@ -300,12 +300,19 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 
 	for _, s := range subscriptions {
 		isBodyMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter.Body.Map())
-		if err != nil {
+
+		if err != nil && soft {
+			log.WithError(err).Error("subcription failed to match id")
+			continue
+		} else {
 			return nil, err
 		}
 
 		isHeaderMatched, err := subRepo.TestSubscriptionFilter(ctx, e.GetRawHeaders(), s.FilterConfig.Filter.Headers.Map())
-		if err != nil {
+		if err != nil && soft {
+			log.WithError(err).Error("subscription failed to match header")
+			continue
+		} else {
 			return nil, err
 		}
 
