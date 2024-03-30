@@ -280,7 +280,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, false)
 		if err != nil {
 			log.WithError(err).Error("error find a matching subscription for this source")
 			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: defaultDelay}
@@ -302,7 +302,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		isBodyMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter.Body.Map())
 
 		if err != nil && soft {
-			log.WithError(err).Error("subcription failed to match id")
+			log.WithError(err).Error("subcription failed to match body")
 			continue
 		} else {
 			return nil, err
