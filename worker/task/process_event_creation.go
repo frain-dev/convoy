@@ -304,7 +304,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		if err != nil && soft {
 			log.WithError(err).Errorf("subcription (%s) failed to match body", s.UID)
 			continue
-		} else {
+		} else if err != nil {
 			return nil, err
 		}
 
@@ -312,7 +312,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		if err != nil && soft {
 			log.WithError(err).Errorf("subscription (%s) failed to match header", s.UID)
 			continue
-		} else {
+		} else if err != nil {
 			return nil, err
 		}
 
