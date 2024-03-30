@@ -302,7 +302,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		isBodyMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter.Body.Map())
 
 		if err != nil && soft {
-			log.WithError(err).Error("subcription failed to match body")
+			log.WithError(err).Errorf("subcription (%s) failed to match body", s.UID)
 			continue
 		} else {
 			return nil, err
@@ -310,7 +310,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 
 		isHeaderMatched, err := subRepo.TestSubscriptionFilter(ctx, e.GetRawHeaders(), s.FilterConfig.Filter.Headers.Map())
 		if err != nil && soft {
-			log.WithError(err).Error("subscription failed to match header")
+			log.WithError(err).Errorf("subscription (%s) failed to match header", s.UID)
 			continue
 		} else {
 			return nil, err
