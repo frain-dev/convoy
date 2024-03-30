@@ -279,7 +279,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	}
 
 	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
-	err = s.cache.Set(ctx, srcCacheKey, source, time.Hour*24)
+	err = s.cache.Set(ctx, srcCacheKey, source, time.Minute*1)
 	if err != nil {
 		return err
 	}
@@ -352,13 +352,13 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 	}
 
 	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
-	err = s.cache.Set(ctx, srcCacheKey, source, time.Hour*24)
+	err = s.cache.Set(ctx, srcCacheKey, source, time.Minute*1)
 	if err != nil {
 		return err
 	}
 
 	srcCacheKey2 := convoy.SourceCacheKey.Get(source.MaskID).String()
-	err = s.cache.Set(ctx, srcCacheKey2, source, time.Hour*24)
+	err = s.cache.Set(ctx, srcCacheKey2, source, time.Minute*1)
 	if err != nil {
 		return err
 	}
@@ -576,7 +576,7 @@ func (s *sourceRepo) readFromCache(ctx context.Context, key string, readFromDB f
 		return nil, err
 	}
 
-	err = s.cache.Set(ctx, srcCacheKey, fromDB, time.Hour*24)
+	err = s.cache.Set(ctx, srcCacheKey, fromDB, time.Minute*1)
 	if err != nil {
 		return nil, err
 	}
