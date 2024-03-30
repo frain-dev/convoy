@@ -70,8 +70,10 @@ type ProjectConfig struct {
 
 	// MetaEvent is used to configure the project's meta events
 	MetaEvent *MetaEventConfiguration `json:"meta_event"`
-  
-  MultipleEndpointSubscriptions bool `json:"multiple_endpoint_subscriptions"`
+
+	// MultipleEndpointSubscriptions is used to configure if multiple subscriptions
+	// can be created for the endpoint in a project
+	MultipleEndpointSubscriptions bool `json:"multiple_endpoint_subscriptions"`
 }
 
 func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {

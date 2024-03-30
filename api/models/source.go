@@ -151,14 +151,20 @@ type UpdateSource struct {
 	Verifier VerifierConfig `json:"verifier"`
 
 	// PubSub are used to specify message broker sources for outgoing
-	// webhooks projects, you only need to speicfy this when the source type is `pub_sub`.
+	// webhooks projects, you only need to specify this when the source type is `pub_sub`.
 	PubSub *PubSubConfig `json:"pub_sub"`
 
 	// IdempotencyKeys are used to specify parts of a webhook request to uniquely
 	// identify the event in an incoming webhooks project.
 	IdempotencyKeys []string `json:"idempotency_keys"`
-  BodyFunction    *string `json:"body_function"`
-	HeaderFunction  *string `json:"header_function"`
+
+	// Function is a javascript function used to mutate the payload
+	// immediately after ingesting an event
+	BodyFunction *string `json:"body_function"`
+
+	// Function is a javascript function used to mutate the headers
+	// immediately after ingesting an event
+	HeaderFunction *string `json:"header_function"`
 }
 
 func (us *UpdateSource) Validate() error {
