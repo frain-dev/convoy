@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -313,7 +314,7 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 
 	isValid := isBodyValid && isHeaderValid
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", isValid, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Filter validated successfully", isValid, http.StatusOK))
 }
 
 // TestSubscriptionFunction
@@ -325,31 +326,31 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string						true	"Project ID"
-//	@Param			filter		body		models.TestWebhookFunction	true	"Function Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.SubscriptionFunctionResponse}
+//	@Param			filter		body		models.FunctionRequest	true	"Function Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.FunctionResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_function [post]
 func (h *Handler) TestSubscriptionFunction(w http.ResponseWriter, r *http.Request) {
-	var test models.TestWebhookFunction
+	var test models.FunctionRequest
 	err := util.ReadJSON(r, &test)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache)
-	mutatedPayload, consoleLog, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
+	transformer := transform.NewTransformer()
+	mutatedPayload, consoleLog, err := transformer.Transform(test.Function, test.Payload)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to transform payload")
+		log.FromContext(r.Context()).WithError(err).Error("failed to transform function")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	functionResponse := models.SubscriptionFunctionResponse{
+	functionResponse := models.FunctionResponse{
 		Payload: mutatedPayload,
 		Log:     consoleLog,
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscription transformer function run successfully", functionResponse, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Transformer function run successfully", functionResponse, http.StatusOK))
 }

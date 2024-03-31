@@ -147,7 +147,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		try {
 			const response = await this.privateService.getEndpoints({ q: searchString });
 			this.endpoints = this.token ? response.data : response.data.content;
-			this.modifyEndpointData(this.token ? response.data : response.data.content);
+			this.endPoints = this.token ? response.data : response.data.content;
 			return;
 		} catch (error) {
 			return error;
@@ -246,16 +246,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		} catch (error) {
 			this.createdSubscription = false;
 			this.isCreatingSubscription = false;
-		}
-	}
-
-	modifyEndpointData(endpoints?: ENDPOINT[]) {
-		if (endpoints) {
-			const endpointData = endpoints;
-			endpointData.forEach(data => {
-				data.name = data.title;
-			});
-			this.endPoints = endpointData;
 		}
 	}
 

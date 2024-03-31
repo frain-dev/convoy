@@ -246,11 +246,10 @@
                                         <div class="px-16px font-light">→</div>
                                     </ng-container>
 
-                                    <div [title]="delivery?.endpoint_metadata?.target_url || ''"
-                                        [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
-                                        {{ delivery.endpoint_metadata.title }}
-                                    </div>
-                                </div>
+									<div [title]="delivery?.endpoint_metadata?.url || ''" [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
+										{{ delivery.endpoint_metadata.name }}
+									</div>
+								</div>
 
                                 <span *ngIf="delivery?.device_id">{{ delivery?.device_metadata?.host_name }}</span>
                             </div>
