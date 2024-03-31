@@ -126,16 +126,16 @@
 
 	<div class="mb-50px py-16px border-y border-y-new.primary-25 flex justify-between items-center">
 		<div class="flex items-center gap-24px">
-			<div class="text-12 text-neutral-12">{{ eventDelsDetails?.endpoint_metadata?.title }}</div>
+			<div class="text-12 text-neutral-12">{{ eventDelsDetails?.endpoint_metadata?.name }}</div>
 			<convoy-tag *ngIf="eventDelsDetails?.endpoint_metadata?.status" [color]="eventDelsDetails?.endpoint_metadata?.status || '' | statuscolor">{{ eventDelsDetails?.endpoint_metadata?.status }}</convoy-tag>
 		</div>
 
-		<div class="text-12 text-neutral-12 truncate max-w-[370px]">{{ eventDelsDetails?.endpoint_metadata?.target_url }}</div>
+		<div class="text-12 text-neutral-12 truncate max-w-[370px]">{{ eventDelsDetails?.endpoint_metadata?.url }}</div>
 
 		<div class="flex items-center gap-24px">
-			<convoy-copy-button [text]="eventDelsDetails?.endpoint_metadata?.target_url || ''" color="primary" show-icon="false" [notificationText]="eventDelsDetails?.endpoint_metadata?.title + ' URL has been copied to clipboard'">
+			<convoy-copy-button [text]="eventDelsDetails?.endpoint_metadata?.url || ''" color="primary" show-icon="false" [notificationText]="eventDelsDetails?.endpoint_metadata?.name + ' URL has been copied to clipboard'">
 				<div convoy-tag color="primary" class="flex items-center !gap-12px">
-					<span class="max-w-[230px] truncate">{{ eventDelsDetails?.endpoint_metadata?.target_url }}</span>
+					<span class="max-w-[230px] truncate">{{ eventDelsDetails?.endpoint_metadata?.url }}</span>
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
 						<path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
 						<path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />

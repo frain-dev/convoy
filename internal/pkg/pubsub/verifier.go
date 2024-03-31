@@ -31,8 +31,9 @@ type AmqpPubSub struct {
 	Queue              string    `json:"queue"`
 	Schema             string    `json:"schema"`
 	Auth               *AmqpAuth `json:"auth"`
-	BindedExchange     *string   `json:"bindedExchange"`
+	Vhost              *string   `json:"vhost"`
 	RoutingKey         string    `json:"routingKey"`
+	BoundExchange      *string   `json:"bindedExchange"`
 	DeadLetterExchange *string   `json:"deadLetterExchange"`
 }
 
@@ -141,7 +142,8 @@ func Validate(cfg *datastore.PubSubConfig) error {
 			Port:               cfg.Amqp.Port,
 			Queue:              cfg.Amqp.Queue,
 			Auth:               aAuth,
-			BindedExchange:     cfg.Amqp.BindedExchange,
+			Vhost:              cfg.Amqp.Vhost,
+			BoundExchange:      cfg.Amqp.BoundExchange,
 			RoutingKey:         cfg.Amqp.RoutingKey,
 			DeadLetterExchange: cfg.Amqp.DeadLetterExchange,
 		}

@@ -2,15 +2,14 @@ package services
 
 import (
 	"context"
+	"github.com/oklog/ulid/v2"
 	"net/http"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/google/uuid"
-
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
@@ -40,7 +39,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 	}
 
 	job := &queue.Job{
-		ID:      uuid.NewString(),
+		ID:      ulid.Make().String(),
 		Payload: eventByte,
 		Delay:   0,
 	}

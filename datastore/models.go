@@ -150,7 +150,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(context.Context, *Source, string) error
+	PubSubHandler    func(context.Context, *Source, string, []byte) error
 	MetaEventType    string
 	HookEventType    string
 )
@@ -519,16 +519,17 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
-	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
-	MetaEvent                *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled      bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	AddEventIDTraceHeaders        bool                          `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                          `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                          `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	RetentionPolicy               *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	RateLimit                     *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration        `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration       `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -1056,6 +1057,8 @@ type Source struct {
 	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
 	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
 	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
+	BodyFunction    *string         `json:"body_function" db:"body_function"`
+	HeaderFunction  *string         `json:"header_function" db:"header_function"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -1122,7 +1125,8 @@ type AmqpPubSubConfig struct {
 	Port               string           `json:"port" db:"port"`
 	Queue              string           `json:"queue" db:"queue"`
 	Auth               *AmqpCredentials `json:"auth" db:"auth"`
-	BindedExchange     *string          `json:"bindedExchange" db:"binded_exchange"`
+	BoundExchange      *string          `json:"bindedExchange" db:"binded_exchange"`
+	Vhost              *string          `json:"vhost" db:"vhost"`
 	RoutingKey         string           `json:"routingKey" db:"routing_key"`
 	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
 }

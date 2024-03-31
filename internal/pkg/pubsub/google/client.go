@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
@@ -79,7 +80,25 @@ func (g *Google) consume() {
 	sub.ReceiveSettings.NumGoroutines = g.workers
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
-		if err := g.handler(ctx, g.source, string(m.Data)); err != nil {
+		attributes, err := msgpack.EncodeMsgPack(m.Attributes)
+		if err != nil {
+			g.log.WithError(err).Error("failed to marshall message attributes")
+			return
+		}
+
+		// Google Pub/Sub sends a slice with a single non UTF-8 value,
+		// looks like this: [192], which can cause a panic when marshaling headers
+		if len(attributes) == 1 && attributes[0] == 192 {
+			emptyMap := map[string]string{}
+			emptyBytes, err := msgpack.EncodeMsgPack(emptyMap)
+			if err != nil {
+				g.log.WithError(err).Error("an error occurred creating an empty attributes map")
+				return
+			}
+			attributes = emptyBytes
+		}
+
+		if err := g.handler(ctx, g.source, string(m.Data), attributes); err != nil {
 			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")
 		} else {
 			m.Ack()
@@ -98,6 +117,6 @@ func (g *Google) handleError(client *pubsub.Client) {
 	}
 
 	if err := recover(); err != nil {
-		g.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", g.source.UID, err)).Error("google pubsub source crashed")
+		g.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", g.source.UID, err)).Error("google pubsub source crashed")
 	}
 }

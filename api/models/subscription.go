@@ -114,11 +114,6 @@ type TestFilter struct {
 	Schema FilterSchema `json:"schema"`
 }
 
-type TestWebhookFunction struct {
-	Payload  map[string]interface{} `json:"payload"`
-	Function string                 `json:"function"`
-}
-
 type AlertConfiguration struct {
 	// Count
 	Count int `json:"count"`
@@ -208,9 +203,15 @@ func (fs *FS) Transform() datastore.FilterSchema {
 	}
 }
 
-type SubscriptionFunctionResponse struct {
-	Payload interface{} `json:"payload"`
-	Log     []string    `json:"log"`
+type FunctionRequest struct {
+	Payload  map[string]any `json:"payload"`
+	Function string         `json:"function"`
+	Type     string         `json:"type"`
+}
+
+type FunctionResponse struct {
+	Payload any      `json:"payload"`
+	Log     []string `json:"log"`
 }
 
 type SubscriptionResponse struct {

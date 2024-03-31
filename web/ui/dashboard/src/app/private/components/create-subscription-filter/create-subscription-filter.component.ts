@@ -74,6 +74,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
 			this.generalService.showNotification({ message: testResponse, style: !response.data ? 'error' : 'success' });
 			this.isFilterTestPassed = !!response.data;
+            return this.isFilterTestPassed;
 		} catch (error) {
 			this.isFilterTestPassed = false;
 			return error;
