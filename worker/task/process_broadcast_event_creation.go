@@ -57,8 +57,10 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			UID:              ulid.Make().String(),
 			EventType:        datastore.EventType(broadcastEvent.EventType),
 			ProjectID:        project.UID,
+			SourceID:         broadcastEvent.SourceID,
 			Data:             broadcastEvent.Data,
 			IdempotencyKey:   broadcastEvent.IdempotencyKey,
+			Headers:          getCustomHeaders(broadcastEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
 			Raw:              string(broadcastEvent.Data),
 			CreatedAt:        time.Now(),
@@ -67,7 +69,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 
 		subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
 		if err != nil {
 			return &EndpointError{Err: errors.New("failed to match subscriptions using filter"), delay: defaultDelay}
 		}
@@ -86,7 +88,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 
 		return writeEventDeliveriesToQueue(
 			ctx, subscriptions, event, project, eventDeliveryRepo,
-			subRepo, eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo,
 		)
 	}
 }

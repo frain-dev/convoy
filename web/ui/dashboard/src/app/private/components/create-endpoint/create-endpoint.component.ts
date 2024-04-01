@@ -164,6 +164,7 @@ export class CreateEndpointComponent implements OnInit {
 			this.endpointSecret = endpointDetails?.secrets?.find(secret => !secret.expires_at);
 			if (endpointDetails.rate_limit_duration) this.toggleConfigForm('rate_limit');
 			this.addNewEndpointForm.patchValue(endpointDetails);
+
 			if (endpointDetails.owner_id) this.toggleConfigForm('owner_id');
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
