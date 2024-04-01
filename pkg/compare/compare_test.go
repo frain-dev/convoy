@@ -941,7 +941,7 @@ func jsonEqual(got, want interface{}) bool {
 	return diff == jsondiff.FullMatch
 }
 
-func BenchmarkCompareNestedArrayOperator(t *testing.B) {
+func BenchmarkCompareNestedArrayOperator(b *testing.B) {
 	payload := map[string]interface{}{
 		"data": []interface{}{
 			map[string]interface{}{
@@ -969,26 +969,26 @@ func BenchmarkCompareNestedArrayOperator(t *testing.B) {
 		"swag":                   "hoodies",
 	}
 
-	t.ResetTimer()
-	t.ReportAllocs()
+	b.ResetTimer()
+	b.ReportAllocs()
 
-	for i := 0; i < t.N; i++ {
+	for i := 0; i < b.N; i++ {
 		p, err := flatten.Flatten(payload)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		f, err := flatten.Flatten(filter)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		matched, err := Compare(p, f)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		if !matched {
-			t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
+			b.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
 		}
 	}
 }
 
-func BenchmarkCompareAndOr(t *testing.B) {
+func BenchmarkCompareAndOr(b *testing.B) {
 	payload := map[string]interface{}{
 		"cities": []interface{}{
 			"lagos",
@@ -1026,26 +1026,26 @@ func BenchmarkCompareAndOr(t *testing.B) {
 		},
 	}
 
-	t.ResetTimer()
-	t.ReportAllocs()
+	b.ResetTimer()
+	b.ReportAllocs()
 
-	for i := 0; i < t.N; i++ {
+	for i := 0; i < b.N; i++ {
 		p, err := flatten.Flatten(payload)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		f, err := flatten.Flatten(filter)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		matched, err := Compare(p, f)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		if !matched {
-			t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
+			b.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
 		}
 	}
 }
 
-func BenchmarkCompareRegex(t *testing.B) {
+func BenchmarkCompareRegex(b *testing.B) {
 	payload := map[string]interface{}{
 		"event": "https://admin:admin@mfs-registry-stg.g4.app.cloud.comcast.net/eureka/apps/MFSAGENT/mfsagent:e1432431e46cf610d06e2dbcda13b069?status=UP&lastDirtyTimestamp=1643797857108",
 	}
@@ -1056,21 +1056,21 @@ func BenchmarkCompareRegex(t *testing.B) {
 		},
 	}
 
-	t.ResetTimer()
-	t.ReportAllocs()
+	b.ResetTimer()
+	b.ReportAllocs()
 
-	for i := 0; i < t.N; i++ {
+	for i := 0; i < b.N; i++ {
 		p, err := flatten.Flatten(payload)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		f, err := flatten.Flatten(filter)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		matched, err := Compare(p, f)
-		require.NoError(t, err)
+		require.NoError(b, err)
 
 		if !matched {
-			t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
+			b.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
 		}
 	}
 }
