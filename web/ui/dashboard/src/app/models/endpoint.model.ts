@@ -26,7 +26,6 @@ export interface ENDPOINT {
 	name?: string;
 	url: string;
 	target_url: string;
-	url: string;
 	updated_at: string;
 	rate_limit: number;
 	rate_limit_duration: string;
