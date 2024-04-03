@@ -96,7 +96,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 }
 
 type SSLConfiguration struct {
-	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints" db:"enforce_secure_endpoints"`
+	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints"`
 }
 
 func (r *SSLConfiguration) transform() *datastore.SSLConfiguration {
