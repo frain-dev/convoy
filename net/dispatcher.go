@@ -2,12 +2,11 @@ package net
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptrace"
 	"net/url"
@@ -42,9 +41,15 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 			InsecureSkipVerify: true,
 		}
 	} else {
-		tr.DialTLSContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-			conn, err := tls.Dial(network, addr, &tls.Config{MinVersion: tls.VersionTLS12})
-			return conn, err
+		tr.TLSClientConfig = &tls.Config{
+			VerifyConnection: func(cs tls.ConnectionState) error {
+				switch cs.Version {
+				case tls.VersionTLS12, tls.VersionTLS13:
+					return nil
+				default:
+					return fmt.Errorf("invalid tls version: %d", cs.Version)
+				}
+			},
 		}
 	}
 
