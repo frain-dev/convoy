@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -42,14 +41,7 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 		}
 	} else {
 		tr.TLSClientConfig = &tls.Config{
-			VerifyConnection: func(cs tls.ConnectionState) error {
-				switch cs.Version {
-				case tls.VersionTLS12, tls.VersionTLS13:
-					return nil
-				default:
-					return fmt.Errorf("invalid tls version: %d", cs.Version)
-				}
-			},
+			MinVersion: tls.VersionTLS12,
 		}
 	}
 
