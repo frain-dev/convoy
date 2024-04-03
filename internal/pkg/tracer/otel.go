@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/util"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/grpc/credentials"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -42,6 +43,9 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 
 	if ot.cfg.InsecureSkipVerify {
 		secureOption := otlptracegrpc.WithInsecure()
+		opts = append(opts, secureOption)
+	} else {
+		secureOption := otlptracegrpc.WithTLSCredentials(credentials.NewClientTLSFromCert(nil, ""))
 		opts = append(opts, secureOption)
 	}
 
