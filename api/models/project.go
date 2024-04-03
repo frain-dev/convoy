@@ -73,6 +73,10 @@ type ProjectConfig struct {
 
 	// MetaEvent is used to configure the project's meta events
 	MetaEvent *MetaEventConfiguration `json:"meta_event"`
+
+	// MultipleEndpointSubscriptions is used to configure if multiple subscriptions
+	// can be created for the endpoint in a project
+	MultipleEndpointSubscriptions bool `json:"multiple_endpoint_subscriptions"`
 }
 
 func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
@@ -86,7 +90,8 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
 		DisableEndpoint:          pc.DisableEndpoint,
 		AddEventIDTraceHeaders:   pc.AddEventIDTraceHeaders,
-		SSL:                      pc.SSL.transform(),
+		MultipleEndpointSubscriptions: pc.MultipleEndpointSubscriptions,
+    SSL:                      pc.SSL.transform(),
 		RetentionPolicy:          pc.RetentionPolicy.transform(),
 		RateLimit:                pc.RateLimit.Transform(),
 		Strategy:                 pc.Strategy.transform(),

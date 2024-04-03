@@ -208,7 +208,7 @@
 <!-- subscription tranform form   -->
 <dialog open convoy-dialog position="full" *ngIf="showTransformDialog">
 	<div class="w-full h-full overflow-y-auto">
-		<convoy-create-transform-function (close)="showTransformDialog = false" (subscriptionFunction)="getFunction($event)" [transformFunction]="subscriptionForm.get('function')?.value"></convoy-create-transform-function>
+		<convoy-create-transform-function (close)="showTransformDialog = false" (updatedTransformFunction)="getFunction($event)" [transformFunction]="subscriptionForm.get('function')?.value"></convoy-create-transform-function>
 	</div>
 </dialog>
 

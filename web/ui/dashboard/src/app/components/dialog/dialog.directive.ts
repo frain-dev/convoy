@@ -20,7 +20,7 @@ import { ButtonComponent } from '../button/button.component';
 					</button>
 				</div>
 
-				<a *ngIf="fullscreen === 'true'" convoy-button fill="text" target="_blank" href="https://getconvoy.io/docs" rel="noreferrer">
+				<a *ngIf="fullscreen === 'true'" convoy-button fill="text" target="_blank" href="https://docs.getconvoy.io" rel="noreferrer">
 					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon" />
 					<span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Go to docs</span>
 				</a>

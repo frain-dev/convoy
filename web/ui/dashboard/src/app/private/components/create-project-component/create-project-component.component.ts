@@ -24,6 +24,7 @@ export class CreateProjectComponent implements OnInit {
 	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('mutliSubEndpointsDialog', { static: true }) mutliSubEndpointsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
@@ -51,6 +52,7 @@ export class CreateProjectComponent implements OnInit {
 				enforce_secure_endpoints: [true]
 			}),
 			disable_endpoint: [false, Validators.required],
+			multiple_endpoint_subscriptions: [false, Validators.required],
 			meta_event: this.formBuilder.group({
 				is_enabled: [false, Validators.required],
 				type: ['http', Validators.required],
@@ -139,16 +141,27 @@ export class CreateProjectComponent implements OnInit {
 		try {
 			this.projectDetails = this.privateService.getProjectDetails;
 
+			this.setSignatureVersions();
+
 			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
 
 			this.projectForm.patchValue(this.projectDetails);
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
+
+            // set meta events config
+            this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
+				? this.projectForm.get('config.meta_event.is_enabled')?.patchValue(this.projectDetails.config.meta_event.is_enabled)
+				: this.projectForm.get('config.meta_event.is_enabled')?.patchValue(false);
+
+
 			const search_policy = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
+
 			this.projectForm.get('config.retention_policy.search_policy')?.patchValue(search_policy);
 			const policy = this.projectDetails.config.retention_policy.policy.match(/\d+/g);
 			this.projectForm.get('config.retention_policy.policy')?.patchValue(policy);
+
 			this.projectForm.get('config.meta_event.type')?.patchValue('http');
 
 			let filteredConfigs: string[] = [];
@@ -156,18 +169,20 @@ export class CreateProjectComponent implements OnInit {
 			if (!this.projectDetails?.config.retention_policy_enabled) filteredConfigs.push('retention_policy');
 
 			this.configurations.filter(item => !filteredConfigs.includes(item.uid)).forEach(config => this.toggleConfigForm(config.uid));
-
-			const versions = this.projectDetails.config.signature.versions;
-			if (!versions?.length) return;
-			this.signatureVersions = this.generalService.setContentDisplayed(versions);
-			versions.forEach((version: { encoding: any; hash: any }, index: number) => {
-				this.addVersion();
-				this.versions.at(index)?.patchValue({
-					encoding: version.encoding,
-					hash: version.hash
-				});
-			});
 		} catch {}
+	}
+
+	setSignatureVersions() {
+		const versions = this.projectDetails.config.signature.versions;
+		if (!versions?.length) return;
+		this.signatureVersions = this.generalService.setContentDisplayed(versions);
+		versions.forEach((version: { encoding: any; hash: any }, index: number) => {
+			this.addVersion();
+			this.versions.at(index)?.patchValue({
+				encoding: version.encoding,
+				hash: version.hash
+			});
+		});
 	}
 
 	async createProject() {
@@ -298,10 +313,11 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints') {
+	async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
 		const disableValue = event.target.checked;
-		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		if (actionType === 'endpoints') disableValue ? await this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
 		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
+		if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
 	}
 
 	confirmTLSToggleAction(event: any) {

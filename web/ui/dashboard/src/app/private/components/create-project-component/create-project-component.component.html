@@ -209,6 +209,17 @@
 						<p class="text-12 text-neutral-11 mt-10px w-[460px]">Toggling this will allow only HTTPS secure endpoints, this allows only TLS connections to your endpoints.</p>
 					</div>
 					<convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle>
+					<convoy-toggle formControlName="disable_endpoint" (onChange)="confirmToggleAction($event, 'endpoints')"></convoy-toggle>
+				</div>
+
+				<hr class="border-t border-neutral-4 my-24px" />
+
+				<div class="flex justify-between items-start">
+					<div class="max-w-[500px]">
+						<h3 class="font-semibold mb-8px text-12">Allow endpoint have multiple subscriptions</h3>
+						<p class="text-12 text-neutral-11 mt-10px w-[460px]">Toggling this will allow an endpoint have multiple subscriptions simultaneously.</p>
+					</div>
+					<convoy-toggle name="multiple_endpoint_subscriptions" formControlName="multiple_endpoint_subscriptions" (onChange)="confirmToggleAction($event, 'multiEndpoints')"></convoy-toggle>
 				</div>
 			</ng-container>
 
@@ -393,7 +404,19 @@
         <p class="max-w-[300px] font-medium mb-12px">Connections to your endpoints will be susceptible to machine-in-the-middle attacks</p>
 		<button convoy-button color="danger" class="mb-18px mt-24px" [disabled]="isCreatingProject" (click)="updateProject(); disableTLSEndpointsDialog.close()">Yes, Disable</button>
 		<button convoy-button size="sm" fill="text" class="font-semibold !text-neutral-11" (click)="disableTLSEndpointsDialog.close(); projectForm.patchValue({ config: { ssl: { enforce_secure_endpoints: true } } })">No, Cancel</button>
-	</div>
+
+      <!-- enable muliple endpoints subscription confirmation prompt -->
+<dialog #mutliSubEndpointsDialog convoy-dialog position="center" size="sm">
+	<div class="flex flex-col p-30px">
+		<h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
+		<p class="text-12 font-medium text-neutral-11 mb-20px">You are about to enable multiple subscriptions for endpoints on this project, please confirm this action</p>
+
+		<div class="flex gap-16px items-center">
+			<button convoy-button size="sm" (click)="updateProject(); mutliSubEndpointsDialog.close()">Confirm</button>
+			<button convoy-button fill="text" size="sm" class="font-semibold" (click)="mutliSubEndpointsDialog.close(); projectForm.patchValue({ config: { multiple_endpoint_subscriptions: false } })">Close</button>
+		</div>
+
+ </div>
 </dialog>
 
 <!-- disable meta events prompt  -->
