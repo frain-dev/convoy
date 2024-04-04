@@ -45,8 +45,6 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 		}()
 
-		fmt.Println("running retention policy")
-
 		c := time.Now()
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {

@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/frain-dev/convoy"
 	"github.com/stretchr/testify/require"
 )
 
@@ -145,12 +144,6 @@ func TestLoadConfig(t *testing.T) {
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
 				},
-				StoragePolicy: StoragePolicyConfiguration{
-					Type: "on-prem",
-					OnPrem: OnPremStorage{
-						Path: convoy.DefaultOnPremDir,
-					},
-				},
 				Tracer: TracerConfiguration{
 					OTel: OTelConfiguration{
 						SampleRate:         1.0,
@@ -211,12 +204,6 @@ func TestLoadConfig(t *testing.T) {
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
 				},
-				StoragePolicy: StoragePolicyConfiguration{
-					Type: "on-prem",
-					OnPrem: OnPremStorage{
-						Path: convoy.DefaultOnPremDir,
-					},
-				},
 				Tracer: TracerConfiguration{
 					OTel: OTelConfiguration{
 						SampleRate:         1.0,
@@ -275,12 +262,6 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Analytics: AnalyticsConfiguration{
 					IsEnabled: true,
-				},
-				StoragePolicy: StoragePolicyConfiguration{
-					Type: "on-prem",
-					OnPrem: OnPremStorage{
-						Path: convoy.DefaultOnPremDir,
-					},
 				},
 				Tracer: TracerConfiguration{
 					OTel: OTelConfiguration{

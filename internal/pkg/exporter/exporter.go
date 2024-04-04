@@ -62,7 +62,6 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 
 	policy, err := time.ParseDuration(p.Config.RetentionPolicy.Policy)
 	if err != nil {
-		fmt.Println("parse duraction failing for project: ", p.UID)
 		return nil, err
 	}
 
