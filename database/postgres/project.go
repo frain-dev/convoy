@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/r3labs/diff/v3"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
@@ -41,12 +42,12 @@ const (
 		strategy_duration, strategy_retry_count,
 		signature_header, signature_versions, disable_endpoint,
 		meta_events_enabled, meta_events_type, meta_events_event_type,
-		meta_events_url, meta_events_secret, meta_events_pub_sub, multiple_endpoint_subscriptions
+		meta_events_url, meta_events_secret, meta_events_pub_sub,ssl_enforce_secure_endpoints, multiple_endpoint_subscriptions
 	  )
 	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		  $14, $15, $16, $17, $18, $19, $20, $21
+		  $14, $15, $16, $17, $18, $19, $20, $21, $22
 		);
 	`
 
@@ -71,7 +72,8 @@ const (
 		meta_events_secret = $18,
 		meta_events_pub_sub = $19,
 		search_policy = $20,
-		multiple_endpoint_subscriptions = $21,
+		ssl_enforce_secure_endpoints = $21,
+		multiple_endpoint_subscriptions = $22,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -98,6 +100,7 @@ const (
 		c.signature_header AS "config.signature.header",
 		c.signature_versions AS "config.signature.versions",
 		c.disable_endpoint AS "config.disable_endpoint",
+		c.ssl_enforce_secure_endpoints as "config.ssl.enforce_secure_endpoints",
 		c.meta_events_enabled AS "config.meta_event.is_enabled",
 		COALESCE(c.meta_events_type, '') AS "config.meta_event.type",
 		c.meta_events_event_type AS "config.meta_event.event_type",
@@ -132,6 +135,7 @@ const (
 	c.ratelimit_duration AS "config.ratelimit.duration",
 	c.strategy_type AS "config.strategy.type",
 	c.strategy_duration AS "config.strategy.duration",
+	c.ssl_enforce_secure_endpoints as "config.ssl.enforce_secure_endpoints",
 	c.strategy_retry_count AS "config.strategy.retry_count",
 	c.signature_header AS "config.signature.header",
 	c.signature_versions AS "config.signature.versions",
@@ -261,6 +265,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		me.URL,
 		me.Secret,
 		me.PubSub,
+		project.Config.SSL.EnforceSecureEndpoints,
 		project.Config.MultipleEndpointSubscriptions,
 	)
 	if err != nil {
@@ -378,6 +383,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.Secret,
 		me.PubSub,
 		project.Config.RetentionPolicy.SearchPolicy,
+		project.Config.SSL.EnforceSecureEndpoints,
 		project.Config.MultipleEndpointSubscriptions,
 	)
 	if err != nil {

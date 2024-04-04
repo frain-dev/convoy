@@ -19,39 +19,43 @@ interface TAB {
     styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
-    @ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;
-    @ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
-    @ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
-    @ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('disableTLSEndpointsDialog', { static: true }) disableTLSEndpointsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('mutliSubEndpointsDialog', { static: true }) mutliSubEndpointsDialog!: ElementRef<HTMLDialogElement>;
     @ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
     @ViewChild('previewCatalog', { static: true }) previewCatalog!: ElementRef<HTMLDialogElement>;
 
-    signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
-    projectForm: FormGroup = this.formBuilder.group({
-        name: ['', Validators.required],
-        config: this.formBuilder.group({
-            strategy: this.formBuilder.group({
-                duration: [null],
-                retry_count: [null],
-                type: [null]
-            }),
-            signature: this.formBuilder.group({
-                header: [null],
-                versions: this.formBuilder.array([])
-            }),
-            ratelimit: this.formBuilder.group({
-                count: [null],
-                duration: [null]
-            }),
-            retention_policy: this.formBuilder.group({
-                policy: [720],
-                search_policy: [720]
-            }),
-            disable_endpoint: [false, Validators.required],
+	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
+	projectForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		config: this.formBuilder.group({
+			strategy: this.formBuilder.group({
+				duration: [null],
+				retry_count: [null],
+				type: [null]
+			}),
+			signature: this.formBuilder.group({
+				header: [null],
+				versions: this.formBuilder.array([])
+			}),
+			ratelimit: this.formBuilder.group({
+				count: [null],
+				duration: [null]
+			}),
+			retention_policy: this.formBuilder.group({
+				policy: [720],
+				search_policy: [720]
+			}),
+			ssl: this.formBuilder.group({
+				enforce_secure_endpoints: [true]
+			}),
+			disable_endpoint: [false, Validators.required],
 			multiple_endpoint_subscriptions: [false, Validators.required],
             meta_event: this.formBuilder.group({
-                is_enabled: [true, Validators.required],
+                is_enabled: [false, Validators.required],
                 type: ['http', Validators.required],
                 event_type: [[], Validators.required],
                 url: ['', Validators.required],
@@ -162,11 +166,10 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
 
-            // set meta events config
-            this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
+			// set meta events config
+			this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
 				? this.projectForm.get('config.meta_event.is_enabled')?.patchValue(this.projectDetails.config.meta_event.is_enabled)
 				: this.projectForm.get('config.meta_event.is_enabled')?.patchValue(false);
-
 
 			const search_policy = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
 
@@ -328,8 +331,13 @@ export class CreateProjectComponent implements OnInit {
     async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
         const disableValue = event.target.checked;
         if (actionType === 'endpoints') disableValue ? await this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		else if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
         else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
-		if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
+	}
+
+	confirmTLSToggleAction(event: any) {
+		const disableValue = event.target.checked;
+		disableValue ? this.updateProject() : this.disableTLSEndpointsDialog.nativeElement.showModal();
     }
 
     switchTab(tab: TAB) {

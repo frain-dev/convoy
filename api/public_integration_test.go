@@ -221,7 +221,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://google.com"
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -254,7 +254,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIKey() {
 	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -327,7 +327,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest(
 
 func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	supportEmail := "10xengineer@getconvoy.io"
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
@@ -372,7 +372,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPI
 	isDisabled := randBool()
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", isDisabled, datastore.ActiveEndpointStatus)
@@ -456,10 +456,67 @@ func (s *PublicEndpointIntegrationTestSuite) Test_DeleteEndpoint_WithPersonalAPI
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
 
+func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_AllowHTTP() {
+	title := "random-name"
+	f := faker.New()
+	endpointURL := "http://cgc.info/povn-awjx.html"
+	secret := f.Lorem().Text(25)
+	expectedStatusCode := http.StatusCreated
+
+	cfg := datastore.DefaultProjectConfig
+	cfg.SSL = &datastore.SSLConfiguration{EnforceSecureEndpoints: false}
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, "", "testing", s.DefaultOrg.UID, datastore.OutgoingProject, &cfg)
+	require.NoError(s.T(), err)
+
+	// Seed Auth
+	role := auth.Role{
+		Type:    auth.RoleAdmin,
+		Project: project.UID,
+	}
+
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	require.NoError(s.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", project.UID)
+	plainBody := fmt.Sprintf(`{
+		"name": "%s",
+		"url": "%s",
+		"secret": "%s",
+		"description": "default endpoint",
+		"authentication": {
+			"type": "api_key",
+			"api_key": {
+				"header_name": "x-api-key",
+				"header_value": "testapikey"
+			}
+		}
+	}`, title, endpointURL, secret)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, key, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	require.Equal(s.T(), title, endpoint.Name)
+	require.Equal(s.T(), endpointURL, endpoint.Url)
+	require.Equal(s.T(), datastore.EndpointAuthenticationType("api_key"), endpoint.Authentication.Type)
+	require.Equal(s.T(), "x-api-key", endpoint.Authentication.ApiKey.HeaderName)
+	require.Equal(s.T(), "testapikey", endpoint.Authentication.ApiKey.HeaderValue)
+}
+
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
 	title := "random-name"
 	f := faker.New()
-	endpointURL := f.Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 

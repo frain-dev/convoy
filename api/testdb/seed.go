@@ -116,6 +116,7 @@ func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project,
 				Duration:   10,
 				RetryCount: 2,
 			},
+			SSL: &datastore.DefaultSSLConfig,
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
 				Versions: []datastore.SignatureVersion{

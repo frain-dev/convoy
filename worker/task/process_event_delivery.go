@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
@@ -110,7 +111,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		done := true
-		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
+		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}

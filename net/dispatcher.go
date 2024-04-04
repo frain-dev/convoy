@@ -2,6 +2,7 @@ package net
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
@@ -20,17 +21,31 @@ type Dispatcher struct {
 	client *http.Client
 }
 
-func NewDispatcher(timeout time.Duration, httpProxy string) (*Dispatcher, error) {
+func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) (*Dispatcher, error) {
 	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
 
+	tr := &http.Transport{}
 	if len(httpProxy) > 0 {
 		proxyUrl, err := url.Parse(httpProxy)
 		if err != nil {
 			return nil, err
 		}
 
-		d.client.Transport = &http.Transport{Proxy: http.ProxyURL(proxyUrl)}
+		tr.Proxy = http.ProxyURL(proxyUrl)
 	}
+
+	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.
+	if !enforceSecure {
+		tr.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	} else {
+		tr.TLSClientConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	d.client.Transport = tr
 
 	return d, nil
 }

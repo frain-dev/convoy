@@ -48,6 +48,9 @@
 					},
 					"schema": {
 						"type": "string"
+					},
+					"vhost": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -755,6 +758,9 @@
 			},
 			"datastore.Source": {
 				"properties": {
+					"body_function": {
+						"type": "string"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -769,6 +775,9 @@
 							"type": "string"
 						},
 						"type": "array"
+					},
+					"header_function": {
+						"type": "string"
 					},
 					"idempotency_keys": {
 						"items": {
@@ -991,6 +1000,9 @@
 					},
 					"schema": {
 						"type": "string"
+					},
+					"vhost": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1143,6 +1155,10 @@
 			},
 			"models.CreateSource": {
 				"properties": {
+					"body_function": {
+						"description": "Function is a javascript function used to mutate the payload\nimmediately after ingesting an event",
+						"type": "string"
+					},
 					"custom_response": {
 						"allOf": [
 							{
@@ -1150,6 +1166,10 @@
 							}
 						],
 						"description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only."
+					},
+					"header_function": {
+						"description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
+						"type": "string"
 					},
 					"idempotency_keys": {
 						"description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
@@ -1603,6 +1623,33 @@
 				},
 				"type": "object"
 			},
+			"models.FunctionRequest": {
+				"properties": {
+					"function": {
+						"type": "string"
+					},
+					"payload": {
+						"additionalProperties": {},
+						"type": "object"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.FunctionResponse": {
+				"properties": {
+					"log": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"payload": {}
+				},
+				"type": "object"
+			},
 			"models.GooglePubSubConfig": {
 				"properties": {
 					"project_id": {
@@ -1882,6 +1929,9 @@
 			},
 			"models.SourceResponse": {
 				"properties": {
+					"body_function": {
+						"type": "string"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -1896,6 +1946,9 @@
 							"type": "string"
 						},
 						"type": "array"
+					},
+					"header_function": {
+						"type": "string"
 					},
 					"idempotency_keys": {
 						"items": {
@@ -1939,18 +1992,6 @@
 					"verifier": {
 						"$ref": "#/components/schemas/datastore.VerifierConfig"
 					}
-				},
-				"type": "object"
-			},
-			"models.SubscriptionFunctionResponse": {
-				"properties": {
-					"log": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
-					"payload": {}
 				},
 				"type": "object"
 			},
@@ -2023,35 +2064,6 @@
 							}
 						],
 						"description": "Sample test schema"
-					}
-				},
-				"type": "object"
-			},
-			"models.TestWebhookFunction": {
-				"properties": {
-					"function": {
-						"type": "string"
-					},
-					"payload": {
-						"additionalProperties": true,
-						"type": "object"
-					}
-				},
-				"type": "object"
-			},
-			"models.UpdateCatalogue": {
-				"properties": {
-					"events": {
-						"items": {
-							"$ref": "#/components/schemas/datastore.EventDataCatalogue"
-						},
-						"type": "array"
-					},
-					"open_api_spec": {
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
 					}
 				},
 				"type": "object"
@@ -2129,6 +2141,10 @@
 			},
 			"models.UpdateSource": {
 				"properties": {
+					"body_function": {
+						"description": "Function is a javascript function used to mutate the payload\nimmediately after ingesting an event",
+						"type": "string"
+					},
 					"custom_response": {
 						"allOf": [
 							{
@@ -2143,6 +2159,10 @@
 							"type": "string"
 						},
 						"type": "array"
+					},
+					"header_function": {
+						"description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
+						"type": "string"
 					},
 					"idempotency_keys": {
 						"description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
@@ -2165,7 +2185,7 @@
 								"$ref": "#/components/schemas/models.PubSubConfig"
 							}
 						],
-						"description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects, you only need to speicfy this when the source type is `pub_sub`."
+						"description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects, you only need to specify this when the source type is `pub_sub`."
 					},
 					"type": {
 						"allOf": [
@@ -8547,7 +8567,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.TestWebhookFunction"
+								"$ref": "#/components/schemas/models.FunctionRequest"
 							}
 						}
 					},
@@ -8567,7 +8587,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.SubscriptionFunctionResponse"
+													"$ref": "#/components/schemas/models.FunctionResponse"
 												}
 											},
 											"type": "object"

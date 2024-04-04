@@ -729,7 +729,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -812,7 +812,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 
 func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	supportEmail := "10xengineer@getconvoy.io"
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
@@ -884,7 +884,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
 	title := "random-name"
 	f := faker.New()
-	endpointURL := f.Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 
@@ -3040,6 +3040,9 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
             "type": "exponential",
             "duration": 10,
             "retry_count": 2
+        },
+         "ssl": {
+            "enforce_secure_endpoints": true
         },
         "signature": {
             "header": "X-Convoy-Signature",
