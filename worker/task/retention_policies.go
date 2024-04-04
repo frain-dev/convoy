@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/util"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 
@@ -44,6 +45,8 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 		}()
 
+		fmt.Println("running retention policy")
+
 		c := time.Now()
 		config, err := configRepo.LoadConfiguration(ctx)
 		if err != nil {
@@ -60,6 +63,9 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 		}
 
 		for _, p := range projects {
+			if !p.Config.IsRetentionPolicyEnabled {
+				continue
+			}
 			exporter, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config)
 			if err != nil {
 				return err
@@ -71,15 +77,17 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 
 			// upload to object storage.
-			objectStoreClient, err := objectstore.NewObjectStoreClient(config.StoragePolicy)
-			if err != nil {
-				return err
-			}
-
-			for _, r := range result {
-				err = objectStoreClient.Save(r.ExportFile)
+			if !util.IsStringEmpty(string(config.StoragePolicy.Type)) {
+				objectStoreClient, err := objectstore.NewObjectStoreClient(config.StoragePolicy)
 				if err != nil {
 					return err
+				}
+
+				for _, r := range result {
+					err = objectStoreClient.Save(r.ExportFile)
+					if err != nil {
+						return err
+					}
 				}
 			}
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -61,6 +62,7 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 
 	policy, err := time.ParseDuration(p.Config.RetentionPolicy.Policy)
 	if err != nil {
+		fmt.Println("parse duraction failing for project: ", p.UID)
 		return nil, err
 	}
 
@@ -163,7 +165,7 @@ func (ex *Exporter) exportTable(ctx context.Context, table tablename, expDate ti
 	now := time.Now().UTC().Format(time.RFC3339)
 	exportFile := fmt.Sprintf(exportFileFormat, exportDir, ex.project.OrganisationID, ex.project.UID, now)
 
-	writer, err := getOutputWriter(exportFile)
+	writer, err := ex.getOutputWriter(exportFile)
 	if err != nil {
 		return result, err
 	}
@@ -202,7 +204,7 @@ func (ex *Exporter) getExportDir() (string, error) {
 
 		return ex.config.StoragePolicy.OnPrem.Path.String, nil
 	default:
-		return "", ErrInvalidExportDir
+		return convoy.TmpExportDir, nil
 	}
 }
 
@@ -219,7 +221,12 @@ func (ex *Exporter) getRepo(table tablename) (datastore.ExportRepository, error)
 
 // GetOutputWriter opens and returns an io.WriteCloser for the output
 // options or nil if none is set. The caller is responsible for closing it.
-func getOutputWriter(out string) (io.WriteCloser, error) {
+func (ex *Exporter) getOutputWriter(out string) (io.WriteCloser, error) {
+	if util.IsStringEmpty(string(ex.config.StoragePolicy.Type)) {
+		// return a noop writer
+		return &NopWriteCloser{}, nil
+	}
+
 	// If the directory in which the output file is to be
 	// written does not exist, create it
 	fileDir := filepath.Dir(out)
@@ -237,4 +244,14 @@ func getOutputWriter(out string) (io.WriteCloser, error) {
 
 func toUniversalPath(path string) string {
 	return filepath.FromSlash(path)
+}
+
+type NopWriteCloser struct{}
+
+func (np *NopWriteCloser) Write(p []byte) (n int, err error) {
+	return 0, nil
+}
+
+func (np *NopWriteCloser) Close() error {
+	return nil
 }

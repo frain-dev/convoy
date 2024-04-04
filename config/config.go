@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/kelseyhightower/envconfig"
 )
@@ -62,12 +61,6 @@ var DefaultConfiguration = Configuration{
 	},
 	Analytics: AnalyticsConfiguration{
 		IsEnabled: true,
-	},
-	StoragePolicy: StoragePolicyConfiguration{
-		Type: "on-prem",
-		OnPrem: OnPremStorage{
-			Path: convoy.DefaultOnPremDir,
-		},
 	},
 	Auth: AuthConfiguration{
 		IsSignupEnabled: true,
