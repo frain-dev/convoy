@@ -65,6 +65,9 @@ type ProjectConfig struct {
 	// Strategy is used to configure the project's retry strategies for failing events.
 	Strategy *StrategyConfiguration `json:"strategy"`
 
+	// SSL is used to configure the project's endpoint ssl enforcement rules
+	SSL *SSLConfiguration
+
 	// Signature is used to configure the project's signature header versions
 	Signature *SignatureConfiguration `json:"signature"`
 
@@ -82,17 +85,32 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 	}
 
 	return &datastore.ProjectConfig{
-		MaxIngestSize:                 pc.MaxIngestSize,
-		ReplayAttacks:                 pc.ReplayAttacks,
-		IsRetentionPolicyEnabled:      pc.IsRetentionPolicyEnabled,
-		DisableEndpoint:               pc.DisableEndpoint,
-		AddEventIDTraceHeaders:        pc.AddEventIDTraceHeaders,
+		MaxIngestSize:            pc.MaxIngestSize,
+		ReplayAttacks:            pc.ReplayAttacks,
+		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
+		DisableEndpoint:          pc.DisableEndpoint,
+		AddEventIDTraceHeaders:   pc.AddEventIDTraceHeaders,
 		MultipleEndpointSubscriptions: pc.MultipleEndpointSubscriptions,
-		RetentionPolicy:               pc.RetentionPolicy.transform(),
-		RateLimit:                     pc.RateLimit.Transform(),
-		Strategy:                      pc.Strategy.transform(),
-		Signature:                     pc.Signature.transform(),
-		MetaEvent:                     pc.MetaEvent.transform(),
+    SSL:                      pc.SSL.transform(),
+		RetentionPolicy:          pc.RetentionPolicy.transform(),
+		RateLimit:                pc.RateLimit.Transform(),
+		Strategy:                 pc.Strategy.transform(),
+		Signature:                pc.Signature.transform(),
+		MetaEvent:                pc.MetaEvent.transform(),
+	}
+}
+
+type SSLConfiguration struct {
+	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints"`
+}
+
+func (r *SSLConfiguration) transform() *datastore.SSLConfiguration {
+	if r == nil {
+		return nil
+	}
+
+	return &datastore.SSLConfiguration{
+		EnforceSecureEndpoints: r.EnforceSecureEndpoints,
 	}
 }
 
