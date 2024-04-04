@@ -209,7 +209,6 @@
 						<p class="text-12 text-neutral-11 mt-10px w-[460px]">Toggling this will allow only HTTPS secure endpoints, this allows only TLS connections to your endpoints.</p>
 					</div>
 					<convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle>
-					<convoy-toggle formControlName="disable_endpoint" (onChange)="confirmToggleAction($event, 'endpoints')"></convoy-toggle>
 				</div>
 
 				<hr class="border-t border-neutral-4 my-24px" />
