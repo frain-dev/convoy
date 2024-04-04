@@ -5003,7 +5003,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TestWebhookFunction"
+                            "$ref": "#/definitions/models.FunctionRequest"
                         }
                     }
                 ],
@@ -5019,7 +5019,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.SubscriptionFunctionResponse"
+                                            "$ref": "#/definitions/models.FunctionResponse"
                                         }
                                     }
                                 }
@@ -5470,6 +5470,9 @@
                     "type": "string"
                 },
                 "schema": {
+                    "type": "string"
+                },
+                "vhost": {
                     "type": "string"
                 }
             }
@@ -6112,6 +6115,9 @@
         "datastore.Source": {
             "type": "object",
             "properties": {
+                "body_function": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -6126,6 +6132,9 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "header_function": {
+                    "type": "string"
                 },
                 "idempotency_keys": {
                     "type": "array",
@@ -6331,6 +6340,9 @@
                 },
                 "schema": {
                     "type": "string"
+                },
+                "vhost": {
+                    "type": "string"
                 }
             }
         },
@@ -6483,6 +6495,10 @@
         "models.CreateSource": {
             "type": "object",
             "properties": {
+                "body_function": {
+                    "description": "Function is a javascript function used to mutate the payload\nimmediately after ingesting an event",
+                    "type": "string"
+                },
                 "custom_response": {
                     "description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only.",
                     "allOf": [
@@ -6490,6 +6506,10 @@
                             "$ref": "#/definitions/models.CustomResponse"
                         }
                     ]
+                },
+                "header_function": {
+                    "description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
+                    "type": "string"
                 },
                 "idempotency_keys": {
                     "description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
@@ -6942,6 +6962,33 @@
                 "header": {}
             }
         },
+        "models.FunctionRequest": {
+            "type": "object",
+            "properties": {
+                "function": {
+                    "type": "string"
+                },
+                "payload": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.FunctionResponse": {
+            "type": "object",
+            "properties": {
+                "log": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "payload": {}
+            }
+        },
         "models.GooglePubSubConfig": {
             "type": "object",
             "properties": {
@@ -7222,6 +7269,9 @@
         "models.SourceResponse": {
             "type": "object",
             "properties": {
+                "body_function": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -7236,6 +7286,9 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "header_function": {
+                    "type": "string"
                 },
                 "idempotency_keys": {
                     "type": "array",
@@ -7279,18 +7332,6 @@
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
                 }
-            }
-        },
-        "models.SubscriptionFunctionResponse": {
-            "type": "object",
-            "properties": {
-                "log": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "payload": {}
             }
         },
         "models.SubscriptionResponse": {
@@ -7363,18 +7404,6 @@
                             "$ref": "#/definitions/models.FilterSchema"
                         }
                     ]
-                }
-            }
-        },
-        "models.TestWebhookFunction": {
-            "type": "object",
-            "properties": {
-                "function": {
-                    "type": "string"
-                },
-                "payload": {
-                    "type": "object",
-                    "additionalProperties": true
                 }
             }
         },
@@ -7452,6 +7481,10 @@
         "models.UpdateSource": {
             "type": "object",
             "properties": {
+                "body_function": {
+                    "description": "Function is a javascript function used to mutate the payload\nimmediately after ingesting an event",
+                    "type": "string"
+                },
                 "custom_response": {
                     "description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only.",
                     "allOf": [
@@ -7466,6 +7499,10 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "header_function": {
+                    "description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
+                    "type": "string"
                 },
                 "idempotency_keys": {
                     "description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
@@ -7483,7 +7520,7 @@
                     "type": "string"
                 },
                 "pub_sub": {
-                    "description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects, you only need to speicfy this when the source type is `pub_sub`.",
+                    "description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects, you only need to specify this when the source type is `pub_sub`.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.PubSubConfig"

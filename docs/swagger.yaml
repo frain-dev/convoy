@@ -32,6 +32,8 @@ definitions:
         type: string
       schema:
         type: string
+      vhost:
+        type: string
     type: object
   datastore.ApiKey:
     properties:
@@ -466,6 +468,8 @@ definitions:
     type: object
   datastore.Source:
     properties:
+      body_function:
+        type: string
       created_at:
         type: string
       custom_response:
@@ -476,6 +480,8 @@ definitions:
         items:
           type: string
         type: array
+      header_function:
+        type: string
       idempotency_keys:
         items:
           type: string
@@ -618,6 +624,8 @@ definitions:
         type: string
       schema:
         type: string
+      vhost:
+        type: string
     type: object
   models.ApiKey:
     properties:
@@ -747,12 +755,22 @@ definitions:
     type: object
   models.CreateSource:
     properties:
+      body_function:
+        description: |-
+          Function is a javascript function used to mutate the payload
+          immediately after ingesting an event
+        type: string
       custom_response:
         allOf:
         - $ref: '#/definitions/models.CustomResponse'
         description: |-
           Custom response is used to define a custom response for incoming
           webhooks project sources only.
+      header_function:
+        description: |-
+          Function is a javascript function used to mutate the headers
+          immediately after ingesting an event
+        type: string
       idempotency_keys:
         description: |-
           IdempotencyKeys are used to specify parts of a webhook request to uniquely
@@ -1069,6 +1087,24 @@ definitions:
       body: {}
       header: {}
     type: object
+  models.FunctionRequest:
+    properties:
+      function:
+        type: string
+      payload:
+        additionalProperties: {}
+        type: object
+      type:
+        type: string
+    type: object
+  models.FunctionResponse:
+    properties:
+      log:
+        items:
+          type: string
+        type: array
+      payload: {}
+    type: object
   models.GooglePubSubConfig:
     properties:
       project_id:
@@ -1257,6 +1293,8 @@ definitions:
     type: object
   models.SourceResponse:
     properties:
+      body_function:
+        type: string
       created_at:
         type: string
       custom_response:
@@ -1267,6 +1305,8 @@ definitions:
         items:
           type: string
         type: array
+      header_function:
+        type: string
       idempotency_keys:
         items:
           type: string
@@ -1295,14 +1335,6 @@ definitions:
         type: string
       verifier:
         $ref: '#/definitions/datastore.VerifierConfig'
-    type: object
-  models.SubscriptionFunctionResponse:
-    properties:
-      log:
-        items:
-          type: string
-        type: array
-      payload: {}
     type: object
   models.SubscriptionResponse:
     properties:
@@ -1347,14 +1379,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/models.FilterSchema'
         description: Sample test schema
-    type: object
-  models.TestWebhookFunction:
-    properties:
-      function:
-        type: string
-      payload:
-        additionalProperties: true
-        type: object
     type: object
   models.UpdateCustomResponse:
     properties:
@@ -1425,6 +1449,11 @@ definitions:
     type: object
   models.UpdateSource:
     properties:
+      body_function:
+        description: |-
+          Function is a javascript function used to mutate the payload
+          immediately after ingesting an event
+        type: string
       custom_response:
         allOf:
         - $ref: '#/definitions/models.UpdateCustomResponse'
@@ -1437,6 +1466,11 @@ definitions:
         items:
           type: string
         type: array
+      header_function:
+        description: |-
+          Function is a javascript function used to mutate the headers
+          immediately after ingesting an event
+        type: string
       idempotency_keys:
         description: |-
           IdempotencyKeys are used to specify parts of a webhook request to uniquely
@@ -1455,7 +1489,7 @@ definitions:
         - $ref: '#/definitions/models.PubSubConfig'
         description: |-
           PubSub are used to specify message broker sources for outgoing
-          webhooks projects, you only need to speicfy this when the source type is `pub_sub`.
+          webhooks projects, you only need to specify this when the source type is `pub_sub`.
       type:
         allOf:
         - $ref: '#/definitions/datastore.SourceType'
@@ -4559,7 +4593,7 @@ paths:
         name: filter
         required: true
         schema:
-          $ref: '#/definitions/models.TestWebhookFunction'
+          $ref: '#/definitions/models.FunctionRequest'
       produces:
       - application/json
       responses:
@@ -4570,7 +4604,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.SubscriptionFunctionResponse'
+                  $ref: '#/definitions/models.FunctionResponse'
               type: object
         "400":
           description: Bad Request
