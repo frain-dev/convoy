@@ -150,11 +150,10 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
 
-            // set meta events config
-            this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
+			// set meta events config
+			this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
 				? this.projectForm.get('config.meta_event.is_enabled')?.patchValue(this.projectDetails.config.meta_event.is_enabled)
 				: this.projectForm.get('config.meta_event.is_enabled')?.patchValue(false);
-
 
 			const search_policy = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
 
@@ -316,8 +315,8 @@ export class CreateProjectComponent implements OnInit {
 	async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
 		const disableValue = event.target.checked;
 		if (actionType === 'endpoints') disableValue ? await this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		else if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
 		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
-		if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
 	}
 
 	confirmTLSToggleAction(event: any) {

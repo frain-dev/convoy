@@ -198,10 +198,10 @@
 						<h3 class="font-semibold mb-8px text-12">Disable Failing Endpoint</h3>
 						<p class="text-12 text-neutral-11 mt-10px w-[460px]">Toggling this configuration on will automatically disable all endpoints in this project with failure response untill request to them are manually retried</p>
 					</div>
-					<convoy-toggle name="disable_endpoint" formControlName="disable_endpoint" (onChange)="confirmToggleAction($event)"></convoy-toggle>
+					<convoy-toggle name="disable_endpoint" formControlName="disable_endpoint" (onChange)="confirmToggleAction($event, 'endpoints')"></convoy-toggle>
 				</div>
 
-                <hr class="border-t border-neutral-4 my-24px"/>
+				<hr class="border-t border-neutral-4 my-24px" />
 
 				<div class="flex justify-between items-start" formGroupName="ssl">
 					<div class="max-w-[500px]">
@@ -218,6 +218,9 @@
 						<h3 class="font-semibold mb-8px text-12">Allow endpoint have multiple subscriptions</h3>
 						<p class="text-12 text-neutral-11 mt-10px w-[460px]">Toggling this will allow an endpoint have multiple subscriptions simultaneously.</p>
 					</div>
+
+					<!-- <convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle> -->
+
 					<convoy-toggle name="multiple_endpoint_subscriptions" formControlName="multiple_endpoint_subscriptions" (onChange)="confirmToggleAction($event, 'multiEndpoints')"></convoy-toggle>
 				</div>
 			</ng-container>
@@ -397,14 +400,16 @@
 
 <!-- disable tls endpoints confirmation prompt -->
 <dialog #disableTLSEndpointsDialog convoy-dialog position="center" size="sm">
-    <div class="flex flex-col justify-center items-center px-30px py-40px text-black text-12 text-center">
+	<div class="flex flex-col justify-center items-center px-30px py-40px text-black text-12 text-center">
 		<img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
 		<p class="max-w-[250px] font-semibold">Are you sure you want to disable this?</p>
-        <p class="max-w-[300px] font-medium mb-12px">Connections to your endpoints will be susceptible to machine-in-the-middle attacks</p>
+		<p class="max-w-[300px] font-medium mb-12px">Connections to your endpoints will be susceptible to machine-in-the-middle attacks</p>
 		<button convoy-button color="danger" class="mb-18px mt-24px" [disabled]="isCreatingProject" (click)="updateProject(); disableTLSEndpointsDialog.close()">Yes, Disable</button>
 		<button convoy-button size="sm" fill="text" class="font-semibold !text-neutral-11" (click)="disableTLSEndpointsDialog.close(); projectForm.patchValue({ config: { ssl: { enforce_secure_endpoints: true } } })">No, Cancel</button>
+	</div>
+</dialog>
 
-      <!-- enable muliple endpoints subscription confirmation prompt -->
+<!-- enable muliple endpoints subscription confirmation prompt -->
 <dialog #mutliSubEndpointsDialog convoy-dialog position="center" size="sm">
 	<div class="flex flex-col p-30px">
 		<h3 class="text-14 font-bold text-black mb-8px">Confirm Action</h3>
@@ -414,8 +419,7 @@
 			<button convoy-button size="sm" (click)="updateProject(); mutliSubEndpointsDialog.close()">Confirm</button>
 			<button convoy-button fill="text" size="sm" class="font-semibold" (click)="mutliSubEndpointsDialog.close(); projectForm.patchValue({ config: { multiple_endpoint_subscriptions: false } })">Close</button>
 		</div>
-
- </div>
+	</div>
 </dialog>
 
 <!-- disable meta events prompt  -->
