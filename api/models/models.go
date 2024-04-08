@@ -144,7 +144,7 @@ type PortalLinkResponse struct {
 	ProjectID         string                     `json:"project_id"`
 	OwnerID           string                     `json:"owner_id"`
 	Endpoints         []string                   `json:"endpoints"`
-	EndpointCount     uint32                        `json:"endpoint_count"`
+	EndpointCount     int                        `json:"endpoint_count"`
 	CanManageEndpoint bool                       `json:"can_manage_endpoint"`
 	Token             string                     `json:"token"`
 	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`

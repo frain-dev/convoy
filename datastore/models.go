@@ -1395,7 +1395,7 @@ type PortalLink struct {
 	OwnerID           string           `json:"owner_id" db:"owner_id"`
 	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
 	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
-	EndpointCount     uint32           `json:"endpoint_count" db:"endpoint_count"`
+	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
