@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"github.com/frain-dev/convoy"
 
 	"github.com/mixpanel/mixpanel-go"
 )
@@ -22,16 +23,18 @@ func NewmixpanelBackend() *mixpanelBackend {
 func (mb *mixpanelBackend) Identify(ctx context.Context, instanceID string) error {
 	instance := mixpanel.NewPeopleProperties(instanceID, map[string]any{
 		// we can't identify the cloud platform yet.
-		"cloud": "none",
+		"cloud":   "none",
+		"Version": convoy.GetVersion(),
 	})
 
 	return mb.client.PeopleSet(ctx, []*mixpanel.PeopleProperties{instance})
 }
 
-func (mb *mixpanelBackend) Capture(ctx context.Context, metric metric) error {
+func (mb *mixpanelBackend) Capture(ctx context.Context, metric Metric) error {
 	return mb.client.Track(ctx, []*mixpanel.Event{
 		mb.client.NewEvent(string(metric.Name), metric.InstanceID, map[string]any{
-			"Count": metric.Count,
+			"Count":   metric.Count,
+			"Version": convoy.GetVersion(),
 		}),
 	})
 }
