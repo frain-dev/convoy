@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -20,7 +19,7 @@ import (
 
 const perPage = 50
 
-func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache, cfg config.Configuration, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
 	// Create a pool with go-redis
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
@@ -61,7 +60,7 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache
 		}
 
 		configRepo := postgres.NewConfigRepo(db)
-		config, err := configRepo.LoadConfiguration(context.Background())
+		configuration, err := configRepo.LoadConfiguration(context.Background())
 		if err != nil {
 			return err
 		}
@@ -74,22 +73,22 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache
 			ProjectRepo: projectRepo,
 		}
 
-		totalActiveProjectTracker := &telemetry.TotalActiveProjectTracker{
-			Orgs:        orgs,
-			EventRepo:   eventRepo,
-			ProjectRepo: projectRepo,
-		}
+		//totalActiveProjectTracker := &telemetry.TotalActiveProjectTracker{
+		//	Orgs:        orgs,
+		//	EventRepo:   eventRepo,
+		//	ProjectRepo: projectRepo,
+		//}
 
 		pb := telemetry.NewposthogBackend()
 		mb := telemetry.NewmixpanelBackend()
 
-		telemetry := telemetry.NewTelemetry(log, config,
+		newTelemetry := telemetry.NewTelemetry(log, configuration,
 			telemetry.OptionTracker(totalEventsTracker),
-			telemetry.OptionTracker(totalActiveProjectTracker),
+			//telemetry.OptionTracker(totalActiveProjectTracker),
 			telemetry.OptionBackend(pb),
 			telemetry.OptionBackend(mb))
 
-		err = telemetry.Capture(ctx)
+		err = newTelemetry.Capture(ctx)
 		if err != nil {
 			return err
 		}
@@ -99,16 +98,18 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, cache cache.Cache
 }
 
 func getAllOrganisations(ctx context.Context, orgRepo datastore.OrganisationRepository) ([]datastore.Organisation, error) {
-	var cursor string
+	var cursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
 	var orgs []datastore.Organisation
 
 	for {
-		orgs, pagination, err := orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next})
+		paged, pagination, err := orgRepo.LoadOrganisationsPaged(ctx, datastore.Pageable{PerPage: perPage, NextCursor: cursor, Direction: datastore.Next})
 		if err != nil {
 			return nil, err
 		}
 
-		if len(orgs) == 0 && !pagination.HasNextPage {
+		orgs = append(orgs, paged...)
+
+		if len(paged) == 0 && !pagination.HasNextPage {
 			break
 		}
 

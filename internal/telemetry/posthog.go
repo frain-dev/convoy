@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"github.com/frain-dev/convoy"
 
 	"github.com/posthog/posthog-go"
 )
@@ -24,17 +25,19 @@ func (pb *posthogBackend) Identify(ctx context.Context, instanceID string) error
 		posthog.Identify{
 			DistinctId: instanceID,
 			Properties: posthog.NewProperties().
-				Set("cloud", "none"),
+				Set("cloud", "none").
+				Set("Version", convoy.GetVersion()),
 		})
 }
 
-func (pb *posthogBackend) Capture(ctx context.Context, metric metric) error {
+func (pb *posthogBackend) Capture(ctx context.Context, metric Metric) error {
 	return pb.client.Enqueue(
 		posthog.Capture{
 			DistinctId: metric.InstanceID,
 			Event:      string(metric.Name),
 			Properties: posthog.NewProperties().
-				Set("Count", metric.Count),
+				Set("Count", metric.Count).
+				Set("Version", convoy.GetVersion()),
 		})
 }
 
