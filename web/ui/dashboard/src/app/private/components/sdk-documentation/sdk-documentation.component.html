@@ -7,10 +7,10 @@
 		</li>
 	</ul>
 
-	<div class="flex flex-row m-auto w-full mt-40px mb-24px border-b border-b-grey-10">
+	<div class="flex flex-row m-auto w-full mt-40px mb-24px border-b border-b-neutral-a3">
 		<li *ngFor="let step of steps" class="mr-24px !list-none last-of-type:mr-0">
 			<button class="pb-10px flex items-center" [class]="activeStep === step ? 'active' : ''" (click)="switchStep(step)">
-				<span class="text-14 text-left text-grey-60 tracking-[0.02em] mobile:min-w-[80px] font-medium">{{ step }}</span>
+				<span class="text-14 text-left text-neutral-11 tracking-[0.02em] mobile:min-w-[80px] font-medium">{{ step }}</span>
 			</button>
 		</li>
 	</div>

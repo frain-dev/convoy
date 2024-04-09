@@ -11,18 +11,18 @@
 					<div class="calendar-nav flex items-center justify-between">
 						<div class="flex items-center">
 							<button type="button" (click)="setMonth(-2)">
-								<svg width="24" height="24" class="fill-grey-40">
+								<svg width="24" height="24" class="fill-neutral-10">
 									<use xlink:href="#arrow-left-icon"></use>
 								</svg>
 							</button>
 						</div>
 
-						<div class="text-center text-h4 text-new.gray-900 font-semibold">{{ monthMap[month] }} {{ year }}</div>
+						<div class="text-center text-h4 text-neutral-12 font-semibold">{{ monthMap[month] }} {{ year }}</div>
 
 						<div class="flex items-center"></div>
 					</div>
 
-					<div class="grid grid-cols-7 py-10px capitalize items-center text-center mt-20px font-semibold text-new.gray-900">
+					<div class="grid grid-cols-7 py-10px capitalize items-center text-center mt-20px font-semibold text-neutral-12">
 						<div class="text-14">S</div>
 						<div class="text-14">M</div>
 						<div class="text-14">T</div>
@@ -33,7 +33,7 @@
 					</div>
 
 					<div class="days flex flex-wrap text-center mt-10px">
-						<button type="button" class="text-12 w-40px h-40px text-new.gray-600" [class]="getDayClassNames(date)" *ngFor="let date of datesForLeftCalendar" (click)="onselectDay(date.timestamp)">
+						<button type="button" class="text-12 max-w-40px h-40px text-neutral-10" [class]="getDayClassNames(date)" *ngFor="let date of datesForLeftCalendar" (click)="onselectDay(date.timestamp)">
 							{{ date.date }}
 						</button>
 					</div>
@@ -49,18 +49,18 @@
 					<div class="calendar-nav flex items-center justify-between">
 						<div class="flex items-center"></div>
 
-						<div class="text-center text-h4 text-new.gray-900 font-semibold">{{ monthMap[monthRight] }} {{ yearRight }}</div>
+						<div class="text-center text-h4 text-neutral-12 font-semibold">{{ monthMap[monthRight] }} {{ yearRight }}</div>
 
 						<div class="flex items-center">
 							<button type="button" (click)="setMonth(2)">
-								<svg width="24" height="24" class="fill-grey-40">
+								<svg width="24" height="24" class="fill-neutral-10">
 									<use xlink:href="#arrow-right-icon"></use>
 								</svg>
 							</button>
 						</div>
 					</div>
 
-					<div class="grid grid-cols-7 py-10px capitalize items-center text-center mt-20px font-semibold text-new.gray-900">
+					<div class="grid grid-cols-7 py-10px capitalize items-center text-center mt-20px font-semibold text-neutral-12">
 						<div class="text-14">S</div>
 						<div class="text-14">M</div>
 						<div class="text-14">T</div>
@@ -71,7 +71,7 @@
 					</div>
 
 					<div class="days flex flex-wrap text-center mt-10px">
-						<button type="button" class="text-12 w-40px h-40px text-new.gray-600 empty:hidden" *ngFor="let date of datesForRightCalendar; let i = index" [class]="getDayClassNamesRightCalendar(date)" (click)="onselectDay(date.timestamp)">
+						<button type="button" class="text-12 max-w-40px h-40px text-neutral-10 empty:hidden" *ngFor="let date of datesForRightCalendar; let i = index" [class]="getDayClassNamesRightCalendar(date)" (click)="onselectDay(date.timestamp)">
 							{{ date.date }}
 						</button>
 					</div>

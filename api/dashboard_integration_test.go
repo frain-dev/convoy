@@ -367,7 +367,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	endpoint := &datastore.Endpoint{
 		UID:          "abc",
 		ProjectID:    s.DefaultProject.UID,
-		Title:        "test-app",
+		Name:         "test-app",
 		Secrets:      datastore.Secrets{},
 		SupportEmail: "test@suport.com",
 		CreatedAt:    time.Now(),
@@ -691,7 +691,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), endpoint.Title, dbEndpoint.Title)
+	require.Equal(s.T(), endpoint.Name, dbEndpoint.Name)
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
@@ -729,7 +729,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -759,8 +759,8 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointTitle, dbEndpoint.Title)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
+	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
 }
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
@@ -812,7 +812,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 
 func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	supportEmail := "10xengineer@getconvoy.io"
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
@@ -849,9 +849,9 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), title, dbEndpoint.Title)
+	require.Equal(s.T(), title, dbEndpoint.Name)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
 }
 
 func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
@@ -884,7 +884,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
 	title := "random-name"
 	f := faker.New()
-	endpointURL := f.Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 
@@ -920,8 +920,8 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentic
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	require.Equal(s.T(), title, endpoint.Title)
-	require.Equal(s.T(), endpointURL, endpoint.TargetURL)
+	require.Equal(s.T(), title, endpoint.Name)
+	require.Equal(s.T(), endpointURL, endpoint.Url)
 	require.Equal(s.T(), datastore.EndpointAuthenticationType("api_key"), endpoint.Authentication.Type)
 	require.Equal(s.T(), "x-api-key", endpoint.Authentication.ApiKey.HeaderName)
 	require.Equal(s.T(), "testapikey", endpoint.Authentication.ApiKey.HeaderValue)
@@ -1121,7 +1121,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 	// Create an Endpoint with an app ID
 	endpoint := &datastore.Endpoint{
 		UID:       endpointID,
-		Title:     fmt.Sprintf("TestEndpoint-%s", endpointID),
+		Name:      fmt.Sprintf("TestEndpoint-%s", endpointID),
 		ProjectID: s.DefaultProject.UID,
 		AppID:     appID,
 		Secrets: datastore.Secrets{
@@ -3040,6 +3040,9 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
             "type": "exponential",
             "duration": 10,
             "retry_count": 2
+        },
+         "ssl": {
+            "enforce_secure_endpoints": true
         },
         "signature": {
             "header": "X-Convoy-Signature",

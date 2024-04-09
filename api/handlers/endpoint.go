@@ -21,6 +21,7 @@ import (
 //	@Summary		Create an endpoint
 //	@Description	This endpoint creates an endpoint
 //	@Tags			Endpoints
+//	@Id				CreateEndpoint
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
@@ -108,6 +109,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Retrieve endpoint
 //	@Description	This endpoint fetches an endpoint
+//	@Id				GetEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json
@@ -155,6 +157,7 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Summary		List all endpoints
 //	@Description	This endpoint fetches an endpoints
 //	@Tags			Endpoints
+//	@Id				GetEndpoints
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string						true	"Project ID"
@@ -229,6 +232,7 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update an endpoint
 //	@Description	This endpoint updates an endpoint
+//	@Id				UpdateEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json
@@ -313,6 +317,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Delete endpoint
 //	@Description	This endpoint deletes an endpoint
 //	@Tags			Endpoints
+//	@Id				DeleteEndpoint
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
@@ -349,6 +354,7 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Roll endpoint secret
 //	@Description	This endpoint expires and re-generates the endpoint secret.
+//	@Id				ExpireSecret
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json
@@ -405,6 +411,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Pause endpoint
 //	@Description	This endpoint toggles an endpoint status between the active and paused states
+//	@Id				PauseEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json

@@ -38,7 +38,7 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 
 	endpoint := &datastore.Endpoint{
 		UID:       uid,
-		Title:     title,
+		Name:      title,
 		ProjectID: g.UID,
 		OwnerID:   ownerID,
 		Status:    status,
@@ -61,7 +61,7 @@ func SeedMultipleEndpoints(db database.Database, project *datastore.Project, cou
 		uid := ulid.Make().String()
 		app := &datastore.Endpoint{
 			UID:       uid,
-			Title:     fmt.Sprintf("Test-%s", uid),
+			Name:      fmt.Sprintf("Test-%s", uid),
 			ProjectID: project.UID,
 			Secrets: datastore.Secrets{
 				{UID: ulid.Make().String()},
@@ -109,10 +109,11 @@ func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project,
 		OrganisationID: orgID,
 		Config: &datastore.ProjectConfig{
 			Strategy: &datastore.StrategyConfiguration{
-				Type:       datastore.DefaultStrategyProvider,
+				Type:       datastore.LinearStrategyProvider,
 				Duration:   10,
 				RetryCount: 2,
 			},
+			SSL: &datastore.DefaultSSLConfig,
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
 				Versions: []datastore.SignatureVersion{

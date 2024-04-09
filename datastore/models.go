@@ -150,7 +150,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(context.Context, *Source, string) error
+	PubSubHandler    func(context.Context, *Source, string, []byte) error
 	MetaEventType    string
 	HookEventType    string
 )
@@ -263,7 +263,6 @@ func (k KeyType) IsValid() bool {
 }
 
 const (
-	DefaultStrategyProvider                      = LinearStrategyProvider
 	LinearStrategyProvider      StrategyProvider = "linear"
 	ExponentialStrategyProvider StrategyProvider = "exponential"
 )
@@ -276,14 +275,17 @@ var (
 		IsRetentionPolicyEnabled: false,
 		DisableEndpoint:          false,
 		AddEventIDTraceHeaders:   false,
+		SSL:                      &DefaultSSLConfig,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
 		MetaEvent:                &MetaEventConfiguration{IsEnabled: false},
 	}
 
+	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
+
 	DefaultStrategyConfig = StrategyConfiguration{
-		Type:       DefaultStrategyProvider,
+		Type:       LinearStrategyProvider,
 		Duration:   100,
 		RetryCount: 10,
 	}
@@ -389,8 +391,8 @@ type Endpoint struct {
 	UID                string  `json:"uid" db:"id"`
 	ProjectID          string  `json:"project_id" db:"project_id"`
 	OwnerID            string  `json:"owner_id,omitempty" db:"owner_id"`
-	TargetURL          string  `json:"target_url" db:"target_url"`
-	Title              string  `json:"title" db:"title"`
+	Url                string  `json:"url" db:"url"`
+	Name               string  `json:"name" db:"name"`
 	Secrets            Secrets `json:"secrets" db:"secrets"`
 	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
 	Description        string  `json:"description" db:"description"`
@@ -398,13 +400,13 @@ type Endpoint struct {
 	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
 	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout uint64         `json:"http_timeout" db:"http_timeout"`
-	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
-	Events      int64          `json:"events,omitempty" db:"event_count"`
-	Status      EndpointStatus `json:"status" db:"status"`
+	Status         EndpointStatus          `json:"status" db:"status"`
+	HttpTimeout    uint64                  `json:"http_timeout" db:"http_timeout"`
+	Events         int64                   `json:"events,omitempty" db:"event_count"`
+	Authentication *EndpointAuthentication `json:"authentication" db:"authentication"`
 
-	RateLimitDuration uint64                  `json:"rate_limit_duration" db:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
+	RateLimit         int    `json:"rate_limit" db:"rate_limit"`
+	RateLimitDuration uint64 `json:"rate_limit_duration" db:"rate_limit_duration"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -525,6 +527,8 @@ type ProjectConfig struct {
 	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
 	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
 	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                      `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+  SSL                      *SSLConfiguration             `json:"ssl" db:"ssl"`
 	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
 	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
@@ -599,6 +603,10 @@ type MetaEventConfiguration struct {
 	URL       string         `json:"url" db:"url"`
 	Secret    string         `json:"secret" db:"secret"`
 	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub"`
+}
+
+type SSLConfiguration struct {
+	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints" db:"enforce_secure_endpoints"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -1057,6 +1065,8 @@ type Source struct {
 	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
 	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
 	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
+	BodyFunction    *string         `json:"body_function" db:"body_function"`
+	HeaderFunction  *string         `json:"header_function" db:"header_function"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -1123,7 +1133,8 @@ type AmqpPubSubConfig struct {
 	Port               string           `json:"port" db:"port"`
 	Queue              string           `json:"queue" db:"queue"`
 	Auth               *AmqpCredentials `json:"auth" db:"auth"`
-	BindedExchange     *string          `json:"bindedExchange" db:"binded_exchange"`
+	BoundExchange      *string          `json:"bindedExchange" db:"binded_exchange"`
+	Vhost              *string          `json:"vhost" db:"vhost"`
 	RoutingKey         string           `json:"routingKey" db:"routing_key"`
 	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
 }

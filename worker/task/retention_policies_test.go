@@ -81,6 +81,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 			Duration:   20,
 			RetryCount: 4,
 		},
+		SSL: &datastore.DefaultSSLConfig,
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
 			Policy: "72h",
 		},
@@ -94,7 +95,6 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	endpoint, err := testdb.SeedEndpoint(r.DB, project, ulid.Make().String(), "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(r.T(), err)
 
-	require.NoError(r.T(), err)
 	// seed event
 	duration, err := time.ParseDuration("80h")
 	require.NoError(r.T(), err)
@@ -165,6 +165,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 				},
 			},
 		},
+		SSL: &datastore.DefaultSSLConfig,
 		Strategy: &datastore.StrategyConfiguration{
 			Type:       "linear",
 			Duration:   20,

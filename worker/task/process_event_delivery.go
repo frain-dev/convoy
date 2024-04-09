@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
 	"github.com/frain-dev/convoy/pkg/url"
 
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/oklog/ulid/v2"
 
@@ -45,7 +46,7 @@ type EventDelivery struct {
 }
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
+	projectRepo datastore.ProjectRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
@@ -75,11 +76,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		subscription, err := subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
-
 		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
@@ -91,15 +87,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		ec := &EventDeliveryConfig{subscription: subscription, project: project}
-		rlc := ec.rateLimitConfig()
-
-		res, err := rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
+		err = rateLimiter.Allow(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
-			err := fmt.Errorf("too many events to %s, limit of %v would be reached", endpoint.TargetURL, res.Limit)
-			log.FromContext(ctx).WithError(ErrRateLimit).Error(err.Error())
+			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery id": data.EventDeliveryID}).
+				WithError(err).
+				Error(fmt.Errorf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second))
 
-			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
+			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
@@ -117,13 +111,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		done := true
-		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
+		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
-			log.Debugf("endpoint %s already merged with message %s\n", endpoint.TargetURL, eventDelivery.UID)
+			log.Debugf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID)
 			return nil
 		}
 
@@ -133,7 +127,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				return &EndpointError{Err: err, delay: delayDuration}
 			}
 
-			log.Debugf("endpoint %s is inactive, failing to send.", endpoint.TargetURL)
+			log.Debugf("endpoint %s is inactive, failing to send.", endpoint.Url)
 			return nil
 		}
 
@@ -143,9 +137,9 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		targetURL := endpoint.TargetURL
+		targetURL := endpoint.Url
 		if !util.IsStringEmpty(eventDelivery.URLQueryParams) {
-			targetURL, err = url.ConcatQueryParams(endpoint.TargetURL, eventDelivery.URLQueryParams)
+			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
 			if err != nil {
 				log.WithError(err).Error("failed to concat url query params")
 				return &EndpointError{Err: err, delay: delayDuration}
@@ -201,7 +195,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Metadata.NextSendTime = nextTime
 			attempts := eventDelivery.Metadata.NumTrials + 1
 
-			log.FromContext(ctx).Info("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID, nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+			log.FromContext(ctx).Infof("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID, nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
@@ -326,6 +320,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 type EventDeliveryConfig struct {
 	project      *datastore.Project
 	subscription *datastore.Subscription
+	endpoint     *datastore.Endpoint
 }
 
 type RetryConfig struct {
@@ -335,8 +330,8 @@ type RetryConfig struct {
 }
 
 type RateLimitConfig struct {
-	Count    int
-	Duration time.Duration
+	Rate       int
+	BucketSize int
 }
 
 func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
@@ -358,13 +353,8 @@ func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
 func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
 	rlc := &RateLimitConfig{}
 
-	if ec.subscription.RateLimitConfig != nil {
-		rlc.Count = ec.subscription.RateLimitConfig.Count
-		rlc.Duration = time.Second * time.Duration(ec.subscription.RateLimitConfig.Duration)
-	} else {
-		rlc.Count = ec.project.Config.RateLimit.Count
-		rlc.Duration = time.Second * time.Duration(ec.project.Config.RateLimit.Duration)
-	}
+	rlc.Rate = ec.endpoint.RateLimit
+	rlc.BucketSize = int(ec.endpoint.RateLimitDuration)
 
 	return rlc
 }

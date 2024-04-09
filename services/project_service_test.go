@@ -98,6 +98,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Duration:   20,
 						RetryCount: 4,
 					},
+					SSL: &datastore.SSLConfiguration{EnforceSecureEndpoints: true},
 					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
 						Duration: 60,
@@ -125,6 +126,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 							Duration:   20,
 							RetryCount: 4,
 						},
+						SSL: &models.SSLConfiguration{EnforceSecureEndpoints: false},
 						RateLimit: &models.RateLimitConfiguration{
 							Count:    1000,
 							Duration: 60,
@@ -158,6 +160,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 					},
+					SSL: &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
 					Strategy: &datastore.StrategyConfiguration{
 						Type:       "linear",
 						Duration:   20,
@@ -216,6 +219,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 							},
 						},
 					},
+					SSL:             &datastore.DefaultSSLConfig,
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,
@@ -269,6 +273,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 							},
 						},
 					},
+					SSL:             &datastore.DefaultSSLConfig,
 					Strategy:        &datastore.DefaultStrategyConfig,
 					RateLimit:       &datastore.DefaultRateLimitConfig,
 					RetentionPolicy: &datastore.DefaultRetentionPolicy,

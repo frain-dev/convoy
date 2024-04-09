@@ -19,6 +19,6 @@ export class ListItemComponent implements OnInit {
 	ngOnInit(): void {}
 
 	get class() {
-		return `${this.hasBorder ? 'border-grey-10 border-b' : ''} ${this.active === 'true' ? 'bg-primary-500' : ''}`;
+		return `${this.hasBorder ? 'border-neutral-a3 border-b' : ''} ${this.active === 'true' ? 'bg-primary-500' : ''}`;
 	}
 }

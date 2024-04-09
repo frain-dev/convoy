@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -33,38 +34,14 @@ func (m *MockPubSub) EXPECT() *MockPubSubMockRecorder {
 	return m.recorder
 }
 
-// Consume mocks base method.
-func (m *MockPubSub) Consume() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Consume")
-}
-
-// Consume indicates an expected call of Consume.
-func (mr *MockPubSubMockRecorder) Consume() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Consume", reflect.TypeOf((*MockPubSub)(nil).Consume))
-}
-
 // Start mocks base method.
-func (m *MockPubSub) Start() {
+func (m *MockPubSub) Start(arg0 context.Context) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Start")
+	m.ctrl.Call(m, "Start", arg0)
 }
 
 // Start indicates an expected call of Start.
-func (mr *MockPubSubMockRecorder) Start() *gomock.Call {
+func (mr *MockPubSubMockRecorder) Start(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockPubSub)(nil).Start))
-}
-
-// Stop mocks base method.
-func (m *MockPubSub) Stop() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Stop")
-}
-
-// Stop indicates an expected call of Stop.
-func (mr *MockPubSubMockRecorder) Stop() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockPubSub)(nil).Stop))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockPubSub)(nil).Start), arg0)
 }

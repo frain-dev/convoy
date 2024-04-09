@@ -103,7 +103,7 @@ export class HttpService {
 
 				const requestHeader = {
 					Authorization: `Bearer ${this.token || this.authDetails()?.access_token}`,
-					'X-Convoy-Version': '2024-01-01'
+					'X-Convoy-Version': '2024-03-06'
 				};
 
 				// process URL

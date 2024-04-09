@@ -117,7 +117,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				endpoint = &datastore.Endpoint{UID: "098", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
+				endpoint = &datastore.Endpoint{UID: "098", Url: "https://google.com", Status: datastore.ActiveEndpointStatus}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(endpoint, nil)
 
@@ -180,7 +180,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				endpoint = &datastore.Endpoint{UID: "098", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
+				endpoint = &datastore.Endpoint{UID: "098", Url: "https://google.com", Status: datastore.ActiveEndpointStatus}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(endpoint, nil)
 
@@ -257,7 +257,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
-				endpoint := &datastore.Endpoint{UID: "endpoint-id-1", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
+				endpoint := &datastore.Endpoint{UID: "endpoint-id-1", Url: "https://google.com", Status: datastore.ActiveEndpointStatus}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(2).Return(endpoint, nil)
 
@@ -404,7 +404,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 
-				endpoint := &datastore.Endpoint{UID: "endpoint-id-1", TargetURL: "https://google.com", Status: datastore.ActiveEndpointStatus}
+				endpoint := &datastore.Endpoint{UID: "endpoint-id-1", Url: "https://google.com", Status: datastore.ActiveEndpointStatus}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(endpoint, nil)
 
@@ -807,7 +807,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			payload, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, tt.inputSubs)
+			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, tt.inputSubs, false)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				return

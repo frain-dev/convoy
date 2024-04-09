@@ -1,6 +1,6 @@
 <div [class]="class">
 	<button convoy-button fill="text" type="button" size="sm" (click)="copyItem($event)" class="relative">
-		<svg width="16" height="16" [attr.height]="size === 'sm' ? '14' : '16'" [attr.width]="size === 'sm' ? '14' : '16'" [class]="color === 'gray' ? 'stroke-new.gray-400' : 'stroke-new.primary-400'" *ngIf="showIcon == 'true'">
+		<svg width="16" height="16" [attr.height]="size === 'sm' ? '14' : '16'" [attr.width]="size === 'sm' ? '14' : '16'" [class]="color === 'gray' ? 'stroke-neutral-10' : 'stroke-new.primary-400'" *ngIf="showIcon == 'true'">
 			<use [attr.xlink:href]="size === 'sm' ? '#copy-icon-3' : '#copy-icon-2'"></use>
 		</svg>
 		<ng-content></ng-content>

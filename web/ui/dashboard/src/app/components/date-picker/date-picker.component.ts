@@ -162,14 +162,17 @@ export class DatePickerComponent implements OnInit {
 		let day = args.index % 7;
 		let prevMonth = args.month - 1;
 		let prevYear = args.year;
+
 		if (prevMonth < 0) {
 			prevMonth = 11;
 			prevYear--;
 		}
+
 		let prevMonthNumberOfDays = this.getNumberOfDays(prevYear, prevMonth);
 		let _date = (date < 0 ? prevMonthNumberOfDays + date : date % args.numberOfDays) + 1;
 		let month = date < 0 ? -1 : date >= args.numberOfDays ? 1 : 0;
 		let timestamp = new Date(args.year, args.month, _date).getTime();
+
 		return {
 			date: _date,
 			day,
@@ -228,20 +231,26 @@ export class DatePickerComponent implements OnInit {
 	}
 
 	getDayClassNames(day: CALENDAR_DAY): string {
-		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out ${this.isCurrentDay(day.timestamp) && !this.isStartDay(day.timestamp) && !this.isEndDay(day.timestamp) ? '!bg-transparent !font-extrabold !text-primary-100' : ''} ${
-			this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''
-		} ${(this.isInFuture(day.timestamp) && this.formType === 'filter') || day.month !== 0 ? 'opacity-30 pointer-events-none' : ''} ${day.month !== 0 ? '!opacity-0 pointer-events-none hidden' : ''} ${
-			this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''
-		} ${this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''} ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
+		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out
+        ${this.isCurrentDay(day.timestamp) && !this.isStartDay(day.timestamp) && !this.isEndDay(day.timestamp) ? '!bg-transparent !font-extrabold !text-primary-100' : ''}
+        ${this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''}
+        ${(this.isInFuture(day.timestamp) && this.formType === 'filter') || day.month !== 0 ? 'opacity-30 pointer-events-none' : ''}
+        ${day.month !== 0 ? '!opacity-0 pointer-events-none' : ''}
+        ${this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''}
+        ${this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''}
+        ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
 		return classNames;
 	}
 
 	getDayClassNamesRightCalendar(day: CALENDAR_DAY): string {
-		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out ${this.isCurrentDay(day.timestamp) && !this.isStartDay(day.timestamp) && !this.isEndDay(day.timestamp) ? '!bg-transparent !font-extrabold !text-primary-100' : ''} ${
-			this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''
-		} ${day.month !== 0 ? '!opacity-0 pointer-events-none hidden' : ''} ${this.isInFuture(day.timestamp) && this.formType === 'filter' ? 'opacity-30 pointer-events-none' : ''} ${
-			this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''
-		} ${this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''} ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
+		const classNames = `w-full h-40px justify-center items-center transition-all duration-300 ease-in-out
+        ${this.isCurrentDay(day.timestamp) && !this.isStartDay(day.timestamp) && !this.isEndDay(day.timestamp) ? '!bg-transparent !font-extrabold !text-primary-100' : ''}
+        ${this.isDayWithinStartAndEndDates(day.timestamp) ? 'bg-primary-400 font-medium' : ''}
+        ${day.month !== 0 ? '!opacity-0 pointer-events-none' : ''}
+        ${this.isInFuture(day.timestamp) && this.formType === 'filter' ? 'opacity-30 pointer-events-none' : ''}
+        ${this.isSelectedDay(day.timestamp) && day.month == 0 ? '!bg-primary-200 !text-white-100 font-medium' : ''}
+        ${this.isStartDay(day.timestamp) ? 'rounded-bl-8px rounded-tl-8px' : ''}
+        ${this.isEndDay(day.timestamp) ? 'rounded-br-8px rounded-tr-8px' : ''}`;
 		return classNames;
 	}
 

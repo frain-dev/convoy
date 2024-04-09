@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
 
 	"github.com/frain-dev/convoy/util"
@@ -117,11 +118,12 @@ func (s *Sqs) consume() {
 		case <-s.ctx.Done():
 			return
 		default:
-
+			allAttr := "All"
 			output, err := svc.ReceiveMessageWithContext(s.ctx, &sqs.ReceiveMessageInput{
-				QueueUrl:            queueURL,
-				MaxNumberOfMessages: aws.Int64(10),
-				WaitTimeSeconds:     aws.Int64(1),
+				QueueUrl:              queueURL,
+				MaxNumberOfMessages:   aws.Int64(10),
+				WaitTimeSeconds:       aws.Int64(1),
+				MessageAttributeNames: []*string{&allAttr},
 			})
 
 			if err != nil {
@@ -137,7 +139,27 @@ func (s *Sqs) consume() {
 
 					defer s.handleError()
 
-					if err := s.handler(context.Background(), s.source, *m.Body); err != nil {
+					var d Attrs = m.MessageAttributes
+
+					attributes, err := msgpack.EncodeMsgPack(d.Map())
+					if err != nil {
+						s.log.WithError(err).Error("failed to marshall message attributes")
+						return
+					}
+
+					// Google Pub/Sub sends a slice with a single non UTF-8 value,
+					// looks like this: [192], which can cause a panic when marshaling headers
+					if len(attributes) == 1 && attributes[0] == 192 {
+						emptyMap := map[string]string{}
+						emptyBytes, err := msgpack.EncodeMsgPack(emptyMap)
+						if err != nil {
+							s.log.WithError(err).Error("an error occurred creating an empty attributes map")
+							return
+						}
+						attributes = emptyBytes
+					}
+
+					if err := s.handler(context.Background(), s.source, *m.Body, attributes); err != nil {
 						s.log.WithError(err).Error("failed to write message to create event queue")
 					} else {
 						_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
@@ -160,6 +182,20 @@ func (s *Sqs) consume() {
 
 func (s *Sqs) handleError() {
 	if err := recover(); err != nil {
-		s.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", s.source.UID, err)).Error("sqs pubsub source crashed")
+		s.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", s.source.UID, err)).Error("sqs pubsub source crashed")
 	}
+}
+
+type M map[string]any
+
+// Attrs is a representation of Sqs MessageAttributes.
+type Attrs map[string]*sqs.MessageAttributeValue
+
+// Map creates a map from the elements of the Attrs.
+func (d Attrs) Map() M {
+	m := make(M, len(d))
+	for k, e := range d {
+		m[k] = *e.StringValue
+	}
+	return m
 }

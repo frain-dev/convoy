@@ -85,7 +85,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		return writeEventDeliveriesToQueue(
 			ctx, []datastore.Subscription{*s}, event, project, eventDeliveryRepo,
-			subRepo, eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo,
 		)
 	}
 }
@@ -102,8 +102,8 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 		endpoint = &datastore.Endpoint{
 			UID:                uid,
 			ProjectID:          project.UID,
-			Title:              fmt.Sprintf("endpoint-%s", uid),
-			TargetURL:          dynamicEvent.URL,
+			Name:               fmt.Sprintf("endpoint-%s", uid),
+			Url:                dynamicEvent.URL,
 			RateLimit:          convoy.RATE_LIMIT,
 			HttpTimeout:        convoy.HTTP_TIMEOUT,
 			AdvancedSignatures: true,

@@ -15,10 +15,10 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/server"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
@@ -74,12 +74,9 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			// block the main thread.
-			// trap Ctrl+C and call cancel on the context
-
 			select {
 			case <-quit:
-				cancel()
+				return nil
 			case <-ctx.Done():
 			}
 
@@ -204,10 +201,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 	configRepo := postgres.NewConfigRepo(a.DB)
 
-	rateLimiter, err := limiter.NewLimiter(cfg.Redis)
-	if err != nil {
-		a.Logger.Debug("Failed to initialise rate limiter")
-	}
+	rateLimiter := limiter.NewLimiter(a.DB)
 
 	counter := &telemetry.EventsCounter{}
 
@@ -229,7 +223,6 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
-		subRepo,
 		a.Queue,
 		rateLimiter), newTelemetry)
 
@@ -252,6 +245,16 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		deviceRepo), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
+
+	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
+		endpointRepo,
+		eventRepo,
+		projectRepo,
+		eventDeliveryRepo,
+		a.Queue,
+		subRepo,
+		deviceRepo), newTelemetry)
+
 
 	go func() {
 		consumer.Start()
