@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/telemetry"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -86,12 +88,65 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			eventRepo := postgres.NewEventRepo(a.DB, a.Cache)
 			jobRepo := postgres.NewJobRepo(a.DB, a.Cache)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
+			subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
+			deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 			configRepo := postgres.NewConfigRepo(a.DB)
 
 			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 			if err != nil {
 				return err
 			}
+
+			rateLimiter := limiter.NewLimiter(a.DB)
+			counter := &telemetry.EventsCounter{}
+
+			pb := telemetry.NewposthogBackend()
+			mb := telemetry.NewmixpanelBackend()
+
+			configuration, err := configRepo.LoadConfiguration(context.Background())
+			if err != nil {
+				a.Logger.WithError(err).Fatal("Failed to instance configuration")
+				return err
+			}
+
+			newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
+				telemetry.OptionTracker(counter),
+				telemetry.OptionBackend(pb),
+				telemetry.OptionBackend(mb))
+
+			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
+				endpointRepo,
+				eventDeliveryRepo,
+				projectRepo,
+				a.Queue,
+				rateLimiter), newTelemetry)
+
+			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
+				endpointRepo,
+				eventRepo,
+				projectRepo,
+				eventDeliveryRepo,
+				a.Queue,
+				subRepo,
+				deviceRepo), newTelemetry)
+
+			consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
+				endpointRepo,
+				eventRepo,
+				projectRepo,
+				eventDeliveryRepo,
+				a.Queue,
+				subRepo,
+				deviceRepo), newTelemetry)
+
+			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
+				endpointRepo,
+				eventRepo,
+				projectRepo,
+				eventDeliveryRepo,
+				a.Queue,
+				subRepo,
+				deviceRepo), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 				configRepo,
