@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/internal/telemetry"
 	"os"
 	"os/signal"
 	"time"
@@ -198,15 +199,32 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
 	subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
 	deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
+	configRepo := postgres.NewConfigRepo(a.DB)
 
 	rateLimiter := limiter.NewLimiter(a.DB)
+
+	counter := &telemetry.EventsCounter{}
+
+	pb := telemetry.NewposthogBackend()
+	mb := telemetry.NewmixpanelBackend()
+
+	configuration, err := configRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		a.Logger.WithError(err).Fatal("Failed to instance configuration")
+		return err
+	}
+
+	newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
+		telemetry.OptionTracker(counter),
+		telemetry.OptionBackend(pb),
+		telemetry.OptionBackend(mb))
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
 		a.Queue,
-		rateLimiter))
+		rateLimiter), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 		endpointRepo,
@@ -215,7 +233,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo))
+		deviceRepo), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 		endpointRepo,
@@ -224,7 +242,9 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo))
+		deviceRepo), newTelemetry)
+
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
 		endpointRepo,
@@ -233,9 +253,8 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo))
+		deviceRepo), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
 
 	go func() {
 		consumer.Start()
