@@ -522,18 +522,18 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
-	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
-	MultipleEndpointSubscriptions bool                      `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
-  SSL                      *SSLConfiguration             `json:"ssl" db:"ssl"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
-	MetaEvent                *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled      bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	AddEventIDTraceHeaders        bool                          `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                          `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                          `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	SSL                           *SSLConfiguration             `json:"ssl" db:"ssl"`
+	RetentionPolicy               *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	RateLimit                     *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration        `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration       `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -1395,6 +1395,7 @@ type PortalLink struct {
 	OwnerID           string           `json:"owner_id" db:"owner_id"`
 	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
 	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
+	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`

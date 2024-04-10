@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/database"
@@ -54,6 +55,10 @@ const (
 	p.endpoints,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE 
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
 	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
@@ -75,6 +80,10 @@ const (
 	p.endpoints,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE 
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
 	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
@@ -96,6 +105,10 @@ const (
 	p.endpoints,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE 
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
 	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
@@ -128,6 +141,10 @@ const (
 	p.endpoints,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE 
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
 	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
