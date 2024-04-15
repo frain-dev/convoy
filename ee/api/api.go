@@ -26,9 +26,14 @@ func NewEHandler(opts *types.APIOptions) (*EHandler, error) {
 	}
 
 	opts.Authz = az
+	appHandler, err := api.NewApplicationHandler(opts)
+	if err != nil {
+		return &EHandler{}, err
+	}
+
 	eeh := &EHandler{
 		opts:               opts,
-		ApplicationHandler: &api.ApplicationHandler{A: opts},
+		ApplicationHandler: appHandler,
 	}
 
 	return eeh, nil
