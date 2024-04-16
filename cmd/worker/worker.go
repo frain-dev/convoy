@@ -3,7 +3,13 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/queue"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -181,6 +187,50 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				render.JSON(w, r, "Convoy")
 			})
+
+			go func() {
+				ticker := time.NewTicker(time.Second)
+				for {
+					select {
+					case <-ticker.C:
+						evs, err := eventDeliveryRepo.FindStuckEventDeliveriesByStatus(context.Background(), datastore.ScheduledEventStatus)
+						if err != nil {
+							log.FromContext(ctx).WithError(err).Errorf("an error occurred fetching stuck event deliveries")
+							continue
+						}
+
+						for i := 0; i < len(evs); i++ {
+							eventDelivery := evs[i]
+							payload := task.EventDelivery{
+								EventDeliveryID: eventDelivery.UID,
+								ProjectID:       eventDelivery.ProjectID,
+							}
+
+							data, err := msgpack.EncodeMsgPack(payload)
+							if err != nil {
+								log.FromContext(ctx).WithError(err).Errorf("an error occurred encoding stuck event delivery with id %s", eventDelivery.UID)
+								continue
+							}
+
+							job := &queue.Job{
+								ID:      eventDelivery.UID,
+								Payload: data,
+								Delay:   1 * time.Second,
+							}
+
+							err = a.Queue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+							if err != nil {
+								log.FromContext(ctx).WithError(err).Errorf("an error occurred queueing stuck event delivery with id %s", eventDelivery.UID)
+								continue
+							}
+						}
+					}
+				}
+			}()
+
+			quit := make(chan os.Signal, 1)
+			signal.Notify(quit, os.Interrupt)
+			<-quit
 
 			srv := &http.Server{
 				Handler: router,

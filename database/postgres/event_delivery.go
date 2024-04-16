@@ -169,6 +169,16 @@ const (
 	AND deleted_at IS NULL;
     `
 
+	fetchStuckEventDeliveries = `
+    SELECT id, project_id
+    FROM convoy.event_deliveries
+	WHERE status = $1
+	  AND created_at <= now() - make_interval(secs := 10)
+      AND deleted_at IS NULL
+    FOR UPDATE SKIP LOCKED
+    LIMIT 100;
+    `
+
 	countEventDeliveriesByStatus = `
     SELECT COUNT(id) FROM convoy.event_deliveries WHERE status = $1 AND (project_id = $2 OR $2 = '') AND created_at >= $3 AND created_at <= $4 AND deleted_at IS NULL;
     `
@@ -312,6 +322,28 @@ func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, project
 	}
 
 	return count.Count, nil
+}
+
+func (e *eventDeliveryRepo) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
+	eventDeliveries := make([]datastore.EventDelivery, 0)
+
+	rows, err := e.db.QueryxContext(ctx, fetchStuckEventDeliveries, status)
+	if err != nil {
+		return nil, err
+	}
+	defer closeWithError(rows)
+
+	for rows.Next() {
+		var ed datastore.EventDelivery
+		err = rows.StructScan(&ed)
+		if err != nil {
+			return nil, err
+		}
+
+		eventDeliveries = append(eventDeliveries, ed)
+	}
+
+	return eventDeliveries, nil
 }
 
 func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, projectID string, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
