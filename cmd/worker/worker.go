@@ -7,8 +7,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"net/http"
-	"os"
-	"os/signal"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -189,10 +187,11 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			})
 
 			go func() {
-				ticker := time.NewTicker(time.Second)
+				ticker := time.NewTicker(time.Second * 10)
 				for {
 					select {
-					case <-ticker.C:
+					case t := <-ticker.C:
+						fmt.Printf("here: %+v\n", t)
 						evs, err := eventDeliveryRepo.FindStuckEventDeliveriesByStatus(context.Background(), datastore.ScheduledEventStatus)
 						if err != nil {
 							log.FromContext(ctx).WithError(err).Errorf("an error occurred fetching stuck event deliveries")
@@ -224,13 +223,15 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 								continue
 							}
 						}
+					default:
+						continue
 					}
 				}
 			}()
 
-			quit := make(chan os.Signal, 1)
-			signal.Notify(quit, os.Interrupt)
-			<-quit
+			//quit := make(chan os.Signal, 1)
+			//signal.Notify(quit, os.Interrupt)
+			//<-quit
 
 			srv := &http.Server{
 				Handler: router,

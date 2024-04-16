@@ -263,7 +263,6 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		for {
 			select {
 			case <-ticker.C:
-				// read 100 records from the db using for update skip locked
 				evs, err := eventDeliveryRepo.FindStuckEventDeliveriesByStatus(context.Background(), datastore.ScheduledEventStatus)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Errorf("an error occurred fetching stuck event deliveries")
@@ -295,13 +294,15 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 						continue
 					}
 				}
+			default:
+				continue
 			}
 		}
 	}()
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	<-quit
+	//quit := make(chan os.Signal, 1)
+	//signal.Notify(quit, os.Interrupt)
+	//<-quit
 
 	go func() {
 		consumer.Start()
