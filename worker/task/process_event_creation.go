@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"time"
 
@@ -201,35 +202,35 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		//if eventDelivery.Status != datastore.DiscardedEventStatus {
-		//	payload := EventDelivery{
-		//		EventDeliveryID: eventDelivery.UID,
-		//		ProjectID:       eventDelivery.ProjectID,
-		//	}
-		//
-		//	data, err := msgpack.EncodeMsgPack(payload)
-		//	if err != nil {
-		//		return &EndpointError{Err: err, delay: defaultDelay}
-		//	}
-		//
-		//	job := &queue.Job{
-		//		ID:      eventDelivery.UID,
-		//		Payload: data,
-		//		Delay:   1 * time.Second,
-		//	}
-		//
-		//	if s.Type == datastore.SubscriptionTypeAPI {
-		//		err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
-		//		if err != nil {
-		//			log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
-		//		}
-		//	} else if s.Type == datastore.SubscriptionTypeCLI {
-		//		err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
-		//		if err != nil {
-		//			log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
-		//		}
-		//	}
-		//}
+		if eventDelivery.Status != datastore.DiscardedEventStatus {
+			payload := EventDelivery{
+				EventDeliveryID: eventDelivery.UID,
+				ProjectID:       eventDelivery.ProjectID,
+			}
+
+			data, err := msgpack.EncodeMsgPack(payload)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
+
+			job := &queue.Job{
+				ID:      eventDelivery.UID,
+				Payload: data,
+				Delay:   1 * time.Second,
+			}
+
+			if s.Type == datastore.SubscriptionTypeAPI {
+				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
+				}
+			} else if s.Type == datastore.SubscriptionTypeCLI {
+				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
+				}
+			}
+		}
 	}
 
 	return nil
