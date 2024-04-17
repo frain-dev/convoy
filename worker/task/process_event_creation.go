@@ -22,6 +22,7 @@ import (
 type CreateEventTaskParams struct {
 	UID            string
 	ProjectID      string
+	OwnerID        string            `json:"owner_id"`
 	AppID          string            `json:"app_id"`
 	EndpointID     string            `json:"endpoint_id"`
 	SourceID       string            `json:"source_id"`
@@ -398,7 +399,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		return nil, errors.New("an error occurred while creating event - invalid project")
 	}
 
-	if util.IsStringEmpty(eventParams.AppID) && util.IsStringEmpty(eventParams.EndpointID) {
+	if util.IsStringEmpty(eventParams.AppID) && util.IsStringEmpty(eventParams.EndpointID) && util.IsStringEmpty(eventParams.OwnerID) {
 		return nil, errors.New("please provide an endpoint ID")
 	}
 
@@ -453,6 +454,15 @@ func findEndpoints(ctx context.Context, endpointRepo datastore.EndpointRepositor
 		}
 
 		endpoints = append(endpoints, *endpoint)
+		return endpoints, nil
+	}
+
+	if !util.IsStringEmpty(newMessage.OwnerID) {
+		endpoints, err := endpointRepo.FindEndpointsByOwnerID(ctx, project.UID, newMessage.OwnerID)
+		if err != nil {
+			return endpoints, err
+		}
+
 		return endpoints, nil
 	}
 

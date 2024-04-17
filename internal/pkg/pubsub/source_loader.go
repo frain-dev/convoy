@@ -134,6 +134,7 @@ func (s *SourceLoader) handler(_ context.Context, source *datastore.Source, msg 
 			UID:            ulid.Make().String(),
 			SourceID:       source.UID,
 			ProjectID:      source.ProjectID,
+			OwnerID:        ev.OwnerID,
 			EndpointID:     ev.EndpointID,
 			EventType:      ev.EventType,
 			Data:           ev.Data,
