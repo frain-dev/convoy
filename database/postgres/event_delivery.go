@@ -173,10 +173,10 @@ const (
     SELECT id, project_id
     FROM convoy.event_deliveries
 	WHERE status = $1
-	  AND created_at <= now() - make_interval(secs := 10)
+	  AND created_at <= now() - make_interval(secs := 30)
       AND deleted_at IS NULL
     FOR UPDATE SKIP LOCKED
-    LIMIT 100;
+    LIMIT 1000;
     `
 
 	countEventDeliveriesByStatus = `

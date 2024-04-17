@@ -183,7 +183,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				render.JSON(w, r, "Convoy")
 			})
 
-			ticker := time.NewTicker(time.Second * 10)
+			ticker := time.NewTicker(time.Minute)
 			go task.QueueStuckEventDeliveries(ctx, ticker, eventDeliveryRepo, a.Queue)
 
 			srv := &http.Server{

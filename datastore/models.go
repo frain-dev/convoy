@@ -757,7 +757,7 @@ func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 }
 
 const (
-	// ScheduledEventStatus : when an Event has been scheduled for delivery
+	// ScheduledEventStatus when an Event has been scheduled for delivery
 	ScheduledEventStatus  EventDeliveryStatus = "Scheduled"
 	ProcessingEventStatus EventDeliveryStatus = "Processing"
 	DiscardedEventStatus  EventDeliveryStatus = "Discarded"
@@ -835,7 +835,7 @@ func (m *Metadata) Value() (driver.Value, error) {
 type EventIntervalData struct {
 	Interval  int64  `json:"index" db:"index"`
 	Time      string `json:"date" db:"total_time"`
-	GroupStub string `json:"-" db:"group_only"` // ugnore
+	GroupStub string `json:"-" db:"group_only"` // ignore
 }
 
 type EventInterval struct {
@@ -857,7 +857,7 @@ type DeliveryAttempt struct {
 	HttpResponseCode string     `json:"http_status,omitempty" db:"http_status"`
 	ResponseData     string     `json:"response_data,omitempty" db:"response_data"`
 	Error            string     `json:"error,omitempty" db:"error"`
-	Status           bool       `json:"status,omitempty" db:"statu,"`
+	Status           bool       `json:"status,omitempty" db:"status"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`

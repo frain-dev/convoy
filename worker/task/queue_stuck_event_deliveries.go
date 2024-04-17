@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/queue/redis"
 	"time"
 )
 
@@ -20,8 +21,22 @@ func QueueStuckEventDeliveries(ctx context.Context, ticker *time.Ticker, edRepo 
 				continue
 			}
 
+			ids := func() []string {
+				arr := make([]string, len(evs))
+				for i := 0; i < len(evs); i++ {
+					arr = append(arr, evs[i].UID)
+				}
+				return arr
+			}()
+
+			err = q.(*redis.RedisQueue).DeleteEventDeliveriesFromQueue(convoy.EventQueue, ids)
+			if err != nil {
+				log.FromContext(ctx).WithError(err).Error("an error occurred removing task with id from the queue")
+			}
+
 			for i := 0; i < len(evs); i++ {
 				eventDelivery := evs[i]
+
 				payload := EventDelivery{
 					EventDeliveryID: eventDelivery.UID,
 					ProjectID:       eventDelivery.ProjectID,
