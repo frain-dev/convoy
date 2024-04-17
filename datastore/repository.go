@@ -27,7 +27,7 @@ type EventDeliveryRepository interface {
 	UpdateStatusOfEventDelivery(ctx context.Context, projectID string, eventDelivery EventDelivery, status EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status EventDeliveryStatus) error
 	FindDiscardedEventDeliveries(ctx context.Context, projectID, deviceId string, params SearchParams) ([]EventDelivery, error)
-
+	FindStuckEventDeliveriesByStatus(ctx context.Context, status EventDeliveryStatus) ([]EventDelivery, error)
 	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error

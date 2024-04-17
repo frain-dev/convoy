@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 
@@ -169,6 +170,9 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				render.JSON(w, r, "Convoy")
 			})
 
+			ticker := time.NewTicker(time.Minute)
+			go task.QueueStuckEventDeliveries(ctx, ticker, eventDeliveryRepo, a.Queue)
+
 			srv := &http.Server{
 				Handler: router,
 				Addr:    fmt.Sprintf(":%d", workerPort),
@@ -181,6 +185,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return e
 			}
 
+			ticker.Stop()
 			<-ctx.Done()
 			return ctx.Err()
 		},
