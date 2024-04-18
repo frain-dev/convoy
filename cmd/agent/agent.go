@@ -255,6 +255,8 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		subRepo,
 		deviceRepo), newTelemetry)
 
+	ticker := time.NewTicker(time.Second * 10)
+	go task.QueueStuckEventDeliveries(ctx, ticker, eventDeliveryRepo, a.Queue)
 
 	go func() {
 		consumer.Start()
