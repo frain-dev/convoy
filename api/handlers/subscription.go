@@ -325,7 +325,7 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string						true	"Project ID"
+//	@Param			projectID	path		string					true	"Project ID"
 //	@Param			filter		body		models.FunctionRequest	true	"Function Details"
 //	@Success		200			{object}	util.ServerResponse{data=models.FunctionResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
