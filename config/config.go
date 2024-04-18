@@ -418,7 +418,7 @@ func LoadConfig(p string) error {
 			return err
 		}
 	} else if !errors.Is(err, os.ErrNotExist) {
-		log.Fatal("failed to check for config file")
+		log.WithError(err).Fatal("failed to check if config file exists")
 	}
 
 	// override config from environment variables
