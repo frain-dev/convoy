@@ -311,6 +311,21 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(ctx, pr
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventDeliveryByID", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindEventDeliveryByID), ctx, projectID, id)
 }
 
+// FindStuckEventDeliveriesByStatus mocks base method.
+func (m *MockEventDeliveryRepository) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindStuckEventDeliveriesByStatus", ctx, status)
+	ret0, _ := ret[0].([]datastore.EventDelivery)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindStuckEventDeliveriesByStatus indicates an expected call of FindStuckEventDeliveriesByStatus.
+func (mr *MockEventDeliveryRepositoryMockRecorder) FindStuckEventDeliveriesByStatus(ctx, status interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindStuckEventDeliveriesByStatus", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindStuckEventDeliveriesByStatus), ctx, status)
+}
+
 // LoadEventDeliveriesIntervals mocks base method.
 func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
