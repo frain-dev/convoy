@@ -417,8 +417,8 @@ func LoadConfig(p string) error {
 		if err := json.NewDecoder(f).Decode(&c); err != nil {
 			return err
 		}
-	} else if errors.Is(err, os.ErrNotExist) {
-		log.Info("convoy.json not detected, will look for env vars or cli args")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		log.WithError(err).Fatal("failed to check if config file exists")
 	}
 
 	// override config from environment variables
