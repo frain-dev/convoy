@@ -1,6 +1,7 @@
 # 24.1.4
 
-- [Enhancement] Add custom headers to dynamic event
+- [Enhancement] Add custom headers to dynamic event #1923
+- [Feature] Add broadcast event api #1913
 
 # 24.1.3
 

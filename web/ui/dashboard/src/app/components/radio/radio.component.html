@@ -1,12 +1,12 @@
 <div class="relative h-full">
-	<input type="radio" [id]="id" [name]="name" [formControl]="control" [value]="value" [checked]="checked" class="peer opacity-0 absolute" />
-	<label [for]="id" class="bg-white-100 border border-new.gray-200 rounded-4px p-16px block transition-all duration-200 peer-checked:border-new.primary-300 peer-checked:bg-[#FAFAFE] h-full">
+	<input #radioInput type="radio" [id]="id" [name]="name" [formControl]="control" [value]="value" [checked]="checked" class="peer opacity-0 absolute" />
+	<label [for]="id" class="bg-white-100 border border-neutral-5 rounded-4px p-16px block transition-all duration-200 peer-checked:border-new.primary-300 peer-checked:bg-[#FAFAFE] h-full cursor-pointer">
 		<div class="flex justify-between">
-			<div class="flex items-center">
+			<div class="flex items-start">
 				<div class="w-16px"></div>
 				<div class="ml-20px">
-					<p class="text-12 text-new.gray-600 font-semibold">{{ label }}</p>
-					<p *ngIf="description" class="text-new.gray-500 text-12 text-left font-normal">{{ description }}</p>
+					<p class="text-12 text-neutral-10 font-semibold">{{ label }}</p>
+					<p *ngIf="description" class="text-neutral-11 text-12 text-left font-normal">{{ description }}</p>
 				</div>
 			</div>
 			<convoy-tooltip *ngIf="tooltipContent" [position]="tooltipPosition" [size]="tooltipSize">
@@ -14,5 +14,5 @@
 			</convoy-tooltip>
 		</div>
 	</label>
-	<div class="absolute top-20px left-[17px] rounded-[50px] mb-0 border border-new.gray-400 w-16px h-16px transition-all duration-200 peer-checked:border-new.primary-300 peer-checked:border-[5px]"></div>
+	<div class="absolute top-20px left-[17px] rounded-[50px] mb-0 border border-neutral-10 w-16px h-16px transition-all duration-200 peer-checked:border-new.primary-300 peer-checked:border-[5px]" (click)="radioInput.click()"></div>
 </div>

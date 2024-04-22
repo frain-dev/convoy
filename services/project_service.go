@@ -8,13 +8,11 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/config"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -24,27 +22,15 @@ type ProjectService struct {
 	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	limiter           limiter.RateLimiter
 	cache             cache.Cache
 }
 
 func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) (*ProjectService, error) {
-	cfg, err := config.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	rlimiter, err := limiter.NewLimiter(cfg.Redis)
-	if err != nil {
-		return nil, err
-	}
-
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
-		limiter:           rlimiter,
 		cache:             cache,
 	}, nil
 }
@@ -70,7 +56,11 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			projectConfig.Strategy = datastore.DefaultProjectConfig.Strategy
 		}
 
-		err := validateMetaEvent(projectConfig.MetaEvent)
+		if projectConfig.SSL == nil {
+			projectConfig.SSL = &datastore.DefaultSSLConfig
+		}
+
+		err := validateMetaEvent(projectConfig)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -175,7 +165,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 
 		project.Config = update.Config.Transform()
 		checkSignatureVersions(project.Config.Signature.Versions)
-		err := validateMetaEvent(project.Config.MetaEvent)
+		err := validateMetaEvent(project.Config)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -207,7 +197,8 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	}
 }
 
-func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
+func validateMetaEvent(c *datastore.ProjectConfig) error {
+	metaEvent := c.MetaEvent
 	if metaEvent == nil {
 		return nil
 	}
@@ -217,7 +208,7 @@ func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
 	}
 
 	if metaEvent.Type == datastore.HTTPMetaEvent {
-		url, err := util.CleanEndpoint(metaEvent.URL)
+		url, err := util.ValidateEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints)
 		if err != nil {
 			return err
 		}

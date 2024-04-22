@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -106,12 +107,12 @@ func ProcessEventCreation(
 
 		return writeEventDeliveriesToQueue(
 			ctx, subscriptions, event, project, eventDeliveryRepo,
-			subRepo, eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo,
 		)
 	}
 }
 
-func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, subRepo datastore.SubscriptionRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
+func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
 	ec := &EventDeliveryConfig{project: project}
 	for _, s := range subscriptions {
 		ec.subscription = &s
@@ -147,7 +148,8 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
+			transformer := transform.NewTransformer()
+			mutated, _, err := transformer.Transform(s.Function.String, payload)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
@@ -367,7 +369,7 @@ func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoi
 	return &datastore.Subscription{
 		ProjectID:  project.UID,
 		UID:        ulid.Make().String(),
-		Name:       fmt.Sprintf("%s-subscription", endpoint.Title),
+		Name:       fmt.Sprintf("%s-subscription", endpoint.Name),
 		Type:       datastore.SubscriptionTypeAPI,
 		EndpointID: endpoint.UID,
 		FilterConfig: &datastore.FilterConfiguration{

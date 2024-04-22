@@ -3,12 +3,29 @@
 @import './scss/prism';
 @import './scss/material-design-reset';
 @import '~prismjs/plugins/toolbar/prism-toolbar.css';
+@import '@radix-ui/colors/gray.css';
+@import '@radix-ui/colors/gray-alpha.css';
+@import '@radix-ui/colors/gray-dark.css';
+@import '@radix-ui/colors/gray-dark-alpha.css';
+@import '@radix-ui/colors/green.css';
+@import '@radix-ui/colors/green-alpha.css';
+@import '@radix-ui/colors/green-dark.css';
+@import '@radix-ui/colors/green-dark-alpha.css';
+@import '@radix-ui/colors/red.css';
+@import '@radix-ui/colors/red-alpha.css';
+@import '@radix-ui/colors/red-dark.css';
+@import '@radix-ui/colors/red-dark-alpha.css';
+@import '@radix-ui/colors/amber.css';
+@import '@radix-ui/colors/amber-alpha.css';
+@import '@radix-ui/colors/amber-dark.css';
+@import '@radix-ui/colors/amber-dark-alpha.css';
 
 @tailwind base;
 
 /* Firefox */
 * {
 	scrollbar-width: 5px;
+    @apply text-neutral-12;
 }
 
 /* Chrome, Edge, and Safari */
@@ -23,7 +40,7 @@
 
 *::-webkit-scrollbar-thumb {
 	border-radius: 14px;
-	@apply bg-grey-20;
+	@apply bg-neutral-4;
 }
 
 @tailwind components;
@@ -67,15 +84,15 @@
 				@apply text-h3 font-semibold mb-8px;
 			}
 			p {
-				@apply mb-24px text-14 text-grey-60;
+				@apply mb-24px text-14 text-neutral-11;
 			}
 
 			code {
-				@apply bg-grey-10 rounded-4px py-2px px-8px my-0 mx-[1px] text-12 font-menlo text-black border border-none;
+				@apply bg-neutral-a3 rounded-4px py-2px px-8px my-0 mx-[1px] text-12 font-menlo text-black border border-none;
 			}
 
 			pre {
-				@apply rounded-8px font-normal px-16px py-20px bg-[#F3F3F8] mb-22px font-menlo text-14 whitespace-pre overflow-auto text-grey-40;
+				@apply rounded-8px font-normal px-16px py-20px bg-[#F3F3F8] mb-22px font-menlo text-14 whitespace-pre overflow-auto text-neutral-11;
 			}
 		}
 	}

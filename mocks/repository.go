@@ -311,6 +311,21 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(ctx, pr
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventDeliveryByID", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindEventDeliveryByID), ctx, projectID, id)
 }
 
+// FindStuckEventDeliveriesByStatus mocks base method.
+func (m *MockEventDeliveryRepository) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindStuckEventDeliveriesByStatus", ctx, status)
+	ret0, _ := ret[0].([]datastore.EventDelivery)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindStuckEventDeliveriesByStatus indicates an expected call of FindStuckEventDeliveriesByStatus.
+func (mr *MockEventDeliveryRepositoryMockRecorder) FindStuckEventDeliveriesByStatus(ctx, status interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindStuckEventDeliveriesByStatus", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindStuckEventDeliveriesByStatus), ctx, status)
+}
+
 // LoadEventDeliveriesIntervals mocks base method.
 func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
@@ -1470,22 +1485,6 @@ func (m *MockSubscriptionRepository) TestSubscriptionFilter(ctx context.Context,
 func (mr *MockSubscriptionRepositoryMockRecorder) TestSubscriptionFilter(ctx, payload, filter interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TestSubscriptionFilter", reflect.TypeOf((*MockSubscriptionRepository)(nil).TestSubscriptionFilter), ctx, payload, filter)
-}
-
-// TransformPayload mocks base method.
-func (m *MockSubscriptionRepository) TransformPayload(ctx context.Context, function string, payload map[string]interface{}) (interface{}, []string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "TransformPayload", ctx, function, payload)
-	ret0, _ := ret[0].(interface{})
-	ret1, _ := ret[1].([]string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
-}
-
-// TransformPayload indicates an expected call of TransformPayload.
-func (mr *MockSubscriptionRepositoryMockRecorder) TransformPayload(ctx, function, payload interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TransformPayload", reflect.TypeOf((*MockSubscriptionRepository)(nil).TransformPayload), ctx, function, payload)
 }
 
 // UpdateSubscription mocks base method.

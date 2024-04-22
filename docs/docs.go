@@ -42,6 +42,7 @@ const docTemplate = `{
                     "Endpoints"
                 ],
                 "summary": "List all endpoints",
+                "operationId": "GetEndpoints",
                 "parameters": [
                     {
                         "type": "string",
@@ -101,7 +102,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     }
@@ -213,6 +214,7 @@ const docTemplate = `{
                     "Endpoints"
                 ],
                 "summary": "Create an endpoint",
+                "operationId": "CreateEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -325,6 +327,7 @@ const docTemplate = `{
                     "Endpoints"
                 ],
                 "summary": "Retrieve endpoint",
+                "operationId": "GetEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -433,6 +436,7 @@ const docTemplate = `{
                     "Endpoints"
                 ],
                 "summary": "Update an endpoint",
+                "operationId": "UpdateEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -550,6 +554,7 @@ const docTemplate = `{
                     "Endpoints"
                 ],
                 "summary": "Delete endpoint",
+                "operationId": "DeleteEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -660,6 +665,7 @@ const docTemplate = `{
                     "Endpoints"
                 ],
                 "summary": "Roll endpoint secret",
+                "operationId": "ExpireSecret",
                 "parameters": [
                     {
                         "type": "string",
@@ -779,6 +785,7 @@ const docTemplate = `{
                     "Endpoints"
                 ],
                 "summary": "Pause endpoint",
+                "operationId": "PauseEndpoint",
                 "parameters": [
                     {
                         "type": "string",
@@ -889,6 +896,7 @@ const docTemplate = `{
                     "Event Deliveries"
                 ],
                 "summary": "List all event deliveries",
+                "operationId": "GetEventDeliveriesPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -929,16 +937,19 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Event ID to filter by",
                         "name": "eventId",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "EventType to filter by",
                         "name": "event_type",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "IdempotencyKey to filter by",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -966,7 +977,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     },
@@ -989,6 +1000,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "SubscriptionID to filter by",
                         "name": "subscriptionId",
                         "in": "query"
                     }
@@ -1102,6 +1114,7 @@ const docTemplate = `{
                     "Event Deliveries"
                 ],
                 "summary": "Batch retry event delivery",
+                "operationId": "BatchRetryEventDelivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -1142,16 +1155,19 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Event ID to filter by",
                         "name": "eventId",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "EventType to filter by",
                         "name": "event_type",
                         "in": "query"
                     },
                     {
                         "type": "string",
+                        "description": "IdempotencyKey to filter by",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -1179,7 +1195,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     },
@@ -1202,6 +1218,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "SubscriptionID to filter by",
                         "name": "subscriptionId",
                         "in": "query"
                     }
@@ -1300,6 +1317,7 @@ const docTemplate = `{
                     "Event Deliveries"
                 ],
                 "summary": "Force retry event delivery",
+                "operationId": "ForceResendEventDeliveries",
                 "parameters": [
                     {
                         "type": "string",
@@ -1412,6 +1430,7 @@ const docTemplate = `{
                     "Event Deliveries"
                 ],
                 "summary": "Retrieve an event delivery",
+                "operationId": "GetEventDelivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -1522,6 +1541,7 @@ const docTemplate = `{
                     "Delivery Attempts"
                 ],
                 "summary": "List delivery attempts",
+                "operationId": "GetDeliveryAttempts",
                 "parameters": [
                     {
                         "type": "string",
@@ -1635,6 +1655,7 @@ const docTemplate = `{
                     "Delivery Attempts"
                 ],
                 "summary": "Retrieve a delivery attempt",
+                "operationId": "GetDeliveryAttempt",
                 "parameters": [
                     {
                         "type": "string",
@@ -1752,6 +1773,7 @@ const docTemplate = `{
                     "Event Deliveries"
                 ],
                 "summary": "Retry event delivery",
+                "operationId": "ResendEventDelivery",
                 "parameters": [
                     {
                         "type": "string",
@@ -1862,6 +1884,7 @@ const docTemplate = `{
                     "Events"
                 ],
                 "summary": "List all events",
+                "operationId": "GetEventsPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -1902,6 +1925,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "IdempotencyKey to filter by",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -1935,7 +1959,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     },
@@ -1945,6 +1969,7 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "A list of Source IDs to filter the events by.",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -2063,6 +2088,7 @@ const docTemplate = `{
                     "Events"
                 ],
                 "summary": "Create an event",
+                "operationId": "CreateEndpointEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2072,12 +2098,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Broadcast Event Details",
+                        "description": "Event Details",
                         "name": "event",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.BroadcastEvent"
+                            "$ref": "#/definitions/models.CreateEvent"
                         }
                     }
                 ],
@@ -2093,7 +2119,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.EventResponse"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2175,6 +2201,7 @@ const docTemplate = `{
                     "Events"
                 ],
                 "summary": "Batch replay events",
+                "operationId": "BatchReplayEvents",
                 "parameters": [
                     {
                         "type": "string",
@@ -2215,6 +2242,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "IdempotencyKey to filter by",
                         "name": "idempotencyKey",
                         "in": "query"
                     },
@@ -2248,7 +2276,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     },
@@ -2258,6 +2286,7 @@ const docTemplate = `{
                             "type": "string"
                         },
                         "collectionFormat": "csv",
+                        "description": "A list of Source IDs to filter the events by.",
                         "name": "sourceId",
                         "in": "query"
                     },
@@ -2357,6 +2386,119 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/projects/{projectID}/events/broadcast": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Create a broadcast event",
+                "operationId": "CreateBroadcastEvent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Broadcast Event Details",
+                        "name": "event",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.BroadcastEvent"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.EventResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{projectID}/events/dynamic": {
             "post": {
                 "security": [
@@ -2375,6 +2517,7 @@ const docTemplate = `{
                     "Events"
                 ],
                 "summary": "Dynamic Events",
+                "operationId": "CreateDynamicEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2475,6 +2618,7 @@ const docTemplate = `{
                     "Events"
                 ],
                 "summary": "Fan out an event",
+                "operationId": "CreateEndpointFanoutEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2505,7 +2649,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.EventResponse"
+                                            "$ref": "#/definitions/handlers.Stub"
                                         }
                                     }
                                 }
@@ -2587,6 +2731,7 @@ const docTemplate = `{
                     "Events"
                 ],
                 "summary": "Retrieve an event",
+                "operationId": "GetEndpointEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2697,6 +2842,7 @@ const docTemplate = `{
                     "Events"
                 ],
                 "summary": "Replay event",
+                "operationId": "ReplayEndpointEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2807,6 +2953,7 @@ const docTemplate = `{
                     "Meta Events"
                 ],
                 "summary": "List all meta events",
+                "operationId": "GetMetaEventsPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -2859,7 +3006,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     },
@@ -2980,6 +3127,7 @@ const docTemplate = `{
                     "Meta Events"
                 ],
                 "summary": "Retrieve a meta event",
+                "operationId": "GetMetaEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -3090,6 +3238,7 @@ const docTemplate = `{
                     "Meta Events"
                 ],
                 "summary": "Retry meta event",
+                "operationId": "ResendMetaEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -3200,6 +3349,7 @@ const docTemplate = `{
                     "Portal Links"
                 ],
                 "summary": "List all portal links",
+                "operationId": "LoadPortalLinksPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -3207,16 +3357,6 @@ const docTemplate = `{
                         "name": "projectID",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        },
-                        "collectionFormat": "csv",
-                        "description": "list of endpoint ids",
-                        "name": "endpointID",
-                        "in": "query"
                     },
                     {
                         "enum": [
@@ -3233,39 +3373,43 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "A pagination cursor to fetch the next page of a list",
                         "name": "next_page_cursor",
                         "in": "query"
                     },
                     {
+                        "type": "string",
+                        "example": "01H0JA5MEES38RRK3HTEJC647K",
+                        "description": "The owner ID of the endpoint",
+                        "name": "ownerId",
+                        "in": "query"
+                    },
+                    {
                         "type": "integer",
-                        "name": "per_page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "name": "prev_page_cursor",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "results per page",
+                        "example": 20,
+                        "description": "The number of items to return per page",
                         "name": "perPage",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "page number",
-                        "name": "page",
+                        "example": "01H0JATTVCXZK8FRDX1M1JN3QY",
+                        "description": "A pagination cursor to fetch the previous page of a list",
+                        "name": "prev_page_cursor",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "sort order",
+                        "example": "endpoint-1",
+                        "description": "The name of the endpoint",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "ASC | DESC",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     }
@@ -3377,6 +3521,7 @@ const docTemplate = `{
                     "Portal Links"
                 ],
                 "summary": "Create a portal link",
+                "operationId": "CreatePortalLink",
                 "parameters": [
                     {
                         "type": "string",
@@ -3489,6 +3634,7 @@ const docTemplate = `{
                     "Portal Links"
                 ],
                 "summary": "Retrieve a portal link",
+                "operationId": "GetPortalLink",
                 "parameters": [
                     {
                         "type": "string",
@@ -3597,6 +3743,7 @@ const docTemplate = `{
                     "Portal Links"
                 ],
                 "summary": "Update a portal link",
+                "operationId": "UpdatePortalLink",
                 "parameters": [
                     {
                         "type": "string",
@@ -3716,6 +3863,7 @@ const docTemplate = `{
                     "Portal Links"
                 ],
                 "summary": "Revoke a portal link",
+                "operationId": "RevokePortalLink",
                 "parameters": [
                     {
                         "type": "string",
@@ -3826,6 +3974,7 @@ const docTemplate = `{
                     "Sources"
                 ],
                 "summary": "List all sources",
+                "operationId": "LoadSourcesPaged",
                 "parameters": [
                     {
                         "type": "string",
@@ -3878,7 +4027,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     },
@@ -3997,6 +4146,7 @@ const docTemplate = `{
                     "Sources"
                 ],
                 "summary": "Create a source",
+                "operationId": "CreateSource",
                 "parameters": [
                     {
                         "type": "string",
@@ -4109,6 +4259,7 @@ const docTemplate = `{
                     "Sources"
                 ],
                 "summary": "Retrieve a source",
+                "operationId": "GetSource",
                 "parameters": [
                     {
                         "type": "string",
@@ -4217,6 +4368,7 @@ const docTemplate = `{
                     "Sources"
                 ],
                 "summary": "Update a source",
+                "operationId": "UpdateSource",
                 "parameters": [
                     {
                         "type": "string",
@@ -4334,6 +4486,7 @@ const docTemplate = `{
                     "Sources"
                 ],
                 "summary": "Delete a source",
+                "operationId": "DeleteSource",
                 "parameters": [
                     {
                         "type": "string",
@@ -4444,6 +4597,7 @@ const docTemplate = `{
                     "Subscriptions"
                 ],
                 "summary": "List all subscriptions",
+                "operationId": "GetSubscriptions",
                 "parameters": [
                     {
                         "type": "string",
@@ -4499,7 +4653,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "ASC | DESC",
-                        "description": "sort order",
+                        "description": "Sort order, values are ` + "`" + `ASC` + "`" + ` or ` + "`" + `DESC` + "`" + `, defaults to ` + "`" + `DESC` + "`" + `",
                         "name": "sort",
                         "in": "query"
                     }
@@ -4611,6 +4765,7 @@ const docTemplate = `{
                     "Subscriptions"
                 ],
                 "summary": "Create a subscription",
+                "operationId": "CreateSubscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -4723,6 +4878,7 @@ const docTemplate = `{
                     "Subscriptions"
                 ],
                 "summary": "Validate subscription filter",
+                "operationId": "TestSubscriptionFilter",
                 "parameters": [
                     {
                         "type": "string",
@@ -4824,7 +4980,7 @@ const docTemplate = `{
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint validates that a filter will match a certain payload structure.",
+                "description": "This endpoint test runs a transform function against a payload.",
                 "consumes": [
                     "application/json"
                 ],
@@ -4834,7 +4990,8 @@ const docTemplate = `{
                 "tags": [
                     "Subscriptions"
                 ],
-                "summary": "Validate subscription filter",
+                "summary": "Test a subscription function",
+                "operationId": "TestSubscriptionFunction",
                 "parameters": [
                     {
                         "type": "string",
@@ -4849,7 +5006,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.TestWebhookFunction"
+                            "$ref": "#/definitions/models.FunctionRequest"
                         }
                     }
                 ],
@@ -4865,7 +5022,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.SubscriptionFunctionResponse"
+                                            "$ref": "#/definitions/models.FunctionResponse"
                                         }
                                     }
                                 }
@@ -4947,6 +5104,7 @@ const docTemplate = `{
                     "Subscriptions"
                 ],
                 "summary": "Retrieve a subscription",
+                "operationId": "GetSubscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -5055,6 +5213,7 @@ const docTemplate = `{
                     "Subscriptions"
                 ],
                 "summary": "Update a subscription",
+                "operationId": "UpdateSubscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -5172,6 +5331,7 @@ const docTemplate = `{
                     "Subscriptions"
                 ],
                 "summary": "Delete subscription",
+                "operationId": "DeleteSubscription",
                 "parameters": [
                     {
                         "type": "string",
@@ -5313,6 +5473,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "schema": {
+                    "type": "string"
+                },
+                "vhost": {
                     "type": "string"
                 }
             }
@@ -5494,6 +5657,9 @@ const docTemplate = `{
                 "http_timeout": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "owner_id": {
                     "type": "string"
                 },
@@ -5521,16 +5687,13 @@ const docTemplate = `{
                 "support_email": {
                     "type": "string"
                 },
-                "target_url": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
                 "uid": {
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }
@@ -5955,6 +6118,9 @@ const docTemplate = `{
         "datastore.Source": {
             "type": "object",
             "properties": {
+                "body_function": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -5969,6 +6135,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "header_function": {
+                    "type": "string"
                 },
                 "idempotency_keys": {
                     "type": "array",
@@ -6046,11 +6215,9 @@ const docTemplate = `{
             "type": "string",
             "enum": [
                 "linear",
-                "linear",
                 "exponential"
             ],
             "x-enum-varnames": [
-                "DefaultStrategyProvider",
                 "LinearStrategyProvider",
                 "ExponentialStrategyProvider"
             ]
@@ -6122,9 +6289,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "count": {
+                    "description": "Count",
                     "type": "integer"
                 },
                 "threshold": {
+                    "description": "Threshold",
                     "type": "string"
                 }
             }
@@ -6174,6 +6343,9 @@ const docTemplate = `{
                 },
                 "schema": {
                     "type": "string"
+                },
+                "vhost": {
+                    "type": "string"
                 }
             }
         },
@@ -6203,6 +6375,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "custom_headers": {
+                    "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -6216,9 +6389,11 @@ const docTemplate = `{
                     }
                 },
                 "event_type": {
+                    "description": "Event Type is used for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
+                    "description": "Specify a key for event deduplication",
                     "type": "string"
                 }
             }
@@ -6275,7 +6450,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "slack_webhook_url": {
-                    "description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications.",
+                    "description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications on a slack channel.",
                     "type": "string"
                 },
                 "support_email": {
@@ -6292,31 +6467,30 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "app_id": {
-                    "description": "Deprecated but necessary for backward compatibility",
+                    "description": "Deprecated but necessary for backward compatibility.",
                     "type": "string"
                 },
                 "custom_headers": {
+                    "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+                    "type": "object"
                 },
                 "endpoint_id": {
+                    "description": "Specifies the endpoint to send this event to.",
                     "type": "string"
                 },
                 "event_type": {
+                    "description": "Event Type is used for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
-                    "type": "string"
-                },
-                "owner_id": {
+                    "description": "Specify a key for event deduplication",
                     "type": "string"
                 }
             }
@@ -6324,6 +6498,10 @@ const docTemplate = `{
         "models.CreateSource": {
             "type": "object",
             "properties": {
+                "body_function": {
+                    "description": "Function is a javascript function used to mutate the payload\nimmediately after ingesting an event",
+                    "type": "string"
+                },
                 "custom_response": {
                     "description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only.",
                     "allOf": [
@@ -6332,6 +6510,10 @@ const docTemplate = `{
                         }
                     ]
                 },
+                "header_function": {
+                    "description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
+                    "type": "string"
+                },
                 "idempotency_keys": {
                     "description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
                     "type": "array",
@@ -6339,16 +6521,17 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "is_disabled": {
-                    "description": "This is used to manually enable/disable the source.",
-                    "type": "boolean"
-                },
                 "name": {
                     "description": "Source name.",
                     "type": "string"
                 },
                 "provider": {
-                    "$ref": "#/definitions/datastore.SourceProvider"
+                    "description": "Use this to specify one of our predefined source types.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/datastore.SourceProvider"
+                        }
+                    ]
                 },
                 "pub_sub": {
                     "description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects.",
@@ -6359,7 +6542,7 @@ const docTemplate = `{
                     ]
                 },
                 "type": {
-                    "description": "Source Type. Currently supported values are - sqs, kafka or pubsub.",
+                    "description": "Source Type.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/datastore.SourceType"
@@ -6380,31 +6563,55 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "alert_config": {
-                    "$ref": "#/definitions/models.AlertConfiguration"
+                    "description": "Alert configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.AlertConfiguration"
+                        }
+                    ]
                 },
                 "app_id": {
                     "description": "Deprecated but necessary for backward compatibility",
                     "type": "string"
                 },
                 "endpoint_id": {
+                    "description": "Destination endpoint ID",
                     "type": "string"
                 },
                 "filter_config": {
-                    "$ref": "#/definitions/models.FilterConfiguration"
+                    "description": "Filter configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.FilterConfiguration"
+                        }
+                    ]
                 },
                 "function": {
+                    "description": "Convoy supports mutating your request payload using a js function. Use this field\nto specify a ` + "`" + `transform` + "`" + ` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more",
                     "type": "string"
                 },
                 "name": {
+                    "description": "Subscription Nme",
                     "type": "string"
                 },
                 "rate_limit_config": {
-                    "$ref": "#/definitions/models.RateLimitConfiguration"
+                    "description": "Rate limit configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.RateLimitConfiguration"
+                        }
+                    ]
                 },
                 "retry_config": {
-                    "$ref": "#/definitions/models.RetryConfiguration"
+                    "description": "Retry configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.RetryConfiguration"
+                        }
+                    ]
                 },
                 "source_id": {
+                    "description": "Source Id",
                     "type": "string"
                 }
             }
@@ -6424,33 +6631,40 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "custom_headers": {
+                    "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "data": {
+                    "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
                     "type": "array",
                     "items": {
                         "type": "integer"
                     }
                 },
                 "event_type": {
+                    "description": "Event Type is used for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "event_types": {
+                    "description": "A list of event types for the subscription filter config",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "idempotency_key": {
+                    "description": "Specify a key for event deduplication",
                     "type": "string"
                 },
                 "secret": {
+                    "description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
                     "type": "string"
                 },
                 "url": {
+                    "description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
                     "type": "string"
                 }
             }
@@ -6490,6 +6704,9 @@ const docTemplate = `{
                 "http_timeout": {
                     "type": "integer"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "owner_id": {
                     "type": "string"
                 },
@@ -6517,16 +6734,13 @@ const docTemplate = `{
                 "support_email": {
                     "type": "string"
                 },
-                "target_url": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                },
                 "uid": {
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                },
+                "url": {
                     "type": "string"
                 }
             }
@@ -6673,9 +6887,11 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "expiration": {
+                    "description": "Amount of time to wait before expiring the old endpoint secret.\nIf AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until\nthe old signature is expired.",
                     "type": "integer"
                 },
                 "secret": {
+                    "description": "New Endpoint secret value.",
                     "type": "string"
                 }
             }
@@ -6695,6 +6911,7 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "custom_headers": {
+                    "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
                     "additionalProperties": {
                         "type": "string"
@@ -6708,12 +6925,15 @@ const docTemplate = `{
                     }
                 },
                 "event_type": {
+                    "description": "Event Type is used for filtering and debugging e.g invoice.paid",
                     "type": "string"
                 },
                 "idempotency_key": {
+                    "description": "Specify a key for event deduplication",
                     "type": "string"
                 },
                 "owner_id": {
+                    "description": "Used for fanout, sends this event to all endpoints with this OwnerID.",
                     "type": "string"
                 }
             }
@@ -6722,13 +6942,19 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "event_types": {
+                    "description": "List of event types that the subscription should match",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "filter": {
-                    "$ref": "#/definitions/models.FS"
+                    "description": "Body \u0026 Header filters",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.FS"
+                        }
+                    ]
                 }
             }
         },
@@ -6737,6 +6963,33 @@ const docTemplate = `{
             "properties": {
                 "body": {},
                 "header": {}
+            }
+        },
+        "models.FunctionRequest": {
+            "type": "object",
+            "properties": {
+                "function": {
+                    "type": "string"
+                },
+                "payload": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.FunctionResponse": {
+            "type": "object",
+            "properties": {
+                "log": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "payload": {}
             }
         },
         "models.GooglePubSubConfig": {
@@ -6870,18 +7123,22 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "can_manage_endpoint": {
+                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
                     "type": "boolean"
                 },
                 "endpoints": {
+                    "description": "IDs of endpoints in this portal link",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "name": {
+                    "description": "Portal Link Name",
                     "type": "string"
                 },
                 "owner_id": {
+                    "description": "Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID",
                     "type": "string"
                 }
             }
@@ -6974,16 +7231,24 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "duration": {
+                    "description": "Used to specify a valid Go time duration e.g 10s, 1h3m for how long to wait between event delivery retries",
                     "type": "string"
                 },
                 "interval_seconds": {
+                    "description": "Used to specify a time in seconds for how long to wait between event delivery retries,",
                     "type": "integer"
                 },
                 "retry_count": {
+                    "description": "Used to specify the max number of retries",
                     "type": "integer"
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.StrategyProvider"
+                    "description": "Retry Strategy type",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/datastore.StrategyProvider"
+                        }
+                    ]
                 }
             }
         },
@@ -7007,6 +7272,9 @@ const docTemplate = `{
         "models.SourceResponse": {
             "type": "object",
             "properties": {
+                "body_function": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -7021,6 +7289,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "header_function": {
+                    "type": "string"
                 },
                 "idempotency_keys": {
                     "type": "array",
@@ -7064,18 +7335,6 @@ const docTemplate = `{
                 "verifier": {
                     "$ref": "#/definitions/datastore.VerifierConfig"
                 }
-            }
-        },
-        "models.SubscriptionFunctionResponse": {
-            "type": "object",
-            "properties": {
-                "log": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "payload": {}
             }
         },
         "models.SubscriptionResponse": {
@@ -7134,22 +7393,20 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "request": {
-                    "$ref": "#/definitions/models.FilterSchema"
+                    "description": "Same Request \u0026 Headers",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.FilterSchema"
+                        }
+                    ]
                 },
                 "schema": {
-                    "$ref": "#/definitions/models.FilterSchema"
-                }
-            }
-        },
-        "models.TestWebhookFunction": {
-            "type": "object",
-            "properties": {
-                "function": {
-                    "type": "string"
-                },
-                "payload": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "description": "Sample test schema",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.FilterSchema"
+                        }
+                    ]
                 }
             }
         },
@@ -7168,42 +7425,58 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "advanced_signatures": {
+                    "description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
                     "type": "boolean"
                 },
                 "authentication": {
-                    "$ref": "#/definitions/models.EndpointAuthentication"
+                    "description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.EndpointAuthentication"
+                        }
+                    ]
                 },
                 "description": {
+                    "description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
                     "type": "string"
                 },
                 "http_timeout": {
+                    "description": "Define endpoint http timeout in seconds.",
                     "type": "integer"
                 },
                 "is_disabled": {
+                    "description": "This is used to manually enable/disable the endpoint.",
                     "type": "boolean"
                 },
                 "name": {
                     "type": "string"
                 },
                 "owner_id": {
+                    "description": "The OwnerID is used to group more than one endpoint together to achieve\n[fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)",
                     "type": "string"
                 },
                 "rate_limit": {
+                    "description": "Rate limit is the total number of requests to be sent to an endpoint in\nthe time duration specified in RateLimitDuration",
                     "type": "integer"
                 },
                 "rate_limit_duration": {
+                    "description": "Rate limit duration specifies the time range for the rate limit.",
                     "type": "integer"
                 },
                 "secret": {
+                    "description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
                     "type": "string"
                 },
                 "slack_webhook_url": {
+                    "description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications on a slack channel.",
                     "type": "string"
                 },
                 "support_email": {
+                    "description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
                     "type": "string"
                 },
                 "url": {
+                    "description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
                     "type": "string"
                 }
             }
@@ -7211,35 +7484,67 @@ const docTemplate = `{
         "models.UpdateSource": {
             "type": "object",
             "properties": {
+                "body_function": {
+                    "description": "Function is a javascript function used to mutate the payload\nimmediately after ingesting an event",
+                    "type": "string"
+                },
                 "custom_response": {
-                    "$ref": "#/definitions/models.UpdateCustomResponse"
+                    "description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.UpdateCustomResponse"
+                        }
+                    ]
                 },
                 "forward_headers": {
+                    "description": "Soecfy header you want convoy to save from the ingest request and forward to your endpoints when the event is dispatched.",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
+                "header_function": {
+                    "description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
+                    "type": "string"
+                },
                 "idempotency_keys": {
+                    "description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 },
                 "is_disabled": {
+                    "description": "This is used to manually enable/disable the source.",
                     "type": "boolean"
                 },
                 "name": {
+                    "description": "Source name.",
                     "type": "string"
                 },
                 "pub_sub": {
-                    "$ref": "#/definitions/models.PubSubConfig"
+                    "description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects, you only need to specify this when the source type is ` + "`" + `pub_sub` + "`" + `.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.PubSubConfig"
+                        }
+                    ]
                 },
                 "type": {
-                    "$ref": "#/definitions/datastore.SourceType"
+                    "description": "Source Type.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/datastore.SourceType"
+                        }
+                    ]
                 },
                 "verifier": {
-                    "$ref": "#/definitions/models.VerifierConfig"
+                    "description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.VerifierConfig"
+                        }
+                    ]
                 }
             }
         },
@@ -7247,30 +7552,55 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "alert_config": {
-                    "$ref": "#/definitions/models.AlertConfiguration"
+                    "description": "Alert configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.AlertConfiguration"
+                        }
+                    ]
                 },
                 "app_id": {
+                    "description": "Deprecated but necessary for backward compatibility",
                     "type": "string"
                 },
                 "endpoint_id": {
+                    "description": "Destination endpoint ID",
                     "type": "string"
                 },
                 "filter_config": {
-                    "$ref": "#/definitions/models.FilterConfiguration"
+                    "description": "Filter configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.FilterConfiguration"
+                        }
+                    ]
                 },
                 "function": {
+                    "description": "Convoy supports mutating your request payload using a js function. Use this field\nto specify a ` + "`" + `transform` + "`" + ` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more",
                     "type": "string"
                 },
                 "name": {
+                    "description": "Subscription Nme",
                     "type": "string"
                 },
                 "rate_limit_config": {
-                    "$ref": "#/definitions/models.RateLimitConfiguration"
+                    "description": "Rate limit configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.RateLimitConfiguration"
+                        }
+                    ]
                 },
                 "retry_config": {
-                    "$ref": "#/definitions/models.RetryConfiguration"
+                    "description": "Retry configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.RetryConfiguration"
+                        }
+                    ]
                 },
                 "source_id": {
+                    "description": "Source Id",
                     "type": "string"
                 }
             }
@@ -7307,12 +7637,6 @@ const docTemplate = `{
         "util.ServerResponse": {
             "type": "object",
             "properties": {
-                "data": {
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
                 "message": {
                     "type": "string"
                 },
@@ -7365,13 +7689,17 @@ const docTemplate = `{
         {
             "description": "Portal Links related APIs",
             "name": "Portal Links"
+        },
+        {
+            "description": "Meta Events related APIs",
+            "name": "Meta Events"
         }
     ]
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "0.9.0",
+	Version:          "24.1.4",
 	Host:             "dashboard.getconvoy.io",
 	BasePath:         "/api",
 	Schemes:          []string{"https"},

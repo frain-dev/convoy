@@ -1,6 +1,6 @@
 <div class="flex justify-between items-end mb-24px">
 	<div class="flex items-center">
-		<h1 class="text-18 font-bold text-grey-80 mr-10px">Events Log</h1>
+		<h1 class="text-18 font-bold text-neutral-12 mr-10px">Events Log</h1>
 	</div>
 </div>
 
@@ -61,7 +61,7 @@
 									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag color="gray" size="sm">Duplicate</div>
 
 									<button convoy-button fill="clear" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)">
-										<svg width="20" height="20" class="fill-new.gray-400">
+										<svg width="20" height="20" class="fill-neutral-10">
 											<use xlink:href="#arrow-right-icon"></use>
 										</svg>
 									</button>
@@ -81,11 +81,11 @@
 			<!-- event details loader  -->
 			<ng-container *ngIf="isloadingEvents">
 				<div class="border-b border-new.primary-25 pb-24px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
+					<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
 				</div>
 				<div class="flex justify-between border-y border-new.primary-25 py-24px mb-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
+					<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
+					<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-200px"></div>
 				</div>
 			</ng-container>
 
@@ -101,30 +101,30 @@
 				</div>
 
 				<div class="flex items-center border-b border-new.primary-25 py-24px text-12">
-					<p class="text-new.gray-400 mr-24px">Idempotency Key</p>
-					<p class="text-new.gray-600 w-280px overflow-hidden overflow-ellipsis">{{ eventsDetailsItem?.idempotency_key || '-' }}</p>
+					<p class="text-neutral-10 mr-24px">Idempotency Key</p>
+					<p class="text-neutral-10 w-280px overflow-hidden overflow-ellipsis">{{ eventsDetailsItem?.idempotency_key || '-' }}</p>
 				</div>
 			</ng-container>
 
 			<ng-container *ngIf="eventsDetailsItem?.is_duplicate_event">
 				<div *ngIf="isFetchingDuplicateEvents" class="mt-20px">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
+					<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
 
 					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-60px"></div>
 					</div>
 					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-60px"></div>
 					</div>
 				</div>
 
 				<!-- duplicate events -->
 				<ng-container *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event">
-					<p class="text-12 text-new.gray-600 font-medium my-16px">Duplicate Events</p>
+					<p class="text-12 text-neutral-10 font-medium my-16px">Duplicate Events</p>
 
 					<ul *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event" class="border-b border-new.primary-25 mb-16px">
 						<li convoy-list-item *ngFor="let event of duplicateEvents" class="cursor-pointer border-none flex mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px">
@@ -133,13 +133,13 @@
 								<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
 							</div>
 
-							<div class="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-12 text-new.gray-600 pr-8px">
+							<div class="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-12 text-neutral-10 pr-8px">
 								{{ event.source_metadata.name || 'Rest API' }}
 							</div>
 							<div class="w-1/5">
 								<div convoy-tag color="gray" size="sm" *ngIf="event.is_duplicate_event">Duplicate</div>
 							</div>
-							<div class="flex items-center justify-end text-new.gray-400 text-12">
+							<div class="flex items-center justify-end text-neutral-10 text-12">
 								{{ event.created_at | date: 'shortTime' }}
 							</div>
 						</li>
@@ -148,31 +148,31 @@
 			</ng-container>
 
 			<ng-container *ngIf="!eventsDetailsItem?.is_duplicate_event">
-				<p class="text-12 text-new.gray-600 font-medium mb-16px mt-16px">Deliveries Overview</p>
+				<p class="text-12 text-neutral-10 font-medium mb-16px mt-16px">Deliveries Overview</p>
 
 				<!-- event deliveries loader  -->
 				<div *ngIf="isLoadingSidebarDeliveries">
-					<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
+					<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px mb-32px"></div>
 
 					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-60px"></div>
 					</div>
 					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-60px"></div>
 					</div>
 					<div class="flex justify-between mb-20px">
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-80px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-200px"></div>
-						<div class="bg-grey-10 rounded-[24px] animate-pulse h-4 w-60px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-80px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-200px"></div>
+						<div class="bg-neutral-a3 rounded-[24px] animate-pulse h-4 w-60px"></div>
 					</div>
 				</div>
 
 				<!-- event deliveries empty state  -->
-				<div class="border-b border-new.primary-25 mb-24px p-24px font-normal pl-0 w-full text-12 text-new.gray-400" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">
+				<div class="border-b border-new.primary-25 mb-24px p-24px font-normal pl-0 w-full text-12 text-neutral-10" *ngIf="!isLoadingSidebarDeliveries && sidebarEventDeliveries.length == 0 && displayedEvents && displayedEvents?.length">
 					No event delivery attempt for this event yet.
 				</div>
 
@@ -193,7 +193,7 @@
 								</svg>
 							</div>
 
-							<div class="whitespace-nowrap overflow-ellipsis overflow-hidden text-new.gray-600 text-center text-12">
+							<div class="whitespace-nowrap overflow-ellipsis overflow-hidden text-neutral-10 text-center text-12">
 								<div class="flex items-center" *ngIf="!delivery?.device_id">
 									<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 										<div class="max-w-[100px] truncate">
@@ -203,8 +203,8 @@
 										<div class="px-16px font-light">→</div>
 									</ng-container>
 
-									<div [title]="delivery?.endpoint_metadata?.target_url || ''" [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
-										{{ delivery.endpoint_metadata.title }}
+									<div [title]="delivery?.endpoint_metadata?.url || ''" [class]="(privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[100px]' : 'max-w-[120px]') + ' overflow-hidden overflow-ellipsis'">
+										{{ delivery.endpoint_metadata.name }}
 									</div>
 								</div>
 
@@ -212,11 +212,11 @@
 							</div>
 						</div>
 
-						<div class="flex items-center justify-end text-new.gray-400 text-12 self-end">
+						<div class="flex items-center justify-end text-neutral-10 text-12 self-end">
 							{{ delivery.created_at | date: 'shortTime' }}
 
 							<button convoy-button fill="clear" size="xs" class="pr-0">
-								<svg width="24" height="24" class="fill-new.gray-400">
+								<svg width="24" height="24" class="fill-neutral-10">
 									<use xlink:href="#arrow-right-icon"></use>
 								</svg>
 							</button>
@@ -227,8 +227,8 @@
 
 			<!-- events payload and headers loader  -->
 			<ng-container *ngIf="isloadingEvents">
-				<div class="bg-grey-10 rounded-8px animate-pulse h-120px w-full mr-40px mb-20px"></div>
-				<div class="bg-grey-10 rounded-8px animate-pulse h-120px w-full mr-40px"></div>
+				<div class="bg-neutral-a3 rounded-8px animate-pulse h-120px w-full mr-40px mb-20px"></div>
+				<div class="bg-neutral-a3 rounded-8px animate-pulse h-120px w-full mr-40px"></div>
 			</ng-container>
 
 			<!-- event payload and headers  -->
@@ -249,7 +249,7 @@
 <dialog #batchDialog convoy-dialog position="center" size="sm">
 	<div class="text-center py-30px">
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />
-		<div class="text-center text-16 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
+		<div class="text-center text-16 font-medium text-neutral-11 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-16 font-semibold mb-32px">{{ batchRetryCount || 0 }} event{{ batchRetryCount > 1 ? 's' : '' }}</div>
 		<button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchReplayEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
 		<button convoy-button fill="clear" class="font-semibold m-auto" (click)="batchDialog.close()">No, Cancel</button>

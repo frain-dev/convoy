@@ -15,6 +15,7 @@ import (
 //	@Summary		Retrieve a delivery attempt
 //	@Description	This endpoint fetches an app event delivery attempt
 //	@Tags			Delivery Attempts
+//	@Id				GetDeliveryAttempt
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID			path		string	true	"Project ID"
@@ -48,6 +49,7 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 //	@Summary		List delivery attempts
 //	@Description	This endpoint fetches an app message's delivery attempts
 //	@Tags			Delivery Attempts
+//	@Id				GetDeliveryAttempts
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID		path		string	true	"Project ID"

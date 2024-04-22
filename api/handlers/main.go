@@ -3,7 +3,7 @@ package handlers
 // This is the main doc file, swag cli needs it to be named main.go
 
 //	@title			Convoy API Reference
-//	@version		0.9.0
+//	@version		24.1.4
 //	@description	Convoy is a fast and secure webhooks proxy. This document contains datastore.s API specification.
 //	@termsOfService	https://getconvoy.io/terms
 
@@ -48,6 +48,9 @@ package handlers
 
 //	@tag.name			Portal Links
 //	@tag.description	Portal Links related APIs
+
+//	@tag.name			Meta Events
+//	@tag.description	Meta Events related APIs
 
 // Stub represents empty json or arbitrary json bodies for our doc annotations
 type Stub struct{}

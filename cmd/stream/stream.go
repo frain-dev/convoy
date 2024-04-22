@@ -31,6 +31,9 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
+
 			// override config with cli flags
 			cliConfig, err := buildCliFlagConfiguration(cmd)
 			if err != nil {
@@ -110,8 +113,8 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			}
 			q := redisQueue.NewQueue(opts)
 
-			consumer := worker.NewConsumer(100, q, lo)
-			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))
+			consumer := worker.NewConsumer(ctx, 100, q, lo)
+			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r), nil)
 
 			// start worker
 			fmt.Println("Registering Stream Server Consumer...")

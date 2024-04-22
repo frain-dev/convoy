@@ -46,7 +46,7 @@ type AuthIntegrationTestSuite struct {
 func (u *AuthIntegrationTestSuite) SetupSuite() {
 	u.DB = getDB()
 	u.ConvoyApp = buildServer()
-	u.Router = u.ConvoyApp.BuildRoutes()
+	u.Router = u.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (u *AuthIntegrationTestSuite) SetupTest() {
@@ -323,7 +323,7 @@ type DashboardIntegrationTestSuite struct {
 func (s *DashboardIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *DashboardIntegrationTestSuite) SetupTest() {
@@ -367,7 +367,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	endpoint := &datastore.Endpoint{
 		UID:          "abc",
 		ProjectID:    s.DefaultProject.UID,
-		Title:        "test-app",
+		Name:         "test-app",
 		Secrets:      datastore.Secrets{},
 		SupportEmail: "test@suport.com",
 		CreatedAt:    time.Now(),
@@ -604,7 +604,7 @@ type EndpointIntegrationTestSuite struct {
 func (s *EndpointIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *EndpointIntegrationTestSuite) SetupTest() {
@@ -691,7 +691,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), endpoint.Title, dbEndpoint.Title)
+	require.Equal(s.T(), endpoint.Name, dbEndpoint.Name)
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
@@ -729,7 +729,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointTitle := fmt.Sprintf("Test-%s", ulid.Make().String())
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request.
@@ -759,8 +759,8 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
-	require.Equal(s.T(), endpointTitle, dbEndpoint.Title)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
+	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
 }
 
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
@@ -812,7 +812,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 
 func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	title := "random-name"
-	endpointURL := faker.New().Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	supportEmail := "10xengineer@getconvoy.io"
 	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusAccepted
@@ -849,9 +849,9 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
-	require.Equal(s.T(), title, dbEndpoint.Title)
+	require.Equal(s.T(), title, dbEndpoint.Name)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
-	require.Equal(s.T(), endpointURL, dbEndpoint.TargetURL)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
 }
 
 func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
@@ -884,7 +884,7 @@ func (s *EndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentication() {
 	title := "random-name"
 	f := faker.New()
-	endpointURL := f.Internet().URL()
+	endpointURL := "https://www.google.com/webhp"
 	secret := f.Lorem().Text(25)
 	expectedStatusCode := http.StatusCreated
 
@@ -920,8 +920,8 @@ func (s *EndpointIntegrationTestSuite) Test_CreateEndpoint_With_Custom_Authentic
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	require.Equal(s.T(), title, endpoint.Title)
-	require.Equal(s.T(), endpointURL, endpoint.TargetURL)
+	require.Equal(s.T(), title, endpoint.Name)
+	require.Equal(s.T(), endpointURL, endpoint.Url)
 	require.Equal(s.T(), datastore.EndpointAuthenticationType("api_key"), endpoint.Authentication.Type)
 	require.Equal(s.T(), "x-api-key", endpoint.Authentication.ApiKey.HeaderName)
 	require.Equal(s.T(), "testapikey", endpoint.Authentication.ApiKey.HeaderValue)
@@ -1048,7 +1048,7 @@ type EventIntegrationTestSuite struct {
 func (s *EventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *EventIntegrationTestSuite) SetupTest() {
@@ -1121,7 +1121,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 	// Create an Endpoint with an app ID
 	endpoint := &datastore.Endpoint{
 		UID:       endpointID,
-		Title:     fmt.Sprintf("TestEndpoint-%s", endpointID),
+		Name:      fmt.Sprintf("TestEndpoint-%s", endpointID),
 		ProjectID: s.DefaultProject.UID,
 		AppID:     appID,
 		Secrets: datastore.Secrets{
@@ -1600,7 +1600,7 @@ type OrganisationIntegrationTestSuite struct {
 func (s *OrganisationIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *OrganisationIntegrationTestSuite) SetupTest() {
@@ -1905,7 +1905,7 @@ type OrganisationInviteIntegrationTestSuite struct {
 func (s *OrganisationInviteIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
@@ -2333,7 +2333,7 @@ type OrganisationMemberIntegrationTestSuite struct {
 func (s *OrganisationMemberIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
@@ -2574,7 +2574,7 @@ type PortalLinkIntegrationTestSuite struct {
 func (s *PortalLinkIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PortalLinkIntegrationTestSuite) SetupTest() {
@@ -2851,7 +2851,7 @@ type ProjectIntegrationTestSuite struct {
 func (s *ProjectIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *ProjectIntegrationTestSuite) SetupTest() {
@@ -3041,6 +3041,9 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
             "duration": 10,
             "retry_count": 2
         },
+         "ssl": {
+            "enforce_secure_endpoints": true
+        },
         "signature": {
             "header": "X-Convoy-Signature",
             "hash": "SHA512"
@@ -3162,7 +3165,7 @@ type SourceIntegrationTestSuite struct {
 func (s *SourceIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *SourceIntegrationTestSuite) SetupTest() {
@@ -3496,7 +3499,7 @@ type SubscriptionIntegrationTestSuite struct {
 func (s *SubscriptionIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *SubscriptionIntegrationTestSuite) SetupTest() {
@@ -3986,7 +3989,7 @@ type UserIntegrationTestSuite struct {
 func (u *UserIntegrationTestSuite) SetupSuite() {
 	u.DB = getDB()
 	u.ConvoyApp = buildServer()
-	u.Router = u.ConvoyApp.BuildRoutes()
+	u.Router = u.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (u *UserIntegrationTestSuite) SetupTest() {
@@ -4475,7 +4478,7 @@ type MetaEventIntegrationTestSuite struct {
 func (s *MetaEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
-	s.Router = s.ConvoyApp.BuildRoutes()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *MetaEventIntegrationTestSuite) SetupTest() {

@@ -27,11 +27,12 @@ import (
 //	@Summary		Create an event
 //	@Description	This endpoint creates an endpoint event
 //	@Tags			Events
+//	@Id				CreateEndpointEvent
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.CreateEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
@@ -103,8 +104,9 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 
 // CreateBroadcastEvent
 //
-//	@Summary		Create an event
-//	@Description	This endpoint creates an endpoint event
+//	@Summary		Create a broadcast event
+//	@Id				CreateBroadcastEvent
+//	@Description	This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -113,7 +115,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
-//	@Router			/v1/projects/{projectID}/events [post]
+//	@Router			/v1/projects/{projectID}/events/broadcast [post]
 func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 	var newMessage models.BroadcastEvent
 	err := util.ReadJSON(r, &newMessage)
@@ -153,12 +155,13 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Fan out an event
 //	@Description	This endpoint uses the owner_id to fan out an event to multiple endpoints.
+//	@Id				CreateEndpointFanoutEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.FanoutEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		200			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
@@ -197,11 +200,10 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	resp := &models.EventResponse{Event: event}
 	if event.IsDuplicateEvent {
-		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", resp, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", nil, http.StatusCreated))
 	} else {
-		_ = render.Render(w, r, util.NewServerResponse("Endpoint event created successfully", resp, http.StatusCreated))
+		_ = render.Render(w, r, util.NewServerResponse("Endpoint fanout event queued successfully", nil, http.StatusCreated))
 	}
 }
 
@@ -209,6 +211,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //
 //	@Summary		Dynamic Events
 //	@Description	This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+//	@Id				CreateDynamicEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -257,6 +260,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Replay event
 //	@Description	This endpoint replays an event afresh assuming it is a new event.
+//	@Id				ReplayEndpointEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -293,6 +297,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Batch replay events
 //	@Description	This endpoint replays multiple events at once.
+//	@Id				BatchReplayEvents
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -339,6 +344,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Retrieve an event
 //	@Description	This endpoint retrieves an event
 //	@Tags			Events
+//	@Id				GetEndpointEvent
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
@@ -364,6 +370,7 @@ func (h *Handler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Summary		List all events
 //	@Description	This endpoint fetches app events with pagination
 //	@Tags			Events
+//	@Id				GetEventsPaged
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
@@ -457,16 +464,4 @@ func (h *Handler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
 	eventID := chi.URLParam(r, "eventID")
 	eventRepo := postgres.NewEventRepo(h.A.DB, h.A.Cache)
 	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
-}
-
-func getEndpointIDs(r *http.Request) []string {
-	var endpoints []string
-
-	for _, id := range r.URL.Query()["endpointId"] {
-		if !util.IsStringEmpty(id) {
-			endpoints = append(endpoints, id)
-		}
-	}
-
-	return endpoints
 }

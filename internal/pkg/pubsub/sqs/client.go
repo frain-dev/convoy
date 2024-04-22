@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
 
 	"github.com/frain-dev/convoy/util"
@@ -22,7 +23,7 @@ type Sqs struct {
 	Cfg     *datastore.SQSPubSubConfig
 	source  *datastore.Source
 	workers int
-	done    chan struct{}
+	ctx     context.Context
 	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
@@ -32,24 +33,16 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		Cfg:     source.PubSub.Sqs,
 		source:  source,
 		workers: source.PubSub.Workers,
-		done:    make(chan struct{}),
 		handler: handler,
 		log:     log,
 	}
 }
 
-func (s *Sqs) Start() {
-	for i := 1; i <= s.workers; i++ {
-		go s.Consume()
-	}
-}
+func (s *Sqs) Start(ctx context.Context) {
+	s.ctx = ctx
 
-func (s *Sqs) cancelled() bool {
-	select {
-	case <-s.done:
-		return true
-	default:
-		return false
+	for i := 1; i <= s.workers; i++ {
+		go s.consume()
 	}
 }
 
@@ -78,7 +71,7 @@ func (s *Sqs) Verify() error {
 	return nil
 }
 
-func (s *Sqs) Consume() {
+func (s *Sqs) consume() {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(s.Cfg.DefaultRegion),
 		Credentials: credentials.NewStaticCredentials(s.Cfg.AccessKeyID, s.Cfg.SecretKey, ""),
@@ -120,55 +113,89 @@ func (s *Sqs) Consume() {
 	queueURL := url.QueueUrl
 
 	for {
-		if s.cancelled() {
+
+		select {
+		case <-s.ctx.Done():
 			return
-		}
+		default:
+			allAttr := "All"
+			output, err := svc.ReceiveMessageWithContext(s.ctx, &sqs.ReceiveMessageInput{
+				QueueUrl:              queueURL,
+				MaxNumberOfMessages:   aws.Int64(10),
+				WaitTimeSeconds:       aws.Int64(1),
+				MessageAttributeNames: []*string{&allAttr},
+			})
 
-		output, err := svc.ReceiveMessage(&sqs.ReceiveMessageInput{
-			QueueUrl:            queueURL,
-			MaxNumberOfMessages: aws.Int64(10),
-			WaitTimeSeconds:     aws.Int64(1),
-		})
+			if err != nil {
+				s.log.WithError(err).Error("failed to fetch message - sqs")
+				continue
+			}
 
-		if err != nil {
-			s.log.WithError(err).Error("failed to fetch message - sqs")
-			continue
-		}
+			var wg sync.WaitGroup
+			for _, message := range output.Messages {
+				wg.Add(1)
+				go func(m *sqs.Message) {
+					defer wg.Done()
 
-		var wg sync.WaitGroup
-		for _, message := range output.Messages {
-			wg.Add(1)
-			go func(m *sqs.Message) {
-				defer wg.Done()
+					defer s.handleError()
 
-				defer s.handleError()
+					var d Attrs = m.MessageAttributes
 
-				if err := s.handler(context.Background(), s.source, *m.Body); err != nil {
-					s.log.WithError(err).Error("failed to write message to create event queue")
-				} else {
-					_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
-						QueueUrl:      queueURL,
-						ReceiptHandle: m.ReceiptHandle,
-					})
-
+					attributes, err := msgpack.EncodeMsgPack(d.Map())
 					if err != nil {
-						s.log.WithError(err).Error("failed to delete message")
+						s.log.WithError(err).Error("failed to marshall message attributes")
+						return
 					}
-				}
 
-			}(message)
+					// Google Pub/Sub sends a slice with a single non UTF-8 value,
+					// looks like this: [192], which can cause a panic when marshaling headers
+					if len(attributes) == 1 && attributes[0] == 192 {
+						emptyMap := map[string]string{}
+						emptyBytes, err := msgpack.EncodeMsgPack(emptyMap)
+						if err != nil {
+							s.log.WithError(err).Error("an error occurred creating an empty attributes map")
+							return
+						}
+						attributes = emptyBytes
+					}
 
-			wg.Wait()
+					if err := s.handler(context.Background(), s.source, *m.Body, attributes); err != nil {
+						s.log.WithError(err).Error("failed to write message to create event queue")
+					} else {
+						_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
+							QueueUrl:      queueURL,
+							ReceiptHandle: m.ReceiptHandle,
+						})
+
+						if err != nil {
+							s.log.WithError(err).Error("failed to delete message")
+						}
+					}
+
+				}(message)
+
+				wg.Wait()
+			}
 		}
 	}
-}
-
-func (s *Sqs) Stop() {
-	close(s.done)
 }
 
 func (s *Sqs) handleError() {
 	if err := recover(); err != nil {
-		s.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", s.source.UID, err)).Error("sqs pubsub source crashed")
+		s.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", s.source.UID, err)).Error("sqs pubsub source crashed")
 	}
+}
+
+type M map[string]any
+
+// Attrs is a representation of Sqs MessageAttributes.
+type Attrs map[string]*sqs.MessageAttributeValue
+
+// Map creates a map from the elements of the Attrs.
+func (d Attrs) Map() M {
+	m := make(M, len(d))
+	for k, e := range d {
+		m[k] = *e.StringValue
+	}
+	return m
 }

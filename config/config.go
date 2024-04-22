@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -21,7 +22,7 @@ const (
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
-	DefaultAPIVersion                 = "2024-01-01"
+	DefaultAPIVersion                 = "2024-03-06"
 )
 
 var cfgSingleton atomic.Value
@@ -37,6 +38,7 @@ var DefaultConfiguration = Configuration{
 			SSL:        false,
 			Port:       5005,
 			WorkerPort: 5006,
+			AgentPort:  5008,
 		},
 	},
 	Database: DatabaseConfiguration{
@@ -109,7 +111,8 @@ func (dc DatabaseConfiguration) BuildDsn() string {
 
 	authPart := ""
 	if dc.Username != "" || dc.Password != "" {
-		authPart = fmt.Sprintf("%s:%s@", dc.Username, dc.Password)
+		authPrefix := url.UserPassword(dc.Username, dc.Password)
+		authPart = fmt.Sprintf("%s@", authPrefix)
 	}
 
 	dbPart := ""
@@ -134,6 +137,7 @@ type HTTPServerConfiguration struct {
 	SSLCertFile string `json:"ssl_cert_file" envconfig:"CONVOY_SSL_CERT_FILE"`
 	SSLKeyFile  string `json:"ssl_key_file" envconfig:"CONVOY_SSL_KEY_FILE"`
 	Port        uint32 `json:"port" envconfig:"PORT"`
+	AgentPort   uint32 `json:"agent_port" envconfig:"AGENT_PORT"`
 	IngestPort  uint32 `json:"ingest_port" envconfig:"INGEST_PORT"`
 	WorkerPort  uint32 `json:"worker_port" envconfig:"WORKER_PORT"`
 	SocketPort  uint32 `json:"socket_port" envconfig:"SOCKET_PORT"`
@@ -413,8 +417,8 @@ func LoadConfig(p string) error {
 		if err := json.NewDecoder(f).Decode(&c); err != nil {
 			return err
 		}
-	} else if errors.Is(err, os.ErrNotExist) {
-		log.Info("convoy.json not detected, will look for env vars or cli args")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		log.WithError(err).Fatal("failed to check if config file exists")
 	}
 
 	// override config from environment variables

@@ -24,6 +24,7 @@ export interface ENDPOINT {
 	status?: string;
 	secrets?: SECRET[];
 	name?: string;
+	url: string;
 	target_url: string;
 	updated_at: string;
 	rate_limit: number;

@@ -1,8 +1,0 @@
-{
-	"status": true,
-	"message": "Config details fetched successfully",
-	"data": {
-		"strategy": { "type": "default", "default": { "intervalSeconds": 20, "retryLimit": 3 }, "exponentialBackoff": { "retryLimit": 0 } },
-		"signature": { "header": "X-Convoy-Signature", "hash": "SHA256" }
-	}
-}

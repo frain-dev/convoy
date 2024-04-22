@@ -26,7 +26,7 @@ func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoi
 
 func TestUpdateEndpointService_Run(t *testing.T) {
 	ctx := context.Background()
-	project := &datastore.Project{UID: "1234567890"}
+	project := &datastore.Project{UID: "1234567890", Config: &datastore.DefaultProjectConfig}
 	type args struct {
 		ctx      context.Context
 		e        models.UpdateEndpoint
@@ -57,9 +57,9 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				project:  project,
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Title:             "Endpoint2",
+				Name:              "Endpoint2",
 				Description:       "test_endpoint",
-				TargetURL:         "https://fb.com",
+				Url:               "https://fb.com",
 				RateLimit:         10000,
 				RateLimitDuration: 60,
 				HttpTimeout:       20,

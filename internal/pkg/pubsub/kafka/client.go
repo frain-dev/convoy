@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -23,30 +24,26 @@ type Kafka struct {
 	source  *datastore.Source
 	workers int
 	ctx     context.Context
-	cancel  context.CancelFunc
-	done    chan struct{}
 	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
 
 func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Kafka {
-	ctx, cancel := context.WithCancel(context.Background())
 
 	return &Kafka{
 		Cfg:     source.PubSub.Kafka,
 		source:  source,
 		workers: source.PubSub.Workers,
 		handler: handler,
-		ctx:     ctx,
-		done:    make(chan struct{}),
-		cancel:  cancel,
 		log:     log,
 	}
 }
 
-func (k *Kafka) Start() {
+func (k *Kafka) Start(ctx context.Context) {
+	k.ctx = ctx
+
 	for i := 1; i <= k.workers; i++ {
-		go k.Consume()
+		go k.consume()
 	}
 }
 
@@ -95,15 +92,6 @@ func (k *Kafka) dialer() (*kafka.Dialer, error) {
 	return dialer, nil
 }
 
-func (k *Kafka) cancelled() bool {
-	select {
-	case <-k.done:
-		return true
-	default:
-		return false
-	}
-}
-
 func (k *Kafka) Verify() error {
 	dialer, err := k.dialer()
 	if err != nil {
@@ -112,7 +100,6 @@ func (k *Kafka) Verify() error {
 
 	_, err = dialer.DialContext(context.Background(), "tcp", k.Cfg.Brokers[0])
 	if err != nil {
-		log.WithError(err).Error("failed to connect to kafka instance")
 		return err
 	}
 
@@ -120,11 +107,10 @@ func (k *Kafka) Verify() error {
 
 }
 
-func (k *Kafka) Consume() {
-
+func (k *Kafka) consume() {
 	dialer, err := k.dialer()
 	if err != nil {
-		log.WithError(err).Error("failed to fetch kafka auth")
+		log.WithError(err).Errorf("failed to fetch auth for kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
 
@@ -145,32 +131,35 @@ func (k *Kafka) Consume() {
 	defer k.handleError(r)
 
 	for {
-		if k.cancelled() {
+		select {
+		case <-k.ctx.Done():
 			return
-		}
-
-		m, err := r.FetchMessage(k.ctx)
-		if err != nil {
-			log.WithError(err).Errorf("failed to fetch message from topic %s - kafka", k.Cfg.TopicName)
-			continue
-		}
-
-		ctx := context.Background()
-		if err := k.handler(ctx, k.source, string(m.Value)); err != nil {
-			k.log.WithError(err).Error("failed to write message to create event queue - kafka pub sub")
-		} else {
-			// acknowledge the message
-			err := r.CommitMessages(ctx, m)
+		default:
+			m, err := r.FetchMessage(k.ctx)
 			if err != nil {
-				k.log.WithError(err).Error("failed to commit message - kafka pub sub")
+				log.WithError(err).Errorf("failed to fetch message from kafka source %s with id %s from topic %s - kafka", k.source.Name, k.source.UID, k.Cfg.TopicName)
+				continue
+			}
+
+			var d D = m.Headers
+
+			ctx := context.Background()
+			headers, err := msgpack.EncodeMsgPack(d.Map())
+			if err != nil {
+				k.log.WithError(err).Error("failed to marshall message headers")
+			}
+
+			if err := k.handler(ctx, k.source, string(m.Value), headers); err != nil {
+				k.log.WithError(err).Errorf("failed to write message from kafka source %s with id %s to create event queue - kafka pub sub", k.source.Name, k.source.UID)
+			} else {
+				// acknowledge the message
+				err := r.CommitMessages(ctx, m)
+				if err != nil {
+					k.log.WithError(err).Error("failed to commit message - kafka pub sub")
+				}
 			}
 		}
 	}
-}
-
-func (k *Kafka) Stop() {
-	k.cancel()
-	close(k.done)
 }
 
 func (k *Kafka) handleError(reader *kafka.Reader) {
@@ -179,6 +168,20 @@ func (k *Kafka) handleError(reader *kafka.Reader) {
 	}
 
 	if err := recover(); err != nil {
-		k.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", k.source.UID, err)).Error("kafka pubsub source crashed")
+		k.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", k.source.UID, err)).Error("kafka pubsub source crashed")
 	}
+}
+
+type M map[string]any
+
+// D is an array representation of Kafka Headers.
+type D []kafka.Header
+
+// Map creates a map from the elements of the D.
+func (d D) Map() M {
+	m := make(M, len(d))
+	for _, e := range d {
+		m[e.Key] = e.Value
+	}
+	return m
 }

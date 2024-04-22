@@ -23,7 +23,7 @@ type UpdateEndpointService struct {
 }
 
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	url, err := util.CleanEndpoint(a.E.URL)
+	url, err := util.ValidateEndpoint(a.E.URL, a.Project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -53,10 +53,10 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 }
 
 func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
-	endpoint.TargetURL = e.URL
+	endpoint.Url = e.URL
 	endpoint.Description = e.Description
 
-	endpoint.Title = *e.Name
+	endpoint.Name = *e.Name
 
 	if e.SupportEmail != nil {
 		endpoint.SupportEmail = *e.SupportEmail

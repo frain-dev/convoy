@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
@@ -14,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -79,10 +77,10 @@ const (
 
 	COALESCE(em.secrets,'[]') AS "endpoint_metadata.secrets",
 	COALESCE(em.id,'') AS "endpoint_metadata.id",
-	COALESCE(em.title,'') AS "endpoint_metadata.title",
+	COALESCE(em.name,'') AS "endpoint_metadata.name",
 	COALESCE(em.project_id,'') AS "endpoint_metadata.project_id",
 	COALESCE(em.support_email,'') AS "endpoint_metadata.support_email",
-	COALESCE(em.target_url,'') AS "endpoint_metadata.target_url",
+	COALESCE(em.url,'') AS "endpoint_metadata.url",
 	COALESCE(em.status, '') AS "endpoint_metadata.status",
 	COALESCE(em.owner_id, '') AS "endpoint_metadata.owner_id",
 
@@ -252,6 +250,18 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return ErrSubscriptionNotCreated
 	}
 
+	_subscription := &datastore.Subscription{}
+	err = s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscription.UID, projectID).StructScan(_subscription)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return datastore.ErrSubscriptionNotFound
+		}
+		return err
+	}
+
+	nullifyEmptyConfig(_subscription)
+	*subscription = *_subscription
+
 	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(subscription.UID).String()
 	err = s.cache.Set(ctx, subscriptionCacheKey, &subscription, config.DefaultCacheTTL)
 	if err != nil {
@@ -302,6 +312,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 	}
 
 	nullifyEmptyConfig(_subscription)
+	*subscription = *_subscription
 
 	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(subscription.UID).String()
 	err = s.cache.Set(ctx, subscriptionCacheKey, &_subscription, config.DefaultCacheTTL)
@@ -563,16 +574,6 @@ func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, fi
 	}
 
 	return compare.Compare(p, f)
-}
-
-func (s *subscriptionRepo) TransformPayload(_ context.Context, function string, payload map[string]interface{}) (interface{}, []string, error) {
-	transformer := transform.NewTransformer(goja.New())
-	mutated, consoleLog, err := transformer.Transform(function, payload)
-	if err != nil {
-		return nil, []string{}, err
-	}
-
-	return mutated, consoleLog, nil
 }
 
 var (

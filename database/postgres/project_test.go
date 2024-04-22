@@ -148,6 +148,7 @@ func Test_UpdateProject(t *testing.T) {
 				Count:    8773,
 				Duration: 7766,
 			},
+			SSL: &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
 			Strategy: &datastore.StrategyConfiguration{
 				Type:       datastore.ExponentialStrategyProvider,
 				Duration:   2434,
@@ -264,8 +265,8 @@ func Test_FillProjectStatistics(t *testing.T) {
 
 	endpoint1 := &datastore.Endpoint{
 		ProjectID: project1.UID,
-		TargetURL: "http://google.com",
-		Title:     "test_endpoint",
+		Url:       "http://google.com",
+		Name:      "test_endpoint",
 		Secrets: []datastore.Secret{
 			{
 				Value:     "12345",
@@ -370,8 +371,8 @@ func Test_DeleteProject(t *testing.T) {
 
 	endpoint := &datastore.Endpoint{
 		ProjectID: project.UID,
-		TargetURL: "http://google.com",
-		Title:     "test_endpoint",
+		Url:       "http://google.com",
+		Name:      "test_endpoint",
 		Secrets: []datastore.Secret{
 			{
 				Value:     "12345",

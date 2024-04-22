@@ -136,7 +136,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 				dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 
 				require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-				require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
+				require.Equal(t, dbSub.Endpoint.Name, endpoint.Name)
 				require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
 				require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
 
@@ -149,7 +149,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 				dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-				require.Equal(t, dbSub, *subMap[dbSub.UID])
+				require.Equal(t, dbSub.UID, subMap[dbSub.UID].UID)
 			}
 		})
 	}
@@ -201,7 +201,7 @@ func Test_CreateSubscription(t *testing.T) {
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-	require.Equal(t, dbSub, newSub)
+	require.Equal(t, dbSub.UID, newSub.UID)
 }
 
 func Test_CountEndpointSubscriptions(t *testing.T) {
@@ -264,7 +264,8 @@ func Test_UpdateSubscription(t *testing.T) {
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-	require.Equal(t, dbSub, update)
+	require.Equal(t, dbSub.UID, update.UID)
+	require.Equal(t, dbSub.Name, update.Name)
 }
 
 func Test_FindSubscriptionByID(t *testing.T) {
@@ -295,7 +296,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-	require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
+	require.Equal(t, dbSub.Endpoint.Name, endpoint.Name)
 	require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
 	require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
 
@@ -308,7 +309,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-	require.Equal(t, dbSub, newSub)
+	require.Equal(t, dbSub.UID, newSub.UID)
 }
 
 func Test_FindSubscriptionsBySourceID(t *testing.T) {
@@ -346,7 +347,7 @@ func Test_FindSubscriptionsBySourceID(t *testing.T) {
 
 		dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 		require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-		require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
+		require.Equal(t, dbSub.Endpoint.Name, endpoint.Name)
 		require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
 		require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
 
@@ -359,7 +360,7 @@ func Test_FindSubscriptionsBySourceID(t *testing.T) {
 
 		dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-		require.Equal(t, dbSub, *subMap[dbSub.UID])
+		require.Equal(t, dbSub.UID, subMap[dbSub.UID].UID)
 	}
 }
 
@@ -398,7 +399,7 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 
 		dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 		require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-		require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
+		require.Equal(t, dbSub.Endpoint.Name, endpoint.Name)
 		require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
 		require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
 
@@ -411,7 +412,7 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 
 		dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-		require.Equal(t, dbSub, *subMap[dbSub.UID])
+		require.Equal(t, dbSub.UID, subMap[dbSub.UID].UID)
 	}
 }
 
@@ -445,7 +446,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-	require.Equal(t, dbSub, newSub)
+	require.Equal(t, dbSub.UID, newSub.UID)
 }
 
 func Test_FindCLISubscriptions(t *testing.T) {

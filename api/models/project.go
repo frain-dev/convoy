@@ -10,10 +10,15 @@ import (
 )
 
 type CreateProject struct {
-	Name    string         `json:"name" valid:"required~please provide a valid name"`
-	Type    string         `json:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
-	LogoURL string         `json:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	Config  *ProjectConfig `json:"config"`
+	// Project Name
+	Name string `json:"name" valid:"required~please provide a valid name"`
+
+	// Project Type, supported values are `outgoing`, `incoming`
+	Type    string `json:"type" valid:"required~please provide a valid type,in(incoming|outgoing)"`
+	LogoURL string `json:"logo_url" valid:"url~please provide a valid logo url,optional"`
+
+	// Project Config
+	Config *ProjectConfig `json:"config"`
 }
 
 func (cP *CreateProject) Validate() error {
@@ -21,11 +26,13 @@ func (cP *CreateProject) Validate() error {
 }
 
 type UpdateProject struct {
-	Name              string         `json:"name" valid:"required~please provide a valid name"`
-	LogoURL           string         `json:"logo_url" valid:"url~please provide a valid logo url,optional"`
-	RateLimit         int            `json:"rate_limit" valid:"int~please provide a valid rate limit,optional"`
-	RateLimitDuration string         `json:"rate_limit_duration" valid:"alphanum~please provide a valid rate limit duration,optional"`
-	Config            *ProjectConfig `json:"config" valid:"optional"`
+	// Project Name
+	Name string `json:"name" valid:"required~please provide a valid name"`
+
+	LogoURL string `json:"logo_url" valid:"url~please provide a valid logo url,optional"`
+
+	// Project Config
+	Config *ProjectConfig `json:"config" valid:"optional"`
 }
 
 func (uP *UpdateProject) Validate() error {
@@ -33,16 +40,43 @@ func (uP *UpdateProject) Validate() error {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize            uint64                        `json:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled"`
-	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy"`
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature"`
-	MetaEvent                *MetaEventConfiguration       `json:"meta_event"`
+	// Specifies how many bytes and incoming project should read from the ingest request, and how many bytes an outgoing project should from the response of your endpoints
+	// Defaults to 50KB.
+	MaxIngestSize uint64 `json:"max_payload_read_size"`
+
+	// Controls if your project will add a timestamp to it's webhook signature header to prevent a replay attack, See this blog post[https://getconvoy.io/blog/generating-stripe-like-webhook-signatures] for more]
+	ReplayAttacks bool `json:"replay_attacks_prevention_enabled"`
+
+	// Controls whether the retention policy is active on this project.
+	IsRetentionPolicyEnabled bool `json:"retention_policy_enabled"`
+
+	// Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints
+	AddEventIDTraceHeaders bool `json:"add_event_id_trace_headers"`
+
+	// Controls if the project will disable and endpoint after the retry threshold for an event is reached
+	DisableEndpoint bool `json:"disable_endpoint"`
+
+	// RetentionPolicy is used configure values for our retention and search tokenization policies
+	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy"`
+
+	// RateLimit is used to configure the projects rate limiting config values
+	RateLimit *RateLimitConfiguration `json:"ratelimit"`
+
+	// Strategy is used to configure the project's retry strategies for failing events.
+	Strategy *StrategyConfiguration `json:"strategy"`
+
+	// SSL is used to configure the project's endpoint ssl enforcement rules
+	SSL *SSLConfiguration
+
+	// Signature is used to configure the project's signature header versions
+	Signature *SignatureConfiguration `json:"signature"`
+
+	// MetaEvent is used to configure the project's meta events
+	MetaEvent *MetaEventConfiguration `json:"meta_event"`
+
+	// MultipleEndpointSubscriptions is used to configure if multiple subscriptions
+	// can be created for the endpoint in a project
+	MultipleEndpointSubscriptions bool `json:"multiple_endpoint_subscriptions"`
 }
 
 func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
@@ -56,6 +90,8 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
 		DisableEndpoint:          pc.DisableEndpoint,
 		AddEventIDTraceHeaders:   pc.AddEventIDTraceHeaders,
+		MultipleEndpointSubscriptions: pc.MultipleEndpointSubscriptions,
+    SSL:                      pc.SSL.transform(),
 		RetentionPolicy:          pc.RetentionPolicy.transform(),
 		RateLimit:                pc.RateLimit.Transform(),
 		Strategy:                 pc.Strategy.transform(),
@@ -64,8 +100,25 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 	}
 }
 
+type SSLConfiguration struct {
+	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints"`
+}
+
+func (r *SSLConfiguration) transform() *datastore.SSLConfiguration {
+	if r == nil {
+		return nil
+	}
+
+	return &datastore.SSLConfiguration{
+		EnforceSecureEndpoints: r.EnforceSecureEndpoints,
+	}
+}
+
 type RetentionPolicyConfiguration struct {
-	Policy       string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
+	// Specify the number of hours the policy job should go back before deleting events and deliveries.
+	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
+
+	// Specify the interval in hours for which the event tokenizer runs
 	SearchPolicy string `json:"search_policy" db:"search_policy"`
 }
 

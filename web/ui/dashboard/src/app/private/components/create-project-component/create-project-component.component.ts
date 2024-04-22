@@ -20,9 +20,11 @@ interface TAB {
 })
 export class CreateProjectComponent implements OnInit {
 	@ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('disableTLSEndpointsDialog', { static: true }) disableTLSEndpointsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('mutliSubEndpointsDialog', { static: true }) mutliSubEndpointsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
@@ -46,9 +48,13 @@ export class CreateProjectComponent implements OnInit {
 				policy: [720],
 				search_policy: [720]
 			}),
+			ssl: this.formBuilder.group({
+				enforce_secure_endpoints: [true]
+			}),
 			disable_endpoint: [false, Validators.required],
+			multiple_endpoint_subscriptions: [false, Validators.required],
 			meta_event: this.formBuilder.group({
-				is_enabled: [true, Validators.required],
+				is_enabled: [false, Validators.required],
 				type: ['http', Validators.required],
 				event_type: [[], Validators.required],
 				url: ['', Validators.required],
@@ -91,7 +97,7 @@ export class CreateProjectComponent implements OnInit {
 		{ label: 'secrets', svg: 'stroke', icon: 'secret' }
 	];
 	activeTab = this.tabs[0];
-	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
+	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) {}
 
@@ -165,7 +171,6 @@ export class CreateProjectComponent implements OnInit {
 		} catch {}
 	}
 
-
 	setSignatureVersions() {
 		const versions = this.projectDetails.config.signature.versions;
 		if (!versions?.length) return;
@@ -185,7 +190,7 @@ export class CreateProjectComponent implements OnInit {
 		if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
 			projectFormModal?.scroll({ top: 0 });
 			this.projectForm.markAllAsTouched();
-            return;
+			return;
 		}
 		const projectData = this.getProjectData();
 
@@ -258,7 +263,8 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
 		await this.updateProject();
 		this.newSignatureForm.reset();
-		this.newSignatureDialog.nativeElement.showModal();
+		this.newSignatureDialog.nativeElement.close();
+		this.getProjectDetails();
 	}
 
 	getProjectData() {
@@ -306,10 +312,16 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints') {
+	async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
 		const disableValue = event.target.checked;
-		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		if (actionType === 'endpoints') disableValue ? await this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		else if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
 		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
+	}
+
+	confirmTLSToggleAction(event: any) {
+		const disableValue = event.target.checked;
+		disableValue ? this.updateProject() : this.disableTLSEndpointsDialog.nativeElement.showModal();
 	}
 
 	switchTab(tab: TAB) {

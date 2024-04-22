@@ -12,14 +12,26 @@ import (
 )
 
 type CreateEvent struct {
-	UID            string            `json:"uid" swaggerignore:"true"`
-	AppID          string            `json:"app_id"` // Deprecated but necessary for backward compatibility
-	OwnerID        string            `json:"owner_id"`
-	EndpointID     string            `json:"endpoint_id"`
-	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	EventType      string            `json:"event_type" valid:"required~please provide an event type"`
-	CustomHeaders  map[string]string `json:"custom_headers"`
-	IdempotencyKey string            `json:"idempotency_key"`
+	UID string `json:"uid" swaggerignore:"true"`
+
+	// Deprecated but necessary for backward compatibility.
+	AppID string `json:"app_id"` // Deprecated but necessary for backward compatibility
+
+	// Specifies the endpoint to send this event to.
+	EndpointID string `json:"endpoint_id"`
+
+	// Data is an arbitrary JSON value that gets sent as the body of the
+	// webhook to the endpoints
+	Data json.RawMessage `json:"data" valid:"required~please provide your data" swaggertype:"object"`
+
+	// Event Type is used for filtering and debugging e.g invoice.paid
+	EventType string `json:"event_type" valid:"required~please provide an event type"`
+
+	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
+	CustomHeaders map[string]string `json:"custom_headers"`
+
+	// Specify a key for event deduplication
+	IdempotencyKey string `json:"idempotency_key"`
 }
 
 func (e *CreateEvent) Validate() error {
@@ -27,14 +39,30 @@ func (e *CreateEvent) Validate() error {
 }
 
 type DynamicEvent struct {
-	URL            string            `json:"url" valid:"required~please provide a url"`
-	Secret         string            `json:"secret" valid:"required~please provide a secret"`
-	EventTypes     []string          `json:"event_types"`
-	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	ProjectID      string            `json:"project_id" swaggerignore:"true"`
-	EventType      string            `json:"event_type" valid:"required~please provide an event type"`
-	CustomHeaders  map[string]string `json:"custom_headers"`
-	IdempotencyKey string            `json:"idempotency_key"`
+	// URL is the endpoint's URL prefixed with https. non-https urls are currently
+	// not supported.
+	URL string `json:"url" valid:"required~please provide a url"`
+
+	// Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.
+	Secret string `json:"secret" valid:"required~please provide a secret"`
+
+	// A list of event types for the subscription filter config
+	EventTypes []string `json:"event_types"`
+
+	// Data is an arbitrary JSON value that gets sent as the body of the
+	// webhook to the endpoints
+	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+
+	ProjectID string `json:"project_id" swaggerignore:"true"`
+
+	// Event Type is used for filtering and debugging e.g invoice.paid
+	EventType string `json:"event_type" valid:"required~please provide an event type"`
+
+	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
+	CustomHeaders map[string]string `json:"custom_headers"`
+
+	// Specify a key for event deduplication
+	IdempotencyKey string `json:"idempotency_key"`
 }
 
 func (de *DynamicEvent) Validate() error {
@@ -50,12 +78,18 @@ type SearchParams struct {
 
 type QueryListEvent struct {
 	// Any arbitrary value to filter the events payload
-	Query          string   `json:"query"`
-	SourceIDs      []string `json:"sourceId"`
-	IdempotencyKey string   `json:"idempotencyKey"`
-	SearchParams
+	Query string `json:"query"`
+
+	// A list of Source IDs to filter the events by.
+	SourceIDs []string `json:"sourceId"`
+
+	// IdempotencyKey to filter by
+	IdempotencyKey string `json:"idempotencyKey"`
+
 	// A list of endpoint ids to filter by
 	EndpointIDs []string `json:"endpointId"`
+
+	SearchParams
 	Pageable
 }
 
@@ -95,14 +129,21 @@ func (ds *DynamicEventStub) Validate() error {
 }
 
 type BroadcastEvent struct {
+	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
+
 	ProjectID string `json:"project_id" swaggerignore:"true"`
+	SourceID  string `json:"source_id" swaggerignore:"true"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	CustomHeaders  map[string]string `json:"custom_headers"`
-	IdempotencyKey string            `json:"idempotency_key"`
+	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+
+	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
+	CustomHeaders map[string]string `json:"custom_headers"`
+
+	// Specify a key for event deduplication
+	IdempotencyKey string `json:"idempotency_key"`
 }
 
 func (bs *BroadcastEvent) Validate() error {
@@ -110,14 +151,21 @@ func (bs *BroadcastEvent) Validate() error {
 }
 
 type FanoutEvent struct {
-	OwnerID   string `json:"owner_id" valid:"required~please provide an owner id"`
+	// Used for fanout, sends this event to all endpoints with this OwnerID.
+	OwnerID string `json:"owner_id" valid:"required~please provide an owner id"`
+
+	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	CustomHeaders  map[string]string `json:"custom_headers"`
-	IdempotencyKey string            `json:"idempotency_key"`
+	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+
+	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
+	CustomHeaders map[string]string `json:"custom_headers"`
+
+	// Specify a key for event deduplication
+	IdempotencyKey string `json:"idempotency_key"`
 }
 
 func (fe *FanoutEvent) Validate() error {

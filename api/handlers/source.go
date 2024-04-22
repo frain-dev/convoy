@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -20,6 +23,7 @@ import (
 //
 //	@Summary		Create a source
 //	@Description	This endpoint creates a source
+//	@Id				CreateSource
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -83,6 +87,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Retrieve a source
 //	@Description	This endpoint retrieves a source by its id
+//	@Id				GetSource
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -133,6 +138,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update a source
 //	@Description	This endpoint updates a source
+//	@Id				UpdateSource
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -210,6 +216,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Delete a source
 //	@Description	This endpoint deletes a source
+//	@Id				DeleteSource
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -252,6 +259,7 @@ func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		List all sources
 //	@Description	This endpoint fetches multiple sources
+//	@Id				LoadSourcesPaged
 //	@Tags			Sources
 //	@Accept			json
 //	@Produce		json
@@ -316,4 +324,80 @@ func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
 	}
 
 	s.URL = fmt.Sprintf("%s/ingest/%s", url, s.MaskID)
+}
+
+// TestSourceFunction
+//
+//	@Summary		Validate source function
+//	@Description	This endpoint validates that a filter will match a certain payload structure.
+//	@Tags			Subscriptions
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			filter		body		models.FunctionRequest	true	"Function Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.FunctionResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/subscriptions/test_function [post]
+func (h *Handler) TestSourceFunction(w http.ResponseWriter, r *http.Request) {
+	var test models.FunctionRequest
+	err := util.ReadJSON(r, &test)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	transformer := transform.NewTransformer()
+	mutatedPayload, consoleLog, err := transformer.Transform(test.Function, test.Payload)
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to transform function")
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if test.Type == "body" {
+		// transform to required payload
+		pBytes, err := json.Marshal(mutatedPayload)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		convoyEvent := struct {
+			EndpointID     string            `json:"endpoint_id"`
+			OwnerID        string            `json:"owner_id"`
+			EventType      string            `json:"event_type"`
+			Data           json.RawMessage   `json:"data"`
+			CustomHeaders  map[string]string `json:"custom_headers"`
+			IdempotencyKey string            `json:"idempotency_key"`
+		}{}
+
+		decoder := json.NewDecoder(bytes.NewReader(pBytes))
+		decoder.DisallowUnknownFields()
+
+		// check the payload structure to be sure it satisfies what convoy can ingest else discard and nack it.
+		if err = decoder.Decode(&convoyEvent); err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		if util.IsStringEmpty(convoyEvent.EventType) {
+			err := fmt.Errorf("the output payload doesn't include an event type")
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+
+		if len(convoyEvent.Data) == 0 {
+			err := fmt.Errorf("the output payload doesn't include any data")
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			return
+		}
+	}
+
+	functionResponse := models.FunctionResponse{
+		Payload: mutatedPayload,
+		Log:     consoleLog,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Transformer function run successfully", functionResponse, http.StatusOK))
 }

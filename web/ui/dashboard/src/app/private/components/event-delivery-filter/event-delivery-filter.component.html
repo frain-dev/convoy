@@ -4,21 +4,21 @@
 			<div *ngIf="type === 'logs'">
 				<form class="border border-new.primary-100 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent" [ngClass]="{ 'border-new.primary-200': eventsSearchString != undefined && eventsSearchString != '' }">
 					<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-					<input type="search" placeholder="Search events" [(ngModel)]="eventsSearchString" (change)="searchEvents()" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 outline-none bg-transparent text-12 font-normal" />
+					<input type="search" placeholder="Search events" [(ngModel)]="eventsSearchString" (change)="searchEvents()" [ngModelOptions]="{ standalone: true }" class="w-full text-neutral-11 outline-none bg-transparent text-12 font-normal" />
 					<button *ngIf="eventsSearchString">
 						<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px opacity-75" />
 					</button>
 				</form>
 			</div>
 
-			<button convoy-button fill="outline" class="!p-10px border-new.primary-200" [title]="sortOrder === 'asc' ? 'Sort events by descending order' : 'Sort events by ascending order'" (click)="toggleSortOrder()">
-				<svg width="10" height="10" class="scale-125 fill-new.gray-400 transition-all duration-300" [ngClass]="{ 'rotate-180': sortOrder === 'desc' }">
+			<button convoy-button fill="outline" class="!p-10px border-new.primary-200 bg-new.primary-25" [title]="sortOrder === 'asc' ? 'Sort events by descending order' : 'Sort events by ascending order'" (click)="toggleSortOrder()">
+				<svg width="10" height="10" class="scale-125 fill-neutral-11 transition-all duration-300" [ngClass]="{ 'rotate-180': sortOrder === 'desc' }">
 					<use xlink:href="#sort-icon"></use>
 				</svg>
 			</button>
 
-			<div convoy-button size="sm" fill="outline" texture="light" class="px-6px relative !border-new.primary-100">
-				<label class="text-12 text-new.gray-400 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
+			<div convoy-button size="sm" fill="outline" texture="light" class="px-6px relative !border-new.primary-100 bg-new.primary-25">
+				<label class="text-12 text-neutral-11 block w-full capitalize whitespace-nowrap mr-6px" for="tailMode">Tail Events</label>
 				<input
 					type="checkbox"
 					class="
@@ -26,13 +26,11 @@
 						transition-all
 						w-24px
 						h-18px
-						border border-new.primary-50
+						border border-new.primary-400
 						rounded-4px
 						checked:border-new.primary-400
-						checked:bg-new.primary-25 checked:bg-[url(assets/img/check-icon-primary.svg)] checked:bg-[length:12px] checked:bg-center checked:bg-no-repeat
+						checked:bg-[url(assets/img/svg/new-check-icon.svg)] checked:bg-[length:12px] checked:bg-center checked:bg-no-repeat
 						focus:bottom-2
-						focus:border-new.primary-400
-						bg-white-100
 					"
 					name="enableTailMode"
 					[checked]="enableTailMode"
@@ -41,17 +39,17 @@
 				/>
 			</div>
 
-			<div class="h-22px w-[1px] bg-new.primary-50"></div>
+			<div class="h-26px w-[1px] bg-neutral-8"></div>
 		</div>
 
 		<div class="flex items-center flex-wrap gap-x-16px gap-y-10px max-w-[950px] w-auto">
 			<div class="flex gap-x-2px" *ngIf="queryParams?.startDate && queryParams?.endDate">
-				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Date</div>
-				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
+				<div class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Date</div>
+				<div class="border border-new.primary-100 rounded-tr-8px rounded-br-8px px-10px py-6px text-neutral-11 text-12 flex gap-6px items-center">
 					{{ queryParams.startDate | date: 'dd/MM/yy, h:mm a' }} - {{ queryParams.endDate | date: 'dd/MM/yy, h:mm a' }}
 
 					<button convoy-button (click)="clearFilters('startDate'); toggleFilter('date', false)" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="14" height="14" class="fill-grey-40">
+						<svg width="14" height="14" class="fill-neutral-10">
 							<use xlink:href="#close-icon-2"></use>
 						</svg>
 					</button>
@@ -68,17 +66,17 @@
 					(close)="toggleFilter('date', false)"
 					#datePicker
 				>
-					<button dropdownTrigger convoy-button fill="outline" size="sm" class="border border-new.primary-100 rounded-tl-22px rounded-[0] rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Date</button>
+					<button dropdownTrigger convoy-button fill="outline" size="sm" class="border border-new.primary-100 rounded-tl-8px rounded-[0] rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Date</button>
 				</convoy-date-picker>
 			</ng-container>
 
 			<div class="flex gap-x-2px" *ngIf="eventDeliveryFilteredByStatus.length">
-				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Status</div>
-				<div class="border border-new.primary-100 last-of-type:rounded-tr-22px last-of-type:rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center" *ngFor="let status of eventDeliveryFilteredByStatus">
+				<div class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Status</div>
+				<div class="border border-new.primary-100 last-of-type:rounded-tr-8px last-of-type:rounded-br-8px px-10px py-6px text-neutral-11 text-12 flex gap-6px items-center" *ngFor="let status of eventDeliveryFilteredByStatus">
 					{{ status || 'None' }}
 
 					<button convoy-button (click)="removeStatusFilter(status)" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="14" height="14" class="fill-grey-40">
+						<svg width="14" height="14" class="fill-neutral-10">
 							<use xlink:href="#close-icon-2"></use>
 						</svg>
 					</button>
@@ -87,7 +85,7 @@
 
 			<ng-container *ngIf="showFilter('status')">
 				<div convoy-dropdown size="md" position="right-side" [show]="true" (close)="toggleFilter('status', false)" #statusDropdown>
-					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Status</div>
+					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Status</div>
 
 					<ng-container dropdownOptions>
 						<ul class="min-h-[100px] max-h-[200px] overflow-auto pb-10px">
@@ -107,12 +105,12 @@
 			</ng-container>
 
 			<div class="flex gap-x-2px" *ngIf="eventDeliveriesSource">
-				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Source</div>
-				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
+				<div class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Source</div>
+				<div class="border border-new.primary-100 rounded-tr-8px rounded-br-8px px-10px py-6px text-neutral-11 text-12 flex gap-6px items-center">
 					{{ eventDeliveriesSourceData?.name }}
 
 					<button convoy-button (click)="eventDeliveriesSource = ''; toggleFilter('source', false); clearFilters('sourceId')" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="14" height="14" class="fill-grey-40">
+						<svg width="14" height="14" class="fill-neutral-10">
 							<use xlink:href="#close-icon-2"></use>
 						</svg>
 					</button>
@@ -121,7 +119,7 @@
 
 			<ng-container *ngIf="showFilter('source')">
 				<div convoy-dropdown size="md" position="right-side" [show]="true" #sourcesFilterDropdown [hidden]="portalToken || this.projectService.activeProjectDetails?.type === 'outgoing'" (close)="toggleFilter('source', false)">
-					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Sources</div>
+					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Sources</div>
 
 					<div dropdownOptions>
 						<ul class="min-h-[100px] max-h-[200px] overflow-auto">
@@ -143,12 +141,12 @@
 			</ng-container>
 
 			<div class="flex gap-x-2px" *ngIf="eventDeliveriesEndpoint">
-				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Endpoint</div>
-				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
+				<div class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Endpoint</div>
+				<div class="border border-new.primary-100 rounded-tr-8px rounded-br-8px px-10px py-6px text-neutral-11 text-12 flex gap-6px items-center">
 					{{ eventDeliveriesEndpointData?.title || eventDeliveriesEndpoint }}
 
 					<button convoy-button (click)="clearFilters('endpointId'); toggleFilter('endpoint', false)" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="14" height="14" class="fill-grey-40">
+						<svg width="14" height="14" class="fill-neutral-10">
 							<use xlink:href="#close-icon-2"></use>
 						</svg>
 					</button>
@@ -157,17 +155,17 @@
 
 			<ng-container *ngIf="showFilter('endpoint')">
 				<convoy-endpoint-filter *ngIf="!portalToken" position="right-side" [show]="true" [endpoint]="eventDeliveriesEndpoint" (clear)="clearFilters('endpointId')" (set)="updateEndpointFilter($event); toggleFilter('endpoint', false)">
-					<button dropdownTrigger convoy-button size="sm" fill="outline" class="border border-new.primary-100 rounded-[0] rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Endpoint</button>
+					<button dropdownTrigger convoy-button size="sm" fill="outline" class="border border-new.primary-100 rounded-[0] rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Endpoint</button>
 				</convoy-endpoint-filter>
 			</ng-container>
 
 			<div class="flex gap-x-2px" *ngIf="eventDelEventType">
-				<div class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
-				<div class="border border-new.primary-100 rounded-tr-22px rounded-br-22px px-10px py-6px text-new.gray-400 text-12 flex gap-6px items-center">
+				<div class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
+				<div class="border border-new.primary-100 rounded-tr-8px rounded-br-8px px-10px py-6px text-neutral-11 text-12 flex gap-6px items-center">
 					{{ eventDelEventType }}
 
 					<button convoy-button (click)="clearFilters('eventType'); toggleFilter('eventType', false)" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="14" height="14" class="fill-grey-40">
+						<svg width="14" height="14" class="fill-neutral-10">
 							<use xlink:href="#close-icon-2"></use>
 						</svg>
 					</button>
@@ -176,13 +174,13 @@
 
 			<ng-container *ngIf="showFilter('eventType')">
 				<div convoy-dropdown size="md" position="right-side" [show]="true" (close)="toggleFilter('eventType', false)" #eventTypeDropdown>
-					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-22px rounded-bl-22px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
+					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
 
 					<ng-container dropdownOptions>
 						<div>
 							<form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent">
 								<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-								<input type="search" placeholder="Search event type" [(ngModel)]="eventsTypeSearchString" (change)="setEventType()" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 outline-none bg-transparent text-12 font-normal" />
+								<input type="search" placeholder="Search event type" [(ngModel)]="eventsTypeSearchString" (change)="setEventType()" [ngModelOptions]="{ standalone: true }" class="w-full text-neutral-11 outline-none bg-transparent text-12 font-normal" />
 								<button *ngIf="eventsTypeSearchString">
 									<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px opacity-75" />
 								</button>
@@ -194,8 +192,8 @@
 
 			<div class="flex items-center gap-x-2px">
 				<div convoy-dropdown size="sm" position="left">
-					<button dropdownTrigger convoy-button fill="outline" title="Add new filter" class="!px-8px !py-6px gap-8px !text-new.gray-400 !border-new.primary-200 h-32px transition-all duration-300" [ngClass]="{ 'w-32px rounded-22px': isAnyFilterSelected() }">
-						<svg width="14" height="14" class="fill-new.gray-400">
+					<button dropdownTrigger convoy-button fill="outline" title="Add new filter" class="!px-8px !py-6px gap-8px !text-neutral-11 !border-new.primary-200 h-32px transition-all duration-300" [ngClass]="{ 'w-32px rounded-8px': isAnyFilterSelected() }">
+						<svg width="14" height="14" class="fill-neutral-11">
 							<use xlink:href="#plus-icon"></use>
 						</svg>
 
@@ -211,8 +209,8 @@
 					</ul>
 				</div>
 				<ng-container *ngIf="isAnyFilterSelected()">
-					<button convoy-button size="sm" color="danger" fill="outline" title="Clear filters" class="!border-new.error-200 !px-8px h-32px w-32px rounded-22px" (click)="clearFilters()">
-						<svg width="10" height="10" class="fill-new.gray-400 scale-125">
+					<button convoy-button size="sm" color="danger" fill="outline" title="Clear filters" class="!border-new.error-200 !px-8px h-32px w-32px rounded-8px" (click)="clearFilters()">
+						<svg width="10" height="10" class="fill-neutral-11 scale-125">
 							<use xlink:href="#close-icon-3"></use>
 						</svg>
 					</button>

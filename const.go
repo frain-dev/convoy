@@ -8,9 +8,8 @@ const (
 )
 
 const (
-	RATE_LIMIT                      = 5000
-	RATE_LIMIT_DURATION             = 60
-	RATE_LIMIT_DURATION_IN_DURATION = time.Duration(RATE_LIMIT_DURATION) * time.Second
-	HTTP_TIMEOUT                    = 10
-	HTTP_TIMEOUT_IN_DURATION        = time.Duration(HTTP_TIMEOUT) * time.Second
+	RATE_LIMIT               = 0 // should be deleted
+	RATE_LIMIT_DURATION      = 0 // should be deleted
+	HTTP_TIMEOUT             = 10
+	HTTP_TIMEOUT_IN_DURATION = time.Duration(HTTP_TIMEOUT) * time.Second
 )

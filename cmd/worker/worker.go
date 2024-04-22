@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/telemetry"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -14,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
@@ -46,6 +47,9 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
+
 			// override config with cli Flags
 			cliConfig, err := buildWorkerCliConfiguration(cmd)
 			if err != nil {
@@ -77,10 +81,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			ctx := context.Background()
-
 			// register worker.
-			consumer := worker.NewConsumer(cfg.ConsumerPoolSize, a.Queue, lo)
+			consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, a.Queue, lo)
 			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 			metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
 			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
@@ -91,23 +93,34 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 			configRepo := postgres.NewConfigRepo(a.DB)
 
-			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
-			if err != nil {
-				a.Logger.Debug("Failed to initialise rate limiter")
-			}
-
 			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 			if err != nil {
 				return err
 			}
 
+			rateLimiter := limiter.NewLimiter(a.DB)
+			counter := &telemetry.EventsCounter{}
+
+			pb := telemetry.NewposthogBackend()
+			mb := telemetry.NewmixpanelBackend()
+
+			configuration, err := configRepo.LoadConfiguration(context.Background())
+			if err != nil {
+				a.Logger.WithError(err).Fatal("Failed to instance configuration")
+				return err
+			}
+
+			newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
+				telemetry.OptionTracker(counter),
+				telemetry.OptionBackend(pb),
+				telemetry.OptionBackend(mb))
+
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 				endpointRepo,
 				eventDeliveryRepo,
 				projectRepo,
-				subRepo,
 				a.Queue,
-				rateLimiter))
+				rateLimiter), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
@@ -116,7 +129,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventDeliveryRepo,
 				a.Queue,
 				subRepo,
-				deviceRepo))
+				deviceRepo), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
 				endpointRepo,
@@ -125,7 +138,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventDeliveryRepo,
 				a.Queue,
 				subRepo,
-				deviceRepo))
+				deviceRepo), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 				endpointRepo,
@@ -134,7 +147,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventDeliveryRepo,
 				a.Queue,
 				subRepo,
-				deviceRepo))
+				deviceRepo), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 				configRepo,
@@ -142,21 +155,21 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventRepo,
 				eventDeliveryRepo,
 				rd,
-			))
+			), nil)
 
-			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue, rd))
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue, rd), nil)
 
-			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
+			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, cfg, rd))
-			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
+			consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, rd), nil)
+			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd))
-			consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo))
+			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
+			consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
 
-			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
-			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
-			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd))
+			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
+			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
+			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
 			// start worker
 			lo.Infof("Starting Convoy workers...")

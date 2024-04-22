@@ -49,8 +49,10 @@ func (s *CreateSourceService) Run(ctx context.Context) (*datastore.Source, error
 			Body:        s.NewSource.CustomResponse.Body,
 			ContentType: s.NewSource.CustomResponse.ContentType,
 		},
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		BodyFunction:   s.NewSource.BodyFunction,
+		HeaderFunction: s.NewSource.HeaderFunction,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 
 	buf := uint64(len([]byte(source.CustomResponse.Body)))
