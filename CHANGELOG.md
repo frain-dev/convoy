@@ -1,3 +1,36 @@
+# 24.4.1
+
+### API Changes
+
+> [!NOTE]
+> All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need to specify the version (2023-03-06) in your convoy.json.
+
+- changed endpoint `title` to `name`
+- changes endpoint `target_url` to `url`
+
+### Features
+- Implemented an in-memory store for data plane #1932
+- Re-implement rate limiter using postgres #1937 #1950
+- Add the ability to mutate payloads from message broker sources using javascript functions #1954 #1956 #1958
+- Add project config for enforcing https endpoints #1955 #1957
+- Add documentation to request models #1959
+- 
+
+### Enhancements
+- Encode Postgres connection string credentials #1936
+- Update endpoint `title` to `name` and `target_url` to `url` #1945
+- Enqueue Stuck Event Deliveries #1977
+
+### Bug Fixes
+- Fixed a bug where telemetry wasn't being sent to PostHog #1944
+- Fixed a bug where the signature modal in the project settings doesn't dismiss after saving. #1939
+- Fixed a bug where project settings were not displayed properly on the dashboard #1953
+- Fixed a bug where a failed subscription filter will stop all subscribers from a broadcast event from receiving the event #1962
+- Fixed open telemetry tls configuration #1966
+- Fixed a bug where a created or updated subscription didn't show the nested values #1970
+- Fixed endpoints count query for portal links #1973
+- Added data plane capabilities back to the worker which was unintentionally removed #1974
+
 # 24.1.4
 
 - [Enhancement] Add custom headers to dynamic event #1923
