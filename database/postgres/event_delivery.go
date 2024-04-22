@@ -396,28 +396,6 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, p
 	return nil
 }
 
-func (e *eventDeliveryRepo) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
-	eventDeliveries := make([]datastore.EventDelivery, 0)
-
-	rows, err := e.db.QueryxContext(ctx, fetchStuckEventDeliveries, status)
-	if err != nil {
-		return nil, err
-	}
-	defer closeWithError(rows)
-
-	for rows.Next() {
-		var ed datastore.EventDelivery
-		err = rows.StructScan(&ed)
-		if err != nil {
-			return nil, err
-		}
-
-		eventDeliveries = append(eventDeliveries, ed)
-	}
-
-	return eventDeliveries, nil
-}
-
 func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, projectID, deviceId string, searchParams datastore.SearchParams) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
