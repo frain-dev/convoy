@@ -3,7 +3,7 @@
 ### API Changes
 
 > [!NOTE]
-> All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need to specify the version (2023-03-06) in your convoy.json.
+> All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need to specify the version (2024-04-01) in your convoy.json.
 
 - changed endpoint `title` to `name`
 - changes endpoint `target_url` to `url`
