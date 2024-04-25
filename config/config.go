@@ -22,7 +22,7 @@ const (
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
-	DefaultAPIVersion                 = "2024-03-06"
+	DefaultAPIVersion                 = "2024-04-01"
 )
 
 var cfgSingleton atomic.Value
@@ -417,8 +417,8 @@ func LoadConfig(p string) error {
 		if err := json.NewDecoder(f).Decode(&c); err != nil {
 			return err
 		}
-	} else if errors.Is(err, os.ErrNotExist) {
-		log.Info("convoy.json not detected, will look for env vars or cli args")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		log.WithError(err).Fatal("failed to check if config file exists")
 	}
 
 	// override config from environment variables

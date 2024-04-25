@@ -25,7 +25,7 @@ func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoi
 
 func TestCreateEndpointService_Run(t *testing.T) {
 	projectID := "1234567890"
-	project := &datastore.Project{UID: projectID, Type: datastore.OutgoingProject}
+	project := &datastore.Project{UID: projectID, Type: datastore.OutgoingProject, Config: &datastore.DefaultProjectConfig}
 
 	ctx := context.Background()
 	type args struct {

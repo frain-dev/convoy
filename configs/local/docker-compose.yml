@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.4
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.4.1
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -21,7 +21,7 @@ services:
             - pgbouncer
 
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.4
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.4.1
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -31,7 +31,7 @@ services:
                 condition: service_healthy
 
     stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.4
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.4.1
         command: ["./cmd", "stream", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -41,7 +41,7 @@ services:
                 condition: service_healthy
 
     ingest:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.4
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.4.1
         command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json

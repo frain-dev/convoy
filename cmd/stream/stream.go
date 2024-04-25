@@ -114,7 +114,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			q := redisQueue.NewQueue(opts)
 
 			consumer := worker.NewConsumer(ctx, 100, q, lo)
-			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r))
+			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r), nil)
 
 			// start worker
 			fmt.Println("Registering Stream Server Consumer...")

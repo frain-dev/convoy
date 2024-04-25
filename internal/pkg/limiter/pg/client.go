@@ -31,13 +31,15 @@ func (p *SlidingWindowRateLimiter) takeToken(ctx context.Context, key string, ra
 
 	tx, err := p.db.GetDB().BeginTxx(ctx, nil)
 	if err != nil {
-		return err
+		log.Infof("ratelimit failed: %v", err)
+		return nil
 	}
 
 	var allowed bool
 	err = tx.QueryRowContext(ctx, `select convoy.take_token($1, $2, $3)::bool;`, key, rate, windowSize).Scan(&allowed)
 	if err != nil {
-		return err
+		log.Infof("ratelimit failed: %v", err)
+		return nil
 	}
 
 	err = tx.Commit()
@@ -45,7 +47,7 @@ func (p *SlidingWindowRateLimiter) takeToken(ctx context.Context, key string, ra
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			log.Infof("update failed: %v, unable to rollback: %v", err, rollbackErr)
 		}
-		return err
+		return nil
 	}
 
 	if !allowed {

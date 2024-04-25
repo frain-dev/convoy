@@ -8,8 +8,8 @@
 			<convoy-loader *ngIf="showLoader"></convoy-loader>
 
 			<ng-container *ngIf="projectType === 'incoming'">
-				<h3 class="font-semibold text-new.gray-800 mt-20px text-14">Create your first source</h3>
-				<p class="text-12 text-new.gray-600 mt-6px max-w-[634px]">
+				<h3 class="font-semibold text-neutral-12 mt-20px text-14">Create your first source</h3>
+				<p class="text-12 text-neutral-10 mt-6px max-w-[634px]">
 					A source on Convoy represents the providers and services you want to receive events from. On creating a source, you’ll get a unique URL to listen to event into Convoy which can then be routed to any endpoint of choice
 				</p>
 			</ng-container>
@@ -17,7 +17,7 @@
 			<div class="p-24px pb-0 mt-20px mb-40px" [class]="projectType === 'incoming' ? 'order-4' : 'order-10'" convoy-card>
 				<div class="mb-20px" *ngIf="projectType === 'outgoing'">
 					<div class="flex justify-between">
-						<p class="text-12 text-new.gray-600">Connect third-party event source</p>
+						<p class="text-12 text-neutral-10">Connect third-party event source</p>
 						<convoy-toggle name="connectPubSub" (onChange)="connectPubSub = !connectPubSub" [isChecked]="connectPubSub"></convoy-toggle>
 					</div>
 				</div>
@@ -28,12 +28,12 @@
 			</div>
 
 			<h3 class="font-semibold mt-20px order-5 text-14">Create your first endpoint</h3>
-			<p class="text-12 text-new.gray-600 mt-6px max-w-[634px] order-6">HTTP Endpoint is the destination of events from your sources. Create an endpoint to receive events from your configured sources.</p>
+			<p class="text-12 text-neutral-10 mt-6px max-w-[634px] order-6">HTTP Endpoint is the destination of events from your sources. Create an endpoint to receive events from your configured sources.</p>
 			<convoy-create-endpoint class="mb-20px order-7" (onAction)="$event.action === 'close' ? false : onCreateEndpoint($event.data)"></convoy-create-endpoint>
 
 			<div convoy-card class="p-24px order-8 my-20px">
 				<div class="flex items-center justify-between mb-16px" [ngClass]="{ 'mb-16px': !automaticSubscription }">
-					<p class="text-12 text-new.gray-600">Automatically subscribe endpoint to all events sent?</p>
+					<p class="text-12 text-neutral-10">Automatically subscribe endpoint to all events sent?</p>
 					<convoy-toggle name="automaticSubscription" (onChange)="automaticSubscription = !automaticSubscription" [isChecked]="automaticSubscription"></convoy-toggle>
 				</div>
 

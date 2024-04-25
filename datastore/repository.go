@@ -27,7 +27,7 @@ type EventDeliveryRepository interface {
 	UpdateStatusOfEventDelivery(ctx context.Context, projectID string, eventDelivery EventDelivery, status EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status EventDeliveryStatus) error
 	FindDiscardedEventDeliveries(ctx context.Context, projectID, deviceId string, params SearchParams) ([]EventDelivery, error)
-
+	FindStuckEventDeliveriesByStatus(ctx context.Context, status EventDeliveryStatus) ([]EventDelivery, error)
 	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
@@ -117,7 +117,6 @@ type SubscriptionRepository interface {
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
 	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error)
-	TransformPayload(ctx context.Context, function string, payload map[string]interface{}) (interface{}, []string, error)
 }
 
 type SourceRepository interface {

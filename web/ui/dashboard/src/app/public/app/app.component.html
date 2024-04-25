@@ -1,7 +1,7 @@
 <div>
 	<div class="max-w-[1100px] w-full mx-auto">
 		<div class="flex justify-between items-center mb-12px mt-40px">
-			<h2 class="font-medium text-14 text-new.gray-400">Endpoints</h2>
+			<h2 class="font-medium text-14 text-neutral-10">Endpoints</h2>
 
 			<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="onClickAddEndpoint()" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
 				<img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
@@ -13,37 +13,37 @@
 			<ng-container *ngIf="isloadingSubscriptions && !endpoints?.length">
 				<li class="flex justify-between p-16px">
 					<div class="flex max-w-[790px] justify-between w-full">
-						<div class="bg-grey-10 rounded-8px animate-pulse w-150px h-20px"></div>
-						<div class="bg-grey-10 rounded-8px animate-pulse w-320px h-20px"></div>
+						<div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
+						<div class="bg-neutral-a3 rounded-8px animate-pulse w-320px h-20px"></div>
 						<div class="flex">
-							<div class="bg-grey-10 mr-8px rounded-8px animate-pulse w-52px h-20px"></div>
-							<div class="bg-grey-10 mr-8px rounded-8px animate-pulse w-88px h-20px"></div>
-							<div class="bg-grey-10 rounded-8px animate-pulse w-94px h-20px"></div>
+							<div class="bg-neutral-a3 mr-8px rounded-8px animate-pulse w-52px h-20px"></div>
+							<div class="bg-neutral-a3 mr-8px rounded-8px animate-pulse w-88px h-20px"></div>
+							<div class="bg-neutral-a3 rounded-8px animate-pulse w-94px h-20px"></div>
 						</div>
 					</div>
-					<div class="bg-grey-10 rounded-8px animate-pulse w-12px h-20px"></div>
+					<div class="bg-neutral-a3 rounded-8px animate-pulse w-12px h-20px"></div>
 				</li>
 				<li class="flex justify-between p-16px">
 					<div class="flex max-w-[790px] justify-between w-full">
-						<div class="bg-grey-10 rounded-8px animate-pulse w-150px h-20px"></div>
-						<div class="bg-grey-10 rounded-8px animate-pulse w-320px h-20px"></div>
+						<div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
+						<div class="bg-neutral-a3 rounded-8px animate-pulse w-320px h-20px"></div>
 						<div class="flex">
-							<div class="bg-grey-10 mr-8px rounded-8px animate-pulse w-52px h-20px"></div>
-							<div class="bg-grey-10 mr-8px rounded-8px animate-pulse w-88px h-20px"></div>
-							<div class="bg-grey-10 rounded-8px animate-pulse w-94px h-20px"></div>
+							<div class="bg-neutral-a3 mr-8px rounded-8px animate-pulse w-52px h-20px"></div>
+							<div class="bg-neutral-a3 mr-8px rounded-8px animate-pulse w-88px h-20px"></div>
+							<div class="bg-neutral-a3 rounded-8px animate-pulse w-94px h-20px"></div>
 						</div>
 					</div>
-					<div class="bg-grey-10 rounded-8px animate-pulse w-12px h-20px"></div>
+					<div class="bg-neutral-a3 rounded-8px animate-pulse w-12px h-20px"></div>
 				</li>
 			</ng-container>
 
 			<li class="flex justify-between p-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-12px last-of-type:mb-0 relative" *ngFor="let endpoint of endpoints; let i = index">
-				<div class="flex text-14 text-new.gray-600 max-w-[790px] w-full gap-24px items-center min-h-[28px]">
+				<div class="flex text-14 text-neutral-10 max-w-[790px] w-full gap-24px items-center min-h-[28px]">
 					<div class="flex items-center max-w-[150px] w-full">
-						<div class="mr-8px truncate">{{ endpoint?.title }}</div>
+						<div class="mr-8px truncate">{{ endpoint?.name }}</div>
 						<div convoy-tag size="sm" color="success">{{ endpoint?.status }}</div>
 					</div>
-					<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ endpoint?.target_url }}</div>
+					<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ endpoint?.url }}</div>
 					<div class="md:flex hidden whitespace-nowrap">
 						<div convoy-tag *ngIf="endpoint.subscription" [color]="hasFilter(endpoint.subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px">Filter</div>
 						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.retry_config ? 'primary' : 'gray'" class="mr-8px">Retry Logic</div>
@@ -135,7 +135,7 @@
 
 			<div class="flex justify-center items-center p-40px flex-col" *ngIf="!isloadingSubscriptions && endpoints?.length === 0">
 				<img src="/assets/img/empty-state.svg" alt="empty state image" />
-				<p class="mt-16px text-12 text-new.gray-500">You don't have any endpoints yet</p>
+				<p class="mt-16px text-12 text-neutral-11">You don't have any endpoints yet</p>
 			</div>
 		</ul>
 
