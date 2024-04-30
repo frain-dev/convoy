@@ -219,6 +219,7 @@ module.exports = {
 				500: '#FFEEED'
 			},
 			warning: {
+                ...generateColorScale('amber'),
 				100: '#F0AD4E',
 				200: '#F3BD71',
 				300: '#F6CE95',
