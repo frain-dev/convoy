@@ -48,7 +48,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				e: models.UpdateEndpoint{
 					Name:              stringPtr("Endpoint2"),
 					Description:       "test_endpoint",
-					URL:               "https://fb.com",
+					URL:               "https://www.google.com/webhp",
 					RateLimit:         10000,
 					RateLimitDuration: 60,
 					HttpTimeout:       20,
@@ -59,7 +59,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 			wantEndpoint: &datastore.Endpoint{
 				Name:              "Endpoint2",
 				Description:       "test_endpoint",
-				Url:               "https://fb.com",
+				Url:               "https://www.google.com/webhp",
 				RateLimit:         10000,
 				RateLimitDuration: 60,
 				HttpTimeout:       20,
@@ -81,7 +81,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				e: models.UpdateEndpoint{
 					Name:              stringPtr("Endpoint 1"),
 					Description:       "test_endpoint",
-					URL:               "https://fb.com",
+					URL:               "https://www.google.com/webhp",
 					RateLimit:         10000,
 					RateLimitDuration: 60,
 					HttpTimeout:       20,
@@ -107,7 +107,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				e: models.UpdateEndpoint{
 					Name:              stringPtr("endpoint1"),
 					Description:       "test_endpoint",
-					URL:               "https://fb.com",
+					URL:               "https://www.google.com/webhp",
 					RateLimit:         10000,
 					RateLimitDuration: 60,
 					HttpTimeout:       20,
