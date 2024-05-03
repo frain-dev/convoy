@@ -12,23 +12,10 @@ services:
           dockerfile: Dockerfile.dev
         command: [ "/start.sh" ]
         volumes:
-            - ./convoy.json:/convoy.json
+          - ./configs/local/convoy.json:/convoy.json
         restart: on-failure
         ports:
           - "5005:5005"
-        depends_on:
-            - postgres
-            - redis_server
-            - typesense
-
-    scheduler:
-        build:
-          context: ./
-          dockerfile: Dockerfile.dev
-        entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
         depends_on:
             - postgres
             - redis_server
@@ -40,7 +27,7 @@ services:
           dockerfile: Dockerfile.dev
         entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
-            - ./convoy.json:/convoy.json
+           - ./configs/local/convoy.json:/convoy.json
         restart: on-failure
         depends_on:
             - postgres
@@ -53,7 +40,7 @@ services:
         dockerfile: Dockerfile.dev
       entrypoint: ["./cmd", "ingest", "--config", "convoy.json"]
       volumes:
-        - ./convoy.json:/convoy.json
+        - ./configs/local/convoy.json:/convoy.json
       restart: on-failure
       depends_on:
         - postgres
@@ -86,4 +73,3 @@ services:
             TYPESENSE_API_KEY: "convoy"
         volumes:
             - ./typesense_data:/data/typesense
-
