@@ -25,7 +25,7 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
 
 	tr := &http.Transport{}
-	if len(httpProxy) > 0 {
+	if !util.IsStringEmpty(httpProxy) {
 		proxyUrl, err := url.Parse(httpProxy)
 		if err != nil {
 			return nil, err
