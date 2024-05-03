@@ -65,7 +65,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 			err = userRepo.CreateUser(context.Background(), user)
 			if err != nil {
-				if !errors.Is(err, datastore.ErrDuplicateEmail) {
+				if errors.Is(err, datastore.ErrDuplicateEmail) {
 					// user already exists
 					log.WithError(err).Error("bootstrap failed: user already exists")
 					return nil
