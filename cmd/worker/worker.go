@@ -3,12 +3,11 @@ package worker
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/telemetry"
+	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -132,6 +131,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				deviceRepo), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
+				a.DB,
 				endpointRepo,
 				eventRepo,
 				projectRepo,

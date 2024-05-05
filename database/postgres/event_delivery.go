@@ -220,7 +220,16 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		deviceID = &delivery.DeviceID
 	}
 
-	result, err := e.db.ExecContext(
+	tx, isWrapped, err := GetTx(ctx, e.db)
+	if err != nil {
+		return err
+	}
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
+
+	result, err := tx.ExecContext(
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
@@ -240,7 +249,11 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		return ErrEventDeliveryNotCreated
 	}
 
-	return nil
+	if isWrapped {
+		return nil
+	}
+
+	return tx.Commit()
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
