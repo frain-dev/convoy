@@ -19,6 +19,7 @@ import (
 )
 
 const pkgName = "postgres"
+const TransactionCtx string = "transaction"
 
 // ErrPendingMigrationsFound is used to indicate there exist pending migrations yet to be run
 // if the user proceeds without running migrations it can lead to data integrity issues.
@@ -65,7 +66,7 @@ func (p *Postgres) Rollback(tx *sqlx.Tx, err error) {
 	}
 
 	cmErr := tx.Commit()
-	if err != nil && !errors.Is(cmErr, sql.ErrTxDone) {
+	if cmErr != nil && !errors.Is(cmErr, sql.ErrTxDone) {
 		log.WithError(cmErr).Error("failed to commit tx in ProcessBroadcastEventCreation, rolling back transaction")
 		rbErr := tx.Rollback()
 		log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
@@ -89,7 +90,7 @@ func (p *Postgres) GetHook() *hooks.Hook {
 func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {
 	isWrapped := false
 
-	wrappedTx, ok := ctx.Value("tx").(*sqlx.Tx)
+	wrappedTx, ok := ctx.Value(TransactionCtx).(*sqlx.Tx)
 	if ok && wrappedTx != nil {
 		isWrapped = true
 		return wrappedTx, isWrapped, nil

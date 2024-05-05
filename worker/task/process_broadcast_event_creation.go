@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"time"
 
 	"github.com/frain-dev/convoy/util"
@@ -38,7 +39,7 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 		}
 		defer db.Rollback(tx, err)
 
-		cctx := context.WithValue(ctx, "tx", tx)
+		cctx := context.WithValue(ctx, postgres.TransactionCtx, tx)
 
 		var isDuplicate bool
 		if len(broadcastEvent.IdempotencyKey) > 0 {
