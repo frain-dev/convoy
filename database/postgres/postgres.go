@@ -19,7 +19,10 @@ import (
 )
 
 const pkgName = "postgres"
-const TransactionCtx string = "transaction"
+
+type DbCtxKey string
+
+const TransactionCtx DbCtxKey = "transaction"
 
 // ErrPendingMigrationsFound is used to indicate there exist pending migrations yet to be run
 // if the user proceeds without running migrations it can lead to data integrity issues.
