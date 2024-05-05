@@ -1,33 +1,14 @@
 {
     "host": "localhost:5005",
     "database": {
-        "host": "postgres",
+        "host": "pgbouncer",
         "username": "convoy",
-        "password": "convoy",
+        "password": "pg_password",
         "database": "convoy",
-        "options": "sslmode=disable&connect_timeout=30",
-        "port": 5432
+        "port": 6432
     },
     "redis": {
         "port": 6379,
         "host": "redis_server"
-    },
-    "logger": {
-        "level": "error"
-    },
-    "search": {
-        "type": "typesense",
-        "typesense": {
-            "host": "http://typesense:8108",
-            "api_key": "convoy"
-        }
-    },
-    "server": {
-        "http": {
-            "ssl": false,
-            "ssl_cert_file": "",
-            "ssl_key_file": "",
-            "port": 5005
-        }
     }
 }
