@@ -54,6 +54,24 @@ func (p *Postgres) Close() error {
 	return p.dbx.Close()
 }
 
+func (p *Postgres) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
+	return p.dbx.BeginTxx(ctx, nil)
+}
+
+func (p *Postgres) Rollback(tx *sqlx.Tx, err error) {
+	if err != nil {
+		rbErr := tx.Rollback()
+		log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
+	}
+
+	cmErr := tx.Commit()
+	if err != nil && !errors.Is(cmErr, sql.ErrTxDone) {
+		log.WithError(cmErr).Error("failed to commit tx in ProcessBroadcastEventCreation, rolling back transaction")
+		rbErr := tx.Rollback()
+		log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
+	}
+}
+
 func (p *Postgres) GetHook() *hooks.Hook {
 	if p.hook != nil {
 		return p.hook
@@ -72,11 +90,7 @@ func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {
 	isWrapped := false
 
 	wrappedTx, ok := ctx.Value("tx").(*sqlx.Tx)
-	if !ok {
-		return nil, isWrapped, errors.New("failed to get tx")
-	}
-
-	if wrappedTx != nil {
+	if ok && wrappedTx != nil {
 		isWrapped = true
 		return wrappedTx, isWrapped, nil
 	}

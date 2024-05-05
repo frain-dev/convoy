@@ -59,6 +59,10 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
+				d, _ := args.db.(*mocks.MockDatabase)
+				d.EXPECT().BeginTx(gomock.Any())
+				d.EXPECT().Rollback(gomock.Any(), gomock.Any())
+
 				endpoint := &datastore.Endpoint{
 					UID:    "endpoint-id-1",
 					Name:   "testing-1",
@@ -135,7 +139,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessBroadcastEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
+			fn := ProcessBroadcastEventCreation(args.db, args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

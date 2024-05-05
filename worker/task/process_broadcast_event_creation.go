@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"github.com/frain-dev/convoy/database"
 	"time"
@@ -33,24 +32,11 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			return &EndpointError{Err: err, delay: 10 * time.Second}
 		}
 
-		tx, err := db.GetDB().BeginTxx(ctx, nil)
+		tx, err := db.BeginTx(ctx)
 		if err != nil {
 			return &EndpointError{Err: err, delay: 10 * time.Second}
-
 		}
-		defer func() {
-			if err != nil {
-				rbErr := tx.Rollback()
-				log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
-			}
-
-			cmErr := tx.Commit()
-			if err != nil && !errors.Is(cmErr, sql.ErrTxDone) {
-				log.WithError(cmErr).Error("failed to commit tx in ProcessBroadcastEventCreation, rolling back transaction")
-				rbErr := tx.Rollback()
-				log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
-			}
-		}()
+		defer db.Rollback(tx, err)
 
 		cctx := context.WithValue(ctx, "tx", tx)
 
