@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -65,6 +66,27 @@ func (p *Postgres) GetHook() *hooks.Hook {
 
 	p.hook = hook
 	return p.hook
+}
+
+func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {
+	isWrapped := false
+
+	wrappedTx, ok := ctx.Value("tx").(*sqlx.Tx)
+	if !ok {
+		return nil, isWrapped, errors.New("failed to get tx")
+	}
+
+	if wrappedTx != nil {
+		isWrapped = true
+		return wrappedTx, isWrapped, nil
+	}
+
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, isWrapped, err
+	}
+
+	return tx, isWrapped, nil
 }
 
 func rollbackTx(tx *sqlx.Tx) {

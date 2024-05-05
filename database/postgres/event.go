@@ -205,11 +205,14 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		sourceID = &event.SourceID
 	}
 
-	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, isWrapped, err := GetTx(ctx, e.db)
 	if err != nil {
 		return err
 	}
-	defer rollbackTx(tx)
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
 
 	_, err = tx.ExecContext(ctx, createEvent,
 		event.UID,
@@ -240,6 +243,10 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		if err != nil {
 			return err
 		}
+	}
+
+	if isWrapped {
+		return nil
 	}
 
 	return tx.Commit()
