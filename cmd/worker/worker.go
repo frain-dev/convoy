@@ -7,7 +7,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"net/http"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -183,8 +182,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				render.JSON(w, r, "Convoy")
 			})
 
-			ticker := time.NewTicker(time.Minute)
-			go task.QueueStuckEventDeliveries(ctx, ticker, eventDeliveryRepo, a.Queue)
+			go task.QueueStuckEventDeliveries(ctx, eventDeliveryRepo, a.Queue)
 
 			srv := &http.Server{
 				Handler: router,
@@ -198,7 +196,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return e
 			}
 
-			ticker.Stop()
 			<-ctx.Done()
 			return ctx.Err()
 		},
