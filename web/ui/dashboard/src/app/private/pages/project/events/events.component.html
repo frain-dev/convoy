@@ -25,7 +25,7 @@
 						<img src="/assets/img/time-icon.svg" alt="timer icon" class="mr-20px w-30px" />
 						<p class="mr-12px text-12 text-neutral-12">Waiting on your first web-hook event</p>
 					</div>
-					<a href="https://getconvoy.io/docs/getting-started/receiving-webhook-example" target="_blank" referrerpolicy="no-referrer" convoy-button fill="clear" class="mt-48px font-medium">Don't See Your Events Yet?</a>
+					<a href="https://docs.getconvoy.io/guides/receiving-webhook-example" target="_blank" referrerpolicy="no-referrer" convoy-button fill="clear" class="mt-48px font-medium">Don't See Your Events Yet?</a>
 				</ng-container>
 
 				<ng-container *ngIf="lastestEventDeliveries.length > 0">
@@ -57,7 +57,7 @@
 				</svg>
 			</button>
 
-			<a href="https://getconvoy.io/docs/getting-started/sending-webhook-example" convoy-button target="_blank" referrerpolicy="no-referrer" fill="outline" class="mt-48px" *ngIf="privateService.getProjectDetails?.type === 'outgoing' && isProjectConfigurationComplete">
+			<a href="https://docs.getconvoy.io/guides/sending-webhook-example" convoy-button target="_blank" referrerpolicy="no-referrer" fill="outline" class="mt-48px" *ngIf="privateService.getProjectDetails?.type === 'outgoing' && isProjectConfigurationComplete">
 				Go to documentation
 				<svg class="ml-8px fill-primary-100 w-20px h-20px">
 					<use xlink:href="#external-link-icon"></use>
