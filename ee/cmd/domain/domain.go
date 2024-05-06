@@ -92,6 +92,7 @@ func AddDomainCommand(a *cli.App) *cobra.Command {
 					log.WithError(err).Error("error occurred while forwarding the request")
 					return
 				}
+                defer res.Body.Close()
 
 				for k, v := range res.Header {
 					w.Header().Add(k, v[0])
