@@ -22,34 +22,32 @@
             <convoy-table-loader id="events_loader_loader" [tableHead]="eventLogsTableHead"
                 *ngIf="isloadingEvents"></convoy-table-loader>
 
-            <div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container"
-                *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
-                <table convoy-table>
-                    <thead convoy-table-head>
-                        <th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''"
-                            *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</th>
-                    </thead>
-                    <tbody>
-                        <ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
-                            <tr convoy-table-row [forDate]="true">
-                                <td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
-                                <td convoy-table-cell [forDate]="true"></td>
-                                <td convoy-table-cell [forDate]="true"></td>
-                            </tr>
-                            <tr convoy-table-row class="group"
-                                *ngFor="let event of eventGroup.content; let index = index"
-                                (click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event); showEventForm = false; eventName = ''"
-                                class="cursor-pointer rounded-8px border-b border-b-new.primary-25"
-                                [active]="event.uid === eventsDetailsItem?.uid">
-                                <td convoy-table-cell class="w-380px pl-16px pr-30px relative rounded-l-8px">
-                                    <div convoy-tag color="gray"
-                                        class="mr-8px w-[260px] !gap-16px truncate flex items-center">
-                                        {{ event.uid }}
-                                        <convoy-copy-button size="sm"
-                                            notificationText="Event ID has been copied to clipboard"
-                                            [text]="event.uid"></convoy-copy-button>
-                                    </div>
-                                </td>
+			<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="events-table-container" *ngIf="!isloadingEvents && displayedEvents && displayedEvents.length > 0">
+				<table convoy-table>
+					<thead convoy-table-head>
+						<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventLogsTableHead; let i = index">{{ head }}</th>
+					</thead>
+					<tbody>
+						<ng-container *ngFor="let eventGroup of displayedEvents; let i = index">
+							<tr convoy-table-row [forDate]="true">
+								<td convoy-table-cell [forDate]="true">{{ eventGroup.date }}</td>
+								<td convoy-table-cell [forDate]="true"></td>
+								<td convoy-table-cell [forDate]="true"></td>
+							</tr>
+							<tr
+								convoy-table-row
+								class="group"
+								*ngFor="let event of eventGroup.content; let index = index"
+								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)"
+								class="cursor-pointer rounded-8px border-b border-b-new.primary-25"
+								[active]="event.uid === eventsDetailsItem?.uid"
+							>
+								<td convoy-table-cell class="w-380px pl-16px pr-30px relative rounded-l-8px">
+									<div convoy-tag class="mr-8px w-[260px] !gap-16px truncate flex items-center">
+										{{ event.uid }}
+										<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" [text]="event.uid"></convoy-copy-button>
+									</div>
+								</td>
 
                                 <td convoy-table-cell>
                                     <div class="max-w-[300px] w-full overflow-hidden overflow-ellipsis">
@@ -62,9 +60,8 @@
 
                                 <td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
 
-                                <td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
-                                    <div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag
-                                        color="gray" size="sm">Duplicate</div>
+								<td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
+									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag size="sm">Duplicate</div>
 
 									<button convoy-button fill="clear" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)">
 										<svg width="20" height="20" class="fill-neutral-10">
@@ -166,23 +163,18 @@
 				<ng-container *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event">
 					<p class="text-12 text-neutral-10 font-medium my-16px">Duplicate Events</p>
 
-                    <ul *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event"
-                        class="border-b border-new.primary-25 mb-16px">
-                        <li convoy-list-item *ngFor="let event of duplicateEvents"
-                            class="cursor-pointer border-none flex mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px">
-                            <div class="w-1/3 flex items-center">
-                                <div convoy-tag color="gray" class="overflow-hidden text-ellipsis mr-8px">{{ event.uid
-                                    }}</div>
-                                <convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard"
-                                    className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block"
-                                    [text]="event.uid"></convoy-copy-button>
-                            </div>
+					<ul *ngIf="duplicateEvents && duplicateEvents.length > 0 && eventsDetailsItem?.is_duplicate_event" class="border-b border-new.primary-25 mb-16px">
+						<li convoy-list-item *ngFor="let event of duplicateEvents" class="cursor-pointer border-none flex mb-10px hover:bg-new.primary-25 py-6px rounded-12px transition-colors pl-4px">
+							<div class="w-1/3 flex items-center">
+								<div convoy-tag class="overflow-hidden text-ellipsis mr-8px">{{ event.uid }}</div>
+								<convoy-copy-button size="sm" notificationText="Event ID has been copied to clipboard" className="absolute translate-x-0 translate-y-[-50%] top-[50] hidden group-hover:block" [text]="event.uid"></convoy-copy-button>
+							</div>
 
 							<div class="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-12 text-neutral-10 pr-8px">
 								{{ event.source_metadata.name || 'Rest API' }}
 							</div>
 							<div class="w-1/5">
-								<div convoy-tag color="gray" size="sm" *ngIf="event.is_duplicate_event">Duplicate</div>
+								<div convoy-tag size="sm" *ngIf="event.is_duplicate_event">Duplicate</div>
 							</div>
 							<div class="flex items-center justify-end text-neutral-10 text-12">
 								{{ event.created_at | date: 'shortTime' }}

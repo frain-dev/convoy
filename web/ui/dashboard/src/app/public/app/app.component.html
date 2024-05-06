@@ -45,9 +45,9 @@
 					</div>
 					<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ endpoint?.url }}</div>
 					<div class="md:flex hidden whitespace-nowrap">
-						<div convoy-tag *ngIf="endpoint.subscription" [color]="hasFilter(endpoint.subscription.filter_config.filter) ? 'primary' : 'gray'" class="mr-8px">Filter</div>
-						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.retry_config ? 'primary' : 'gray'" class="mr-8px">Retry Logic</div>
-						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.filter_config.event_types.length > 1 || endpoint.subscription.filter_config.event_types[0] != '*' ? 'primary' : 'gray'" color="primary">Event Types</div>
+						<div convoy-tag *ngIf="endpoint.subscription" [color]="hasFilter(endpoint.subscription.filter_config.filter) ? 'primary' : 'neutral'" class="mr-8px">Filter</div>
+						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.retry_config ? 'primary' : 'neutral'" class="mr-8px">Retry Logic</div>
+						<div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.filter_config.event_types.length > 1 || endpoint.subscription.filter_config.event_types[0] != '*' ? 'primary' : 'neutral'">Event Types</div>
 					</div>
 				</div>
 
