@@ -35,7 +35,7 @@
 		"zone.js": "^0.11.4"
 	},
 	"devDependencies": {
-		"@angular-devkit/build-angular": "^17.3.5",
+		"@angular-devkit/build-angular": "^14.0.3",
 		"@angular/cli": "^14.0.3",
 		"@angular/compiler-cli": "^14.0.3",
 		"@babel/core": "^7.18.5",
@@ -54,6 +54,6 @@
 		"postcss": "^8.4.14",
 		"purgecss": "^4.0.3",
 		"tailwindcss": "^3.1.4",
-		"typescript": "^4.7.4"
+		"typescript": "4.7.4"
 	}
 }
