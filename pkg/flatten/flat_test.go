@@ -4,10 +4,10 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"github.com/stretchr/testify/require"
 	"testing"
 
 	"github.com/nsf/jsondiff"
+	"github.com/stretchr/testify/require"
 )
 
 //go:embed gh_event.json
@@ -77,6 +77,11 @@ func TestFlattenMap(t *testing.T) {
 		{
 			name:  "nothing",
 			given: nil,
+			want:  map[string]interface{}{},
+		},
+		{
+			name:  "string",
+			given: "random_string",
 			want:  map[string]interface{}{},
 		},
 	}
