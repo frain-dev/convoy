@@ -14,6 +14,7 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 .idea
+.vscode
 
 /api/ui/build/*
 !/api/ui/build/go_test_stub.txt
