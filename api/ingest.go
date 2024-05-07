@@ -1,7 +1,10 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
+	"strings"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"io"
@@ -136,8 +139,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	// 3.1 On Failure
 	// Return 400 Bad Request.
-	body := io.LimitReader(r.Body, int64(maxIngestSize))
-	payload, err := io.ReadAll(body)
+	payload, err := extractPayloadFromIngestEventReq(r, maxIngestSize)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -215,6 +217,47 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", len(payload), http.StatusOK))
 	} else {
 		_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
+	}
+}
+
+const (
+	applicationJsonContentType   = "application/json"
+	multipartFormDataContentType = "multipart/form-data"
+)
+
+func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]byte, error) {
+	var contentType string
+	rawContentType := strings.ToLower(
+		strings.TrimSpace(
+			r.Header.Get("Content-Type"),
+		),
+	)
+
+	// We split the rawContentType using the first semicolon as the delimiter because go-chi has a weird way
+	// of handling the form-data content type. It adds a semicolon after the boundary and we need to remove it.
+	// Example: multipart/form-data; boundary=--------------------------879783787191406952783600
+	if contentTypeSlice := strings.SplitN(rawContentType, ";", 2); len(contentTypeSlice) == 0 {
+		// always default to json if no content type is specified
+		contentType = applicationJsonContentType
+	} else {
+		contentType = strings.TrimSpace(contentTypeSlice[0])
+	}
+
+	switch contentType {
+	case multipartFormDataContentType:
+		if err := r.ParseMultipartForm(int64(maxIngestSize)); err != nil {
+			return nil, err
+		}
+		data := make(map[string][]string)
+		for k, v := range r.Form {
+			data[k] = v
+		}
+		return json.Marshal(data)
+
+	default:
+		// To avoid introducing a breaking change, we are keeping the old behaviour of assuming
+		// the content type is JSON if the content type is not specified/unsupported.
+		return io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
 	}
 }
 
