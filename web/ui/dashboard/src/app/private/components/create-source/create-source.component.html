@@ -127,7 +127,7 @@
 			<convoy-select label="Source Type" name="type" formControlName="type" [options]="pubSubTypes" errorMessage="Select source type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('pub_sub.type')?.patchValue($event)"></convoy-select>
 
 			<convoy-input-field class="mt-24px">
-				<label for="workers" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue. For Kafka sources, the number of partitions for the tpoic should match the number of workers">Workers</label>
+				<label for="workers" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue. For Kafka sources, the number of partitions for the topic should match the number of workers">Workers</label>
 				<input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
 				<convoy-input-error *ngIf="sourceForm.get('pub_sub.workers')?.touched && sourceForm.get('pub_sub.workers')?.invalid">Enter number of workers</convoy-input-error>
 			</convoy-input-field>
