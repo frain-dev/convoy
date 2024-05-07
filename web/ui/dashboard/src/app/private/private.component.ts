@@ -71,6 +71,10 @@ export class PrivateComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
+    shouldMountAppRouter(): boolean {
+        return !this.isLoadingOrganisations && (Boolean(this.organisations?.length) || this.router.url.startsWith('/user-settings'))
+    }
+
 	async getConfiguration() {
 		try {
 			const response = await this.privateService.getConfiguration();

@@ -247,6 +247,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
+		a.DB,
 		endpointRepo,
 		eventRepo,
 		projectRepo,
@@ -255,8 +256,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		subRepo,
 		deviceRepo), newTelemetry)
 
-	ticker := time.NewTicker(time.Second * 10)
-	go task.QueueStuckEventDeliveries(ctx, ticker, eventDeliveryRepo, a.Queue)
+	go task.QueueStuckEventDeliveries(ctx, eventDeliveryRepo, a.Queue)
 
 	go func() {
 		consumer.Start()
