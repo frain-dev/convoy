@@ -127,7 +127,7 @@
 			<convoy-select label="Source Type" name="type" formControlName="type" [options]="pubSubTypes" errorMessage="Select source type" [required]="true" className="mb-0" (selectedOption)="sourceForm.get('pub_sub.type')?.patchValue($event)"></convoy-select>
 
 			<convoy-input-field class="mt-24px">
-				<label for="workers" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue.">Workers</label>
+				<label for="workers" convoy-label required="true" tooltip="This specifies the number of consumers you want polling messages from your queue. For Kafka sources, the number of partitions for the topic should match the number of workers">Workers</label>
 				<input type="number" id="workers" convoy-input autocomplete="workers" formControlName="workers" placeholder="Workers" />
 				<convoy-input-error *ngIf="sourceForm.get('pub_sub.workers')?.touched && sourceForm.get('pub_sub.workers')?.invalid">Enter number of workers</convoy-input-error>
 			</convoy-input-field>
@@ -287,7 +287,13 @@
 			</ng-container>
 
 			<ng-container formGroupName="kafka" *ngIf="sourceForm.value.pub_sub.type === 'kafka'">
-				<h2 class="text-16 text-neutral-10 font-semibold mb-20px">Configure Kafka</h2>
+                <div class="flex item-centers gap-14px">
+                    <h2 class="text-16 text-neutral-10 font-semibold mb-20px">Configure Kafka</h2>
+                    <a convoy-button fill="text" target="_blank" href="https://docs.getconvoy.io/product-manual/sources#kafka" rel="noreferrer" class="h-22px !py-0">
+                        <img src="/assets/img/doc-icon-primary.svg" alt="doc icon" class="h-16px w-16px" />
+                        <span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Docs</span>
+                    </a>
+                </div>
 
 				<convoy-multi-input label="Broker Addresses" required="true" [prefilledKeys]="brokerAddresses" (inputValues)="addBrokers($event)"></convoy-multi-input>
 				<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.brokers')?.touched && sourceForm.get('pub_sub.kafka.brokers')?.invalid">Please add at least one broker address</convoy-input-error>
