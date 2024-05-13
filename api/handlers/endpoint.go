@@ -293,9 +293,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	serverResponse := util.NewServerResponse(
-		"Endpoint updated successfully",
-		resp, http.StatusAccepted)
+	serverResponse := util.NewServerResponse("Endpoint updated successfully", resp, http.StatusAccepted)
 
 	rb, err := json.Marshal(serverResponse)
 	if err != nil {
@@ -441,7 +439,21 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted))
+	serverResponse := util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted)
+
+	rb, err := json.Marshal(serverResponse)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resBytes, err := h.RM.VersionResponse(r, rb, "UpdateEndpoint")
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	util.WriteResponse(w, r, resBytes, http.StatusAccepted)
 }
 
 func (h *Handler) retrieveEndpoint(ctx context.Context, endpointID, projectID string) (*datastore.Endpoint, error) {
