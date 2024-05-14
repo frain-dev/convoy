@@ -6,10 +6,10 @@ as
 $$
 DECLARE
     next_min timestamptz;
-    _can_take BOOLEAN;
+    can_take BOOLEAN;
     row RECORD;
 BEGIN
-    SELECT * FROM convoy.token_bucket WHERE key = _key FOR UPDATE SKIP LOCKED LIMIT 1 INTO row;
+    SELECT expires_at, tokens FROM convoy.token_bucket WHERE key = _key FOR UPDATE SKIP LOCKED LIMIT 1 INTO row;
     if row is null then
         return false;
     end if;
@@ -40,7 +40,7 @@ BEGIN
         rate = COALESCE(_rate, rate),
         updated_at = DEFAULT
     WHERE key = _key
-    RETURNING TRUE INTO _can_take;
+    RETURNING TRUE INTO can_take;
 
     -- Insert if no record found
     IF NOT FOUND THEN
@@ -49,7 +49,7 @@ BEGIN
         return true;
     END IF;
 
-    RETURN _can_take;
+    RETURN can_take;
 END;
 $$;
 -- +migrate StatementEnd
