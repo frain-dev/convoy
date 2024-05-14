@@ -27,7 +27,7 @@
 				<ng-container dropdownOptions class="relative">
 					<ul class="p-10px max-h-[300px] overflow-y-auto overflow-x-hidden">
 						<li class="mb-12px last-of-type:mb-0 w-full" *ngFor="let project of projects">
-							<button convoy-dropdown-option class="text-12 text-new.primary-800 py-8px px-8px w-full text-left hover:bg-new.primary-25 transition-all duration-300 rounded-8px flex justify-between items-center gap-24px" (click)="getProjectCompleteDetails(project)">
+							<button convoy-dropdown-option convoy-button size="sm" color="neutral" fill="text" class="py-8px px-8px w-full text-left hover:bg-new.primary-25 transition-all duration-300 rounded-8px flex justify-between items-center gap-24px" (click)="getProjectCompleteDetails(project)">
 								<div class="flex items-center gap-8px max-w-[calc(100%-36px)]">
 									<div class="w-full max-w-[200px] truncate">{{ project.name }}</div>
 									<div tooltipToggle convoy-tag class="py-[1px] px-[3px]" color="primary" fill="soft">
@@ -47,12 +47,12 @@
 					<hr class="border-t border-t-new.primary-25" *ngIf="projects.length" />
 
 					<div class="flex items-center">
-						<a routerLink="../new" class="text-12 text-new.primary-800 py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
+						<a routerLink="../new" convoy-button size="sm" color="neutral" fill="text" class="py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
 							<img src="assets/img/svg/plus-icon.svg" class="w-12px mr-8px" alt="plus icon" />
 							New Project
 						</a>
 						<div class="h-44px w-2px bg-new.primary-25"></div>
-						<a routerLink="../" class="text-12 text-new.primary-800 py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
+						<a routerLink="../" convoy-button size="sm" color="neutral" fill="text" class="py-12px px-18px w-full text-left hover:bg-new.primary-25 flex items-center">
 							<img src="assets/img/svg/projects.svg" class="w-12px mr-8px" alt="plus icon" />
 							All Projects
 						</a>

@@ -89,7 +89,7 @@
 							<td convoy-table-cell colspan="2"></td>
 							<td convoy-table-cell>
 								<div class="w-full flex items-center justify-end">
-									<button convoy-button size="xs" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ endpointId: endpoint.uid }" texture="light">
+									<button convoy-button size="xs" fill="soft" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ endpointId: endpoint.uid }">
 										<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
 										View Events
 									</button>
@@ -103,7 +103,7 @@
 
 										<ul dropdownOptions class="p-10px">
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="secretDialog.showModal()">
+												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="secretDialog.showModal()">
 													<svg width="16" height="16" class="mr-8px">
 														<use xlink:href="#shield-icon"></use>
 													</svg>
@@ -111,7 +111,7 @@
 												</button>
 											</li>
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 													<svg width="14" height="14" class="stroke-neutral-10 mr-8px">
 														<use [attr.xlink:href]="selectedEndpoint?.status === 'paused' ? '#play-icon' : '#pause-icon'"></use>
 													</svg>
@@ -119,7 +119,7 @@
 												</button>
 											</li>
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
+												<button convoy-dropdown-option convoy-button color="neutral" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
 													<svg width="17" height="16" class="fill-neutral-10 mr-8px">
 														<use xlink:href="#edit-icon"></use>
 													</svg>
@@ -128,7 +128,7 @@
 											</li>
 
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="danger" class="w-full !justify-start" fill="text" (click)="deleteDialog.showModal()">
+												<button convoy-dropdown-option convoy-button color="error" class="w-full !justify-start" fill="text" (click)="deleteDialog.showModal()">
 													<svg width="14" height="14" class="fill-transparent stroke-new.error-400 mr-8px">
 														<use xlink:href="#delete-icon2"></use>
 													</svg>
@@ -137,7 +137,7 @@
 											</li>
 
 											<li *ngIf="privateService.getProjectDetails?.type === 'outgoing'" class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="sendTestEvent()" [disabled]="isSendingTestEvent">
+												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="sendTestEvent()" [disabled]="isSendingTestEvent">
 													<svg width="16" height="17" class="mr-8px">
 														<use xlink:href="#send-icon"></use>
 													</svg>
