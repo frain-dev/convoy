@@ -1,3 +1,18 @@
+# 24.5.1
+
+### Features
+- Create default org when bootstrapping Convoy for the first time. #1991
+- Display user-settings page when there are no organizations. #1999
+
+### Enhancements
+- Use transactions in ProcessBroadcastEventCreation to prevent a race condition. #1994
+- Update copy for the kafka source form giving more information and linking to docs. #2000
+- Update Endpoint table with its ID on the dashboard. #1988
+
+### Bug fixes
+- Fixed a panic that would occur when request body is a string during subscription filtering. #1992
+- Fixed a bug where the response from the pause endpoint api wasn't versioned correctly. #2001
+
 # 24.4.1
 
 ### API Changes
