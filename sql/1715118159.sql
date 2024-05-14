@@ -10,6 +10,10 @@ DECLARE
     row RECORD;
 BEGIN
     SELECT * FROM convoy.token_bucket WHERE key = _key FOR UPDATE SKIP LOCKED LIMIT 1 INTO row;
+    if row is null then
+        return false;
+    end if;
+
     next_min := current_timestamp + make_interval(secs := _bucket_size);
 
     IF current_timestamp < row.expires_at AND row.tokens = _rate THEN
@@ -42,7 +46,7 @@ BEGIN
     IF NOT FOUND THEN
         INSERT INTO convoy.token_bucket (key, rate, expires_at)
         VALUES (_key, _rate, next_min);
-        _can_take = true;
+        return true;
     END IF;
 
     RETURN _can_take;
