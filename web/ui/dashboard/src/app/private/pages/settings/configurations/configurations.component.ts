@@ -42,6 +42,11 @@ export class ConfigurationsComponent implements OnInit {
 	configForm: FormGroup = this.formBuilder.group({
 		is_analytics_enabled: [null, Validators.required],
 		is_signup_enabled: [null, Validators.required],
+		retention_policy_enabled: [true],
+		retention_policy: this.formBuilder.group({
+			policy: [720],
+			search_policy: [720]
+		}),
 		storage_policy: this.formBuilder.group({
 			type: [null, Validators.required],
 			on_prem: this.formBuilder.group({
@@ -56,6 +61,11 @@ export class ConfigurationsComponent implements OnInit {
 			})
 		})
 	});
+
+	configurations = [
+		{ uid: 'retention_policy', name: 'Retention Policy', show: false },
+		{ uid: 'storage_policy', name: 'Storage Policy', show: false }
+	];
 
 	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService) {}
 
@@ -87,5 +97,16 @@ export class ConfigurationsComponent implements OnInit {
 		} catch {
 			this.isUpdatingConfig = false;
 		}
+	}
+
+	toggleConfigForm(configValue: string) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) config.show = !config.show;
+			if (configValue === 'retention_policy' && config.uid === 'retention_policy') this.configForm.patchValue({ retention_policy_enabled: config.show });
+		});
+	}
+
+	showConfig(configValue: string): boolean {
+		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
 }
