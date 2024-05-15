@@ -5,11 +5,13 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 )
 
@@ -73,7 +75,9 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			go ingest.Run()
 
 			srv := server.NewServer(cfg.Server.HTTP.IngestPort, func() {})
-			srv.SetHandler(chi.NewMux())
+			mux := chi.NewMux()
+			mux.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}))
+			srv.SetHandler(mux)
 
 			a.Logger.Info("Starting Convoy Message Broker Ingester...")
 

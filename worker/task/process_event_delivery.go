@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -157,7 +158,17 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
+		m := metrics.GetDPInstance()
+		pUID := project.UID
+		eUID := endpoint.UID
+
+		st := time.Now()
+
 		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
+		elapsedMs := time.Since(st).Milliseconds()
+		m.IncrementEgressTotal(pUID, eUID)
+		m.ObserveEgressNetworkLatency(pUID, eUID, elapsedMs)
+
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -184,6 +195,9 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
 			eventDelivery.Latency = time.Since(eventDelivery.CreatedAt).String()
+
+			m.IncrementEgressDeliveredTotal(pUID, eUID)
+			m.ObserveEgressDeliveryLatency(pUID, eUID, time.Since(eventDelivery.CreatedAt).Milliseconds())
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
@@ -196,6 +210,8 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			attempts := eventDelivery.Metadata.NumTrials + 1
 
 			log.FromContext(ctx).Infof("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID, nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+
+			m.IncrementEgressErrorsTotal(pUID, eUID)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
