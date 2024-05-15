@@ -44,10 +44,6 @@ export class CreateProjectComponent implements OnInit {
 				count: [null],
 				duration: [null]
 			}),
-			retention_policy: this.formBuilder.group({
-				policy: [720],
-				search_policy: [720]
-			}),
 			ssl: this.formBuilder.group({
 				enforce_secure_endpoints: [true]
 			}),
@@ -60,7 +56,6 @@ export class CreateProjectComponent implements OnInit {
 				url: ['', Validators.required],
 				secret: [null]
 			}),
-			retention_policy_enabled: [true]
 		}),
 		type: [null, Validators.required]
 	});
@@ -85,7 +80,6 @@ export class CreateProjectComponent implements OnInit {
 	configurations = [
 		{ uid: 'strategy', name: 'Retry Config', show: false },
 		{ uid: 'ratelimit', name: 'Rate Limit', show: false },
-		{ uid: 'retention_policy', name: 'Retention Policy', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	public rbacService = inject(RbacService);
@@ -129,7 +123,6 @@ export class CreateProjectComponent implements OnInit {
 	toggleConfigForm(configValue: string) {
 		this.configurations.forEach(config => {
 			if (config.uid === configValue) config.show = !config.show;
-			if (configValue === 'retention_policy' && config.uid === 'retention_policy') this.projectForm.patchValue({ config: { retention_policy_enabled: config.show } });
 		});
 	}
 
@@ -155,17 +148,10 @@ export class CreateProjectComponent implements OnInit {
 				? this.projectForm.get('config.meta_event.is_enabled')?.patchValue(this.projectDetails.config.meta_event.is_enabled)
 				: this.projectForm.get('config.meta_event.is_enabled')?.patchValue(false);
 
-			const search_policy = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
-
-			this.projectForm.get('config.retention_policy.search_policy')?.patchValue(search_policy);
-			const policy = this.projectDetails.config.retention_policy.policy.match(/\d+/g);
-			this.projectForm.get('config.retention_policy.policy')?.patchValue(policy);
-
 			this.projectForm.get('config.meta_event.type')?.patchValue('http');
 
 			let filteredConfigs: string[] = [];
 			if (this.projectDetails?.type === 'incoming') filteredConfigs.push('signature');
-			if (!this.projectDetails?.config.retention_policy_enabled) filteredConfigs.push('retention_policy');
 
 			this.configurations.filter(item => !filteredConfigs.includes(item.uid)).forEach(config => this.toggleConfigForm(config.uid));
 		} catch {}
@@ -222,12 +208,8 @@ export class CreateProjectComponent implements OnInit {
 		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
 		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
 		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
-		if (this.projectForm.value.config.retention_policy.search_policy)
-			this.projectForm.value.config.retention_policy.search_policy =
-				typeof this.projectForm.value.config.retention_policy.search_policy === 'string' ? this.projectForm.value.config.retention_policy.search_policy : `${this.projectForm.value.config.retention_policy.search_policy}h`;
-		if (this.projectForm.value.config.retention_policy.policy)
-			this.projectForm.value.config.retention_policy.policy = typeof this.projectForm.value.config.retention_policy.policy === 'string' ? this.projectForm.value.config.retention_policy.policy : `${this.projectForm.value.config.retention_policy.policy}h`;
-		this.isCreatingProject = true;
+
+        this.isCreatingProject = true;
 
 		try {
 			// this updateProject service also updates project in localstorage
@@ -270,15 +252,10 @@ export class CreateProjectComponent implements OnInit {
 	getProjectData() {
 		const configKeys = Object.keys(this.projectForm.value.config);
 		const projectData = this.projectForm.value;
+
 		configKeys.forEach(configKey => {
 			if (!this.showConfig(configKey)) delete projectData.config[configKey];
 		});
-
-		if (this.showConfig('retention_policy')) {
-			projectData.config.retention_policy_enabled = true;
-			projectData.config.retention_policy.search_policy = typeof projectData.config.retention_policy.search_policy === 'string' ? projectData.config.retention_policy.search_policy : `${projectData.config.retention_policy.search_policy}h`;
-			projectData.config.retention_policy.policy = typeof projectData.config.retention_policy.policy === 'string' ? projectData.config.retention_policy.policy : `${projectData.config.retention_policy.policy}h`;
-		}
 
 		return projectData;
 	}
