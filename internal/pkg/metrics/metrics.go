@@ -44,5 +44,6 @@ func RequestDuration() *prometheus.HistogramVec {
 func RegisterQueueMetrics(q queue.Queuer) {
 	Reg().MustRegister(
 		metrics.NewQueueMetricsCollector(q.(*redisqueue.RedisQueue).Inspector()),
+		q.(*redisqueue.RedisQueue),
 	)
 }
