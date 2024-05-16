@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 })
 export class ButtonComponent implements OnInit {
 	@Input('buttonText') buttonText!: string;
-	@Input('fill') fill: 'default' | 'outline' | 'clear' | 'text' | 'link' | 'soft' | 'soft-outline' = 'default';
+	@Input('fill') fill: 'solid' | 'outline' | 'text' | 'link' | 'soft' | 'soft-outline' = 'solid';
 	@Input('size') size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
 	@Input('color') color: 'primary' | 'success' | 'warning' | 'neutral' | 'error' = 'primary';
 
@@ -24,56 +24,17 @@ export class ButtonComponent implements OnInit {
 	ngOnInit(): void {}
 
 	get classes(): string {
-		const colors = {
-			primary: {
-				default: 'bg-new.primary-400 text-white-100',
-				outline: 'border border-new.primary-400 text-new.primary-400',
-				clear: 'border-none text-new.primary-400',
-				text: `border-none text-new.primary-400 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				link: `border-none text-new.primary-400 underline decoration-new.primary-400 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				soft: 'bg-new.primary-25 text-new.primary-400',
-				'soft-outline': `border border-new.primary-200 text-new.primary-400`
-			},
-			error: {
-				default: 'bg-error-9 text-white-100',
-				outline: 'border border-error-9 text-error-9',
-				clear: 'border-none text-error-9',
-				text: `border-none text-error-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				link: `border-none text-error-9 underline decoration-error-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				soft: 'bg-error-a3 text-error-11',
-				'soft-outline': `border border-error-6 text-error-9`
-			},
-			neutral: {
-				default: 'bg-neutral-9 text-white-100',
-				outline: 'border border-neutral-9 text-neutral-9',
-				clear: 'border-none text-neutral-9',
-				text: `border-none text-neutral-10 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				link: `border-none text-neutral-10 underline decoration-neutral-10 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				soft: 'bg-neutral-a3 text-neutral-11',
-				'soft-outline': 'border border-neutral-6 text-neutral-9'
-			},
-			success: {
-				default: 'bg-success-9 text-white-100',
-				outline: 'border border-success-9 text-success-9',
-				clear: 'border-none text-success-9',
-				text: `border-none text-success-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				link: `border-none text-success-9 underline decoration-success-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				soft: 'bg-success-a3 text-success-11',
-				'soft-outline': 'border border-success-6 text-success-9'
-			},
-			warning: {
-				default: 'bg-warning-9 text-white-100',
-				outline: 'border border-warning-9 text-warning-9',
-				clear: 'border-none text-warning-9',
-				text: `border-none text-warning-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				link: `border-none text-warning-9 underline decoration-warning-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				soft: 'bg-warning-a3 text-warning-11',
-				'soft-outline': 'border border-warning-6 text-warning-9'
-			}
+		const buttonTypes = {
+			solid: `${this.color === 'primary' ? 'bg-new.primary-400 text-white-100' : `bg-${this.color}-9 text-white-100`}`,
+			outline: `border ${this.color === 'primary' ? 'border-new.primary-400 text-new.primary-400' : `border-${this.color}-9 text-${this.color}-9`}`,
+			text: `border-none ${this.color === 'primary' ? 'text-new.primary-400 ' : `text-${this.color}-${this.color === 'neutral' ? '10' : '9'}`} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
+			link: `border-none ${this.color === 'primary' ? 'text-new.primary-400 decoration-new.primary-400' : `text-${this.color}-${this.color === 'neutral' ? '10' : '9'} decoration-${this.color}-${this.color === 'neutral' ? '10' : '9'}`} underline ${
+				this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''
+			}`,
+			soft: `${this.color === 'primary' ? 'bg-new.primary-25 text-new.primary-400' : `bg-${this.color}-a3 text-${this.color}-11`} `,
+			'soft-outline': `border ${this.color === 'primary' ? 'border-new.primary-200 text-new.primary-400' : `border-${this.color}-6 text-${this.color}-9`}`
 		};
 
-
-
-		return `${this.fill !== 'text' ? this.buttonSizes[this.size] : ''} ${colors[this.color][this.fill]} flex items-center justify-center disabled:opacity-50 rounded-8px`;
+		return `${this.fill !== 'text' ? this.buttonSizes[this.size] : ''} ${buttonTypes[this.fill]} flex items-center justify-center disabled:opacity-50 rounded-8px`;
 	}
 }
