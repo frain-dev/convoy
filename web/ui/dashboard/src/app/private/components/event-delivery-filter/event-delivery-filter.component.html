@@ -90,14 +90,14 @@
 					<ng-container dropdownOptions>
 						<ul class="min-h-[100px] max-h-[200px] overflow-auto pb-10px">
 							<li convoy-list-item *ngFor="let status of eventDeliveryStatuses" (click)="selectStatusFilter(status)" class="text-14 px-20px">
-								<button convoy-button color="grey" fill="text" class="capitalize font-normal text-left w-full !justify-start text-12">
+								<button convoy-button color="neutral" fill="text" class="capitalize font-normal text-left w-full !justify-start text-12">
 									{{ status || 'None' }}
 								</button>
 							</li>
 						</ul>
 
 						<div class="px-10px py-8px flex justify-end gap-14px border-t border-t-new.primary-25">
-							<button convoy-dropdown-option convoy-button size="sm" class="text-10 !py-4px" fill="outline" color="danger" (click)="eventDeliveryFilteredByStatus = []; toggleFilter('status', false); clearFilters('status')">Clear</button>
+							<button convoy-dropdown-option convoy-button size="sm" class="text-10 !py-4px" fill="outline" color="error" (click)="eventDeliveryFilteredByStatus = []; toggleFilter('status', false); clearFilters('status')">Clear</button>
 							<button convoy-dropdown-option convoy-button size="sm" class="text-10 !py-4px" (click)="getSelectedStatusFilter()">Apply</button>
 						</div>
 					</ng-container>

@@ -14,8 +14,8 @@ export class ButtonComponent implements OnInit {
 	@Input('buttonText') buttonText!: string;
 	@Input('fill') fill: 'default' | 'outline' | 'clear' | 'text' | 'link' | 'soft' | 'soft-outline' = 'default';
 	@Input('size') size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
-	@Input('color') color: 'primary' | 'success' | 'warning' | 'danger' | 'grey' | 'transparent' | 'neutral' | 'error' = 'primary';
-	@Input('texture') texture: 'deep' | 'light' = 'deep';
+	@Input('color') color: 'primary' | 'success' | 'warning' | 'neutral' | 'error' = 'primary';
+
 	@Input('index') tabIndex = 0;
 	buttonSizes = { xs: 'py-4px px-8px text-12', sm: `py-6px px-16px text-12`, md: `py-8px px-18px text-12`, lg: `py-10px px-36px w-full text-14` };
 
@@ -52,15 +52,6 @@ export class ButtonComponent implements OnInit {
 				soft: 'bg-neutral-a3 text-neutral-11',
 				'soft-outline': 'border border-neutral-6 text-neutral-9'
 			},
-			grey: {
-				default: 'bg-neutral-9 text-white-100',
-				outline: 'border border-neutral-9 text-neutral-9',
-				clear: 'border-none text-neutral-9',
-				text: `border-none text-neutral-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				link: `border-none text-neutral-9 underline decoration-neutral-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				soft: 'bg-neutral-a3 text-neutral-11',
-				'soft-outline': 'border border-neutral-6 text-neutral-9'
-			},
 			success: {
 				default: 'bg-success-9 text-white-100',
 				outline: 'border border-success-9 text-success-9',
@@ -78,36 +69,10 @@ export class ButtonComponent implements OnInit {
 				link: `border-none text-warning-9 underline decoration-warning-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
 				soft: 'bg-warning-a3 text-warning-11',
 				'soft-outline': 'border border-warning-6 text-warning-9'
-			},
-			danger: {
-				default: 'bg-warning-9 text-white-100',
-				outline: 'border border-warning-9 text-warning-9',
-				clear: 'border-none text-warning-9',
-				text: `border-none text-warning-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				link: `border-none text-warning-9 underline decoration-warning-9 ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-				soft: 'bg-warning-a3 text-warning-11',
-				'soft-outline': 'border border-warning-6 text-warning-9'
-			},
-			transparent: {
-				default: 'bg-warning-9 text-white-100',
-				outline: 'border border-warning-9 text-warning-9',
-				clear: 'border-none text-warning-9',
-				text: 'border-none text-warning-9',
-				link: 'border-none text-warning-9 underline decoration-warning-9',
-				soft: 'bg-warning-a3 text-warning-11',
-				'soft-outline': 'border border-warning-6 text-warning-9'
 			}
 		};
 
-		const colorLevel = this.texture == 'deep' ? '100' : this.color == 'grey' ? '20' : '500';
-		const buttonTypes = {
-			default: `bg-${this.color}-${colorLevel} text-${this.texture == 'deep' ? 'white' : this.color}-100 border-none rounded-8px hover:shadow-xs transition-all`,
-			soft: `bg-new.${this.color}-25 text-new.${this.color}-400 border-none border border-new.${this.color}-25  rounded-8px hover:shadow-xs transition-all`,
-			outline: `border rounded-[10px] border-${this.color}-${colorLevel} text-${this.color}-100 hover:shadow-xs transition-all`,
-			clear: `border-none text-${this.color}-100`,
-			text: `border-0 text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''}`,
-			link: `border-none text-${this.color}-${colorLevel} ${this.size == 'sm' || this.size == 'xs' ? 'text-12' : ''} underline decoration-${this.color}-${colorLevel}`
-		};
+
 
 		return `${this.fill !== 'text' ? this.buttonSizes[this.size] : ''} ${colors[this.color][this.fill]} flex items-center justify-center disabled:opacity-50 rounded-8px`;
 	}
