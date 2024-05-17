@@ -10,7 +10,7 @@
 		<convoy-create-subscription [action]="endpoint ? 'update' : 'create'" isPortal="true" [subscriptionId]="endpoint?.subscription?.uid || ''"></convoy-create-subscription>
 
 		<div class="flex justify-end items-center">
-			<button convoy-button color="danger" fill="outline" class="mr-30px" (click)="onAction.emit({ action: 'close' })">Close</button>
+			<button convoy-button color="error" fill="outline" class="mr-30px" (click)="onAction.emit({ action: 'close' })">Close</button>
 			<button convoy-button (click)="endpoint ? updateEndpoint() : createEndpoint()">{{ endpoint ? 'Updat' : 'Creat' }}{{ isCreatingEndpoint ? 'ing Endpoint...' : 'e Endpoint' }}</button>
 		</div>
 	</div>

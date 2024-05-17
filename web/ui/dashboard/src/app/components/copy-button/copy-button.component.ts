@@ -15,9 +15,14 @@ export class CopyButtonComponent implements OnInit {
 	@Input('show-icon') showIcon: 'true' | 'false' = 'true';
 	@Input('notificationText') notificationText!: string;
 	@Input('size') size: 'sm' | 'md' = 'md';
-	@Input('color') color: 'primary' | 'gray' = 'gray';
+	@Input('color') color: 'primary' | 'gray' | 'neutral' = 'gray';
 	@Input('className') class!: string;
 	@Output('copyText') copy = new EventEmitter();
+	colors = {
+		primary: 'stroke-new.primary-400',
+		neutral: 'stroke-neutral-10',
+		gray: 'stroke-neutral-10'
+	};
 	constructor(private generalService: GeneralService) {}
 
 	ngOnInit(): void {}
@@ -30,7 +35,6 @@ export class CopyButtonComponent implements OnInit {
 			await navigator.clipboard.writeText(this.textToCopy);
 			this.copy.emit();
 			if (this.notificationText) this.generalService.showNotification({ message: this.notificationText, style: 'info' });
-
 		} catch (err) {
 			return err;
 		}

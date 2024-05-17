@@ -53,13 +53,13 @@
 
 			<ng-container *ngIf="multiple">
 				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25">
-					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+					<button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 				</li>
 			</ng-container>
 
 			<ng-container *ngIf="!multiple">
 				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option>
-					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+					<button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 				</li>
 			</ng-container>
 		</ul>

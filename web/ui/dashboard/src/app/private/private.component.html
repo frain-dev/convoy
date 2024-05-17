@@ -14,7 +14,7 @@
 				</a>
 
 				<div convoy-dropdown size="lg" #organisationDropdown *ngIf="organisations?.length">
-					<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-neutral-a3 py-10px px-20px rounded-8px mr-12px">
+					<button dropdownTrigger convoy-button color="neutral" fill="soft" size="sm" class="py-10px px-20px rounded-8px mr-12px">
 						<convoy-badge *ngIf="organisations?.length" className="mr-8px" [show-text]="false" [text]="userOrganization?.name || ''">
 							<div class="max-w-[110px] truncate">{{ userOrganization?.name }}</div>
 						</convoy-badge>
@@ -27,7 +27,7 @@
 
 						<ul [hidden]="!organisations?.length">
 							<li convoy-dropdown-option *ngFor="let organisation of organisations">
-								<button convoy-button fill="text" color="grey" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
+								<button convoy-button fill="text" color="neutral" size="sm" class="justify-start px-16px py-12px w-full" (click)="selectOrganisation(organisation)">
 									<div class="flex justify-between items-center w-full">
 										<convoy-badge [text]="organisation.name" [show-text]="false">
 											<div class="max-w-[110px] truncate">{{ organisation?.name }}</div>
@@ -56,7 +56,7 @@
 				</div>
 
 				<div convoy-dropdown size="lg" #accountDropdown>
-					<button dropdownTrigger convoy-button color="grey" texture="light" size="sm" class="bg-neutral-a3 py-12px px-10px rounded-8px h-36px">
+					<button dropdownTrigger convoy-button color="neutral" fill="soft" size="sm" class="py-12px px-10px rounded-8px h-36px">
 						<img src="/assets/img/user-icon.svg" alt="user icon" />
 					</button>
 
@@ -69,7 +69,7 @@
 							<a convoy-dropdown-option routerLink="/user-settings" class="block py-8px text-12 pl-16px text-neutral-11 w-full">My account</a>
 						</li>
 						<li class="border-t border-t-neutral-a3">
-							<button convoy-dropdown-option convoy-button fill="text" color="danger" class="font-medium px-16px py-8px text-12 w-full !justify-start" (click)="logout()">Logout</button>
+							<button convoy-dropdown-option convoy-button fill="text" color="error" class="font-medium px-16px py-8px text-12 w-full !justify-start" (click)="logout()">Logout</button>
 						</li>
 					</ul>
 				</div>
@@ -130,7 +130,7 @@
 				</convoy-input-field>
 
 				<div class="flex items-center gap-24px justify-end w-full">
-					<button convoy-button [disabled]="creatingOrganisation" size="sm" type="button" (click)="dialog.nativeElement.close()" fill="outline" color="danger" class="self-stretch px-18px">Cancel</button>
+					<button convoy-button [disabled]="creatingOrganisation" size="sm" type="button" (click)="dialog.nativeElement.close()" fill="outline" color="error" class="self-stretch px-18px">Cancel</button>
 					<button convoy-button [disabled]="creatingOrganisation" size="sm" class="self-stretch px-18px">Create</button>
 				</div>
 			</form>

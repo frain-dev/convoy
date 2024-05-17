@@ -29,22 +29,17 @@
                         name</convoy-input-error>
                 </convoy-input-field>
 
-                <ng-container *ngIf="action !== 'update'">
-                    <h3 class="mt-24px mb-16px font-medium text-14">Project type</h3>
-                    <div class="project-types grid grid-cols-2 gap-24px">
-                        <convoy-radio formControlName="type"
-                            description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints"
-                            label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
-                        <convoy-radio formControlName="type"
-                            description="Create an outgoing webhooks project to publish events to your customer-provided endpoints"
-                            label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
-                    </div>
-                    <div class="flex items-center text-12 text-danger-100 mt-8px"
-                        *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
-                        <img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
-                        <span>Please select a project type</span>
-                    </div>
-                </ng-container>
+				<ng-container *ngIf="action !== 'update'">
+					<h3 class="mt-24px mb-16px font-medium text-14">Project type</h3>
+					<div class="project-types grid grid-cols-2 gap-24px">
+						<convoy-radio formControlName="type" description="Create an incoming webhooks project to proxy events from third-party providers to your endpoints" label="Incoming webhooks" _name="type" value="incoming" _id="incoming"></convoy-radio>
+						<convoy-radio formControlName="type" description="Create an outgoing webhooks project to publish events to your customer-provided endpoints" label="Outgoing webhooks" _name="type" value="outgoing" _id="outgoing"></convoy-radio>
+					</div>
+					<div class="flex items-center text-12 text-error-9 mt-8px" *ngIf="projectForm.controls['type'].touched && projectForm.controls['type'].invalid">
+						<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+						<span>Please select a project type</span>
+					</div>
+				</ng-container>
 
 				<div class="mt-40px">
 					<div formGroupName="config">
@@ -54,7 +49,7 @@
 									Signature Details
 									<convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your header and hash function for your project</convoy-tooltip>
 								</p>
-								<button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
+								<button convoy-permission="Project Settings|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('signature')">
 									<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 										<use xlink:href="#delete-icon2"></use>
 									</svg>
@@ -88,7 +83,7 @@
 										retry attempt.
 									</convoy-tooltip>
 								</p>
-								<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('strategy')">
+								<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('strategy')">
 									<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 										<use xlink:href="#delete-icon2"></use>
 									</svg>
@@ -126,7 +121,7 @@
 									Rate Limit Parameters
 									<convoy-tooltip size="sm" position="top-right" class="ml-4px">These are the specifications for how many events are to be sent to an endpoint per time</convoy-tooltip>
 								</p>
-								<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('ratelimit')">
+								<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('ratelimit')">
 									<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 										<use xlink:href="#delete-icon2"></use>
 									</svg>
@@ -153,7 +148,7 @@
 						<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('retention_policy')">
 							<div class="flex justify-between items-center mb-24px">
 								<p class="text-12 font-medium text-neutral-11">Retention Policy</p>
-								<button convoy-button type="button" size="xs" fill="outline" convoy-permission="Project Settings|MANAGE" color="grey" texture="light" (click)="toggleConfigForm('retention_policy')">
+								<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Project Settings|MANAGE" (click)="toggleConfigForm('retention_policy')">
 									<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 										<use xlink:href="#delete-icon2"></use>
 									</svg>
@@ -323,17 +318,17 @@
 					<convoy-copy-button [text]="projectDetails.uid || ''" notificationText="Project ID has been copied to you clipboard."></convoy-copy-button>
 				</div>
 
-                <div class="flex justify-center mt-24px">
-                    <button convoy-button convoy-permission="Project Settings|MANAGE" color="primary" size="sm"
-                        type="button" (click)="confirmationDialog.showModal()" [disabled]="regeneratingKey">
-                        <svg width="16" height="16" class="mr-8px stroke-white-100 scale-90"
-                            [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
-                            <use xlink:href="#refresh-icon"></use>
-                        </svg>
-                        Regenerate API Key
-                    </button>
-                </div>
-            </ng-container>
+				<div class="flex justify-center mt-24px">
+					<button convoy-button convoy-permission="Project Settings|MANAGE" size="sm" type="button" (click)="confirmationDialog.showModal()" [disabled]="regeneratingKey">
+						<svg width="16" height="16" class="mr-8px stroke-white-100 scale-90" [ngClass]="{ 'animate-spin-slow': regeneratingKey }">
+							<use xlink:href="#refresh-icon"></use>
+						</svg>
+						Regenerate API Key
+					</button>
+				</div>
+			</ng-container>
+		</div>
+	</div>
 
             <div class="flex justify-end"
                 *ngIf="activeTab.label !== 'signature history' && activeTab.label !== 'endpoints config' && activeTab.label !== 'secrets' && activeTab.label !== 'events catalogue'">
@@ -460,13 +455,12 @@
                 errorMessage="Please select a hash" [required]="true"
                 (selectedOption)="newSignatureForm.patchValue({ hash: $event })"></convoy-select>
 
-            <div class="flex justify-end mt-38px">
-                <button convoy-button color="danger" fill="outline" class="mr-16px"
-                    (click)="versions.removeAt(versionsLength - 1); newSignatureDialog.close()">Discard</button>
-                <button convoy-button (click)="createNewSignature(versionsLength - 1)">Create</button>
-            </div>
-        </form>
-    </div>
+			<div class="flex justify-end mt-38px">
+				<button convoy-button color="error" fill="outline" class="mr-16px" (click)="versions.removeAt(versionsLength - 1); newSignatureDialog.close()">Discard</button>
+				<button convoy-button (click)="createNewSignature(versionsLength - 1)">Create</button>
+			</div>
+		</form>
+	</div>
 </dialog>
 <!-- add new signature modal  -->
 
@@ -475,9 +469,9 @@
 	<div class="px-20px py-30px">
 		<p class="text-14 font-bold text-black mb-8px">Confirm Action</p>
 		<p class="text-12 font-medium text-neutral-11 mb-24px">You are about to regenerate a new Api Key for this project</p>
-		<div class="flex items-center">
-			<button convoy-button color="primary" class="mr-12px px-16px" (click)="regenerateKey()">Confirm</button>
-			<button convoy-button fill="clear" color="danger" class="font-semibold" (click)="confirmationDialog.close()">Cancel</button>
+		<div class="flex items-center gap-12px">
+			<button convoy-button class="px-16px" (click)="regenerateKey()">Confirm</button>
+			<button convoy-button fill="text" size="sm" class="font-semibold" (click)="confirmationDialog.close()">Cancel</button>
 		</div>
 	</div>
 </dialog>
@@ -503,7 +497,7 @@
 		<img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
 		<p class="max-w-[250px] font-semibold">Are you sure you want to disable this?</p>
 		<p class="max-w-[300px] font-medium mb-12px">Connections to your endpoints will be susceptible to machine-in-the-middle attacks</p>
-		<button convoy-button color="danger" class="mb-18px mt-24px" [disabled]="isCreatingProject" (click)="updateProject(); disableTLSEndpointsDialog.close()">Yes, Disable</button>
+		<button convoy-button color="error" class="mb-18px mt-24px" [disabled]="isCreatingProject" (click)="updateProject(); disableTLSEndpointsDialog.close()">Yes, Disable</button>
 		<button convoy-button size="sm" fill="text" class="font-semibold !text-neutral-11" (click)="disableTLSEndpointsDialog.close(); projectForm.patchValue({ config: { ssl: { enforce_secure_endpoints: true } } })">No, Cancel</button>
 	</div>
 </dialog>
@@ -526,8 +520,8 @@
 	<div class="flex flex-col justify-center items-center px-30px py-40px">
 		<img src="/assets/img/warning.gif" class="h-[126px] w-[126px]" alt="warning" />
 		<p class="max-w-[250px] font-medium text-black text-12 mb-12px text-center">Are you sure you want to disable meta events on this project?</p>
-		<button convoy-button color="danger" class="mb-18px mt-24px" [disabled]="isCreatingProject" (click)="updateProject(); metaEventsDialog.close()">Yes, Disable</button>
-		<button convoy-button size="sm" fill="text" class="font-semibold !text-neutral-11" (click)="metaEventsDialog.close(); projectForm.patchValue({ config: { meta_event: { is_enabled: true } } })">No, Cancel</button>
+		<button convoy-button color="error" class="mb-18px mt-24px" [disabled]="isCreatingProject" (click)="updateProject(); metaEventsDialog.close()">Yes, Disable</button>
+		<button convoy-button size="sm" fill="text" color="neutral" class="font-semibold" (click)="metaEventsDialog.close(); projectForm.patchValue({ config: { meta_event: { is_enabled: true } } })">No, Cancel</button>
 	</div>
 </dialog>
 <!-- disable meta events prompt  -->
