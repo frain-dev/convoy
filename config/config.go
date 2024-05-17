@@ -242,6 +242,11 @@ type SentryConfiguration struct {
 	DSN string `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
 }
 
+type RetentionPolicyConfiguration struct {
+	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	SearchPolicy string `json:"search_policy" db:"search_policy"`
+}
+
 type AnalyticsConfiguration struct {
 	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
@@ -326,24 +331,26 @@ func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 }
 
 type Configuration struct {
-	APIVersion         string                     `json:"api_version" envconfig:"CONVOY_API_VERSION"`
-	Auth               AuthConfiguration          `json:"auth,omitempty"`
-	Database           DatabaseConfiguration      `json:"database"`
-	Redis              RedisConfiguration         `json:"redis"`
-	Prometheus         PrometheusConfiguration    `json:"prometheus"`
-	Server             ServerConfiguration        `json:"server"`
-	MaxResponseSize    uint64                     `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP               SMTPConfiguration          `json:"smtp"`
-	Environment        string                     `json:"env" envconfig:"CONVOY_ENV"`
-	Logger             LoggerConfiguration        `json:"logger"`
-	Tracer             TracerConfiguration        `json:"tracer"`
-	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
-	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	FeatureFlag        FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
-	Analytics          AnalyticsConfiguration     `json:"analytics"`
-	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
-	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
-	EnableProfiling    bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	APIVersion               string                        `json:"api_version" envconfig:"CONVOY_API_VERSION"`
+	Auth                     AuthConfiguration             `json:"auth,omitempty"`
+	Database                 DatabaseConfiguration         `json:"database"`
+	Redis                    RedisConfiguration            `json:"redis"`
+	Prometheus               PrometheusConfiguration       `json:"prometheus"`
+	Server                   ServerConfiguration           `json:"server"`
+	MaxResponseSize          uint64                        `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP                     SMTPConfiguration             `json:"smtp"`
+	Environment              string                        `json:"env" envconfig:"CONVOY_ENV"`
+	Logger                   LoggerConfiguration           `json:"logger"`
+	Tracer                   TracerConfiguration           `json:"tracer"`
+	Host                     string                        `json:"host" envconfig:"CONVOY_HOST"`
+	CustomDomainSuffix       string                        `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	FeatureFlag              FlagLevel                     `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
+	Analytics                AnalyticsConfiguration        `json:"analytics"`
+	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
+	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" envconfig:"CONVOY_RETENTION_POLICY"`
+	StoragePolicy            StoragePolicyConfiguration    `json:"storage_policy"`
+	ConsumerPoolSize         int                           `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	EnableProfiling          bool                          `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

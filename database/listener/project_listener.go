@@ -2,12 +2,13 @@ package listener
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/r3labs/diff/v3"
-	"time"
 )
 
 type ProjectListener struct {
@@ -35,9 +36,9 @@ func (e *ProjectListener) run(eventType string, data interface{}, changelog inte
 				switch change.Type {
 				case diff.UPDATE:
 					if testSliceEq(change.Path, []string{"Config", "RetentionPolicy", "SearchPolicy"}) {
-						dur, err := time.ParseDuration(project.Config.RetentionPolicy.SearchPolicy)
+						dur, err := time.ParseDuration(project.Config.SearchPolicy)
 						if err != nil {
-							log.WithError(err).Errorf("%s is not a valid time duration", project.Config.RetentionPolicy.SearchPolicy)
+							log.WithError(err).Errorf("%s is not a valid time duration", project.Config.SearchPolicy)
 							return
 						}
 

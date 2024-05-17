@@ -15,6 +15,8 @@ type Configuration struct {
 
 	// Used to configure where events removed by retention policies are stored
 	StoragePolicy *StoragePolicyConfiguration `json:"storage_policy"`
+
+	RetentionPolicy *RetentionPolicyConfiguration
 }
 
 func (c *Configuration) Validate() error {

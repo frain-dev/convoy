@@ -35,9 +35,9 @@ const (
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		id, retention_policy_policy, search_policy,
+		id, search_policy,
         max_payload_read_size, replay_attacks_prevention_enabled,
-		retention_policy_enabled, ratelimit_count,
+		ratelimit_count,
 		ratelimit_duration, strategy_type,
 		strategy_duration, strategy_retry_count,
 		signature_header, signature_versions, disable_endpoint,
@@ -47,33 +47,31 @@ const (
 	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		  $14, $15, $16, $17, $18, $19, $20, $21, $22
+		  $14, $15, $16, $17, $18, $19, $20
 		);
 	`
 
 	updateProjectConfiguration = `
 	UPDATE convoy.project_configurations SET
-		retention_policy_policy = $2,
-		max_payload_read_size = $3,
-		replay_attacks_prevention_enabled = $4,
-		retention_policy_enabled = $5,
-		ratelimit_count = $6,
-		ratelimit_duration = $7,
-		strategy_type = $8,
-		strategy_duration = $9,
-		strategy_retry_count = $10,
-		signature_header = $11,
-		signature_versions = $12,
-		disable_endpoint = $13,
-		meta_events_enabled = $14,
-		meta_events_type = $15,
-		meta_events_event_type = $16,
-		meta_events_url = $17,
-		meta_events_secret = $18,
-		meta_events_pub_sub = $19,
-		search_policy = $20,
-		ssl_enforce_secure_endpoints = $21,
-		multiple_endpoint_subscriptions = $22,
+		max_payload_read_size = $2,
+		replay_attacks_prevention_enabled = $3,
+		ratelimit_count = $4,
+		ratelimit_duration = $5,
+		strategy_type = $6,
+		strategy_duration = $7,
+		strategy_retry_count = $8,
+		signature_header = $9,
+		signature_versions = $10,
+		disable_endpoint = $11,
+		meta_events_enabled = $12,
+		meta_events_type = $13,
+		meta_events_event_type = $14,
+		meta_events_url = $15,
+		meta_events_secret = $16,
+		meta_events_pub_sub = $17,
+		search_policy = $18,
+		ssl_enforce_secure_endpoints = $19,
+		multiple_endpoint_subscriptions = $20,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -237,7 +235,6 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	}
 	defer rollbackTx(tx)
 
-	rc := project.Config.GetRetentionPolicyConfig()
 	rlc := project.Config.GetRateLimitConfig()
 	sc := project.Config.GetStrategyConfig()
 	sgc := project.Config.GetSignatureConfig()
@@ -246,11 +243,9 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	configID := ulid.Make().String()
 	result, err := tx.ExecContext(ctx, createProjectConfiguration,
 		configID,
-		rc.Policy,
-		rc.SearchPolicy,
+		project.Config.SearchPolicy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
-		project.Config.IsRetentionPolicyEnabled,
 		rlc.Count,
 		rlc.Duration,
 		sc.Type,
@@ -364,10 +359,8 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	me := project.Config.GetMetaEventConfig()
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.ProjectConfigID,
-		project.Config.RetentionPolicy.Policy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
-		project.Config.IsRetentionPolicyEnabled,
 		project.Config.RateLimit.Count,
 		project.Config.RateLimit.Duration,
 		project.Config.Strategy.Type,
@@ -382,7 +375,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.URL,
 		me.Secret,
 		me.PubSub,
-		project.Config.RetentionPolicy.SearchPolicy,
+		project.Config.SearchPolicy,
 		project.Config.SSL.EnforceSecureEndpoints,
 		project.Config.MultipleEndpointSubscriptions,
 	)

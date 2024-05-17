@@ -269,17 +269,16 @@ const (
 
 var (
 	DefaultProjectConfig = ProjectConfig{
-		RetentionPolicy:          &DefaultRetentionPolicy,
-		MaxIngestSize:            config.MaxResponseSize,
-		ReplayAttacks:            false,
-		IsRetentionPolicyEnabled: false,
-		DisableEndpoint:          false,
-		AddEventIDTraceHeaders:   false,
-		SSL:                      &DefaultSSLConfig,
-		RateLimit:                &DefaultRateLimitConfig,
-		Strategy:                 &DefaultStrategyConfig,
-		Signature:                GetDefaultSignatureConfig(),
-		MetaEvent:                &MetaEventConfiguration{IsEnabled: false},
+		SearchPolicy:           "720h",
+		MaxIngestSize:          config.MaxResponseSize,
+		ReplayAttacks:          false,
+		DisableEndpoint:        false,
+		AddEventIDTraceHeaders: false,
+		SSL:                    &DefaultSSLConfig,
+		RateLimit:              &DefaultRateLimitConfig,
+		Strategy:               &DefaultStrategyConfig,
+		Signature:              GetDefaultSignatureConfig(),
+		MetaEvent:              &MetaEventConfiguration{IsEnabled: false},
 	}
 
 	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
@@ -313,8 +312,8 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy:       "720h",
-		SearchPolicy: "720h",
+		IsRetentionPolicyEnabled: false,
+		Policy:                   "720h",
 	}
 )
 
@@ -522,18 +521,17 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize                 uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks                 bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled      bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
-	AddEventIDTraceHeaders        bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint               bool                          `json:"disable_endpoint" db:"disable_endpoint"`
-	MultipleEndpointSubscriptions bool                          `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
-	SSL                           *SSLConfiguration             `json:"ssl" db:"ssl"`
-	RetentionPolicy               *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	RateLimit                     *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
-	Strategy                      *StrategyConfiguration        `json:"strategy" db:"strategy"`
-	Signature                     *SignatureConfiguration       `json:"signature" db:"signature"`
-	MetaEvent                     *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                  `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                    `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	AddEventIDTraceHeaders        bool                    `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                    `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                    `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	SearchPolicy                  string                  `json:"search_policy" db:"search_policy"`
+	SSL                           *SSLConfiguration       `json:"ssl" db:"ssl"`
+	RateLimit                     *RateLimitConfiguration `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration  `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -555,13 +553,6 @@ func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
 		return *p.Signature
 	}
 	return SignatureConfiguration{}
-}
-
-func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
-	if p.RetentionPolicy != nil {
-		return *p.RetentionPolicy
-	}
-	return RetentionPolicyConfiguration{}
 }
 
 func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
@@ -610,8 +601,8 @@ type SSLConfiguration struct {
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
-	SearchPolicy string `json:"search_policy" db:"search_policy"`
+	Policy                   string `json:"policy" db:"policy"`
+	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"enabled"`
 }
 
 type ProjectStatistics struct {
@@ -1270,14 +1261,22 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	UID                string                      `json:"uid" db:"id"`
-	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" db:"is_analytics_enabled"`
-	IsSignupEnabled    bool                        `json:"is_signup_enabled" db:"is_signup_enabled"`
-	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" db:"storage_policy"`
+	UID                string                        `json:"uid" db:"id"`
+	IsAnalyticsEnabled bool                          `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsSignupEnabled    bool                          `json:"is_signup_enabled" db:"is_signup_enabled"`
+	StoragePolicy      *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
+	RetentionPolicy    *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
+	if c.RetentionPolicy != nil {
+		return *c.RetentionPolicy
+	}
+	return RetentionPolicyConfiguration{}
 }
 
 type StoragePolicyConfiguration struct {
