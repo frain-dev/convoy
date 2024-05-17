@@ -248,9 +248,14 @@ func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]
 		if err := r.ParseMultipartForm(int64(maxIngestSize)); err != nil {
 			return nil, err
 		}
-		data := make(map[string][]string)
+		data := make(map[string]string)
 		for k, v := range r.Form {
-			data[k] = v
+			// Golang handles the form data and returns it as a map[string][]string.
+			// we only need the first value in the slice, so we take the first element in the slice.
+			// We also skip empty values.
+			if len(v) > 0 {
+				data[k] = v[0]
+			}
 		}
 		return json.Marshal(data)
 
