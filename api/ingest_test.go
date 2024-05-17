@@ -36,11 +36,11 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		payload, err := extractPayloadFromIngestEventReq(req, 1024)
 		require.NoError(t, err)
 
-		var form map[string][]string
+		var form map[string]string
 		require.NoError(t, json.Unmarshal(payload, &form))
 
-		require.Equal(t, "value1", form["key1"][0])
-		require.Equal(t, "value2", form["key2"][0])
+		require.Equal(t, "value1", form["key1"])
+		require.Equal(t, "value2", form["key2"])
 	})
 
 	t.Run("content type not specified", func(t *testing.T) {
