@@ -83,7 +83,7 @@
 
 	<div class="mt-60px">
 		<div
-			*ngIf="!isLoadingOrganisations && !organisations?.length"
+			*ngIf="!shouldMountAppRouter()"
 			convoy-empty-state
 			imgSrc="/assets/img/organizations-empty-state.svg"
 			heading="Create an organisation to get started with Convoy"
@@ -97,7 +97,7 @@
 			</button>
 		</div>
 
-		<router-outlet *ngIf="organisations?.length"></router-outlet>
+		<router-outlet *ngIf="shouldMountAppRouter()"></router-outlet>
 	</div>
 
 	<!-- Convoy version -->
