@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"sync"
 
 	"github.com/frain-dev/convoy/queue"
@@ -41,9 +43,10 @@ func RequestDuration() *prometheus.HistogramVec {
 	return requestDuration
 }
 
-func RegisterQueueMetrics(q queue.Queuer) {
+func RegisterQueueMetrics(q queue.Queuer, db database.Database) {
 	Reg().MustRegister(
 		metrics.NewQueueMetricsCollector(q.(*redisqueue.RedisQueue).Inspector()),
 		q.(*redisqueue.RedisQueue),
+		db.(*postgres.Postgres),
 	)
 }

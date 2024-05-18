@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
@@ -146,22 +145,8 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 	}
 
 	url := project.Config.MetaEvent.URL
-	m := metrics.GetDPInstance()
-	pUID := project.UID
-	eUID := url
-
-	st := time.Now()
 
 	resp, err := dispatch.SendRequest(url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID))
-
-	elapsedMs := time.Since(st).Milliseconds()
-	m.IncrementEgressTotal(pUID, eUID)
-	m.ObserveEgressNetworkLatency(pUID, eUID, elapsedMs)
-
-	if err != nil {
-		m.IncrementEgressErrorsTotal(pUID, eUID)
-		return nil, err
-	}
 
 	var status string
 	var statusCode int
@@ -181,13 +166,9 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 	if statusCode >= 200 && statusCode <= 299 {
 		requestLogger.Infof("%s", metaEvent.UID)
 		log.Infof("%s sent", metaEvent.UID)
-		m.IncrementEgressDeliveredTotal(pUID, eUID)
-
-		m.ObserveEgressDeliveryLatency(pUID, eUID, time.Since(metaEvent.CreatedAt).Milliseconds())
 		return resp, nil
 	}
 
-	m.IncrementEgressErrorsTotal(pUID, eUID)
 	requestLogger.Errorf("%s", metaEvent.UID)
 	return resp, errors.New(resp.Error)
 }
