@@ -6,13 +6,13 @@
 
 	<div class="w-[730px] ml-auto">
 		<hr class="border-t border-neutral-a3 my-40px" />
-		<div convoy-card color="danger" class="p-26px my-24px">
-			<h2 class="text-danger text-14 font-semibold mb-20px">Danger zone</h2>
+		<div convoy-card color="error" class="p-26px my-24px">
+			<h2 class="text-error-9 text-14 font-semibold mb-20px">Danger zone</h2>
 			<p class="text-12">
 				Deleting this project will delete all of it's data including events, apps, subscriptions and config.
 				<strong>Are you sure you want to delete this project?</strong>
 			</p>
-			<button convoy-button convoy-permission="Project Settings|MANAGE" color="danger" size="sm" class="mt-32px" (click)="deleteDialog.showModal()">
+			<button convoy-button convoy-permission="Project Settings|MANAGE" color="error" size="sm" class="mt-32px" (click)="deleteDialog.showModal()">
 				<svg width="18" height="18" class="mr-2 fill-white-100">
 					<use xlink:href="#delete-icon"></use>
 				</svg>

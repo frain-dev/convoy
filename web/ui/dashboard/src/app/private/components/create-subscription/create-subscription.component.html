@@ -79,7 +79,7 @@
 							before the next retry attempt.
 						</convoy-tooltip>
 					</p>
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
+					<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
 						<svg width="14" height="14" class="fill-transparent stroke-neutral-9">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
@@ -101,7 +101,7 @@
 						the next retry attempt.
 					</convoy-tooltip>
 				</p>
-				<button convoy-button type="button" size="xs" fill="outline" color="grey" *ngIf="action !== 'view'" texture="light" (click)="toggleConfigForm('retry_config')">
+				<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" *ngIf="action !== 'view'" (click)="toggleConfigForm('retry_config')">
 					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 						<use xlink:href="#delete-icon2"></use>
 					</svg>
@@ -146,11 +146,11 @@
 					<p class="text-10 text-neutral-10 mt-4px">Filter events received by request body and header.</p>
 				</div>
 				<div class="flex items-center">
-					<button convoy-button fill="outline" color="grey" class="!text-neutral-10 border-neutral-5 py-2px px-6px" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
+					<button convoy-button fill="soft-outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
 
 					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
 
-					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('filter_config')">
+					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="soft-outline" color="neutral" (click)="toggleConfigForm('filter_config')">
 						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
@@ -166,11 +166,11 @@
 					<p class="text-10 text-neutral-10 mt-4px">Transform request body of events with a javascript function.</p>
 				</div>
 				<div class="flex items-center">
-					<button convoy-button fill="outline" color="grey" class="!text-neutral-10 border-neutral-5 py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()">Open Editor</button>
+					<button convoy-button fill="soft-outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()">Open Editor</button>
 
 					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
 
-					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('tranform_config')">
+					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="soft-outline" color="neutral" (click)="toggleConfigForm('tranform_config')">
 						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>

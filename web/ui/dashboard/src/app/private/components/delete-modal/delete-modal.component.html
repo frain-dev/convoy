@@ -2,6 +2,6 @@
     <img src="/assets/img/warning.gif" class="w-100px" alt="warning" />
     <p class="text-14 font-medium text-black mb-8px text-center max-w-[230px]">Are you sure you want to {{ deleteText }}?</p>
     <p class="text-12 font-normal text-neutral-11 my-20px">This action is irrevesible.</p>
-    <button convoy-button color="danger" class="mb-24px" [disabled]="isLoading" (click)="deleteData.emit()">{{ deleteButtonText ? 'Yes, ' + deleteButtonText : 'Yes, Delete' }}</button>
-    <button convoy-button fill="outline" class="font-semibold" (click)="closeModal.emit()">No, Cancel</button>
+    <button convoy-button color="error" class="mb-18px" [disabled]="isLoading" (click)="deleteData.emit()">{{ deleteButtonText ? 'Yes, ' + deleteButtonText : 'Yes, Delete' }}</button>
+    <button convoy-button fill="text" color="neutral" size="sm" class="font-semibold" (click)="closeModal.emit()">No, Cancel</button>
 </div>

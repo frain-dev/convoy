@@ -17,10 +17,10 @@
 					*ngFor="let endpoint of endpoints$ | async"
 					(click)="selectedEndpoint = endpoint; setEndpoint.emit(selectedEndpoint)"
 					class="text-14 px-20px"
-					[ngClass]="{ 'text-primary-100 !bg-primary-500': selectedEndpoint && selectedEndpoint.uid === endpoint.uid }"
+					[ngClass]="{ 'text-primary-100 !bg-new.primary-400': selectedEndpoint && selectedEndpoint.uid === endpoint.uid }"
 				>
-					<button convoy-button color="grey" fill="text" class="capitalize font-normal text-left w-full !justify-start text-12">
-						{{ endpoint.title }}
+					<button convoy-button color="neutral" fill="text" class="capitalize font-normal text-left w-full !justify-start text-12">
+						{{ endpoint.title || endpoint.name }}
 					</button>
 				</li>
 			</ng-container>
@@ -45,6 +45,5 @@
 				</li>
 			</ng-container>
 		</ul>
-
 	</div>
 </div>
