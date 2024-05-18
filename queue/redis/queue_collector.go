@@ -30,7 +30,7 @@ func (rq *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		eventQueueTotalDesc,
 		prometheus.GaugeValue,
-		float64(qinfo.Size),
+		float64(qinfo.Size-qinfo.Completed-qinfo.Archived),
 		"scheduled", // not yet in db
 	)
 }

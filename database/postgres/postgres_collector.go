@@ -255,7 +255,9 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	metrics.EventQueueEndpointBacklogMetrics = eventEBQms
 
 	attemptsQuery := `select project_id, endpoint_id,
-       coalesce(substring(substring(convert_from(attempts, 'UTF8'), '"http_status":"[0-9]{3} .*",'), '\d{3} [A-Za-z ]{1,}'), '')
+       coalesce(substring((regexp_split_to_array(convert_from(attempts, 'UTF8'), 'http_status":'))
+           [array_length((regexp_split_to_array(convert_from(attempts, 'UTF8'), 'http_status":')), 1)],
+           '\d{3} [A-Za-z ]{1,}'), '')
            as status_code, count(*) as total from event_deliveries group by project_id, endpoint_id, status_code`
 	rows6, err := p.GetDB().Queryx(attemptsQuery)
 	if err != nil {
