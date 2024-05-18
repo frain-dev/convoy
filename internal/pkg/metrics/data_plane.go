@@ -10,13 +10,8 @@ var m *Metrics
 var once sync.Once
 
 const (
-	projectLabel  = "project"
-	sourceLabel   = "source"
-	endpointLabel = "endpoint"
-)
-
-var (
-	bucketsDefault = prometheus.LinearBuckets(1, 0.5, 20)
+	projectLabel = "project"
+	sourceLabel  = "source"
 )
 
 // Metrics for the data plane

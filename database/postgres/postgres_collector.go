@@ -50,6 +50,7 @@ type EventQueueEndpointBacklogMetrics struct {
 type EventQueueEndpointAttemptMetrics struct {
 	ProjectID  string `json:"project_id" db:"project_id"`
 	EndpointId string `json:"endpoint_id" db:"endpoint_id"`
+	Status     string `json:"status" db:"status"`
 	StatusCode string `json:"status_code" db:"status_code"`
 	Total      uint64 `json:"total" db:"total"`
 }
@@ -64,7 +65,6 @@ type Metrics struct {
 	EventQueueEndpointAttemptMetrics []EventQueueEndpointAttemptMetrics
 }
 
-// Descriptors used by Postgres
 var (
 	eventQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_queue_total"),
@@ -83,11 +83,7 @@ var (
 		"Total number of tasks in the delivery queue per endpoint",
 		[]string{"project_id", "endpoint", "status"}, nil,
 	)
-	eventDeliveryQueueLatencyDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "event_queue_latency_seconds"),
-		"Distribution of delivery query latency in seconds",
-		[]string{"project_id", "endpoint", "status"}, nil,
-	)
+
 	eventDeliveryQueueBacklogDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_backlog_seconds"),
 		"Number of seconds the oldest pending task is waiting in pending state to be processed per endpoint",
@@ -97,7 +93,7 @@ var (
 	eventDeliveryAttemptsTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_attempts_total"),
 		"Total number of attempts per endpoint",
-		[]string{"project_id", "endpoint", "http_status_code"}, nil,
+		[]string{"project_id", "endpoint", "status", "http_status_code"}, nil,
 	)
 )
 
@@ -154,7 +150,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			eventDeliveryQueueBacklogDesc,
 			prometheus.GaugeValue,
-			float64(metric.AgeSeconds),
+			metric.AgeSeconds,
 			metric.ProjectID,
 			metric.EndpointId,
 		)
@@ -167,6 +163,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			float64(metric.Total),
 			metric.ProjectID,
 			metric.EndpointId,
+			strings.ToLower(metric.Status),
 			metric.StatusCode,
 		)
 	}
@@ -184,90 +181,108 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 		return nil, err
 	}
 	defer closeWithError(rows)
-	eventQms := make([]EventQueueMetrics, 0)
+	eventQueueMetrics := make([]EventQueueMetrics, 0)
 	for rows.Next() {
 		var eqm EventQueueMetrics
 		err = rows.StructScan(&eqm)
 		if err != nil {
 			return nil, err
 		}
-		eventQms = append(eventQms, eqm)
+		eventQueueMetrics = append(eventQueueMetrics, eqm)
 	}
-	metrics.EventQueueMetrics = eventQms
+	metrics.EventQueueMetrics = eventQueueMetrics
 
-	backlogQM := `select ed.project_id, coalesce(source_id, 'http') as source_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at)))
-    as age_seconds from event_deliveries ed left join convoy.events e on e.id = ed.event_id where status = 'Processing'
-    group by ed.project_id, source_id limit 1000`
+	backlogQM := `with a1 as (
+    select ed.project_id, coalesce(source_id, 'http') as source_id,
+           EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
+    from event_deliveries ed left join convoy.events e on e.id = ed.event_id
+    where status = 'Processing'
+    group by ed.project_id, source_id limit 1000 --samples
+    )
+    select * from a1
+    union all
+    select ed.project_id, coalesce(source_id, 'http'), 0 as age_seconds
+    from event_deliveries ed left join convoy.events e on e.id = ed.event_id
+    where status = 'Success' and source_id not in (select source_id from a1)
+    group by ed.project_id, source_id
+    limit 1000 -- samples`
 	rows1, err := p.GetDB().Queryx(backlogQM)
 	if err != nil {
 		return nil, err
 	}
 	defer closeWithError(rows1)
-	eventBQms := make([]EventQueueBacklogMetrics, 0)
+	eventQueueBacklogMetrics := make([]EventQueueBacklogMetrics, 0)
 	for rows1.Next() {
 		var e EventQueueBacklogMetrics
 		err = rows1.StructScan(&e)
 		if err != nil {
 			return nil, err
 		}
-		eventBQms = append(eventBQms, e)
+		eventQueueBacklogMetrics = append(eventQueueBacklogMetrics, e)
 	}
-	metrics.EventQueueBacklogMetrics = eventBQms
+	metrics.EventQueueBacklogMetrics = eventQueueBacklogMetrics
 
-	backlogEQM := `select ed.project_id, coalesce(source_id, 'http') as source_id, endpoint_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
-         from event_deliveries ed left join convoy.events e on e.id = ed.event_id
-         where status = 'Processing'
-         group by ed.project_id, source_id, endpoint_id limit 1000`
-	rows4, err := p.GetDB().Queryx(backlogEQM)
+	queryDeliveryQ := "select project_id, endpoint_id, status, count(*) as total from event_deliveries group by project_id, endpoint_id, status"
+	rows2, err := p.GetDB().Queryx(queryDeliveryQ)
+	if err != nil {
+		return nil, err
+	}
+	defer closeWithError(rows2)
+	eventDeliveryQueueMetrics := make([]EventDeliveryQueueMetrics, 0)
+	for rows2.Next() {
+		var eqm EventDeliveryQueueMetrics
+		err = rows2.StructScan(&eqm)
+		if err != nil {
+			return nil, err
+		}
+		eventDeliveryQueueMetrics = append(eventDeliveryQueueMetrics, eqm)
+	}
+	metrics.EventDeliveryQueueMetrics = eventDeliveryQueueMetrics
+
+	backlogEQM := `with a1 as (
+    select ed.project_id, coalesce(source_id, 'http') as source_id, endpoint_id,
+           EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
+    from event_deliveries ed left join convoy.events e on e.id = ed.event_id
+    where status = 'Processing'
+    group by ed.project_id, source_id, endpoint_id limit 1000 --samples
+    )
+    select * from a1
+    union all
+    select ed.project_id, coalesce(source_id, 'http'), endpoint_id, 0 as age_seconds
+    from event_deliveries ed left join convoy.events e on e.id = ed.event_id
+    where status = 'Success' and endpoint_id not in (select endpoint_id from a1)
+    group by ed.project_id, source_id, endpoint_id
+    limit 1000 -- samples`
+	rows3, err := p.GetDB().Queryx(backlogEQM)
+	if err != nil {
+		return nil, err
+	}
+	defer closeWithError(rows3)
+	eventQueueEndpointBacklogMetrics := make([]EventQueueEndpointBacklogMetrics, 0)
+	for rows3.Next() {
+		var e EventQueueEndpointBacklogMetrics
+		err = rows3.StructScan(&e)
+		if err != nil {
+			return nil, err
+		}
+		eventQueueEndpointBacklogMetrics = append(eventQueueEndpointBacklogMetrics, e)
+	}
+	metrics.EventQueueEndpointBacklogMetrics = eventQueueEndpointBacklogMetrics
+
+	attemptsQuery := `select project_id, endpoint_id, status,
+       coalesce(substring((regexp_split_to_array(convert_from(attempts, 'UTF8'), 'http_status":'))
+           [array_length((regexp_split_to_array(convert_from(attempts, 'UTF8'), 'http_status":')), 1)],
+           '\d{3} [A-Za-z ]{1,}'), '')
+           as status_code, count(*) as total from event_deliveries group by project_id, endpoint_id, status, status_code;`
+	rows4, err := p.GetDB().Queryx(attemptsQuery)
 	if err != nil {
 		return nil, err
 	}
 	defer closeWithError(rows4)
-	eventEBQms := make([]EventQueueEndpointBacklogMetrics, 0)
-	for rows4.Next() {
-		var e EventQueueEndpointBacklogMetrics
-		err = rows4.StructScan(&e)
-		if err != nil {
-			return nil, err
-		}
-		eventEBQms = append(eventEBQms, e)
-	}
-	metrics.EventQueueEndpointBacklogMetrics = eventEBQms
-
-	bEQM := `select ed.project_id, coalesce(source_id, 'http') as source_id, endpoint_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
-         from event_deliveries ed left join convoy.events e on e.id = ed.event_id
-         where status = 'Processing'
-         group by ed.project_id, source_id, endpoint_id limit 1000`
-	rows5, err := p.GetDB().Queryx(bEQM)
-	if err != nil {
-		return nil, err
-	}
-	defer closeWithError(rows5)
-	bkMetrics := make([]EventQueueEndpointBacklogMetrics, 0)
-	for rows5.Next() {
-		var e EventQueueEndpointBacklogMetrics
-		err = rows5.StructScan(&e)
-		if err != nil {
-			return nil, err
-		}
-		bkMetrics = append(bkMetrics, e)
-	}
-	metrics.EventQueueEndpointBacklogMetrics = eventEBQms
-
-	attemptsQuery := `select project_id, endpoint_id,
-       coalesce(substring((regexp_split_to_array(convert_from(attempts, 'UTF8'), 'http_status":'))
-           [array_length((regexp_split_to_array(convert_from(attempts, 'UTF8'), 'http_status":')), 1)],
-           '\d{3} [A-Za-z ]{1,}'), '')
-           as status_code, count(*) as total from event_deliveries group by project_id, endpoint_id, status_code`
-	rows6, err := p.GetDB().Queryx(attemptsQuery)
-	if err != nil {
-		return nil, err
-	}
-	defer closeWithError(rows6)
 	attempts := make([]EventQueueEndpointAttemptMetrics, 0)
-	for rows6.Next() {
+	for rows4.Next() {
 		var e EventQueueEndpointAttemptMetrics
-		err = rows6.StructScan(&e)
+		err = rows4.StructScan(&e)
 		if err != nil {
 			return nil, err
 		}
