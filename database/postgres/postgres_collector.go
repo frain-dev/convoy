@@ -10,7 +10,7 @@ import (
 // Namespace used in fully-qualified metrics names.
 const namespace = "convoy"
 
-const delaySeconds = 5
+const delaySeconds = 1
 
 var lastRun = time.Now()
 
@@ -178,7 +178,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 func (p *Postgres) collectMetrics() (*Metrics, error) {
 	metrics := &Metrics{}
 
-	queryEventQueueMetrics := "select project_id, coalesce(source_id, '') as source_id, count(*) as total from events group by project_id, source_id"
+	queryEventQueueMetrics := "select project_id, coalesce(source_id, 'http') as source_id, count(*) as total from events group by project_id, source_id"
 	rows, err := p.GetDB().Queryx(queryEventQueueMetrics)
 	if err != nil {
 		return nil, err
@@ -195,7 +195,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueMetrics = eventQms
 
-	backlogQM := `select ed.project_id, coalesce(source_id, '') as source_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at)))
+	backlogQM := `select ed.project_id, coalesce(source_id, 'http') as source_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at)))
     as age_seconds from event_deliveries ed left join convoy.events e on e.id = ed.event_id where status = 'Processing'
     group by ed.project_id, source_id limit 1000`
 	rows1, err := p.GetDB().Queryx(backlogQM)
@@ -214,7 +214,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueBacklogMetrics = eventBQms
 
-	backlogEQM := `select ed.project_id, coalesce(source_id, '') as source_id, endpoint_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
+	backlogEQM := `select ed.project_id, coalesce(source_id, 'http') as source_id, endpoint_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
          from event_deliveries ed left join convoy.events e on e.id = ed.event_id
          where status = 'Processing'
          group by ed.project_id, source_id, endpoint_id limit 1000`
@@ -234,7 +234,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueEndpointBacklogMetrics = eventEBQms
 
-	bEQM := `select ed.project_id, coalesce(source_id, '') as source_id, endpoint_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
+	bEQM := `select ed.project_id, coalesce(source_id, 'http') as source_id, endpoint_id, EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
          from event_deliveries ed left join convoy.events e on e.id = ed.event_id
          where status = 'Processing'
          group by ed.project_id, source_id, endpoint_id limit 1000`
@@ -255,7 +255,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	metrics.EventQueueEndpointBacklogMetrics = eventEBQms
 
 	attemptsQuery := `select project_id, endpoint_id,
-       coalesce(substring(substring(convert_from(attempts, 'UTF8'), '"http_status":"[0-9]{3} [A-Za-z]{1,}",'), '\d{3} \w+'), '')
+       coalesce(substring(substring(convert_from(attempts, 'UTF8'), '"http_status":"[0-9]{3} .*",'), '\d{3} [A-Za-z ]{1,}'), '')
            as status_code, count(*) as total from event_deliveries group by project_id, endpoint_id, status_code`
 	rows6, err := p.GetDB().Queryx(attemptsQuery)
 	if err != nil {
