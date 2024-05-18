@@ -1,10 +1,12 @@
 package metrics
 
 import (
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"math/rand"
 	"reflect"
 	"strconv"
@@ -31,6 +33,10 @@ func TestGetDPInstance(t *testing.T) {
 }
 
 func TestMetrics_IncrementIngestConsumedTotal(t *testing.T) {
+	configFile := "./testdata/config/convoy.json"
+	err := config.LoadConfig(configFile)
+	require.NoError(t, err)
+
 	type args struct {
 		source *datastore.Source
 	}
@@ -70,6 +76,10 @@ func TestMetrics_IncrementIngestConsumedTotal(t *testing.T) {
 }
 
 func TestMetrics_IncrementIngestErrorsTotal(t *testing.T) {
+	configFile := "./testdata/config/convoy.json"
+	err := config.LoadConfig(configFile)
+	require.NoError(t, err)
+
 	type args struct {
 		source *datastore.Source
 	}
@@ -109,6 +119,10 @@ func TestMetrics_IncrementIngestErrorsTotal(t *testing.T) {
 }
 
 func TestMetrics_IncrementIngestTotal(t *testing.T) {
+	configFile := "./testdata/config/convoy.json"
+	err := config.LoadConfig(configFile)
+	require.NoError(t, err)
+
 	type args struct {
 		source *datastore.Source
 	}
