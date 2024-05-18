@@ -157,6 +157,13 @@ func TestLoadConfig(t *testing.T) {
 						InsecureSkipVerify: true,
 					},
 				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: true,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -223,6 +230,13 @@ func TestLoadConfig(t *testing.T) {
 						InsecureSkipVerify: true,
 					},
 				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: true,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -286,6 +300,13 @@ func TestLoadConfig(t *testing.T) {
 					OTel: OTelConfiguration{
 						SampleRate:         1.0,
 						InsecureSkipVerify: true,
+					},
+				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: true,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
 					},
 				},
 			},
