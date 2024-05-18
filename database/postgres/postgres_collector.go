@@ -10,9 +10,9 @@ import (
 // Namespace used in fully-qualified metrics names.
 const namespace = "convoy"
 
-const delaySeconds = 1
-
 var lastRun = time.Now()
+
+var cachedMetrics *Metrics // needed to feed the UI with data when sampling time has not yet elapsed
 
 type EventQueueMetrics struct {
 	ProjectID string `json:"project_id" db:"project_id"`
@@ -79,7 +79,7 @@ var (
 	)
 
 	eventDeliveryQueueTotalDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(namespace, "", "convoy_event_delivery_queue_total"),
+		prometheus.BuildFQName(namespace, "", "event_delivery_queue_total"),
 		"Total number of tasks in the delivery queue per endpoint",
 		[]string{"project_id", "endpoint", "status"}, nil,
 	)
@@ -102,16 +102,22 @@ func (p *Postgres) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
-
-	now := time.Now()
-	if lastRun.Add(delaySeconds * time.Second).After(now) {
+	if !p.metricsConfig.IsEnabled {
 		return
 	}
 
-	metrics, err := p.collectMetrics()
-	if err != nil {
-		log.Printf("Failed to collect metrics data: %v", err)
-		return
+	var metrics *Metrics
+	var err error
+	now := time.Now()
+	if cachedMetrics != nil && lastRun.Add(time.Duration(p.metricsConfig.Prometheus.SampleTime)*time.Second).After(now) {
+		metrics = cachedMetrics
+	} else {
+		metrics, err = p.collectMetrics()
+		if err != nil {
+			log.Printf("Failed to collect metrics data: %v", err)
+			return
+		}
+		cachedMetrics = metrics
 	}
 
 	for _, metric := range metrics.EventQueueMetrics {
@@ -129,7 +135,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(
 			eventQueueBacklogDesc,
 			prometheus.GaugeValue,
-			float64(metric.AgeSeconds),
+			metric.AgeSeconds,
 			metric.ProjectID,
 			metric.SourceId,
 		)
@@ -171,7 +177,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	lastRun = now
 }
 
-// collectQueueInfo gathers essential metrics from the DB
+// collectMetrics gathers essential metrics from the DB
 func (p *Postgres) collectMetrics() (*Metrics, error) {
 	metrics := &Metrics{}
 
@@ -268,27 +274,6 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 		eventQueueEndpointBacklogMetrics = append(eventQueueEndpointBacklogMetrics, e)
 	}
 	metrics.EventQueueEndpointBacklogMetrics = eventQueueEndpointBacklogMetrics
-
-	attemptsQuery := `select project_id, endpoint_id, status,
-       coalesce(substring((regexp_split_to_array(convert_from(attempts, 'UTF8'), 'http_status":'))
-           [array_length((regexp_split_to_array(convert_from(attempts, 'UTF8'), 'http_status":')), 1)],
-           '\d{3} [A-Za-z ]{1,}'), '')
-           as status_code, count(*) as total from event_deliveries group by project_id, endpoint_id, status, status_code;`
-	rows4, err := p.GetDB().Queryx(attemptsQuery)
-	if err != nil {
-		return nil, err
-	}
-	defer closeWithError(rows4)
-	attempts := make([]EventQueueEndpointAttemptMetrics, 0)
-	for rows4.Next() {
-		var e EventQueueEndpointAttemptMetrics
-		err = rows4.StructScan(&e)
-		if err != nil {
-			return nil, err
-		}
-		attempts = append(attempts, e)
-	}
-	metrics.EventQueueEndpointAttemptMetrics = attempts
 
 	return metrics, nil
 }

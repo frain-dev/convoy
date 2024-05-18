@@ -388,6 +388,35 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
+	metricsBackend, err := cmd.Flags().GetString("metrics-backend")
+	if err != nil {
+		return nil, err
+	}
+
+	if !config.IsStringEmpty(metricsBackend) {
+		c.Metrics = config.MetricsConfiguration{
+			IsEnabled: false,
+			Backend:   config.MetricsBackend(metricsBackend),
+		}
+		switch c.Metrics.Backend {
+		case config.PrometheusMetricsProvider:
+			sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
+			if err != nil {
+				return nil, err
+			}
+			if sampleTime < 1 {
+				return nil, errors.New("metrics-prometheus-sample-time must be non-zero")
+			}
+			c.Metrics = config.MetricsConfiguration{
+				IsEnabled: true,
+				Backend:   config.MetricsBackend(metricsBackend),
+				Prometheus: config.PrometheusMetricsConfiguration{
+					SampleTime: sampleTime,
+				},
+			}
+		}
+	}
+
 	return c, nil
 }
 

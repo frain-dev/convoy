@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/prometheus/client_golang/prometheus"
 	"sync"
@@ -16,6 +17,7 @@ const (
 
 // Metrics for the data plane
 type Metrics struct {
+	IsEnabled           bool
 	IngestTotal         *prometheus.CounterVec
 	IngestConsumedTotal *prometheus.CounterVec
 	IngestErrorsTotal   *prometheus.CounterVec
@@ -31,17 +33,32 @@ func GetDPInstance() *Metrics {
 func newMetrics(pr prometheus.Registerer) *Metrics {
 	m := InitMetrics()
 
-	pr.MustRegister(
-		m.IngestTotal,
-		m.IngestConsumedTotal,
-		m.IngestErrorsTotal,
-	)
+	if m.IsEnabled {
+		pr.MustRegister(
+			m.IngestTotal,
+			m.IngestConsumedTotal,
+			m.IngestErrorsTotal,
+		)
+	}
 	return m
 }
 
 func InitMetrics() *Metrics {
 
+	cfg, err := config.Get()
+	if err != nil {
+		return &Metrics{
+			IsEnabled: false,
+		}
+	}
+	if !cfg.Metrics.IsEnabled {
+		return &Metrics{
+			IsEnabled: false,
+		}
+	}
+
 	m := &Metrics{
+		IsEnabled: true,
 
 		IngestTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -69,13 +86,22 @@ func InitMetrics() *Metrics {
 }
 
 func (m *Metrics) IncrementIngestTotal(source *datastore.Source) {
+	if !m.IsEnabled {
+		return
+	}
 	m.IngestTotal.With(prometheus.Labels{projectLabel: source.ProjectID, sourceLabel: source.UID}).Inc()
 }
 
 func (m *Metrics) IncrementIngestConsumedTotal(source *datastore.Source) {
+	if !m.IsEnabled {
+		return
+	}
 	m.IngestConsumedTotal.With(prometheus.Labels{projectLabel: source.ProjectID, sourceLabel: source.UID}).Inc()
 }
 
 func (m *Metrics) IncrementIngestErrorsTotal(source *datastore.Source) {
+	if !m.IsEnabled {
+		return
+	}
 	m.IngestErrorsTotal.With(prometheus.Labels{projectLabel: source.ProjectID, sourceLabel: source.UID}).Inc()
 }

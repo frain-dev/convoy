@@ -2,6 +2,7 @@ package redis
 
 import (
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -22,6 +23,13 @@ func (rq *RedisQueue) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (rq *RedisQueue) Collect(ch chan<- prometheus.Metric) {
+	cfg, err := config.Get()
+	if err != nil {
+		return
+	}
+	if !cfg.Metrics.IsEnabled {
+		return
+	}
 	qinfo, err := rq.inspector.GetQueueInfo(string(convoy.CreateEventQueue))
 	if err != nil {
 		return
