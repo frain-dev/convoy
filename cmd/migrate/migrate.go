@@ -22,6 +22,7 @@ func AddMigrateCommand(a *cli.App) *cobra.Command {
 	cmd.AddCommand(addUpCommand())
 	cmd.AddCommand(addDownCommand())
 	cmd.AddCommand(addCreateCommand())
+	cmd.AddCommand(addListCommand())
 
 	return cmd
 }
@@ -119,6 +120,48 @@ func addCreateCommand() *cobra.Command {
 				if err != nil {
 					log.Fatal(err)
 				}
+			}
+		},
+	}
+
+	return cmd
+}
+
+func addListCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "list",
+		Short: "list all migrations",
+		Annotations: map[string]string{
+			"CheckMigration":  "false",
+			"ShouldBootstrap": "false",
+		},
+		Run: func(cmd *cobra.Command, args []string) {
+			cfg, err := config.Get()
+			if err != nil {
+				log.WithError(err).Fatalf("Error fetching the config.")
+			}
+
+			db, err := postgres.NewDB(cfg)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			defer db.Close()
+
+			m := migrator.New(db)
+			migrationRecords, err := m.List()
+			if err != nil {
+				log.WithError(err).Fatal("failed to list migrations")
+			}
+
+			if len(migrationRecords) == 0 {
+				fmt.Println("No migrations found")
+			}
+
+			fmt.Printf("Name              Applied At\n----------------- ----------------------------\n")
+
+			for _, record := range migrationRecords {
+				fmt.Printf("%s    %v\n", record.Name, record.AppliedAt.Format("2006-01-02 15:04 (MST)"))
 			}
 		},
 	}
