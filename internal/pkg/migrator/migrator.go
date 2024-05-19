@@ -1,6 +1,8 @@
 package migrator
 
 import (
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
 	"github.com/jmoiron/sqlx"
@@ -10,6 +12,11 @@ import (
 var (
 	tableSchema = "convoy"
 )
+
+type MigrationRecord struct {
+	Name      string
+	AppliedAt time.Time
+}
 
 type Migrator struct {
 	dbx *sqlx.DB
@@ -40,4 +47,22 @@ func (m *Migrator) Down(max int) error {
 		return err
 	}
 	return nil
+}
+
+func (m *Migrator) List() ([]MigrationRecord, error) {
+	records, err := migrate.GetMigrationRecords(m.dbx.DB, "postgres")
+	if err != nil {
+		return nil, err
+	}
+
+	var migrationRecords []MigrationRecord
+	for _, record := range records {
+		migrationRecord := MigrationRecord{
+			Name:      record.Id,
+			AppliedAt: record.AppliedAt,
+		}
+		migrationRecords = append(migrationRecords, migrationRecord)
+	}
+
+	return migrationRecords, nil
 }
