@@ -121,6 +121,10 @@ func TestLoadConfig(t *testing.T) {
 					Host:   "localhost",
 					Port:   8379,
 				},
+				RetentionPolicy: RetentionPolicyConfiguration{
+					Policy:                   "720h",
+					IsRetentionPolicyEnabled: true,
+				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
@@ -170,6 +174,7 @@ func TestLoadConfig(t *testing.T) {
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
+				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h"},
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -235,6 +240,7 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
+				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h"},
 				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
