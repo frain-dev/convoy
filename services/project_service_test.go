@@ -209,6 +209,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				LogoURL:        "https://google.com",
 				OrganisationID: "1234",
 				Config: &datastore.ProjectConfig{
+					SearchPolicy:  "720h",
 					MaxIngestSize: 51200,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
@@ -260,8 +261,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 				Type:           "outgoing",
 				LogoURL:        "https://google.com",
 				OrganisationID: "1234",
-
 				Config: &datastore.ProjectConfig{
+					SearchPolicy:  "720h",
 					MaxIngestSize: 51200,
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
