@@ -61,7 +61,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	];
 	isCreatingSubscription = false;
 
-	projectType?: 'incoming' | 'outgoing' = this.privateService.getProjectDetails?.type;
+	projectType?: 'incoming' | 'outgoing';
 	isLoadingForm = true;
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
@@ -81,8 +81,12 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
+
+		this.projectType = this.token ? 'outgoing' : this.privateService.getProjectDetails?.type;
+
 		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
 		if (this.action === 'update') await this.getSubscriptionDetails();
+
 		this.isLoadingForm = false;
 
 		// add required validation on source input for incoming projects

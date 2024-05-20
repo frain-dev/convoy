@@ -6,13 +6,12 @@
 				<li *ngFor="let source of preConfiguredSources" class="list-none last-of-type:mr-0">
 					<button
 						convoy-button
-						texture="light"
 						size="sm"
-						color="grey"
-						fill="outline"
+						color="neutral"
+						fill="soft-outline"
 						type="button"
 						class="w-60px h-60px"
-						[ngClass]="{ '!border-solid !border !border-primary-100': sourceForm.value.verifier.type === source }"
+						[ngClass]="{ '!border-solid !border !border-new.primary-400': sourceForm.value.verifier.type === source }"
 						(click)="sourceForm.get('verifier.type')?.patchValue(source); sourceForm.value.name ? false : sourceForm.get('name')?.patchValue(source + ' Source')"
 					>
 						<img [src]="'/assets/img/' + source + '.png'" [alt]="source + '-icon'" />
@@ -369,7 +368,7 @@
 		<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
 			<div class="flex justify-between items-center mb-16px">
 				<h4 class="text-12 text-neutral-10 font-semibold">Custom response</h4>
-				<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
+				<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
 					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 						<use xlink:href="#delete-icon2"></use>
 					</svg>
@@ -394,7 +393,7 @@
 		<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
 			<div class="flex justify-between items-end mb-24px">
 				<p class="text-12 font-semibold text-neutral-10 flex items-center">Idempotency Config</p>
-				<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('idempotency')">
+				<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('idempotency')">
 					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 						<use xlink:href="#delete-icon2"></use>
 					</svg>
@@ -417,11 +416,11 @@
 					<p class="text-10 text-neutral-10 mt-4px">Transform request body of events with a javascript function.</p>
 				</div>
 				<div class="flex items-center">
-					<button convoy-button fill="outline" color="grey" class="!text-neutral-10 border-neutral-5 py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()">Open Editor</button>
+					<button convoy-button fill="outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()">Open Editor</button>
 
 					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
 
-					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('tranform_config')">
+					<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('tranform_config')">
 						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>

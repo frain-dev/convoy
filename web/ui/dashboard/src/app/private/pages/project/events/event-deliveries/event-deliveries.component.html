@@ -68,7 +68,7 @@
 										</ng-container>
 
 										<span [class]="projectService.activeProjectDetails?.type === 'incoming' ? 'max-w-[146px] overflow-hidden overflow-ellipsis' : 'w-166px' + ' overflow-hidden overflow-ellipsis'">
-											{{ event.endpoint_metadata.title }}
+											{{ event.endpoint_metadata.title || event.endpoint_metadata.name }}
 										</span>
 										<!-- show this if CLI is the receiver -->
 										<convoy-tag *ngIf="event.device_id" className="flex items-center">
@@ -86,7 +86,7 @@
 									<button
 										convoy-button
 										size="xs"
-										texture="light"
+                                        fill="soft"
 										[disabled]="event.status !== 'Success' && event.status !== 'Failure' && event.status !== 'Discarded'"
 										[title]="event.status !== 'Failure' && event.status !== 'Success' && event.status !== 'Discarded' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
 										(click)="event.status === 'Success' ? forceRetryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid }) : retryEvent({ e: $event, index: this.index, eventDeliveryId: event.uid })"
@@ -123,6 +123,6 @@
 		<div class="text-center text-14 font-medium text-neutral-11 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-12 font-semibold mb-32px">{{ batchRetryCount || 0 }} event deliver{{ batchRetryCount > 1 ? 'ies' : 'y' }}</div>
 		<button convoy-button size="sm" [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-		<button convoy-button fill="clear" class="font-semibold m-auto mt-16px" (click)="dialog.nativeElement.close()">No, Cancel</button>
+		<button convoy-button fill="text" class="font-semibold m-auto mt-16px" (click)="dialog.nativeElement.close()">No, Cancel</button>
 	</div>
 </dialog>

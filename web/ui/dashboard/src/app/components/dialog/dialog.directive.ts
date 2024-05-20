@@ -15,7 +15,7 @@ import { ButtonComponent } from '../button/button.component';
 						<ng-content></ng-content>
 					</div>
 
-					<button convoy-button size="sm" texture="light" class="px-8px !py-8px" [class]="fullscreen !== 'false' ? 'order-1 mr-2' : 'order-2'" (click)="closeDialog.emit()">
+					<button convoy-button size="sm" fill="soft" class="px-8px !py-8px" [class]="fullscreen !== 'false' ? 'order-1 mr-2' : 'order-2'" (click)="closeDialog.emit()">
 						<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" />
 					</button>
 				</div>

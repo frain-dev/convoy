@@ -152,7 +152,7 @@
 				</div>
 			</convoy-copy-button>
 
-			<button convoy-button fill="soft" color="grey" size="sm" class="bg-neutral-4 px-10px" [routerLink]="'../../../endpoints/' + eventDelsDetails?.endpoint_metadata?.uid">
+			<button convoy-button fill="soft" color="neutral" size="sm" class="px-10px" [routerLink]="'../../../endpoints/' + eventDelsDetails?.endpoint_metadata?.uid">
 				<svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
 					<path
 						d="M7.73463 2.10021L2.94546 7.16937C2.76463 7.36187 2.58963 7.74104 2.55463 8.00354L2.3388 9.89354C2.26296 10.576 2.75296 11.0427 3.42963 10.926L5.30796 10.6052C5.57046 10.5585 5.93796 10.366 6.11879 10.1677L10.908 5.09854C11.7363 4.22354 12.1096 3.22604 10.8205 2.00687C9.53713 0.799375 8.56296 1.22521 7.73463 2.10021Z"
@@ -176,10 +176,10 @@
 			[disabled]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success'"
 			[title]="eventDelsDetails.status !== 'Failure' && eventDelsDetails.status !== 'Success' ? 'You can not retry an event when it is scheduled or still processing.' : ''"
 			size="xs"
-			class="text-neutral-11 bg-neutral-4"
+			fill="soft"
 			(click)="eventDelsDetails.status === 'Success' ? forceRetryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid }) : retryEvent({ e: $event, eventDeliveryId: eventDelsDetails.uid })"
 		>
-			<svg width="16" height="16" class="mr-10px">
+			<svg width="16" height="16" class="mr-10px fill-new.primary-400">
 				<use xlink:href="#refresh-icon-2"></use>
 			</svg>
 			{{ eventDelsDetails.status === 'Success' ? 'Force Retry' : 'Retry' }}
