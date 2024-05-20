@@ -140,10 +140,8 @@ func Test_UpdateProject(t *testing.T) {
 		OrganisationID:  project.OrganisationID,
 		ProjectConfigID: project.ProjectConfigID, // TODO(all): if i comment this line this test never exits, weird problem
 		Config: &datastore.ProjectConfig{
-			MaxIngestSize:            8483,
-			ReplayAttacks:            true,
-			IsRetentionPolicyEnabled: true,
-			RetentionPolicy:          &datastore.RetentionPolicyConfiguration{Policy: "99d"},
+			MaxIngestSize: 8483,
+			ReplayAttacks: true,
 			RateLimit: &datastore.RateLimitConfiguration{
 				Count:    8773,
 				Duration: 7766,
