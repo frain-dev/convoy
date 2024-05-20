@@ -28,7 +28,7 @@ const (
 		id,
 		is_analytics_enabled,
 		is_signup_enabled,
-		retention_policy_enabled AS "retention_policy.retention_policy_enabled",
+		retention_policy_enabled AS "retention_policy.enabled",
 		retention_policy_policy AS "retention_policy.policy",
 		storage_policy_type AS "storage_policy.type",
 		on_prem_path AS "storage_policy.on_prem.path",

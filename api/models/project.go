@@ -109,22 +109,6 @@ func (r *SSLConfiguration) transform() *datastore.SSLConfiguration {
 	}
 }
 
-type RetentionPolicyConfiguration struct {
-	// Controls whether the retention policy is active on this instance.
-	IsRetentionPolicyEnabled bool `json:"retention_policy_enabled"`
-
-	// Specify the number of hours the policy job should go back before deleting events and deliveries.
-	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
-}
-
-func (r *RetentionPolicyConfiguration) Transform() *datastore.RetentionPolicyConfiguration {
-	if r == nil {
-		return nil
-	}
-
-	return &datastore.RetentionPolicyConfiguration{Policy: r.Policy, IsRetentionPolicyEnabled: r.IsRetentionPolicyEnabled}
-}
-
 type RateLimitConfiguration struct {
 	Count    int    `json:"count"`
 	Duration uint64 `json:"duration"`

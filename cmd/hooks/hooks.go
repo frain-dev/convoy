@@ -191,6 +191,11 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		OnPrem: &onPrem,
 	}
 
+	retentionPolicy := &datastore.RetentionPolicyConfiguration{
+		Policy:                   cfg.RetentionPolicy.Policy,
+		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
+	}
+
 	configuration, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
@@ -200,6 +205,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 				StoragePolicy:      storagePolicy,
 				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				RetentionPolicy:    retentionPolicy,
 				CreatedAt:          time.Now(),
 				UpdatedAt:          time.Now(),
 			}
@@ -213,6 +219,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	configuration.RetentionPolicy = retentionPolicy
 	configuration.UpdatedAt = time.Now()
 
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)

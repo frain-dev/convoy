@@ -79,7 +79,7 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 }
 
 func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
-	if !ex.config.IsRetentionPolicyEnabled {
+	if !ex.config.RetentionPolicy.IsRetentionPolicyEnabled {
 		return nil, nil
 	}
 

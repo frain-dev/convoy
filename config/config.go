@@ -243,8 +243,8 @@ type SentryConfiguration struct {
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
-	SearchPolicy string `json:"search_policy" db:"search_policy"`
+	Policy                   string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"enabled"`
 }
 
 type AnalyticsConfiguration struct {
