@@ -98,10 +98,16 @@ var (
 )
 
 func (p *Postgres) Describe(ch chan<- *prometheus.Desc) {
+	if p == nil {
+		return
+	}
 	prometheus.DescribeByCollect(p, ch)
 }
 
 func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
+	if p == nil {
+		return
+	}
 	if !p.metricsConfig.IsEnabled {
 		return
 	}

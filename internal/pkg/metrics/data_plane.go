@@ -33,7 +33,7 @@ func GetDPInstance() *Metrics {
 func newMetrics(pr prometheus.Registerer) *Metrics {
 	m := InitMetrics()
 
-	if m.IsEnabled {
+	if m.IsEnabled && m.IngestTotal != nil && m.IngestConsumedTotal != nil && m.IngestErrorsTotal != nil {
 		pr.MustRegister(
 			m.IngestTotal,
 			m.IngestConsumedTotal,

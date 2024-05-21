@@ -19,10 +19,16 @@ var (
 )
 
 func (rq *RedisQueue) Describe(ch chan<- *prometheus.Desc) {
+	if rq == nil {
+		return
+	}
 	prometheus.DescribeByCollect(rq, ch)
 }
 
 func (rq *RedisQueue) Collect(ch chan<- prometheus.Metric) {
+	if rq == nil {
+		return
+	}
 	cfg, err := config.Get()
 	if err != nil {
 		return
