@@ -44,8 +44,7 @@ export class ConfigurationsComponent implements OnInit {
 		is_signup_enabled: [null, Validators.required],
 		retention_policy_enabled: [true],
 		retention_policy: this.formBuilder.group({
-			policy: [720],
-			search_policy: [720]
+			policy: [720]
 		}),
 		storage_policy: this.formBuilder.group({
 			type: [null, Validators.required],
@@ -77,8 +76,11 @@ export class ConfigurationsComponent implements OnInit {
 		this.isFetchingConfig = true;
 		try {
 			const response = await this.settingService.fetchConfigSettings();
+
 			const configurations = response.data[0];
 			this.configForm.patchValue(configurations);
+			this.configForm.get('retention_policy.policy')?.patchValue(this.getHours(configurations.retention_policy.policy));
+
 			this.isFetchingConfig = false;
 		} catch {
 			this.isFetchingConfig = false;
@@ -88,6 +90,8 @@ export class ConfigurationsComponent implements OnInit {
 	async updateConfigSettings() {
 		if (this.configForm.value.storage_policy.type === 'on_prem') delete this.configForm.value.storage_policy.s3;
 		if (this.configForm.value.storage_policy.type === 's3') delete this.configForm.value.storage_policy.on_prem;
+		if (typeof this.configForm.value.retention_policy.policy === 'number') this.configForm.value.retention_policy.policy = `${this.configForm.value.retention_policy.policy}h`;
+
 		this.isUpdatingConfig = true;
 		try {
 			const response = await this.settingService.updateConfigSettings(this.configForm.value);
@@ -108,5 +112,10 @@ export class ConfigurationsComponent implements OnInit {
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
+	}
+
+	getHours(hours: any) {
+		const [digits, _] = hours.match(/\D+|\d+/g);
+		return parseInt(digits);
 	}
 }

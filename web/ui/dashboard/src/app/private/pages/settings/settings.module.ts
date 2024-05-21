@@ -22,6 +22,7 @@ import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { TeamsModule } from './teams/teams.module';
 import { ConfigButtonComponent } from '../../components/config-button/config-button.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
@@ -51,7 +52,8 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		InputDirective,
 		LabelComponent,
 		DialogDirective,
-		TeamsModule
+		TeamsModule,
+        TooltipComponent
 	]
 })
 export class SettingsModule {}
