@@ -30,7 +30,7 @@
 	<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="configForm.get('retention_policy_enabled')?.value && showConfig('retention_policy')">
 		<div class="flex justify-between items-center mb-24px">
 			<p class="text-12 font-medium text-neutral-11">Retention Policy</p>
-			<button convoy-button type="button" size="xs" fill="outline" convoy-permission="Project Settings|MANAGE" color="grey" texture="light" (click)="toggleConfigForm('retention_policy')">
+			<button convoy-button type="button" size="xs" fill="soft-outline" convoy-permission="Project Settings|MANAGE" color="neutral" (click)="toggleConfigForm('retention_policy')">
 				<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 					<use xlink:href="#delete-icon2"></use>
 				</svg>
@@ -61,7 +61,7 @@
 	<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('storage_policy')">
 		<div class="flex justify-between items-center mb-24px">
 			<p class="text-12 font-medium text-neutral-11">Storage Policy</p>
-			<button convoy-button type="button" size="xs" fill="outline" convoy-permission="Project Settings|MANAGE" color="grey" texture="light" (click)="toggleConfigForm('storage_policy')">
+			<button convoy-button type="button" size="xs" fill="soft-outline" convoy-permission="Project Settings|MANAGE" color="neutral" (click)="toggleConfigForm('storage_policy')">
 				<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 					<use xlink:href="#delete-icon2"></use>
 				</svg>
