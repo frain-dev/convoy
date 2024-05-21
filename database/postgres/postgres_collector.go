@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"strings"
@@ -13,6 +14,8 @@ const namespace = "convoy"
 var lastRun = time.Now()
 
 var cachedMetrics *Metrics // needed to feed the UI with data when sampling time has not yet elapsed
+
+var metricsConfig *config.MetricsConfiguration
 
 type EventQueueMetrics struct {
 	ProjectID string `json:"project_id" db:"project_id"`
@@ -98,24 +101,25 @@ var (
 )
 
 func (p *Postgres) Describe(ch chan<- *prometheus.Desc) {
-	if p == nil {
-		return
-	}
 	prometheus.DescribeByCollect(p, ch)
 }
 
 func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
-	if p == nil {
-		return
+	if metricsConfig == nil {
+		cfg, err := config.Get()
+		if err != nil {
+			return
+		}
+		metricsConfig = &cfg.Metrics
 	}
-	if !p.metricsConfig.IsEnabled {
+	if metricsConfig.IsEnabled {
 		return
 	}
 
 	var metrics *Metrics
 	var err error
 	now := time.Now()
-	if cachedMetrics != nil && lastRun.Add(time.Duration(p.metricsConfig.Prometheus.SampleTime)*time.Second).After(now) {
+	if cachedMetrics != nil && lastRun.Add(time.Duration(metricsConfig.Prometheus.SampleTime)*time.Second).After(now) {
 		metrics = cachedMetrics
 	} else {
 		metrics, err = p.collectMetrics()

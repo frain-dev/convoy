@@ -29,9 +29,8 @@ const TransactionCtx DbCtxKey = "transaction"
 var ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, please run convoy migrate first")
 
 type Postgres struct {
-	dbx           *sqlx.DB
-	hook          *hooks.Hook
-	metricsConfig config.MetricsConfiguration
+	dbx  *sqlx.DB
+	hook *hooks.Hook
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
@@ -48,7 +47,7 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	db.SetMaxOpenConns(dbConfig.SetMaxOpenConnections)
 	db.SetConnMaxLifetime(time.Second * time.Duration(dbConfig.SetConnMaxLifetime))
 
-	return &Postgres{dbx: db, metricsConfig: cfg.Metrics}, nil
+	return &Postgres{dbx: db}, nil
 }
 
 func (p *Postgres) GetDB() *sqlx.DB {
