@@ -177,7 +177,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			metrics.RegisterQueueMetrics(a.Queue, a.DB)
 
 			router := chi.NewRouter()
-			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}))
+			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				render.JSON(w, r, "Convoy")
 			})

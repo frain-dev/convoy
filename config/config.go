@@ -87,7 +87,7 @@ var DefaultConfiguration = Configuration{
 	},
 	EnableProfiling: false,
 	Metrics: MetricsConfiguration{
-		IsEnabled: true,
+		IsEnabled: false,
 		Backend:   PrometheusMetricsProvider,
 		Prometheus: PrometheusMetricsConfiguration{
 			SampleTime: 5,

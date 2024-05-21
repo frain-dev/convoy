@@ -102,7 +102,7 @@ func main() {
 	c.Flags().StringVar(&otelAuthHeaderValue, "otel-auth-header-value", "", "OTel backend auth header value")
 
 	// metrics
-	c.Flags().StringVar(&metricsBackend, "metrics-backend", "", "Metrics backend e.g. prometheus")
+	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('experimental' feature flag level required")
 	c.Flags().Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))

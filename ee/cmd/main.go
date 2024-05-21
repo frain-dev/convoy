@@ -63,6 +63,9 @@ func main() {
 	var otelAuthHeaderName string
 	var otelAuthHeaderValue string
 
+	var metricsBackend string
+	var prometheusMetricsSampleTime uint64
+
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
@@ -96,6 +99,10 @@ func main() {
 	c.Flags().StringVar(&otelCollectorURL, "otel-collector-url", "", "OTel collector URL")
 	c.Flags().StringVar(&otelAuthHeaderName, "otel-auth-header-name", "", "OTel backend auth header name")
 	c.Flags().StringVar(&otelAuthHeaderValue, "otel-auth-header-value", "", "OTel backend auth header value")
+
+	// metrics
+	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('experimental' feature flag level required")
+	c.Flags().Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))

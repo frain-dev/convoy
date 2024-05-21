@@ -158,7 +158,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Metrics: MetricsConfiguration{
-					IsEnabled: true,
+					IsEnabled: false,
 					Backend:   "prometheus",
 					Prometheus: PrometheusMetricsConfiguration{
 						SampleTime: 5,
@@ -231,7 +231,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Metrics: MetricsConfiguration{
-					IsEnabled: true,
+					IsEnabled: false,
 					Backend:   "prometheus",
 					Prometheus: PrometheusMetricsConfiguration{
 						SampleTime: 5,
@@ -303,7 +303,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Metrics: MetricsConfiguration{
-					IsEnabled: true,
+					IsEnabled: false,
 					Backend:   "prometheus",
 					Prometheus: PrometheusMetricsConfiguration{
 						SampleTime: 5,
