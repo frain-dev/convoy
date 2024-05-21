@@ -31,6 +31,7 @@ export class CreateProjectComponent implements OnInit {
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
+			search_policy: [720],
 			strategy: this.formBuilder.group({
 				duration: [null],
 				retry_count: [null],
@@ -55,7 +56,7 @@ export class CreateProjectComponent implements OnInit {
 				event_type: [[], Validators.required],
 				url: ['', Validators.required],
 				secret: [null]
-			}),
+			})
 		}),
 		type: [null, Validators.required]
 	});
@@ -80,6 +81,7 @@ export class CreateProjectComponent implements OnInit {
 	configurations = [
 		{ uid: 'strategy', name: 'Retry Config', show: false },
 		{ uid: 'ratelimit', name: 'Rate Limit', show: false },
+		{ uid: 'search_policy', name: 'Search Policy', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	public rbacService = inject(RbacService);
@@ -142,6 +144,7 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
+			this.projectForm.get('config.search_policy')?.patchValue(this.getHours(this.projectDetails.config.search_policy));
 
 			// set meta events config
 			this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
@@ -180,6 +183,8 @@ export class CreateProjectComponent implements OnInit {
 		}
 		const projectData = this.getProjectData();
 
+		console.log(projectData);
+
 		this.isCreatingProject = true;
 
 		try {
@@ -208,8 +213,9 @@ export class CreateProjectComponent implements OnInit {
 		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
 		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
 		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
+		if (typeof this.projectForm.value.config.search_policy === 'number') this.projectForm.value.config.search_policy = `${this.projectForm.value.config.search_policy}h`;
 
-        this.isCreatingProject = true;
+		this.isCreatingProject = true;
 
 		try {
 			// this updateProject service also updates project in localstorage
@@ -255,6 +261,7 @@ export class CreateProjectComponent implements OnInit {
 
 		configKeys.forEach(configKey => {
 			if (!this.showConfig(configKey)) delete projectData.config[configKey];
+			if (this.showConfig('search_policy') && typeof projectData.config.search_policy === 'number') projectData.config.search_policy = `${projectData.config.search_policy}h`;
 		});
 
 		return projectData;
@@ -270,6 +277,11 @@ export class CreateProjectComponent implements OnInit {
 				this.projectForm.updateValueAndValidity();
 			});
 		}
+	}
+
+	getHours(hours: any) {
+		const [digits, _] = hours.match(/\D+|\d+/g);
+		return parseInt(digits);
 	}
 
 	getTimeString(timeValue: number) {

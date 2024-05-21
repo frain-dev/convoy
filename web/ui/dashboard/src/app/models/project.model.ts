@@ -31,6 +31,7 @@ export interface PROJECT {
 		retention_policy_enabled: boolean;
 		DisableEndpoint: boolean;
 		replay_attacks: boolean;
+        search_policy: string;
 	};
 	statistics?: {
 		messages_sent: number;
