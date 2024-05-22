@@ -8,9 +8,15 @@
 		Back
 	</button>
 
+	<h2 class="font-medium text-14 text-neutral-10 mb-24px">Subscriptions</h2>
 	<div class="flex justify-between items-center mb-12px">
-		<h2 class="font-medium text-14 text-neutral-10">Subscriptions</h2>
-
+		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getSubscriptions({ name: subscriptionSearchString })">
+			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
+			<input type="search" placeholder="Search subscriptions" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="subscriptionSearchString" [ngModelOptions]="{ standalone: true }" />
+			<button convoy-button *ngIf="subscriptionSearchString && subscriptionSearchString.length > 0" class="transition-all duration-200" fill="text" (click)="getSubscriptions({ name: subscriptionSearchString })" size="sm">
+				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
+			</button>
+		</form>
 		<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="action = 'create'; showSubscriptionForm = true" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
 			<img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
 			Add Subscription

@@ -15,11 +15,12 @@ import { DeleteModalComponent } from 'src/app/private/components/delete-modal/de
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
+import { FormsModule } from '@angular/forms';
 
 @Component({
 	selector: 'convoy-subscriptions-list',
 	standalone: true,
-	imports: [CommonModule, TagComponent, CopyButtonComponent, CardComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent, PaginationComponent, DeleteModalComponent, DialogDirective, TooltipComponent, CreateSubscriptionModule],
+	imports: [CommonModule, TagComponent, CopyButtonComponent, CardComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent, PaginationComponent, DeleteModalComponent, DialogDirective, TooltipComponent, CreateSubscriptionModule, FormsModule],
 	templateUrl: './subscriptions.component.html',
 	styleUrls: ['./subscriptions.component.scss']
 })
@@ -32,7 +33,8 @@ export class SubscriptionsComponent implements OnInit {
 
 	isLoadingSubscriptions = false;
 	isDeletingSubscription = false;
-    showSubscriptionForm = false;
+	showSubscriptionForm = false;
+	subscriptionSearchString!: string;
 	action: 'update' | 'create' = 'create';
 	activeSubscription?: SUBSCRIPTION;
 	subscriptions?: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
@@ -44,7 +46,7 @@ export class SubscriptionsComponent implements OnInit {
 		this.getSubscriptions();
 	}
 
-	async getSubscriptions(requestDetails?: CURSOR) {
+	async getSubscriptions(requestDetails?: CURSOR & { name?: string }) {
 		const endpointId = this.endpoint.uid;
 		this.isLoadingSubscriptions = true;
 
