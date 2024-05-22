@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"io"
 	"os"
 	"time"
@@ -53,6 +54,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		if err = config.Override(cliConfig); err != nil {
+			return err
+		}
+		cfg, err = config.Get() // updated
+		if err != nil {
 			return err
 		}
 
@@ -386,6 +391,45 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			DSN: dsn,
 		}
 
+	}
+
+	flag, err := fflag2.NewFFlag()
+	if err != nil {
+		return nil, err
+	}
+	c.Metrics = config.MetricsConfiguration{
+		IsEnabled: false,
+	}
+	if flag.CanAccessFeature(fflag2.Prometheus, c) {
+		metricsBackend, err := cmd.Flags().GetString("metrics-backend")
+		if err != nil {
+			return nil, err
+		}
+		if !config.IsStringEmpty(metricsBackend) {
+			c.Metrics = config.MetricsConfiguration{
+				IsEnabled: false,
+				Backend:   config.MetricsBackend(metricsBackend),
+			}
+			switch c.Metrics.Backend {
+			case config.PrometheusMetricsProvider:
+				sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
+				if err != nil {
+					return nil, err
+				}
+				if sampleTime < 1 {
+					return nil, errors.New("metrics-prometheus-sample-time must be non-zero")
+				}
+				c.Metrics = config.MetricsConfiguration{
+					IsEnabled: true,
+					Backend:   config.MetricsBackend(metricsBackend),
+					Prometheus: config.PrometheusMetricsConfiguration{
+						SampleTime: sampleTime,
+					},
+				}
+			}
+		} else {
+			log.Warn("No metrics-backend specified")
+		}
 	}
 
 	return c, nil

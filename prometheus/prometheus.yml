@@ -1,0 +1,20 @@
+global:
+    scrape_interval:     15s
+    evaluation_interval: 15s
+
+scrape_configs:
+    - job_name: prometheus
+      static_configs:
+          - targets: ['prometheus:9090']
+    - job_name: web
+      metrics_path: /metrics
+      static_configs:
+          - targets: ["web:5005"]
+    - job_name: worker
+      metrics_path: /metrics
+      static_configs:
+          - targets: ["worker:5006"]
+    - job_name: ingest
+      metrics_path: /metrics
+      static_configs:
+          - targets: ["ingest:5009"]
