@@ -4628,6 +4628,12 @@
                     },
                     {
                         "type": "string",
+                        "description": "Subscription name to filter by",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "example": "01H0JA5MEES38RRK3HTEJC647K",
                         "description": "A pagination cursor to fetch the next page of a list",
                         "name": "next_page_cursor",

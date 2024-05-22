@@ -332,6 +332,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		"endpoint_ids": filter.EndpointIDs,
 		"limit":        pageable.Limit(),
 		"cursor":       pageable.Cursor(),
+		"name":         filter.SubscriptionName,
 	}
 
 	var query, filterQuery string
@@ -344,6 +345,10 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	filterQuery = ` AND s.project_id = :project_id`
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery += ` AND s.endpoint_id IN (:endpoint_ids)`
+	}
+
+	if !util.IsStringEmpty(filter.SubscriptionName) {
+		filterQuery += ` AND s.name LIKE '%:name%'`
 	}
 
 	query = fmt.Sprintf(query, baseFetchSubscription, filterQuery)
