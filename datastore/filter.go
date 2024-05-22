@@ -37,12 +37,13 @@ type ApiKeyFilter struct {
 }
 
 type FilterBy struct {
-	OwnerID      string
-	EndpointID   string
-	EndpointIDs  []string
-	ProjectID    string
-	SourceID     string
-	SearchParams SearchParams
+	OwnerID          string
+	EndpointID       string
+	EndpointIDs      []string
+	SubscriptionName string
+	ProjectID        string
+	SourceID         string
+	SearchParams     SearchParams
 }
 
 func (f *FilterBy) String() *string {

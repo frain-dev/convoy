@@ -17,9 +17,10 @@ import (
 )
 
 func generateSubscription(project *datastore.Project, source *datastore.Source, endpoint *datastore.Endpoint, device *datastore.Device) *datastore.Subscription {
+	uid := ulid.Make().String()
 	return &datastore.Subscription{
-		UID:        ulid.Make().String(),
-		Name:       "Subscription",
+		UID:        uid,
+		Name:       "Subscription-" + uid,
 		Type:       datastore.SubscriptionTypeAPI,
 		ProjectID:  project.UID,
 		SourceID:   source.UID,
@@ -61,8 +62,9 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	endpoint := seedEndpoint(t, db)
 	device := seedDevice(t, db)
 	subMap := map[string]*datastore.Subscription{}
+	var newSub *datastore.Subscription
 	for i := 0; i < 100; i++ {
-		newSub := generateSubscription(project, source, endpoint, device)
+		newSub = generateSubscription(project, source, endpoint, device)
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
 		subMap[newSub.UID] = newSub
 	}
@@ -72,10 +74,11 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		EndpointIDs []string
-		pageData    datastore.Pageable
-		expected    Expected
+		name             string
+		EndpointIDs      []string
+		SubscriptionName string
+		pageData         datastore.Pageable
+		expected         Expected
 	}{
 		{
 			name:     "Load Subscriptions Paged - 10 records",
@@ -83,6 +86,17 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 3,
+				},
+			},
+		},
+
+		{
+			name:             "Load Subscriptions Paged - 1 record - filter by name",
+			SubscriptionName: newSub.Name,
+			pageData:         datastore.Pageable{PerPage: 1, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					PerPage: 1,
 				},
 			},
 		},
@@ -121,7 +135,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			subs, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointIDs: tc.EndpointIDs}, tc.pageData)
+			subs, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointIDs: tc.EndpointIDs, SubscriptionName: tc.SubscriptionName}, tc.pageData)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)

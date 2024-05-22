@@ -8146,6 +8146,14 @@
 						}
 					},
 					{
+						"description": "Subscription name to filter by",
+						"in": "query",
+						"name": "name",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
