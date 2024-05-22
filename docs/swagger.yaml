@@ -4194,6 +4194,10 @@ paths:
           type: string
         name: endpointId
         type: array
+      - description: Subscription name to filter by
+        in: query
+        name: name
+        type: string
       - description: A pagination cursor to fetch the next page of a list
         example: 01H0JA5MEES38RRK3HTEJC647K
         in: query

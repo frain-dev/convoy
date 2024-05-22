@@ -80,6 +80,9 @@ func (us *UpdateSubscription) Validate() error {
 type QueryListSubscription struct {
 	// A list of endpointIDs to filter by
 	EndpointIDs []string `json:"endpointId"`
+
+	// Subscription name to filter by
+	Name string `json:"name"`
 	Pageable
 }
 
@@ -96,7 +99,8 @@ func (qs *QueryListSubscription) Transform(r *http.Request) *QueryListSubscripti
 	return &QueryListSubscriptionResponse{
 		Pageable: m.GetPageableFromContext(r.Context()),
 		FilterBy: &datastore.FilterBy{
-			EndpointIDs: getEndpointIDs(r),
+			EndpointIDs:      getEndpointIDs(r),
+			SubscriptionName: r.URL.Query().Get("name"),
 		},
 	}
 }
