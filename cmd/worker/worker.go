@@ -3,10 +3,11 @@ package worker
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/telemetry"
-	"net/http"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -318,6 +319,26 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if smtpPort != 0 {
 		c.SMTP.Port = smtpPort
+	}
+
+	// CONVOY_RETENTION_POLICY
+	retentionPolicy, err := cmd.Flags().GetString("retention-policy")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(retentionPolicy) {
+		c.RetentionPolicy.Policy = retentionPolicy
+	}
+
+	// CONVOY_RETENTION_POLICY_ENABLED
+	retentionPolicyEnabled, err := cmd.Flags().GetBool("retention-policy-enabled")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(retentionPolicy) {
+		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
 	}
 
 	return c, nil
