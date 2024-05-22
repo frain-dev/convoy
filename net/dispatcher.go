@@ -113,7 +113,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			res.IP = connInfo.Conn.RemoteAddr().String()
-			log.Infof("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
+			log.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
 		},
 	}
 
