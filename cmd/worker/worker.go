@@ -38,6 +38,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var smtpProvider string
 	var smtpUrl string
 	var smtpPort uint32
+	var retentionPolicy string
+	var retentionPolicyEnabled bool
 
 	cmd := &cobra.Command{
 		Use:   "worker",
@@ -211,6 +213,9 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
 	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "SMTP Port")
 
+	cmd.Flags().StringVar(&retentionPolicy, "retention-policy", "", "SMTP Port")
+	cmd.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "SMTP Port")
+
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
@@ -337,7 +342,7 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		return nil, err
 	}
 
-	if !util.IsStringEmpty(retentionPolicy) {
+	if retentionPolicyEnabled {
 		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
 	}
 
