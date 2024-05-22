@@ -90,6 +90,13 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	EnableProfiling: false,
+	Metrics: MetricsConfiguration{
+		IsEnabled: false,
+		Backend:   PrometheusMetricsProvider,
+		Prometheus: PrometheusMetricsConfiguration{
+			SampleTime: 5,
+		},
+	},
 }
 
 type DatabaseConfiguration struct {
@@ -275,6 +282,16 @@ type OnPremStorage struct {
 	Path string `json:"path" envconfig:"CONVOY_STORAGE_PREM_PATH"`
 }
 
+type MetricsConfiguration struct {
+	IsEnabled  bool                           `json:"metrics_enabled" envconfig:"CONVOY_METRICS_ENABLED"`
+	Backend    MetricsBackend                 `json:"metrics_backend" envconfig:"CONVOY_METRICS_BACKEND"`
+	Prometheus PrometheusMetricsConfiguration `json:"prometheus_metrics"`
+}
+
+type PrometheusMetricsConfiguration struct {
+	SampleTime uint64 `json:"sample_time"`
+}
+
 const (
 	envPrefix      string = "convoy"
 	OSSEnvironment string = "oss"
@@ -293,6 +310,10 @@ const (
 	TypesenseSearchProvider  SearchProvider          = "typesense"
 )
 
+const (
+	PrometheusMetricsProvider MetricsBackend = "prometheus"
+)
+
 type (
 	AuthProvider            string
 	QueueProvider           string
@@ -303,6 +324,7 @@ type (
 	DatabaseProvider        string
 	SearchProvider          string
 	FeatureFlagProvider     string
+	MetricsBackend          string
 )
 
 func (s SignatureHeaderProvider) String() string {
@@ -355,6 +377,7 @@ type Configuration struct {
 	StoragePolicy            StoragePolicyConfiguration   `json:"storage_policy"`
 	ConsumerPoolSize         int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 	EnableProfiling          bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	Metrics                  MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called
@@ -482,6 +505,16 @@ func validate(c *Configuration) error {
 
 	if err := ensureSSL(c.Server); err != nil {
 		return err
+	}
+
+	if c.Metrics.IsEnabled {
+		backend := c.Metrics.Backend
+		switch backend {
+		case PrometheusMetricsProvider:
+			break
+		default:
+			c.Metrics.IsEnabled = false
+		}
 	}
 
 	return nil

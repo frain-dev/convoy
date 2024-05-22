@@ -87,3 +87,11 @@ services:
         volumes:
             - ./typesense_data:/data/typesense
 
+    prometheus:
+        image: prom/prometheus:v2.24.0
+        volumes:
+            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+        ports:
+            - 9090:9090
+        restart: always
+

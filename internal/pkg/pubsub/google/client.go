@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"cloud.google.com/go/pubsub"
@@ -98,10 +99,15 @@ func (g *Google) consume() {
 			attributes = emptyBytes
 		}
 
+		mm := metrics.GetDPInstance()
+		mm.IncrementIngestTotal(g.source)
+
 		if err := g.handler(ctx, g.source, string(m.Data), attributes); err != nil {
 			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")
+			mm.IncrementIngestErrorsTotal(g.source)
 		} else {
 			m.Ack()
+			mm.IncrementIngestConsumedTotal(g.source)
 		}
 	})
 

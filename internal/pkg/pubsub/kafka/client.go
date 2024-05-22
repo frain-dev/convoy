@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -141,6 +142,9 @@ func (k *Kafka) consume() {
 				continue
 			}
 
+			mm := metrics.GetDPInstance()
+			mm.IncrementIngestTotal(k.source)
+
 			var d D = m.Headers
 
 			ctx := context.Background()
@@ -151,11 +155,15 @@ func (k *Kafka) consume() {
 
 			if err := k.handler(ctx, k.source, string(m.Value), headers); err != nil {
 				k.log.WithError(err).Errorf("failed to write message from kafka source %s with id %s to create event queue - kafka pub sub", k.source.Name, k.source.UID)
+				mm.IncrementIngestErrorsTotal(k.source)
 			} else {
 				// acknowledge the message
 				err := r.CommitMessages(ctx, m)
 				if err != nil {
 					k.log.WithError(err).Error("failed to commit message - kafka pub sub")
+					mm.IncrementIngestErrorsTotal(k.source)
+				} else {
+					mm.IncrementIngestConsumedTotal(k.source)
 				}
 			}
 		}
