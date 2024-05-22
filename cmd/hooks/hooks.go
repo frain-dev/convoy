@@ -4,10 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"io"
 	"os"
 	"time"
+
+	"github.com/frain-dev/convoy/util"
+
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 
 	dbhook "github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/listener"
@@ -328,6 +331,27 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Password: redisPassword,
 		Database: redisDatabase,
 		Port:     redisPort,
+	}
+
+	// CONVOY_RETENTION_POLICY
+	retentionPolicy, err := cmd.Flags().GetString("retention-policy")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(retentionPolicy) {
+		c.RetentionPolicy.Policy = retentionPolicy
+	}
+
+	// CONVOY_RETENTION_POLICY_ENABLED
+	isretentionPolicyEnabledSet := cmd.Flags().Changed("retention-policy-enabled")
+	if isretentionPolicyEnabledSet {
+		retentionPolicyEnabled, err := cmd.Flags().GetBool("retention-policy-enabled")
+		if err != nil {
+			return nil, err
+		}
+
+		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
 	}
 
 	// Feature flags
