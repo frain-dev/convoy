@@ -21,6 +21,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	@Input('action') action: 'update' | 'create' | 'view' = 'create';
 	@Input('isPortal') isPortal: 'true' | 'false' = 'false';
 	@Input('subscriptionId') subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
+	@Input('endpointId') endpointId?: string;
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
@@ -84,7 +85,13 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		this.projectType = this.token ? 'outgoing' : this.privateService.getProjectDetails?.type;
 
+		if (this.isPortal === 'true')
+			this.subscriptionForm.patchValue({
+				endpoint_id: this.endpointId
+			});
+
 		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
+
 		if (this.action === 'update') await this.getSubscriptionDetails();
 
 		this.isLoadingForm = false;

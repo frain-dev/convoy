@@ -14,6 +14,7 @@ import { CreateEndpointComponent } from 'src/app/private/components/create-endpo
 import { CreatePortalEndpointComponent } from '../create-endpoint/create-endpoint.component';
 import { EndpointSecretComponent } from 'src/app/private/pages/project/endpoints/endpoint-secret/endpoint-secret.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
+import { SubscriptionsComponent } from '../subscriptions/subscriptions.component';
 
 const routes: Routes = [{ path: '', component: AppComponent }];
 
@@ -34,7 +35,8 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		TagComponent,
 		EndpointSecretComponent,
 		CreatePortalEndpointComponent,
-        DialogDirective
+        DialogDirective,
+        SubscriptionsComponent
 	]
 })
 export class AppModule {}
