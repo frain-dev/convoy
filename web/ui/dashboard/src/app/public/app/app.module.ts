@@ -15,6 +15,7 @@ import { CreatePortalEndpointComponent } from '../create-endpoint/create-endpoin
 import { EndpointSecretComponent } from 'src/app/private/pages/project/endpoints/endpoint-secret/endpoint-secret.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { SubscriptionsComponent } from '../subscriptions/subscriptions.component';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 
 const routes: Routes = [{ path: '', component: AppComponent }];
 
@@ -36,7 +37,8 @@ const routes: Routes = [{ path: '', component: AppComponent }];
 		EndpointSecretComponent,
 		CreatePortalEndpointComponent,
         DialogDirective,
-        SubscriptionsComponent
+        SubscriptionsComponent,
+        StatusColorModule
 	]
 })
 export class AppModule {}

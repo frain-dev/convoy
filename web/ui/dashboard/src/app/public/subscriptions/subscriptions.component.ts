@@ -1,5 +1,5 @@
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -16,6 +16,7 @@ import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 import { CreateSubscriptionModule } from 'src/app/private/components/create-subscription/create-subscription.module';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
 	selector: 'convoy-subscriptions-list',
@@ -27,7 +28,7 @@ import { FormsModule } from '@angular/forms';
 export class SubscriptionsComponent implements OnInit {
 	@ViewChild('deleteDialog', { static: true }) deleteDialog!: ElementRef<HTMLDialogElement>;
 
-	@Input('endpoint') endpoint!: any;
+	@Input('endpointId') endpointId = this.route.snapshot.queryParams.endpointId;
 	@Input('portalDetails') portalDetails!: PORTAL_LINK;
 	@Output('closeModal') closeModal = new EventEmitter();
 
@@ -36,18 +37,22 @@ export class SubscriptionsComponent implements OnInit {
 	showSubscriptionForm = false;
 	subscriptionSearchString!: string;
 	action: 'update' | 'create' = 'create';
+	currentRoute = window.location.pathname.split('/').reverse()[0];
 	activeSubscription?: SUBSCRIPTION;
 	subscriptions?: { content: SUBSCRIPTION[]; pagination?: PAGINATION };
 	displayedSubscriptions?: { date: string; content: SUBSCRIPTION[] }[];
 
-	constructor(private privateService: PrivateService, private generalService: GeneralService) {}
+	token: string = this.route.snapshot.queryParams.token;
+
+	constructor(private privateService: PrivateService, private generalService: GeneralService, private location: Location, private route: ActivatedRoute) {}
 
 	ngOnInit() {
+		if (!this.endpointId) this.endpointId = this.route.snapshot.queryParams.endpointId;
 		this.getSubscriptions();
 	}
 
 	async getSubscriptions(requestDetails?: CURSOR & { name?: string }) {
-		const endpointId = this.endpoint.uid;
+		const endpointId = this.endpointId;
 		this.isLoadingSubscriptions = true;
 
 		try {
@@ -58,6 +63,12 @@ export class SubscriptionsComponent implements OnInit {
 
 			this.isLoadingSubscriptions = false;
 		} catch {}
+	}
+
+	openSubsriptionForm(action: 'create' | 'update') {
+		this.action = action;
+		this.showSubscriptionForm = true;
+		this.location.go(`/portal/subscriptions/${action === 'create' ? 'new' : this.activeSubscription?.uid}?token=${this.token}${action === 'create' ? '' : `&endpointId=${this.endpointId}`}`);
 	}
 
 	async deleteSubscripton() {
@@ -72,5 +83,10 @@ export class SubscriptionsComponent implements OnInit {
 		} catch {
 			this.isDeletingSubscription = false;
 		}
+	}
+
+	goBack(isForm?: boolean) {
+		isForm ? (this.showSubscriptionForm = false) : this.closeModal.emit();
+		this.location.back();
 	}
 }

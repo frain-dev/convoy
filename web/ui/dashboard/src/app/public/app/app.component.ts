@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { EVENT_DELIVERY } from 'src/app/models/event.model';
 import { PAGINATION } from 'src/app/models/global.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
@@ -24,6 +24,7 @@ export class AppComponent implements OnInit {
 	@ViewChild('subscriptionDropdown') dropdownComponent!: DropdownComponent;
 	token: string = this.route.snapshot.queryParams.token;
 	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
+	currentRoute = window.location.pathname.split('/').reverse()[0];
 	activeEndpoint?: PORTAL_ENDPOINT;
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
@@ -33,7 +34,7 @@ export class AppComponent implements OnInit {
 	portalDetails!: PORTAL_LINK;
 	endpoints: PORTAL_ENDPOINT[] = [];
 
-	constructor(private appService: AppService, private route: ActivatedRoute, private endpointService: EndpointsService, private generalService: GeneralService, private privateService: PrivateService, public location: Location) {}
+	constructor(private appService: AppService, private route: ActivatedRoute, private endpointService: EndpointsService, private generalService: GeneralService, private privateService: PrivateService, public location: Location, private router: Router) {}
 
 	ngOnInit(): void {
 		Promise.all([this.getPortalDetails(), this.getEndpoints()]).then(() => {
@@ -103,6 +104,12 @@ export class AppComponent implements OnInit {
 		} catch {
 			this.isTogglingEndpoint = false;
 		}
+	}
+
+	goToSubscriptionsPage(endpoint: ENDPOINT) {
+		this.activeEndpoint = endpoint;
+		this.showSubscriptionsList = true;
+		this.location.go(`/portal/subscriptions?token=${this.token}&endpointId=${this.activeEndpoint?.uid}`);
 	}
 
 	hideSubscriptionDropdown() {

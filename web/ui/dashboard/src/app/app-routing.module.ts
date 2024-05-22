@@ -15,9 +15,9 @@ const routes: Routes = [
 		path: 'portal/event-deliveries/:id',
 		loadChildren: () => import('./public/event-delivery/event-delivery.module').then(m => m.EventDeliveryModule)
 	},
-	{
-		path: 'portal/subscriptions/new',
-		loadChildren: () => import('./public/create-subscription/create-subscription.module').then(m => m.CreateSubscriptionPublicModule)
+    {
+		path: 'portal/subscriptions',
+		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
 	},
 	{
 		path: 'portal/subscriptions/:id',

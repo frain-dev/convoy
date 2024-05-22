@@ -1,5 +1,5 @@
 <div class="max-w-[1100px] w-full mx-auto pb-160px pt-40px">
-	<button convoy-button fill="text" class="!p-0 font-medium capitalize text-12 mb-30px" (click)="closeModal.emit()">
+	<button convoy-button fill="text" class="!p-0 font-medium capitalize text-12 mb-30px" (click)="goBack()">
 		<div class="block p-2px rounded-100px border border-new.primary-50 mr-8px">
 			<svg width="24" height="24" class="fill-neutral-10 scale-75">
 				<use xlink:href="#arrow-left-icon"></use>
@@ -17,14 +17,14 @@
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</button>
 		</form>
-		<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="action = 'create'; showSubscriptionForm = true" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
+		<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="openSubsriptionForm('create')" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
 			<img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
 			Add Subscription
 		</button>
 	</div>
 
 	<ul convoy-card class="mb-40px">
-		<ng-container *ngIf="isLoadingSubscriptions && subscriptions?.content && !subscriptions?.content?.length">
+		<ng-container *ngIf="isLoadingSubscriptions && !subscriptions?.content?.length">
 			<li class="flex justify-between p-16px">
 				<div class="flex max-w-[790px] justify-between w-full">
 					<div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
@@ -78,7 +78,7 @@
 
 					<ul dropdownOptions class="p-10px">
 						<li class="hover:bg-new.primary-25 transition-all duration-300 rounded-8px mb-4px" *ngIf="portalDetails?.can_manage_endpoint">
-							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="activeSubscription = subscription; action = 'update'; showSubscriptionForm = true">
+							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="activeSubscription = subscription; openSubsriptionForm('update')">
 								<svg width="16" height="16" class="mr-8px">
 									<use xlink:href="#edit-icon"></use>
 								</svg>
@@ -112,9 +112,9 @@
 	<app-delete-modal [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteSubscripton()"></app-delete-modal>
 </dialog>
 
-<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto" *ngIf="showSubscriptionForm">
+<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto" *ngIf="showSubscriptionForm || (currentRoute !== 'subscriptions' && currentRoute !== 'new')">
 	<div class="max-w-[770px] w-full mx-auto pt-40px">
-		<button convoy-button fill="text" class="!p-0 font-medium capitalize text-12" (click)="showSubscriptionForm = false">
+		<button convoy-button fill="text" class="!p-0 font-medium capitalize text-12" (click)="goBack(true)">
 			<div class="block p-2px rounded-100px border border-new.primary-50 mr-8px">
 				<svg width="24" height="24" class="fill-neutral-10 scale-75">
 					<use xlink:href="#arrow-left-icon"></use>
@@ -122,6 +122,6 @@
 			</div>
 			Back
 		</button>
-		<convoy-create-subscription [action]="action" isPortal="true" showAction="true" [endpointId]="endpoint.uid" [subscriptionId]="activeSubscription?.uid" (onAction)="getSubscriptions(); showSubscriptionForm = false"></convoy-create-subscription>
+		<convoy-create-subscription [action]="action" isPortal="true" showAction="true" [endpointId]="endpointId" [subscriptionId]="activeSubscription?.uid" (onAction)="getSubscriptions(); goBack(true)"></convoy-create-subscription>
 	</div>
 </div>

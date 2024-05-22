@@ -41,7 +41,7 @@
 				<div class="flex text-14 text-neutral-10 max-w-[790px] w-full gap-24px items-center min-h-[28px]">
 					<div class="flex items-center max-w-[150px] w-full">
 						<div class="mr-8px truncate">{{ endpoint?.name }}</div>
-						<div convoy-tag size="sm" color="success">{{ endpoint?.status }}</div>
+						<div convoy-tag size="sm" [color]="endpoint.status | statuscolor">{{ endpoint?.status }}</div>
 					</div>
 					<div class="max-w-xs whitespace-nowrap text-ellipsis overflow-hidden">{{ endpoint?.url }}</div>
 					<div class="md:flex hidden whitespace-nowrap">
@@ -66,7 +66,7 @@
 							</button>
 						</li>
 						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
-							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="activeEndpoint = endpoint; showSubscriptionsList = true">
+							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="goToSubscriptionsPage(endpoint)">
 								<svg width="16" height="16" class="mr-8px stroke-neutral-12 scale-90">
 									<use xlink:href="#subscriptions-icon"></use>
 								</svg>
@@ -302,8 +302,8 @@
 		<convoy-create-portal-endpoint (onAction)="onCloseEndpointForm()" [endpoint]="activeEndpoint"></convoy-create-portal-endpoint>
 	</div>
 
-	<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto" *ngIf="showSubscriptionsList">
-		<convoy-subscriptions-list [endpoint]="activeEndpoint" [portalDetails]="portalDetails" (closeModal)="showSubscriptionsList = false"></convoy-subscriptions-list>
+	<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto" *ngIf="showSubscriptionsList || currentRoute !== 'portal'">
+		<convoy-subscriptions-list [endpointId]="activeEndpoint?.uid" [portalDetails]="portalDetails" (closeModal)="showSubscriptionsList = false"></convoy-subscriptions-list>
 	</div>
 </div>
 

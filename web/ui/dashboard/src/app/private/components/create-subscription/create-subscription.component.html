@@ -190,7 +190,7 @@
 
 	<div class="flex justify-end mt-40px pb-40px" [ngClass]="{ hidden: showAction === 'false' }">
 		<button convoy-button size="sm" [disabled]="isCreatingSubscription || subscriptionForm.disabled">
-			{{ action == 'update' ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
+			{{ action == 'update' || subscriptionId ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100" *ngIf="action === 'create'">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
