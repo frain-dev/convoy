@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -137,6 +138,9 @@ func (k *Amqp) consume() {
 		return
 	}
 
+	mm := metrics.GetDPInstance()
+	mm.IncrementIngestTotal(k.source)
+
 	for d := range messages {
 		headers, err := msgpack.EncodeMsgPack(d.Headers)
 		if err != nil {
@@ -147,11 +151,16 @@ func (k *Amqp) consume() {
 			k.log.WithError(err).Error("failed to write message to create event queue - amqp pub sub")
 			if err := d.Ack(false); err != nil {
 				k.log.WithError(err).Error("failed to ack message")
+				mm.IncrementIngestErrorsTotal(k.source)
+			} else {
+				mm.IncrementIngestConsumedTotal(k.source)
 			}
 		} else {
+
 			// Reject the message and send it to DLQ
 			if err := d.Nack(false, false); err != nil {
 				k.log.WithError(err).Error("failed to nack message")
+				mm.IncrementIngestErrorsTotal(k.source)
 			}
 		}
 	}

@@ -174,7 +174,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			lo.Infof("Starting Convoy workers...")
 			consumer.Start()
 
-			metrics.RegisterQueueMetrics(a.Queue)
+			metrics.RegisterQueueMetrics(a.Queue, a.DB)
 
 			router := chi.NewRouter()
 			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))

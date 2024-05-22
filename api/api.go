@@ -478,7 +478,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 	router.HandleFunc("/*", reactRootHandler)
 
-	metrics.RegisterQueueMetrics(a.A.Queue)
+	metrics.RegisterQueueMetrics(a.A.Queue, a.A.DB)
 	prometheus.MustRegister(metrics.RequestDuration())
 	a.Router = router
 
