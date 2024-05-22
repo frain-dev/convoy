@@ -5,7 +5,11 @@ import (
 	"errors"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
+
+var ErrRateLimitExceeded = errors.New("rate limit exceeded")
 
 type SlidingWindowRateLimiter struct {
 	db database.Database
@@ -31,28 +35,42 @@ func (p *SlidingWindowRateLimiter) takeToken(ctx context.Context, key string, ra
 
 	tx, err := p.db.GetDB().BeginTxx(ctx, nil)
 	if err != nil {
-		log.Infof("ratelimit failed: %v", err)
 		return nil
 	}
 
 	var allowed bool
 	err = tx.QueryRowContext(ctx, `select convoy.take_token($1, $2, $3)::bool;`, key, rate, windowSize).Scan(&allowed)
 	if err != nil {
-		log.Infof("ratelimit failed: %v", err)
-		return nil
+		return postgresErrorTransform(tx, err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			log.Infof("update failed: %v, unable to rollback: %v", err, rollbackErr)
+			log.Infof("failed: %v, unable to rollback: %v", err, rollbackErr)
 		}
 		return nil
 	}
 
 	if !allowed {
-		return errors.New("rate limit error")
+		return ErrRateLimitExceeded
 	}
 
 	return nil
+}
+
+func postgresErrorTransform(tx *sqlx.Tx, err error) error {
+	if rollbackErr := tx.Rollback(); rollbackErr != nil {
+		log.Infof("failed: %v, unable to rollback: %v", err, rollbackErr)
+	}
+
+	var pgErr *pq.Error
+	ok := errors.As(err, &pgErr)
+	if ok {
+		if pgErr.Code == "23505" {
+			return ErrRateLimitExceeded
+		}
+	}
+
+	return err
 }
