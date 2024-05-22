@@ -9,12 +9,14 @@ DECLARE
     can_take BOOLEAN;
     row RECORD;
 BEGIN
+    next_min := current_timestamp + make_interval(secs := _bucket_size);
+
     SELECT expires_at, tokens FROM convoy.token_bucket WHERE key = _key FOR UPDATE SKIP LOCKED LIMIT 1 INTO row;
     if row is null then
-        return false;
+        INSERT INTO convoy.token_bucket (key, rate, expires_at)
+        VALUES (_key, _rate, next_min);
+        return true;
     end if;
-
-    next_min := current_timestamp + make_interval(secs := _bucket_size);
 
     IF current_timestamp < row.expires_at AND row.tokens = _rate THEN
         RETURN FALSE;
@@ -41,13 +43,6 @@ BEGIN
         updated_at = DEFAULT
     WHERE key = _key
     RETURNING TRUE INTO can_take;
-
-    -- Insert if no record found
-    IF NOT FOUND THEN
-        INSERT INTO convoy.token_bucket (key, rate, expires_at)
-        VALUES (_key, _rate, next_min);
-        return true;
-    END IF;
 
     RETURN can_take;
 END;
