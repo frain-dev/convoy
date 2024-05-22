@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
 
@@ -131,6 +132,9 @@ func (s *Sqs) consume() {
 				continue
 			}
 
+			mm := metrics.GetDPInstance()
+			mm.IncrementIngestTotal(s.source)
+
 			var wg sync.WaitGroup
 			for _, message := range output.Messages {
 				wg.Add(1)
@@ -161,7 +165,9 @@ func (s *Sqs) consume() {
 
 					if err := s.handler(context.Background(), s.source, *m.Body, attributes); err != nil {
 						s.log.WithError(err).Error("failed to write message to create event queue")
+						mm.IncrementIngestErrorsTotal(s.source)
 					} else {
+						mm.IncrementIngestConsumedTotal(s.source)
 						_, err = svc.DeleteMessage(&sqs.DeleteMessageInput{
 							QueueUrl:      queueURL,
 							ReceiptHandle: m.ReceiptHandle,
