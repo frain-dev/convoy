@@ -64,7 +64,18 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		data.FilterBy.EndpointIDs = endpointIDs
+		// verify that the listed endpoints are all in this portal link
+		if len(data.FilterBy.EndpointIDs) != 0 {
+			for _, endpointID := range data.FilterBy.EndpointIDs {
+				if !util.StringSliceContains(endpointIDs, endpointID) {
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+					return
+				}
+			}
+		} else {
+			data.FilterBy.EndpointIDs = endpointIDs
+		}
+
 	}
 
 	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
