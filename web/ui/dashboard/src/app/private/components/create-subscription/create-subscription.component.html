@@ -49,7 +49,7 @@
 			<button size="sm" convoy-button fill="text" type="button" class="mt-24px font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Create New Endpoint</button>
 		</div>
 
-		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)" class="block mb-70px">
+		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)" type="subscription" class="block mb-70px">
 			<button size="sm" convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-40px font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Use Existing Endpoint</button>
 		</convoy-create-endpoint>
 	</ng-container>
@@ -190,7 +190,7 @@
 
 	<div class="flex justify-end mt-40px pb-40px" [ngClass]="{ hidden: showAction === 'false' }">
 		<button convoy-button size="sm" [disabled]="isCreatingSubscription || subscriptionForm.disabled">
-			{{ action == 'update' || subscriptionId ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
+			{{ action == 'update' || isUpdateAction ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100" *ngIf="action === 'create'">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>

@@ -1,13 +1,4 @@
-<div class="max-w-[1100px] w-full mx-auto pb-160px pt-40px">
-	<button convoy-button fill="text" class="!p-0 font-medium capitalize text-12 mb-30px" (click)="goBack()">
-		<div class="block p-2px rounded-100px border border-new.primary-50 mr-8px">
-			<svg width="24" height="24" class="fill-neutral-10 scale-75">
-				<use xlink:href="#arrow-left-icon"></use>
-			</svg>
-		</div>
-		Back
-	</button>
-
+<div class="max-w-[1300px] w-full mx-auto px-24px pb-100px pt-80px">
 	<h2 class="font-medium text-14 text-neutral-10 mb-24px">Subscriptions</h2>
 	<div class="flex justify-between items-center mb-12px">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getSubscriptions({ name: subscriptionSearchString })">
@@ -17,7 +8,7 @@
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</button>
 		</form>
-		<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="openSubsriptionForm('create')" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
+		<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="openSubsriptionForm('create')">
 			<img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
 			Add Subscription
 		</button>
@@ -112,8 +103,8 @@
 	<app-delete-modal [isLoading]="isDeletingSubscription" [deleteText]="'delete “' + activeSubscription?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteSubscripton()"></app-delete-modal>
 </dialog>
 
-<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto" *ngIf="showSubscriptionForm || (currentRoute !== 'subscriptions' && currentRoute !== 'new')">
-	<div class="max-w-[770px] w-full mx-auto pt-40px">
+<div class="fixed top-0 left-0 right-0 bottom-0 bg-[#fff] z-20 pb-100px overflow-auto" *ngIf="showSubscriptionForm || currentRoute === 'new' || (currentRoute !== 'subscriptions' && currentRoute !== 'new')">
+	<div class="max-w-[900px] w-full mx-auto pt-40px">
 		<button convoy-button fill="text" class="!p-0 font-medium capitalize text-12" (click)="goBack(true)">
 			<div class="block p-2px rounded-100px border border-new.primary-50 mr-8px">
 				<svg width="24" height="24" class="fill-neutral-10 scale-75">

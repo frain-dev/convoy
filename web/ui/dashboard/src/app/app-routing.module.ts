@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-
 const routes: Routes = [
 	{
 		path: '',
@@ -9,19 +8,33 @@ const routes: Routes = [
 	},
 	{
 		path: 'portal',
-		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
-	},
-	{
-		path: 'portal/event-deliveries/:id',
-		loadChildren: () => import('./public/event-delivery/event-delivery.module').then(m => m.EventDeliveryModule)
-	},
-    {
-		path: 'portal/subscriptions',
-		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
-	},
-	{
-		path: 'portal/subscriptions/:id',
-		loadChildren: () => import('./public/app/app.module').then(m => m.AppModule)
+		loadComponent: () => import('./portal/portal.component').then(m => m.PortalComponent),
+		children: [
+			{
+				path: '',
+				loadComponent: () => import('./portal/event-deliveries/event-deliveries.component').then(m => m.EventDeliveriesComponent)
+			},
+			{
+				path: 'endpoints',
+				loadComponent: () => import('./portal/endpoints/endpoints.component').then(m => m.EndpointsComponent)
+			},
+			{
+				path: 'endpoints/:id',
+				loadComponent: () => import('./portal/endpoints/endpoints.component').then(m => m.EndpointsComponent)
+			},
+			{
+				path: 'subscriptions',
+				loadComponent: () => import('./portal/subscriptions/subscriptions.component').then(m => m.SubscriptionsComponent)
+			},
+			{
+				path: 'subscriptions/:id',
+				loadComponent: () => import('./portal/subscriptions/subscriptions.component').then(m => m.SubscriptionsComponent)
+			},
+			{
+				path: 'event-deliveries/:id',
+				loadComponent: () => import('./portal/event-delivery/event-delivery.component').then(m => m.EventDeliveryComponent)
+			}
+		]
 	},
 	{
 		path: '',
