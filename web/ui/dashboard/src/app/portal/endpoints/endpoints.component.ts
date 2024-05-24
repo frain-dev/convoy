@@ -1,40 +1,50 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { EVENT_DELIVERY } from 'src/app/models/event.model';
-import { PAGINATION } from 'src/app/models/global.model';
-import { SUBSCRIPTION } from 'src/app/models/subscription';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
-import { AppService } from './app.service';
-import { GeneralService } from 'src/app/services/general/general.service';
+import { CommonModule, Location } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
+import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
+import { SUBSCRIPTION } from 'src/app/models/subscription';
+import { GeneralService } from 'src/app/services/general/general.service';
 import { EndpointsService } from 'src/app/private/pages/project/endpoints/endpoints.service';
+import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
+import { EndpointSecretComponent } from 'src/app/private/pages/project/endpoints/endpoint-secret/endpoint-secret.component';
+import { PortalService } from '../portal.service';
 import { PrivateService } from 'src/app/private/private.service';
-import { Location } from '@angular/common';
+import { TagComponent } from 'src/app/components/tag/tag.component';
+import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
+import { CardComponent } from 'src/app/components/card/card.component';
+import { ButtonComponent } from 'src/app/components/button/button.component';
+import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
+import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 
 interface PORTAL_ENDPOINT extends ENDPOINT {
 	subscription?: SUBSCRIPTION;
 }
-
 @Component({
-	selector: 'app-app',
-	templateUrl: './app.component.html',
-	styleUrls: ['./app.component.scss']
+	selector: 'convoy-endpoints',
+	standalone: true,
+	imports: [CommonModule, DialogDirective, EndpointSecretComponent, TagComponent, StatusColorModule, CardComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent, CreateEndpointComponent, PaginationComponent],
+	templateUrl: './endpoints.component.html',
+	styleUrls: ['./endpoints.component.scss']
 })
-export class AppComponent implements OnInit {
+export class EndpointsComponent implements OnInit {
 	@ViewChild('subscriptionDropdown') dropdownComponent!: DropdownComponent;
 	token: string = this.route.snapshot.queryParams.token;
-	eventDeliveries!: { content: EVENT_DELIVERY[]; pagination: PAGINATION };
+	currentRoute = window.location.pathname.split('/').reverse()[0];
 	activeEndpoint?: PORTAL_ENDPOINT;
 	eventDeliveryFilteredByEventId!: string;
 	isloadingSubscriptions = false;
 	showCreateEndpoint = false;
+	showSubscriptionsList = false;
 	isTogglingEndpoint = false;
 	portalDetails!: PORTAL_LINK;
 	endpoints: PORTAL_ENDPOINT[] = [];
+	action: 'create' | 'update' = 'create';
 
-	constructor(private appService: AppService, private route: ActivatedRoute, private endpointService: EndpointsService, private generalService: GeneralService, private privateService: PrivateService, public location: Location) {}
+	constructor(private route: ActivatedRoute, private generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router) {}
 
 	ngOnInit(): void {
+		console.log(this.currentRoute);
 		Promise.all([this.getPortalDetails(), this.getEndpoints()]).then(() => {
 			this.activeEndpoint = this.endpoints.find(endpoint => endpoint.uid === this.route.snapshot.queryParams.endpointId);
 			this.showCreateEndpoint = !!this.route.snapshot.queryParams.endpointId;
@@ -43,7 +53,7 @@ export class AppComponent implements OnInit {
 
 	async getPortalDetails() {
 		try {
-			const portalLinkDetails = await this.appService.getPortalDetail();
+			const portalLinkDetails = await this.portalService.getPortalDetail();
 			this.portalDetails = portalLinkDetails.data;
 		} catch (_error) {}
 	}
@@ -59,14 +69,12 @@ export class AppComponent implements OnInit {
 			this.endpoints = this.endpoints.map(endpoint => {
 				return { ...endpoint, subscription: subscriptions.data.content.find((subscription: SUBSCRIPTION) => subscription.endpoint_metadata?.uid === endpoint.uid) };
 			});
+
+			console.log(this.endpoints);
 			this.isloadingSubscriptions = false;
 		} catch (_error) {
 			this.isloadingSubscriptions = false;
 		}
-	}
-
-	getEventDeliveries(eventId: string) {
-		this.eventDeliveryFilteredByEventId = eventId;
 	}
 
 	hasFilter(filterObject: { headers: Object; body: Object }): boolean {
@@ -97,19 +105,27 @@ export class AppComponent implements OnInit {
 		try {
 			const response = await this.endpointService.toggleEndpoint(endpointDetails?.uid);
 			this.endpoints[subscriptionIndex] = { ...this.endpoints[subscriptionIndex], ...response.data };
-			this.generalService.showNotification({ message: `${endpointDetails?.title} status updated successfully`, style: 'success' });
+			this.generalService.showNotification({ message: `${endpointDetails?.name || endpointDetails?.title} status updated successfully`, style: 'success' });
 			this.isTogglingEndpoint = false;
 		} catch {
 			this.isTogglingEndpoint = false;
 		}
 	}
 
+	goToSubscriptionsPage(endpoint: ENDPOINT) {
+		this.activeEndpoint = endpoint;
+		this.showSubscriptionsList = true;
+		this.router.navigate(['/portal/subscriptions'], { queryParams: { token: this.token, endpointId: this.activeEndpoint?.uid } });
+	}
+
 	hideSubscriptionDropdown() {
 		this.dropdownComponent.show = false;
 	}
 
-	onClickAddEndpoint() {
+	openEndpointForm(action: 'create' | 'update') {
+		this.action = action;
 		this.showCreateEndpoint = true;
+		this.location.go(`/portal/endpoints/${action === 'create' ? 'new' : this.activeEndpoint?.uid}?token=${this.token}`);
 		document.getElementsByTagName('body')[0].classList.add('overflow-hidden');
 	}
 
@@ -117,7 +133,14 @@ export class AppComponent implements OnInit {
 		this.activeEndpoint = undefined;
 		this.getEndpoints();
 		this.showCreateEndpoint = false;
-		this.location.go('/portal?token=' + this.token);
+		this.location.go('/portal/endpoints?token=' + this.token);
+	}
+
+	goBack(isForm?: boolean) {
+		if (isForm) this.showCreateEndpoint = false;
+		this.activeEndpoint = undefined;
+		this.getEndpoints();
+		this.location.back();
 		document.getElementsByTagName('body')[0].classList.remove('overflow-hidden');
 	}
 }
