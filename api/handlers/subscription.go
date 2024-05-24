@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"net/http"
-	"slices"
 
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/transform"
@@ -196,7 +195,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !slices.Contains(endpointIDs, sub.EndpointID) {
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
 			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 			return
 		}
@@ -267,7 +266,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !slices.Contains(endpointIDs, sub.EndpointID) {
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
 			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 			return
 		}
@@ -345,7 +344,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !slices.Contains(endpointIDs, sub.EndpointID) {
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
 			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
 			return
 		}
