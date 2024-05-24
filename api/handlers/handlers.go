@@ -96,6 +96,11 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	return project, nil
 }
 
+func (h *Handler) isPortaLinkReq(r *http.Request) bool {
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	return h.IsReqWithPortalLinkToken(authUser)
+}
+
 func (h *Handler) retrieveHost() (string, error) {
 	cfg, err := config.Get()
 	if err != nil {
