@@ -3,10 +3,13 @@ package worker
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/loader"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/telemetry"
-	"net/http"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -108,6 +111,18 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
+			interval := 4
+
+			subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger)
+			subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
+
+			err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
+			if err != nil {
+				return err
+			}
+
+			go memorystore.DefaultStore.Sync(ctx, interval)
+
 			newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
 				telemetry.OptionTracker(counter),
 				telemetry.OptionBackend(pb),
@@ -137,7 +152,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				eventDeliveryRepo,
 				a.Queue,
 				subRepo,
-				deviceRepo), newTelemetry)
+				deviceRepo,
+				subscriptionsTable), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 				endpointRepo,

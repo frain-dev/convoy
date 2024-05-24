@@ -2,10 +2,11 @@ package agent
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/internal/telemetry"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/telemetry"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api"
@@ -16,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/server"
@@ -68,7 +70,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			err = startWorkerComponent(ctx, a)
+			err = startWorkerComponent(ctx, a, interval)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
 				return err
@@ -183,7 +185,7 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 	return nil
 }
 
-func startWorkerComponent(ctx context.Context, a *cli.App) error {
+func startWorkerComponent(ctx context.Context, a *cli.App, interval int) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
@@ -211,6 +213,14 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	configuration, err := configRepo.LoadConfiguration(context.Background())
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to instance configuration")
+		return err
+	}
+
+	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger)
+	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
+
+	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
+	if err != nil {
 		return err
 	}
 
@@ -254,7 +264,8 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo), newTelemetry)
+		deviceRepo,
+		subscriptionsTable), newTelemetry)
 
 	go task.QueueStuckEventDeliveries(ctx, eventDeliveryRepo, a.Queue)
 

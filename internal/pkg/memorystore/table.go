@@ -101,6 +101,18 @@ func (t *Table) GetKeys() []string {
 	return keys
 }
 
+func (t *Table) GetItems() []*Row {
+	t.Lock()
+	defer t.Unlock()
+
+	var rows []*Row
+	for _, row := range t.rows {
+		rows = append(rows, row)
+	}
+
+	return rows
+}
+
 func (t *Table) Sync(ctx context.Context) error {
 	return t.syncer.SyncChanges(ctx, t)
 }
