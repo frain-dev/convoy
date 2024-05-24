@@ -5,6 +5,10 @@ import (
 	"sync"
 )
 
+type ITable interface {
+	GetItems() []*Row
+}
+
 type Syncer interface {
 	SyncChanges(context.Context, *Table) error
 }

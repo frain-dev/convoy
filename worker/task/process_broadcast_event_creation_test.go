@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -59,6 +60,26 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
+				st, _ := args.subTable.(*mocks.MockITable)
+				st.EXPECT().GetItems().Return([]*memorystore.Row{
+					memorystore.NewRow("sub-1", datastore.Subscription{
+						UID:        "sub-1",
+						Name:       "test-sub",
+						Type:       datastore.SubscriptionTypeAPI,
+						ProjectID:  "project-id-1",
+						EndpointID: "endpoint-id-1",
+						FilterConfig: &datastore.FilterConfiguration{
+							EventTypes: []string{"*"},
+						},
+						AlertConfig:     nil,
+						RetryConfig:     nil,
+						RateLimitConfig: nil,
+					}),
+				})
+
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+
 				d, _ := args.db.(*mocks.MockDatabase)
 				d.EXPECT().BeginTx(gomock.Any())
 				d.EXPECT().Rollback(gomock.Any(), gomock.Any())
@@ -75,36 +96,6 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 					},
 				}
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", "project-id-1").Times(1).Return(endpoint, nil)
-
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := []datastore.Subscription{
-					{
-						UID:        "sub-1",
-						Name:       "test-sub",
-						Type:       datastore.SubscriptionTypeAPI,
-						ProjectID:  "project-id-1",
-						EndpointID: "endpoint-id-1",
-						FilterConfig: &datastore.FilterConfiguration{
-							EventTypes: []string{"*"},
-						},
-						AlertConfig:     nil,
-						RetryConfig:     nil,
-						RateLimitConfig: nil,
-					},
-				}
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-
-				s.EXPECT().LoadSubscriptionsPaged(gomock.Any(), "project-id-1", &datastore.FilterBy{}, datastore.Pageable{
-					PerPage:    3500,
-					Direction:  datastore.Next,
-					NextCursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
-				}).Times(1).Return(subscriptions, datastore.PaginationData{
-					PerPage:         3500,
-					HasNextPage:     false,
-					HasPreviousPage: false,
-					PrevPageCursor:  "",
-					NextPageCursor:  "",
-				}, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), "project-id-1", "idem-key-1").Times(1).Return(nil, nil)
@@ -139,7 +130,8 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessBroadcastEventCreation(args.db, args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
+			fn := ProcessBroadcastEventCreation(args.db, args.endpointRepo,
+				args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.subTable)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

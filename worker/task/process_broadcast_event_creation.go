@@ -21,7 +21,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, subscriptionsTable *memorystore.Table) func(context.Context, *asynq.Task) error {
+func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, subscriptionsTable memorystore.ITable) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var broadcastEvent models.BroadcastEvent
 
@@ -54,7 +54,7 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 		}
 
 		subRows := subscriptionsTable.GetItems()
-		subscriptions := getSusbcriptionsFromRows(subRows)
+		subscriptions := getSubcriptionsFromRows(subRows)
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
@@ -129,7 +129,7 @@ func getAllSubscriptions(ctx context.Context, subRepo datastore.SubscriptionRepo
 	return subscriptions, nil
 }
 
-func getSusbcriptionsFromRows(rows []*memorystore.Row) []datastore.Subscription {
+func getSubcriptionsFromRows(rows []*memorystore.Row) []datastore.Subscription {
 	var subscriptions []datastore.Subscription
 
 	for _, row := range rows {
