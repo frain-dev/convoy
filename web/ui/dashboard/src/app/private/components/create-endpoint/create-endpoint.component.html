@@ -198,12 +198,7 @@
 	</div>
 
 	<div class="flex justify-end mt-40px mb-60px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button *ngIf="!editMode" [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">
-			{{ savingEndpoint ? 'Creating Endpoint..' : 'Create Endpoint' }}
-		</button>
-		<button convoy-button *ngIf="editMode" [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">
-			{{ savingEndpoint ? 'Updating Endpoint..' : 'Update Endpoint' }}
-		</button>
+		<button convoy-button [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">{{ editMode || isUpdateAction ? 'Updat' : 'Creat' }}{{ savingEndpoint ? 'ing' : 'e' }} Endpoint{{ savingEndpoint ? '...' : '' }}</button>
 	</div>
 </div>
 

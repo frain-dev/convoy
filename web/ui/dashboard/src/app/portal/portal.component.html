@@ -1,0 +1,22 @@
+<div class="w-full border-b border-b-new.primary-50 fixed top-0 z-[12] bg-white-100">
+	<nav class="flex items-center justify-between max-w-[1300px] m-auto px-24px py-16px">
+		<ul class="flex items-center justify-between w-full relative">
+			<div class="flex items-center gap-6px">
+				<li *ngFor="let nav of sideBarItems" class="transition-all duration-200 z-[1]">
+					<a
+						[routerLink]="'.' + nav.route"
+						[queryParams]="{ token }"
+						routerLinkActive="!text-new.primary-400 on hover:bg-transparent"
+						#route="routerLinkActive"
+						class="nav-tab text-neutral-10 rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-neutral-a2"
+					>
+						<span class="text-12 transition-all duration-200 whitespace-nowrap">{{ nav.name }}</span>
+					</a>
+				</li>
+			</div>
+
+			<div class="absolute w-122px left-0 h-[36px] bg-new.primary-25 rounded-22px z-0 transition-all duration-300" [style]="'left: ' + activeTab?.offsetLeft + 'px; width: ' + activeTab?.offsetWidth + 'px'"></div>
+		</ul>
+	</nav>
+</div>
+<router-outlet></router-outlet>
