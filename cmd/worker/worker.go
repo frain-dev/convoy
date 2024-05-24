@@ -31,6 +31,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var workerPort uint32
 	var logLevel string
 	var consumerPoolSize int
+	var interval int
 
 	var smtpSSL bool
 	var smtpUsername string
@@ -110,8 +111,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Logger.WithError(err).Fatal("Failed to instance configuration")
 				return err
 			}
-
-			interval := 4
 
 			subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger)
 			subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
@@ -229,6 +228,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
+	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
 
 	return cmd
 }

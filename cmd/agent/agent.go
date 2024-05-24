@@ -58,6 +58,9 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
+			// start sync configuration from the database.
+			go memorystore.DefaultStore.Sync(ctx, interval)
+
 			err = startServerComponent(ctx, a)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane server component: %v", err)
@@ -70,7 +73,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			err = startWorkerComponent(ctx, a, interval)
+			err = startWorkerComponent(ctx, a)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
 				return err
@@ -173,8 +176,6 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 		return err
 	}
 
-	go memorystore.DefaultStore.Sync(ctx, interval)
-
 	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger)
 	if err != nil {
 		return err
@@ -185,7 +186,7 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 	return nil
 }
 
-func startWorkerComponent(ctx context.Context, a *cli.App, interval int) error {
+func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")

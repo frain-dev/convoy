@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	perPage = 50
+	perPage = 1000
 )
 
 type SubscriptionLoader struct {
@@ -94,7 +94,7 @@ func (s *SubscriptionLoader) fetchSubscriptions(ctx context.Context) ([]datastor
 			defer wg.Done()
 
 			var subscriptions []datastore.Subscription
-			subscriptions, err = s.fetchSubscriptionBatch(ctx, subscriptions, projectID, "")
+			subscriptions, err = s.fetchSubscriptionBatch(ctx, subscriptions, projectID, "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
 				return
@@ -104,14 +104,15 @@ func (s *SubscriptionLoader) fetchSubscriptions(ctx context.Context) ([]datastor
 		}(projects[i].UID)
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
 
 	var allSubscriptions []datastore.Subscription
 	for projectSubs := range resultChan {
 		allSubscriptions = append(allSubscriptions, projectSubs...)
 	}
-
-	close(resultChan)
 
 	return allSubscriptions, nil
 }

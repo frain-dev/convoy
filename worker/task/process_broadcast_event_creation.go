@@ -53,13 +53,6 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			isDuplicate = len(events) > 0
 		}
 
-		//pageable := datastore.Pageable{
-		//	PerPage:    3500,
-		//	Direction:  datastore.Next,
-		//	NextCursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
-		//}
-
-		//subscriptions, err := getAllSubscriptions(cctx, subRepo, project.UID, pageable)
 		subRows := subscriptionsTable.GetItems()
 		subscriptions := getSusbcriptionsFromRows(subRows)
 
