@@ -1,10 +1,10 @@
 <div class="max-w-[1300px] w-full mx-auto px-24px pt-80px pb-100px">
 	<h2 class="font-medium text-14 text-neutral-10 mb-24px">Endpoints</h2>
 	<div class="flex justify-between items-center mb-12px">
-		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getEndpoints({ search: endpointSearchString })">
+		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getEndpoints({ q: endpointSearchString })">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
 			<input type="search" placeholder="Search endpoints" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="endpointSearchString" [ngModelOptions]="{ standalone: true }" />
-			<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0" class="transition-all duration-200" fill="text" (click)="getEndpoints({ search: endpointSearchString })" size="sm">
+			<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0" class="transition-all duration-200" fill="text" size="sm">
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</button>
 		</form>

@@ -50,7 +50,6 @@ export class EndpointsComponent implements OnInit {
 	constructor(private route: ActivatedRoute, private generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router) {}
 
 	ngOnInit(): void {
-		console.log(this.currentRoute);
 		Promise.all([this.getPortalDetails(), this.getEndpoints()]).then(() => {
 			this.activeEndpoint = this.endpoints.find(endpoint => endpoint.uid === this.route.snapshot.queryParams.endpointId);
 			this.showCreateEndpoint = !!this.route.snapshot.queryParams.endpointId;
@@ -64,7 +63,8 @@ export class EndpointsComponent implements OnInit {
 		} catch (_error) {}
 	}
 
-	async getEndpoints(requestDetails?: CURSOR & { search?: string }) {
+	async getEndpoints(requestDetails?: CURSOR & { q?: string }) {
+        console.log(requestDetails)
 		this.isloadingSubscriptions = true;
 		try {
 			const endpoints = await this.privateService.getEndpoints(requestDetails);
