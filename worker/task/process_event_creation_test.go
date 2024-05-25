@@ -3,9 +3,11 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/frain-dev/convoy/database"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -28,6 +30,7 @@ type args struct {
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
 	deviceRepo        datastore.DeviceRepository
+	subTable          memorystore.ITable
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
@@ -40,6 +43,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	db := mocks.NewMockDatabase(ctrl)
+	subTable := mocks.NewMockITable(ctrl)
 
 	return &args{
 		endpointRepo:      endpointRepo,
@@ -51,6 +55,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 		cache:             mockCache,
 		eventQueue:        mockQueuer,
 		subRepo:           subRepo,
+		subTable:          subTable,
 	}
 }
 

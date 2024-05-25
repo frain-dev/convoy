@@ -5,6 +5,10 @@ import (
 	"sync"
 )
 
+type ITable interface {
+	GetItems() []*Row
+}
+
 type Syncer interface {
 	SyncChanges(context.Context, *Table) error
 }
@@ -99,6 +103,18 @@ func (t *Table) GetKeys() []string {
 	}
 
 	return keys
+}
+
+func (t *Table) GetItems() []*Row {
+	t.Lock()
+	defer t.Unlock()
+
+	var rows []*Row
+	for _, row := range t.rows {
+		rows = append(rows, row)
+	}
+
+	return rows
 }
 
 func (t *Table) Sync(ctx context.Context) error {
