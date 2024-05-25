@@ -28,13 +28,15 @@
 				</convoy-create-source>
 			</div>
 		</ng-container>
+	</ng-container>
 
+	<ng-container *ngIf="(!endpointId && !isUpdateAction) || isPortal === 'false'">
 		<h3 class="font-semibold text-14 mt-40px">Endpoint</h3>
 		<p class="text-12 text-neutral-10 mt-6px">Endpoint this subscription routes events into.</p>
 		<div convoy-card class="px-24px py-24px mt-20px mb-70px" *ngIf="!showCreateEndpointForm">
 			<convoy-select
 				className="mb-0 mt-24px"
-				[options]="endPoints"
+				[options]="endpoints"
 				name="endpoint"
 				formControlName="endpoint_id"
 				errorMessage="Select or create an endpoint"

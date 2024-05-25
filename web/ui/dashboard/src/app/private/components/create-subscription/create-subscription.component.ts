@@ -50,7 +50,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	eventTags: string[] = [];
 	apps!: APP[];
 	sources!: SOURCE[];
-	endPoints: ENDPOINT[] = [];
 	showCreateSourceForm = false;
 	showCreateEndpointForm = false;
 	enableMoreConfig = false;
@@ -91,6 +90,8 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.patchValue({
 				endpoint_id: this.endpointId
 			});
+
+		if (this.isPortal === 'true' && !this.endpointId) this.getEndpoints();
 
 		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
 
@@ -156,8 +157,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	async getEndpoints(searchString?: string) {
 		try {
 			const response = await this.privateService.getEndpoints({ q: searchString });
-			this.endpoints = this.token ? response.data : response.data.content;
-			this.endPoints = this.token ? response.data : response.data.content;
+			this.endpoints = response.data.content;
 			return;
 		} catch (error) {
 			return error;
