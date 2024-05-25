@@ -8,6 +8,7 @@
 						[queryParams]="{ token }"
 						routerLinkActive="!text-new.primary-400 on hover:bg-transparent"
 						#route="routerLinkActive"
+                        [routerLinkActiveOptions]="{exact: true}"
 						class="nav-tab text-neutral-10 rounded-22px py-8px px-16px transition-all duration-200 font-medium hover:bg-neutral-a2"
 					>
 						<span class="text-12 transition-all duration-200 whitespace-nowrap">{{ nav.name }}</span>

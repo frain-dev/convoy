@@ -16,6 +16,9 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateEndpointComponent } from 'src/app/private/components/create-endpoint/create-endpoint.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
+import { CURSOR, PAGINATION } from 'src/app/models/global.model';
+import { FormsModule } from '@angular/forms';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 
 interface PORTAL_ENDPOINT extends ENDPOINT {
 	subscription?: SUBSCRIPTION;
@@ -23,7 +26,7 @@ interface PORTAL_ENDPOINT extends ENDPOINT {
 @Component({
 	selector: 'convoy-endpoints',
 	standalone: true,
-	imports: [CommonModule, DialogDirective, EndpointSecretComponent, TagComponent, StatusColorModule, CardComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent, CreateEndpointComponent, PaginationComponent],
+	imports: [CommonModule, DialogDirective, EndpointSecretComponent, TagComponent, StatusColorModule, CardComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent, CreateEndpointComponent, PaginationComponent, FormsModule, CopyButtonComponent],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
 })
@@ -38,8 +41,11 @@ export class EndpointsComponent implements OnInit {
 	showSubscriptionsList = false;
 	isTogglingEndpoint = false;
 	portalDetails!: PORTAL_LINK;
+	fetchedEndpoints?: { content: ENDPOINT[]; pagination?: PAGINATION };
+	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints: PORTAL_ENDPOINT[] = [];
 	action: 'create' | 'update' = 'create';
+	endpointSearchString = '';
 
 	constructor(private route: ActivatedRoute, private generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router) {}
 
@@ -58,19 +64,14 @@ export class EndpointsComponent implements OnInit {
 		} catch (_error) {}
 	}
 
-	async getEndpoints() {
+	async getEndpoints(requestDetails?: CURSOR & { search?: string }) {
 		this.isloadingSubscriptions = true;
 		try {
-			const endpoints = await this.privateService.getEndpoints();
+			const endpoints = await this.privateService.getEndpoints(requestDetails);
+			this.fetchedEndpoints = endpoints.data;
 			this.endpoints = endpoints.data.content;
-			const endpointIds = this.endpoints.map(endpoint => endpoint.uid);
+            this.displayedEndpoints = this.generalService.setContentDisplayed(endpoints.data.content);
 
-			const subscriptions = await this.privateService.getSubscriptions({ endpointId: endpointIds });
-			this.endpoints = this.endpoints.map(endpoint => {
-				return { ...endpoint, subscription: subscriptions.data.content.find((subscription: SUBSCRIPTION) => subscription.endpoint_metadata?.uid === endpoint.uid) };
-			});
-
-			console.log(this.endpoints);
 			this.isloadingSubscriptions = false;
 		} catch (_error) {
 			this.isloadingSubscriptions = false;

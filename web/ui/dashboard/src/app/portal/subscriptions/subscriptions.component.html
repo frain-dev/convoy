@@ -8,7 +8,7 @@
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</button>
 		</form>
-		<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="openSubsriptionForm('create')">
+		<button convoy-button fill="soft" class="py-4px px-10px rounded-8px text-12" (click)="openSubsriptionForm('create')" *ngIf="portalDetails?.can_manage_endpoint && portalDetails?.owner_id">
 			<img src="/assets/img/add-icon.svg" alt="add icon" class="mr-8px w-12px" />
 			Add Subscription
 		</button>
@@ -16,37 +16,25 @@
 
 	<ul convoy-card class="mb-40px">
 		<ng-container *ngIf="isLoadingSubscriptions && !subscriptions?.content?.length">
-			<li class="flex justify-between p-16px">
-				<div class="flex max-w-[790px] justify-between w-full">
+			<ng-container *ngFor="let i of [0, 1]">
+				<li class="px-4 py-14px">
+					<div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
+				</li>
+				<li class="flex items-center gap-36px p-16px" *ngFor="let i of [0, 1, 2]">
+					<div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
+					<div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
 					<div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
 					<div class="bg-neutral-a3 rounded-8px animate-pulse w-320px h-20px"></div>
-					<div class="flex">
-						<div class="bg-neutral-a3 mr-8px rounded-8px animate-pulse w-52px h-20px"></div>
-						<div class="bg-neutral-a3 mr-8px rounded-8px animate-pulse w-88px h-20px"></div>
-						<div class="bg-neutral-a3 rounded-8px animate-pulse w-94px h-20px"></div>
-					</div>
-				</div>
-				<div class="bg-neutral-a3 rounded-8px animate-pulse w-12px h-20px"></div>
-			</li>
-			<li class="flex justify-between p-16px">
-				<div class="flex max-w-[790px] justify-between w-full">
-					<div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
-					<div class="bg-neutral-a3 rounded-8px animate-pulse w-320px h-20px"></div>
-					<div class="flex">
-						<div class="bg-neutral-a3 mr-8px rounded-8px animate-pulse w-52px h-20px"></div>
-						<div class="bg-neutral-a3 mr-8px rounded-8px animate-pulse w-88px h-20px"></div>
-						<div class="bg-neutral-a3 rounded-8px animate-pulse w-94px h-20px"></div>
-					</div>
-				</div>
-				<div class="bg-neutral-a3 rounded-8px animate-pulse w-12px h-20px"></div>
-			</li>
+					<div class="bg-neutral-a3 rounded-8px animate-pulse w-12px h-20px ml-auto"></div>
+				</li>
+			</ng-container>
 		</ng-container>
 		<ng-container *ngFor="let subscriptionGroup of displayedSubscriptions; let i = index">
-			<li class="py-10px px-12px">
-				<div class="text-neutral-10 text-12 pl-10px">{{ subscriptionGroup.date }}</div>
+			<li class="py-10px px-22px">
+				<div class="text-neutral-10 text-12">{{ subscriptionGroup.date }}</div>
 			</li>
 
-			<li class="flex justify-between py-10px px-22px hover:bg-new.primary-25 transition-all duration-300 mb-12px last-of-type:mb-0 relative border-b border-neutral-4" *ngFor="let subscription of subscriptionGroup.content; let i = index">
+			<li class="flex justify-between py-12px px-22px hover:bg-new.primary-25 transition-all duration-300 last-of-type:mb-0 relative border-b border-new.primary-25" *ngFor="let subscription of subscriptionGroup.content; let i = index">
 				<div class="flex text-14 text-neutral-10 gap-36px items-center min-h-[28px]">
 					<div class="flex items-center min-w-200px gap-10px">
 						<div class="max-w-150px w-full truncate">{{ subscription?.name }}</div>
