@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 )
 
 const (
@@ -24,7 +23,9 @@ type SubscriptionLoader struct {
 	log log.StdLogger
 }
 
-func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger) *SubscriptionLoader {
+func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository,
+	projectRepo datastore.ProjectRepository,
+	log log.StdLogger) *SubscriptionLoader {
 	return &SubscriptionLoader{
 		log:         log,
 		subRepo:     subRepo,
@@ -41,7 +42,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		return err
 	}
 
-	var dSubKeys []string
+	var dSubKeys []memorystore.Key
 	for _, sub := range subscriptions {
 		key, err := s.generateSubKey(&sub)
 		if err != nil {
@@ -51,7 +52,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	}
 
 	// find new and updated rows
-	newRows := util.Difference(dSubKeys, mSubKeys)
+	newRows := memorystore.Difference(dSubKeys, mSubKeys)
 	if len(newRows) != 0 {
 		for _, idx := range newRows {
 			for _, sub := range subscriptions {
@@ -61,14 +62,14 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 				}
 
 				if key == idx {
-					_ = table.Add(idx, sub)
+					_ = table.Add(key, sub)
 				}
 			}
 		}
 	}
 
 	// find deleted rows
-	deletedRows := util.Difference(mSubKeys, dSubKeys)
+	deletedRows := memorystore.Difference(mSubKeys, dSubKeys)
 	if len(deletedRows) != 0 {
 		for _, idx := range deletedRows {
 			table.Delete(idx)
@@ -144,8 +145,8 @@ func (s *SubscriptionLoader) fetchSubscriptionBatch(ctx context.Context,
 	return subscriptions, nil
 }
 
-func (s *SubscriptionLoader) generateSubKey(sub *datastore.Subscription) (string, error) {
-	var hash string
+func (s *SubscriptionLoader) generateSubKey(sub *datastore.Subscription) (memorystore.Key, error) {
+	var hash memorystore.Key
 
 	bytes, err := json.Marshal(sub)
 	if err != nil {
@@ -157,5 +158,6 @@ func (s *SubscriptionLoader) generateSubKey(sub *datastore.Subscription) (string
 	hashBytes := sha256Hash.Sum(nil)
 	hashString := hex.EncodeToString(hashBytes)
 
-	return hashString, nil
+	hash = memorystore.NewKey(sub.ProjectID, hashString)
+	return hash, nil
 }

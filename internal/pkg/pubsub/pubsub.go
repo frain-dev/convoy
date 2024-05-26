@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
@@ -76,7 +77,7 @@ func createClient(source *datastore.Source, handler datastore.PubSubHandler, log
 	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)
 }
 
-func generateSourceKey(source *datastore.Source) string {
+func generateSourceKey(source *datastore.Source) memorystore.Key {
 	var hash string
 
 	if source.PubSub.Type == datastore.SqsPubSub {
@@ -102,5 +103,5 @@ func generateSourceKey(source *datastore.Source) string {
 	h := md5.Sum([]byte(hash))
 	hash = hex.EncodeToString(h[:])
 
-	return hash
+	return memorystore.NewKey(source.ProjectID, hash)
 }

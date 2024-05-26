@@ -2,10 +2,25 @@ package memorystore
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 )
+
+type Key string
+
+func NewKey(prefix, hash string) Key {
+	var key strings.Builder
+
+	key.WriteString(prefix)
+	key.WriteString(delim)
+	key.WriteString(hash)
+
+	return Key(key.String())
+}
+
+func (k Key) String() string {
+	return string(k)
+}
 
 const delim = ":"
 
@@ -28,14 +43,13 @@ func OptionSyncer(s Syncer) func(*Table) {
 type Table struct {
 	Syncer
 
-	namespace string
 	sync.RWMutex
-	rows   map[string]*Row
+	rows   map[Key]*Row
 	syncer Syncer
 }
 
-func NewTable(namespace string, opts ...Option) *Table {
-	t := &Table{namespace: namespace, rows: make(map[string]*Row)}
+func NewTable(opts ...Option) *Table {
+	t := &Table{rows: make(map[Key]*Row)}
 
 	for _, opt := range opts {
 		opt(t)
@@ -44,7 +58,7 @@ func NewTable(namespace string, opts ...Option) *Table {
 	return t
 }
 
-func (t *Table) Get(key string) *Row {
+func (t *Table) Get(key Key) *Row {
 	t.RLock()
 	defer t.RUnlock()
 
@@ -52,7 +66,7 @@ func (t *Table) Get(key string) *Row {
 }
 
 // Checks if an item exists in the table.
-func (t *Table) Exists(key string) bool {
+func (t *Table) Exists(key Key) bool {
 	t.RLock()
 	defer t.RUnlock()
 
@@ -60,8 +74,8 @@ func (t *Table) Exists(key string) bool {
 }
 
 // This assumes the caller has called Lock()
-func (t *Table) getInternal(key string) *Row {
-	value, ok := t.rows[t.generateNamespacedKey(key)]
+func (t *Table) getInternal(key Key) *Row {
+	value, ok := t.rows[key]
 	if !ok {
 		return nil
 	}
@@ -70,13 +84,13 @@ func (t *Table) getInternal(key string) *Row {
 }
 
 // This assumes the caller has called Lock()
-func (t *Table) existInternal(key string) bool {
-	_, ok := t.rows[t.generateNamespacedKey(key)]
+func (t *Table) existInternal(key Key) bool {
+	_, ok := t.rows[key]
 	return ok
 }
 
 // Add a new item if it doesn't exist.
-func (t *Table) Add(key string, value interface{}) *Row {
+func (t *Table) Add(key Key, value interface{}) *Row {
 	t.Lock()
 	defer t.Unlock()
 
@@ -85,26 +99,26 @@ func (t *Table) Add(key string, value interface{}) *Row {
 		return row
 	}
 
-	row = &Row{key: key, value: value}
-	t.rows[t.generateNamespacedKey(key)] = row
+	row = &Row{key: string(key), value: value}
+	t.rows[key] = row
 	return row
 }
 
 // Removes an item from the store.
-func (t *Table) Delete(key string) {
+func (t *Table) Delete(key Key) {
 	t.Lock()
 	defer t.Unlock()
 
-	delete(t.rows, t.generateNamespacedKey(key))
+	delete(t.rows, key)
 }
 
-func (t *Table) GetKeys() []string {
+func (t *Table) GetKeys() []Key {
 	t.RLock()
 	defer t.RUnlock()
 
-	var keys []string
+	var keys []Key
 	for k := range t.rows {
-		keys = append(keys, t.generateResourceKey(k))
+		keys = append(keys, k)
 	}
 
 	return keys
@@ -122,14 +136,22 @@ func (t *Table) GetItems() []*Row {
 	return rows
 }
 
-func (t *Table) generateNamespacedKey(key string) string {
-	return fmt.Sprintf("%s%s%s", t.namespace, delim, key)
-}
-
-func (t *Table) generateResourceKey(key string) string {
-	return strings.Split(key, delim)[1]
-}
-
 func (t *Table) Sync(ctx context.Context) error {
 	return t.syncer.SyncChanges(ctx, t)
+}
+
+func Difference(a, b []Key) []Key {
+	mb := make(map[Key]struct{}, len(b))
+	for _, x := range b {
+		mb[x] = struct{}{}
+	}
+
+	var diff []Key
+	for _, x := range a {
+		if _, found := mb[x]; !found {
+			diff = append(diff, x)
+		}
+	}
+
+	return diff
 }
