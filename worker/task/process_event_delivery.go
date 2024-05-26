@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -91,7 +90,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if err != nil {
 			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery id": data.EventDeliveryID}).
 				WithError(err).
-				Error(fmt.Errorf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second))
+				Debugf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second)
 
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
@@ -177,10 +176,8 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		})
 
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
-			requestLogger.Infof("%s", eventDelivery.UID)
-			log.Infof("%s sent", eventDelivery.UID)
+			requestLogger.Debugf("%s sent", eventDelivery.UID)
 			attemptStatus = true
-			// e.Sent = true
 
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
@@ -188,7 +185,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
-			// e.Sent = false
 
 			eventDelivery.Status = datastore.RetryEventStatus
 
@@ -196,7 +192,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Metadata.NextSendTime = nextTime
 			attempts := eventDelivery.Metadata.NumTrials + 1
 
-			log.FromContext(ctx).Infof("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID, nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID, nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
@@ -222,7 +218,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			endpointStatus := datastore.InactiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
-				log.FromContext(ctx).Info("Failed to reactivate endpoint after successful retry")
+				log.FromContext(ctx).Errorf("Failed to reactivate endpoint after successful retry")
 			}
 		}
 

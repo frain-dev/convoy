@@ -102,7 +102,7 @@ func NewLogger(out io.Writer) *Logger {
 		Formatter: &logrus.JSONFormatter{
 			TimestampFormat: "2006-01-02 15:04:05",
 		},
-		Level:        logrus.DebugLevel,
+		Level:        logrus.ErrorLevel,
 		ReportCaller: false,
 	}
 

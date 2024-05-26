@@ -6,7 +6,7 @@ services:
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
-        restart: on-failure
+        restart: unless-stopped
         ports:
             - "5005:5005"
         healthcheck:
@@ -25,17 +25,7 @@ services:
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
-        restart: on-failure
-        depends_on:
-            web:
-                condition: service_healthy
-
-    stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.5.1
-        command: ["./cmd", "stream", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
+        restart: unless-stopped
         depends_on:
             web:
                 condition: service_healthy
@@ -45,7 +35,7 @@ services:
         command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
-        restart: on-failure
+        restart: unless-stopped
         depends_on:
             web:
                 condition: service_healthy
@@ -62,25 +52,29 @@ services:
             - ./conf/:/bitnami/pgbouncer/conf/
             - ./conf/userlists.txt:/bitnami/userlists.txt
         ports:
-            - 6432:6432
+            - "6432:6432"
 
     postgres:
-        image: postgres:15.2-alpine
+        image: bitnami/postgresql:latest
         restart: unless-stopped
+        ports:
+            - "5432:5432"
         environment:
-            POSTGRES_DB: convoy
-            POSTGRES_USER: convoy
+            POSTGRESQL_DATABASE: convoy
+            POSTGRESQL_USERNAME: convoy
             POSTGRES_PASSWORD: pg_password
-            PGDATA: /data/postgres
+            POSTGRESQL_MAX_CONNECTIONS: 250
+            POSTGRESQL_POSTGRES_PASSWORD: postgres
+            POSTGRESQL_SHARED_PRELOAD_LIBRARIES: pg_stat_statements
         volumes:
-          - postgres_data:/data/postgres
+          - postgresql_master_data:/bitnami/postgresql
 
     redis_server:
         image: redis:alpine
-        restart: always
+        restart: unless-stopped
         volumes:
           - redis_data:/data
 
 volumes:
-    postgres_data:
+    postgresql_master_data:
     redis_data:
