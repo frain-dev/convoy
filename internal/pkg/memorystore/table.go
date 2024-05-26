@@ -2,8 +2,12 @@ package memorystore
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
 )
+
+const delim = ":"
 
 type ITable interface {
 	GetItems() []*Row
@@ -24,13 +28,14 @@ func OptionSyncer(s Syncer) func(*Table) {
 type Table struct {
 	Syncer
 
+	namespace string
 	sync.RWMutex
 	rows   map[string]*Row
 	syncer Syncer
 }
 
-func NewTable(opts ...Option) *Table {
-	t := &Table{rows: make(map[string]*Row)}
+func NewTable(namespace string, opts ...Option) *Table {
+	t := &Table{namespace: namespace, rows: make(map[string]*Row)}
 
 	for _, opt := range opts {
 		opt(t)
@@ -56,7 +61,7 @@ func (t *Table) Exists(key string) bool {
 
 // This assumes the caller has called Lock()
 func (t *Table) getInternal(key string) *Row {
-	value, ok := t.rows[key]
+	value, ok := t.rows[t.generateNamespacedKey(key)]
 	if !ok {
 		return nil
 	}
@@ -66,7 +71,7 @@ func (t *Table) getInternal(key string) *Row {
 
 // This assumes the caller has called Lock()
 func (t *Table) existInternal(key string) bool {
-	_, ok := t.rows[key]
+	_, ok := t.rows[t.generateNamespacedKey(key)]
 	return ok
 }
 
@@ -81,7 +86,7 @@ func (t *Table) Add(key string, value interface{}) *Row {
 	}
 
 	row = &Row{key: key, value: value}
-	t.rows[key] = row
+	t.rows[t.generateNamespacedKey(key)] = row
 	return row
 }
 
@@ -90,7 +95,7 @@ func (t *Table) Delete(key string) {
 	t.Lock()
 	defer t.Unlock()
 
-	delete(t.rows, key)
+	delete(t.rows, t.generateNamespacedKey(key))
 }
 
 func (t *Table) GetKeys() []string {
@@ -99,7 +104,7 @@ func (t *Table) GetKeys() []string {
 
 	var keys []string
 	for k := range t.rows {
-		keys = append(keys, k)
+		keys = append(keys, t.generateResourceKey(k))
 	}
 
 	return keys
@@ -115,6 +120,14 @@ func (t *Table) GetItems() []*Row {
 	}
 
 	return rows
+}
+
+func (t *Table) generateNamespacedKey(key string) string {
+	return fmt.Sprintf("%s%s%s", t.namespace, delim, key)
+}
+
+func (t *Table) generateResourceKey(key string) string {
+	return strings.Split(key, delim)[1]
 }
 
 func (t *Table) Sync(ctx context.Context) error {

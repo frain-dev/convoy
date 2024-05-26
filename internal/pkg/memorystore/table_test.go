@@ -22,7 +22,7 @@ func Test_Table_Add(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			table := NewTable()
+			table := NewTable("project-id-123")
 
 			if tc.setupTable != nil {
 				tc.setupTable(table)
@@ -31,14 +31,14 @@ func Test_Table_Add(t *testing.T) {
 			row := table.Add("test-key", "test-value")
 
 			require.Equal(t, len(table.GetKeys()), 1)
-			require.Equal(t, row.Key(), "test-key")
+			require.Equal(t, row.Key(), "project-id-123:test-key")
 			require.Equal(t, row.Value(), "test-value")
 		})
 	}
 }
 
 func Test_Table_GetKeys(t *testing.T) {
-	table := NewTable()
+	table := NewTable("project-id-123")
 	numberOfItems := rand.Intn(10)
 
 	for i := 0; i < numberOfItems; i++ {
