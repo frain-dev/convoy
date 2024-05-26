@@ -21,6 +21,7 @@ type EventDeliveryRepository interface {
 	ExportRepository
 	CreateEventDelivery(context.Context, *EventDelivery) error
 	FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*EventDelivery, error)
+	CreateEventDeliveries(ctx context.Context, deliveries []*EventDelivery) error
 	FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]EventDelivery, error)
 	FindEventDeliveriesByEventID(ctx context.Context, projectID string, id string) ([]EventDelivery, error)
 	CountDeliveriesByStatus(ctx context.Context, projectID string, status EventDeliveryStatus, params SearchParams) (int64, error)

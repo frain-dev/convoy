@@ -55,6 +55,7 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 
 		subRows := subscriptionsTable.GetItems()
 		subscriptions := getSubcriptionsFromRows(subRows)
+		println("subs:", len(subscriptions))
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),

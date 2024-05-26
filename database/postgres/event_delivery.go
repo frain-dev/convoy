@@ -42,6 +42,26 @@ const (
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
     `
 
+	batchCreateEventDeliveries = `
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,created_at,updated_at)
+    VALUES (:id,
+            :project_id,
+            :event_id,
+            :endpoint_id,
+            :subscription_id,
+            :headers,
+            :attempts,
+            :status,
+            :metadata,
+            :cli_metadata,
+            :description,
+            :url_query_params,
+            :idempotency_key,
+            :event_type,
+            :created_at,
+            :updated_at);
+    `
+
 	baseFetchEventDelivery = `
     SELECT
         ed.id,ed.project_id,ed.event_id,ed.subscription_id,
@@ -236,6 +256,37 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey, delivery.EventType,
 		delivery.CreatedAt, delivery.UpdatedAt,
 	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrEventDeliveryNotCreated
+	}
+
+	if isWrapped {
+		return nil
+	}
+
+	return tx.Commit()
+}
+
+func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliveries []*datastore.EventDelivery) error {
+	tx, isWrapped, err := GetTx(ctx, e.db)
+	if err != nil {
+		return err
+	}
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
+
+	result, err := tx.NamedExecContext(ctx, batchCreateEventDeliveries, deliveries)
 	if err != nil {
 		return err
 	}

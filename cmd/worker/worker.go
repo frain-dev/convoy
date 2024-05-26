@@ -197,8 +197,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				render.JSON(w, r, "Convoy")
 			})
 
-			go task.QueueStuckEventDeliveries(ctx, eventDeliveryRepo, a.Queue)
-
 			srv := &http.Server{
 				Handler: router,
 				Addr:    fmt.Sprintf(":%d", workerPort),

@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -113,6 +114,8 @@ func ProcessEventCreation(
 }
 
 func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
+	var eds []*datastore.EventDelivery
+
 	ec := &EventDeliveryConfig{project: project}
 	for _, s := range subscriptions {
 		ec.subscription = &s
@@ -121,6 +124,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		if s.Type == datastore.SubscriptionTypeAPI {
 			endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 			if err != nil {
+				log.WithError(err).WithField("endpoint", s.EndpointID).Error("failed to find endpoint")
 				return &EndpointError{Err: err, delay: defaultDelay}
 			}
 
@@ -172,8 +176,13 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			RetryLimit:      rc.RetryCount,
 		}
 
+		id, err := ulid.New(ulid.Timestamp(time.Now()), rand.Reader)
+		if err != nil {
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
+
 		eventDelivery := &datastore.EventDelivery{
-			UID:              ulid.Make().String(),
+			UID:              id.String(),
 			SubscriptionID:   s.UID,
 			EventType:        event.EventType,
 			Metadata:         metadata,
@@ -198,37 +207,48 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			}
 		}
 
-		err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
+		eds = append(eds, eventDelivery)
+		time.Sleep(time.Millisecond)
+	}
+
+	println("hmm", len(eds))
+
+	for len(eds) > 0 {
+		println("eds:", len(eds))
+
+		var recordsToInsert []*datastore.EventDelivery
+		if len(eds) >= 1000 {
+			recordsToInsert = eds[:1000]
+		} else {
+			recordsToInsert = eds
+		}
+
+		err := eventDeliveryRepo.CreateEventDeliveries(ctx, recordsToInsert)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		if eventDelivery.Status != datastore.DiscardedEventStatus {
-			payload := EventDelivery{
-				EventDeliveryID: eventDelivery.UID,
-				ProjectID:       eventDelivery.ProjectID,
-			}
+		for _, eventDelivery := range recordsToInsert {
+			if eventDelivery.Status != datastore.DiscardedEventStatus {
+				payload := EventDelivery{
+					EventDeliveryID: eventDelivery.UID,
+					ProjectID:       eventDelivery.ProjectID,
+				}
 
-			data, err := msgpack.EncodeMsgPack(payload)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
+				data, err := msgpack.EncodeMsgPack(payload)
+				if err != nil {
+					return &EndpointError{Err: err, delay: defaultDelay}
+				}
 
-			job := &queue.Job{
-				ID:      eventDelivery.UID,
-				Payload: data,
-				Delay:   1 * time.Second,
-			}
+				job := &queue.Job{
+					ID:      eventDelivery.UID,
+					Payload: data,
+					Delay:   1 * time.Second,
+				}
 
-			if s.Type == datastore.SubscriptionTypeAPI {
 				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
-				}
-			} else if s.Type == datastore.SubscriptionTypeCLI {
-				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
-				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 				}
 			}
 		}

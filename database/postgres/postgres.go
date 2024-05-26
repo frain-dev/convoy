@@ -65,14 +65,14 @@ func (p *Postgres) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
 func (p *Postgres) Rollback(tx *sqlx.Tx, err error) {
 	if err != nil {
 		rbErr := tx.Rollback()
-		log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
+		log.WithError(rbErr).Error("failed to roll back transaction")
 	}
 
 	cmErr := tx.Commit()
 	if cmErr != nil && !errors.Is(cmErr, sql.ErrTxDone) {
-		log.WithError(cmErr).Error("failed to commit tx in ProcessBroadcastEventCreation, rolling back transaction")
+		log.WithError(cmErr).Error("failed to commit tx, rolling back transaction")
 		rbErr := tx.Rollback()
-		log.WithError(rbErr).Error("failed to roll back transaction in ProcessBroadcastEventCreation")
+		log.WithError(rbErr).Error("failed to roll back transaction")
 	}
 }
 
