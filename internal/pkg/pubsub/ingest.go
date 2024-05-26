@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/pkg/transform"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -32,7 +33,7 @@ type Ingest struct {
 	ctx     context.Context
 	ticker  *time.Ticker
 	queue   queue.Queuer
-	sources map[string]*PubSubSource
+	sources map[memorystore.Key]*PubSubSource
 	table   *memorystore.Table
 	log     log.StdLogger
 }
@@ -44,7 +45,7 @@ func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer
 		queue:   queue,
 		log:     log,
 		table:   table,
-		sources: make(map[string]*PubSubSource),
+		sources: make(map[memorystore.Key]*PubSubSource),
 		ticker:  time.NewTicker(time.Duration(1) * time.Second),
 	}
 
@@ -75,8 +76,8 @@ func (i *Ingest) Run() {
 	}
 }
 
-func (i *Ingest) getSourceKeys() []string {
-	var s []string
+func (i *Ingest) getSourceKeys() []memorystore.Key {
+	var s []memorystore.Key
 	for k := range i.sources {
 		s = append(s, k)
 	}
@@ -88,7 +89,7 @@ func (i *Ingest) run() error {
 	i.log.Info("refreshing runner...", len(i.sources))
 
 	// cancel all stale/outdated source runners.
-	staleRows := util.Difference(i.getSourceKeys(), i.table.GetKeys())
+	staleRows := memorystore.Difference(i.getSourceKeys(), i.table.GetKeys())
 	for _, key := range staleRows {
 		ps, ok := i.sources[key]
 		if !ok {
@@ -100,7 +101,7 @@ func (i *Ingest) run() error {
 	}
 
 	// start all new/updated source runners.
-	newSourceKeys := util.Difference(i.table.GetKeys(), i.getSourceKeys())
+	newSourceKeys := memorystore.Difference(i.table.GetKeys(), i.getSourceKeys())
 	for _, key := range newSourceKeys {
 		sr := i.table.Get(key)
 		if sr == nil {
@@ -117,7 +118,7 @@ func (i *Ingest) run() error {
 			return err
 		}
 
-		ps.hash = key
+		//ps.hash = key
 		ps.Start()
 		i.sources[key] = ps
 	}

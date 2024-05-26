@@ -44,7 +44,7 @@ func NewPubSubSource(ctx context.Context, source *datastore.Source, handler data
 
 	ctx, cancelFunc := context.WithCancel(ctx)
 	pubSubSource := &PubSubSource{ctx: ctx, cancelFunc: cancelFunc, client: client, source: source}
-	pubSubSource.hash = generateSourceKey(source)
+	//pubSubSource.hash = generateSourceKey(source)
 	pubSubSource.cancelFunc = cancelFunc
 	return pubSubSource, nil
 }
