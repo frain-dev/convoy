@@ -11,32 +11,21 @@ import (
 var prefix = "project-id-123"
 
 func Test_Table_Add(t *testing.T) {
-	tests := map[string]struct {
-		setupTable func(table *Table)
-	}{
-		"should_return_row_if_key_exists": {
-			setupTable: func(table *Table) {
-				table.Add(prefix, "test-key", "test-value")
-			},
-		},
-		"should_return_row_if_does_not_exist": {},
-	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			table := NewTable()
+	t.Run("should return row if key exists", func(t *testing.T) {
+		table := NewTable()
 
-			if tc.setupTable != nil {
-				tc.setupTable(table)
-			}
+		key := NewKey(prefix, "test-key")
+		value := "test-value"
 
-			row := table.Add(prefix, "test-key", "test-value")
+		table.Add(key, value)
 
-			require.Equal(t, len(table.GetKeys()), 1)
-			require.Equal(t, row.Key(), "test-key")
-			require.Equal(t, row.Value(), "test-value")
-		})
-	}
+		// get row from table.
+		row := table.Get(key)
+
+		require.Equal(t, len(table.GetKeys()), 1)
+		require.Equal(t, row.Value(), value)
+	})
 }
 
 func Test_Table_GetKeys(t *testing.T) {
@@ -44,8 +33,8 @@ func Test_Table_GetKeys(t *testing.T) {
 	numberOfItems := rand.Intn(10)
 
 	for i := 0; i < numberOfItems; i++ {
-		key := fmt.Sprintf("test-key-%d", i)
-		table.Add(prefix, key, "test-value")
+		key := NewKey(prefix, fmt.Sprintf("test-key-%d", i))
+		table.Add(key, "test-value")
 	}
 
 	require.Equal(t, len(table.GetKeys()), numberOfItems)
