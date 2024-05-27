@@ -61,7 +61,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				st, _ := args.subTable.(*mocks.MockITable)
-				st.EXPECT().GetItems().Return([]*memorystore.Row{
+				st.EXPECT().GetItems("project-id-1").Return([]*memorystore.Row{
 					memorystore.NewRow("sub-1", datastore.Subscription{
 						UID:        "sub-1",
 						Name:       "test-sub",
