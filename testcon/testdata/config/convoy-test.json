@@ -1,0 +1,29 @@
+{
+    "database": {
+        "scheme": "postgres",
+        "host": "localhost",
+        "username": "postgres",
+        "password": "postgres",
+        "database": "convoy",
+        "options": "sslmode=disable&connect_timeout=30",
+        "port": 5438,
+        "max_open_conn": 10,
+        "max_idle_conn": 10,
+        "conn_max_lifetime": 190
+    },
+    "redis": {
+        "port": 6378,
+        "scheme": "redis",
+        "host": "localhost"
+    },
+    "max_response_size": 40,
+    "server": {
+        "http": {
+            "port": 80
+        }
+    },
+    "logger": {
+        "level": "error"
+    },
+    "consumer_pool_size": 59
+}

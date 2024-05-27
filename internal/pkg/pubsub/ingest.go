@@ -85,7 +85,7 @@ func (i *Ingest) getSourceKeys() []string {
 }
 
 func (i *Ingest) run() error {
-	i.log.Info("refreshing runner...", len(i.sources))
+	i.log.Debug("refreshing runner...", len(i.sources))
 
 	// cancel all stale/outdated source runners.
 	staleRows := util.Difference(i.getSourceKeys(), i.table.GetKeys())

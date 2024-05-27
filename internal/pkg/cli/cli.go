@@ -56,3 +56,7 @@ func (c *ConvoyCli) AddCommand(subCmd *cobra.Command) {
 func (c *ConvoyCli) Execute() error {
 	return c.cmd.Execute()
 }
+
+func (c *ConvoyCli) GetCmd() *cobra.Command {
+	return c.cmd
+}
