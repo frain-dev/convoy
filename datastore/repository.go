@@ -117,6 +117,7 @@ type SubscriptionRepository interface {
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
 	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error)
+	FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]Subscription, error)
 }
 
 type SourceRepository interface {

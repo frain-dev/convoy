@@ -1381,6 +1381,21 @@ func (mr *MockSubscriptionRepositoryMockRecorder) DeleteSubscription(ctx, projec
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSubscription", reflect.TypeOf((*MockSubscriptionRepository)(nil).DeleteSubscription), ctx, projectID, subscription)
 }
 
+// FetchSubscriptionsForBroadcast mocks base method.
+func (m *MockSubscriptionRepository) FetchSubscriptionsForBroadcast(ctx context.Context, projectID, eventType string, pageSize int) ([]datastore.Subscription, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchSubscriptionsForBroadcast", ctx, projectID, eventType, pageSize)
+	ret0, _ := ret[0].([]datastore.Subscription)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchSubscriptionsForBroadcast indicates an expected call of FetchSubscriptionsForBroadcast.
+func (mr *MockSubscriptionRepositoryMockRecorder) FetchSubscriptionsForBroadcast(ctx, projectID, eventType, pageSize interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchSubscriptionsForBroadcast", reflect.TypeOf((*MockSubscriptionRepository)(nil).FetchSubscriptionsForBroadcast), ctx, projectID, eventType, pageSize)
+}
+
 // FindCLISubscriptions mocks base method.
 func (m *MockSubscriptionRepository) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
 	m.ctrl.T.Helper()
