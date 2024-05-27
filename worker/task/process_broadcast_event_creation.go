@@ -54,7 +54,7 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 
 		subscriptions, err := subRepo.FetchSubscriptionsForBroadcast(ctx, broadcastEvent.ProjectID, fmt.Sprintf("{%s}", broadcastEvent.EventType), 1000)
 		if err != nil {
-			return &EndpointError{Err: errors.New(fmt.Sprintf("failed to fetch subscriptions with err: %s", err.Error())), delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("failed to fetch subscriptions with err: %s", err.Error()), delay: defaultDelay}
 		}
 
 		event := &datastore.Event{
