@@ -6,7 +6,19 @@
 
 		<div
 			convoy-input
-			class="peer-disabled:text-neutral-4 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100 py-12px px-16px appearance-none bg-[url(/assets/img/angle-down.svg)] bg-no-repeat bg-[right_10px_top_15px] min-h-[46px] cursor-pointer flex items-center flex-wrap"
+			class="
+				peer-disabled:text-neutral-4 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
+				py-12px
+				px-16px
+				appearance-none
+				bg-[url(/assets/img/angle-down.svg)] bg-no-repeat
+				bg-[right_10px_top_15px]
+				min-h-[46px]
+				cursor-pointer
+				flex
+				items-center
+				flex-wrap
+			"
 		>
 			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
 			<ng-container *ngIf="multiple">
@@ -41,7 +53,7 @@
 
 			<ng-container *ngIf="multiple">
 				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25">
-					<button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name ? option.name : option }}</button>
+					<button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 				</li>
 			</ng-container>
 
