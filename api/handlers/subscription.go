@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"errors"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"net/http"
+
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/transform"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -39,8 +41,43 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var q *models.QueryListSubscription
-
 	data := q.Transform(r)
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",
+				models.PagedResponse{Content: []models.SubscriptionResponse{}, Pagination: &datastore.PaginationData{PerPage: 0}}, http.StatusOK))
+			return
+		}
+
+		// verify that the listed endpoints are all in this portal link
+		if len(data.FilterBy.EndpointIDs) != 0 {
+			for _, endpointID := range data.FilterBy.EndpointIDs {
+				if !util.StringSliceContains(endpointIDs, endpointID) {
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+					return
+				}
+			}
+		} else {
+			data.FilterBy.EndpointIDs = endpointIDs
+		}
+
+	}
+
 	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
@@ -154,6 +191,27 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			return
+		}
+	}
+
 	cs := services.CreateSubscriptionService{
 		SubRepo:         postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
 		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
@@ -205,6 +263,26 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			return
+		}
+	}
+
 	err = postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete subscription")
@@ -249,6 +327,38 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		sub, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+		if err != nil {
+			log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
+			if errors.Is(err, datastore.ErrSubscriptionNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
+				return
+			}
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			return
+		}
 	}
 
 	us := services.UpdateSubscriptionService{

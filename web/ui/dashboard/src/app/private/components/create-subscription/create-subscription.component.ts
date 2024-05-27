@@ -21,6 +21,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	@Input('action') action: 'update' | 'create' | 'view' = 'create';
 	@Input('isPortal') isPortal: 'true' | 'false' = 'false';
 	@Input('subscriptionId') subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
+	@Input('endpointId') endpointId: string = this.route.snapshot.queryParams.endpointId;
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
 
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
@@ -49,7 +50,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	eventTags: string[] = [];
 	apps!: APP[];
 	sources!: SOURCE[];
-	endPoints: ENDPOINT[] = [];
 	showCreateSourceForm = false;
 	showCreateEndpointForm = false;
 	enableMoreConfig = false;
@@ -84,8 +84,18 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		this.projectType = this.token ? 'outgoing' : this.privateService.getProjectDetails?.type;
 
+		if (!this.subscriptionId) this.subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
+
+		if (this.isPortal === 'true' || this.token)
+			this.subscriptionForm.patchValue({
+				endpoint_id: this.endpointId
+			});
+
+		if (this.isPortal === 'true' && !this.endpointId) this.getEndpoints();
+
 		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
-		if (this.action === 'update') await this.getSubscriptionDetails();
+
+		if (this.action === 'update' || this.isUpdateAction) await this.getSubscriptionDetails();
 
 		this.isLoadingForm = false;
 
@@ -147,8 +157,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	async getEndpoints(searchString?: string) {
 		try {
 			const response = await this.privateService.getEndpoints({ q: searchString });
-			this.endpoints = this.token ? response.data : response.data.content;
-			this.endPoints = this.token ? response.data : response.data.content;
+			this.endpoints = response.data.content;
 			return;
 		} catch (error) {
 			return error;
@@ -236,7 +245,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		// create subscription
 		try {
-			const response = this.action == 'update' ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
+			const response = this.action == 'update' || this.isUpdateAction ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
 			this.subscription = response.data;
 			if (setup) await this.privateService.getProjectStat({ refresh: true });
 			this.privateService.getSubscriptions();
@@ -277,5 +286,9 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	get shouldShowBorder(): number {
 		return this.configurations.filter(config => config.show).length;
+	}
+
+	get isUpdateAction(): boolean {
+		return this.subscriptionId && this.subscriptionId !== 'new';
 	}
 }

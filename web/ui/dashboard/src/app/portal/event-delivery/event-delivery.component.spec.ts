@@ -8,12 +8,10 @@ describe('EventDeliveryComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ EventDeliveryComponent ]
+      imports: [ EventDeliveryComponent ]
     })
     .compileComponents();
-  });
 
-  beforeEach(() => {
     fixture = TestBed.createComponent(EventDeliveryComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
