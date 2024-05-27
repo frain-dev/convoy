@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
