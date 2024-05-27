@@ -8,8 +8,6 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -108,35 +106,4 @@ func getEndpointIDs(subs []datastore.Subscription) []string {
 	}
 
 	return ids
-}
-
-func getAllSubscriptions(ctx context.Context, subRepo datastore.SubscriptionRepository, projectID string, pageable datastore.Pageable) ([]datastore.Subscription, error) {
-	subscriptions, paginationData, err := subRepo.LoadSubscriptionsPaged(ctx, projectID, &datastore.FilterBy{}, pageable)
-	if err != nil {
-		return nil, err
-	}
-
-	if paginationData.HasNextPage {
-		pageable.NextCursor = subscriptions[len(subscriptions)-1].UID
-		subs, err := getAllSubscriptions(ctx, subRepo, projectID, pageable)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions = append(subscriptions, subs...)
-
-	}
-
-	return subscriptions, nil
-}
-
-func getSubcriptionsFromRows(rows []*memorystore.Row) []datastore.Subscription {
-	var subscriptions []datastore.Subscription
-
-	for _, row := range rows {
-		subscription, _ := row.Value().(datastore.Subscription)
-		subscriptions = append(subscriptions, subscription)
-	}
-
-	return subscriptions
 }
