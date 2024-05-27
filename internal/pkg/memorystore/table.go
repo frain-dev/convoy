@@ -18,6 +18,10 @@ func NewKey(prefix, hash string) Key {
 	return Key(key.String())
 }
 
+func (k Key) HasPrefix(prefix string) bool {
+	return strings.HasPrefix(k.String(), prefix)
+}
+
 func (k Key) String() string {
 	return string(k)
 }
@@ -25,7 +29,7 @@ func (k Key) String() string {
 const delim = ":"
 
 type ITable interface {
-	GetItems() []*Row
+	GetItems(prefix string) []*Row
 }
 
 type Syncer interface {
@@ -124,13 +128,15 @@ func (t *Table) GetKeys() []Key {
 	return keys
 }
 
-func (t *Table) GetItems() []*Row {
+func (t *Table) GetItems(prefix string) []*Row {
 	t.Lock()
 	defer t.Unlock()
 
 	var rows []*Row
-	for _, row := range t.rows {
-		rows = append(rows, row)
+	for k, row := range t.rows {
+		if k.HasPrefix(prefix) {
+			rows = append(rows, row)
+		}
 	}
 
 	return rows

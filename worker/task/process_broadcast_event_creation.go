@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -53,7 +54,7 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			isDuplicate = len(events) > 0
 		}
 
-		subRows := subscriptionsTable.GetItems()
+		subRows := subscriptionsTable.GetItems(project.UID)
 		subscriptions := getSubcriptionsFromRows(subRows)
 
 		event := &datastore.Event{
