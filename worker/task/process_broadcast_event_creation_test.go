@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -60,9 +59,9 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
-				st, _ := args.subTable.(*mocks.MockITable)
-				st.EXPECT().GetItems().Return([]*memorystore.Row{
-					memorystore.NewRow("sub-1", datastore.Subscription{
+				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
+				subscriptions := []datastore.Subscription{
+					{
 						UID:        "sub-1",
 						Name:       "test-sub",
 						Type:       datastore.SubscriptionTypeAPI,
@@ -74,10 +73,11 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 						AlertConfig:     nil,
 						RetryConfig:     nil,
 						RateLimitConfig: nil,
-					}),
-				})
+					},
+				}
+				s.EXPECT().FetchSubscriptionsForBroadcast(gomock.Any(), "project-id-1", gomock.Any(), gomock.Any()).
+					Times(1).Return(subscriptions, nil)
 
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 
 				d, _ := args.db.(*mocks.MockDatabase)
@@ -131,7 +131,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
 			fn := ProcessBroadcastEventCreation(args.db, args.endpointRepo,
-				args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.subTable)
+				args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

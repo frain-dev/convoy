@@ -5,17 +5,15 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/util"
-
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -112,6 +110,14 @@ const (
 	LEFT JOIN convoy.devices d ON s.device_id = d.id
 	WHERE s.deleted_at IS NULL `
 
+	fetchSubscriptionsForBroadcast = `
+    select id, type, project_id, endpoint_id, function, filter_config_event_types AS "filter_config.event_types"
+    from convoy.subscriptions
+    where filter_config_event_types = '%s'
+    AND id > $1
+    AND project_id = $2
+    ORDER BY id LIMIT $3`
+
 	baseFetchSubscriptionsPagedForward = `
 	%s
 	%s
@@ -204,6 +210,33 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 		ca = ncache.NewNoopCache()
 	}
 	return &subscriptionRepo{db: db.GetDB(), cache: ca}
+}
+
+func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]datastore.Subscription, error) {
+	var subs []datastore.Subscription
+	var cursor = "0"
+
+	for {
+		query := fmt.Sprintf(fetchSubscriptionsForBroadcast, eventType)
+		rows, err := s.db.QueryxContext(ctx, query, cursor, projectID, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		subscriptions, err := scanSubscriptions(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(subscriptions) == 0 {
+			break
+		}
+
+		subs = append(subs, subscriptions...)
+		cursor = subscriptions[len(subscriptions)-1].UID
+	}
+
+	return subs, nil
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {

@@ -3,12 +3,11 @@ package task
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -21,7 +20,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, subscriptionsTable memorystore.ITable) func(context.Context, *asynq.Task) error {
+func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var broadcastEvent models.BroadcastEvent
 
@@ -53,8 +52,10 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			isDuplicate = len(events) > 0
 		}
 
-		subRows := subscriptionsTable.GetItems()
-		subscriptions := getSubcriptionsFromRows(subRows)
+		subscriptions, err := subRepo.FetchSubscriptionsForBroadcast(ctx, broadcastEvent.ProjectID, fmt.Sprintf("{%s}", broadcastEvent.EventType), 1000)
+		if err != nil {
+			return &EndpointError{Err: fmt.Errorf("failed to fetch subscriptions with err: %s", err.Error()), delay: defaultDelay}
+		}
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
@@ -69,8 +70,6 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
 		}
-
-		subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
 
 		subscriptions, err = matchSubscriptionsUsingFilter(cctx, event, subRepo, subscriptions, true)
 		if err != nil {
@@ -107,35 +106,4 @@ func getEndpointIDs(subs []datastore.Subscription) []string {
 	}
 
 	return ids
-}
-
-func getAllSubscriptions(ctx context.Context, subRepo datastore.SubscriptionRepository, projectID string, pageable datastore.Pageable) ([]datastore.Subscription, error) {
-	subscriptions, paginationData, err := subRepo.LoadSubscriptionsPaged(ctx, projectID, &datastore.FilterBy{}, pageable)
-	if err != nil {
-		return nil, err
-	}
-
-	if paginationData.HasNextPage {
-		pageable.NextCursor = subscriptions[len(subscriptions)-1].UID
-		subs, err := getAllSubscriptions(ctx, subRepo, projectID, pageable)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions = append(subscriptions, subs...)
-
-	}
-
-	return subscriptions, nil
-}
-
-func getSubcriptionsFromRows(rows []*memorystore.Row) []datastore.Subscription {
-	var subscriptions []datastore.Subscription
-
-	for _, row := range rows {
-		subscription, _ := row.Value().(datastore.Subscription)
-		subscriptions = append(subscriptions, subscription)
-	}
-
-	return subscriptions
 }
