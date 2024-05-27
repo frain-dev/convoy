@@ -52,11 +52,6 @@
 							<convoy-copy-button size="sm" [notificationText]="endpoint.name || endpoint.title + ' ID has been copied to clipboard'" [text]="endpoint.uid"></convoy-copy-button>
 						</div>
 					</div>
-					<!-- <div class="md:flex hidden whitespace-nowrap">
-                        <div convoy-tag *ngIf="endpoint.subscription" [color]="hasFilter(endpoint.subscription.filter_config.filter) ? 'primary' : 'neutral'" class="mr-8px">Filter</div>
-                        <div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.retry_config ? 'primary' : 'neutral'" class="mr-8px">Retry Logic</div>
-                        <div convoy-tag *ngIf="endpoint.subscription" [color]="endpoint.subscription.filter_config.event_types.length > 1 || endpoint.subscription.filter_config.event_types[0] != '*' ? 'primary' : 'neutral'">Event Types</div>
-                    </div> -->
 				</div>
 
 				<div convoy-dropdown #subscriptionDropdown position="right" size="md" class="ml-4px">
