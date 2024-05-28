@@ -371,7 +371,7 @@ type Configuration struct {
 }
 
 type PyroscopeConfiguration struct {
-	EnableProfiling bool   `json:"enabled" envconfig:"ENABLE_PYROSCOPE_PROFILING"`
+	EnableProfiling bool   `json:"enabled" envconfig:"CONVOY_ENABLE_PYROSCOPE_PROFILING"`
 	URL             string `json:"url" envconfig:"CONVOY_PYROSCOPE_URL"`
 	Username        string `json:"username" envconfig:"CONVOY_PYROSCOPE_USERNAME"`
 	Password        string `json:"password" envconfig:"CONVOY_PYROSCOPE_PASSWORD"`
