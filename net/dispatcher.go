@@ -125,6 +125,8 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 		res.Error = err.Error()
 		return err
 	}
+	defer response.Body.Close()
+
 	updateDispatchHeaders(res, response)
 
 	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
@@ -140,7 +142,6 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 		log.WithError(err).Error("couldn't parse response body")
 		return err
 	}
-	defer response.Body.Close()
 
 	return nil
 }
