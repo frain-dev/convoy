@@ -111,7 +111,10 @@ const (
 	WHERE s.deleted_at IS NULL `
 
 	fetchSubscriptionsForBroadcast = `
-    select id, type, project_id, endpoint_id, function, filter_config_event_types AS "filter_config.event_types"
+    select id, type, project_id, endpoint_id, function,
+    filter_config_event_types AS "filter_config.event_types",
+    filter_config_filter_headers AS "filter_config.filter.headers",
+	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
     where filter_config_event_types = '%s'
     AND id > $1
