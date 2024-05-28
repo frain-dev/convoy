@@ -233,9 +233,18 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		return err
 	}
 
-	var ids []interface{}
-	if len(event.Endpoints) > 0 {
-		for _, endpointID := range event.Endpoints {
+	records := event.Endpoints
+	var recordsToInsert []string
+
+	for len(recordsToInsert) > 0 {
+		if len(recordsToInsert) >= 30000 {
+			recordsToInsert = records[:30000]
+		} else {
+			recordsToInsert = records
+		}
+
+		var ids []interface{}
+		for _, endpointID := range recordsToInsert {
 			ids = append(ids, &EventEndpoint{EventID: event.UID, EndpointID: endpointID})
 		}
 
