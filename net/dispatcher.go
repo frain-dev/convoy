@@ -2,6 +2,7 @@ package net
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -50,7 +51,7 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 	return d, nil
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string) (*Response, error) {
+func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string) (*Response, error) {
 	r := &Response{}
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")
@@ -59,7 +60,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		return r, err
 	}
 
-	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating request")
 		return r, err
