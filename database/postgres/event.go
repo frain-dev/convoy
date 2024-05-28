@@ -236,18 +236,15 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	}
 
 	records := event.Endpoints
-
-	for len(records) > 0 {
-		var recordsToInsert []string
-
-		if len(records) >= PartitionSize {
-			recordsToInsert = records[:PartitionSize]
-		} else {
-			recordsToInsert = records
+	var j int
+	for i := 0; i < len(records); i += PartitionSize {
+		j += PartitionSize
+		if j > len(records) {
+			j = len(records)
 		}
 
 		var ids []interface{}
-		for _, endpointID := range recordsToInsert {
+		for _, endpointID := range records[i:j] {
 			ids = append(ids, &EventEndpoint{EventID: event.UID, EndpointID: endpointID})
 		}
 
@@ -255,8 +252,6 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		if err != nil {
 			return err
 		}
-
-		records = records[max(len(recordsToInsert)-1, 1):]
 	}
 
 	if isWrapped {
