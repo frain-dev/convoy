@@ -112,6 +112,10 @@ func TestProcessEventCreated(t *testing.T) {
 						Type:       datastore.SubscriptionTypeAPI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 					},
 				}
@@ -246,6 +250,10 @@ func TestProcessEventCreated(t *testing.T) {
 						Type:       datastore.SubscriptionTypeAPI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 					},
 					{
@@ -253,7 +261,10 @@ func TestProcessEventCreated(t *testing.T) {
 						ProjectID:  "project-id-1",
 						EndpointID: "endpoint-id-1",
 						FilterConfig: &datastore.FilterConfiguration{
-							Filter: datastore.FilterSchema{},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 						Type: datastore.SubscriptionTypeAPI,
 					},
@@ -321,6 +332,10 @@ func TestProcessEventCreated(t *testing.T) {
 						Type:      datastore.SubscriptionTypeCLI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 					},
 					{
@@ -328,7 +343,10 @@ func TestProcessEventCreated(t *testing.T) {
 						ProjectID: "project-id-1",
 						DeviceID:  "device-3",
 						FilterConfig: &datastore.FilterConfiguration{
-							Filter: datastore.FilterSchema{},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 						Type: datastore.SubscriptionTypeCLI,
 					},
@@ -403,6 +421,10 @@ func TestProcessEventCreated(t *testing.T) {
 						Type:       datastore.SubscriptionTypeAPI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 					},
 				}
@@ -479,19 +501,23 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
+				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{"person.age": 10}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{"person.age": 10},
+						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{},
+						},
 					},
 				},
 			},
