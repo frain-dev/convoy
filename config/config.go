@@ -360,6 +360,7 @@ type Configuration struct {
 	Logger             LoggerConfiguration        `json:"logger"`
 	Tracer             TracerConfiguration        `json:"tracer"`
 	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
+	Pyroscope          PyroscopeConfiguration     `json:"pyroscope"`
 	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	FeatureFlag        FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
 	Analytics          AnalyticsConfiguration     `json:"analytics"`
@@ -367,6 +368,14 @@ type Configuration struct {
 	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 	EnableProfiling    bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 	Metrics            MetricsConfiguration       `json:"metrics" envconfig:"CONVOY_METRICS"`
+}
+
+type PyroscopeConfiguration struct {
+	EnableProfiling bool   `json:"enabled" envconfig:"ENABLE_PYROSCOPE_PROFILING"`
+	URL             string `json:"url" envconfig:"CONVOY_PYROSCOPE_URL"`
+	Username        string `json:"username" envconfig:"CONVOY_PYROSCOPE_USERNAME"`
+	Password        string `json:"password" envconfig:"CONVOY_PYROSCOPE_PASSWORD"`
+	ProfileID       string `json:"profile_id" envconfig:"CONVOY_PYROSCOPE_PROFILE_ID"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

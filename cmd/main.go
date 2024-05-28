@@ -1,9 +1,10 @@
 package main
 
 import (
-	_ "go.uber.org/automaxprocs"
 	"os"
 	_ "time/tzdata"
+
+	_ "go.uber.org/automaxprocs"
 
 	"github.com/frain-dev/convoy/cmd/agent"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
@@ -58,7 +59,6 @@ func main() {
 	var redisUsername string
 	var redisPassword string
 	var redisDatabase string
-	var enableProfiling bool
 
 	var tracerType string
 	var sentryDSN string
@@ -94,7 +94,6 @@ func main() {
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
 	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
-	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
 
 	// tracing
 	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
