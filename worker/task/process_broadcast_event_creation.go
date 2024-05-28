@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -26,17 +25,17 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 
 		err = msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultDelay}
 		}
 
 		project, err := projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: 10 * time.Second}
 		}
 
 		tx, err := db.BeginTx(ctx)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1003, err: %s", err.Error()), delay: 10 * time.Second}
 		}
 		defer db.Rollback(tx, err)
 
@@ -46,7 +45,7 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 		if len(broadcastEvent.IdempotencyKey) > 0 {
 			events, err := eventRepo.FindEventsByIdempotencyKey(cctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: 10 * time.Second}
 			}
 
 			isDuplicate = len(events) > 0
@@ -73,14 +72,14 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 
 		subscriptions, err = matchSubscriptionsUsingFilter(cctx, event, subRepo, subscriptions, true)
 		if err != nil {
-			return &EndpointError{Err: errors.New("failed to match subscriptions using filter"), delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultDelay}
 		}
 
 		event.Endpoints = getEndpointIDs(subscriptions)
 
 		err = eventRepo.CreateEvent(cctx, event)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: 10 * time.Second}
 		}
 
 		if event.IsDuplicateEvent {
