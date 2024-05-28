@@ -1,11 +1,13 @@
 package pubsub
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
 
 	"github.com/frain-dev/convoy/datastore"
+	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
@@ -13,12 +15,15 @@ import (
 )
 
 type PubSub interface {
-	Start()
-	Consume()
-	Stop()
+	Start(context.Context)
 }
 
 type PubSubSource struct {
+	cancelFunc context.CancelFunc
+
+	// use channel to trigger a reset.
+	ctx context.Context
+
 	// The pub sub client.
 	client PubSub
 
@@ -30,29 +35,50 @@ type PubSubSource struct {
 	hash string
 }
 
-func NewPubSubSource(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (*PubSubSource, error) {
-	client, err := NewPubSubClient(source, handler, log)
+func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (*PubSubSource, error) {
+	client, err := createClient(source, handler, log)
 	if err != nil {
 		return nil, err
 	}
 
-	pubSubSource := &PubSubSource{client: client, source: source}
-	pubSubSource.hash = pubSubSource.getHash()
+	ctx, cancelFunc := context.WithCancel(ctx)
+	pubSubSource := &PubSubSource{ctx: ctx, cancelFunc: cancelFunc, client: client, source: source}
+	pubSubSource.hash = generateSourceKey(source)
+	pubSubSource.cancelFunc = cancelFunc
 	return pubSubSource, nil
 }
 
 func (p *PubSubSource) Start() {
-	p.client.Start()
+	p.client.Start(p.ctx)
 }
 
 func (p *PubSubSource) Stop() {
-	p.client.Stop()
+	p.cancelFunc()
 }
 
-func (p *PubSubSource) getHash() string {
+func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (PubSub, error) {
+	if source.PubSub.Type == datastore.SqsPubSub {
+		return sqs.New(source, handler, log), nil
+	}
+
+	if source.PubSub.Type == datastore.GooglePubSub {
+		return google.New(source, handler, log), nil
+	}
+
+	if source.PubSub.Type == datastore.KafkaPubSub {
+		return kafka.New(source, handler, log), nil
+	}
+
+	if source.PubSub.Type == datastore.AmqpPubSub {
+		return rqm.New(source, handler, log), nil
+	}
+
+	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)
+}
+
+func generateSourceKey(source *datastore.Source) string {
 	var hash string
 
-	source := p.source
 	if source.PubSub.Type == datastore.SqsPubSub {
 		sq := source.PubSub.Sqs
 		hash = fmt.Sprintf("%s,%s,%s,%s,%v", sq.AccessKeyID, sq.SecretKey, sq.DefaultRegion, sq.QueueName, source.PubSub.Workers)
@@ -68,67 +94,13 @@ func (p *PubSubSource) getHash() string {
 		hash = fmt.Sprintf("%s,%s,%s,%v,%v", kq.Brokers, kq.ConsumerGroupID, kq.TopicName, kq.Auth, source.PubSub.Workers)
 	}
 
+	if source.PubSub.Type == datastore.AmqpPubSub {
+		aq := source.PubSub.Amqp
+		hash = fmt.Sprintf("%s,%s,%s,%v", aq.Schema, aq.Host, aq.Queue, source.PubSub.Workers)
+	}
+
 	h := md5.Sum([]byte(hash))
 	hash = hex.EncodeToString(h[:])
 
 	return hash
-
-}
-
-type SourcePool struct {
-	log     log.StdLogger
-	sources map[string]*PubSubSource
-}
-
-func NewSourcePool(log log.StdLogger) *SourcePool {
-	return &SourcePool{
-		log:     log,
-		sources: make(map[string]*PubSubSource),
-	}
-}
-
-func (s *SourcePool) Insert(ps *PubSubSource) {
-	source := ps.source
-	existingSource, exists := s.sources[source.UID]
-
-	if exists {
-		so := &PubSubSource{source: source}
-		// config hasn't changed
-		if existingSource.hash == so.getHash() {
-			return
-		}
-
-		s.Remove(source.UID)
-	}
-
-	ps.Start()
-	s.sources[source.UID] = ps
-}
-
-func (s *SourcePool) Remove(sourceId string) {
-	s.sources[sourceId].Stop()
-	delete(s.sources, sourceId)
-}
-
-func (s *SourcePool) Stop() {
-	for key, source := range s.sources {
-		s.log.Infof("Stopping pub source with ID: %s", key)
-		source.Stop()
-	}
-}
-
-func NewPubSubClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (PubSub, error) {
-	if source.PubSub.Type == datastore.SqsPubSub {
-		return sqs.New(source, handler, log), nil
-	}
-
-	if source.PubSub.Type == datastore.GooglePubSub {
-		return google.New(source, handler, log), nil
-	}
-
-	if source.PubSub.Type == datastore.KafkaPubSub {
-		return kafka.New(source, handler, log), nil
-	}
-
-	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)
 }

@@ -26,7 +26,7 @@ func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoi
 
 func TestUpdateEndpointService_Run(t *testing.T) {
 	ctx := context.Background()
-	project := &datastore.Project{UID: "1234567890"}
+	project := &datastore.Project{UID: "1234567890", Config: &datastore.DefaultProjectConfig}
 	type args struct {
 		ctx      context.Context
 		e        models.UpdateEndpoint
@@ -48,21 +48,21 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				e: models.UpdateEndpoint{
 					Name:              stringPtr("Endpoint2"),
 					Description:       "test_endpoint",
-					URL:               "https://fb.com",
+					URL:               "https://www.google.com/webhp",
 					RateLimit:         10000,
-					RateLimitDuration: "1m",
-					HttpTimeout:       "20s",
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint2"},
 				project:  project,
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Title:             "Endpoint2",
+				Name:              "Endpoint2",
 				Description:       "test_endpoint",
-				TargetURL:         "https://fb.com",
+				Url:               "https://www.google.com/webhp",
 				RateLimit:         10000,
-				RateLimitDuration: "1m0s",
-				HttpTimeout:       "20s",
+				RateLimitDuration: 60,
+				HttpTimeout:       20,
 			},
 			dbFn: func(as *UpdateEndpointService) {
 				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
@@ -71,34 +71,8 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
-
-				c, _ := as.Cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantErr: false,
-		},
-		{
-			name: "should_error_for_invalid_rate_limit_duration",
-			args: args{
-				ctx: ctx,
-				e: models.UpdateEndpoint{
-					Name:              stringPtr("Endpoint 1"),
-					Description:       "test_endpoint",
-					URL:               "https://fb.com",
-					RateLimit:         10000,
-					RateLimitDuration: "m",
-					HttpTimeout:       "20s",
-				},
-				endpoint: &datastore.Endpoint{UID: "endpoint1"},
-				project:  project,
-			},
-			dbFn: func(as *UpdateEndpointService) {
-				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
-					Times(1).Return(&datastore.Endpoint{UID: "endpoint1"}, nil)
-			},
-			wantErr:    true,
-			wantErrMsg: `time: invalid duration "m"`,
 		},
 		{
 			name: "should_fail_to_update_endpoint",
@@ -107,10 +81,10 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				e: models.UpdateEndpoint{
 					Name:              stringPtr("Endpoint 1"),
 					Description:       "test_endpoint",
-					URL:               "https://fb.com",
+					URL:               "https://www.google.com/webhp",
 					RateLimit:         10000,
-					RateLimitDuration: "1m",
-					HttpTimeout:       "20s",
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
 				project:  project,
@@ -133,10 +107,10 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				e: models.UpdateEndpoint{
 					Name:              stringPtr("endpoint1"),
 					Description:       "test_endpoint",
-					URL:               "https://fb.com",
+					URL:               "https://www.google.com/webhp",
 					RateLimit:         10000,
-					RateLimitDuration: "1m",
-					HttpTimeout:       "20s",
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint1"},
 				project:  project,

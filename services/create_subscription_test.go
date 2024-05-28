@@ -13,8 +13,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideCreateSubscriptionService(ctrl *gomock.Controller, project *datastore.Project, newSub *models.CreateSubscription) *CreateSubcriptionService {
-	return &CreateSubcriptionService{
+func provideCreateSubscriptionService(ctrl *gomock.Controller, project *datastore.Project, newSub *models.CreateSubscription) *CreateSubscriptionService {
+	return &CreateSubscriptionService{
 		SubRepo:         mocks.NewMockSubscriptionRepository(ctrl),
 		EndpointRepo:    mocks.NewMockEndpointRepository(ctrl),
 		SourceRepo:      mocks.NewMockSourceRepository(ctrl),
@@ -23,7 +23,7 @@ func provideCreateSubscriptionService(ctrl *gomock.Controller, project *datastor
 	}
 }
 
-func TestCreateSubcriptionService_Run(t *testing.T) {
+func TestCreateSubscriptionService_Run(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
@@ -36,7 +36,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 		name             string
 		args             args
 		wantSubscription *datastore.Subscription
-		dbFn             func(so *CreateSubcriptionService)
+		dbFn             func(so *CreateSubscriptionService)
 		wantErr          bool
 		wantErrMsg       string
 	}{
@@ -49,7 +49,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject, Config: &datastore.ProjectConfig{MultipleEndpointSubscriptions: false}},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -57,7 +57,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
@@ -79,7 +79,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			},
 		},
 		{
-			name: "should fail to count endpoint subscriptions for outgoing project",
+			name: "should fail to count endpoint subscriptions for outgoing project if multi endpoints for subscriptions is false",
 			args: args{
 				ctx: ctx,
 				newSubscription: &models.CreateSubscription{
@@ -87,7 +87,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject, Config: &datastore.ProjectConfig{MultipleEndpointSubscriptions: false}},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -95,7 +95,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
 					Times(1).
@@ -115,6 +115,40 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 			wantErrMsg: "failed to count endpoint subscriptions",
 		},
 		{
+			name: "should count endpoint subscriptions for outgoing project if multi endpoints for subscriptions is true",
+			args: args{
+				ctx: ctx,
+				newSubscription: &models.CreateSubscription{
+					Name:       "sub 1",
+					SourceID:   "source-id-1",
+					EndpointID: "endpoint-id-1",
+				},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject, Config: &datastore.ProjectConfig{MultipleEndpointSubscriptions: true}},
+			},
+			wantSubscription: &datastore.Subscription{
+				Name:       "sub 1",
+				Type:       datastore.SubscriptionTypeAPI,
+				SourceID:   "source-id-1",
+				EndpointID: "endpoint-id-1",
+			},
+			dbFn: func(ss *CreateSubscriptionService) {
+				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
+				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(nil)
+
+				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
+					Times(1).Return(
+					&datastore.Endpoint{
+						UID:       "endpoint-id-1",
+						ProjectID: "12345",
+					},
+					nil,
+				)
+			},
+		},
+		{
 			name: "should error for endpoint already has a subscription",
 			args: args{
 				ctx: ctx,
@@ -123,7 +157,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject, Config: &datastore.ProjectConfig{MultipleEndpointSubscriptions: false}},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -131,7 +165,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
 					Times(1).
@@ -167,7 +201,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
@@ -210,7 +244,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
@@ -244,7 +278,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(nil, errors.New("failed"))
@@ -269,7 +303,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(
@@ -299,7 +333,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 				SourceID:   "source-id-1",
 				EndpointID: "endpoint-id-1",
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				a, _ := ss.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).
 					Times(1).Return(nil, errors.New("failed to find endpoint by id"))
@@ -320,7 +354,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 					UID: "12345",
 				},
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
@@ -347,7 +381,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 					SourceID:   "source-id-1",
 					EndpointID: "endpoint-id-1",
 				},
-				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject},
+				project: &datastore.Project{UID: "12345", Type: datastore.OutgoingProject, Config: &datastore.ProjectConfig{MultipleEndpointSubscriptions: false}},
 			},
 			wantSubscription: &datastore.Subscription{
 				Name:       "sub 1",
@@ -358,7 +392,7 @@ func TestCreateSubcriptionService_Run(t *testing.T) {
 					EventTypes: []string{"*"},
 				},
 			},
-			dbFn: func(ss *CreateSubcriptionService) {
+			dbFn: func(ss *CreateSubscriptionService) {
 				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CreateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).

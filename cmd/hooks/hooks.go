@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
+	"io"
 	"os"
 	"time"
-
-	"github.com/pyroscope-io/client/pyroscope"
 
 	dbhook "github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/listener"
@@ -21,13 +21,12 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/tracer"
-	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/spf13/cobra"
 )
 
@@ -57,21 +56,16 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err = config.Override(cliConfig); err != nil {
 			return err
 		}
-
-		nwCfg := cfg.Tracer.NewRelic
-		nRApp, err := newrelic.NewApplication(
-			newrelic.ConfigAppName(nwCfg.AppName),
-			newrelic.ConfigLicense(nwCfg.LicenseKey),
-			newrelic.ConfigDistributedTracerEnabled(nwCfg.DistributedTracerEnabled),
-			newrelic.ConfigEnabled(nwCfg.ConfigEnabled),
-		)
+		cfg, err = config.Get() // updated
 		if err != nil {
 			return err
 		}
 
-		apm.SetApplication(nRApp)
+		app.TracerShutdown, err = tracer.Init(cfg.Tracer, cmd.Name())
+		if err != nil {
+			return err
+		}
 
-		var tr tracer.Tracer
 		var ca cache.Cache
 		var q queue.Queuer
 
@@ -82,10 +76,8 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		queueNames := map[string]int{
 			string(convoy.EventQueue):       3,
 			string(convoy.CreateEventQueue): 3,
-			string(convoy.SearchIndexQueue): 1,
 			string(convoy.ScheduleQueue):    1,
 			string(convoy.DefaultQueue):     1,
-			string(convoy.StreamQueue):      1,
 			string(convoy.MetaEventQueue):   1,
 		}
 
@@ -100,25 +92,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		lo := log.NewLogger(os.Stdout)
 
-		if cfg.Tracer.Type == config.NewRelicTracerProvider {
-			tr, err = tracer.NewTracer(cfg, lo.WithLogger())
-			if err != nil {
-				return err
-			}
-		}
-
-		profiling, err := cmd.Flags().GetBool("enable-profiling")
-		if err != nil {
-			return err
-		}
-
-		if profiling {
-			err = enableProfiling(cfg)
-			if err != nil {
-				return err
-			}
-		}
-
 		ca, err = cache.NewCache(cfg.Redis)
 		if err != nil {
 			return err
@@ -131,12 +104,17 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		*db = *postgresDB
 
-		projectRepo := postgres.NewProjectRepo(postgresDB)
-		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
+		hooks := dbhook.Init()
+
+		// the order matters here
+		projectListener := listener.NewProjectListener(q)
+		hooks.RegisterHook(datastore.ProjectUpdated, projectListener.AfterUpdate)
+		projectRepo := postgres.NewProjectRepo(postgresDB, ca)
+
+		metaEventRepo := postgres.NewMetaEventRepo(postgresDB, ca)
 		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
 		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo)
 
-		hooks := dbhook.Init()
 		hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
 		hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)
 		hooks.RegisterHook(datastore.EndpointDeleted, endpointListener.AfterDelete)
@@ -152,7 +130,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo
-		app.Tracer = tr
 		app.Cache = ca
 
 		if ok := shouldBootstrap(cmd); ok {
@@ -161,8 +138,18 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				return err
 			}
 
-			err = ensureInstanceConfig(context.Background(), app, cfg)
+			dbCfg, err := ensureInstanceConfig(context.Background(), app, cfg)
 			if err != nil {
+				return err
+			}
+
+			t := telemetry.NewTelemetry(lo, dbCfg,
+				telemetry.OptionBackend(telemetry.NewposthogBackend()),
+				telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
+
+			err = t.Identify(cmd.Context(), dbCfg.UID)
+			if err != nil {
+				// do nothing?
 				return err
 			}
 		}
@@ -177,14 +164,20 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 		if err == nil {
 			os.Exit(0)
 		}
+
+		err = app.TracerShutdown(context.Background())
+		if err == nil {
+			os.Exit(0)
+		}
 		return err
 	}
 }
 
-func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configuration) error {
+func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configuration) (*datastore.Configuration, error) {
 	configRepo := postgres.NewConfigRepo(a.DB)
 
 	s3 := datastore.S3Storage{
+		Prefix:       null.NewString(cfg.StoragePolicy.S3.Prefix, true),
 		Bucket:       null.NewString(cfg.StoragePolicy.S3.Bucket, true),
 		AccessKey:    null.NewString(cfg.StoragePolicy.S3.AccessKey, true),
 		SecretKey:    null.NewString(cfg.StoragePolicy.S3.SecretKey, true),
@@ -207,17 +200,19 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
 			a.Logger.Info("Creating Instance Config")
-			return configRepo.CreateConfiguration(ctx, &datastore.Configuration{
+			cfg := &datastore.Configuration{
 				UID:                ulid.Make().String(),
 				StoragePolicy:      storagePolicy,
 				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
 				CreatedAt:          time.Now(),
 				UpdatedAt:          time.Now(),
-			})
+			}
+
+			return cfg, configRepo.CreateConfiguration(ctx, cfg)
 		}
 
-		return err
+		return configuration, err
 	}
 
 	configuration.StoragePolicy = storagePolicy
@@ -225,7 +220,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
 	configuration.UpdatedAt = time.Now()
 
-	return configRepo.UpdateConfiguration(ctx, configuration)
+	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
 }
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
@@ -328,6 +323,115 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Port:     redisPort,
 	}
 
+	// Feature flags
+	fflag, err := cmd.Flags().GetString("feature-flag")
+	if err != nil {
+		return nil, err
+	}
+
+	switch fflag {
+	case config.Experimental:
+		c.FeatureFlag = config.ExperimentalFlagLevel
+	}
+
+	// tracing
+	tracingProvider, err := cmd.Flags().GetString("tracer-type")
+	if err != nil {
+		return nil, err
+	}
+
+	c.Tracer = config.TracerConfiguration{
+		Type: config.TracerProvider(tracingProvider),
+	}
+
+	switch c.Tracer.Type {
+	case config.OTelTracerProvider:
+		sampleRate, err := cmd.Flags().GetFloat64("otel-sample-rate")
+		if err != nil {
+			return nil, err
+		}
+
+		collectorURL, err := cmd.Flags().GetString("otel-collector-url")
+		if err != nil {
+			return nil, err
+		}
+
+		headerName, err := cmd.Flags().GetString("otel-auth-header-name")
+		if err != nil {
+			return nil, err
+		}
+
+		headerValue, err := cmd.Flags().GetString("otel-auth-header-value")
+		if err != nil {
+			return nil, err
+		}
+
+		insecureSkipVerify, err := cmd.Flags().GetBool("otel-insecure-skip-verify")
+		if err != nil {
+			return nil, err
+		}
+
+		c.Tracer.OTel = config.OTelConfiguration{
+			SampleRate:         sampleRate,
+			CollectorURL:       collectorURL,
+			InsecureSkipVerify: insecureSkipVerify,
+			OTelAuth: config.OTelAuthConfiguration{
+				HeaderName:  headerName,
+				HeaderValue: headerValue,
+			},
+		}
+
+	case config.SentryTracerProvider:
+		dsn, err := cmd.Flags().GetString("sentry-dsn")
+		if err != nil {
+			return nil, err
+		}
+
+		c.Tracer.Sentry = config.SentryConfiguration{
+			DSN: dsn,
+		}
+
+	}
+
+	flag, err := fflag2.NewFFlag()
+	if err != nil {
+		return nil, err
+	}
+	c.Metrics = config.MetricsConfiguration{
+		IsEnabled: false,
+	}
+	if flag.CanAccessFeature(fflag2.Prometheus, c) {
+		metricsBackend, err := cmd.Flags().GetString("metrics-backend")
+		if err != nil {
+			return nil, err
+		}
+		if !config.IsStringEmpty(metricsBackend) {
+			c.Metrics = config.MetricsConfiguration{
+				IsEnabled: false,
+				Backend:   config.MetricsBackend(metricsBackend),
+			}
+			switch c.Metrics.Backend {
+			case config.PrometheusMetricsProvider:
+				sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
+				if err != nil {
+					return nil, err
+				}
+				if sampleTime < 1 {
+					return nil, errors.New("metrics-prometheus-sample-time must be non-zero")
+				}
+				c.Metrics = config.MetricsConfiguration{
+					IsEnabled: true,
+					Backend:   config.MetricsBackend(metricsBackend),
+					Prometheus: config.PrometheusMetricsConfiguration{
+						SampleTime: sampleTime,
+					},
+				}
+			}
+		} else {
+			log.Warn("No metrics-backend specified")
+		}
+	}
+
 	return c, nil
 }
 
@@ -358,6 +462,7 @@ func checkPendingMigrations(db database.Database) error {
 	if err != nil {
 		return err
 	}
+	defer closeWithError(rows)
 
 	for rows.Next() {
 		var id ID
@@ -377,7 +482,7 @@ func checkPendingMigrations(db database.Database) error {
 		return postgres.ErrPendingMigrationsFound
 	}
 
-	return rows.Close()
+	return nil
 }
 
 func shouldCheckMigration(cmd *cobra.Command) bool {
@@ -416,7 +521,7 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
-	userRepo := postgres.NewUserRepo(a.DB)
+	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
 	if err != nil {
 		return fmt.Errorf("failed to load users - %w", err)
@@ -454,28 +559,9 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	return nil
 }
 
-func enableProfiling(cfg config.Configuration) error {
-	_, err := pyroscope.Start(pyroscope.Config{
-		ApplicationName: "convoy-" + cfg.Pyroscope.ProfileID,
-
-		// replace this with the address of pyroscope server
-		ServerAddress: cfg.Pyroscope.URL,
-		// you can disable logging by setting this to nil
-		// Logger: pyroscope.StandardLogger,
-		Logger: nil,
-		// optionally, if authentication is enabled, specify the API key:
-		AuthToken:         cfg.Pyroscope.AuthToken,
-		BasicAuthUser:     cfg.Pyroscope.Username,
-		BasicAuthPassword: cfg.Pyroscope.Password,
-		// but you can select the ones you want to use:
-		ProfileTypes: []pyroscope.ProfileType{
-			pyroscope.ProfileCPU,
-			pyroscope.ProfileAllocObjects,
-			pyroscope.ProfileAllocSpace,
-			pyroscope.ProfileInuseObjects,
-			pyroscope.ProfileInuseSpace,
-			pyroscope.ProfileGoroutines,
-		},
-	})
-	return err
+func closeWithError(closer io.Closer) {
+	err := closer.Close()
+	if err != nil {
+		fmt.Printf("%v, an error occurred while closing the client", err)
+	}
 }

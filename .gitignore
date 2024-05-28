@@ -14,9 +14,10 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 .idea
+.vscode
 
-/api/dashboard/ui/build/*
-!/api/dashboard/ui/build/go_test_stub.txt
+/api/ui/build/*
+!/api/ui/build/go_test_stub.txt
 /data/mongo/
 .DS_Store
 *.db

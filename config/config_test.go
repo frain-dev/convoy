@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"testing"
@@ -100,7 +102,9 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:5005",
+				APIVersion:       DefaultAPIVersion,
+				Host:             "localhost:5005",
+				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -117,10 +121,10 @@ func TestLoadConfig(t *testing.T) {
 					Host:   "localhost",
 					Port:   8379,
 				},
-				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
+						AgentPort:  5008,
 						WorkerPort: 5006,
 					},
 				},
@@ -147,6 +151,19 @@ func TestLoadConfig(t *testing.T) {
 						Path: convoy.DefaultOnPremDir,
 					},
 				},
+				Tracer: TracerConfiguration{
+					OTel: OTelConfiguration{
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
+					},
+				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: false,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -157,7 +174,9 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/valid-convoy-redis-cluster.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:5005",
+				APIVersion:       DefaultAPIVersion,
+				Host:             "localhost:5005",
+				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -175,10 +194,10 @@ func TestLoadConfig(t *testing.T) {
 					Port:      6379,
 					Addresses: "localhost:7001,localhost:7002,localhost:7003,localhost:7004,localhost:7005,localhost:7006",
 				},
-				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
+						AgentPort:  5008,
 						WorkerPort: 5006,
 					},
 				},
@@ -205,6 +224,19 @@ func TestLoadConfig(t *testing.T) {
 						Path: convoy.DefaultOnPremDir,
 					},
 				},
+				Tracer: TracerConfiguration{
+					OTel: OTelConfiguration{
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
+					},
+				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: false,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
+					},
+				},
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -215,7 +247,9 @@ func TestLoadConfig(t *testing.T) {
 				path: "./testdata/Config/zero-max-response-size-convoy.json",
 			},
 			wantCfg: Configuration{
-				Host: "localhost:5005",
+				APIVersion:       DefaultAPIVersion,
+				Host:             "localhost:5005",
+				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -232,10 +266,10 @@ func TestLoadConfig(t *testing.T) {
 					Host:   "localhost",
 					Port:   8379,
 				},
-				Search: DefaultConfiguration.Search,
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
+						AgentPort:  5008,
 						WorkerPort: 5006,
 					},
 				},
@@ -260,6 +294,19 @@ func TestLoadConfig(t *testing.T) {
 					Type: "on-prem",
 					OnPrem: OnPremStorage{
 						Path: convoy.DefaultOnPremDir,
+					},
+				},
+				Tracer: TracerConfiguration{
+					OTel: OTelConfiguration{
+						SampleRate:         1.0,
+						InsecureSkipVerify: true,
+					},
+				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: false,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
 					},
 				},
 			},
@@ -417,6 +464,67 @@ func TestOverride(t *testing.T) {
 				require.Equal(t, tc.expectedConfig.Redis, c.Redis)
 			default:
 			}
+		})
+	}
+}
+
+func Test_DatabaseConfigurationBuildDsn(t *testing.T) {
+	tests := []struct {
+		name        string
+		dbConfig    DatabaseConfiguration
+		expectedDsn string
+	}{
+		{
+			name: "handles happy path Postgres config",
+			dbConfig: DatabaseConfiguration{
+				Type:               PostgresDatabaseProvider,
+				Scheme:             "postgres",
+				Host:               "localhost",
+				Username:           "postgres",
+				Password:           "postgres",
+				Database:           "convoy",
+				Options:            "sslmode=disable&connect_timeout=30",
+				Port:               5432,
+				SetConnMaxLifetime: 3600,
+			},
+			expectedDsn: "postgres://postgres:postgres@localhost:5432/convoy?sslmode=disable&connect_timeout=30",
+		},
+		{
+			name: "escapes special characters in the password",
+			dbConfig: DatabaseConfiguration{
+				Type:               PostgresDatabaseProvider,
+				Scheme:             "postgres",
+				Host:               "localhost",
+				Username:           "asdf12345",
+				Password:           "Password1234@#%^/?:",
+				Database:           "convoy",
+				Options:            "sslmode=disable&connect_timeout=30",
+				Port:               5432,
+				SetConnMaxLifetime: 3600,
+			},
+			expectedDsn: "postgres://asdf12345:Password1234%40%23%25%5E%2F%3F%3A@localhost:5432/convoy?sslmode=disable&connect_timeout=30",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actualDsn := tc.dbConfig.BuildDsn()
+			require.Equal(t, tc.expectedDsn, actualDsn)
+
+			u, err := url.Parse(actualDsn)
+			require.NoError(t, err)
+
+			require.Equal(t, tc.dbConfig.Scheme, u.Scheme)
+			require.Equal(t, tc.dbConfig.Host, u.Hostname())
+			require.Equal(t, tc.dbConfig.Username, u.User.Username())
+			actualPassword, passwordSet := u.User.Password()
+			require.True(t, passwordSet)
+			require.Equal(t, tc.dbConfig.Password, actualPassword)
+			expectedPath := fmt.Sprintf("/%s", tc.dbConfig.Database)
+			require.Equal(t, expectedPath, u.Path)
+
+			parsedPort, e := strconv.ParseInt(u.Port(), 10, 64)
+			require.NoError(t, e)
+			require.Equal(t, int64(tc.dbConfig.Port), parsedPort)
 		})
 	}
 }

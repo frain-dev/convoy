@@ -15,6 +15,7 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
+import { ConfigButtonComponent } from '../config-button/config-button.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
@@ -43,8 +44,9 @@ import { NotificationComponent } from 'src/app/components/notification/notificat
 		LabelComponent,
 		TokenModalComponent,
 		PermissionDirective,
-        DialogDirective,
-        NotificationComponent
+		DialogDirective,
+		NotificationComponent,
+		ConfigButtonComponent
 	],
 	exports: [CreateProjectComponent]
 })

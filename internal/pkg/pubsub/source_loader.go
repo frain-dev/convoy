@@ -2,22 +2,12 @@ package pubsub
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"math"
-	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/apm"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	"github.com/frain-dev/convoy/worker/task"
-	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -28,186 +18,101 @@ type SourceLoader struct {
 	endpointRepo datastore.EndpointRepository
 	sourceRepo   datastore.SourceRepository
 	projectRepo  datastore.ProjectRepository
-	queue        queue.Queuer
-	sourcePool   *SourcePool
-	log          log.StdLogger
+
+	log log.StdLogger
 }
 
-func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datastore.SourceRepository, projectRepo datastore.ProjectRepository, queue queue.Queuer, sourcePool *SourcePool, log log.StdLogger) *SourceLoader {
+func NewSourceLoader(endpointRepo datastore.EndpointRepository, sourceRepo datastore.SourceRepository, projectRepo datastore.ProjectRepository, log log.StdLogger) *SourceLoader {
 	return &SourceLoader{
 		endpointRepo: endpointRepo,
 		sourceRepo:   sourceRepo,
 		projectRepo:  projectRepo,
-		queue:        queue,
-		sourcePool:   sourcePool,
 		log:          log,
 	}
 }
 
-func (s *SourceLoader) Run(ctx context.Context, interval int, stop <-chan struct{}) {
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
+// TODO(subomi): Refactor source loader to not know about table
+// instead it should return changes through a channel.
+func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table) error {
+	mSourceKeys := table.GetKeys()
 
-	for {
-		select {
-		case <-ticker.C:
-			err := s.fetchProjectSources(ctx)
-			if err != nil {
-				s.log.WithError(err).Error("failed to fetch sources")
+	sources, err := s.fetchProjectSources(ctx)
+	if err != nil {
+		s.log.WithError(err).Error("failed to fetch sources")
+		return err
+	}
+
+	var dSourceKeys []string
+	for _, source := range sources {
+		dSourceKeys = append(dSourceKeys, generateSourceKey(&source))
+	}
+
+	// find new and updated rows
+	newRows := util.Difference(dSourceKeys, mSourceKeys)
+	if len(newRows) != 0 {
+		for _, idx := range newRows {
+			for _, source := range sources {
+				if generateSourceKey(&source) == idx {
+					_ = table.Add(idx, source)
+				}
 			}
-		case <-stop:
-			// Stop the ticker
-			ticker.Stop()
-
-			// Stop the existing pub sub sources
-			s.sourcePool.Stop()
-			return
 		}
 	}
-}
 
-func (s *SourceLoader) fetchSources(ctx context.Context, projectID string, cursor string) error {
-	txn, innerCtx := apm.StartTransaction(ctx, "fetchSources")
-	defer txn.End()
-
-	filter := &datastore.SourceFilter{
-		Type: string(datastore.PubSubSource),
+	// find deleted rows
+	deletedRows := util.Difference(mSourceKeys, dSourceKeys)
+	if len(deletedRows) != 0 {
+		for _, idx := range deletedRows {
+			table.Delete(idx)
+		}
 	}
 
+	return nil
+}
+
+func (s *SourceLoader) fetchSources(ctx context.Context, sources []datastore.Source, projectIDs []string, cursor string) ([]datastore.Source, error) {
 	pageable := datastore.Pageable{
 		NextCursor: cursor,
 		Direction:  datastore.Next,
 		PerPage:    perPage,
 	}
 
-	sources, pagination, err := s.sourceRepo.LoadSourcesPaged(innerCtx, projectID, filter, pageable)
+	newSources, pagination, err := s.sourceRepo.LoadPubSubSourcesByProjectIDs(ctx, projectIDs, pageable)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if len(sources) == 0 && !pagination.HasNextPage {
-		return nil
+	if len(newSources) == 0 && !pagination.HasNextPage {
+		return sources, nil
 	}
 
-	for _, source := range sources {
-		ps, err := NewPubSubSource(&source, s.handler, s.log)
-		if err != nil {
-			s.log.WithError(err).Error("failed to create pub sub source")
-		}
-
-		s.sourcePool.Insert(ps)
+	if pagination.HasNextPage {
+		cursor = pagination.NextPageCursor
+		sources = append(sources, newSources...)
+		return s.fetchSources(ctx, sources, projectIDs, cursor)
 	}
 
-	cursor = pagination.NextPageCursor
-	return s.fetchSources(innerCtx, projectID, cursor)
+	sources = append(sources, newSources...)
+	return sources, nil
 }
 
-func (s *SourceLoader) fetchProjectSources(ctx context.Context) error {
-	txn, innerCtx := apm.StartTransaction(ctx, "fetchProjectSources")
-	defer txn.End()
-
-	projects, err := s.projectRepo.LoadProjects(innerCtx, &datastore.ProjectFilter{})
+func (s *SourceLoader) fetchProjectSources(ctx context.Context) ([]datastore.Source, error) {
+	projects, err := s.projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for _, project := range projects {
-		err := s.fetchSources(innerCtx, project.UID, fmt.Sprintf("%d", math.MaxInt))
-		if err != nil {
-			s.log.WithError(err).Error("failed to load sources")
-			continue
-		}
+	ids := make([]string, len(projects))
+	for i := range projects {
+		ids[i] = projects[i].UID
 	}
 
-	return nil
-}
-
-func (s *SourceLoader) handler(ctx context.Context, source *datastore.Source, msg string) error {
-	txn, innerCtx := apm.StartTransaction(ctx, fmt.Sprintf("%v handler", source.Name))
-	defer txn.End()
-
-	ev := struct {
-		EndpointID    string            `json:"endpoint_id"`
-		OwnerID       string            `json:"owner_id"`
-		EventType     string            `json:"event_type"`
-		Data          json.RawMessage   `json:"data"`
-		CustomHeaders map[string]string `json:"custom_headers"`
-	}{}
-
-	if err := json.Unmarshal([]byte(msg), &ev); err != nil {
-		return err
-	}
-
-	var endpoints []string
-
-	if !util.IsStringEmpty(ev.OwnerID) {
-		ownerIdEndpoints, err := s.endpointRepo.FindEndpointsByOwnerID(innerCtx, source.ProjectID, ev.OwnerID)
-		if err != nil {
-			return err
-		}
-
-		if len(ownerIdEndpoints) == 0 {
-			return errors.New("owner ID has no configured endpoints")
-		}
-
-		for _, endpoint := range ownerIdEndpoints {
-			endpoints = append(endpoints, endpoint.UID)
-		}
-	} else {
-		endpoint, err := s.endpointRepo.FindEndpointByID(innerCtx, ev.EndpointID, source.ProjectID)
-		if err != nil {
-			return err
-		}
-
-		endpoints = append(endpoints, endpoint.UID)
-	}
-
-	event := datastore.Event{
-		UID:       ulid.Make().String(),
-		EventType: datastore.EventType(ev.EventType),
-		SourceID:  source.UID,
-		ProjectID: source.ProjectID,
-		Raw:       string(ev.Data),
-		Data:      ev.Data,
-		Headers:   getCustomHeaders(ev.CustomHeaders),
-		Endpoints: endpoints,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-
-	createEvent := task.CreateEvent{
-		Event:              event,
-		CreateSubscription: !util.IsStringEmpty(ev.EndpointID),
-	}
-
-	eventByte, err := json.Marshal(createEvent)
+	var sources []datastore.Source
+	sources, err = s.fetchSources(ctx, sources, ids, "")
 	if err != nil {
-		return err
+		s.log.WithError(err).Error("failed to load sources")
+		return nil, err
 	}
 
-	job := &queue.Job{
-		ID:      event.UID,
-		Payload: json.RawMessage(eventByte),
-		Delay:   0,
-	}
-
-	err = s.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func getCustomHeaders(customHeaders map[string]string) httpheader.HTTPHeader {
-	var headers map[string][]string
-
-	if customHeaders != nil {
-		headers = make(map[string][]string)
-
-		for key, value := range customHeaders {
-			headers[key] = []string{value}
-		}
-	}
-
-	return headers
+	return sources, nil
 }

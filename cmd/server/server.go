@@ -2,7 +2,10 @@ package server
 
 import (
 	"errors"
+	_ "net/http/pprof"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/worker"
@@ -23,44 +26,20 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var env string
 	var host string
 	var proxy string
-	var sentry string
 	var limiter string
 	var cache string
 	var logger string
-	var searcher string
 	var logLevel string
 	var sslKeyFile string
 	var sslCertFile string
-	var retryStrategy string
-	var signatureHash string
-	var signatureHeader string
-	var smtpProvider string
-	var smtpUrl string
-	var smtpUsername string
-	var smtpPassword string
-	var smtpReplyTo string
-	var smtpFrom string
-	var newRelicApp string
-	var newRelicKey string
-	var typesenseApiKey string
 	var promaddr string
 
-	var typesenseHost string
 	var apiKeyAuthConfig string
 	var basicAuthConfig string
+	var nativeRealmEnabled bool
 
 	var ssl bool
-	var disableEndpoint bool
-	var replayAttacks bool
-	var nativeRealmEnabled bool
-	var newRelicTracerEnabled bool
-	var newRelicConfigEnabled bool
-
 	var port uint32
-	var smtpPort uint32
-	var retryLimit uint64
-	var workerPort uint32
-	var retryInterval uint64
 	var maxResponseSize uint64
 
 	cmd := &cobra.Command{
@@ -78,7 +57,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			err = StartConvoyServer(a)
+			err = startConvoyServer(a)
 
 			if err != nil {
 				a.Logger.Errorf("Error starting convoy server: %v", err)
@@ -97,56 +76,39 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
-	cmd.Flags().StringVar(&sentry, "sentry", "", "Sentry DSN")
 	cmd.Flags().StringVar(&sslCertFile, "ssl-cert-file", "", "SSL certificate file")
 	cmd.Flags().StringVar(&sslKeyFile, "ssl-key-file", "", "SSL key file")
-	cmd.Flags().StringVar(&retryStrategy, "retry-strategy", "", "Endpoint retry strategy")
-	cmd.Flags().StringVar(&signatureHash, "signature-hash", "", "Application signature hash")
-	cmd.Flags().StringVar(&signatureHeader, "signature-header", "", "Application signature header")
-	cmd.Flags().StringVar(&smtpProvider, "smtp-provider", "", "SMTP provider")
-	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
-	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP authentication username")
-	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
-	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
-	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
-	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
-	cmd.Flags().StringVar(&newRelicKey, "new-relic-key", "", "NewRelic application license key")
-	cmd.Flags().StringVar(&searcher, "searcher", "", "Searcher")
-	cmd.Flags().StringVar(&typesenseHost, "typesense-host", "", "Typesense Host")
-	cmd.Flags().StringVar(&typesenseApiKey, "typesense-api-key", "", "Typesense Api Key")
 	cmd.Flags().StringVar(&promaddr, "promaddr", "", `Prometheus dsn`)
 
 	cmd.Flags().BoolVar(&ssl, "ssl", false, "Configure SSL")
 	cmd.Flags().BoolVar(&nativeRealmEnabled, "native", false, "Enable native-realm authentication")
-	cmd.Flags().BoolVar(&disableEndpoint, "disable-endpoint", false, "Disable all application endpoints")
-	cmd.Flags().BoolVar(&replayAttacks, "replay-attacks", false, "Enable feature to prevent replay attacks")
-	cmd.Flags().BoolVar(&newRelicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
-	cmd.Flags().BoolVar(&newRelicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
 
 	cmd.Flags().Uint32Var(&port, "port", 0, "Server port")
-	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "Server port")
-	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
-	cmd.Flags().Uint64Var(&retryLimit, "retry-limit", 0, "Endpoint retry limit")
 	cmd.Flags().Uint64Var(&maxResponseSize, "max-response-size", 0, "Max response size")
-	cmd.Flags().Uint64Var(&retryInterval, "retry-interval", 0, "Endpoint retry interval")
 
 	return cmd
 }
 
-func StartConvoyServer(a *cli.App) error {
+func startConvoyServer(a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
 	}
 
 	start := time.Now()
-	a.Logger.Info("Starting Convoy server...")
+	a.Logger.Info("Starting Convoy control plane...")
 
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
-	userRepo := postgres.NewUserRepo(a.DB)
-	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, a.Cache)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB, a.Cache)
+	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB, a.Cache)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
+	}
+
+	flag, err := fflag.NewFFlag()
+	if err != nil {
+		a.Logger.WithError(err).Fatal("failed to create fflag controller")
 	}
 
 	if cfg.Server.HTTP.Port <= 0 {
@@ -166,10 +128,10 @@ func StartConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
+			FFlag:  flag,
 			DB:     a.DB,
 			Queue:  a.Queue,
 			Logger: lo,
-			Tracer: a.Tracer,
 			Cache:  a.Cache,
 		})
 	if err != nil {
@@ -181,14 +143,16 @@ func StartConvoyServer(a *cli.App) error {
 		return err
 	}
 
-	srv.SetHandler(handler.BuildRoutes())
+	srv.SetHandler(handler.BuildControlPlaneRoutes())
 
 	// initialize scheduler
 	s := worker.NewScheduler(a.Queue, lo)
 
-	// register daily analytic task
-	s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
+	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
+	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
+	s.RegisterTask("0 0 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
+	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
 	// Start scheduler
 	s.Start()
@@ -358,16 +322,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Server.HTTP.Port = port
 	}
 
-	// WORKER_PORT
-	workerPort, err := cmd.Flags().GetUint32("worker-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if workerPort != 0 {
-		c.Server.HTTP.WorkerPort = workerPort
-	}
-
 	// CONVOY_SSL_KEY_FILE
 	sslKeyFile, err := cmd.Flags().GetString("ssl-key-file")
 	if err != nil {
@@ -398,76 +352,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Server.HTTP.HttpProxy = proxy
 	}
 
-	// CONVOY_SMTP_PROVIDER
-	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpProvider) {
-		c.SMTP.Provider = smtpProvider
-	}
-
-	// CONVOY_SMTP_URL
-	smtpUrl, err := cmd.Flags().GetString("smtp-url")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpUrl) {
-		c.SMTP.URL = smtpUrl
-	}
-
-	// CONVOY_SMTP_USERNAME
-	smtpUsername, err := cmd.Flags().GetString("smtp-username")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpUsername) {
-		c.SMTP.Username = smtpUsername
-	}
-
-	// CONVOY_SMTP_PASSWORD
-	smtpPassword, err := cmd.Flags().GetString("smtp-password")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpPassword) {
-		c.SMTP.Password = smtpPassword
-	}
-
-	// CONVOY_SMTP_FROM
-	smtpFrom, err := cmd.Flags().GetString("smtp-from")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpFrom) {
-		c.SMTP.From = smtpFrom
-	}
-
-	// CONVOY_SMTP_REPLY_TO
-	smtpReplyTo, err := cmd.Flags().GetString("smtp-reply-to")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpReplyTo) {
-		c.SMTP.ReplyTo = smtpReplyTo
-	}
-
-	// CONVOY_SMTP_PORT
-	smtpPort, err := cmd.Flags().GetUint32("smtp-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if smtpPort != 0 {
-		c.SMTP.Port = smtpPort
-	}
-
 	// CONVOY_MAX_RESPONSE_SIZE
 	maxResponseSize, err := cmd.Flags().GetUint64("max-response-size")
 	if err != nil {
@@ -476,78 +360,6 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if maxResponseSize != 0 {
 		c.MaxResponseSize = maxResponseSize
-	}
-
-	// CONVOY_NEWRELIC_APP_NAME
-	newReplicApp, err := cmd.Flags().GetString("new-relic-app")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(newReplicApp) {
-		c.Tracer.NewRelic.AppName = newReplicApp
-	}
-
-	// CONVOY_NEWRELIC_LICENSE_KEY
-	newReplicKey, err := cmd.Flags().GetString("new-relic-key")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(newReplicKey) {
-		c.Tracer.NewRelic.LicenseKey = newReplicKey
-	}
-
-	// CONVOY_SEARCH_TYPE
-	searcher, err := cmd.Flags().GetString("searcher")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(searcher) {
-		c.Search.Type = config.SearchProvider(searcher)
-	}
-
-	// CONVOY_TYPESENSE_HOST
-	typesenseHost, err := cmd.Flags().GetString("typesense-host")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(typesenseHost) {
-		c.Search.Typesense.Host = typesenseHost
-	}
-
-	// CONVOY_TYPESENSE_API_KEY
-	typesenseApiKey, err := cmd.Flags().GetString("typesense-api-key")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(typesenseApiKey) {
-		c.Search.Typesense.ApiKey = typesenseApiKey
-	}
-
-	// CONVOY_NEWRELIC_CONFIG_ENABLED
-	isNRCESet := cmd.Flags().Changed("new-relic-config-enabled")
-	if isNRCESet {
-		newReplicConfigEnabled, err := cmd.Flags().GetBool("new-relic-config-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.ConfigEnabled = newReplicConfigEnabled
-	}
-
-	// CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED
-	isNRTESet := cmd.Flags().Changed("new-relic-tracer-enabled")
-	if isNRTESet {
-		newReplicTracerEnabled, err := cmd.Flags().GetBool("new-relic-tracer-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
 	}
 
 	// CONVOY_NATIVE_REALM_ENABLED

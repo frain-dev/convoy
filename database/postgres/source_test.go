@@ -20,7 +20,7 @@ func Test_CreateSource(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	sourceRepo := NewSourceRepo(db)
+	sourceRepo := NewSourceRepo(db, nil)
 	source := generateSource(t, db)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -38,7 +38,7 @@ func Test_FindSourceByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	sourceRepo := NewSourceRepo(db)
+	sourceRepo := NewSourceRepo(db, nil)
 	source := generateSource(t, db)
 
 	_, err := sourceRepo.FindSourceByID(context.Background(), source.ProjectID, source.UID)
@@ -61,7 +61,7 @@ func Test_FindSourceByName(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	sourceRepo := NewSourceRepo(db)
+	sourceRepo := NewSourceRepo(db, nil)
 	source := generateSource(t, db)
 
 	_, err := sourceRepo.FindSourceByName(context.Background(), source.ProjectID, source.Name)
@@ -84,7 +84,7 @@ func Test_FindSourceByMaskID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	sourceRepo := NewSourceRepo(db)
+	sourceRepo := NewSourceRepo(db, nil)
 	source := generateSource(t, db)
 
 	_, err := sourceRepo.FindSourceByMaskID(context.Background(), source.MaskID)
@@ -107,7 +107,7 @@ func Test_UpdateSource(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	sourceRepo := NewSourceRepo(db)
+	sourceRepo := NewSourceRepo(db, nil)
 	source := generateSource(t, db)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -134,8 +134,8 @@ func Test_DeleteSource(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	sourceRepo := NewSourceRepo(db)
-	subRepo := NewSubscriptionRepo(db)
+	sourceRepo := NewSourceRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db, nil)
 	source := generateSource(t, db)
 
 	require.NoError(t, sourceRepo.CreateSource(context.Background(), source))
@@ -224,7 +224,7 @@ func Test_LoadSourcesPaged(t *testing.T) {
 			db, closeFn := getDB(t)
 			defer closeFn()
 
-			sourceRepo := NewSourceRepo(db)
+			sourceRepo := NewSourceRepo(db, nil)
 			project := seedProject(t, db)
 
 			for i := 0; i < tc.count; i++ {
@@ -283,6 +283,6 @@ func generateSource(t *testing.T, db database.Database) *datastore.Source {
 func seedSource(t *testing.T, db database.Database) *datastore.Source {
 	source := generateSource(t, db)
 
-	require.NoError(t, NewSourceRepo(db).CreateSource(context.Background(), source))
+	require.NoError(t, NewSourceRepo(db, nil).CreateSource(context.Background(), source))
 	return source
 }

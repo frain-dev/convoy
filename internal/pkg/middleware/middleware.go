@@ -11,11 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/riandyrn/otelchi"
+
 	"github.com/sirupsen/logrus"
 
-	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/newrelic/go-agent/v3/newrelic"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -27,8 +28,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	sdktrace "go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -52,15 +55,8 @@ func InstrumentPath(path string) func(http.Handler) http.Handler {
 	}
 }
 
-func InstrumentRequests() func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			txn, r, w := apm.StartWebTransaction(r.URL.Path, r, w)
-			defer txn.End()
-
-			next.ServeHTTP(w, r)
-		})
-	}
+func InstrumentRequests(serverName string, r chi.Router) func(next http.Handler) http.Handler {
+	return otelchi.Middleware(serverName, otelchi.WithChiRoutes(r))
 }
 
 func WriteRequestIDHeader(next http.Handler) http.Handler {
@@ -68,6 +64,26 @@ func WriteRequestIDHeader(next http.Handler) http.Handler {
 		w.Header().Set("X-Request-ID", r.Context().Value(middleware.RequestIDKey).(string))
 		next.ServeHTTP(w, r)
 	})
+}
+
+func CanAccessFeature(fflag *fflag.FFlag, featureKey fflag.FeatureFlagKey) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			cfg, err := config.Get()
+			if err != nil {
+				log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
+				_ = render.Render(w, r, util.NewErrorResponse("something went wrong", http.StatusInternalServerError))
+				return
+			}
+
+			if !fflag.CanAccessFeature(featureKey, &cfg) {
+				_ = render.Render(w, r, util.NewErrorResponse("this feature is not enabled in this server", http.StatusForbidden))
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func SetupCORS(next http.Handler) http.Handler {
@@ -153,7 +169,6 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 
 	if len(authInfo) != 2 {
 		err := errors.New("invalid header structure")
-		apm.NoticeError(r.Context(), err)
 		return nil, err
 	}
 
@@ -192,8 +207,16 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			}, nil
 		}
 
+		parts := strings.Split(authToken, ".")
+		if len(parts) == 3 {
+			return &auth.Credential{
+				Type:  auth.CredentialTypeJWT,
+				Token: authToken,
+			}, nil
+		}
+
 		return &auth.Credential{
-			Type:  auth.CredentialTypeJWT,
+			Type:  auth.CredentialTypeToken,
 			Token: authToken,
 		}, nil
 
@@ -205,6 +228,7 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 func Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rawPerPage := r.URL.Query().Get("perPage")
+		sort := r.URL.Query().Get("sort")
 		rawDirection := r.URL.Query().Get("direction")
 		rawNextCursor := r.URL.Query().Get("next_page_cursor")
 		rawPrevCursor := r.URL.Query().Get("prev_page_cursor")
@@ -217,25 +241,19 @@ func Pagination(next http.Handler) http.Handler {
 			rawDirection = "next"
 		}
 
-		if len(rawNextCursor) == 0 {
-			rawNextCursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
-		}
-
-		if len(rawPrevCursor) == 0 {
-			rawPrevCursor = ""
-		}
-
 		perPage, err := strconv.Atoi(rawPerPage)
 		if err != nil {
 			perPage = 20
 		}
 
 		pageable := datastore.Pageable{
+			Sort:       strings.ToUpper(sort),
 			PerPage:    perPage,
 			Direction:  datastore.PageDirection(rawDirection),
 			NextCursor: rawNextCursor,
 			PrevCursor: rawPrevCursor,
 		}
+		pageable.SetCursors()
 
 		r = r.WithContext(setPageableInContext(r.Context(), pageable))
 		next.ServeHTTP(w, r)
@@ -303,22 +321,10 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 		requestFields["header"] = headerFields(r.Header)
 	}
 
-	cfg, err := config.Get()
-	if err != nil {
-		return nil
-	}
+	span := sdktrace.SpanFromContext(r.Context())
 
-	if cfg.Tracer.Type == config.NewRelicTracerProvider {
-		txn := newrelic.FromContext(r.Context()).GetLinkingMetadata()
-
-		if cfg.Tracer.NewRelic.DistributedTracerEnabled {
-			requestFields["traceId"] = txn.TraceID
-			requestFields["spanId"] = txn.SpanID
-		}
-
-		requestFields["entity.guid"] = txn.EntityGUID
-		requestFields["entity.name"] = txn.EntityName
-	}
+	requestFields["traceId"] = span.SpanContext().SpanID()
+	requestFields["spanId"] = span.SpanContext().TraceID()
 
 	return requestFields
 }
@@ -387,7 +393,11 @@ func setPageableInContext(ctx context.Context, pageable datastore.Pageable) cont
 }
 
 func GetPageableFromContext(ctx context.Context) datastore.Pageable {
-	return ctx.Value(pageableCtx).(datastore.Pageable)
+	v := ctx.Value(pageableCtx)
+	if v != nil {
+		return v.(datastore.Pageable)
+	}
+	return datastore.Pageable{}
 }
 
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {

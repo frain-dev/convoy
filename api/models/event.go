@@ -3,23 +3,35 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"time"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"net/http"
-	"time"
 )
 
 type CreateEvent struct {
+	UID string `json:"uid" swaggerignore:"true"`
+
+	// Deprecated but necessary for backward compatibility.
+	AppID string `json:"app_id"` // Deprecated but necessary for backward compatibility
+
+	// Specifies the endpoint to send this event to.
 	EndpointID string `json:"endpoint_id"`
-	AppID      string `json:"app_id"` // Deprecated but necessary for backward compatibility
-	EventType  string `json:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	CustomHeaders  map[string]string `json:"custom_headers"`
-	IdempotencyKey string            `json:"idempotency_key"`
+	Data json.RawMessage `json:"data" valid:"required~please provide your data" swaggertype:"object"`
+
+	// Event Type is used for filtering and debugging e.g invoice.paid
+	EventType string `json:"event_type" valid:"required~please provide an event type"`
+
+	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
+	CustomHeaders map[string]string `json:"custom_headers"`
+
+	// Specify a key for event deduplication
+	IdempotencyKey string `json:"idempotency_key"`
 }
 
 func (e *CreateEvent) Validate() error {
@@ -27,9 +39,30 @@ func (e *CreateEvent) Validate() error {
 }
 
 type DynamicEvent struct {
-	Endpoint     DynamicEndpoint     `json:"endpoint"`
-	Subscription DynamicSubscription `json:"subscription"`
-	Event        DynamicEventStub    `json:"event"`
+	// URL is the endpoint's URL prefixed with https. non-https urls are currently
+	// not supported.
+	URL string `json:"url" valid:"required~please provide a url"`
+
+	// Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.
+	Secret string `json:"secret" valid:"required~please provide a secret"`
+
+	// A list of event types for the subscription filter config
+	EventTypes []string `json:"event_types"`
+
+	// Data is an arbitrary JSON value that gets sent as the body of the
+	// webhook to the endpoints
+	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+
+	ProjectID string `json:"project_id" swaggerignore:"true"`
+
+	// Event Type is used for filtering and debugging e.g invoice.paid
+	EventType string `json:"event_type" valid:"required~please provide an event type"`
+
+	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
+	CustomHeaders map[string]string `json:"custom_headers"`
+
+	// Specify a key for event deduplication
+	IdempotencyKey string `json:"idempotency_key"`
 }
 
 func (de *DynamicEvent) Validate() error {
@@ -45,12 +78,18 @@ type SearchParams struct {
 
 type QueryListEvent struct {
 	// Any arbitrary value to filter the events payload
-	Query          string `json:"query"`
-	SourceID       string `json:"sourceId"`
+	Query string `json:"query"`
+
+	// A list of Source IDs to filter the events by.
+	SourceIDs []string `json:"sourceId"`
+
+	// IdempotencyKey to filter by
 	IdempotencyKey string `json:"idempotencyKey"`
-	SearchParams
+
 	// A list of endpoint ids to filter by
 	EndpointIDs []string `json:"endpointId"`
+
+	SearchParams
 	Pageable
 }
 
@@ -69,7 +108,7 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 			Query:          r.URL.Query().Get("query"),
 			IdempotencyKey: r.URL.Query().Get("idempotencyKey"),
 			EndpointIDs:    getEndpointIDs(r),
-			SourceID:       r.URL.Query().Get("sourceId"),
+			SourceIDs:      getSourceIDs(r),
 			SearchParams:   searchParams,
 			Pageable:       m.GetPageableFromContext(r.Context()),
 		},
@@ -89,15 +128,44 @@ func (ds *DynamicEventStub) Validate() error {
 	return util.Validate(ds)
 }
 
+type BroadcastEvent struct {
+	// Event Type is used for filtering and debugging e.g invoice.paid
+	EventType string `json:"event_type" valid:"required~please provide an event type"`
+
+	ProjectID string `json:"project_id" swaggerignore:"true"`
+	SourceID  string `json:"source_id" swaggerignore:"true"`
+
+	// Data is an arbitrary JSON value that gets sent as the body of the
+	// webhook to the endpoints
+	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+
+	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
+	CustomHeaders map[string]string `json:"custom_headers"`
+
+	// Specify a key for event deduplication
+	IdempotencyKey string `json:"idempotency_key"`
+}
+
+func (bs *BroadcastEvent) Validate() error {
+	return util.Validate(bs)
+}
+
 type FanoutEvent struct {
-	OwnerID   string `json:"owner_id" valid:"required~please provide an owner id"`
+	// Used for fanout, sends this event to all endpoints with this OwnerID.
+	OwnerID string `json:"owner_id" valid:"required~please provide an owner id"`
+
+	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
-	CustomHeaders  map[string]string `json:"custom_headers"`
-	IdempotencyKey string            `json:"idempotency_key"`
+	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+
+	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
+	CustomHeaders map[string]string `json:"custom_headers"`
+
+	// Specify a key for event deduplication
+	IdempotencyKey string `json:"idempotency_key"`
 }
 
 func (fe *FanoutEvent) Validate() error {
@@ -106,34 +174,6 @@ func (fe *FanoutEvent) Validate() error {
 
 type EventResponse struct {
 	*datastore.Event
-}
-
-type QueryBatchReplayEvent struct {
-	// The endpoint ID to filter by
-	EndpointID string `json:"endpointId"`
-	// The source ID to filter by
-	SourceID string `json:"sourceId"`
-	SearchParams
-}
-
-type QueryBatchReplayEventResponse struct {
-	*datastore.Filter
-}
-
-func (qb *QueryBatchReplayEvent) Transform(r *http.Request) (*QueryBatchReplayEventResponse, error) {
-	searchParams, err := getSearchParams(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return &QueryBatchReplayEventResponse{
-		Filter: &datastore.Filter{
-			Pageable:     defaultPageable,
-			SourceID:     r.URL.Query().Get("sourceId"),
-			EndpointID:   r.URL.Query().Get("endpointId"),
-			SearchParams: searchParams,
-		},
-	}, nil
 }
 
 type QueryCountAffectedEvents struct {
@@ -172,6 +212,18 @@ func getEndpointIDs(r *http.Request) []string {
 	}
 
 	return endpoints
+}
+
+func getSourceIDs(r *http.Request) []string {
+	var sources []string
+
+	for _, id := range r.URL.Query()["sourceId"] {
+		if !util.IsStringEmpty(id) {
+			sources = append(sources, id)
+		}
+	}
+
+	return sources
 }
 
 func getSearchParams(r *http.Request) (datastore.SearchParams, error) {

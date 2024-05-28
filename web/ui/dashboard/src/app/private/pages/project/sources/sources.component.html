@@ -1,58 +1,72 @@
-<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Sources</h1>
-		<convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right"></convoy-tooltip>
-	</div>
-
-	<button convoy-button size="sm" routerLink="./new" convoy-permission="Sources|MANAGE" *ngIf="!isLoadingSources && sources?.content?.length">Connect a source</button>
-</div>
-
 <!-- empty state  -->
-<div class="py-100px" convoy-card *ngIf="!isLoadingSources && sources?.content?.length == 0">
+<div class="py-80px" *ngIf="!isLoadingSources && sources?.content?.length == 0">
 	<div convoy-empty-state imgSrc="/assets/img/sources-empty-state.png" heading="Create your first source" description="Sources are how your webhook events are routed into the Convoy." id="sources-empty-state">
-		<button convoy-permission="Sources|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Connect a source</button>
+		<button convoy-permission="Sources|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">
+			<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
+				<use xlink:href="#plus-icon"></use>
+			</svg>
+			Connect a source
+		</button>
 	</div>
 </div>
 
 <!-- loader  -->
-<div convoy-card class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingSources">
+<div class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingSources">
 	<convoy-loader position="relative"></convoy-loader>
 </div>
 
 <ng-container *ngIf="!isLoadingSources && sources?.content?.length">
+	<div class="flex justify-between items-end mb-24px">
+		<div class="flex items-center">
+			<h1 class="text-18 font-bold text-neutral-12 mr-10px">Sources</h1>
+			<!-- <convoy-tooltip tooltipContent="Your sources are channels connected to Convoy to trigger webhook events to subscribed endpoints" position="right" class="scale-90"></convoy-tooltip> -->
+		</div>
+	</div>
+
 	<!-- list of sources  -->
-	<div class="p-24px min-h-[600px]" convoy-card>
+	<div class="min-h-[600px]">
 		<div class="flex flex-wrap gap-24px">
+			<a
+				convoy-permission="Sources|MANAGE"
+				routerLink="./new"
+				class="w-full max-w-[440px] min-w-[300px] rounded-8px border border-dashed border-new.primary-400 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
+			>
+				<svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				<span class="text-primary-100 font-medium text-12">Create new Source</span>
+			</a>
+
 			<ng-container *ngFor="let source of sources?.content; let i = index">
-				<div convoy-card [id]="'source' + i" class="w-full max-w-[338px] min-w-[300px] py-20px h-fit">
+				<div convoy-card [id]="'source' + i" class="w-full max-w-[440px] min-w-[300px] py-20px h-fit">
 					<!-- outgoing project sources -->
 					<ng-container *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
 						<div class="flex items-center justify-between px-24px">
 							<div class="flex items-center">
 								<img [src]="'assets/img/' + source.pub_sub.type + '.png'" alt="icon" class="mr-12px" />
 								<div>
-									<p class="text-10 text-grey-40 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
+									<p class="text-10 text-neutral-11 capitalize mb-4px">{{ source.pub_sub.type | sourceValue: 'pub_sub' }}</p>
 									<p class="text-14 font-medium">{{ source.name }}</p>
 								</div>
 							</div>
 
 							<div convoy-dropdown position="left" size="md" class="ml-4px">
-								<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
+								<button dropdownTrigger convoy-button size="sm" fill="text" class="!p-0">
 									<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
 								</button>
 
 								<ul dropdownOptions class="p-10px">
 									<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-										<button convoy-dropdown-option convoy-button color="grey" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
-											<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
+										<button convoy-dropdown-option convoy-button color="neutral" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
+											<svg width="17" height="16" class="fill-neutral-10 mr-8px">
 												<use xlink:href="#edit-icon"></use>
 											</svg>
 											Edit
 										</button>
 									</li>
 									<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-										<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeSource = source; deleteDialog.showModal()">
-											<svg width="16" height="16" class="mr-8px fill-danger-100">
+										<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="error" class="w-full !justify-start" (click)="activeSource = source; deleteDialog.showModal()">
+											<svg width="16" height="16" class="mr-8px fill-error-9">
 												<use xlink:href="#delete-icon"></use>
 											</svg>
 											Delete
@@ -65,36 +79,36 @@
 
 					<!-- incoming project sources -->
 					<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
-						<div class="px-24px pb-12px border-b border-b-grey-10">
-							<div class="text-grey-40 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
+						<div class="px-24px pb-12px border-b border-b-neutral-a3">
+							<div class="text-neutral-11 text-10 mb-4px">{{ source.provider || (source.verifier.type | sourceValue: 'verifier') }}</div>
 							<div class="flex justify-between items-center">
-								<div class="text-14 text-new.gray-800 font-medium">{{ source.name }}</div>
+								<div class="text-14 text-neutral-12 font-medium">{{ source.name }}</div>
 
 								<div convoy-dropdown #incomingSourceDropdown position="left" size="md" class="ml-4px">
-									<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
+									<button dropdownTrigger convoy-button size="sm" fill="text" class="!p-0">
 										<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
 									</button>
 
 									<ul dropdownOptions class="p-10px">
 										<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-											<div convoy-copy-button show-icon="false" class="w-full" color="gray" size="sm" (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" [text]="source?.uid || ''">
-												<svg width="16" height="16" class="stroke-new.gray-600">
+											<div convoy-copy-button show-icon="false" class="w-full" color="neutral" size="sm" (copyText)="hideIncomingSourceDropdown()" [notificationText]="source.name + ' ID has been copied to clipboard'" [text]="source?.uid || ''">
+												<svg width="16" height="16" class="stroke-neutral-10">
 													<use xlink:href="#copy-icon-3"></use>
 												</svg>
-												<span class="pl-8px text-new.gray-600">Copy ID</span>
+												<span class="pl-8px text-neutral-10">Copy ID</span>
 											</div>
 										</li>
 										<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-											<button convoy-dropdown-option convoy-button color="grey" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
-												<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
+											<button convoy-dropdown-option convoy-button color="neutral" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + source?.uid">
+												<svg width="17" height="16" class="fill-neutral-10 mr-8px">
 													<use xlink:href="#edit-icon"></use>
 												</svg>
 												Edit
 											</button>
 										</li>
 										<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-											<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeSource = source; deleteDialog.showModal()">
-												<svg width="16" height="16" class="mr-8px fill-danger-100">
+											<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="error" class="w-full !justify-start" (click)="activeSource = source; deleteDialog.showModal()">
+												<svg width="16" height="16" class="mr-8px fill-error-9">
 													<use xlink:href="#delete-icon"></use>
 												</svg>
 												Delete
@@ -104,8 +118,26 @@
 								</div>
 							</div>
 						</div>
-						<div class="mt-12px mx-24px">
-							<convoy-copy-button [text]="source.url" color="primary" className="ml-2px" [notificationText]="source.name + ' URL has been copied to clipboard'"><span class="text-14 ml-8px font-medium">Copy URL</span></convoy-copy-button>
+
+						<div class="mt-16px mx-24px">
+							<convoy-copy-button [text]="source.url" color="primary" show-icon="false" [notificationText]="source.name + ' URL has been copied to clipboard'">
+								<div convoy-tag color="primary" class="flex items-center !gap-12px">
+									<span class="max-w-[230px] truncate">{{ source.url }}</span>
+									<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
+										<path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+										<path d="M10 6H14C16 6 16 5 16 4C16 2 15 2 14 2H10C9 2 8 2 8 4C8 6 9 6 10 6Z" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+										<path
+											d="M16 4.01953C19.33 4.19953 21 5.42953 21 9.99953V15.9995C21 19.9995 20 21.9995 15 21.9995H9C4 21.9995 3 19.9995 3 15.9995V9.99953C3 5.43953 4.67 4.19953 8 4.01953"
+											stroke="#292D32"
+											stroke-width="1.5"
+											stroke-miterlimit="10"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										/>
+									</svg>
+								</div>
+							</convoy-copy-button>
 						</div>
 					</ng-container>
 				</div>
@@ -119,14 +151,14 @@
 
 <dialog #sourceDialog convoy-dialog id="sourceForm" position="full">
 	<div convoy-dialog-header fullscreen="true" (closeDialog)="closeCreateSourceModal({ action: 'close' })">
-		<h2 class="font-semibold capitalize ml-2">{{ action === 'update' ? 'Update Source' : 'Create source' }}</h2>
+		<h2 class="font-semibold text-14 capitalize ml-10px">{{ action === 'update' ? 'Update Source' : 'Create source' }}</h2>
 	</div>
 
 	<div class="w-full h-full">
-        <div class="max-w-[770px] m-auto">
-            <convoy-create-source showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
-        </div>
-    </div>
+		<div class="max-w-[770px] pt-24px m-auto">
+			<convoy-create-source [showModal]="privateService.getProjectDetails?.type === 'incoming' ? 'true' : 'false'" showAction="true" (onAction)="closeCreateSourceModal($event)" [action]="action"></convoy-create-source>
+		</div>
+	</div>
 </dialog>
 
 <dialog #deleteDialog convoy-dialog position="center" size="sm">

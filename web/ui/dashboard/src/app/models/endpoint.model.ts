@@ -18,15 +18,17 @@ export interface ENDPOINT {
 		api_key: { header_value: string; header_name: string };
 	};
 	created_at: string;
+    owner_id?:string;
 	description: string;
 	events?: any;
-	status?: string;
+	status: string;
 	secrets?: SECRET[];
 	name?: string;
+	url: string;
 	target_url: string;
 	updated_at: string;
-	rate_limit?: number;
-	rate_limit_duration?: string;
+	rate_limit: number;
+	rate_limit_duration: string;
 	http_timeout?: string;
 	support_email: string;
 }

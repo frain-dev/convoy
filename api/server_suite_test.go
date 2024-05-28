@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	ncache "github.com/frain-dev/convoy/cache/noop"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/database"
@@ -27,13 +29,11 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/cache"
-	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/tracer"
 )
 
 // TEST HELPERS.
@@ -70,7 +70,7 @@ func getDB() database.Database {
 	_ = os.Setenv("TZ", "") // Use UTC by default :)
 
 	dbHooks := hooks.Init()
-	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}) {})
+	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
 
 	return db
 }
@@ -85,7 +85,6 @@ func getQueueOptions() (queue.QueueOptions, error) {
 	queueNames := map[string]int{
 		string(convoy.EventQueue):       3,
 		string(convoy.CreateEventQueue): 3,
-		string(convoy.SearchIndexQueue): 1,
 		string(convoy.ScheduleQueue):    1,
 		string(convoy.DefaultQueue):     1,
 		string(convoy.StreamQueue):      1,
@@ -102,7 +101,6 @@ func getQueueOptions() (queue.QueueOptions, error) {
 }
 
 func buildServer() *ApplicationHandler {
-	var t tracer.Tracer = nil
 	var logger *log.Logger
 	var qOpts queue.QueueOptions
 
@@ -120,7 +118,6 @@ func buildServer() *ApplicationHandler {
 			DB:     db,
 			Queue:  newQueue,
 			Logger: logger,
-			Tracer: t,
 			Cache:  noopCache,
 		})
 
@@ -129,13 +126,13 @@ func buildServer() *ApplicationHandler {
 	return ah
 }
 
-func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, cache cache.Cache) {
+func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, portalLinkRepo datastore.PortalLinkRepository, cache cache.Cache) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, cache)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache)
 	if err != nil {
 		t.Errorf("failed to initialize realm chain : %v", err)
 	}
@@ -169,13 +166,12 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 		}
 
 		req := createRequest(http.MethodPost, "/ui/auth/login", "", bytes.NewBuffer(body))
-
 		w := httptest.NewRecorder()
 
 		// Act
 		router.ServeHTTP(w, req)
 		if w.Code != http.StatusOK {
-			return fmt.Errorf("failed to authenticate: reponse body: %s", w.Body.String())
+			return fmt.Errorf("failed to authenticate: response body: %s", w.Body.String())
 		}
 
 		loginResp := &models.LoginUserResponse{}
@@ -195,14 +191,15 @@ func authenticateRequest(auth *models.LoginUser) AuthenticatorFn {
 }
 
 func randBool() bool {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(2) == 1
+	rnd := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return rnd.Intn(2) == 1
 }
 
 func createRequest(method, url, auth string, body io.Reader) *http.Request {
 	req := httptest.NewRequest(method, url, body)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", auth))
+	req.Header.Add(VersionHeader, config.DefaultAPIVersion)
 
 	return req
 }

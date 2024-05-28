@@ -10,43 +10,33 @@ import (
 
 	"github.com/tidwall/gjson"
 
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
 
-type exportRepo struct {
-	db *sqlx.DB
-}
-
-func NewExportRepo(db database.Database) datastore.ExportRepository {
-	return &exportRepo{db: db.GetDB()}
-}
-
 const (
 	exportRepoQ = `
-		SELECT to_jsonb(ed) - 'id' || jsonb_build_object('uid', ed.id) AS json_output
+		SELECT TO_JSONB(ed) - 'id' || JSONB_BUILD_OBJECT('uid', ed.id) AS json_output
 		FROM %s AS ed %s
 		ORDER BY id ASC
 		LIMIT $4
 	`
 
 	count = `
-		SELECT COUNT(*) FROM %s %s;
+		SELECT COUNT(*) FROM %s %s
 	`
 
 	where = ` WHERE deleted_at IS NULL AND project_id = $1 AND created_at < $2 AND (id > $3 OR $3 = '')`
 )
 
 // ExportRecords exports the records from the given table and writes them in json format to the passed writer.
-// It's the callers responsibility to close the writer.
-func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+// It's the caller's responsibility to close the writer.
+func exportRecords(ctx context.Context, db *sqlx.DB, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
 	c := &struct {
 		Count int64 `db:"count"`
 	}{}
 
 	countQuery := fmt.Sprintf(count, tableName, where)
-	err := e.db.QueryRowxContext(ctx, countQuery, projectID, createdAt, "").StructScan(c)
+	err := db.QueryRowxContext(ctx, countQuery, projectID, createdAt, "").StructScan(c)
 	if err != nil {
 		return 0, err
 	}
@@ -73,7 +63,7 @@ func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID str
 	)
 
 	for i := 0; i < numBatches; i++ {
-		n, lastID, err = e.querybatch(ctx, q, projectID, lastID, createdAt, batchSize, w)
+		n, lastID, err = querybatch(ctx, db, q, projectID, lastID, createdAt, batchSize, w)
 		if err != nil {
 			return 0, fmt.Errorf("failed to query batch %d: %v", i, err)
 		}
@@ -90,21 +80,21 @@ func (e *exportRepo) ExportRecords(ctx context.Context, tableName, projectID str
 
 var commaJSON = []byte(`,`)
 
-func (e *exportRepo) querybatch(ctx context.Context, q, projectID, lastID string, createdAt time.Time, batchSize int, w io.Writer) (int64, string, error) {
+func querybatch(ctx context.Context, db *sqlx.DB, q, projectID, lastID string, createdAt time.Time, batchSize int, w io.Writer) (int64, string, error) {
 	var numDocs int64
 
 	// Calling rows.Close() manually in places before we return is important here to prevent
 	//  a memory leak, we cannot use defer in a loop because this can fill up the function stack quickly
-	rows, err := e.db.QueryxContext(ctx, q, projectID, createdAt, lastID, batchSize)
+	rows, err := db.QueryxContext(ctx, q, projectID, createdAt, lastID, batchSize)
 	if err != nil {
 		return 0, "", err
 	}
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	var record json.RawMessage
 	records := make([]byte, 0, 1000)
 
-	// scan first record and append it without appending comma
+	// scan the first record and append it without appending a comma
 	if rows.Next() {
 		numDocs++
 		err = rows.Scan(&record)

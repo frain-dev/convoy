@@ -2,6 +2,8 @@ package pubsub
 
 import (
 	"errors"
+
+	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -23,9 +25,26 @@ type SqsPubSub struct {
 	QueueName     string `json:"queue_name" valid:"required"`
 }
 
+type AmqpPubSub struct {
+	Host               string    `json:"host"`
+	Port               string    `json:"port"`
+	Queue              string    `json:"queue"`
+	Schema             string    `json:"schema"`
+	Auth               *AmqpAuth `json:"auth"`
+	Vhost              *string   `json:"vhost"`
+	RoutingKey         string    `json:"routingKey"`
+	BoundExchange      *string   `json:"bindedExchange"`
+	DeadLetterExchange *string   `json:"deadLetterExchange"`
+}
+
+type AmqpAuth struct {
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
 type KafkaPubSub struct {
 	Brokers         []string   `json:"brokers" valid:"required~brokers list is required"`
-	ConsumerGroupID string     `json:"consumer_group_id" valid:"required~consumer group ID is required"`
+	ConsumerGroupID string     `json:"consumer_group_id"`
 	TopicName       string     `json:"topic_name" valid:"required~topic name is required"`
 	Auth            *KafkaAuth `json:"auth"`
 }
@@ -99,6 +118,42 @@ func Validate(cfg *datastore.PubSubConfig) error {
 
 		s := &sqs.Sqs{Cfg: cfg.Sqs}
 		if err := s.Verify(); err != nil {
+			return err
+		}
+
+		return nil
+
+	case datastore.AmqpPubSub:
+		if cfg.Amqp == nil {
+			return errors.New("amqp config is required")
+		}
+
+		var aAuth *AmqpAuth
+		if cfg.Amqp.Auth != nil {
+			aAuth = &AmqpAuth{
+				User:     cfg.Amqp.Auth.User,
+				Password: cfg.Amqp.Auth.Password,
+			}
+		}
+
+		aPubSub := &AmqpPubSub{
+			Schema:             cfg.Amqp.Schema,
+			Host:               cfg.Amqp.Host,
+			Port:               cfg.Amqp.Port,
+			Queue:              cfg.Amqp.Queue,
+			Auth:               aAuth,
+			Vhost:              cfg.Amqp.Vhost,
+			BoundExchange:      cfg.Amqp.BoundExchange,
+			RoutingKey:         cfg.Amqp.RoutingKey,
+			DeadLetterExchange: cfg.Amqp.DeadLetterExchange,
+		}
+
+		if err := util.Validate(aPubSub); err != nil {
+			return err
+		}
+
+		a := &rqm.Amqp{Cfg: cfg.Amqp}
+		if err := a.Verify(); err != nil {
 			return err
 		}
 

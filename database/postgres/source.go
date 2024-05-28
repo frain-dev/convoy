@@ -5,6 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
+	"time"
 
 	"github.com/lib/pq"
 
@@ -19,8 +23,8 @@ import (
 const (
 	createSource = `
     INSERT INTO convoy.sources (id,source_verifier_id,name,type,mask_id,provider,is_disabled,forward_headers,project_id,
-                                pub_sub,custom_response_body,custom_response_content_type,idempotency_keys)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13);
+                                pub_sub,custom_response_body,custom_response_content_type,idempotency_keys, body_function, header_function)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
     `
 
 	createSourceVerifier = `
@@ -45,7 +49,9 @@ const (
 	custom_response_body = $10,
 	custom_response_content_type = $11,
 	idempotency_keys = $12,
-	updated_at = now()
+	body_function = $13,
+	header_function = $14,
+	updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
 
@@ -60,7 +66,7 @@ const (
         hmac_header=$8,
         hmac_secret=$9,
         hmac_encoding=$10,
-		updated_at = now()
+		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
@@ -76,50 +82,72 @@ const (
 		s.forward_headers,
 		s.idempotency_keys,
 		s.project_id,
+		s.body_function,
+		s.header_function,
 		COALESCE(s.source_verifier_id, '') AS source_verifier_id,
-		COALESCE(s.custom_response_body, '') as "custom_response.body",
-		COALESCE(s.custom_response_content_type, '') as "custom_response.content_type",
-		COALESCE(sv.type, '') as "verifier.type",
-		COALESCE(sv.basic_username, '') as "verifier.basic_auth.username",
-		COALESCE(sv.basic_password, '') as "verifier.basic_auth.password",
-        COALESCE(sv.api_key_header_name, '') as "verifier.api_key.header_name",
-        COALESCE(sv.api_key_header_value, '') as "verifier.api_key.header_value",
-        COALESCE(sv.hmac_hash, '') as "verifier.hmac.hash",
-        COALESCE(sv.hmac_header, '') as "verifier.hmac.header",
-        COALESCE(sv.hmac_secret, '') as "verifier.hmac.secret",
-        COALESCE(sv.hmac_encoding, '') as "verifier.hmac.encoding",
+		COALESCE(s.custom_response_body, '') AS "custom_response.body",
+		COALESCE(s.custom_response_content_type, '') AS "custom_response.content_type",
+		COALESCE(sv.type, '') AS "verifier.type",
+		COALESCE(sv.basic_username, '') AS "verifier.basic_auth.username",
+		COALESCE(sv.basic_password, '') AS "verifier.basic_auth.password",
+        COALESCE(sv.api_key_header_name, '') AS "verifier.api_key.header_name",
+        COALESCE(sv.api_key_header_value, '') AS "verifier.api_key.header_value",
+        COALESCE(sv.hmac_hash, '') AS "verifier.hmac.hash",
+        COALESCE(sv.hmac_header, '') AS "verifier.hmac.header",
+        COALESCE(sv.hmac_secret, '') AS "verifier.hmac.secret",
+        COALESCE(sv.hmac_encoding, '') AS "verifier.hmac.encoding",
 		s.created_at,
 		s.updated_at
-	FROM convoy.sources as s
+	FROM convoy.sources AS s
 	LEFT JOIN convoy.source_verifiers sv ON s.source_verifier_id = sv.id
 	WHERE s.deleted_at IS NULL
 	`
 
-	fetchSource = baseFetchSource + ` AND %s = $1;`
-
-	fetchSourceByName = baseFetchSource + ` AND %s = $1 AND %s = $2;`
+	fetchPubSubSources = `
+	SELECT
+	    id,
+		name,
+		type,
+		pub_sub,
+		mask_id,
+		provider,
+		is_disabled,
+		forward_headers,
+		idempotency_keys,
+		body_function,
+		header_function,
+		project_id,
+		created_at,
+		updated_at
+	FROM convoy.sources
+	WHERE type = '%s' AND project_id IN (:project_ids) AND deleted_at IS NULL
+	AND (id <= :cursor OR :cursor = '')
+    ORDER BY id DESC
+    LIMIT :limit
+	`
 
 	deleteSource = `
 	UPDATE convoy.sources SET
-	deleted_at = now()
-	WHERE id = $1 AND deleted_at IS NULL;
+	deleted_at = NOW()
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deleteSourceVerifier = `
 	UPDATE convoy.source_verifiers SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deleteSourceSubscription = `
 	UPDATE convoy.subscriptions SET
-	deleted_at = now()
-	WHERE source_id = $1 AND deleted_at IS NULL;
+	deleted_at = NOW()
+	WHERE source_id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	fetchSourcesPagedFilter = `
 	AND (s.type = :type OR :type = '')
-	AND (s.provider = :provider OR :provider = '')
+    AND (s.provider = :provider OR :provider = '')
+	AND s.name ILIKE :query
 	AND s.project_id = :project_id
 	`
 
@@ -146,11 +174,16 @@ const (
 	`
 
 	countPrevSources = `
-	SELECT count(distinct(s.id)) as count
+	SELECT COUNT(DISTINCT(s.id)) AS count
 	FROM convoy.sources s
 	WHERE s.deleted_at IS NULL
 	%s
 	AND s.id > :cursor GROUP BY s.id ORDER BY s.id DESC LIMIT 1`
+)
+
+var (
+	fetchSource       = baseFetchSource + ` AND %s = $1;`
+	fetchSourceByName = baseFetchSource + ` AND %s = $1 AND %s = $2;`
 )
 
 var (
@@ -161,11 +194,15 @@ var (
 )
 
 type sourceRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewSourceRepo(db database.Database) datastore.SourceRepository {
-	return &sourceRepo{db: db.GetDB()}
+func NewSourceRepo(db database.Database, ca cache.Cache) datastore.SourceRepository {
+	if ca == nil {
+		ca = ncache.NewNoopCache()
+	}
+	return &sourceRepo{db: db.GetDB(), cache: ca}
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {
@@ -174,6 +211,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	var (
 		hmac   datastore.HMac
@@ -220,7 +258,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
 		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
 		source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
-		source.IdempotencyKeys,
+		source.IdempotencyKeys, source.BodyFunction, source.HeaderFunction,
 	)
 	if err != nil {
 		return err
@@ -235,7 +273,18 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		return ErrSourceNotCreated
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
+	err = s.cache.Set(ctx, srcCacheKey, source, time.Minute*1)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source *datastore.Source) error {
@@ -243,12 +292,13 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	result, err := tx.ExecContext(
 		ctx, updateSourceById, source.UID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID,
+		source.Provider, source.IsDisabled, source.ForwardHeaders, projectID,
 		source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
-		source.IdempotencyKeys,
+		source.IdempotencyKeys, source.BodyFunction, source.HeaderFunction,
 	)
 	if err != nil {
 		return err
@@ -296,70 +346,123 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 		}
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
+	err = s.cache.Set(ctx, srcCacheKey, source, time.Minute*1)
+	if err != nil {
+		return err
+	}
+
+	srcCacheKey2 := convoy.SourceCacheKey.Get(source.MaskID).String()
+	err = s.cache.Set(ctx, srcCacheKey2, source, time.Minute*1)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *sourceRepo) FindSourceByID(ctx context.Context, projectID string, id string) (*datastore.Source, error) {
-	source := &datastore.Source{}
-	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrSourceNotFound
+func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id string) (*datastore.Source, error) {
+	fromCache, err := s.readFromCache(ctx, id, func() (*datastore.Source, error) {
+		source := &datastore.Source{}
+		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrSourceNotFound
+			}
+			return nil, err
 		}
+
+		return source, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return source, nil
+	return fromCache, nil
 }
 
 func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID string, name string) (*datastore.Source, error) {
-	source := &datastore.Source{}
-	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrSourceNotFound
+	fromCache, err := s.readFromCache(ctx, name, func() (*datastore.Source, error) {
+		source := &datastore.Source{}
+		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrSourceNotFound
+			}
+			return nil, err
 		}
+
+		return source, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return source, nil
+	return fromCache, nil
 }
 
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
-	source := &datastore.Source{}
-	err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrSourceNotFound
+	fromCache, err := s.readFromCache(ctx, maskID, func() (*datastore.Source, error) {
+		source := &datastore.Source{}
+		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrSourceNotFound
+			}
+			return nil, err
 		}
+
+		return source, nil
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	return source, nil
+	return fromCache, nil
 }
 
-func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectID, id, sourceVeriferID string) error {
+func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id, sourceVerifierId string) error {
 	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
-	_, err = tx.ExecContext(ctx, deleteSourceVerifier, sourceVeriferID)
+	_, err = tx.ExecContext(ctx, deleteSourceVerifier, sourceVerifierId)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteSource, id)
+	_, err = tx.ExecContext(ctx, deleteSource, id, projectId)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deleteSourceSubscription, id)
+	_, err = tx.ExecContext(ctx, deleteSourceSubscription, id, projectId)
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	srcCacheKey := convoy.SourceCacheKey.Get(id).String()
+	err = s.cache.Delete(ctx, srcCacheKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, filter *datastore.SourceFilter, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
@@ -369,6 +472,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		"project_id": projectID,
 		"limit":      pageable.Limit(),
 		"cursor":     pageable.Cursor(),
+		"query":      "%" + filter.Query + "%",
 	}
 
 	var query string
@@ -396,6 +500,7 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+	defer closeWithError(rows)
 
 	sources := make([]datastore.Source, 0)
 	for rows.Next() {
@@ -429,13 +534,14 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(sources))
@@ -449,6 +555,87 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 
 	pagination := &datastore.PaginationData{PrevRowCount: count}
 	pagination = pagination.Build(pageable, ids)
+
+	return sources, *pagination, nil
+}
+
+func (s *sourceRepo) readFromCache(ctx context.Context, key string, readFromDB func() (*datastore.Source, error)) (*datastore.Source, error) {
+	var source *datastore.Source
+	srcCacheKey := convoy.SourceCacheKey.Get(key).String()
+	err := s.cache.Get(ctx, srcCacheKey, &source)
+	if err != nil {
+		return nil, err
+	}
+
+	if source != nil {
+		return source, err
+	}
+
+	fromDB, err := readFromDB()
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.cache.Set(ctx, srcCacheKey, fromDB, time.Minute*1)
+	if err != nil {
+		return nil, err
+	}
+
+	return fromDB, err
+}
+
+func (s *sourceRepo) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIDs []string, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {
+	arg := map[string]interface{}{
+		"project_ids": projectIDs,
+		"limit":       pageable.Limit(),
+		"cursor":      pageable.Cursor(),
+	}
+
+	query := fmt.Sprintf(fetchPubSubSources, datastore.PubSubSource)
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	query = s.db.Rebind(query)
+
+	rows, err := s.db.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+	defer closeWithError(rows)
+
+	sources := make([]datastore.Source, 0)
+	for rows.Next() {
+		var source datastore.Source
+		err = rows.StructScan(&source)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+
+		sources = append(sources, source)
+	}
+
+	// Bypass pagination.Build here since we're only dealing with forward paging here
+	var hasNext bool
+	var cursor string
+	if len(sources) > pageable.PerPage {
+		cursor = sources[len(sources)-1].UID
+		sources = sources[:len(sources)-1]
+		hasNext = true
+	}
+
+	pagination := &datastore.PaginationData{
+		PerPage:        int64(pageable.PerPage),
+		HasNextPage:    hasNext,
+		NextPageCursor: cursor,
+	}
 
 	return sources, *pagination, nil
 }

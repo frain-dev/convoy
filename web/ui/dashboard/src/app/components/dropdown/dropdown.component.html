@@ -1,4 +1,4 @@
-<div convoyOverlay *ngIf="show" (click)="$event.stopPropagation(); show = false"></div>
+<div convoyOverlay *ngIf="show" (click)="$event.stopPropagation(); show = false; close.emit()"></div>
 <div class="relative">
 	<div class="empty:hidden" #dropdownTriggerContainer>
 		<ng-content select="[dropdownTrigger]"></ng-content>

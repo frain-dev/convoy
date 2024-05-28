@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/frain-dev/convoy/internal/pkg/dedup"
-	"github.com/frain-dev/convoy/util"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -19,9 +21,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-var (
-	ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")
-)
+var ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")
 
 type MetaEvent struct {
 	MetaEventID string
@@ -32,10 +32,13 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data MetaEvent
 
-		err := json.Unmarshal(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal process process meta event payload")
-			return &EndpointError{Err: err, delay: defaultDelay}
+			err := json.Unmarshal(t.Payload(), &data)
+			if err != nil {
+				return &EndpointError{Err: err, delay: defaultDelay}
+			}
 		}
 
 		metaEvent, err := metaEventRepo.FindMetaEventByID(ctx, data.ProjectID, data.MetaEventID)
@@ -117,13 +120,8 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 		return nil, err
 	}
 
-	httpDuration, err := time.ParseDuration(convoy.HTTP_TIMEOUT)
-	if err != nil {
-		log.WithError(err).Error("failed to parse timeout duration")
-		return nil, err
-	}
-
-	dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
+	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
+	dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating http client")
 		return nil, err
@@ -147,6 +145,7 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 	}
 
 	url := project.Config.MetaEvent.URL
+
 	resp, err := dispatch.SendRequest(url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID))
 	if err != nil {
 		return nil, err

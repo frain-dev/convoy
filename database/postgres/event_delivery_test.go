@@ -30,7 +30,7 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 
 	ed := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
@@ -42,6 +42,8 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 
 	dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt = time.Time{}, time.Time{}
 	dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source, dbEventDelivery.Device = nil, nil, nil, nil
+
+	require.Equal(t, "", dbEventDelivery.Latency)
 
 	require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 	ed.Metadata.NextSendTime = time.Time{}
@@ -59,6 +61,7 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 		EndpointID:     endpoint.UID,
 		DeviceID:       device.UID,
 		SubscriptionID: sub.UID,
+		EventType:      event.EventType,
 		Headers:        httpheader.HTTPHeader{"X-sig": []string{"3787 fmmfbf"}},
 		DeliveryAttempts: []datastore.DeliveryAttempt{
 			{UID: ulid.Make().String()},
@@ -94,7 +97,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 	event := seedEvent(t, db, project)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	edMap := map[string]*datastore.EventDelivery{}
 	ids := []string{}
 	for i := 0; i < 8; i++ {
@@ -145,7 +148,7 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 	endpoint := seedEndpoint(t, db)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	edMap := map[string]*datastore.EventDelivery{}
 
 	mainEvent := seedEvent(t, db, project)
@@ -199,7 +202,7 @@ func Test_eventDeliveryRepo_CountDeliveriesByStatus(t *testing.T) {
 	event := seedEvent(t, db, project)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 
 	status := datastore.FailureEventStatus
 	for i := 0; i < 8; i++ {
@@ -235,7 +238,7 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDelivery(t *testing.T) {
 
 	ed := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
@@ -262,7 +265,7 @@ func Test_eventDeliveryRepo_UpdateStatusOfEventDeliveries(t *testing.T) {
 	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
 	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed1)
 	require.NoError(t, err)
 
@@ -291,7 +294,7 @@ func Test_eventDeliveryRepo_FindDiscardedEventDeliveries(t *testing.T) {
 	event := seedEvent(t, db, project)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 
 	status := datastore.DiscardedEventStatus
 	for i := 0; i < 8; i++ {
@@ -329,13 +332,17 @@ func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
 
 	ed := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
 	newAttempt := datastore.DeliveryAttempt{
 		UID: ulid.Make().String(),
 	}
+
+	latency := "1h2m"
+
+	ed.Latency = latency
 
 	err = edRepo.UpdateEventDeliveryWithAttempt(context.Background(), project.UID, *ed, newAttempt)
 	require.NoError(t, err)
@@ -345,6 +352,7 @@ func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
 
 	require.Equal(t, ed.DeliveryAttempts[0], dbEventDelivery.DeliveryAttempts[0])
 	require.Equal(t, newAttempt, dbEventDelivery.DeliveryAttempts[1])
+	require.Equal(t, latency, dbEventDelivery.Latency)
 }
 
 func Test_eventDeliveryRepo_CountEventDeliveries(t *testing.T) {
@@ -361,7 +369,7 @@ func Test_eventDeliveryRepo_CountEventDeliveries(t *testing.T) {
 	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
 	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed1)
 	require.NoError(t, err)
 
@@ -392,7 +400,7 @@ func Test_eventDeliveryRepo_DeleteProjectEventDeliveries(t *testing.T) {
 	ed1 := generateEventDelivery(project, endpoint, event, device, sub)
 	ed2 := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	err := edRepo.CreateEventDelivery(context.Background(), ed1)
 	require.NoError(t, err)
 
@@ -436,7 +444,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 	event := seedEvent(t, db, project)
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 
-	edRepo := NewEventDeliveryRepo(db)
+	edRepo := NewEventDeliveryRepo(db, nil)
 	edMap := map[string]*datastore.EventDelivery{}
 	for i := 0; i < 8; i++ {
 		ed := generateEventDelivery(project, endpoint, event, device, sub)
@@ -456,7 +464,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		datastore.Pageable{
 			PerPage: 10,
 		},
-		"",
+		"", "",
 	)
 
 	require.NoError(t, err)
@@ -484,4 +492,29 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 
 		require.Equal(t, ed, dbEventDelivery)
 	}
+
+	evType := "file"
+	event = seedEventWithEventType(t, db, project, evType)
+
+	ed := generateEventDelivery(project, endpoint, event, device, sub)
+
+	err = edRepo.CreateEventDelivery(context.Background(), ed)
+	require.NoError(t, err)
+
+	filteredDeliveries, _, err := edRepo.LoadEventDeliveriesPaged(
+		context.Background(), project.UID, []string{endpoint.UID}, event.UID, sub.UID,
+		[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus},
+		datastore.SearchParams{
+			CreatedAtStart: time.Now().Add(-time.Hour).Unix(),
+			CreatedAtEnd:   time.Now().Add(time.Hour).Unix(),
+		},
+		datastore.Pageable{
+			PerPage: 10,
+		},
+		"", evType,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, 1, len(filteredDeliveries))
+	require.Equal(t, ed.UID, filteredDeliveries[0].UID)
 }

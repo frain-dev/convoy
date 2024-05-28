@@ -2,7 +2,12 @@ package task
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
+	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/go-redsync/redsync/v4"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -17,12 +22,36 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(context.Context, *asynq.Task) error {
-	sourceRepo := postgres.NewSourceRepo(db)
-	subRepo := postgres.NewSubscriptionRepo(db)
-	endpointRepo := postgres.NewEndpointRepo(db)
+func MonitorTwitterSources(db database.Database, cache cache.Cache, queue queue.Queuer, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
+	sourceRepo := postgres.NewSourceRepo(db, cache)
+	subRepo := postgres.NewSubscriptionRepo(db, cache)
+	endpointRepo := postgres.NewEndpointRepo(db, cache)
+
+	pool := goredis.NewPool(redis.Client())
+	rs := redsync.New(pool)
 
 	return func(ctx context.Context, t *asynq.Task) error {
+		const mutexName = "convoy:monitor_twitter_sources:mutex"
+		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
+
+		tctx, cancel := context.WithTimeout(ctx, time.Second*2)
+		defer cancel()
+
+		err := mutex.LockContext(tctx)
+		if err != nil {
+			return fmt.Errorf("failed to obtain lock: %v", err)
+		}
+
+		defer func() {
+			tctx, cancel := context.WithTimeout(ctx, time.Second*2)
+			defer cancel()
+
+			ok, err := mutex.UnlockContext(tctx)
+			if !ok || err != nil {
+				log.WithError(err).Error("failed to release lock")
+			}
+		}()
+
 		p := datastore.Pageable{PerPage: 100, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
 		f := &datastore.SourceFilter{Provider: string(datastore.TwitterSourceProvider)}
 
@@ -55,7 +84,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(contex
 						}
 
 						if !util.IsStringEmpty(app.SupportEmail) {
-							err = sendNotificationEmail(source, app, queue)
+							err = sendNotificationEmail(ctx, source, app, queue)
 							if err != nil {
 								log.Error("failed to send notification")
 								return err
@@ -69,7 +98,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer) func(contex
 	}
 }
 
-func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint, q queue.Queuer) error {
+func sendNotificationEmail(ctx context.Context, source datastore.Source, endpoint *datastore.Endpoint, q queue.Queuer) error {
 	em := email.Message{
 		Email:        endpoint.SupportEmail,
 		Subject:      "Twitter Custom Source",
@@ -80,14 +109,14 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 		},
 	}
 
-	buf, err := json.Marshal(em)
+	bytes, err := msgpack.EncodeMsgPack(em)
 	if err != nil {
 		log.WithError(err).Error("failed to marshal notification payload")
 		return err
 	}
 
 	job := &queue.Job{
-		Payload: json.RawMessage(buf),
+		Payload: bytes,
 		Delay:   0,
 	}
 

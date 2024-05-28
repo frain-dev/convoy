@@ -20,6 +20,7 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
+import { TeamsModule } from './teams/teams.module';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
@@ -47,7 +48,8 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		InputErrorComponent,
 		InputDirective,
 		LabelComponent,
-        DialogDirective
+		DialogDirective,
+		TeamsModule
 	]
 })
 export class SettingsModule {}

@@ -1,9 +1,10 @@
 <div convoy-dialog-header fullscreen="true" (closeDialog)="goBack()">
-	<h2 class="font-semibold capitalize">Portal Link</h2>
+	<h2 class="font-semibold text-14 capitalize">Portal Link</h2>
 </div>
+
 <div class="max-w-[770px] m-auto">
 	<h2 class="font-semibold mb-8px mt-30px">{{ action === 'update' ? 'Update' : 'Create' }} Portal Link</h2>
-	<p class="text-new.gray-600 font-normal text-14 max-w-[577px]">Portal link is a mini Convoy dashboard for your for your receiving endpoint owners to easily review and debug their webhook events from you.</p>
+	<p class="text-neutral-10 font-normal text-14 max-w-[577px]">Portal link is a mini Convoy dashboard for your for your receiving endpoint owners to easily review and debug their webhook events from you.</p>
 
 	<form [formGroup]="portalLinkForm" (ngSubmit)="savePortalLink()">
 		<div convoy-card class="p-24px mt-24px">
@@ -30,6 +31,7 @@
 					label="Endpoints"
 					name="endpoints"
 					formControlName="endpoints"
+                    [selectedValues]="selectedEndpoints"
 					[options]="endpoints"
 					[required]="true"
 					[multiple]="true"
@@ -49,7 +51,7 @@
 			<div class="flex justify-between items-start">
 				<div class="max-w-[500px]">
 					<label class="text-14 font-semibold">Allow Endpoint Management</label>
-					<p class="text-12 font-normal text-grey-40 mt-10px">Endpoint management enables portal link user to update and create (if set up with owner id) endpoints.</p>
+					<p class="text-12 font-normal text-neutral-11 mt-10px">Endpoint management enables portal link user to update and create (if set up with owner id) endpoints.</p>
 				</div>
 				<convoy-toggle [class]="portalLink ? 'disabled' : ''" formControlName="can_manage_endpoint"></convoy-toggle>
 			</div>
@@ -57,8 +59,8 @@
 			<hr class="my-24px border border-new.primary-25" *ngIf="portalLink" />
 
 			<ng-container *ngIf="portalLink">
-				<p class="text-grey-40 text-12 mt-20px">Portal Link</p>
-				<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
+				<p class="text-neutral-11 text-12 mt-20px">Portal Link</p>
+				<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
 					<span class="text-14 font-normal whitespace-nowrap w-450px overflow-hidden text-ellipsis">{{ portalLink || '' }}</span>
 					<convoy-copy-button [text]="portalLink || ''" notificationText="URL has been copied to clipboard!"></convoy-copy-button>
 				</div>

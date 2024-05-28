@@ -1,5 +1,8 @@
+import { Location } from '@angular/common';
 import { Injectable } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
+import { FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { NOTIFICATION_STATUS } from 'src/app/models/global.model';
 import { environment } from 'src/environments/environment';
 
@@ -9,7 +12,8 @@ import { environment } from 'src/environments/environment';
 export class GeneralService {
 	alertStatus: BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean }> = new BehaviorSubject<{ message: string; style: NOTIFICATION_STATUS; type?: string; show: boolean }>({ message: 'testing', style: 'info', type: 'alert', show: false });
 
-	constructor() {}
+
+	constructor(private route: ActivatedRoute, private _location: Location) {}
 
 	showNotification(details: { message: string; style: NOTIFICATION_STATUS; type?: string }) {
 		this.alertStatus.next({ message: details.message, style: details.style, show: true, type: details.type ? details.type : 'alert' });
@@ -97,7 +101,7 @@ export class GeneralService {
 		return `${day} ${months[month]}, ${year}`;
 	}
 
-	setContentDisplayed(content: { created_at: Date }[]) {
+	setContentDisplayed(content: { created_at: Date }[], sortOrder?: string) {
 		const dateCreateds = content.map((item: { created_at: Date }) => this.getDate(item.created_at));
 		const uniqueDateCreateds = [...new Set(dateCreateds)];
 		let displayedItems: any = [];
@@ -105,12 +109,27 @@ export class GeneralService {
 			const filteredItemDate = content.filter((item: { created_at: Date }) => this.getDate(item.created_at) === itemDate);
 			const contents = { date: itemDate, content: filteredItemDate };
 			displayedItems.push(contents);
-			displayedItems = displayedItems.sort((a: any, b: any) => Number(new Date(b.date)) - Number(new Date(a.date)));
+
+			displayedItems = sortOrder === 'desc' ? displayedItems.sort((a: any, b: any) => Number(new Date(b.date)) - Number(new Date(a.date))) : displayedItems.sort((a: any, b: any) => Number(new Date(a.date)) - Number(new Date(b.date)));
 		});
+
 		return displayedItems;
 	}
 
-	getCodeSnippetString(type: 'event_data' | 'res_body' | 'res_header' | 'req_header' | 'error', data: any) {
+	addFilterToURL(params?: FILTER_QUERY_PARAM) {
+		const queryParams = { ...this.route.snapshot.queryParams, ...params };
+
+		if (!params?.next_page_cursor) delete queryParams.next_page_cursor;
+		if (!params?.prev_page_cursor) delete queryParams.prev_page_cursor;
+
+		const cleanedQuery: any = Object.fromEntries(Object.entries(queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
+		const cleanedQueryParams = new URLSearchParams(cleanedQuery).toString();
+		this._location.go(`${location.pathname}?${cleanedQueryParams}`);
+
+		return queryParams;
+	}
+
+	getCodeSnippetString(type: 'event_data' | 'res_body' | 'res_header' | 'req_header' | 'error' | 'log', data: any) {
 		let displayMessage = '';
 		switch (type) {
 			case 'event_data':

@@ -2,7 +2,6 @@ package convoy
 
 import (
 	"embed"
-	"fmt"
 	"strings"
 )
 
@@ -82,28 +81,31 @@ func GetVersionFromFS(fs embed.FS) string {
 }
 
 const (
-	EventProcessor               TaskName = "EventProcessor"
-	DeadLetterProcessor          TaskName = "DeadLetterProcessor"
-	CreateEventProcessor         TaskName = "CreateEventProcessor"
-	CreateDynamicEventProcessor  TaskName = "CreateDynamicEventProcessor"
-	MetaEventProcessor           TaskName = "MetaEventProcessor"
-	NotificationProcessor        TaskName = "NotificationProcessor"
-	IndexDocument                TaskName = "index document"
-	DailyAnalytics               TaskName = "daily analytics"
-	StreamCliEventsProcessor     TaskName = "StreamCliEventsProcessor"
-	MonitorTwitterSources        TaskName = "monitor twitter sources"
-	RetentionPolicies            TaskName = "retention_policies"
-	EmailProcessor               TaskName = "EmailProcessor"
-	ExpireSecretsProcessor       TaskName = "ExpireSecretsProcessor"
-	DeleteArchivedTasksProcessor TaskName = "DeleteArchivedTasksProcessor"
+	EventProcessor                TaskName = "EventProcessor"
+	CreateEventProcessor          TaskName = "CreateEventProcessor"
+	CreateDynamicEventProcessor   TaskName = "CreateDynamicEventProcessor"
+	CreateBroadcastEventProcessor TaskName = "CreateBroadcastEventProcessor"
+	MetaEventProcessor            TaskName = "MetaEventProcessor"
+	NotificationProcessor         TaskName = "NotificationProcessor"
+	TokenizeSearch                TaskName = "tokenize search"
+	TokenizeSearchForProject      TaskName = "tokenize search for project"
+	DailyAnalytics                TaskName = "daily analytics"
+	StreamCliEventsProcessor      TaskName = "StreamCliEventsProcessor"
+	MonitorTwitterSources         TaskName = "monitor twitter sources"
+	RetentionPolicies             TaskName = "retention_policies"
+	EmailProcessor                TaskName = "EmailProcessor"
+	ExpireSecretsProcessor        TaskName = "ExpireSecretsProcessor"
+	DeleteArchivedTasksProcessor  TaskName = "DeleteArchivedTasksProcessor"
 
-	EndpointsCacheKey          CacheKey = "endpoints"
-	OrganisationsCacheKey      CacheKey = "organisations"
+	EndpointCacheKey           CacheKey = "endpoints"
+	UserCacheKey               CacheKey = "users"
+	ApiKeyCacheKey             CacheKey = "api_keys"
+	OrganisationCacheKey       CacheKey = "organisations"
 	OrganisationMemberCacheKey CacheKey = "organisation_members"
 	ProjectsCacheKey           CacheKey = "projects"
+	SubscriptionCacheKey       CacheKey = "subscriptions"
 	TokenCacheKey              CacheKey = "tokens"
 	SourceCacheKey             CacheKey = "sources"
-	IdempotencyCacheKey        CacheKey = "dedup"
 )
 
 // queues
@@ -122,13 +124,3 @@ const (
 	DefaultOnPremDir = "/var/convoy/export"
 	TmpExportDir     = "/tmp/convoy/export"
 )
-
-const (
-	EventDeliveryIDLength = 12
-)
-
-const (
-	Concurrency = 100
-)
-
-var ErrUnsupportedDatebase = fmt.Errorf("unsupported database for search detected, remove search configuration or use a supported database (postgres)")

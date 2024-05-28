@@ -2,8 +2,8 @@ package notifications
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"strconv"
 
 	"github.com/frain-dev/convoy"
@@ -66,7 +66,7 @@ func SendEndpointNotification(ctx context.Context,
 				TemplateName: email.TemplateEndpointUpdate,
 				Params: map[string]string{
 					"logo_url":        project.LogoURL,
-					"target_url":      endpoint.TargetURL,
+					"target_url":      endpoint.Url,
 					"failure_msg":     failureMsg,
 					"response_body":   responseBody,
 					"status_code":     strconv.Itoa(statusCode),
@@ -81,9 +81,9 @@ func SendEndpointNotification(ctx context.Context,
 
 			var text string
 			if failure {
-				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit, endpoint response body (%s) and status code was %d, reason for failure is \"%s\", endpoint status is now %s", endpoint.TargetURL, responseBody, statusCode, failureMsg, status)
+				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit, endpoint response body (%s) and status code was %d, reason for failure is \"%s\", endpoint status is now %s", endpoint.Url, responseBody, statusCode, failureMsg, status)
 			} else {
-				text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.TargetURL, status)
+				text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.Url, status)
 			}
 
 			payload.Text = text
@@ -93,14 +93,14 @@ func SendEndpointNotification(ctx context.Context,
 			continue
 		}
 
-		buf, err := json.Marshal(v)
+		buf, err := msgpack.EncodeMsgPack(v)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to marshal %v notification payload", v.NotificationType)
 			continue
 		}
 
 		job := &queue.Job{
-			Payload: json.RawMessage(buf),
+			Payload: buf,
 			Delay:   0,
 		}
 

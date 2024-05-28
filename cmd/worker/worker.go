@@ -3,16 +3,17 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/telemetry"
+
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/analytics"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/searcher"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -27,11 +28,17 @@ import (
 func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var workerPort uint32
 	var logLevel string
+	var consumerPoolSize int
+	var interval int
 
-	var newRelicApp string
-	var newRelicKey string
-	var newRelicTracerEnabled bool
-	var newRelicConfigEnabled bool
+	var smtpSSL bool
+	var smtpUsername string
+	var smtpPassword string
+	var smtpReplyTo string
+	var smtpFrom string
+	var smtpProvider string
+	var smtpUrl string
+	var smtpPort uint32
 
 	cmd := &cobra.Command{
 		Use:   "worker",
@@ -40,6 +47,9 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
+
 			// override config with cli Flags
 			cliConfig, err := buildWorkerCliConfiguration(cmd)
 			if err != nil {
@@ -71,92 +81,111 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			ctx := context.Background()
-
 			// register worker.
-			consumer := worker.NewConsumer(a.Queue, lo)
-			projectRepo := postgres.NewProjectRepo(a.DB)
-			metaEventRepo := postgres.NewMetaEventRepo(a.DB)
-			endpointRepo := postgres.NewEndpointRepo(a.DB)
-			eventRepo := postgres.NewEventRepo(a.DB)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
-			subRepo := postgres.NewSubscriptionRepo(a.DB)
-			deviceRepo := postgres.NewDeviceRepo(a.DB)
+			consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, a.Queue, lo)
+			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
+			metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
+			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+			eventRepo := postgres.NewEventRepo(a.DB, a.Cache)
+			jobRepo := postgres.NewJobRepo(a.DB, a.Cache)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
+			subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
+			deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 			configRepo := postgres.NewConfigRepo(a.DB)
-			searchBackend, err := searcher.NewSearchClient(cfg)
-			if err != nil {
-				a.Logger.Debug("Failed to initialise search backend")
-			}
 
 			rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 			if err != nil {
 				return err
 			}
 
+			rateLimiter := limiter.NewLimiter(a.DB)
+			counter := &telemetry.EventsCounter{}
+
+			pb := telemetry.NewposthogBackend()
+			mb := telemetry.NewmixpanelBackend()
+
+			configuration, err := configRepo.LoadConfiguration(context.Background())
+			if err != nil {
+				a.Logger.WithError(err).Fatal("Failed to instance configuration")
+				return err
+			}
+
+			newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
+				telemetry.OptionTracker(counter),
+				telemetry.OptionBackend(pb),
+				telemetry.OptionBackend(mb))
+
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
+				a.DB,
 				endpointRepo,
 				eventDeliveryRepo,
 				projectRepo,
-				subRepo,
-				a.Queue))
+				a.Queue,
+				rateLimiter), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
 				eventRepo,
 				projectRepo,
 				eventDeliveryRepo,
-				a.Cache,
 				a.Queue,
 				subRepo,
-				deviceRepo))
+				deviceRepo), newTelemetry)
+
+			consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
+				a.DB,
+				endpointRepo,
+				eventRepo,
+				projectRepo,
+				eventDeliveryRepo,
+				a.Queue,
+				subRepo,
+				deviceRepo), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 				endpointRepo,
 				eventRepo,
 				projectRepo,
 				eventDeliveryRepo,
-				a.Cache,
 				a.Queue,
 				subRepo,
-				deviceRepo))
+				deviceRepo), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 				configRepo,
 				projectRepo,
 				eventRepo,
 				eventDeliveryRepo,
-				postgres.NewExportRepo(a.DB),
-				searchBackend,
-			))
+				rd,
+			), nil)
 
-			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue))
+			consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue, rd), nil)
 
-			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo))
+			consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 
-			consumer.RegisterHandlers(convoy.DailyAnalytics, analytics.TrackDailyAnalytics(a.DB, cfg, rd))
-			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc))
+			consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, rd), nil)
+			consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-			indexDocument, err := task.NewIndexDocument(cfg)
-			if err != nil {
-				return err
-			}
-			consumer.RegisterHandlers(convoy.IndexDocument, indexDocument.ProcessTask)
+			consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
+			consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
 
-			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc))
-			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo))
-			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd))
+			consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
+			consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
+			consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
 			// start worker
 			lo.Infof("Starting Convoy workers...")
 			consumer.Start()
 
-			metrics.RegisterQueueMetrics(a.Queue)
+			metrics.RegisterQueueMetrics(a.Queue, a.DB)
 
 			router := chi.NewRouter()
 			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 				render.JSON(w, r, "Convoy")
 			})
+
+			go task.QueueStuckEventDeliveries(ctx, eventDeliveryRepo, a.Queue)
 
 			srv := &http.Server{
 				Handler: router,
@@ -175,12 +204,19 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVar(&smtpSSL, "smtp-ssl", false, "Enable SMTP SSL")
+	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP authentication username")
+	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
+	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
+	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
+	cmd.Flags().StringVar(&smtpProvider, "smtp-provider", "", "SMTP provider")
+	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
+	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "SMTP Port")
+
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
-	cmd.Flags().BoolVar(&newRelicConfigEnabled, "new-relic-config-enabled", false, "Enable new-relic config")
-	cmd.Flags().BoolVar(&newRelicTracerEnabled, "new-relic-tracer-enabled", false, "Enable new-relic distributed tracer")
-	cmd.Flags().StringVar(&newRelicApp, "new-relic-app", "", "NewRelic application name")
-	cmd.Flags().StringVar(&newRelicKey, "new-relic-key", "", "NewRelic application license key")
+	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
+	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
 
 	return cmd
 }
@@ -197,6 +233,12 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		c.Logger.Level = logLevel
 	}
 
+	// CONVOY_WORKER_POOL_SIZE
+	consumerPoolSize, err := cmd.Flags().GetInt("consumers")
+	if err != nil {
+		return nil, err
+	}
+
 	workerPort, err := cmd.Flags().GetUint32("worker-port")
 	if err != nil {
 		return nil, err
@@ -208,46 +250,78 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	c.Server.HTTP.WorkerPort = workerPort
 
-	// CONVOY_NEWRELIC_APP_NAME
-	newReplicApp, err := cmd.Flags().GetString("new-relic-app")
+	if consumerPoolSize >= 0 {
+		c.ConsumerPoolSize = consumerPoolSize
+	}
+
+	// CONVOY_SMTP_PROVIDER
+	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
 	if err != nil {
 		return nil, err
 	}
 
-	if !util.IsStringEmpty(newReplicApp) {
-		c.Tracer.NewRelic.AppName = newReplicApp
+	if !util.IsStringEmpty(smtpProvider) {
+		c.SMTP.Provider = smtpProvider
 	}
 
-	// CONVOY_NEWRELIC_LICENSE_KEY
-	newReplicKey, err := cmd.Flags().GetString("new-relic-key")
+	// CONVOY_SMTP_URL
+	smtpUrl, err := cmd.Flags().GetString("smtp-url")
 	if err != nil {
 		return nil, err
 	}
 
-	if !util.IsStringEmpty(newReplicKey) {
-		c.Tracer.NewRelic.LicenseKey = newReplicKey
+	if !util.IsStringEmpty(smtpUrl) {
+		c.SMTP.URL = smtpUrl
 	}
 
-	// CONVOY_NEWRELIC_CONFIG_ENABLED
-	isNRCESet := cmd.Flags().Changed("new-relic-config-enabled")
-	if isNRCESet {
-		newReplicConfigEnabled, err := cmd.Flags().GetBool("new-relic-config-enabled")
-		if err != nil {
-			return nil, err
-		}
-
-		c.Tracer.NewRelic.ConfigEnabled = newReplicConfigEnabled
+	// CONVOY_SMTP_USERNAME
+	smtpUsername, err := cmd.Flags().GetString("smtp-username")
+	if err != nil {
+		return nil, err
 	}
 
-	// CONVOY_NEWRELIC_DISTRIBUTED_TRACER_ENABLED
-	isNRTESet := cmd.Flags().Changed("new-relic-tracer-enabled")
-	if isNRTESet {
-		newReplicTracerEnabled, err := cmd.Flags().GetBool("new-relic-tracer-enabled")
-		if err != nil {
-			return nil, err
-		}
+	if !util.IsStringEmpty(smtpUsername) {
+		c.SMTP.Username = smtpUsername
+	}
 
-		c.Tracer.NewRelic.DistributedTracerEnabled = newReplicTracerEnabled
+	// CONVOY_SMTP_PASSWORD
+	smtpPassword, err := cmd.Flags().GetString("smtp-password")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpPassword) {
+		c.SMTP.Password = smtpPassword
+	}
+
+	// CONVOY_SMTP_FROM
+	smtpFrom, err := cmd.Flags().GetString("smtp-from")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpFrom) {
+		c.SMTP.From = smtpFrom
+	}
+
+	// CONVOY_SMTP_REPLY_TO
+	smtpReplyTo, err := cmd.Flags().GetString("smtp-reply-to")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpReplyTo) {
+		c.SMTP.ReplyTo = smtpReplyTo
+	}
+
+	// CONVOY_SMTP_PORT
+	smtpPort, err := cmd.Flags().GetUint32("smtp-port")
+	if err != nil {
+		return nil, err
+	}
+
+	if smtpPort != 0 {
+		c.SMTP.Port = smtpPort
 	}
 
 	return c, nil

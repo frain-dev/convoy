@@ -83,7 +83,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
-					gomock.Any()).
+					gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(
 						[]datastore.EventDelivery{
@@ -154,7 +154,7 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
-					gomock.Any()).
+					gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(
 						[]datastore.EventDelivery{

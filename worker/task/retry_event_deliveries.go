@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/frain-dev/convoy/cache"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -16,8 +18,8 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDuration string, db database.Database, eventQueue queue.Queuer) {
-	if statuses == nil {
+func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration string, eventId string) {
+	if len(statuses) == 1 && util.IsStringEmpty(string(statuses[0])) {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
 
@@ -34,6 +36,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 	then := now.Add(-d)
 
 	for _, status := range statuses {
+		log.Printf("Searching for events with status %s", status)
 		searchParams := datastore.SearchParams{
 			CreatedAtStart: then.Unix(),
 			CreatedAtEnd:   now.Unix(),
@@ -58,10 +61,9 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		var wg sync.WaitGroup
 
 		wg.Add(1)
-		eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
-		projectRepo := postgres.NewProjectRepo(db)
+		eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, cache)
 
-		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, projectRepo, deliveryChan, q, &wg)
+		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, deliveryChan, q, &wg)
 
 		counter, err := eventDeliveryRepo.CountDeliveriesByStatus(ctx, "", status, searchParams)
 		if err != nil {
@@ -70,7 +72,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 		log.Infof("Total number of event deliveries to requeue is %d", counter)
 
 		for {
-			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, "", "", []datastore.EventDeliveryStatus{status}, searchParams, pageable, "")
+			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, eventId, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable, "", "")
 			if err != nil {
 				log.WithError(err).Errorf("successfully fetched %d event deliveries", count)
 				close(deliveryChan)
@@ -96,7 +98,7 @@ func RetryEventDeliveries(statuses []datastore.EventDeliveryStatus, lookBackDura
 	}
 }
 
-func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, projectRepo datastore.ProjectRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
+func processEventDeliveryBatch(ctx context.Context, status datastore.EventDeliveryStatus, eventDeliveryRepo datastore.EventDeliveryRepository, deliveryChan <-chan []datastore.EventDelivery, q *redisqueue.RedisQueue, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	batchCount := 1
@@ -150,10 +152,10 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 			if err != nil {
 				log.WithError(err).Errorf("batch %d: failed to send event delivery %s to the queue", batchCount, delivery.UID)
 			}
-			log.Infof("sucessfully requeued delivery with id: %s", delivery.UID)
+			log.Infof("successfully re-queued delivery with id: %s", delivery.UID)
 		}
 
-		log.Infof("batch %d: sucessfully requeued %d deliveries", batchCount, len(batch))
+		log.Infof("batch %d: successfully re-queued %d deliveries", batchCount, len(batch))
 		batchCount++
 	}
 }

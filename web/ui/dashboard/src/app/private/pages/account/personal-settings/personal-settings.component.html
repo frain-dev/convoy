@@ -14,30 +14,30 @@
 
 <!-- personal access tken header  -->
 <div class="flex justify-between items-center mb-28px" *ngIf="!showCreateNewTokenForm && personalAccessKeys?.content?.length > 0">
-	<h3 class="font-semibold">Personal Access Tokens</h3>
+	<h3 class="text-16 font-bold text-neutral-10">Personal Access Tokens</h3>
 
 	<button convoy-button size="sm" (click)="showCreateNewTokenForm = true">
 		<svg width="16" height="16" class="mr-8px fill-white-100">
 			<use xlink:href="#plus-icon"></use>
 		</svg>
-		Create New Token
+		Token
 	</button>
 </div>
 
 <!-- personal access token  -->
 <ng-container *ngIf="!isFetchingKeys && personalAccessKeys && !showCreateNewTokenForm">
-	<div class="flex justify-between items-center py-12px border-b border-b-grey-10 last-of-type:border-none" *ngFor="let key of personalAccessKeys?.content">
+	<div class="flex justify-between items-center py-12px border-b border-b-neutral-a3 last-of-type:border-none" *ngFor="let key of personalAccessKeys?.content">
 		<div>
 			<div class="flex items-center">
 				<p class="font-medium text-12 mr-14px">{{ key.name }}</p>
-				<convoy-tag [color]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
+				<convoy-tag size="sm" [color]="getKeyStatus(key.expires_at) | statuscolor">{{ getKeyStatus(key.expires_at) }}</convoy-tag>
 			</div>
-			<p class="text-grey-40 text-10 mt-8px">
+			<p class="text-neutral-11 text-10 mt-8px">
 				<span *ngIf="key.expires_at">Expires At: ({{ key.expires_at | date: 'mediumDate' }})</span>
 			</p>
 		</div>
-		<button convoy-button size="sm" fill="text" color="danger" (click)="selectedKey = key; settingsDialog.showModal()" *ngIf="getKeyStatus(key.expires_at) === 'active'">
-			<svg width="16" height="16" class="mr-8px fill-danger-100">
+		<button convoy-button size="sm" fill="text" color="error" (click)="selectedKey = key; settingsDialog.showModal()" *ngIf="getKeyStatus(key.expires_at) === 'active'">
+			<svg width="16" height="16" class="mr-8px fill-error-9">
 				<use xlink:href="#delete-icon"></use>
 			</svg>
 			Revoke
@@ -71,32 +71,32 @@
 <div class="flex items-center mt-16px" [ngClass]="{ invisible: personalAccessKeys?.content?.length === 0 || personalAccessKeys?.content?.length < 10 || showCreateNewTokenForm }">
 	<button
 		convoy-button
-		fill="outline"
+		fill="soft-outline"
 		size="sm"
-		class="pl-4px pr-16px py-4px border-primary-300"
+		class="pl-4px pr-16px py-4px"
 		routerLink="./"
 		disabled
 		[queryParams]="{ page: personalAccessKeys?.pagination?.prev }"
 		[disabled]="personalAccessKeys?.pagination?.prev === 0"
 		(click)="fetchPersonalKeys({ page: personalAccessKeys?.pagination?.prev })"
 	>
-		<svg width="24" height="24" class="mr-8px fill-primary-100">
+		<svg width="24" height="24" class="mr-8px fill-new.primary-400">
 			<use xlink:href="#arrow-left-icon"></use>
 		</svg>
 		Previous
 	</button>
 	<button
 		convoy-button
-		fill="outline"
+		fill="soft-outline"
 		size="sm"
-		class="pr-4px pl-16px py-4px border-primary-300 ml-16px"
+		class="pr-4px pl-16px py-4px ml-16px"
 		routerLink="./"
 		[queryParams]="{ page: personalAccessKeys?.pagination?.next }"
 		[disabled]="personalAccessKeys?.pagination?.next === 0"
 		(click)="fetchPersonalKeys({ page: personalAccessKeys?.pagination?.next })"
 	>
 		Next
-		<svg width="24" height="24" class="ml-8px fill-primary-100">
+		<svg width="24" height="24" class="ml-8px fill-new.primary-400">
 			<use xlink:href="#arrow-right-icon"></use>
 		</svg>
 	</button>
@@ -115,5 +115,5 @@
 
 <!-- revoke token modal  -->
 <dialog #settingsDialog convoy-dialog position="center" size="sm">
-	<app-delete-modal [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + 'api key”'" deleteButtonText="revoke" (closeModal)="settingsDialog.close()" (deleteData)="revokeKey()"></app-delete-modal>
+	<app-delete-modal [isLoading]="isRevokingKey" [deleteText]="'revoke “' + selectedKey?.name + ' api key”'" deleteButtonText="revoke" (closeModal)="settingsDialog.close()" (deleteData)="revokeKey()"></app-delete-modal>
 </dialog>

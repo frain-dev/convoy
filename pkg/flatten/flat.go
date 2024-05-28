@@ -133,6 +133,7 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 			f[k] = v
 		}
 	case nil:
+	case string:
 	default:
 		if prefix != "" {
 			f[prefix] = n

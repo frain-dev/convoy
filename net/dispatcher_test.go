@@ -2,8 +2,8 @@ package net
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
-	"math/rand"
 	"net/http"
 	"testing"
 

@@ -23,14 +23,14 @@ export class EndpointSecretComponent implements OnInit {
 		expiration: ['', Validators.required]
 	});
 	expirationDates = [
-		{ name: '1 hour', uid: 1 },
-		{ name: '2 hour', uid: 2 },
-		{ name: '4 hour', uid: 4 },
-		{ name: '8 hour', uid: 8 },
-		{ name: '12 hour', uid: 12 },
-		{ name: '16 hour', uid: 16 },
-		{ name: '20 hour', uid: 20 },
-		{ name: '24 hour', uid: 24 }
+		{ name: '1 hour', uid: 3600 },
+		{ name: '2 hour', uid: 7200 },
+		{ name: '4 hour', uid: 14400 },
+		{ name: '8 hour', uid: 28800 },
+		{ name: '12 hour', uid: 43200 },
+		{ name: '16 hour', uid: 57600 },
+		{ name: '20 hour', uid: 72000 },
+		{ name: '24 hour', uid: 86400 }
 	];
 	showExpireSecret = false;
 	isExpiringSecret = false;
@@ -50,6 +50,7 @@ export class EndpointSecretComponent implements OnInit {
 		try {
 			const response = await this.endpointService.expireSecret({ endpointId: this.endpointDetails?.uid || '', body: this.expireSecretForm.value });
 			this.generalService.showNotification({ style: 'success', message: response.message });
+			this.endpointDetails = response.data;
 			this.isExpiringSecret = false;
 			this.expireCurrentSecret.emit();
 			this.showExpireSecret = false;

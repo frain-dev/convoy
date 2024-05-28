@@ -34,6 +34,7 @@ export class CreatePortalLinkComponent implements OnInit {
 		type: [null, Validators.required]
 	});
 	endpoints!: ENDPOINT[];
+	selectedEndpoints!: ENDPOINT[];
 	isCreatingPortalLink = false;
 	fetchingLinkDetails = false;
 	portalLink!: string;
@@ -73,11 +74,7 @@ export class CreatePortalLinkComponent implements OnInit {
 	async getEndpoints(searchString?: string) {
 		try {
 			const response = await this.privateService.getEndpoints({ q: searchString });
-			const endpointData = response.data.content;
-			endpointData.forEach((data: ENDPOINT) => {
-				data.name = data.title;
-			});
-			this.endpoints = endpointData;
+			this.endpoints = response.data.content;
 		} catch {}
 	}
 
@@ -87,7 +84,9 @@ export class CreatePortalLinkComponent implements OnInit {
 		try {
 			const response = await this.createPortalLinkService.getPortalLink(this.linkUid);
 			const linkDetails = response.data;
-			this.portalLinkForm.patchValue({ ...linkDetails, type: linkDetails.endpoints ? 'endpoint' : 'owner_id' });
+			this.selectedEndpoints = linkDetails.endpoints_metadata;
+			const endpoints = this.selectedEndpoints.map(endpoint => endpoint.uid);
+			this.portalLinkForm.patchValue({ ...linkDetails, endpoints, type: linkDetails.endpoints ? 'endpoint' : 'owner_id' });
 			this.fetchingLinkDetails = false;
 		} catch {
 			this.fetchingLinkDetails = false;

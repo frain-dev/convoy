@@ -1,10 +1,13 @@
 package google
 
 import (
-	"cloud.google.com/go/pubsub"
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+
+	"cloud.google.com/go/pubsub"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"google.golang.org/api/option"
@@ -17,33 +20,25 @@ type Google struct {
 	source  *datastore.Source
 	workers int
 	ctx     context.Context
-	cancel  context.CancelFunc
 	handler datastore.PubSubHandler
 	log     log.StdLogger
 }
 
 func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Google {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	return &Google{
 		Cfg:     source.PubSub.Google,
 		source:  source,
-		ctx:     ctx,
-		cancel:  cancel,
 		workers: source.PubSub.Workers,
 		handler: handler,
 		log:     log,
 	}
 }
 
-func (g *Google) Start() {
+func (g *Google) Start(ctx context.Context) {
+	g.ctx = ctx
 	if g.workers > 0 {
-		go g.Consume()
+		go g.consume()
 	}
-}
-
-func (g *Google) Stop() {
-	g.cancel()
 }
 
 // Verify ensures the pub sub credentials are valid
@@ -71,8 +66,8 @@ func (g *Google) Verify() error {
 	return nil
 }
 
-func (g *Google) Consume() {
-	client, err := pubsub.NewClient(context.Background(), g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
+func (g *Google) consume() {
+	client, err := pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 
 	if err != nil {
 		g.log.WithError(err).Error("failed to create new pubsub client")
@@ -86,10 +81,33 @@ func (g *Google) Consume() {
 	sub.ReceiveSettings.NumGoroutines = g.workers
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
-		if err := g.handler(ctx, g.source, string(m.Data)); err != nil {
+		attributes, err := msgpack.EncodeMsgPack(m.Attributes)
+		if err != nil {
+			g.log.WithError(err).Error("failed to marshall message attributes")
+			return
+		}
+
+		// Google Pub/Sub sends a slice with a single non UTF-8 value,
+		// looks like this: [192], which can cause a panic when marshaling headers
+		if len(attributes) == 1 && attributes[0] == 192 {
+			emptyMap := map[string]string{}
+			emptyBytes, err := msgpack.EncodeMsgPack(emptyMap)
+			if err != nil {
+				g.log.WithError(err).Error("an error occurred creating an empty attributes map")
+				return
+			}
+			attributes = emptyBytes
+		}
+
+		mm := metrics.GetDPInstance()
+		mm.IncrementIngestTotal(g.source)
+
+		if err := g.handler(ctx, g.source, string(m.Data), attributes); err != nil {
 			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")
+			mm.IncrementIngestErrorsTotal(g.source)
 		} else {
 			m.Ack()
+			mm.IncrementIngestConsumedTotal(g.source)
 		}
 	})
 
@@ -105,6 +123,6 @@ func (g *Google) handleError(client *pubsub.Client) {
 	}
 
 	if err := recover(); err != nil {
-		g.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", g.source.UID, err)).Error("google pubsub source crashed")
+		g.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", g.source.UID, err)).Error("google pubsub source crashed")
 	}
 }

@@ -20,7 +20,7 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 	rs := redsync.New(pool)
 
 	return func(ctx context.Context, t *asynq.Task) error {
-		const mutexName = "convoy:deletearchivedtasks:mutex"
+		const mutexName = "convoy:delete_archived_tasks:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
 
 		tctx, cancel := context.WithTimeout(ctx, time.Second*2)
@@ -45,7 +45,6 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 		queues := []string{
 			string(convoy.EventQueue),
 			string(convoy.CreateEventQueue),
-			string(convoy.SearchIndexQueue),
 			string(convoy.ScheduleQueue),
 			string(convoy.DefaultQueue),
 			string(convoy.StreamQueue),
@@ -59,10 +58,10 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 			return errors.New("invalid queue type")
 		}
 
-		for _, queue := range queues {
-			_, err := q.Inspector().DeleteAllArchivedTasks(queue)
+		for _, qu := range queues {
+			_, err := q.Inspector().DeleteAllArchivedTasks(qu)
 			if err != nil {
-				log.FromContext(ctx).WithError(err).Errorf("failed to delete archived task from queue - %s", queue)
+				log.FromContext(ctx).WithError(err).Errorf("failed to delete archived task from queue - %s", qu)
 				continue
 			}
 		}

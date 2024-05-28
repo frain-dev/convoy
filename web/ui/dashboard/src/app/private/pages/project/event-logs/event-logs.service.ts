@@ -8,7 +8,7 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class EventLogsService {
 	constructor(private http: HttpService) {}
 
-	getRetryCount(requestDetails: { endpointId?: string; page: number; startDate: string; endDate: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
+	getRetryCount(requestDetails: { endpointId?: string; page?: number; startDate?: string; endDate?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -41,7 +41,7 @@ export class EventLogsService {
 		});
 	}
 
-	batchRetryEvent(requestDetails: { page: number; startDate: string; endDate: string; endpointId?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
+	batchRetryEvent(requestDetails: { startDate?: string; endDate?: string; endpointId?: string; sourceId?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({

@@ -2,8 +2,9 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -23,23 +24,25 @@ type CreateDynamicEventService struct {
 
 func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 	if e.Project == nil {
-		return &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
+		return &ServiceError{ErrMsg: "an error occurred while creating dynamic event - invalid project"}
 	}
 
-	e.DynamicEvent.Event.ProjectID = e.Project.UID
+	e.DynamicEvent.ProjectID = e.Project.UID
+
+	if len(e.DynamicEvent.EventTypes) == 0 {
+		e.DynamicEvent.EventTypes = []string{"*"}
+	}
 
 	taskName := convoy.CreateDynamicEventProcessor
 
-	eventByte, err := json.Marshal(e.DynamicEvent)
+	eventByte, err := msgpack.EncodeMsgPack(e.DynamicEvent)
 	if err != nil {
 		return util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	payload := json.RawMessage(eventByte)
-
 	job := &queue.Job{
 		ID:      uuid.NewString(),
-		Payload: payload,
+		Payload: eventByte,
 		Delay:   0,
 	}
 

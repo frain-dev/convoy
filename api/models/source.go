@@ -3,23 +3,47 @@ package models
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"net/http"
-	"strings"
 )
 
 type CreateSource struct {
-	Name            string                   `json:"name" valid:"required~please provide a source name"`
-	Type            datastore.SourceType     `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	Provider        datastore.SourceProvider `json:"provider"`
-	IsDisabled      bool                     `json:"is_disabled"`
-	CustomResponse  CustomResponse           `json:"custom_response"`
-	Verifier        VerifierConfig           `json:"verifier"`
-	PubSub          PubSubConfig             `json:"pub_sub"`
-	IdempotencyKeys []string                 `json:"idempotency_keys"`
-	IdempotencyTTL  string                   `json:"idempotency_ttl"`
+	// Source name.
+	Name string `json:"name" valid:"required~please provide a source name"`
+
+	// Source Type.
+	Type datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+
+	// Use this to specify one of our predefined source types.
+	Provider datastore.SourceProvider `json:"provider"`
+
+	// Custom response is used to define a custom response for incoming
+	// webhooks project sources only.
+	CustomResponse CustomResponse `json:"custom_response"`
+
+	// Verifiers are used to verify webhook events ingested in incoming
+	// webhooks projects.
+	Verifier VerifierConfig `json:"verifier"`
+
+	// PubSub are used to specify message broker sources for outgoing
+	// webhooks projects.
+	PubSub PubSubConfig `json:"pub_sub"`
+
+	// IdempotencyKeys are used to specify parts of a webhook request to uniquely
+	// identify the event in an incoming webhooks project.
+	IdempotencyKeys []string `json:"idempotency_keys"`
+
+	// Function is a javascript function used to mutate the payload
+	// immediately after ingesting an event
+	BodyFunction *string `json:"body_function"`
+
+	// Function is a javascript function used to mutate the headers
+	// immediately after ingesting an event
+	HeaderFunction *string `json:"header_function"`
 }
 
 func (cs *CreateSource) Validate() error {
@@ -106,15 +130,41 @@ func validateSourceForProvider(newSource *CreateSource) error {
 }
 
 type UpdateSource struct {
-	Name            *string              `json:"name" valid:"required~please provide a source name"`
-	Type            datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
-	IsDisabled      *bool                `json:"is_disabled"`
-	ForwardHeaders  []string             `json:"forward_headers"`
-	CustomResponse  UpdateCustomResponse `json:"custom_response"`
-	Verifier        VerifierConfig       `json:"verifier"`
-	PubSub          *PubSubConfig        `json:"pub_sub"`
-	IdempotencyKeys []string             `json:"idempotency_keys"`
-	IdempotencyTTL  string               `json:"idempotency_ttl"`
+	// Source name.
+	Name *string `json:"name" valid:"required~please provide a source name"`
+
+	// Source Type.
+	Type datastore.SourceType `json:"type" valid:"required~please provide a type,supported_source~unsupported source type"`
+
+	// This is used to manually enable/disable the source.
+	IsDisabled *bool `json:"is_disabled"`
+
+	// Soecfy header you want convoy to save from the ingest request and forward to your endpoints when the event is dispatched.
+	ForwardHeaders []string `json:"forward_headers"`
+
+	// Custom response is used to define a custom response for incoming
+	// webhooks project sources only.
+	CustomResponse UpdateCustomResponse `json:"custom_response"`
+
+	// Verifiers are used to verify webhook events ingested in incoming
+	// webhooks projects.
+	Verifier VerifierConfig `json:"verifier"`
+
+	// PubSub are used to specify message broker sources for outgoing
+	// webhooks projects, you only need to specify this when the source type is `pub_sub`.
+	PubSub *PubSubConfig `json:"pub_sub"`
+
+	// IdempotencyKeys are used to specify parts of a webhook request to uniquely
+	// identify the event in an incoming webhooks project.
+	IdempotencyKeys []string `json:"idempotency_keys"`
+
+	// Function is a javascript function used to mutate the payload
+	// immediately after ingesting an event
+	BodyFunction *string `json:"body_function"`
+
+	// Function is a javascript function used to mutate the headers
+	// immediately after ingesting an event
+	HeaderFunction *string `json:"header_function"`
 }
 
 func (us *UpdateSource) Validate() error {
@@ -142,11 +192,17 @@ type QueryListSource struct {
 }
 
 type Pageable struct {
+	// Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+	Sort string `json:"sort"  example:"ASC | DESC"`
+
 	// The number of items to return per page
-	PerPage   int                     `json:"perPage" example:"20"`
+	PerPage int `json:"perPage" example:"20"`
+
 	Direction datastore.PageDirection `json:"direction"`
+
 	// A pagination cursor to fetch the previous page of a list
 	PrevCursor string `json:"prev_page_cursor" example:"01H0JATTVCXZK8FRDX1M1JN3QY"`
+
 	// A pagination cursor to fetch the next page of a list
 	NextCursor string `json:"next_page_cursor" example:"01H0JA5MEES38RRK3HTEJC647K"`
 }
@@ -160,6 +216,7 @@ func (ls *QueryListSource) Transform(r *http.Request) *QueryListSourceResponse {
 	return &QueryListSourceResponse{
 		Pageable: m.GetPageableFromContext(r.Context()),
 		SourceFilter: &datastore.SourceFilter{
+			Query:    r.URL.Query().Get("q"),
 			Type:     r.URL.Query().Get("type"),
 			Provider: r.URL.Query().Get("provider"),
 		},
@@ -254,6 +311,7 @@ type PubSubConfig struct {
 	Sqs     *SQSPubSubConfig     `json:"sqs"`
 	Google  *GooglePubSubConfig  `json:"google"`
 	Kafka   *KafkaPubSubConfig   `json:"kafka"`
+	Amqp    *AmqpPubSubconfig    `json:"amqp"`
 }
 
 func (pc *PubSubConfig) Transform() *datastore.PubSubConfig {
@@ -267,6 +325,7 @@ func (pc *PubSubConfig) Transform() *datastore.PubSubConfig {
 		Sqs:     pc.Sqs.transform(),
 		Google:  pc.Google.transform(),
 		Kafka:   pc.Kafka.transform(),
+		Amqp:    pc.Amqp.transform(),
 	}
 }
 
@@ -313,6 +372,54 @@ type KafkaPubSubConfig struct {
 	ConsumerGroupID string     `json:"consumer_group_id"`
 	TopicName       string     `json:"topic_name"`
 	Auth            *KafkaAuth `json:"auth"`
+}
+
+type AmqpPubSubconfig struct {
+	Schema             string        `json:"schema"`
+	Host               string        `json:"host"`
+	Port               string        `json:"port"`
+	Auth               *AmqpAuth     `json:"auth"`
+	Queue              string        `json:"queue"`
+	Vhost              *string       `json:"vhost"`
+	BoundExchange      *AmqpExchange `json:"bindExchange"`
+	DeadLetterExchange *string       `json:"deadLetterExchange"`
+}
+
+type AmqpAuth struct {
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
+type AmqpExchange struct {
+	Exchange   *string `json:"exchange"`
+	RoutingKey *string `json:"routingKey"`
+}
+
+func (ac *AmqpPubSubconfig) transform() *datastore.AmqpPubSubConfig {
+	if ac == nil {
+		return nil
+	}
+
+	bind := AmqpExchange{
+		Exchange:   nil,
+		RoutingKey: nil,
+	}
+
+	if ac.BoundExchange != nil {
+		bind = *ac.BoundExchange
+	}
+
+	return &datastore.AmqpPubSubConfig{
+		Schema:             ac.Schema,
+		Host:               ac.Host,
+		Port:               ac.Port,
+		Queue:              ac.Queue,
+		Vhost:              ac.Vhost,
+		BoundExchange:      bind.Exchange,
+		RoutingKey:         *bind.RoutingKey,
+		Auth:               (*datastore.AmqpCredentials)(ac.Auth),
+		DeadLetterExchange: ac.DeadLetterExchange,
+	}
 }
 
 func (kc *KafkaPubSubConfig) transform() *datastore.KafkaPubSubConfig {

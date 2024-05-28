@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 @Directive({
 	selector: 'convoy-table, [convoy-table]',
 	standalone: true,
-	host: { class: 'w-full h-fit text-new.gray-600', id: 'table' }
+	host: { class: 'w-full h-fit text-neutral-10', id: 'table' }
 })
 export class TableComponent implements OnInit {
 	constructor() {}
@@ -19,7 +19,7 @@ export class TableComponent implements OnInit {
 	imports: [CommonModule],
 	host: { class: 'p-0 ' },
 	template: `
-		<div [class]="forDate ? 'pt-16px pl-16px pb-8px text-new.gray-400' : 'pt-12px pb-12px whitespace-nowrap text-new.gray-900'" class="flex flex-row items-center text-12 font-normal">
+		<div [class]="forDate ? 'pt-16px pl-16px pb-8px text-neutral-10' : 'pt-12px pb-12px whitespace-nowrap text-neutral-12'" class="flex flex-row items-center text-12 font-normal">
 			<ng-content></ng-content>
 		</div>
 	`
@@ -37,7 +37,7 @@ export class TableCellComponent implements OnInit {
 	selector: 'convoy-table-head, [convoy-table-head]',
 	standalone: true,
 	imports: [CommonModule],
-	host: { class: 'bg-new.primary-25' },
+	host: { class: '' },
 	template: `
 		<tr>
 			<ng-content></ng-content>

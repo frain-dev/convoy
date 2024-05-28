@@ -25,7 +25,7 @@ export class EventsService {
 		});
 	}
 
-	getEventDeliveries(requestDetails?: { page?: any; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; sourceId?: string; status?: any; next_page_cursor?: string }): Promise<HTTP_RESPONSE> {
+	getEventDeliveries(requestDetails?: { page?: any; startDate?: string; endDate?: string; endpointId?: string; eventId?: string; sourceId?: string; status?: any; next_page_cursor?: string; sort?: string }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({

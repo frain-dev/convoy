@@ -16,7 +16,7 @@ import (
 )
 
 func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl string, loginUser *models.RegisterUser) *RegisterUserService {
-	config, err := config.Get()
+	configuration, err := config.Get()
 	require.NoError(t, err)
 
 	c := mocks.NewMockCache(ctrl)
@@ -25,7 +25,7 @@ func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl s
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 		Queue:         mocks.NewMockQueuer(ctrl),
-		JWT:           jwt.NewJwt(&config.Auth.Jwt, c),
+		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, c),
 		ConfigRepo:    mocks.NewMockConfigurationRepository(ctrl),
 		BaseURL:       baseUrl,
 		Data:          loginUser,

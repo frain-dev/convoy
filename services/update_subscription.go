@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -43,6 +44,10 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 
 	if !util.IsStringEmpty(s.Update.SourceID) {
 		subscription.SourceID = s.Update.SourceID
+	}
+
+	if !util.IsStringEmpty(s.Update.Function) {
+		subscription.Function = null.StringFrom(s.Update.Function)
 	}
 
 	if !util.IsStringEmpty(s.Update.EndpointID) {

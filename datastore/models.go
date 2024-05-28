@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -24,6 +25,7 @@ import (
 type Pageable struct {
 	PerPage    int           `json:"per_page"`
 	Direction  PageDirection `json:"direction"`
+	Sort       string        `json:"sort"`
 	PrevCursor string        `json:"prev_page_cursor"`
 	NextCursor string        `json:"next_page_cursor"`
 }
@@ -43,9 +45,31 @@ func (p Pageable) Cursor() string {
 	return p.PrevCursor
 }
 
+func (p Pageable) SortOrder() string {
+	if p.Sort == "ASC" || p.Sort == "DESC" {
+		return p.Sort
+	}
+
+	return "DESC"
+}
+
 func (p Pageable) Limit() int {
 	return p.PerPage + 1
 }
+
+func (p *Pageable) SetCursors() {
+	switch p.Sort {
+	case "ASC":
+		if isStringEmpty(p.NextCursor) {
+			p.NextCursor = "" // still set it empty, it might be filled with spaces
+		}
+	default:
+		if isStringEmpty(p.NextCursor) {
+			p.NextCursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
+		}
+	}
+}
+func isStringEmpty(s string) bool { return len(strings.TrimSpace(s)) == 0 }
 
 type PaginationData struct {
 	PrevRowCount    PrevRowCount `json:"-"`
@@ -126,7 +150,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(context.Context, *Source, string) error
+	PubSubHandler    func(context.Context, *Source, string, []byte) error
 	MetaEventType    string
 	HookEventType    string
 )
@@ -146,6 +170,7 @@ const (
 )
 
 const (
+	ProjectUpdated       HookEventType = "project.updated"
 	EndpointCreated      HookEventType = "endpoint.created"
 	EndpointUpdated      HookEventType = "endpoint.updated"
 	EndpointDeleted      HookEventType = "endpoint.deleted"
@@ -168,6 +193,7 @@ const (
 	SqsPubSub    PubSubType = "sqs"
 	GooglePubSub PubSubType = "google"
 	KafkaPubSub  PubSubType = "kafka"
+	AmqpPubSub   PubSubType = "amqp"
 )
 
 func (s SourceProvider) IsValid() bool {
@@ -237,7 +263,6 @@ func (k KeyType) IsValid() bool {
 }
 
 const (
-	DefaultStrategyProvider                      = LinearStrategyProvider
 	LinearStrategyProvider      StrategyProvider = "linear"
 	ExponentialStrategyProvider StrategyProvider = "exponential"
 )
@@ -250,14 +275,17 @@ var (
 		IsRetentionPolicyEnabled: false,
 		DisableEndpoint:          false,
 		AddEventIDTraceHeaders:   false,
+		SSL:                      &DefaultSSLConfig,
 		RateLimit:                &DefaultRateLimitConfig,
 		Strategy:                 &DefaultStrategyConfig,
 		Signature:                GetDefaultSignatureConfig(),
 		MetaEvent:                &MetaEventConfiguration{IsEnabled: false},
 	}
 
+	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
+
 	DefaultStrategyConfig = StrategyConfiguration{
-		Type:       DefaultStrategyProvider,
+		Type:       LinearStrategyProvider,
 		Duration:   100,
 		RetryCount: 10,
 	}
@@ -285,7 +313,8 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy: "720h",
+		Policy:       "720h",
+		SearchPolicy: "720h",
 	}
 )
 
@@ -362,8 +391,8 @@ type Endpoint struct {
 	UID                string  `json:"uid" db:"id"`
 	ProjectID          string  `json:"project_id" db:"project_id"`
 	OwnerID            string  `json:"owner_id,omitempty" db:"owner_id"`
-	TargetURL          string  `json:"target_url" db:"target_url"`
-	Title              string  `json:"title" db:"title"`
+	Url                string  `json:"url" db:"url"`
+	Name               string  `json:"name" db:"name"`
 	Secrets            Secrets `json:"secrets" db:"secrets"`
 	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
 	Description        string  `json:"description" db:"description"`
@@ -371,13 +400,13 @@ type Endpoint struct {
 	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
 	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout string         `json:"http_timeout" db:"http_timeout"`
-	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
-	Events      int64          `json:"events,omitempty" db:"event_count"`
-	Status      EndpointStatus `json:"status" db:"status"`
+	Status         EndpointStatus          `json:"status" db:"status"`
+	HttpTimeout    uint64                  `json:"http_timeout" db:"http_timeout"`
+	Events         int64                   `json:"events,omitempty" db:"event_count"`
+	Authentication *EndpointAuthentication `json:"authentication" db:"authentication"`
 
-	RateLimitDuration string                  `json:"rate_limit_duration" db:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
+	RateLimit         int    `json:"rate_limit" db:"rate_limit"`
+	RateLimitDuration uint64 `json:"rate_limit_duration" db:"rate_limit_duration"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -463,6 +492,16 @@ type ProjectMetadata struct {
 	RetainedEvents int `json:"retained_events" bson:"retained_events"`
 }
 
+type ProjectEvents struct {
+	Id          string `json:"id" db:"id"`
+	EventsCount int    `json:"events_count" db:"events_count"`
+}
+
+type SearchIndexParams struct {
+	ProjectID string `json:"project_id"`
+	Interval  int    `json:"interval"`
+}
+
 type SignatureVersions []SignatureVersion
 
 func (s *SignatureVersions) Scan(v interface{}) error {
@@ -483,16 +522,18 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
-	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
-	MetaEvent                *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	IsRetentionPolicyEnabled      bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
+	AddEventIDTraceHeaders        bool                          `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                          `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                          `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	SSL                           *SSLConfiguration             `json:"ssl" db:"ssl"`
+	RetentionPolicy               *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	RateLimit                     *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration        `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration       `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -564,8 +605,13 @@ type MetaEventConfiguration struct {
 	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub"`
 }
 
+type SSLConfiguration struct {
+	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints" db:"enforce_secure_endpoints"`
+}
+
 type RetentionPolicyConfiguration struct {
-	Policy string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
+	SearchPolicy string `json:"search_policy" db:"search_policy"`
 }
 
 type ProjectStatistics struct {
@@ -638,10 +684,21 @@ func (s *EndpointMetadata) Scan(v interface{}) error {
 	}
 
 	if string(b) == "null" {
+		*s = nil // Set the pointer to nil
 		return nil
 	}
 
-	return json.Unmarshal(b, s)
+	err := json.Unmarshal(b, s)
+	if err != nil {
+		return err
+	}
+
+	// Check if the slice only contains a nil element, and if so, set it to an empty slice
+	if len(*s) == 1 && (*s)[0] == nil {
+		*s = EndpointMetadata{}
+	}
+
+	return nil
 }
 
 // Event defines a payload to be sent to an application
@@ -700,7 +757,7 @@ func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 }
 
 const (
-	// ScheduledEventStatus : when an Event has been scheduled for delivery
+	// ScheduledEventStatus when an Event has been scheduled for delivery
 	ScheduledEventStatus  EventDeliveryStatus = "Scheduled"
 	ProcessingEventStatus EventDeliveryStatus = "Processing"
 	DiscardedEventStatus  EventDeliveryStatus = "Discarded"
@@ -778,7 +835,7 @@ func (m *Metadata) Value() (driver.Value, error) {
 type EventIntervalData struct {
 	Interval  int64  `json:"index" db:"index"`
 	Time      string `json:"date" db:"total_time"`
-	GroupStub string `json:"-" db:"group_only"` // ugnore
+	GroupStub string `json:"-" db:"group_only"` // ignore
 }
 
 type EventInterval struct {
@@ -800,7 +857,7 @@ type DeliveryAttempt struct {
 	HttpResponseCode string     `json:"http_status,omitempty" db:"http_status"`
 	ResponseData     string     `json:"response_data,omitempty" db:"response_data"`
 	Error            string     `json:"error,omitempty" db:"error"`
-	Status           bool       `json:"status,omitempty" db:"statu,"`
+	Status           bool       `json:"status,omitempty" db:"status"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -854,6 +911,8 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
+	Latency        string                `json:"latency" db:"latency"`
+	EventType      EventType             `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -932,6 +991,7 @@ type Subscription struct {
 	SourceID   string           `json:"-" db:"source_id"`
 	EndpointID string           `json:"-" db:"endpoint_id"`
 	DeviceID   string           `json:"-" db:"device_id"`
+	Function   null.String      `json:"function" db:"function"`
 
 	Source   *Source   `json:"source_metadata" db:"source_metadata"`
 	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`
@@ -1005,6 +1065,8 @@ type Source struct {
 	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
 	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
 	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
+	BodyFunction    *string         `json:"body_function" db:"body_function"`
+	HeaderFunction  *string         `json:"header_function" db:"header_function"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -1017,6 +1079,7 @@ type PubSubConfig struct {
 	Sqs     *SQSPubSubConfig    `json:"sqs" db:"sqs"`
 	Google  *GooglePubSubConfig `json:"google" db:"google"`
 	Kafka   *KafkaPubSubConfig  `json:"kafka" db:"kafka"`
+	Amqp    *AmqpPubSubConfig   `json:"amqp" db:"amqp"`
 }
 
 func (p *PubSubConfig) Scan(value interface{}) error {
@@ -1062,6 +1125,23 @@ type KafkaPubSubConfig struct {
 	ConsumerGroupID string     `json:"consumer_group_id" db:"consumer_group_id"`
 	TopicName       string     `json:"topic_name" db:"topic_name"`
 	Auth            *KafkaAuth `json:"auth" db:"auth"`
+}
+
+type AmqpPubSubConfig struct {
+	Schema             string           `json:"schema" db:"schema"`
+	Host               string           `json:"host" db:"host"`
+	Port               string           `json:"port" db:"port"`
+	Queue              string           `json:"queue" db:"queue"`
+	Auth               *AmqpCredentials `json:"auth" db:"auth"`
+	BoundExchange      *string          `json:"bindedExchange" db:"binded_exchange"`
+	Vhost              *string          `json:"vhost" db:"vhost"`
+	RoutingKey         string           `json:"routingKey" db:"routing_key"`
+	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
+}
+
+type AmqpCredentials struct {
+	User     string `json:"user" db:"user"`
+	Password string `json:"password" db:"password"`
 }
 
 type KafkaAuth struct {
@@ -1207,6 +1287,7 @@ type StoragePolicyConfiguration struct {
 }
 
 type S3Storage struct {
+	Prefix       null.String `json:"prefix" db:"prefix"`
 	Bucket       null.String `json:"bucket" db:"bucket" valid:"required~please provide a bucket name"`
 	AccessKey    null.String `json:"access_key,omitempty" db:"access_key" valid:"required~please provide an access key"`
 	SecretKey    null.String `json:"secret_key,omitempty" db:"secret_key" valid:"required~please provide a secret key"`
@@ -1248,6 +1329,28 @@ const (
 	DeviceStatusOffline  DeviceStatus = "offline"
 	DeviceStatusOnline   DeviceStatus = "online"
 	DeviceStatusDisabled DeviceStatus = "disabled"
+)
+
+type Job struct {
+	UID         string    `json:"uid" db:"id"`
+	Type        string    `json:"type" db:"type"`
+	Status      JobStatus `json:"status,omitempty" db:"status"`
+	ProjectID   string    `json:"project_id,omitempty" db:"project_id"`
+	FailedAt    null.Time `json:"failed_at,omitempty" db:"failed_at,omitempty" swaggertype:"string"`
+	StartedAt   null.Time `json:"started_at,omitempty" db:"started_at,omitempty" swaggertype:"string"`
+	CompletedAt null.Time `json:"completed_at,omitempty" db:"completed_at,omitempty" swaggertype:"string"`
+	CreatedAt   time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt   time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt   null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type JobStatus string
+
+const (
+	JobStatusReady     JobStatus = "ready"
+	JobStatusRunning   JobStatus = "running"
+	JobStatusFailed    JobStatus = "failed"
+	JobStatusCompleted JobStatus = "completed"
 )
 
 type UserMetadata struct {
@@ -1292,6 +1395,7 @@ type PortalLink struct {
 	OwnerID           string           `json:"owner_id" db:"owner_id"`
 	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
 	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
+	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`

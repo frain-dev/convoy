@@ -70,7 +70,7 @@ pre[class*='language-'] {
 .token.inserted,
 .token.selector,
 .token.string {
-	color: #4661CE;
+	color: #4661ce;
 }
 
 .language-css .token.string,
@@ -118,6 +118,12 @@ pre.line-numbers {
 	counter-reset: linenumber;
 }
 
+pre.log-display {
+	padding: 0;
+	margin: 0;
+	max-width: 545px;
+}
+
 .eventDelivery {
 	pre.line-numbers {
 		max-width: 474px;
@@ -126,7 +132,7 @@ pre.line-numbers {
 	}
 }
 
-pre.line-numbers > code {
+pre.line-numbers > code, pre.log-display > code {
 	position: relative;
 	white-space: inherit;
 }

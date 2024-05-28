@@ -1,16 +1,38 @@
 components:
   schemas:
-    config.SignatureHeaderProvider:
-      enum:
-      - X-Convoy-Signature
-      type: string
-      x-enum-varnames:
-      - DefaultSignatureHeader
     datastore.AlertConfiguration:
       properties:
         count:
           type: integer
         threshold:
+          type: string
+      type: object
+    datastore.AmqpCredentials:
+      properties:
+        password:
+          type: string
+        user:
+          type: string
+      type: object
+    datastore.AmqpPubSubConfig:
+      properties:
+        auth:
+          $ref: '#/components/schemas/datastore.AmqpCredentials'
+        bindedExchange:
+          type: string
+        deadLetterExchange:
+          type: string
+        host:
+          type: string
+        port:
+          type: string
+        queue:
+          type: string
+        routingKey:
+          type: string
+        schema:
+          type: string
+        vhost:
           type: string
       type: object
     datastore.ApiKey:
@@ -130,6 +152,8 @@ components:
         events:
           type: integer
         http_timeout:
+          type: integer
+        name:
           type: string
         owner_id:
           type: string
@@ -138,7 +162,7 @@ components:
         rate_limit:
           type: integer
         rate_limit_duration:
-          type: string
+          type: integer
         secrets:
           items:
             $ref: '#/components/schemas/datastore.Secret'
@@ -149,13 +173,11 @@ components:
           $ref: '#/components/schemas/datastore.EndpointStatus'
         support_email:
           type: string
-        target_url:
-          type: string
-        title:
-          type: string
         uid:
           type: string
         updated_at:
+          type: string
+        url:
           type: string
       type: object
     datastore.EndpointAuthentication:
@@ -288,18 +310,32 @@ components:
       additionalProperties:
         type: string
       type: object
-    datastore.KeyType:
-      enum:
-      - project
-      - app_portal
-      - cli
-      - personal_key
-      type: string
-      x-enum-varnames:
-      - ProjectKey
-      - AppPortalKey
-      - CLIKey
-      - PersonalKey
+    datastore.KafkaAuth:
+      properties:
+        hash:
+          type: string
+        password:
+          type: string
+        tls:
+          type: boolean
+        type:
+          type: string
+        username:
+          type: string
+      type: object
+    datastore.KafkaPubSubConfig:
+      properties:
+        auth:
+          $ref: '#/components/schemas/datastore.KafkaAuth'
+        brokers:
+          items:
+            type: string
+          type: array
+        consumer_group_id:
+          type: string
+        topic_name:
+          type: string
+      type: object
     datastore.M:
       additionalProperties: true
       type: object
@@ -312,31 +348,6 @@ components:
         response_http_header:
           $ref: '#/components/schemas/datastore.HttpHeader'
       type: object
-    datastore.MetaEventConfiguration:
-      properties:
-        event_type:
-          items:
-            type: string
-          type: array
-        is_enabled:
-          type: boolean
-        pub_sub:
-          $ref: '#/components/schemas/datastore.PubSubConfig'
-        secret:
-          type: string
-        type:
-          $ref: '#/components/schemas/datastore.MetaEventType'
-        url:
-          type: string
-      type: object
-    datastore.MetaEventType:
-      enum:
-      - http
-      - pub_sub
-      type: string
-      x-enum-varnames:
-      - HTTPMetaEvent
-      - PubSubMetaEvent
     datastore.Metadata:
       properties:
         data:
@@ -368,17 +379,6 @@ components:
       x-enum-varnames:
       - Next
       - Prev
-    datastore.Pageable:
-      properties:
-        direction:
-          $ref: '#/components/schemas/datastore.PageDirection'
-        next_page_cursor:
-          type: string
-        per_page:
-          type: integer
-        prev_page_cursor:
-          type: string
-      type: object
     datastore.PaginationData:
       properties:
         has_next_page:
@@ -392,71 +392,6 @@ components:
         prev_page_cursor:
           type: string
       type: object
-    datastore.Project:
-      properties:
-        config:
-          $ref: '#/components/schemas/datastore.ProjectConfig'
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        logo_url:
-          type: string
-        name:
-          type: string
-        organisation_id:
-          type: string
-        retained_events:
-          type: integer
-        statistics:
-          $ref: '#/components/schemas/datastore.ProjectStatistics'
-        type:
-          $ref: '#/components/schemas/datastore.ProjectType'
-        uid:
-          type: string
-        updated_at:
-          type: string
-      type: object
-    datastore.ProjectConfig:
-      properties:
-        disable_endpoint:
-          type: boolean
-        max_payload_read_size:
-          type: integer
-        meta_event:
-          $ref: '#/components/schemas/datastore.MetaEventConfiguration'
-        ratelimit:
-          $ref: '#/components/schemas/datastore.RateLimitConfiguration'
-        replay_attacks_prevention_enabled:
-          type: boolean
-        retention_policy:
-          $ref: '#/components/schemas/datastore.RetentionPolicyConfiguration'
-        retention_policy_enabled:
-          type: boolean
-        signature:
-          $ref: '#/components/schemas/datastore.SignatureConfiguration'
-        strategy:
-          $ref: '#/components/schemas/datastore.StrategyConfiguration'
-      type: object
-    datastore.ProjectStatistics:
-      properties:
-        messages_sent:
-          type: integer
-        total_endpoints:
-          type: integer
-        total_sources:
-          type: integer
-        total_subscriptions:
-          type: integer
-      type: object
-    datastore.ProjectType:
-      enum:
-      - outgoing
-      - incoming
-      type: string
-      x-enum-varnames:
-      - OutgoingProject
-      - IncomingProject
     datastore.ProviderConfig:
       properties:
         twitter:
@@ -464,8 +399,12 @@ components:
       type: object
     datastore.PubSubConfig:
       properties:
+        amqp:
+          $ref: '#/components/schemas/datastore.AmqpPubSubConfig'
         google:
           $ref: '#/components/schemas/datastore.GooglePubSubConfig'
+        kafka:
+          $ref: '#/components/schemas/datastore.KafkaPubSubConfig'
         sqs:
           $ref: '#/components/schemas/datastore.SQSPubSubConfig'
         type:
@@ -477,21 +416,20 @@ components:
       enum:
       - sqs
       - google
+      - kafka
+      - amqp
       type: string
       x-enum-varnames:
       - SqsPubSub
       - GooglePubSub
+      - KafkaPubSub
+      - AmqpPubSub
     datastore.RateLimitConfiguration:
       properties:
         count:
           type: integer
         duration:
           type: integer
-      type: object
-    datastore.RetentionPolicyConfiguration:
-      properties:
-        policy:
-          type: string
       type: object
     datastore.RetryConfiguration:
       properties:
@@ -513,13 +451,6 @@ components:
         secret_key:
           type: string
       type: object
-    datastore.SearchParams:
-      properties:
-        created_at_end:
-          type: integer
-        created_at_start:
-          type: integer
-      type: object
     datastore.Secret:
       properties:
         created_at:
@@ -535,28 +466,10 @@ components:
         value:
           type: string
       type: object
-    datastore.SignatureConfiguration:
-      properties:
-        header:
-          $ref: '#/components/schemas/config.SignatureHeaderProvider'
-        versions:
-          items:
-            $ref: '#/components/schemas/datastore.SignatureVersion'
-          type: array
-      type: object
-    datastore.SignatureVersion:
-      properties:
-        created_at:
-          type: string
-        encoding:
-          $ref: '#/components/schemas/datastore.EncodingType'
-        hash:
-          type: string
-        uid:
-          type: string
-      type: object
     datastore.Source:
       properties:
+        body_function:
+          type: string
         created_at:
           type: string
         custom_response:
@@ -567,6 +480,8 @@ components:
           items:
             type: string
           type: array
+        header_function:
+          type: string
         idempotency_keys:
           items:
             type: string
@@ -618,23 +533,12 @@ components:
       - RestApiSource
       - PubSubSource
       - DBChangeStream
-    datastore.StrategyConfiguration:
-      properties:
-        duration:
-          type: integer
-        retry_count:
-          type: integer
-        type:
-          $ref: '#/components/schemas/datastore.StrategyProvider'
-      type: object
     datastore.StrategyProvider:
       enum:
-      - linear
       - linear
       - exponential
       type: string
       x-enum-varnames:
-      - DefaultStrategyProvider
       - LinearStrategyProvider
       - ExponentialStrategyProvider
     datastore.SubscriptionType:
@@ -673,36 +577,54 @@ components:
       - HMacVerifier
       - BasicAuthVerifier
       - APIKeyVerifier
+    handlers.Stub:
+      type: object
     httpheader.HTTPHeader:
       additionalProperties:
         items:
           type: string
         type: array
       type: object
-    models.APIKeyResponse:
-      properties:
-        created_at:
-          type: string
-        expires_at:
-          type: string
-        key:
-          type: string
-        key_type:
-          $ref: '#/components/schemas/datastore.KeyType'
-        name:
-          type: string
-        role:
-          $ref: '#/components/schemas/models.Role'
-        uid:
-          type: string
-        user_id:
-          type: string
-      type: object
     models.AlertConfiguration:
       properties:
         count:
+          description: Count
           type: integer
         threshold:
+          description: Threshold
+          type: string
+      type: object
+    models.AmqpAuth:
+      properties:
+        password:
+          type: string
+        user:
+          type: string
+      type: object
+    models.AmqpExchange:
+      properties:
+        exchange:
+          type: string
+        routingKey:
+          type: string
+      type: object
+    models.AmqpPubSubconfig:
+      properties:
+        auth:
+          $ref: '#/components/schemas/models.AmqpAuth'
+        bindExchange:
+          $ref: '#/components/schemas/models.AmqpExchange'
+        deadLetterExchange:
+          type: string
+        host:
+          type: string
+        port:
+          type: string
+        queue:
+          type: string
+        schema:
+          type: string
+        vhost:
           type: string
       type: object
     models.ApiKey:
@@ -719,46 +641,13 @@ components:
         username:
           type: string
       type: object
-    models.CreateEndpoint:
+    models.BroadcastEvent:
       properties:
-        advanced_signatures:
-          type: boolean
-        appID:
-          description: Deprecated but necessary for backward compatibility
-          type: string
-        authentication:
-          $ref: '#/components/schemas/models.EndpointAuthentication'
-        description:
-          type: string
-        http_timeout:
-          type: string
-        is_disabled:
-          type: boolean
-        name:
-          type: string
-        owner_id:
-          type: string
-        rate_limit:
-          type: integer
-        rate_limit_duration:
-          type: string
-        secret:
-          type: string
-        slack_webhook_url:
-          type: string
-        support_email:
-          type: string
-        url:
-          type: string
-      type: object
-    models.CreateEvent:
-      properties:
-        app_id:
-          description: Deprecated but necessary for backward compatibility
-          type: string
         custom_headers:
           additionalProperties:
             type: string
+          description: Specifies custom headers you want convoy to add when the event
+            is dispatched to your endpoint
           type: object
         data:
           description: |-
@@ -767,72 +656,186 @@ components:
           items:
             type: integer
           type: array
-        endpoint_id:
-          type: string
         event_type:
+          description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
         idempotency_key:
+          description: Specify a key for event deduplication
           type: string
       type: object
-    models.CreateProject:
+    models.CreateEndpoint:
       properties:
-        config:
-          $ref: '#/components/schemas/models.ProjectConfig'
-        logo_url:
+        advanced_signatures:
+          description: |-
+            Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+            -- simple or advanced. If left unspecified, we default to false.
+          type: boolean
+        appID:
+          description: Deprecated but necessary for backward compatibility
           type: string
+        authentication:
+          allOf:
+          - $ref: '#/components/schemas/models.EndpointAuthentication'
+          description: |-
+            This is used to define any custom authentication required by the endpoint. This
+            shouldn't be needed often because webhook endpoints usually should be exposed to
+            the internet.
+        description:
+          description: |-
+            Human-readable description of the endpoint. Think of this as metadata describing
+            the endpoint
+          type: string
+        http_timeout:
+          description: Define endpoint http timeout in seconds.
+          type: integer
+        is_disabled:
+          description: This is used to manually enable/disable the endpoint.
+          type: boolean
         name:
+          description: Endpoint name.
           type: string
-        type:
+        owner_id:
+          description: |-
+            The OwnerID is used to group more than one endpoint together to achieve
+            [fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)
+          type: string
+        rate_limit:
+          description: |-
+            Rate limit is the total number of requests to be sent to an endpoint in
+            the time duration specified in RateLimitDuration
+          type: integer
+        rate_limit_duration:
+          description: Rate limit duration specifies the time range for the rate limit.
+          type: integer
+        secret:
+          description: Endpoint's webhook secret. If not provided, Convoy autogenerates
+            one for the endpoint.
+          type: string
+        slack_webhook_url:
+          description: |-
+            Slack webhook URL is an alternative method to support email where endpoint developers
+            can receive failure notifications on a slack channel.
+          type: string
+        support_email:
+          description: |-
+            Endpoint developers support email. This is used for communicating endpoint state
+            changes. You should always turn this on when disabling endpoints are enabled.
+          type: string
+        url:
+          description: |-
+            URL is the endpoint's URL prefixed with https. non-https urls are currently
+            not supported.
           type: string
       type: object
-    models.CreateProjectResponse:
+    models.CreateEvent:
       properties:
-        api_key:
-          $ref: '#/components/schemas/models.APIKeyResponse'
-        project:
-          $ref: '#/components/schemas/models.ProjectResponse'
+        app_id:
+          description: Deprecated but necessary for backward compatibility.
+          type: string
+        custom_headers:
+          additionalProperties:
+            type: string
+          description: Specifies custom headers you want convoy to add when the event
+            is dispatched to your endpoint
+          type: object
+        data:
+          description: |-
+            Data is an arbitrary JSON value that gets sent as the body of the
+            webhook to the endpoints
+          type: object
+        endpoint_id:
+          description: Specifies the endpoint to send this event to.
+          type: string
+        event_type:
+          description: Event Type is used for filtering and debugging e.g invoice.paid
+          type: string
+        idempotency_key:
+          description: Specify a key for event deduplication
+          type: string
       type: object
     models.CreateSource:
       properties:
+        body_function:
+          description: |-
+            Function is a javascript function used to mutate the payload
+            immediately after ingesting an event
+          type: string
         custom_response:
-          $ref: '#/components/schemas/models.CustomResponse'
+          allOf:
+          - $ref: '#/components/schemas/models.CustomResponse'
+          description: |-
+            Custom response is used to define a custom response for incoming
+            webhooks project sources only.
+        header_function:
+          description: |-
+            Function is a javascript function used to mutate the headers
+            immediately after ingesting an event
+          type: string
         idempotency_keys:
+          description: |-
+            IdempotencyKeys are used to specify parts of a webhook request to uniquely
+            identify the event in an incoming webhooks project.
           items:
             type: string
           type: array
-        idempotency_ttl:
-          type: string
-        is_disabled:
-          type: boolean
         name:
+          description: Source name.
           type: string
         provider:
-          $ref: '#/components/schemas/datastore.SourceProvider'
+          allOf:
+          - $ref: '#/components/schemas/datastore.SourceProvider'
+          description: Use this to specify one of our predefined source types.
         pub_sub:
-          $ref: '#/components/schemas/models.PubSubConfig'
+          allOf:
+          - $ref: '#/components/schemas/models.PubSubConfig'
+          description: |-
+            PubSub are used to specify message broker sources for outgoing
+            webhooks projects.
         type:
-          $ref: '#/components/schemas/datastore.SourceType'
+          allOf:
+          - $ref: '#/components/schemas/datastore.SourceType'
+          description: Source Type.
         verifier:
-          $ref: '#/components/schemas/models.VerifierConfig'
+          allOf:
+          - $ref: '#/components/schemas/models.VerifierConfig'
+          description: |-
+            Verifiers are used to verify webhook events ingested in incoming
+            webhooks projects.
       type: object
     models.CreateSubscription:
       properties:
         alert_config:
-          $ref: '#/components/schemas/models.AlertConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.AlertConfiguration'
+          description: Alert configuration
         app_id:
           description: Deprecated but necessary for backward compatibility
           type: string
         endpoint_id:
+          description: Destination endpoint ID
           type: string
         filter_config:
-          $ref: '#/components/schemas/models.FilterConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.FilterConfiguration'
+          description: Filter configuration
+        function:
+          description: |-
+            Convoy supports mutating your request payload using a js function. Use this field
+            to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
+          type: string
         name:
+          description: Subscription Nme
           type: string
         rate_limit_config:
-          $ref: '#/components/schemas/models.RateLimitConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.RateLimitConfiguration'
+          description: Rate limit configuration
         retry_config:
-          $ref: '#/components/schemas/models.RetryConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.RetryConfiguration'
+          description: Retry configuration
         source_id:
+          description: Source Id
           type: string
       type: object
     models.CustomResponse:
@@ -842,78 +845,41 @@ components:
         content_type:
           type: string
       type: object
-    models.DynamicEndpoint:
-      properties:
-        advanced_signatures:
-          type: boolean
-        appID:
-          description: Deprecated but necessary for backward compatibility
-          type: string
-        authentication:
-          $ref: '#/components/schemas/models.EndpointAuthentication'
-        description:
-          type: string
-        http_timeout:
-          type: string
-        is_disabled:
-          type: boolean
-        name:
-          type: string
-        owner_id:
-          type: string
-        rate_limit:
-          type: integer
-        rate_limit_duration:
-          type: string
-        secret:
-          type: string
-        slack_webhook_url:
-          type: string
-        support_email:
-          type: string
-        url:
-          type: string
-      type: object
     models.DynamicEvent:
-      properties:
-        endpoint:
-          $ref: '#/components/schemas/models.DynamicEndpoint'
-        event:
-          $ref: '#/components/schemas/models.DynamicEventStub'
-        subscription:
-          $ref: '#/components/schemas/models.DynamicSubscription'
-      type: object
-    models.DynamicEventStub:
       properties:
         custom_headers:
           additionalProperties:
             type: string
+          description: Specifies custom headers you want convoy to add when the event
+            is dispatched to your endpoint
           type: object
         data:
-          description: Data is an arbitrary JSON value that gets sent as the body
-            of the webhook to the endpoints
+          description: |-
+            Data is an arbitrary JSON value that gets sent as the body of the
+            webhook to the endpoints
           items:
             type: integer
           type: array
         event_type:
+          description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
+        event_types:
+          description: A list of event types for the subscription filter config
+          items:
+            type: string
+          type: array
         idempotency_key:
+          description: Specify a key for event deduplication
           type: string
-        project_id:
+        secret:
+          description: Endpoint's webhook secret. If not provided, Convoy autogenerates
+            one for the endpoint.
           type: string
-      type: object
-    models.DynamicSubscription:
-      properties:
-        alert_config:
-          $ref: '#/components/schemas/models.AlertConfiguration'
-        filter_config:
-          $ref: '#/components/schemas/models.FilterConfiguration'
-        name:
+        url:
+          description: |-
+            URL is the endpoint's URL prefixed with https. non-https urls are currently
+            not supported.
           type: string
-        rate_limit_config:
-          $ref: '#/components/schemas/models.RateLimitConfiguration'
-        retry_config:
-          $ref: '#/components/schemas/models.RetryConfiguration'
       type: object
     models.EndpointAuthentication:
       properties:
@@ -937,6 +903,8 @@ components:
         events:
           type: integer
         http_timeout:
+          type: integer
+        name:
           type: string
         owner_id:
           type: string
@@ -945,7 +913,7 @@ components:
         rate_limit:
           type: integer
         rate_limit_duration:
-          type: string
+          type: integer
         secrets:
           items:
             $ref: '#/components/schemas/datastore.Secret'
@@ -956,13 +924,11 @@ components:
           $ref: '#/components/schemas/datastore.EndpointStatus'
         support_email:
           type: string
-        target_url:
-          type: string
-        title:
-          type: string
         uid:
           type: string
         updated_at:
+          type: string
+        url:
           type: string
       type: object
     models.EventDeliveryResponse:
@@ -987,9 +953,13 @@ components:
           type: string
         event_metadata:
           $ref: '#/components/schemas/datastore.Event'
+        event_type:
+          type: string
         headers:
           $ref: '#/components/schemas/httpheader.HTTPHeader'
         idempotency_key:
+          type: string
+        latency:
           type: string
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
@@ -1058,8 +1028,13 @@ components:
     models.ExpireSecret:
       properties:
         expiration:
+          description: |-
+            Amount of time to wait before expiring the old endpoint secret.
+            If AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until
+            the old signature is expired.
           type: integer
         secret:
+          description: New Endpoint secret value.
           type: string
       type: object
     models.FS:
@@ -1074,6 +1049,8 @@ components:
         custom_headers:
           additionalProperties:
             type: string
+          description: Specifies custom headers you want convoy to add when the event
+            is dispatched to your endpoint
           type: object
         data:
           description: |-
@@ -1083,25 +1060,50 @@ components:
             type: integer
           type: array
         event_type:
+          description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
         idempotency_key:
+          description: Specify a key for event deduplication
           type: string
         owner_id:
+          description: Used for fanout, sends this event to all endpoints with this
+            OwnerID.
           type: string
       type: object
     models.FilterConfiguration:
       properties:
         event_types:
+          description: List of event types that the subscription should match
           items:
             type: string
           type: array
         filter:
-          $ref: '#/components/schemas/models.FS'
+          allOf:
+          - $ref: '#/components/schemas/models.FS'
+          description: Body & Header filters
       type: object
     models.FilterSchema:
       properties:
         body: {}
         header: {}
+      type: object
+    models.FunctionRequest:
+      properties:
+        function:
+          type: string
+        payload:
+          additionalProperties: {}
+          type: object
+        type:
+          type: string
+      type: object
+    models.FunctionResponse:
+      properties:
+        log:
+          items:
+            type: string
+          type: array
+        payload: {}
       type: object
     models.GooglePubSubConfig:
       properties:
@@ -1128,23 +1130,35 @@ components:
     models.IDs:
       properties:
         ids:
+          description: A list of event delivery IDs to forcefully resend.
           items:
             type: string
           type: array
       type: object
-    models.MetaEventConfiguration:
+    models.KafkaAuth:
       properties:
-        event_type:
+        hash:
+          type: string
+        password:
+          type: string
+        tls:
+          type: boolean
+        type:
+          type: string
+        username:
+          type: string
+      type: object
+    models.KafkaPubSubConfig:
+      properties:
+        auth:
+          $ref: '#/components/schemas/models.KafkaAuth'
+        brokers:
           items:
             type: string
           type: array
-        is_enabled:
-          type: boolean
-        secret:
+        consumer_group_id:
           type: string
-        type:
-          type: string
-        url:
+        topic_name:
           type: string
       type: object
     models.MetaEventResponse:
@@ -1168,17 +1182,29 @@ components:
         updated_at:
           type: string
       type: object
+    models.PagedResponse:
+      properties:
+        content: {}
+        pagination:
+          $ref: '#/components/schemas/datastore.PaginationData'
+      type: object
     models.PortalLink:
       properties:
         can_manage_endpoint:
+          description: Specify whether endpoint management can be done through the
+            Portal Link UI
           type: boolean
         endpoints:
+          description: IDs of endpoints in this portal link
           items:
             type: string
           type: array
         name:
+          description: Portal Link Name
           type: string
         owner_id:
+          description: Alternatively specify OwnerID, the portal link will inherit
+            all the endpoints with this owner ID
           type: string
       type: object
     models.PortalLinkResponse:
@@ -1214,56 +1240,14 @@ components:
         url:
           type: string
       type: object
-    models.ProjectConfig:
-      properties:
-        disable_endpoint:
-          type: boolean
-        max_payload_read_size:
-          type: integer
-        meta_event:
-          $ref: '#/components/schemas/models.MetaEventConfiguration'
-        ratelimit:
-          $ref: '#/components/schemas/models.RateLimitConfiguration'
-        replay_attacks_prevention_enabled:
-          type: boolean
-        retention_policy:
-          $ref: '#/components/schemas/models.RetentionPolicyConfiguration'
-        retention_policy_enabled:
-          type: boolean
-        signature:
-          $ref: '#/components/schemas/models.SignatureConfiguration'
-        strategy:
-          $ref: '#/components/schemas/models.StrategyConfiguration'
-      type: object
-    models.ProjectResponse:
-      properties:
-        config:
-          $ref: '#/components/schemas/datastore.ProjectConfig'
-        created_at:
-          type: string
-        deleted_at:
-          type: string
-        logo_url:
-          type: string
-        name:
-          type: string
-        organisation_id:
-          type: string
-        retained_events:
-          type: integer
-        statistics:
-          $ref: '#/components/schemas/datastore.ProjectStatistics'
-        type:
-          $ref: '#/components/schemas/datastore.ProjectType'
-        uid:
-          type: string
-        updated_at:
-          type: string
-      type: object
     models.PubSubConfig:
       properties:
+        amqp:
+          $ref: '#/components/schemas/models.AmqpPubSubconfig'
         google:
           $ref: '#/components/schemas/models.GooglePubSubConfig'
+        kafka:
+          $ref: '#/components/schemas/models.KafkaPubSubConfig'
         sqs:
           $ref: '#/components/schemas/models.SQSPubSubConfig'
         type:
@@ -1278,30 +1262,23 @@ components:
         duration:
           type: integer
       type: object
-    models.RetentionPolicyConfiguration:
-      properties:
-        policy:
-          type: string
-      type: object
     models.RetryConfiguration:
       properties:
         duration:
+          description: Used to specify a valid Go time duration e.g 10s, 1h3m for
+            how long to wait between event delivery retries
           type: string
         interval_seconds:
+          description: Used to specify a time in seconds for how long to wait between
+            event delivery retries,
           type: integer
         retry_count:
+          description: Used to specify the max number of retries
           type: integer
         type:
-          $ref: '#/components/schemas/datastore.StrategyProvider'
-      type: object
-    models.Role:
-      properties:
-        app:
-          type: string
-        project:
-          type: string
-        type:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/datastore.StrategyProvider'
+          description: Retry Strategy type
       type: object
     models.SQSPubSubConfig:
       properties:
@@ -1314,28 +1291,10 @@ components:
         secret_key:
           type: string
       type: object
-    models.SignatureConfiguration:
-      properties:
-        header:
-          $ref: '#/components/schemas/config.SignatureHeaderProvider'
-        versions:
-          items:
-            $ref: '#/components/schemas/models.SignatureVersion'
-          type: array
-      type: object
-    models.SignatureVersion:
-      properties:
-        created_at:
-          type: string
-        encoding:
-          type: string
-        hash:
-          type: string
-        uid:
-          type: string
-      type: object
     models.SourceResponse:
       properties:
+        body_function:
+          type: string
         created_at:
           type: string
         custom_response:
@@ -1346,6 +1305,8 @@ components:
           items:
             type: string
           type: array
+        header_function:
+          type: string
         idempotency_keys:
           items:
             type: string
@@ -1375,15 +1336,6 @@ components:
         verifier:
           $ref: '#/components/schemas/datastore.VerifierConfig'
       type: object
-    models.StrategyConfiguration:
-      properties:
-        duration:
-          type: integer
-        retry_count:
-          type: integer
-        type:
-          type: string
-      type: object
     models.SubscriptionResponse:
       properties:
         alert_config:
@@ -1400,6 +1352,8 @@ components:
           $ref: '#/components/schemas/datastore.Endpoint'
         filter_config:
           $ref: '#/components/schemas/datastore.FilterConfiguration'
+        function:
+          $ref: '#/components/schemas/null.String'
         name:
           type: string
         rate_limit_config:
@@ -1418,9 +1372,13 @@ components:
     models.TestFilter:
       properties:
         request:
-          $ref: '#/components/schemas/models.FilterSchema'
+          allOf:
+          - $ref: '#/components/schemas/models.FilterSchema'
+          description: Same Request & Headers
         schema:
-          $ref: '#/components/schemas/models.FilterSchema'
+          allOf:
+          - $ref: '#/components/schemas/models.FilterSchema'
+          description: Sample test schema
       type: object
     models.UpdateCustomResponse:
       properties:
@@ -1432,87 +1390,151 @@ components:
     models.UpdateEndpoint:
       properties:
         advanced_signatures:
+          description: |-
+            Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+            -- simple or advanced. If left unspecified, we default to false.
           type: boolean
         authentication:
-          $ref: '#/components/schemas/models.EndpointAuthentication'
+          allOf:
+          - $ref: '#/components/schemas/models.EndpointAuthentication'
+          description: |-
+            This is used to define any custom authentication required by the endpoint. This
+            shouldn't be needed often because webhook endpoints usually should be exposed to
+            the internet.
         description:
+          description: |-
+            Human-readable description of the endpoint. Think of this as metadata describing
+            the endpoint
           type: string
         http_timeout:
-          type: string
+          description: Define endpoint http timeout in seconds.
+          type: integer
         is_disabled:
+          description: This is used to manually enable/disable the endpoint.
           type: boolean
         name:
           type: string
         owner_id:
+          description: |-
+            The OwnerID is used to group more than one endpoint together to achieve
+            [fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)
           type: string
         rate_limit:
+          description: |-
+            Rate limit is the total number of requests to be sent to an endpoint in
+            the time duration specified in RateLimitDuration
           type: integer
         rate_limit_duration:
-          type: string
+          description: Rate limit duration specifies the time range for the rate limit.
+          type: integer
         secret:
+          description: Endpoint's webhook secret. If not provided, Convoy autogenerates
+            one for the endpoint.
           type: string
         slack_webhook_url:
+          description: |-
+            Slack webhook URL is an alternative method to support email where endpoint developers
+            can receive failure notifications on a slack channel.
           type: string
         support_email:
+          description: |-
+            Endpoint developers support email. This is used for communicating endpoint state
+            changes. You should always turn this on when disabling endpoints are enabled.
           type: string
         url:
-          type: string
-      type: object
-    models.UpdateProject:
-      properties:
-        config:
-          $ref: '#/components/schemas/models.ProjectConfig'
-        logo_url:
-          type: string
-        name:
-          type: string
-        rate_limit:
-          type: integer
-        rate_limit_duration:
+          description: |-
+            URL is the endpoint's URL prefixed with https. non-https urls are currently
+            not supported.
           type: string
       type: object
     models.UpdateSource:
       properties:
-        custom_response:
-          $ref: '#/components/schemas/models.UpdateCustomResponse'
-        forward_headers:
-          items:
-            type: string
-          type: array
-        idempotency_keys:
-          items:
-            type: string
-          type: array
-        idempotency_ttl:
+        body_function:
+          description: |-
+            Function is a javascript function used to mutate the payload
+            immediately after ingesting an event
           type: string
+        custom_response:
+          allOf:
+          - $ref: '#/components/schemas/models.UpdateCustomResponse'
+          description: |-
+            Custom response is used to define a custom response for incoming
+            webhooks project sources only.
+        forward_headers:
+          description: Soecfy header you want convoy to save from the ingest request
+            and forward to your endpoints when the event is dispatched.
+          items:
+            type: string
+          type: array
+        header_function:
+          description: |-
+            Function is a javascript function used to mutate the headers
+            immediately after ingesting an event
+          type: string
+        idempotency_keys:
+          description: |-
+            IdempotencyKeys are used to specify parts of a webhook request to uniquely
+            identify the event in an incoming webhooks project.
+          items:
+            type: string
+          type: array
         is_disabled:
+          description: This is used to manually enable/disable the source.
           type: boolean
         name:
+          description: Source name.
           type: string
         pub_sub:
-          $ref: '#/components/schemas/models.PubSubConfig'
+          allOf:
+          - $ref: '#/components/schemas/models.PubSubConfig'
+          description: |-
+            PubSub are used to specify message broker sources for outgoing
+            webhooks projects, you only need to specify this when the source type is `pub_sub`.
         type:
-          $ref: '#/components/schemas/datastore.SourceType'
+          allOf:
+          - $ref: '#/components/schemas/datastore.SourceType'
+          description: Source Type.
         verifier:
-          $ref: '#/components/schemas/models.VerifierConfig'
+          allOf:
+          - $ref: '#/components/schemas/models.VerifierConfig'
+          description: |-
+            Verifiers are used to verify webhook events ingested in incoming
+            webhooks projects.
       type: object
     models.UpdateSubscription:
       properties:
         alert_config:
-          $ref: '#/components/schemas/models.AlertConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.AlertConfiguration'
+          description: Alert configuration
         app_id:
+          description: Deprecated but necessary for backward compatibility
           type: string
         endpoint_id:
+          description: Destination endpoint ID
           type: string
         filter_config:
-          $ref: '#/components/schemas/models.FilterConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.FilterConfiguration'
+          description: Filter configuration
+        function:
+          description: |-
+            Convoy supports mutating your request payload using a js function. Use this field
+            to specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more
+          type: string
         name:
+          description: Subscription Nme
           type: string
         rate_limit_config:
-          $ref: '#/components/schemas/models.RateLimitConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.RateLimitConfiguration'
+          description: Rate limit configuration
         retry_config:
-          $ref: '#/components/schemas/models.RetryConfiguration'
+          allOf:
+          - $ref: '#/components/schemas/models.RetryConfiguration'
+          description: Retry configuration
         source_id:
+          description: Source Id
           type: string
       type: object
     models.VerifierConfig:
@@ -1526,20 +1548,16 @@ components:
         type:
           $ref: '#/components/schemas/datastore.VerifierType'
       type: object
-    public.Stub:
-      type: object
-    public.pagedResponse:
+    null.String:
       properties:
-        content: {}
-        pagination:
-          $ref: '#/components/schemas/datastore.PaginationData'
+        string:
+          type: string
+        valid:
+          description: Valid is true if String is not NULL
+          type: boolean
       type: object
     util.ServerResponse:
       properties:
-        data:
-          items:
-            type: integer
-          type: array
         message:
           type: string
         status:
@@ -1562,332 +1580,13 @@ info:
     url: https://www.mozilla.org/en-US/MPL/2.0/
   termsOfService: https://getconvoy.io/terms
   title: Convoy API Reference
-  version: 0.9.0
+  version: 24.1.4
 openapi: 3.0.3
 paths:
-  /v1/projects:
-    get:
-      description: This endpoint fetches projects
-      parameters:
-      - description: Project name
-        in: query
-        name: name
-        schema:
-          type: string
-      - description: organisation id
-        in: query
-        name: orgID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      items:
-                        $ref: '#/components/schemas/models.ProjectResponse'
-                      type: array
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Not Found
-      security:
-      - ApiKeyAuth: []
-      summary: List all projects
-      tags:
-      - Projects
-    post:
-      description: This endpoint creates a project
-      parameters:
-      - description: Organisation id
-        in: query
-        name: orgID
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.CreateProject'
-        description: Project Details
-        required: true
-        x-originalParamName: project
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.CreateProjectResponse'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Not Found
-      security:
-      - ApiKeyAuth: []
-      summary: Create a project
-      tags:
-      - Projects
-  /v1/projects/{projectID}:
-    delete:
-      description: This endpoint deletes a project using its id
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Not Found
-      security:
-      - ApiKeyAuth: []
-      summary: Delete a project
-      tags:
-      - Projects
-    get:
-      description: This endpoint fetches a project by its id
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.ProjectResponse'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Not Found
-      security:
-      - ApiKeyAuth: []
-      summary: Retrieve a project
-      tags:
-      - Projects
-    put:
-      description: This endpoint updates a project
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/models.UpdateProject'
-        description: Project Details
-        required: true
-        x-originalParamName: project
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.ProjectResponse'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Not Found
-      security:
-      - ApiKeyAuth: []
-      summary: Update a project
-      tags:
-      - Projects
   /v1/projects/{projectID}/endpoints:
     get:
       description: This endpoint fetches an endpoints
+      operationId: GetEndpoints
       parameters:
       - description: Project ID
         in: path
@@ -1895,6 +1594,16 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: A pagination cursor to fetch the next page of a list
         in: query
         name: next_page_cursor
@@ -1920,6 +1629,11 @@ paths:
         name: q
         schema:
           type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        in: query
+        name: sort
+        schema:
+          type: string
       responses:
         "200":
           content:
@@ -1930,7 +1644,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/public.pagedResponse'
+                      - $ref: '#/components/schemas/models.PagedResponse'
                       - properties:
                           content:
                             items:
@@ -1947,7 +1661,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -1958,7 +1672,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -1969,7 +1683,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -1979,6 +1693,7 @@ paths:
       - Endpoints
     post:
       description: This endpoint creates an endpoint
+      operationId: CreateEndpoint
       parameters:
       - description: Project ID
         in: path
@@ -2014,7 +1729,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2025,7 +1740,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2036,7 +1751,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2047,6 +1762,7 @@ paths:
   /v1/projects/{projectID}/endpoints/{endpointID}:
     delete:
       description: This endpoint deletes an endpoint
+      operationId: DeleteEndpoint
       parameters:
       - description: Project ID
         in: path
@@ -2069,7 +1785,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -2080,7 +1796,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2091,7 +1807,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2102,7 +1818,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2112,6 +1828,7 @@ paths:
       - Endpoints
     get:
       description: This endpoint fetches an endpoint
+      operationId: GetEndpoint
       parameters:
       - description: Project ID
         in: path
@@ -2145,7 +1862,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2156,7 +1873,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2167,7 +1884,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2177,6 +1894,7 @@ paths:
       - Endpoints
     put:
       description: This endpoint updates an endpoint
+      operationId: UpdateEndpoint
       parameters:
       - description: Project ID
         in: path
@@ -2218,7 +1936,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2229,7 +1947,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2240,7 +1958,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2251,6 +1969,7 @@ paths:
   /v1/projects/{projectID}/endpoints/{endpointID}/expire_secret:
     put:
       description: This endpoint expires and re-generates the endpoint secret.
+      operationId: ExpireSecret
       parameters:
       - description: Project ID
         in: path
@@ -2292,7 +2011,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2303,7 +2022,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2314,7 +2033,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2326,6 +2045,7 @@ paths:
     put:
       description: This endpoint toggles an endpoint status between the active and
         paused states
+      operationId: PauseEndpoint
       parameters:
       - description: Project ID
         in: path
@@ -2359,7 +2079,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2370,7 +2090,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2381,7 +2101,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2389,76 +2109,10 @@ paths:
       summary: Pause endpoint
       tags:
       - Endpoints
-  /v1/projects/{projectID}/endpoints/{endpointID}/toggle_status:
-    put:
-      description: This endpoint toggles an endpoint status between the active and
-        inactive statetes
-      parameters:
-      - description: Project ID
-        in: path
-        name: projectID
-        required: true
-        schema:
-          type: string
-      - description: Endpoint ID
-        in: path
-        name: endpointID
-        required: true
-        schema:
-          type: string
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/models.EndpointResponse'
-                  type: object
-          description: OK
-        "400":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Bad Request
-        "401":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Unauthorized
-        "404":
-          content:
-            application/json:
-              schema:
-                allOf:
-                - $ref: '#/components/schemas/util.ServerResponse'
-                - properties:
-                    data:
-                      $ref: '#/components/schemas/public.Stub'
-                  type: object
-          description: Not Found
-      security:
-      - ApiKeyAuth: []
-      summary: Toggle endpoint status
-      tags:
-      - Endpoints
   /v1/projects/{projectID}/eventdeliveries:
     get:
       description: This endpoint retrieves all event deliveries paginated.
+      operationId: GetEventDeliveriesPaged
       parameters:
       - description: Project ID
         in: path
@@ -2466,6 +2120,16 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         in: query
         name: endDate
@@ -2478,11 +2142,18 @@ paths:
           items:
             type: string
           type: array
-      - in: query
+      - description: Event ID to filter by
+        in: query
         name: eventId
         schema:
           type: string
-      - in: query
+      - description: EventType to filter by
+        in: query
+        name: event_type
+        schema:
+          type: string
+      - description: IdempotencyKey to filter by
+        in: query
         name: idempotencyKey
         schema:
           type: string
@@ -2501,6 +2172,11 @@ paths:
         name: prev_page_cursor
         schema:
           type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        in: query
+        name: sort
+        schema:
+          type: string
       - description: The start date
         in: query
         name: startDate
@@ -2513,7 +2189,8 @@ paths:
           items:
             type: string
           type: array
-      - in: query
+      - description: SubscriptionID to filter by
+        in: query
         name: subscriptionId
         schema:
           type: string
@@ -2527,7 +2204,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/public.pagedResponse'
+                      - $ref: '#/components/schemas/models.PagedResponse'
                       - properties:
                           content:
                             items:
@@ -2544,7 +2221,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2555,7 +2232,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2566,7 +2243,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2577,6 +2254,7 @@ paths:
   /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}:
     get:
       description: This endpoint fetches an event delivery.
+      operationId: GetEventDelivery
       parameters:
       - description: Project ID
         in: path
@@ -2610,7 +2288,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2621,7 +2299,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2632,7 +2310,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2643,6 +2321,7 @@ paths:
   /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts:
     get:
       description: This endpoint fetches an app message's delivery attempts
+      operationId: GetDeliveryAttempts
       parameters:
       - description: Project ID
         in: path
@@ -2678,7 +2357,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2689,7 +2368,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2700,7 +2379,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2711,6 +2390,7 @@ paths:
   /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}:
     get:
       description: This endpoint fetches an app event delivery attempt
+      operationId: GetDeliveryAttempt
       parameters:
       - description: Project ID
         in: path
@@ -2750,7 +2430,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2761,7 +2441,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2772,7 +2452,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2783,6 +2463,7 @@ paths:
   /v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend:
     put:
       description: This endpoint retries an event delivery.
+      operationId: ResendEventDelivery
       parameters:
       - description: Project ID
         in: path
@@ -2816,7 +2497,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2827,7 +2508,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2838,7 +2519,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2849,11 +2530,27 @@ paths:
   /v1/projects/{projectID}/eventdeliveries/batchretry:
     post:
       description: This endpoint batch retries multiple event deliveries at once.
+      operationId: BatchRetryEventDelivery
       parameters:
       - description: Project ID
         in: path
         name: projectID
         required: true
+        schema:
+          type: string
+      - in: query
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
+      - description: The end date
+        in: query
+        name: endDate
         schema:
           type: string
       - description: A list of endpoint IDs to filter by
@@ -2863,8 +2560,44 @@ paths:
           items:
             type: string
           type: array
-      - in: query
+      - description: Event ID to filter by
+        in: query
         name: eventId
+        schema:
+          type: string
+      - description: EventType to filter by
+        in: query
+        name: event_type
+        schema:
+          type: string
+      - description: IdempotencyKey to filter by
+        in: query
+        name: idempotencyKey
+        schema:
+          type: string
+      - description: A pagination cursor to fetch the next page of a list
+        in: query
+        name: next_page_cursor
+        schema:
+          type: string
+      - description: The number of items to return per page
+        in: query
+        name: perPage
+        schema:
+          type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        in: query
+        name: prev_page_cursor
+        schema:
+          type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        in: query
+        name: sort
+        schema:
+          type: string
+      - description: The start date
+        in: query
+        name: startDate
         schema:
           type: string
       - description: A list of event delivery statuses to filter by
@@ -2874,7 +2607,8 @@ paths:
           items:
             type: string
           type: array
-      - in: query
+      - description: SubscriptionID to filter by
+        in: query
         name: subscriptionId
         schema:
           type: string
@@ -2887,7 +2621,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -2898,7 +2632,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2909,7 +2643,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2920,7 +2654,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -2931,6 +2665,7 @@ paths:
   /v1/projects/{projectID}/eventdeliveries/forceresend:
     post:
       description: This endpoint enables you retry a previously successful event delivery
+      operationId: ForceResendEventDeliveries
       parameters:
       - description: Project ID
         in: path
@@ -2942,12 +2677,7 @@ paths:
         content:
           application/json:
             schema:
-              allOf:
-              - $ref: '#/components/schemas/public.Stub'
-              - properties:
-                  ids:
-                    $ref: '#/components/schemas/models.IDs'
-                type: object
+              $ref: '#/components/schemas/models.IDs'
         description: event delivery ids
         required: true
         x-originalParamName: deliveryIds
@@ -2960,7 +2690,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -2971,7 +2701,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -2982,7 +2712,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -2993,7 +2723,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3004,6 +2734,7 @@ paths:
   /v1/projects/{projectID}/events:
     get:
       description: This endpoint fetches app events with pagination
+      operationId: GetEventsPaged
       parameters:
       - description: Project ID
         in: path
@@ -3011,6 +2742,16 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         in: query
         name: endDate
@@ -3023,7 +2764,8 @@ paths:
           items:
             type: string
           type: array
-      - in: query
+      - description: IdempotencyKey to filter by
+        in: query
         name: idempotencyKey
         schema:
           type: string
@@ -3047,10 +2789,18 @@ paths:
         name: query
         schema:
           type: string
-      - in: query
-        name: sourceId
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        in: query
+        name: sort
         schema:
           type: string
+      - description: A list of Source IDs to filter the events by.
+        in: query
+        name: sourceId
+        schema:
+          items:
+            type: string
+          type: array
       - description: The start date
         in: query
         name: startDate
@@ -3066,7 +2816,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/public.pagedResponse'
+                      - $ref: '#/components/schemas/models.PagedResponse'
                       - properties:
                           content:
                             items:
@@ -3083,7 +2833,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3094,7 +2844,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3105,7 +2855,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3115,6 +2865,7 @@ paths:
       - Events
     post:
       description: This endpoint creates an endpoint event
+      operationId: CreateEndpointEvent
       parameters:
       - description: Project ID
         in: path
@@ -3139,7 +2890,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/models.EventResponse'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -3150,7 +2901,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3161,7 +2912,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3172,7 +2923,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3183,6 +2934,7 @@ paths:
   /v1/projects/{projectID}/events/{eventID}:
     get:
       description: This endpoint retrieves an event
+      operationId: GetEndpointEvent
       parameters:
       - description: Project ID
         in: path
@@ -3216,7 +2968,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3227,7 +2979,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3238,7 +2990,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3249,6 +3001,7 @@ paths:
   /v1/projects/{projectID}/events/{eventID}/replay:
     put:
       description: This endpoint replays an event afresh assuming it is a new event.
+      operationId: ReplayEndpointEvent
       parameters:
       - description: Project ID
         in: path
@@ -3282,7 +3035,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3293,7 +3046,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3304,7 +3057,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3315,6 +3068,7 @@ paths:
   /v1/projects/{projectID}/events/batchreplay:
     post:
       description: This endpoint replays multiple events at once.
+      operationId: BatchReplayEvents
       parameters:
       - description: Project ID
         in: path
@@ -3323,37 +3077,67 @@ paths:
         schema:
           type: string
       - in: query
-        name: endpointID
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
+      - description: The end date
+        in: query
+        name: endDate
         schema:
           type: string
-      - in: query
-        name: endpointIDs
+      - description: A list of endpoint ids to filter by
+        in: query
+        name: endpointId
         schema:
           items:
             type: string
           type: array
-      - in: query
-        name: eventID
-        schema:
-          type: string
-      - in: query
+      - description: IdempotencyKey to filter by
+        in: query
         name: idempotencyKey
         schema:
           type: string
-      - in: query
-        name: ownerID
+      - description: A pagination cursor to fetch the next page of a list
+        in: query
+        name: next_page_cursor
         schema:
           type: string
-      - in: query
+      - description: The number of items to return per page
+        in: query
+        name: perPage
+        schema:
+          type: integer
+      - description: A pagination cursor to fetch the previous page of a list
+        in: query
+        name: prev_page_cursor
+        schema:
+          type: string
+      - description: Any arbitrary value to filter the events payload
+        in: query
         name: query
         schema:
           type: string
-      - in: query
-        name: sourceID
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        in: query
+        name: sort
         schema:
           type: string
-      - in: query
-        name: subscriptionID
+      - description: A list of Source IDs to filter the events by.
+        in: query
+        name: sourceId
+        schema:
+          items:
+            type: string
+          type: array
+      - description: The start date
+        in: query
+        name: startDate
         schema:
           type: string
       responses:
@@ -3369,7 +3153,7 @@ paths:
                       - $ref: '#/components/schemas/datastore.Event'
                       - properties:
                           data:
-                            $ref: '#/components/schemas/public.Stub'
+                            $ref: '#/components/schemas/handlers.Stub'
                         type: object
                   type: object
           description: OK
@@ -3381,7 +3165,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3392,7 +3176,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3403,7 +3187,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3411,11 +3195,82 @@ paths:
       summary: Batch replay events
       tags:
       - Events
+  /v1/projects/{projectID}/events/broadcast:
+    post:
+      description: This endpoint creates a event that is broadcast to every endpoint
+        whose subscription matches the given event type.
+      operationId: CreateBroadcastEvent
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.BroadcastEvent'
+        description: Broadcast Event Details
+        required: true
+        x-originalParamName: event
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.EventResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Create a broadcast event
+      tags:
+      - Events
   /v1/projects/{projectID}/events/dynamic:
     post:
       description: This endpoint does not require creating endpoint and subscriptions
         ahead of time. Instead, you supply the endpoint and the payload, and Convoy
         delivers the events
+      operationId: CreateDynamicEvent
       parameters:
       - description: Project ID
         in: path
@@ -3436,7 +3291,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/public.Stub'
+                $ref: '#/components/schemas/handlers.Stub'
           description: OK
         "400":
           content:
@@ -3446,7 +3301,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3457,7 +3312,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3468,7 +3323,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3480,6 +3335,7 @@ paths:
     post:
       description: This endpoint uses the owner_id to fan out an event to multiple
         endpoints.
+      operationId: CreateEndpointFanoutEvent
       parameters:
       - description: Project ID
         in: path
@@ -3504,7 +3360,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/models.EventResponse'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -3515,7 +3371,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3526,7 +3382,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3537,7 +3393,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3548,6 +3404,7 @@ paths:
   /v1/projects/{projectID}/meta-events:
     get:
       description: This endpoint fetches meta events with pagination
+      operationId: GetMetaEventsPaged
       parameters:
       - description: Project ID
         in: path
@@ -3555,6 +3412,16 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: The end date
         in: query
         name: endDate
@@ -3575,6 +3442,11 @@ paths:
         name: prev_page_cursor
         schema:
           type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        in: query
+        name: sort
+        schema:
+          type: string
       - description: The start date
         in: query
         name: startDate
@@ -3590,7 +3462,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/public.pagedResponse'
+                      - $ref: '#/components/schemas/models.PagedResponse'
                       - properties:
                           content:
                             items:
@@ -3607,7 +3479,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3618,7 +3490,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3629,7 +3501,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3640,6 +3512,7 @@ paths:
   /v1/projects/{projectID}/meta-events/{metaEventID}:
     get:
       description: This endpoint retrieves a meta event
+      operationId: GetMetaEvent
       parameters:
       - description: Project ID
         in: path
@@ -3673,7 +3546,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3684,7 +3557,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3695,7 +3568,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3706,6 +3579,7 @@ paths:
   /v1/projects/{projectID}/meta-events/{metaEventID}/resend:
     put:
       description: This endpoint retries a meta event
+      operationId: ResendMetaEvent
       parameters:
       - description: Project ID
         in: path
@@ -3739,7 +3613,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3750,7 +3624,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3761,7 +3635,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3772,6 +3646,7 @@ paths:
   /v1/projects/{projectID}/portal-links:
     get:
       description: This endpoint fetches multiple portal links
+      operationId: LoadPortalLinksPaged
       parameters:
       - description: Project ID
         in: path
@@ -3779,17 +3654,42 @@ paths:
         required: true
         schema:
           type: string
-      - description: results per page
+      - in: query
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
+      - description: A pagination cursor to fetch the next page of a list
+        in: query
+        name: next_page_cursor
+        schema:
+          type: string
+      - description: The owner ID of the endpoint
+        in: query
+        name: ownerId
+        schema:
+          type: string
+      - description: The number of items to return per page
         in: query
         name: perPage
         schema:
-          type: string
-      - description: page number
+          type: integer
+      - description: A pagination cursor to fetch the previous page of a list
         in: query
-        name: page
+        name: prev_page_cursor
         schema:
           type: string
-      - description: sort order
+      - description: The name of the endpoint
+        in: query
+        name: q
+        schema:
+          type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
         in: query
         name: sort
         schema:
@@ -3804,7 +3704,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/public.pagedResponse'
+                      - $ref: '#/components/schemas/models.PagedResponse'
                       - properties:
                           content:
                             items:
@@ -3821,7 +3721,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3832,7 +3732,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3843,7 +3743,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3853,6 +3753,7 @@ paths:
       - Portal Links
     post:
       description: This endpoint creates a portal link
+      operationId: CreatePortalLink
       parameters:
       - description: Project ID
         in: path
@@ -3888,7 +3789,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3899,7 +3800,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3910,7 +3811,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3921,6 +3822,7 @@ paths:
   /v1/projects/{projectID}/portal-links/{portalLinkID}:
     get:
       description: This endpoint retrieves a portal link by its id.
+      operationId: GetPortalLink
       parameters:
       - description: Project ID
         in: path
@@ -3954,7 +3856,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -3965,7 +3867,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -3976,7 +3878,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -3986,6 +3888,7 @@ paths:
       - Portal Links
     put:
       description: This endpoint updates a portal link
+      operationId: UpdatePortalLink
       parameters:
       - description: Project ID
         in: path
@@ -4027,7 +3930,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4038,7 +3941,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4049,7 +3952,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4060,6 +3963,7 @@ paths:
   /v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:
     put:
       description: This endpoint revokes a portal link
+      operationId: RevokePortalLink
       parameters:
       - description: Project ID
         in: path
@@ -4082,7 +3986,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -4093,7 +3997,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4104,7 +4008,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4115,7 +4019,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4126,6 +4030,7 @@ paths:
   /v1/projects/{projectID}/sources:
     get:
       description: This endpoint fetches multiple sources
+      operationId: LoadSourcesPaged
       parameters:
       - description: Project ID
         in: path
@@ -4133,6 +4038,16 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: A pagination cursor to fetch the next page of a list
         in: query
         name: next_page_cursor
@@ -4153,6 +4068,11 @@ paths:
         name: provider
         schema:
           type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        in: query
+        name: sort
+        schema:
+          type: string
       - description: The source type e.g. http, pub_sub
         in: query
         name: type
@@ -4168,7 +4088,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/public.pagedResponse'
+                      - $ref: '#/components/schemas/models.PagedResponse'
                       - properties:
                           content:
                             items:
@@ -4185,7 +4105,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4196,7 +4116,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4207,7 +4127,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4217,6 +4137,7 @@ paths:
       - Sources
     post:
       description: This endpoint creates a source
+      operationId: CreateSource
       parameters:
       - description: Project ID
         in: path
@@ -4252,7 +4173,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4263,7 +4184,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4274,7 +4195,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4285,6 +4206,7 @@ paths:
   /v1/projects/{projectID}/sources/{sourceID}:
     delete:
       description: This endpoint deletes a source
+      operationId: DeleteSource
       parameters:
       - description: Project ID
         in: path
@@ -4307,7 +4229,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -4318,7 +4240,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4329,7 +4251,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4340,7 +4262,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4350,6 +4272,7 @@ paths:
       - Sources
     get:
       description: This endpoint retrieves a source by its id
+      operationId: GetSource
       parameters:
       - description: Project ID
         in: path
@@ -4383,7 +4306,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4394,7 +4317,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4405,7 +4328,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4415,6 +4338,7 @@ paths:
       - Sources
     put:
       description: This endpoint updates a source
+      operationId: UpdateSource
       parameters:
       - description: Project ID
         in: path
@@ -4456,7 +4380,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4467,7 +4391,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4478,7 +4402,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4489,6 +4413,7 @@ paths:
   /v1/projects/{projectID}/subscriptions:
     get:
       description: This endpoint fetches all the subscriptions
+      operationId: GetSubscriptions
       parameters:
       - description: Project ID
         in: path
@@ -4496,6 +4421,16 @@ paths:
         required: true
         schema:
           type: string
+      - in: query
+        name: direction
+        schema:
+          enum:
+          - next
+          - prev
+          type: string
+        x-enum-varnames:
+        - Next
+        - Prev
       - description: A list of endpointIDs to filter by
         in: query
         name: endpointId
@@ -4503,6 +4438,11 @@ paths:
           items:
             type: string
           type: array
+      - description: Subscription name to filter by
+        in: query
+        name: name
+        schema:
+          type: string
       - description: A pagination cursor to fetch the next page of a list
         in: query
         name: next_page_cursor
@@ -4518,6 +4458,11 @@ paths:
         name: prev_page_cursor
         schema:
           type: string
+      - description: Sort order, values are `ASC` or `DESC`, defaults to `DESC`
+        in: query
+        name: sort
+        schema:
+          type: string
       responses:
         "200":
           content:
@@ -4528,7 +4473,7 @@ paths:
                 - properties:
                     data:
                       allOf:
-                      - $ref: '#/components/schemas/public.pagedResponse'
+                      - $ref: '#/components/schemas/models.PagedResponse'
                       - properties:
                           content:
                             items:
@@ -4545,7 +4490,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4556,7 +4501,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4567,7 +4512,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4577,6 +4522,7 @@ paths:
       - Subscriptions
     post:
       description: This endpoint creates a subscriptions
+      operationId: CreateSubscription
       parameters:
       - description: Project ID
         in: path
@@ -4612,7 +4558,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4623,7 +4569,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4634,7 +4580,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4645,6 +4591,7 @@ paths:
   /v1/projects/{projectID}/subscriptions/{subscriptionID}:
     delete:
       description: This endpoint deletes a subscription
+      operationId: DeleteSubscription
       parameters:
       - description: Project ID
         in: path
@@ -4667,7 +4614,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: OK
         "400":
@@ -4678,7 +4625,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4689,7 +4636,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4700,7 +4647,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4710,6 +4657,7 @@ paths:
       - Subscriptions
     get:
       description: This endpoint retrieves a single subscription
+      operationId: GetSubscription
       parameters:
       - description: Project ID
         in: path
@@ -4743,7 +4691,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4754,7 +4702,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4765,7 +4713,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4775,6 +4723,7 @@ paths:
       - Subscriptions
     put:
       description: This endpoint updates a subscription
+      operationId: UpdateSubscription
       parameters:
       - description: Project ID
         in: path
@@ -4816,7 +4765,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4827,7 +4776,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4838,7 +4787,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
@@ -4850,6 +4799,7 @@ paths:
     post:
       description: This endpoint validates that a filter will match a certain payload
         structure.
+      operationId: TestSubscriptionFilter
       parameters:
       - description: Project ID
         in: path
@@ -4885,7 +4835,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Bad Request
         "401":
@@ -4896,7 +4846,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Unauthorized
         "404":
@@ -4907,12 +4857,81 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      $ref: '#/components/schemas/public.Stub'
+                      $ref: '#/components/schemas/handlers.Stub'
                   type: object
           description: Not Found
       security:
       - ApiKeyAuth: []
       summary: Validate subscription filter
+      tags:
+      - Subscriptions
+  /v1/projects/{projectID}/subscriptions/test_function:
+    post:
+      description: This endpoint test runs a transform function against a payload.
+      operationId: TestSubscriptionFunction
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.FunctionRequest'
+        description: Function Details
+        required: true
+        x-originalParamName: filter
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.FunctionResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Test a subscription function
       tags:
       - Subscriptions
 servers:
@@ -4936,3 +4955,5 @@ tags:
   name: Projects
 - description: Portal Links related APIs
   name: Portal Links
+- description: Meta Events related APIs
+  name: Meta Events

@@ -10,10 +10,10 @@ export type ACCOUNT_SETTINGS = 'profile' | 'security' | 'personal access tokens'
 })
 export class AccountComponent implements OnInit {
 	activePage: ACCOUNT_SETTINGS = 'profile';
-	settingsMenu: { name: ACCOUNT_SETTINGS; icon: string }[] = [
-		{ name: 'profile', icon: 'profile' },
-		{ name: 'security', icon: 'security' },
-		{ name: 'personal access tokens', icon: 'key' }
+	settingsMenu: { name: ACCOUNT_SETTINGS; icon: string; svg: 'fill' | 'stroke' }[] = [
+		{ name: 'profile', icon: 'profile', svg: 'stroke' },
+		{ name: 'security', icon: 'security', svg: 'fill' },
+		{ name: 'personal access tokens', icon: 'key', svg: 'fill' }
 	];
 
 	constructor(private router: Router, private route: ActivatedRoute) {}

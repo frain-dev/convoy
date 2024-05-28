@@ -5,13 +5,10 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api"
-	base "github.com/frain-dev/convoy/api/dashboard"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/ee/api/dashboard"
 	"github.com/frain-dev/convoy/ee/api/policies"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/go-chi/chi/v5"
 )
 
 type EHandler struct {
@@ -29,9 +26,14 @@ func NewEHandler(opts *types.APIOptions) (*EHandler, error) {
 	}
 
 	opts.Authz = az
+	appHandler, err := api.NewApplicationHandler(opts)
+	if err != nil {
+		return &EHandler{}, err
+	}
+
 	eeh := &EHandler{
 		opts:               opts,
-		ApplicationHandler: &api.ApplicationHandler{A: opts},
+		ApplicationHandler: appHandler,
 	}
 
 	return eeh, nil
@@ -39,19 +41,11 @@ func NewEHandler(opts *types.APIOptions) (*EHandler, error) {
 
 func (eh *EHandler) BuildRoutes() http.Handler {
 	// register community routes
-	router := eh.ApplicationHandler.BuildRoutes()
+	router := eh.ApplicationHandler.BuildControlPlaneRoutes()
 
 	// apply overrides
-	eh.RegisterEnterpriseDashboardHandler(router)
 
 	return router
-}
-
-func (eh *EHandler) RegisterEnterpriseDashboardHandler(r *chi.Mux) {
-	_ = &dashboard.DashboardHandler{
-		DashboardHandler: base.NewDashboardHandler(eh.opts),
-		Opts:             eh.opts,
-	}
 }
 
 func (eh *EHandler) RegisterPolicy() error {
@@ -60,8 +54,8 @@ func (eh *EHandler) RegisterPolicy() error {
 	err = eh.opts.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.ProjectPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationRepo:       postgres.NewOrgRepo(eh.opts.DB),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(eh.opts.DB),
+			OrganisationRepo:       postgres.NewOrgRepo(eh.opts.DB, eh.opts.Cache),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(eh.opts.DB, eh.opts.Cache),
 		}
 
 		po.SetRule("manage", authz.RuleFunc(po.Manage))
@@ -76,7 +70,7 @@ func (eh *EHandler) RegisterPolicy() error {
 	err = eh.opts.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.OrganisationPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(eh.opts.DB),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(eh.opts.DB, eh.opts.Cache),
 		}
 
 		po.SetRule("manage", authz.RuleFunc(po.Manage))

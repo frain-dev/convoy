@@ -7,6 +7,12 @@ import { PrivateService } from '../../private.service';
 import { CreateProjectComponentService } from './create-project-component.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 
+interface TAB {
+	label: string;
+	svg: 'fill' | 'stroke';
+	icon: string;
+}
+
 @Component({
 	selector: 'app-create-project-component',
 	templateUrl: './create-project-component.component.html',
@@ -14,9 +20,11 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 })
 export class CreateProjectComponent implements OnInit {
 	@ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('disableTLSEndpointsDialog', { static: true }) disableTLSEndpointsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('mutliSubEndpointsDialog', { static: true }) mutliSubEndpointsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
@@ -37,17 +45,22 @@ export class CreateProjectComponent implements OnInit {
 				duration: [null]
 			}),
 			retention_policy: this.formBuilder.group({
-				policy: ['720h']
+				policy: [720],
+				search_policy: [720]
 			}),
-			is_retention_policy_enabled: [true],
+			ssl: this.formBuilder.group({
+				enforce_secure_endpoints: [true]
+			}),
 			disable_endpoint: [false, Validators.required],
+			multiple_endpoint_subscriptions: [false, Validators.required],
 			meta_event: this.formBuilder.group({
-				is_enabled: [true, Validators.required],
+				is_enabled: [false, Validators.required],
 				type: ['http', Validators.required],
 				event_type: [[], Validators.required],
 				url: ['', Validators.required],
 				secret: [null]
-			})
+			}),
+			retention_policy_enabled: [true]
 		}),
 		type: [null, Validators.required]
 	});
@@ -70,22 +83,28 @@ export class CreateProjectComponent implements OnInit {
 	projectDetails!: PROJECT;
 	signatureVersions!: { date: string; content: VERSIONS[] }[];
 	configurations = [
-		{ uid: 'retry-config', name: 'Retry Config', show: false },
-		{ uid: 'rate-limit', name: 'Rate Limit', show: false },
-		{ uid: 'retention', name: 'Retention Policy', show: false },
+		{ uid: 'strategy', name: 'Retry Config', show: false },
+		{ uid: 'ratelimit', name: 'Rate Limit', show: false },
+		{ uid: 'retention_policy', name: 'Retention Policy', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }
 	];
 	public rbacService = inject(RbacService);
-	tabs: string[] = ['project config', 'signature history', 'endpoints config', 'meta events'];
-	activeTab = 'project config';
-	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
+	tabs: TAB[] = [
+		{ label: 'project config', svg: 'fill', icon: 'settings' },
+		{ label: 'signature history', svg: 'fill', icon: 'sig-history' },
+		{ label: 'endpoints config', svg: 'stroke', icon: 'endpoints' },
+		{ label: 'meta events config', svg: 'stroke', icon: 'meta-events' },
+		{ label: 'secrets', svg: 'stroke', icon: 'secret' }
+	];
+	activeTab = this.tabs[0];
+	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
 
 	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
 		if (this.action === 'update') this.getProjectDetails();
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
-		if (this.action === 'update') this.switchTab(this.route.snapshot.queryParams?.activePage ?? 'project config');
+		if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
 	}
 
 	get versions(): FormArray {
@@ -110,6 +129,7 @@ export class CreateProjectComponent implements OnInit {
 	toggleConfigForm(configValue: string) {
 		this.configurations.forEach(config => {
 			if (config.uid === configValue) config.show = !config.show;
+			if (configValue === 'retention_policy' && config.uid === 'retention_policy') this.projectForm.patchValue({ config: { retention_policy_enabled: config.show } });
 		});
 	}
 
@@ -118,62 +138,67 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async getProjectDetails() {
-		this.enableMoreConfig = true;
-
 		try {
 			this.projectDetails = this.privateService.getProjectDetails;
 
-			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab !== 'signature history');
+			this.setSignatureVersions();
+
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
 
 			this.projectForm.patchValue(this.projectDetails);
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
 
-			this.configurations.forEach(config => {
-				if (this.projectDetails?.type === 'outgoing') this.toggleConfigForm(config.uid);
-				else if (config.uid !== 'signature') this.toggleConfigForm(config.uid);
-			});
+			// set meta events config
+			this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
+				? this.projectForm.get('config.meta_event.is_enabled')?.patchValue(this.projectDetails.config.meta_event.is_enabled)
+				: this.projectForm.get('config.meta_event.is_enabled')?.patchValue(false);
 
-			const versions = this.projectDetails.config.signature.versions;
-			if (!versions?.length) return;
-			this.signatureVersions = this.generalService.setContentDisplayed(versions);
-			versions.forEach((version: { encoding: any; hash: any }, index: number) => {
-				this.addVersion();
-				this.versions.at(index)?.patchValue({
-					encoding: version.encoding,
-					hash: version.hash
-				});
-			});
+			const search_policy = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
+
+			this.projectForm.get('config.retention_policy.search_policy')?.patchValue(search_policy);
+			const policy = this.projectDetails.config.retention_policy.policy.match(/\d+/g);
+			this.projectForm.get('config.retention_policy.policy')?.patchValue(policy);
+
+			this.projectForm.get('config.meta_event.type')?.patchValue('http');
+
+			let filteredConfigs: string[] = [];
+			if (this.projectDetails?.type === 'incoming') filteredConfigs.push('signature');
+			if (!this.projectDetails?.config.retention_policy_enabled) filteredConfigs.push('retention_policy');
+
+			this.configurations.filter(item => !filteredConfigs.includes(item.uid)).forEach(config => this.toggleConfigForm(config.uid));
 		} catch {}
+	}
+
+	setSignatureVersions() {
+		const versions = this.projectDetails.config.signature.versions;
+		if (!versions?.length) return;
+		this.signatureVersions = this.generalService.setContentDisplayed(versions);
+		versions.forEach((version: { encoding: any; hash: any }, index: number) => {
+			this.addVersion();
+			this.versions.at(index)?.patchValue({
+				encoding: version.encoding,
+				hash: version.hash
+			});
+		});
 	}
 
 	async createProject() {
 		const projectFormModal = document.getElementById('projectForm');
 
-		if (this.enableMoreConfig) {
-			if (this.newSignatureForm.invalid || this.projectForm.invalid) {
-				this.newSignatureForm.markAllAsTouched();
-				this.projectForm.markAllAsTouched();
-				projectFormModal?.scroll({ top: 0 });
-				return;
-			}
-
-			this.versions.at(0).patchValue(this.newSignatureForm.value);
-		}
-
-		if (!this.enableMoreConfig && this.projectForm.get('name')?.invalid && this.projectForm.get('type')?.invalid) {
+		if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
 			projectFormModal?.scroll({ top: 0 });
-			return this.projectForm.markAllAsTouched();
+			this.projectForm.markAllAsTouched();
+			return;
 		}
-		const dataForNoConfig = this.projectForm.value;
-		if (!this.enableMoreConfig) delete dataForNoConfig.config;
+		const projectData = this.getProjectData();
 
 		this.isCreatingProject = true;
 
 		try {
 			// this createProject service also updates project as active project in localstorage
-			const response = await this.createProjectService.createProject(this.enableMoreConfig ? this.projectForm.value : dataForNoConfig);
+			const response = await this.createProjectService.createProject(projectData);
 			await this.privateService.getProjectStat({ refresh: true });
 
 			this.privateService.getProjects({ refresh: true });
@@ -197,6 +222,11 @@ export class CreateProjectComponent implements OnInit {
 		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
 		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
 		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
+		if (this.projectForm.value.config.retention_policy.search_policy)
+			this.projectForm.value.config.retention_policy.search_policy =
+				typeof this.projectForm.value.config.retention_policy.search_policy === 'string' ? this.projectForm.value.config.retention_policy.search_policy : `${this.projectForm.value.config.retention_policy.search_policy}h`;
+		if (this.projectForm.value.config.retention_policy.policy)
+			this.projectForm.value.config.retention_policy.policy = typeof this.projectForm.value.config.retention_policy.policy === 'string' ? this.projectForm.value.config.retention_policy.policy : `${this.projectForm.value.config.retention_policy.policy}h`;
 		this.isCreatingProject = true;
 
 		try {
@@ -233,18 +263,24 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.at(i).patchValue(this.newSignatureForm.value);
 		await this.updateProject();
 		this.newSignatureForm.reset();
-		this.newSignatureDialog.nativeElement.showModal();
+		this.newSignatureDialog.nativeElement.close();
+		this.getProjectDetails();
 	}
 
-	checkProjectConfig() {
-		const configDetails = this.projectForm.value.config;
-		const configKeys = Object.keys(configDetails).slice(0, -1);
+	getProjectData() {
+		const configKeys = Object.keys(this.projectForm.value.config);
+		const projectData = this.projectForm.value;
 		configKeys.forEach(configKey => {
-			const configKeyValues = configDetails[configKey] ? Object.values(configDetails[configKey]) : [];
-			if (configKeyValues.every(item => item === null)) delete this.projectForm.value.config[configKey];
+			if (!this.showConfig(configKey)) delete projectData.config[configKey];
 		});
 
-		if (this.projectForm.value.config.is_retention_policy_enabled === null) delete this.projectForm.value.config.is_retention_policy_enabled;
+		if (this.showConfig('retention_policy')) {
+			projectData.config.retention_policy_enabled = true;
+			projectData.config.retention_policy.search_policy = typeof projectData.config.retention_policy.search_policy === 'string' ? projectData.config.retention_policy.search_policy : `${projectData.config.retention_policy.search_policy}h`;
+			projectData.config.retention_policy.policy = typeof projectData.config.retention_policy.policy === 'string' ? projectData.config.retention_policy.policy : `${projectData.config.retention_policy.policy}h`;
+		}
+
+		return projectData;
 	}
 
 	checkMetaEventsConfig() {
@@ -276,21 +312,27 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-	confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints') {
+	async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
 		const disableValue = event.target.checked;
-		if (actionType !== 'metaEvents') disableValue ? this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		if (actionType === 'endpoints') disableValue ? await this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
+		else if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
 		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
 	}
 
-	switchTab(tab: string) {
-		if (tab === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
+	confirmTLSToggleAction(event: any) {
+		const disableValue = event.target.checked;
+		disableValue ? this.updateProject() : this.disableTLSEndpointsDialog.nativeElement.showModal();
+	}
+
+	switchTab(tab: TAB) {
+		if (tab.label === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
 		this.activeTab = tab;
 		this.addPageToUrl();
 	}
 
 	addPageToUrl() {
 		const queryParams: any = {};
-		queryParams.activePage = this.activeTab;
+		queryParams.activePage = this.activeTab.label;
 		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
 	}
 

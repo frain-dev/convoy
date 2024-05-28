@@ -3,8 +3,11 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
@@ -31,41 +34,15 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 		{
 			name: "should_create_dynamic_event",
 			dynamicEvent: &models.DynamicEvent{
-				Endpoint: models.DynamicEndpoint{
-					URL:    "https://google.com",
-					Secret: "1234",
-					Name:   "testing",
-				},
-				Subscription: models.DynamicSubscription{
-					Name:        "test_sub",
-					AlertConfig: &models.AlertConfiguration{
-                        Count: 4,
-                        Threshold: "1h",
-                    },
-					RetryConfig: &models.RetryConfiguration{
-						Type:       datastore.DefaultRetryConfig.Type,
-						Duration:   "1m",
-						RetryCount: datastore.DefaultRetryConfig.RetryCount,
-					},
-					RateLimitConfig: &models.RateLimitConfiguration{
-                        Count: 1000,
-                        Duration: 60,
-                    },
-				},
-				Event: models.DynamicEventStub{
-					ProjectID: "project-id-1",
-					EventType: "*",
-					Data:      []byte(`{"name":"daniel"}`),
-					CustomHeaders: map[string]string{
-						"X-signature": "Convoy",
-					},
-				},
+				URL:            "https://google.com",
+				Secret:         "1234",
+				EventTypes:     []string{"*"},
+				Data:           []byte(`{"name":"daniel"}`),
+				ProjectID:      "project-id-1",
+				EventType:      "*",
+				IdempotencyKey: "idem-key-1",
 			},
 			dbFn: func(args *args) {
-				mockCache, _ := args.cache.(*mocks.MockCache)
-				var p *datastore.Project
-				mockCache.EXPECT().Get(gomock.Any(), "projects:project-id-1", &p).Times(1).Return(nil)
-
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -83,13 +60,12 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 					project,
 					nil,
 				)
-				mockCache.EXPECT().Set(gomock.Any(), "projects:project-id-1", project, 10*time.Minute).Times(1).Return(nil)
 
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				endpoint := &datastore.Endpoint{
 					UID:    "endpoint-id-1",
-					Title:  "testing-1",
+					Name:   "testing-1",
 					Status: datastore.ActiveEndpointStatus,
 					Secrets: datastore.Secrets{
 						{
@@ -99,11 +75,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 					},
 				}
 				a.EXPECT().FindEndpointByTargetURL(gomock.Any(), "project-id-1", "https://google.com").Times(1).Return(endpoint, nil)
-
-				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), "project-id-1").
-					Times(1).Return(nil)
-
-				mockCache.EXPECT().Set(gomock.Any(), "endpoints:endpoint-id-1", gomock.Any(), 10*time.Minute).Times(1).Return(nil)
+				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", "project-id-1").Times(1).Return(endpoint, nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				subscriptions := []datastore.Subscription{
@@ -119,11 +91,12 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 					},
 				}
 
+				s.EXPECT().UpdateSubscription(gomock.Any(), "project-id-1", gomock.Any()).Times(1).Return(nil)
+
 				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "project-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
 
-				s.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), "project-id-1", "idem-key-1").Times(1).Return(nil, nil)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
@@ -131,49 +104,19 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
 		{
 			name: "should_create_new_endpoint_and_subscription_for_dynamic_event",
 			dynamicEvent: &models.DynamicEvent{
-				Endpoint: models.DynamicEndpoint{
-					URL:    "https://google.com",
-					Secret: "1234",
-					Name:   "testing",
-				},
-				Subscription: models.DynamicSubscription{
-					Name:        "test_sub",
-					AlertConfig: &models.AlertConfiguration{
-                    Count: 4,
-                    Threshold: "1h",
-                },
-					RetryConfig: &models.RetryConfiguration{
-						Type:       datastore.DefaultRetryConfig.Type,
-						Duration:   "1m",
-						RetryCount: datastore.DefaultRetryConfig.RetryCount,
-					},
-                    RateLimitConfig: &models.RateLimitConfiguration{
-                        Count: 1000,
-                        Duration: 60,
-                    },
-				},
-				Event: models.DynamicEventStub{
-					ProjectID: "project-id-1",
-					EventType: "*",
-					Data:      []byte(`{"name":"daniel"}`),
-					CustomHeaders: map[string]string{
-						"X-signature": "Convoy",
-					},
-				},
+				URL:       "https://google.com",
+				Secret:    "1234",
+				Data:      []byte(`{"name":"daniel"}`),
+				ProjectID: "project-id-1",
+				EventType: "*",
 			},
 			dbFn: func(args *args) {
-				mockCache, _ := args.cache.(*mocks.MockCache)
-				var p *datastore.Project
-				mockCache.EXPECT().Get(gomock.Any(), "projects:project-id-1", &p).Times(1).Return(nil)
-
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -191,16 +134,25 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 					project,
 					nil,
 				)
-				mockCache.EXPECT().Set(gomock.Any(), "projects:project-id-1", project, 10*time.Minute).Times(1).Return(nil)
-
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				a.EXPECT().FindEndpointByTargetURL(gomock.Any(), "project-id-1", "https://google.com").Times(1).Return(nil, datastore.ErrEndpointNotFound)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "project-id-1").Times(1).Return(&datastore.Endpoint{
+					UID:                "endpoint-id-1",
+					ProjectID:          project.UID,
+					Name:               fmt.Sprintf("endpoint-%s", ulid.Make().String()),
+					Url:                "https:/google.com",
+					RateLimit:          convoy.RATE_LIMIT,
+					HttpTimeout:        convoy.HTTP_TIMEOUT,
+					AdvancedSignatures: true,
+					RateLimitDuration:  convoy.RATE_LIMIT_DURATION,
+					Status:             datastore.ActiveEndpointStatus,
+					CreatedAt:          time.Now(),
+					UpdatedAt:          time.Now(),
+				}, nil)
 
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), "project-id-1").
 					Times(1).Return(nil)
-
-				mockCache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), 10*time.Minute).Times(1).Return(nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 
@@ -216,8 +168,6 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
-
-				q.EXPECT().Write(convoy.IndexDocument, convoy.SearchIndexQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			wantErr: false,
 		},
@@ -242,7 +192,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.cache, args.eventQueue, args.subRepo, args.deviceRepo)
+			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

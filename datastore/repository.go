@@ -18,6 +18,7 @@ type APIKeyRepository interface {
 }
 
 type EventDeliveryRepository interface {
+	ExportRepository
 	CreateEventDelivery(context.Context, *EventDelivery) error
 	FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*EventDelivery, error)
 	FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]EventDelivery, error)
@@ -26,15 +27,16 @@ type EventDeliveryRepository interface {
 	UpdateStatusOfEventDelivery(ctx context.Context, projectID string, eventDelivery EventDelivery, status EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status EventDeliveryStatus) error
 	FindDiscardedEventDeliveries(ctx context.Context, projectID, deviceId string, params SearchParams) ([]EventDelivery, error)
-
+	FindStuckEventDeliveriesByStatus(ctx context.Context, status EventDeliveryStatus) ([]EventDelivery, error)
 	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey string) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period) ([]EventInterval, error)
 }
 
 type EventRepository interface {
+	ExportRepository
 	CreateEvent(context.Context, *Event) error
 	FindEventByID(ctx context.Context, projectID string, id string) (*Event, error)
 	FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]Event, error)
@@ -42,8 +44,10 @@ type EventRepository interface {
 	CountEvents(ctx context.Context, projectID string, f *Filter) (int64, error)
 	LoadEventsPaged(ctx context.Context, projectID string, f *Filter) ([]Event, PaginationData, error)
 	DeleteProjectEvents(ctx context.Context, projectID string, f *EventFilter, hardDelete bool) error
+	DeleteProjectTokenizedEvents(ctx context.Context, projectID string, filter *EventFilter) error
 	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
+	CopyRows(ctx context.Context, projectID string, interval int) error
 }
 
 type ProjectRepository interface {
@@ -52,6 +56,7 @@ type ProjectRepository interface {
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
+	GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]ProjectEvents, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
@@ -112,16 +117,18 @@ type SubscriptionRepository interface {
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
 	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error)
+	FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]Subscription, error)
 }
 
 type SourceRepository interface {
 	CreateSource(context.Context, *Source) error
-	UpdateSource(ctx context.Context, projectID string, source *Source) error
-	FindSourceByID(ctx context.Context, projectID string, id string) (*Source, error)
+	UpdateSource(ctx context.Context, projectId string, source *Source) error
+	FindSourceByID(ctx context.Context, projectId string, id string) (*Source, error)
 	FindSourceByName(ctx context.Context, projectId string, name string) (*Source, error)
-	FindSourceByMaskID(ctx context.Context, maskID string) (*Source, error)
-	DeleteSourceByID(ctx context.Context, projectID string, id string, sourceVerifierID string) error
-	LoadSourcesPaged(ctx context.Context, projectID string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
+	FindSourceByMaskID(ctx context.Context, maskId string) (*Source, error)
+	DeleteSourceByID(ctx context.Context, projectId string, id string, sourceVerifierId string) error
+	LoadSourcesPaged(ctx context.Context, projectId string, filter *SourceFilter, pageable Pageable) ([]Source, PaginationData, error)
+	LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIds []string, pageable Pageable) ([]Source, PaginationData, error)
 }
 
 type DeviceRepository interface {
@@ -132,6 +139,18 @@ type DeviceRepository interface {
 	FetchDeviceByID(ctx context.Context, uid string, appID, projectID string) (*Device, error)
 	FetchDeviceByHostName(ctx context.Context, hostName string, appID, projectID string) (*Device, error)
 	LoadDevicesPaged(ctx context.Context, projectID string, filter *ApiKeyFilter, pageable Pageable) ([]Device, PaginationData, error)
+}
+
+type JobRepository interface {
+	CreateJob(ctx context.Context, job *Job) error
+	MarkJobAsStarted(ctx context.Context, uid, projectID string) error
+	MarkJobAsCompleted(ctx context.Context, uid, projectID string) error
+	MarkJobAsFailed(ctx context.Context, uid, projectID string) error
+	DeleteJob(ctx context.Context, uid string, projectID string) error
+	FetchJobById(ctx context.Context, uid string, projectID string) (*Job, error)
+	FetchRunningJobsByProjectId(ctx context.Context, projectID string) ([]Job, error)
+	FetchJobsByProjectId(ctx context.Context, projectID string) ([]Job, error)
+	LoadJobsPaged(ctx context.Context, projectID string, pageable Pageable) ([]Job, PaginationData, error)
 }
 
 type UserRepository interface {
@@ -160,13 +179,13 @@ type PortalLinkRepository interface {
 	RevokePortalLink(ctx context.Context, projectID string, id string) error
 }
 
-type ExportRepository interface {
-	ExportRecords(ctx context.Context, tableName, projectID string, createdAt time.Time, w io.Writer) (int64, error)
-}
-
 type MetaEventRepository interface {
 	CreateMetaEvent(context.Context, *MetaEvent) error
 	FindMetaEventByID(ctx context.Context, projectID string, id string) (*MetaEvent, error)
 	LoadMetaEventsPaged(ctx context.Context, projectID string, f *Filter) ([]MetaEvent, PaginationData, error)
 	UpdateMetaEvent(ctx context.Context, projectID string, metaEvent *MetaEvent) error
+}
+
+type ExportRepository interface {
+	ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error)
 }

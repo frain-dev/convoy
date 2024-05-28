@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
@@ -9,7 +9,6 @@ import { Router } from '@angular/router';
 	styleUrls: ['./project.component.scss']
 })
 export class ProjectComponent implements OnInit {
-	screenWidth = window.innerWidth;
 	sideBarItems = [
 		{
 			name: 'Event Deliveries',
@@ -44,16 +43,22 @@ export class ProjectComponent implements OnInit {
 			route: '/meta-events'
 		}
 	];
-	shouldShowFullSideBar = true;
 	projectDetails?: PROJECT;
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
 	projects: PROJECT[] = [];
+	activeNavTab: any;
 
 	constructor(private privateService: PrivateService, private router: Router) {}
 
 	ngOnInit() {
-		Promise.all([this.checkScreenSize(), this.getProjectDetails(), this.getProjects()]);
+		Promise.all([this.getProjectDetails(), this.getProjects()]);
+	}
+
+	get activeTab(): any {
+		const element = document.querySelector('.nav-tab.on') as any;
+		if (element) this.activeNavTab = element;
+		return element || this.activeNavTab;
 	}
 
 	async getProjectDetails() {
@@ -80,16 +85,6 @@ export class ProjectComponent implements OnInit {
 		return this.projectDetails?.type === 'outgoing';
 	}
 
-	checkScreenSize() {
-		this.screenWidth > 1150 ? (this.shouldShowFullSideBar = true) : (this.shouldShowFullSideBar = false);
-	}
-
-	@HostListener('window:resize', ['$event'])
-	onWindowResize() {
-		this.screenWidth = window.innerWidth;
-		this.checkScreenSize();
-	}
-
 	isStrokeIcon(icon: string): boolean {
 		const menuIcons = ['subscriptions', 'portal', 'logs', 'meta'];
 		const checkForStrokeIcon = menuIcons.some(menuIcon => icon.includes(menuIcon));
@@ -106,9 +101,14 @@ export class ProjectComponent implements OnInit {
 
 			if (this.projectDetails?.type === 'outgoing' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'endpoint') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
 			if (this.projectDetails?.type === 'incoming' && this.sideBarItems[this.sideBarItems.length - 1].icon === 'portal') this.sideBarItems.pop();
+
+			await this.privateService.getProject({ refresh: true, projectId: project.uid });
 			await this.privateService.getProjectStat({ refresh: true });
+			this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+				this.router.navigate([`/projects/${project.uid}`]);
+			});
+
 			this.isLoadingProjectDetails = false;
-			this.router.navigate([`/projects/${project.uid}`]);
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
 		}

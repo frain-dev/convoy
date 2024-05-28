@@ -10,7 +10,7 @@ helpFunc() {
 
 buildConvoy() {
 	# Build UI.
-	UIDIR="api/dashboard/ui/build"
+	UIDIR="api/ui/build"
 
 	# Remove build folder
 	rm -rf $UIDIR
@@ -22,7 +22,7 @@ buildConvoy() {
 	cd ./web/ui/dashboard
 
 	# Install dependencies
-	npm ci
+	npm i
 
 	# Run production build
 	if [[ "$build" == "ce" ]]; then
@@ -43,9 +43,9 @@ buildConvoy() {
 	fi
 }
 
-while getopts ":b:" opt; do 
-	case "$opt" in 
-		b) 
+while getopts ":b:" opt; do
+	case "$opt" in
+		b)
 			build="$OPTARG"
 
 			if [[ "$build" == "ce" ]]; then

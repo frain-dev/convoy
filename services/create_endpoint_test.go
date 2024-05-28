@@ -25,7 +25,7 @@ func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoi
 
 func TestCreateEndpointService_Run(t *testing.T) {
 	projectID := "1234567890"
-	project := &datastore.Project{UID: projectID, Type: datastore.OutgoingProject}
+	project := &datastore.Project{UID: projectID, Type: datastore.OutgoingProject, Config: &datastore.DefaultProjectConfig}
 
 	ctx := context.Background()
 	type args struct {
@@ -64,23 +64,21 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				c, _ := app.Cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantEndpoint: &datastore.Endpoint{
-				Title:           "endpoint",
+				Name:            "endpoint",
 				SupportEmail:    "endpoint@test.com",
 				SlackWebhookURL: "https://google.com",
 				ProjectID:       project.UID,
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
 				},
-				TargetURL:         "https://google.com",
-				Description:       "test_endpoint",
-				RateLimit:         5000,
-				Status:            datastore.ActiveEndpointStatus,
-				RateLimitDuration: "1m0s",
+				AdvancedSignatures: true,
+				Url:                "https://google.com",
+				Description:        "test_endpoint",
+				RateLimit:          0,
+				Status:             datastore.ActiveEndpointStatus,
+				RateLimitDuration:  0,
 			},
 			wantErr: false,
 		},
@@ -92,7 +90,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					Name:              "endpoint",
 					Secret:            "1234",
 					RateLimit:         100,
-					RateLimitDuration: "1m",
+					RateLimitDuration: 60,
 					URL:               "https://google.com",
 					Description:       "test_endpoint",
 					Authentication: &models.EndpointAuthentication{
@@ -113,21 +111,19 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				c, _ := app.Cache.(*mocks.MockCache)
-				c.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			wantEndpoint: &datastore.Endpoint{
 				ProjectID: project.UID,
-				Title:     "endpoint",
+				Name:      "endpoint",
 				Secrets: []datastore.Secret{
 					{Value: "1234"},
 				},
-				TargetURL:         "https://google.com",
-				Description:       "test_endpoint",
-				RateLimit:         100,
-				Status:            datastore.ActiveEndpointStatus,
-				RateLimitDuration: "1m0s",
+				Url:                "https://google.com",
+				AdvancedSignatures: true,
+				Description:        "test_endpoint",
+				RateLimit:          100,
+				Status:             datastore.ActiveEndpointStatus,
+				RateLimitDuration:  60,
 				Authentication: &datastore.EndpointAuthentication{
 					Type: datastore.APIKeyAuthentication,
 					ApiKey: &datastore.ApiKey{
@@ -139,23 +135,6 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_error_for_invalid_rate_limit_duration",
-			args: args{
-				ctx: ctx,
-				e: models.CreateEndpoint{
-					Name:              "test_endpoint",
-					Secret:            "1234",
-					RateLimit:         100,
-					RateLimitDuration: "m",
-					URL:               "https://google.com",
-					Description:       "test_endpoint",
-				},
-				g: project,
-			},
-			wantErr:    true,
-			wantErrMsg: `an error occurred parsing the rate limit duration: time: invalid duration "m"`,
-		},
-		{
 			name: "should_fail_to_create_endpoint",
 			args: args{
 				ctx: ctx,
@@ -163,7 +142,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					Name:              "test_endpoint",
 					Secret:            "1234",
 					RateLimit:         100,
-					RateLimitDuration: "1m",
+					RateLimitDuration: 60,
 					URL:               "https://google.com",
 					Description:       "test_endpoint",
 				},

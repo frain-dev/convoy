@@ -23,7 +23,7 @@ func Test_UpdateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
@@ -35,18 +35,18 @@ func Test_UpdateEndpoint(t *testing.T) {
 		UID:                endpoint.UID,
 		ProjectID:          endpoint.ProjectID,
 		OwnerID:            "4304jj39h43h",
-		TargetURL:          "https//uere.ccm",
-		Title:              "testing_endpoint_repo",
+		Url:                "https//uere.ccm",
+		Name:               "testing_endpoint_repo",
 		Secrets:            endpoint.Secrets,
 		AdvancedSignatures: true,
 		AppID:              endpoint.AppID,
 		Description:        "9897fdkhkhd",
 		SlackWebhookURL:    "https:/899gfnnn",
 		SupportEmail:       "ex@convoybbb.com",
-		HttpTimeout:        "88s",
+		HttpTimeout:        88,
 		RateLimit:          8898,
 		Status:             datastore.ActiveEndpointStatus,
-		RateLimitDuration:  "48s",
+		RateLimitDuration:  10,
 		Authentication: &datastore.EndpointAuthentication{
 			Type: datastore.APIKeyAuthentication,
 			ApiKey: &datastore.ApiKey{
@@ -85,7 +85,7 @@ func Test_UpdateEndpointStatus(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
 
@@ -110,7 +110,7 @@ func Test_DeleteEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
 
@@ -137,7 +137,7 @@ func Test_DeleteEndpoint(t *testing.T) {
 		RateLimitConfig: &datastore.DefaultRateLimitConfig,
 	}
 
-	subRepo := NewSubscriptionRepo(db)
+	subRepo := NewSubscriptionRepo(db, nil)
 	err = subRepo.CreateSubscription(context.Background(), project.UID, sub)
 	require.NoError(t, err)
 
@@ -155,8 +155,8 @@ func Test_CreateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	projectRepo := NewProjectRepo(db)
-	endpointRepo := NewEndpointRepo(db)
+	projectRepo := NewProjectRepo(db, nil)
+	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -200,18 +200,18 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
+	eventRepo := NewEventRepo(db, nil)
 
 	project := seedProject(t, db)
 
 	for i := 0; i < 7; i++ {
 		endpoint := generateEndpoint(project)
 		if i == 1 || i == 2 || i == 4 {
-			endpoint.Title += " daniel"
+			endpoint.Name += " daniel"
 		}
 
-		fmt.Printf("%+v\n", endpoint.Title)
+		fmt.Printf("%+v\n", endpoint.Name)
 
 		err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 		require.NoError(t, err)
@@ -241,8 +241,8 @@ func Test_FindEndpointsByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
+	eventRepo := NewEventRepo(db, nil)
 
 	project := seedProject(t, db)
 	ids := []string{}
@@ -299,8 +299,8 @@ func Test_FindEndpointsByAppID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
+	eventRepo := NewEventRepo(db, nil)
 
 	project := seedProject(t, db)
 	appID := "vvbbbb"
@@ -355,8 +355,8 @@ func Test_FindEndpointsByOwnerID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
+	eventRepo := NewEventRepo(db, nil)
 
 	project := seedProject(t, db)
 	ownerID := "owner-ffdjj"
@@ -411,7 +411,7 @@ func Test_CountProjectEndpoints(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
 	for i := 0; i < 6; i++ {
@@ -439,8 +439,8 @@ func Test_FindEndpointByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
-	eventRepo := NewEventRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
+	eventRepo := NewEventRepo(db, nil)
 
 	_, err := endpointRepo.FindEndpointByID(context.Background(), ulid.Make().String(), "")
 	require.Equal(t, datastore.ErrEndpointNotFound, err)
@@ -482,7 +482,7 @@ func Test_UpdateSecrets(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
@@ -523,7 +523,7 @@ func Test_DeleteSecret(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	endpointRepo := NewEndpointRepo(db)
+	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
@@ -567,17 +567,17 @@ func generateEndpoint(project *datastore.Project) *datastore.Endpoint {
 		UID:                ulid.Make().String(),
 		ProjectID:          project.UID,
 		OwnerID:            ulid.Make().String(),
-		TargetURL:          faker.New().Address().StreetAddress(),
-		Title:              fmt.Sprintf("%s-%s", faker.New().Company().Name(), ulid.Make().String()),
+		Url:                faker.New().Address().StreetAddress(),
+		Name:               fmt.Sprintf("%s-%s", faker.New().Company().Name(), ulid.Make().String()),
 		AdvancedSignatures: true,
 		Description:        "testing",
 		SlackWebhookURL:    "https:/gggggg",
 		SupportEmail:       "ex@convoy.com",
 		AppID:              "app1",
-		HttpTimeout:        "30s",
+		HttpTimeout:        30,
 		RateLimit:          300,
 		Status:             datastore.ActiveEndpointStatus,
-		RateLimitDuration:  "4s",
+		RateLimitDuration:  10,
 		Secrets: []datastore.Secret{
 			{
 				UID:       ulid.Make().String(),
@@ -600,7 +600,7 @@ func seedEndpoint(t *testing.T, db database.Database) *datastore.Endpoint {
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
 
-	err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
+	err := NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 
 	return endpoint

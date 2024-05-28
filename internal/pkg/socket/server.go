@@ -3,9 +3,10 @@ package socket
 import (
 	"context"
 	"encoding/json"
-	"github.com/frain-dev/convoy/internal/pkg/apm"
 	"sync"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/util"
 	"github.com/hibiken/asynq"
@@ -84,9 +85,6 @@ func (h *Hub) StartEventSender(ctx context.Context) {
 }
 
 func (h *Hub) sendEvent(ctx context.Context, ev *CLIEvent) {
-	txn, innerCtx := apm.StartTransaction(ctx, "sendEvent")
-	defer txn.End()
-
 	h.lock.RLock()
 	client := h.deviceClients[ev.DeviceID]
 	h.lock.RUnlock()
@@ -97,7 +95,7 @@ func (h *Hub) sendEvent(ctx context.Context, ev *CLIEvent) {
 	}
 
 	if !client.IsOnline() {
-		client.GoOffline(innerCtx)
+		client.GoOffline(ctx)
 		client.Close(unregister)
 		return
 	}
@@ -146,7 +144,7 @@ func (e *EndpointError) Delay() time.Duration {
 func (h *Hub) EventDeliveryCLiHandler(r *Repo) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
-		err := json.Unmarshal(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
 			log.WithError(err).Error("failed to unmarshal process event delivery payload")
 			return &EndpointError{Err: err, delay: time.Second}
@@ -218,13 +216,10 @@ func (h *Hub) StartClientStatusWatcher(ctx context.Context) {
 }
 
 func (h *Hub) checkDeviceStatus(ctx context.Context) {
-	txn, innerCtx := apm.StartTransaction(ctx, "checkDeviceStatus")
-	defer txn.End()
-
 	for k, v := range h.deviceClients {
 		h.lock.Lock()
 		if !h.deviceClients[k].IsOnline() {
-			h.deviceClients[k].GoOffline(innerCtx)
+			h.deviceClients[k].GoOffline(ctx)
 			h.deviceClients[k].Close(unregister)
 			log.Printf("%s has be set to offline after inactivity for 30 seconds", v.Device.HostName)
 		}

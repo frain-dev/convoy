@@ -2,11 +2,12 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -37,7 +38,7 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	expiresAt := time.Now().Add(time.Hour * time.Duration(a.S.Expiration))
+	expiresAt := time.Now().Add(time.Second * time.Duration(a.S.Expiration))
 	a.Endpoint.Secrets[idx].ExpiresAt = null.TimeFrom(expiresAt)
 
 	secret := a.Endpoint.Secrets[idx]
@@ -53,16 +54,14 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 		ProjectID:  a.Project.UID,
 	}
 
-	jobByte, err := json.Marshal(body)
+	bytes, err := msgpack.EncodeMsgPack(body)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	payload := json.RawMessage(jobByte)
-
 	job := &queue.Job{
 		ID:      secret.UID,
-		Payload: payload,
+		Payload: bytes,
 		Delay:   time.Hour * time.Duration(a.S.Expiration),
 	}
 
@@ -94,12 +93,6 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 	if err != nil {
 		log.Errorf("Error occurred expiring secret %s", err)
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to expire endpoint secret"))
-	}
-
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(a.Endpoint.UID).String()
-	err = a.Cache.Set(ctx, endpointCacheKey, &a.Endpoint, time.Minute*5)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update app cache")
 	}
 
 	return a.Endpoint, nil

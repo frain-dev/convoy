@@ -1,45 +1,57 @@
-<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Endpoints</h1>
-		<convoy-tooltip tooltipContent="Endpoints are receivers, they recieve the webhook events from sources it is subscribed to" position="right"></convoy-tooltip>
+<!-- empty state  -->
+<div class="py-80px min-h-[500px]" *ngIf="!userSearch && !isLoadingEndpoints && !displayedEndpoints?.length">
+	<div
+		convoy-empty-state
+		imgSrc="/assets/img/events-log-empty-state.png"
+		[heading]="endpointSearchString ? endpointSearchString + ' endpoint does not exist' : 'You currently do not have any endpoints'"
+		description="Endpoints will be listed here when available"
+		id="endpoints-empty-state"
+	>
+		<button convoy-permission="Endpoints|MANAGE" emptyStateCTA convoy-button size="sm" class="mt-36px" id="create-endpoint-modal-button" routerLink="./new">
+			<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
+				<use xlink:href="#plus-icon"></use>
+			</svg>
+			Create Endpoint
+		</button>
 	</div>
 </div>
 
-<!-- empty state  -->
-<div class="py-100px mt-24px min-h-[500px]" convoy-card *ngIf="!isLoadingEndpoints && displayedEndpoints?.length === 0">
-	<convoy-empty-state
-		imgSrc="/assets/img/events-log-empty-state.png"
-		[buttonText]="!endpointSearchString ? 'Create Endpoint' : ''"
-		[description]="endpointSearchString ? endpointSearchString + ' endpoint does not exist' : 'You currently do not have any endpoints'"
-		id="endpoints-empty-state"
-		(onAction)="router.navigate(['./new'], { relativeTo: this.route })"
-	></convoy-empty-state>
-</div>
-
-<div convoy-card class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingEndpoints">
+<div class="relative min-h-[500px] flex items-center justify-center" *ngIf="isLoadingEndpoints">
 	<convoy-loader position="relative"></convoy-loader>
 </div>
 
 <!-- If user has endpoints -->
-<ng-container *ngIf="!isLoadingEndpoints && displayedEndpoints?.length">
+<ng-container *ngIf="userSearch || (!isLoadingEndpoints && displayedEndpoints?.length)">
+	<div class="flex justify-between items-end mb-24px">
+		<div class="flex items-center">
+			<h1 class="text-18 font-bold text-neutral-12 mr-10px">Endpoints</h1>
+			<!-- <convoy-tooltip tooltipContent="Endpoints are receivers, they recieve the webhook events from sources it is subscribed to" position="right"></convoy-tooltip> -->
+		</div>
+	</div>
+
 	<div class="flex items-center justify-between mb-24px mt-18px">
 		<div class="flex items-center">
-			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
+			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getEndpoints({ search: endpointSearchString, hideLoader: true })">
 				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-				<input type="search" placeholder="Search endpoints" class="w-full text-grey-40 text-14 outline-none" [(ngModel)]="endpointSearchString" (keyup)="searchEndpoint({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
-				<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0" class="transition-all duration-200" fill="text" size="sm">
+				<input type="search" placeholder="Search endpoints" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="endpointSearchString" [ngModelOptions]="{ standalone: true }" />
+				<button convoy-button *ngIf="endpointSearchString && endpointSearchString.length > 0" class="transition-all duration-200" fill="text" (click)="getEndpoints({ search: endpointSearchString, hideLoader: true })" size="sm">
 					<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 				</button>
 			</form>
 		</div>
 
-		<button convoy-permission="Endpoints|MANAGE" *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">Create Endpoint</button>
+		<button convoy-permission="Endpoints|MANAGE" *ngIf="displayedEndpoints?.length" convoy-button size="sm" class="h-36px" id="create-endpoint-modal-button" routerLink="./new">
+			<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
+				<use xlink:href="#plus-icon"></use>
+			</svg>
+			Endpoint
+		</button>
 	</div>
 
 	<div convoy-card>
 		<div class="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]" id="event-deliveries-table-container">
 			<table convoy-table>
-				<thead convoy-table-head>
+				<thead convoy-table-head class="border-b border-b-new.primary-25">
 					<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of endpointsTableHead; let i = index">{{ head }}</th>
 				</thead>
 				<tbody>
@@ -52,28 +64,38 @@
 							<td convoy-table-cell [forDate]="true"></td>
 							<td convoy-table-cell [forDate]="true"></td>
 						</tr>
-						<tr convoy-table-row *ngFor="let endpoint of endpointGroup.content; let index = index" [id]="'endpoint' + i" (click)="selectedEndpoint = endpoint">
-							<td convoy-table-cell class="w-162px">
-								<div class="w-150px overflow-hidden overflow-ellipsis pl-16px">{{ endpoint.title }}</div>
+						<tr convoy-table-row *ngFor="let endpoint of endpointGroup.content; let index = index" [id]="'endpoint' + i" class="border-b border-b-new.primary-25" (click)="selectedEndpoint = endpoint">
+							<td convoy-table-cell class="w-[300px]">
+								<div class="truncate max-w-[290px] pl-16px">{{ endpoint.name || endpoint.title }}</div>
 							</td>
 							<td convoy-table-cell class="w-100px">
 								<convoy-tag *ngIf="endpoint.status" [color]="endpoint.status | statuscolor" className="ml-4px">{{ endpoint.status }}</convoy-tag>
 							</td>
-							<td convoy-table-cell class="relative w-176px">
-								<div convoy-tag color="gray" class="mr-8px w-210px truncate">{{ endpoint.uid }}</div>
-								<convoy-copy-button size="sm" [notificationText]="endpoint.title + ' ID has been copied to clipboard'" className="absolute translate-x-0 translate-y-[-50%] top-[50]" [text]="endpoint.uid"></convoy-copy-button>
+							<td convoy-table-cell class="relative">
+								<div convoy-tag class="!gap-10px flex items-center">
+									<span class="w-[200px] truncate">{{ endpoint.url || endpoint.target_url }}</span>
+
+									<convoy-copy-button size="sm" [notificationText]="endpoint.name || endpoint.title + ' Url has been copied to clipboard'" [text]="endpoint.url || endpoint.target_url"></convoy-copy-button>
+								</div>
+							</td>
+							<td convoy-table-cell class="relative">
+								<div convoy-tag class="!gap-10px flex items-center">
+									<span class="w-[150px] truncate">{{ endpoint.uid }}</span>
+
+									<convoy-copy-button size="sm" [notificationText]="endpoint.name || endpoint.title + ' ID has been copied to clipboard'" [text]="endpoint.uid"></convoy-copy-button>
+								</div>
 							</td>
 
 							<td convoy-table-cell colspan="2"></td>
 							<td convoy-table-cell>
 								<div class="w-full flex items-center justify-end">
-									<button convoy-button size="xs" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ endpointId: endpoint.uid }" texture="light">
+									<button convoy-button size="xs" fill="soft" [routerLink]="['../events']" [relativeTo]="route" [queryParams]="{ endpointId: endpoint.uid }">
 										<img src="/assets/img/view-events-icon.svg" class="w-14px mr-10px" alt="view events icon" />
 										View Events
 									</button>
 
 									<div convoy-dropdown position="right">
-										<button dropdownTrigger convoy-button size="xs" fill="clear" class="ml-40px pr-24px">
+										<button dropdownTrigger convoy-button size="xs" fill="text" class="ml-40px pr-24px">
 											<svg width="21" height="20">
 												<use xlink:href="#more-icon"></use>
 											</svg>
@@ -81,7 +103,7 @@
 
 										<ul dropdownOptions class="p-10px">
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="secretDialog.showModal()">
+												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="secretDialog.showModal()">
 													<svg width="16" height="16" class="mr-8px">
 														<use xlink:href="#shield-icon"></use>
 													</svg>
@@ -89,16 +111,16 @@
 												</button>
 											</li>
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
-													<svg width="14" height="14" class="stroke-new.gray-600 mr-8px">
+												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
+													<svg width="14" height="14" class="stroke-neutral-10 mr-8px">
 														<use [attr.xlink:href]="selectedEndpoint?.status === 'paused' ? '#play-icon' : '#pause-icon'"></use>
 													</svg>
 													{{ selectedEndpoint?.status === 'paused' ? 'Unpause' : 'Pause' }}
 												</button>
 											</li>
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
-													<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
+												<button convoy-dropdown-option convoy-button color="neutral" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
+													<svg width="17" height="16" class="fill-neutral-10 mr-8px">
 														<use xlink:href="#edit-icon"></use>
 													</svg>
 													Edit
@@ -106,7 +128,7 @@
 											</li>
 
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="danger" class="w-full !justify-start" fill="text" (click)="deleteDialog.showModal()">
+												<button convoy-dropdown-option convoy-button color="error" class="w-full !justify-start" fill="text" (click)="deleteDialog.showModal()">
 													<svg width="14" height="14" class="fill-transparent stroke-new.error-400 mr-8px">
 														<use xlink:href="#delete-icon2"></use>
 													</svg>
@@ -115,7 +137,7 @@
 											</li>
 
 											<li *ngIf="privateService.getProjectDetails?.type === 'outgoing'" class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-												<button convoy-dropdown-option convoy-button color="grey" class="w-full !justify-start" fill="text" (click)="sendTestEvent()" [disabled]="isSendingTestEvent">
+												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="sendTestEvent()" [disabled]="isSendingTestEvent">
 													<svg width="16" height="17" class="mr-8px">
 														<use xlink:href="#send-icon"></use>
 													</svg>
@@ -143,14 +165,13 @@
 <!-- create endpoint modal -->
 <dialog #endpointDialog convoy-dialog position="full">
 	<div convoy-dialog-header fullscreen="true" (closeDialog)="cancel()">
-		<h2 class="font-semibold capitalize">{{ action === 'update' ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
+		<h2 class="font-semibold text-14 capitalize">{{ action === 'update' ? 'Edit Endpoint' : 'Create Endpoint' }}</h2>
 	</div>
-
 	<div class="h-full w-full">
-        <div class="max-w-[770px] m-auto">
-            <convoy-create-endpoint showAction="true" (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="action === 'update'"></convoy-create-endpoint>
-        </div>
-    </div>
+		<div class="max-w-[770px] m-auto">
+			<convoy-create-endpoint showAction="true" (onAction)="$event.action === 'close' ? cancel() : getEndpoints(); cancel()" [editMode]="action === 'update'"></convoy-create-endpoint>
+		</div>
+	</div>
 </dialog>
 
 <!-- endpoint secret  -->
@@ -160,5 +181,5 @@
 
 <!-- delete modal  -->
 <dialog #deleteDialog convoy-dialog position="center" size="sm">
-	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.title + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteEndpoint()"></app-delete-modal>
+	<app-delete-modal [isLoading]="isDeletingEndpoint" [deleteText]="'delete “' + selectedEndpoint?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="deleteEndpoint()"></app-delete-modal>
 </dialog>

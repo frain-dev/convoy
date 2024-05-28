@@ -39,7 +39,11 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 		})
 	});
 	isFilterTestPassed = false;
-	payload: any;
+	payload: any = {
+		id: 'Sample-1',
+		name: 'Sample 1',
+		description: 'This is sample data #1'
+	};
 	header: any;
 
 	constructor(private formBuilder: FormBuilder, private createSubscriptionService: CreateSubscriptionService, private generalService: GeneralService, private route: ActivatedRoute) {}
@@ -70,6 +74,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
 			this.generalService.showNotification({ message: testResponse, style: !response.data ? 'error' : 'success' });
 			this.isFilterTestPassed = !!response.data;
+            return this.isFilterTestPassed;
 		} catch (error) {
 			this.isFilterTestPassed = false;
 			return error;

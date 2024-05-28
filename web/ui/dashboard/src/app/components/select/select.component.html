@@ -7,13 +7,13 @@
 		<div
 			convoy-input
 			class="
-				peer-disabled:text-new.gray-300 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
+				peer-disabled:text-neutral-4 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
 				py-12px
 				px-16px
 				appearance-none
 				bg-[url(/assets/img/angle-down.svg)] bg-no-repeat
 				bg-[right_10px_top_15px]
-				min-h-[48px]
+				min-h-[46px]
 				cursor-pointer
 				flex
 				items-center
@@ -22,10 +22,10 @@
 		>
 			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
 			<ng-container *ngIf="multiple">
-				<div *ngFor="let option of selectedOptions" class="border border-new.gray-200 py-4px px-8px font-medium text-12 text-new.gray-400 mr-1 mb-1 rounded-22px flex items-center">
+				<div *ngFor="let option of selectedOptions" class="border border-neutral-5 py-4px px-8px font-medium text-12 text-neutral-10 mr-1 mb-1 rounded-22px flex items-center">
 					{{ option.name || option.title || option }}
 					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="14" height="14" class="fill-grey-40">
+						<svg width="14" height="14" class="fill-neutral-10">
 							<use xlink:href="#close-icon-2"></use>
 						</svg>
 					</button>
@@ -49,17 +49,17 @@
 					</div>
 				</li>
 			</ng-container>
-			<li class="text-14 text-grey-20">Select</li>
+			<li class="text-14 text-neutral-4">Select</li>
 
 			<ng-container *ngIf="multiple">
 				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25">
-					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+					<button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 				</li>
 			</ng-container>
 
 			<ng-container *ngIf="!multiple">
 				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option>
-					<button convoy-button color="transparent" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+					<button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
 				</li>
 			</ng-container>
 		</ul>

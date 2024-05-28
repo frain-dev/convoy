@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/frain-dev/convoy/cache"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -35,12 +37,12 @@ const (
 		endpoints = $3,
 		owner_id = $4,
 		can_manage_endpoint = $5,
-		updated_at = now()
+		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
 	deletePortalLinkEndpoints = `
-	DELETE from convoy.portal_links_endpoints
+	DELETE FROM convoy.portal_links_endpoints
 	WHERE portal_link_id = $1 OR endpoint_id = $2
 	`
 
@@ -51,11 +53,15 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	COALESCE(p.can_manage_endpoint, false) as "can_manage_endpoint",
-	COALESCE(p.owner_id, '') as "owner_id",
+	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
+	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE 
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
-	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -72,11 +78,15 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	COALESCE(p.can_manage_endpoint, false) as "can_manage_endpoint",
-	COALESCE(p.owner_id, '') as "owner_id",
+	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
+	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE 
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
-	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -93,11 +103,15 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	COALESCE(p.can_manage_endpoint, false) as "can_manage_endpoint",
-	COALESCE(p.owner_id, '') as "owner_id",
+	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
+	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE 
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
-	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url, 'secrets', e.secrets)))  AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -108,7 +122,7 @@ const (
 	`
 
 	countPrevPortalLinks = `
-	SELECT count(distinct(p.id)) as count
+	SELECT COUNT(DISTINCT(p.id)) AS count
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -125,11 +139,15 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	COALESCE(p.can_manage_endpoint, false) as "can_manage_endpoint",
-	COALESCE(p.owner_id, '') as "owner_id",
+	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
+	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE 
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
-	array_to_json(ARRAY_AGG(json_build_object('uid', e.id, 'title', e.title, 'project_id', e.project_id, 'target_url', e.target_url)))  AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -164,17 +182,18 @@ const (
 
 	deletePortalLink = `
 	UPDATE convoy.portal_links SET
-	deleted_at = now()
+	deleted_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 )
 
 type portalLinkRepo struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	cache cache.Cache
 }
 
-func NewPortalLinkRepo(db database.Database) datastore.PortalLinkRepository {
-	return &portalLinkRepo{db: db.GetDB()}
+func NewPortalLinkRepo(db database.Database, cache cache.Cache) datastore.PortalLinkRepository {
+	return &portalLinkRepo{db: db.GetDB(), cache: cache}
 }
 
 func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
@@ -182,6 +201,7 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	r, err := tx.ExecContext(ctx, createPortalLink,
 		portal.UID,
@@ -218,6 +238,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 	if err != nil {
 		return err
 	}
+	defer rollbackTx(tx)
 
 	r, err := tx.ExecContext(ctx, updatePortalLink,
 		portal.UID,
@@ -330,8 +351,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-
-	defer rows.Close()
+	defer closeWithError(rows)
 
 	var portalLinks []datastore.PortalLink
 
@@ -371,13 +391,14 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
+		defer closeWithError(rows)
+
 		if rows.Next() {
 			err = rows.StructScan(&count)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
 		}
-		rows.Close()
 	}
 
 	ids := make([]string, len(portalLinks))
@@ -425,6 +446,7 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 		if err != nil {
 			return err
 		}
+		defer closeWithError(rows)
 
 		for rows.Next() {
 			var endpoint datastore.Endpoint

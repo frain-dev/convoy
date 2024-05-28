@@ -1,12 +1,5 @@
-<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Portal Links</h1>
-		<convoy-tooltip tooltipContent="Portals links allows you to view and debug webhook events sent to selected endpoints on a streamlined dashboard. On a portal page only events sent to the endpoints you've selected will be shown." position="right"></convoy-tooltip>
-	</div>
-</div>
-
 <!-- empty state  -->
-<div convoy-card class="py-100px mt-24px" *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length === 0">
+<div class="py-80px" *ngIf="!linkEndpoint && !isLoadingPortalLinks && portalLinks?.content?.length === 0">
 	<div
 		convoy-empty-state
 		imgSrc="/assets/img/portal-link-empty-state.png"
@@ -14,7 +7,12 @@
 		description="Portal Links enable you create customer-facing dashboards for your user endpoints. You can link a portal link to more than one endpoint at a time."
 		id="links-empty-state"
 	>
-		<button convoy-permission="Portal Links|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">Create a Portal Link</button>
+		<button convoy-permission="Portal Links|MANAGE" convoy-button emptyStateCTA routerLink="./new" class="mt-36px">
+			<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
+				<use xlink:href="#plus-icon"></use>
+			</svg>
+			Create a Portal Link
+		</button>
 	</div>
 </div>
 
@@ -23,80 +21,82 @@
 	<convoy-loader position="relative"></convoy-loader>
 </div>
 
-<ng-container *ngIf="!isLoadingPortalLinks && portalLinks?.content?.length">
-	<div class="flex items-center justify-between my-26px">
+<ng-container *ngIf="linkEndpoint || (!isLoadingPortalLinks && portalLinks?.content?.length)">
+	<div class="flex justify-between items-end mb-24px">
 		<div class="flex items-center">
+			<h1 class="text-18 font-bold text-neutral-12 mr-10px">Portal Links</h1>
+			<!-- <convoy-tooltip tooltipContent="Portals links allows you to view and debug webhook events sent to selected endpoints on a streamlined dashboard. On a portal page only events sent to the endpoints you've selected will be shown." position="right"></convoy-tooltip> -->
+		</div>
+	</div>
+
+	<div class="flex items-center justify-between my-26px">
+		<div class="flex items-center gap-24px">
 			<!-- not available yet  -->
 			<!-- <div class="flex items-center">
                 <form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
                     <img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-                    <input type="search" placeholder="Search links" class="w-full text-grey-40 text-14 outline-none" [(ngModel)]="linkSearchString" (keyup)="searchLinks({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
+                    <input type="search" placeholder="Search links" class="w-full text-neutral-11 text-14 outline-none" [(ngModel)]="linkSearchString" (keyup)="searchLinks({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" />
                     <button convoy-button *ngIf="linkSearchString && linkSearchString.length > 0" class="transition-all duration-200" fill="text" size="sm">
                         <img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
                     </button>
                 </form>
             </div> -->
 
-			<div convoy-dropdown size="lg" position="left">
-				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 min-w-[140px] whitespace-nowrap justify-between h-36px" [ngClass]="{ 'text-primary-100 !bg-primary-500': !!linkEndpoint }">
-					<img src="/assets/img/apps-icon-grey.svg" class="w-14px mr-10px" alt="apps filter icon" />
-					<span class="text-grey-40 w-full">All Endpoints</span>
-					<img class="ml-10px mr-0px w-14px" *ngIf="!linkEndpoint" src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" />
-					<button type="button" *ngIf="linkEndpoint" (click)="clearEndpointFilter($event)">
-						<svg width="10" height="10" class="fill-primary-100">
-							<use xlink:href="#close-icon"></use>
+			<convoy-endpoint-filter [endpoint]="linkEndpoint" (set)="updateEndpointFilter($event)">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 whitespace-nowrap justify-between" [ngClass]="{ 'text-primary-100 !bg-primary-500': linkEndpoint }">
+					<div class="flex items-center gap-10px">
+						<svg width="18" height="18" class="transition-all scale-75" [class]="linkEndpoint ? 'stroke-new.primary-400' : 'stroke-neutral-10'">
+							<use xlink:href="#endpoints-icon"></use>
 						</svg>
-					</button>
+						<span class="text-neutral-11">Endpoints</span>
+
+						<button type="button" *ngIf="linkEndpoint" (click)="clearEndpointFilter()">
+							<svg width="10" height="10" class="fill-primary-100">
+								<use xlink:href="#close-icon"></use>
+							</svg>
+						</button>
+					</div>
 				</button>
-
-				<ng-container dropdownOptions>
-					<div class="m-10px border border-primary-400 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
-						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
-						<input type="search" placeholder="Search endpoints here" #linksEndpointFilter class="w-full outline-none text-12" />
-					</div>
-
-					<ul class="min-h-[100px] pb-10px">
-						<li class="py-8px flex items-center justify-between border-b border-grey-10 px-10px" *ngFor="let endpoint of linksEndpointFilter$ | async" convoy-dropdown-option [ngClass]="{ 'bg-primary-500': endpoint.uid === linkEndpoint }">
-							<button convoy-button fill="text" class="text-12 text-black w-full !justify-start" (click)="updateEndpointFilter(endpoint.uid)">
-								{{ endpoint.title }}
-							</button>
-						</li>
-					</ul>
-
-					<div *ngIf="!!linkEndpoint" class="p-10px pb-20px flex justify-end">
-						<button convoy-dropdown-option convoy-button size="sm" fill="outline" color="danger" (click)="clearEndpointFilter()">Clear</button>
-					</div>
-				</ng-container>
-			</div>
+			</convoy-endpoint-filter>
 		</div>
-
-		<convoy-button convoy-permission="Portal Links|MANAGE" size="sm" routerLink="./new">Create Portal Link</convoy-button>
 	</div>
 
-	<div class="p-24px min-h-[600px]" convoy-card>
+	<div class="min-h-[600px]">
 		<div class="flex flex-wrap gap-24px">
-			<div convoy-card hover="true" class="w-full max-w-[348px]" *ngFor="let link of portalLinks?.content; let i = index" [id]="'portal-link' + i">
-				<div class="px-24px py-20px border-b border-b-grey-10">
+			<a convoy-card hover="true" class="w-full max-w-[440px] min-h-[160px] min-w-[300px] flex items-center justify-center border border-dashed border-new.primary-400 hover:!border-new.primary-400" convoy-permission="Portal Links|MANAGE" routerLink="./new">
+				<svg width="22" height="22" class="mr-2 scale-75 fill-new.primary-400">
+					<use xlink:href="#plus-icon"></use>
+				</svg>
+				<span class="text-new.primary-400 font-medium text-12">Create Portal Link</span>
+			</a>
+
+			<div convoy-card hover="true" class="w-full max-w-[440px] min-w-[300px]" *ngFor="let link of portalLinks?.content; let i = index" [id]="'portal-link' + i">
+				<div class="px-24px py-20px border-b border-b-neutral-a3">
 					<div class="flex justify-between items-center">
-						<div class="text-14 font-medium overflow-hidden max-w-[260px] text-ellipsis whitespace-nowrap">{{ link.name }}</div>
+						<div class="text-14 font-medium overflow-hidden max-w-[260px] text-ellipsis whitespace-nowrap">
+							<div>{{ link.name }}</div>
+							<div class="mt-4px text-12 text-neutral-11">
+								<span>{{ link.endpoints_metadata.length }} Endpoint{{ link.endpoints_metadata.length > 1 ? 's' : '' }}</span>
+							</div>
+						</div>
 
 						<div convoy-dropdown #portalLinkDropdown position="left" size="md" class="ml-4px">
-							<button dropdownTrigger convoy-button size="sm" fill="clear" class="!p-0">
+							<button dropdownTrigger convoy-button size="sm" fill="text" class="!p-0">
 								<img src="assets/img/more-icon-vertical.svg" class="h-5" alt="more icon" />
 							</button>
 
 							<ul dropdownOptions class="p-10px">
 								<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-									<button convoy-dropdown-option convoy-button color="grey" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + link?.uid">
-										<svg width="17" height="16" class="fill-new.gray-600 mr-8px">
+									<button convoy-dropdown-option convoy-button color="neutral" size="sm" fill="text" class="w-full !justify-start" [routerLink]="'./' + link?.uid">
+										<svg width="17" height="16" class="fill-neutral-10 mr-8px">
 											<use xlink:href="#edit-icon"></use>
 										</svg>
 										Edit
 									</button>
 								</li>
 								<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="danger" class="w-full !justify-start" (click)="activeLink = link; deleteDialog.nativeElement.showModal()">
-										<svg width="16" height="16" class="mr-8px fill-danger-100">
+									<button convoy-permission="Sources|MANAGE" convoy-dropdown-option convoy-button size="sm" fill="text" color="error" class="w-full !justify-start" (click)="activeLink = link; deleteDialog.showModal()">
+										<svg width="16" height="16" class="mr-8px fill-error-9">
 											<use xlink:href="#delete-icon"></use>
 										</svg>
 										Delete
@@ -107,14 +107,34 @@
 					</div>
 				</div>
 
-				<div class="mx-24px flex justify-between items-center">
+				<div class="mx-24px py-20px">
+					<convoy-copy-button [text]="link.url" color="primary" show-icon="false" notificationText="URL has been copied to clipboard">
+						<div convoy-tag color="primary" class="flex items-center !gap-12px">
+							<span class="max-w-[230px] truncate">{{ link.url }}</span>
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
+								<path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+								<path d="M10 6H14C16 6 16 5 16 4C16 2 15 2 14 2H10C9 2 8 2 8 4C8 6 9 6 10 6Z" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+								<path
+									d="M16 4.01953C19.33 4.19953 21 5.42953 21 9.99953V15.9995C21 19.9995 20 21.9995 15 21.9995H9C4 21.9995 3 19.9995 3 15.9995V9.99953C3 5.43953 4.67 4.19953 8 4.01953"
+									stroke="#292D32"
+									stroke-width="1.5"
+									stroke-miterlimit="10"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</div>
+					</convoy-copy-button>
+				</div>
+				<!-- <div class="mx-24px flex justify-between items-center">
 					<div class="my-12px">
 						<span class="text-12 font-medium">{{ link.endpoint_count }}</span>
-						<span class="text-12 text-grey-40 pl-8px">Endpoint(s)</span>
+						<span class="text-12 text-neutral-11 pl-8px">Endpoint(s)</span>
 					</div>
-					<div class="bg-grey-10 w-2px min-h-[60px]"></div>
+					<div class="bg-neutral-a3 w-2px min-h-[60px]"></div>
 					<convoy-copy-button [text]="link.url" color="primary" className="ml-2px my-12px flex items-center" notificationText="URL has been copied to clipboard"><span class="text-12 ml-8px font-medium">Copy Portal Link</span></convoy-copy-button>
-				</div>
+				</div> -->
 			</div>
 		</div>
 	</div>
@@ -125,10 +145,10 @@
 
 <dialog #portalLinkDialog convoy-dialog position="full">
 	<div class="w-full h-full">
-        <convoy-create-portal-link [action]="action"></convoy-create-portal-link>
-    </div>
+		<convoy-create-portal-link [action]="action"></convoy-create-portal-link>
+	</div>
 </dialog>
 
-<dialog #deleteModal convoy-dialog position="center" size="sm">
-	<app-delete-modal [isLoading]="isRevokingLink" [deleteText]="'revoke “' + activeLink?.name + '”'" (closeModal)="deleteDialog.nativeElement.close()" (deleteData)="revokeLink()"></app-delete-modal>
+<dialog #deleteDialog convoy-dialog position="center" size="sm">
+	<app-delete-modal [isLoading]="isRevokingLink" [deleteText]="'revoke “' + activeLink?.name + '”'" (closeModal)="deleteDialog.close()" (deleteData)="revokeLink()"></app-delete-modal>
 </dialog>

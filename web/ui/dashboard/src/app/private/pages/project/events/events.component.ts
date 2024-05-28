@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { format } from 'date-fns';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
@@ -6,7 +6,7 @@ import { EventsService } from './events.service';
 import { EVENT_DELIVERY } from 'src/app/models/event.model';
 import { CHARTDATA, PAGINATION } from 'src/app/models/global.model';
 import { PrivateService } from 'src/app/private/private.service';
-import { NavigationEnd, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { SOURCE } from 'src/app/models/source.model';
 
 @Component({
@@ -14,7 +14,7 @@ import { SOURCE } from 'src/app/models/source.model';
 	templateUrl: './events.component.html',
 	styleUrls: ['./events.component.scss']
 })
-export class EventsComponent implements OnInit, OnDestroy {
+export class EventsComponent implements OnInit {
 	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
 	isloadingDashboardData: boolean = false;
 	showFilterDropdown: boolean = false;
@@ -27,6 +27,10 @@ export class EventsComponent implements OnInit, OnDestroy {
 		startDate: [{ value: new Date(new Date().setDate(new Date().getDate() - 30)), disabled: true }],
 		endDate: [{ value: new Date(), disabled: true }]
 	});
+	dateRangeValue?: {
+		startDate: string | Date;
+		endDate: string | Date;
+	};
 	hasEvents: boolean = false;
 	chartData!: CHARTDATA[];
 	showAddEventModal = false;
@@ -39,18 +43,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 	isPageLoading = false;
 	reloadSubscription: any;
 
-	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {
-		// for reloading this component when the same route is called again
-		this.router.routeReuseStrategy.shouldReuseRoute = function () {
-			return false;
-		};
-
-		this.reloadSubscription = this.router.events.subscribe(event => {
-			if (event instanceof NavigationEnd) {
-				this.router.navigated = false;
-			}
-		});
-	}
+	constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public privateService: PrivateService, public router: Router) {}
 
 	async ngOnInit() {
 		this.isloadingDashboardData = true;
@@ -72,11 +65,6 @@ export class EventsComponent implements OnInit, OnDestroy {
 			this.isloadingDashboardData = false;
 			this.isPageLoading = false;
 		}
-	}
-
-	ngOnDestroy(): void {
-		clearInterval(this.eventDelievryIntervalTime);
-		this.reloadSubscription?.unsubscribe();
 	}
 
 	async getLatestSource() {
@@ -138,6 +126,7 @@ export class EventsComponent implements OnInit, OnDestroy {
 	}
 
 	getSelectedDateRange(dateRange?: { startDate: Date; endDate: Date }) {
+		this.dateRangeValue = dateRange;
 		this.statsDateRange.patchValue({
 			startDate: dateRange?.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
 			endDate: dateRange?.endDate || new Date()

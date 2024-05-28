@@ -11,8 +11,9 @@ type AuthenticatedUser struct {
 	Metadata             interface{} `json:"-"` // Additional data set by the realm that authenticated the user, see the jwt realm for an example
 
 	// TODO(subomi): This are set to interfaces temporarily to work around import cycles.
-	User   interface{} `json:"user"`
-	APIKey interface{} `json:"api_key"`
+	User       interface{} `json:"user"`
+	APIKey     interface{} `json:"api_key"`
+	PortalLink interface{} `json:"portal_link"`
 }
 
 type Credential struct {
@@ -32,6 +33,7 @@ type CredentialType string
 const (
 	CredentialTypeBasic  = CredentialType("BASIC")
 	CredentialTypeAPIKey = CredentialType("BEARER")
+	CredentialTypeToken  = CredentialType("TOKEN")
 	CredentialTypeJWT    = CredentialType("JWT")
 )
 

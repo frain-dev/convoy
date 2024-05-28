@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -27,7 +26,12 @@ type CreateEndpointService struct {
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	url, err := util.CleanEndpoint(a.E.URL)
+	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
+	}
+
+	url, err := util.ValidateEndpoint(a.E.URL, project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -37,45 +41,36 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		a.E.RateLimit = convoy.RATE_LIMIT
 	}
 
-	if util.IsStringEmpty(a.E.RateLimitDuration) {
+	if a.E.RateLimitDuration == 0 {
 		a.E.RateLimitDuration = convoy.RATE_LIMIT_DURATION
 	}
 
-	duration, err := time.ParseDuration(a.E.RateLimitDuration)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the rate limit duration: %v", err)}
-	}
-
-	if !util.IsStringEmpty(a.E.HttpTimeout) {
-		_, err = time.ParseDuration(a.E.HttpTimeout)
-		if err != nil {
-			return nil, &ServiceError{ErrMsg: fmt.Sprintf("an error occurred parsing the http timeout: %v", err)}
+	truthValue := true
+	switch project.Type {
+	case datastore.IncomingProject:
+		a.E.AdvancedSignatures = &truthValue
+	case datastore.OutgoingProject:
+		if a.E.AdvancedSignatures != nil {
+			break
 		}
-	}
 
-	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
-	}
-
-	if project.Type == datastore.IncomingProject {
-		a.E.AdvancedSignatures = true
+		a.E.AdvancedSignatures = &truthValue
 	}
 
 	endpoint := &datastore.Endpoint{
 		UID:                ulid.Make().String(),
 		ProjectID:          a.ProjectID,
 		OwnerID:            a.E.OwnerID,
-		Title:              a.E.Name,
+		Name:               a.E.Name,
 		SupportEmail:       a.E.SupportEmail,
 		SlackWebhookURL:    a.E.SlackWebhookURL,
-		TargetURL:          a.E.URL,
+		Url:                a.E.URL,
 		Description:        a.E.Description,
 		RateLimit:          a.E.RateLimit,
 		HttpTimeout:        a.E.HttpTimeout,
-		AdvancedSignatures: a.E.AdvancedSignatures,
+		AdvancedSignatures: *a.E.AdvancedSignatures,
 		AppID:              a.E.AppID,
-		RateLimitDuration:  duration.String(),
+		RateLimitDuration:  a.E.RateLimitDuration,
 		Status:             datastore.ActiveEndpointStatus,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
@@ -118,44 +113,6 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")
 		return nil, &ServiceError{ErrMsg: "an error occurred while adding endpoint", Err: err}
-	}
-
-	if !util.IsStringEmpty(endpoint.OwnerID) {
-		portalLink, err := a.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, a.ProjectID, endpoint.OwnerID)
-		if err != nil {
-			if errors.Is(err, datastore.ErrPortalLinkNotFound) {
-				return endpoint, nil
-			}
-
-			log.FromContext(ctx).WithError(err).Error("Failed to retrieve portal link for endpoint")
-			return endpoint, nil
-		}
-
-		update := models.PortalLink{
-			Name:              portalLink.Name,
-			Endpoints:         append(portalLink.Endpoints, endpoint.UID),
-			OwnerID:           portalLink.OwnerID,
-			CanManageEndpoint: portalLink.CanManageEndpoint,
-		}
-		upl := UpdatePortalLinkService{
-			PortalLinkRepo: a.PortalLinkRepo,
-			EndpointRepo:   a.EndpointRepo,
-			Project:        project,
-			Update:         &update,
-			PortalLink:     portalLink,
-		}
-
-		_, err = upl.Run(ctx)
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("Failed to update portal link endpoints")
-			return endpoint, nil
-		}
-	}
-
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
-	err = a.Cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: "failed to update endpoint cache", Err: nil}
 	}
 
 	return endpoint, nil

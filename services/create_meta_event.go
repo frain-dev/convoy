@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -29,12 +30,16 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		return err
 	}
 
-	cfg := project.Config.MetaEvent
-	if !cfg.IsEnabled {
+	cfg := project.Config
+	if cfg.MetaEvent == nil {
 		return nil
 	}
 
-	if !m.isSubscribed(eventType, cfg.EventType) {
+	if !cfg.MetaEvent.IsEnabled {
+		return nil
+	}
+
+	if !m.isSubscribed(eventType, cfg.MetaEvent.EventType) {
 		return nil
 	}
 
@@ -84,14 +89,14 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		ProjectID:   projectID,
 	}
 
-	mE, err := json.Marshal(s)
+	bytes, err := msgpack.EncodeMsgPack(s)
 	if err != nil {
 		return err
 	}
 
 	err = m.queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      metaEvent.UID,
-		Payload: mE,
+		Payload: bytes,
 	})
 
 	if err != nil {

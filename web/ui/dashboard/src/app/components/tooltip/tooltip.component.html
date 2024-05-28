@@ -4,7 +4,7 @@
 			<img [src]="img" [attr.height]="size === 'sm' ? '13px' : '18px'" [attr.width]="size === 'sm' ? '13px' : '18px'" alt="info" />
 		</ng-container>
 		<ng-container *ngIf="!img">
-			<svg width="18" height="18" [attr.height]="size === 'sm' ? '13' : '18'" [attr.width]="size === 'sm' ? '13' : '18'" class="fill-grey-40">
+			<svg width="18" height="18" [attr.height]="size === 'sm' ? '13' : '18'" [attr.width]="size === 'sm' ? '13' : '18'" class="fill-neutral-10">
 				<use xlink:href="#info-icon"></use>
 			</svg>
 		</ng-container>
@@ -19,15 +19,14 @@
 			group-hover:opacity-100 group-focus-within:opacity-100 group-focus:opacity-100 group-hover:pointer-events-auto group-focus-within:pointer-events-auto group-focus:pointer-events-auto
 			pointer-events-none
 			transition-all
-			bottom-[calc(100%+20px)]
+			z-50
 			rounded-8px
 			p-14px
 			text-12 text-left
 			after:content-['']
 			after:absolute
-			after:-bottom-[19px]
 			font-light
-			after:border-[10px] after:border-b-transparent after:border-x-transparent
+			after:border-[10px]
 		"
 		[class]="classes"
 	>

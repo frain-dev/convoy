@@ -1,11 +1,12 @@
 package cli
 
 import (
+	"context"
+
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/tracer"
 	"github.com/spf13/cobra"
 	flag "github.com/spf13/pflag"
 )
@@ -16,8 +17,10 @@ type App struct {
 	DB      database.Database
 	Queue   queue.Queuer
 	Logger  log.StdLogger
-	Tracer  tracer.Tracer
 	Cache   cache.Cache
+
+	// TODO(subomi): Let's make this cleaner.
+	TracerShutdown func(context.Context) error
 }
 
 type ConvoyCli struct {

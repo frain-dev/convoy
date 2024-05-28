@@ -2,13 +2,10 @@ package services
 
 import (
 	"context"
-	"errors"
-	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -26,7 +23,7 @@ type UpdateEndpointService struct {
 }
 
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	url, err := util.CleanEndpoint(a.E.URL)
+	url, err := util.ValidateEndpoint(a.E.URL, a.Project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -52,21 +49,14 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 	}
 
-	endpointCacheKey := convoy.EndpointsCacheKey.Get(endpoint.UID).String()
-	err = a.Cache.Set(ctx, endpointCacheKey, &endpoint, time.Minute*5)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to update endpoint cache")
-		return endpoint, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update application cache"))
-	}
-
 	return endpoint, nil
 }
 
 func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
-	endpoint.TargetURL = e.URL
+	endpoint.Url = e.URL
 	endpoint.Description = e.Description
 
-	endpoint.Title = *e.Name
+	endpoint.Name = *e.Name
 
 	if e.SupportEmail != nil {
 		endpoint.SupportEmail = *e.SupportEmail
@@ -80,20 +70,15 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, proje
 		endpoint.RateLimit = e.RateLimit
 	}
 
-	if !util.IsStringEmpty(e.RateLimitDuration) {
-		duration, err := time.ParseDuration(e.RateLimitDuration)
-		if err != nil {
-			return nil, err
-		}
-
-		endpoint.RateLimitDuration = duration.String()
+	if e.RateLimitDuration != 0 {
+		endpoint.RateLimitDuration = e.RateLimitDuration
 	}
 
 	if e.AdvancedSignatures != nil && project.Type == datastore.OutgoingProject {
 		endpoint.AdvancedSignatures = *e.AdvancedSignatures
 	}
 
-	if !util.IsStringEmpty(e.HttpTimeout) {
+	if e.HttpTimeout != 0 {
 		endpoint.HttpTimeout = e.HttpTimeout
 	}
 

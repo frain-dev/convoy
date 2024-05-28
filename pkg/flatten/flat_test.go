@@ -4,10 +4,10 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/nsf/jsondiff"
+	"github.com/stretchr/testify/require"
 )
 
 //go:embed gh_event.json
@@ -77,6 +77,11 @@ func TestFlattenMap(t *testing.T) {
 		{
 			name:  "nothing",
 			given: nil,
+			want:  map[string]interface{}{},
+		},
+		{
+			name:  "string",
+			given: "random_string",
 			want:  map[string]interface{}{},
 		},
 	}
@@ -965,7 +970,7 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Flatten(test.given)
 			if test.wantErr {
-				if test.err != err {
+				if !errors.Is(err, test.err) {
 					t.Errorf("failed to flatten: %+v", err)
 				}
 			}
@@ -1135,9 +1140,6 @@ func TestFlattenArray(t *testing.T) {
 				t.Errorf("failed to flatten: %+v", err)
 			}
 
-			expectedJson, _ := json.MarshalIndent(got, "", " ")
-			fmt.Printf("%v\n", string(expectedJson))
-
 			if !jsonEqual(got, test.want) {
 				t.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, test.want)
 			}
@@ -1147,12 +1149,12 @@ func TestFlattenArray(t *testing.T) {
 
 func TestFlattenLargeJSON(t *testing.T) {
 	var given, want interface{}
-	err := json.Unmarshal([]byte(ghEvent), &given)
+	err := json.Unmarshal(ghEvent, &given)
 	if err != nil {
 		t.Errorf("failed to unmarshal JSON: %v", err)
 	}
 
-	err = json.Unmarshal([]byte(ghEventFlat), &want)
+	err = json.Unmarshal(ghEventFlat, &want)
 	if err != nil {
 		t.Errorf("failed to unmarshal JSON: %v", err)
 	}
@@ -1175,4 +1177,220 @@ func jsonEqual(got, want interface{}) bool {
 
 	diff, _ := jsondiff.Compare(a, b, &jsondiff.Options{})
 	return diff == jsondiff.FullMatch
+}
+
+func BenchmarkFlattenArray(b *testing.B) {
+	test := `
+        [
+            {
+              "hallo": {
+                  "lorem": [20, 2],
+                  "ipsum": {
+                      "dolor": ["1", "10"]
+                  }
+              }
+            },
+            {
+              "game": {
+                  "name": "Elden Ring",
+                  "authors": {
+                      "first_name": "George",
+                      "last_name": "Martin"
+                  }
+              }
+            },
+            {
+              "person": {
+                  "ages": [100, -1],
+                  "names": {
+                      "parts": ["ray", "mond"]
+                  }
+              }
+            }
+        ]`
+
+	want := map[string]interface{}{
+		"0.hallo.lorem":             []interface{}{float64(20), float64(2)},
+		"0.hallo.ipsum.dolor":       []interface{}{"1", "10"},
+		"1.game.authors.first_name": "George",
+		"1.game.authors.last_name":  "Martin",
+		"1.game.name":               "Elden Ring",
+		"2.person.ages":             []interface{}{float64(100), float64(-1)},
+		"2.person.names.parts":      []interface{}{"ray", "mond"},
+	}
+
+	var given interface{}
+	err := json.Unmarshal([]byte(test), &given)
+	if err != nil {
+		require.NoError(b, err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		got, err := Flatten(given)
+		require.NoError(b, err)
+
+		if !jsonEqual(got, want) {
+			b.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, want)
+		}
+	}
+}
+
+func BenchmarkFlattenMap(b *testing.B) {
+	test := map[string]interface{}{
+		"$and": []map[string]interface{}{
+			{
+				"$or": []map[string]interface{}{
+					{
+						"person": map[string]interface{}{
+							"age": map[string]interface{}{
+								"$in": []int{10, 11, 12},
+							},
+						},
+					},
+					{
+						"places": map[string]interface{}{
+							"temperatures": 39.9,
+						},
+					},
+				},
+			},
+			{
+				"city": "lagos",
+			},
+		},
+	}
+
+	want := map[string]interface{}{
+		"$and": []map[string]interface{}{
+			{
+				"$or": []map[string]interface{}{
+					{
+						"person.age": map[string]interface{}{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"places.temperatures": 39.9,
+					},
+				},
+			},
+			{
+				"city": "lagos",
+			},
+		},
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		got, err := Flatten(test)
+		require.NoError(b, err)
+
+		if !jsonEqual(got, want) {
+			b.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, want)
+		}
+	}
+}
+
+func BenchmarkFlattenLargeJson(b *testing.B) {
+	var given, want interface{}
+	err := json.Unmarshal(ghEvent, &given)
+	if err != nil {
+		b.Errorf("failed to unmarshal JSON: %v", err)
+	}
+
+	err = json.Unmarshal(ghEventFlat, &want)
+	if err != nil {
+		b.Errorf("failed to unmarshal JSON: %v", err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		got, err := Flatten(given)
+		require.NoError(b, err)
+
+		if !jsonEqual(got, want) {
+			expectedJson, _ := json.MarshalIndent(got, "", " ")
+			b.Errorf("%v\n", string(expectedJson))
+		}
+	}
+}
+
+func BenchmarkFlattenOperators(b *testing.B) {
+	given := map[string]interface{}{
+		"filter": map[string]interface{}{
+			"person": map[string]interface{}{
+				"age": map[string]interface{}{
+					"$eq": float64(5),
+				},
+			},
+		},
+	}
+	want := map[string]interface{}{
+		"filter.person.age": map[string]interface{}{
+			"$eq": float64(5),
+		},
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		got, err := Flatten(given)
+		require.NoError(b, err)
+
+		if !jsonEqual(got, want) {
+			expectedJson, _ := json.MarshalIndent(got, "", " ")
+			b.Errorf("%v\n", string(expectedJson))
+		}
+	}
+}
+
+func BenchmarkFlattenWithPrefix(b *testing.B) {
+	test := `{
+				"hello": {
+					"lorem": {
+						"ipsum": "again",
+						"dolor": "sit"
+					}
+				},
+				"world": {
+					"lorem": {
+						"ipsum": "again",
+						"dolor": "sit"
+					}
+				}
+			}`
+
+	want := map[string]interface{}{
+		"data.hello.lorem.ipsum": "again",
+		"data.hello.lorem.dolor": "sit",
+		"data.world.lorem.ipsum": "again",
+		"data.world.lorem.dolor": "sit",
+	}
+
+	var given interface{}
+	err := json.Unmarshal([]byte(test), &given)
+	if err != nil {
+		require.NoError(b, err)
+	}
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		got, err := FlattenWithPrefix("data", given)
+		require.NoError(b, err)
+
+		if !jsonEqual(got, want) {
+			expectedJson, _ := json.MarshalIndent(got, "", " ")
+			b.Errorf("%v\n", string(expectedJson))
+		}
+	}
 }

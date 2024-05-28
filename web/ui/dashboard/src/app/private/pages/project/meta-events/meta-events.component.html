@@ -1,12 +1,13 @@
 <!-- header  -->
-<div class="flex justify-between items-end border-b border-b-grey-10 pb-20px mb-24px">
-	<div class="flex items-center">
-		<h1 class="text-24 font-bold text-grey-80 mr-10px">Meta Events</h1>
-		<convoy-tooltip position="right">Meta events are operation events that occur on your project, such as: event delivery, endpoints status, e.t.c. You can receive this events notification via HTTPS.</convoy-tooltip>
-	</div>
-</div>
 
 <ng-container *ngIf="isMetaEventEnabled">
+	<div class="flex justify-between items-end mb-24px">
+		<div class="flex items-center">
+			<h1 class="text-18 font-bold text-neutral-12 mr-10px">Meta Events</h1>
+			<!-- <convoy-tooltip position="top-right">Meta events are operation events that occur on your project, such as: event delivery, endpoints status, e.t.c. You can receive this events notification via HTTPS.</convoy-tooltip> -->
+		</div>
+	</div>
+
 	<div convoy-card class="flex">
 		<div class="min-w-[605px] w-full h-full overflow-hidden relative">
 			<convoy-table-loader id="meta_events_loader" [tableHead]="metaEventsTableHead" *ngIf="isLoadingMetaEvents"></convoy-table-loader>
@@ -29,20 +30,20 @@
 								</td>
 
 								<td convoy-table-cell>
-									<convoy-tag color="gray">{{ event.event_type }}</convoy-tag>
+									<convoy-tag color="neutral">{{ event.event_type }}</convoy-tag>
 								</td>
 
 								<td convoy-table-cell class="">{{ event.metadata.num_trials }}</td>
 								<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
 								<td convoy-table-cell class="">
-									<button convoy-button size="xs" texture="light" [disabled]="isRetryingMetaEvent" (click)="retryMetaEvent(event.uid)">
+									<button convoy-button size="xs" fill="soft" [disabled]="isRetryingMetaEvent" (click)="retryMetaEvent(event.uid)">
 										<img src="assets/img/refresh-icon-primary.svg" alt="refresh icon" class="mr-10px" />
 										Retry
 									</button>
 								</td>
 
 								<td convoy-table-cell>
-									<button convoy-button fill="clear" size="sm" (click)="selectedMetaEvent = event">
+									<button convoy-button fill="text" size="sm" (click)="selectedMetaEvent = event">
 										<img src="assets/img/angle-arrow-right-primary.svg" class="ml-16px h-16px" alt="arrow right" />
 									</button>
 								</td>
@@ -55,11 +56,11 @@
 			<div convoy-empty-state type="table" class="my-150px" imgSrc="/assets/img/empty-state.svg" description="No meta event has been sent" *ngIf="!isLoadingMetaEvents && (!displayedMetaEvents || displayedMetaEvents?.length === 0)"></div>
 		</div>
 
-		<div class="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l border-grey-10">
+		<div class="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l border-neutral-a3">
 			<div class="p-16px">
 				<ng-container *ngIf="isLoadingMetaEvents">
-					<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px mb-20px"></div>
-					<div class="bg-grey-10 rounded-8px animate-pulse h-150px w-full mr-40px"></div>
+					<div class="bg-neutral-a3 rounded-8px animate-pulse h-150px w-full mr-40px mb-20px"></div>
+					<div class="bg-neutral-a3 rounded-8px animate-pulse h-150px w-full mr-40px"></div>
 				</ng-container>
 
 				<ng-container *ngIf="displayedMetaEvents && displayedMetaEvents.length > 0">
@@ -80,7 +81,7 @@
 </ng-container>
 
 <!-- empty state  -->
-<div class="py-100px" convoy-card *ngIf="!isMetaEventEnabled">
+<div class="py-80px" *ngIf="!isMetaEventEnabled">
 	<div
 		convoy-empty-state
 		imgSrc="/assets/img/events-empty-state-image.svg"
@@ -88,6 +89,6 @@
 		description="Meta events are operation events that occur on your project, such as: event delivery, endpoints status, e.t.c. You can receive this events notification via HTTPS."
 		id="meta-events-empty-state"
 	>
-		<button convoy-button emptyStateCTA class="mt-36px" (click)="routeToMetaEvents()">Turn on Meta Events</button>
+		<button convoy-button emptyStateCTA class="!py-14px mt-36px" (click)="routeToMetaEvents()">Turn on Meta Events</button>
 	</div>
 </div>

@@ -68,7 +68,7 @@ export class EndpointsComponent implements OnInit {
 
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['Name', 'Status', 'ID', '', '', ''];
+	endpointsTableHead = ['Name', 'Status', 'Url','ID', '', '', ''];
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
@@ -79,8 +79,9 @@ export class EndpointsComponent implements OnInit {
 	isSendingTestEvent = false;
 	endpointSearchString!: string;
 	action: 'create' | 'update' = 'create';
+	userSearch = false;
 
-	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
+	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) { }
 
 	ngOnInit() {
 		const urlParam = this.route.snapshot.params.id;
@@ -94,11 +95,12 @@ export class EndpointsComponent implements OnInit {
 
 	async getEndpoints(requestDetails?: CURSOR & { search?: string; hideLoader?: boolean }) {
 		this.isLoadingEndpoints = !requestDetails?.hideLoader;
+		this.userSearch = !!requestDetails?.search;
 
 		try {
 			const response = await this.privateService.getEndpoints({ ...requestDetails, q: requestDetails?.search || this.endpointSearchString });
 			this.endpoints = response.data;
-			this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
+			if(response.data.content) this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
 			this.isLoadingEndpoints = false;
 		} catch {
 			this.isLoadingEndpoints = false;

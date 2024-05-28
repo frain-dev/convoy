@@ -13,7 +13,9 @@ type Filter struct {
 	EndpointIDs    []string
 	SubscriptionID string
 	EventID        string
+	EventType      string
 	SourceID       string
+	SourceIDs      []string
 	Pageable       Pageable
 	IdempotencyKey string
 	Status         []EventDeliveryStatus
@@ -23,6 +25,7 @@ type Filter struct {
 type SourceFilter struct {
 	Type     string
 	Provider string
+	Query    string
 }
 
 type ApiKeyFilter struct {
@@ -34,11 +37,13 @@ type ApiKeyFilter struct {
 }
 
 type FilterBy struct {
-	EndpointID   string
-	EndpointIDs  []string
-	ProjectID    string
-	SourceID     string
-	SearchParams SearchParams
+	OwnerID          string
+	EndpointID       string
+	EndpointIDs      []string
+	SubscriptionName string
+	ProjectID        string
+	SourceID         string
+	SearchParams     SearchParams
 }
 
 func (f *FilterBy) String() *string {
