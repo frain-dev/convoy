@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/grafana/pyroscope-go"
 
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -186,14 +188,17 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 
 func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
 	_, err := pyroscope.Start(pyroscope.Config{
-		ApplicationName: fmt.Sprintf("convoy-%s-%s", cmd.Use, cfg.Pyroscope.ProfileID),
-
+		ApplicationName: cfg.Pyroscope.ProfileID,
+		Tags: map[string]string{
+			"cmd": cmd.Use,
+		},
 		// replace this with the address of pyroscope server
 		ServerAddress: cfg.Pyroscope.URL,
 
 		// you can disable logging by setting this to nil
 		// Logger: pyroscope.StandardLogger,
-		Logger: nil,
+		Logger:     logrus.StandardLogger(),
+		UploadRate: time.Second * 5,
 
 		// optionally, if authentication is enabled, specify the API key:
 		BasicAuthUser:     cfg.Pyroscope.Username,
@@ -202,11 +207,15 @@ func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
 		// but you can select the ones you want to use:
 		ProfileTypes: []pyroscope.ProfileType{
 			pyroscope.ProfileCPU,
-			pyroscope.ProfileAllocObjects,
-			pyroscope.ProfileAllocSpace,
 			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileAllocObjects,
 			pyroscope.ProfileInuseSpace,
+			pyroscope.ProfileAllocSpace,
 			pyroscope.ProfileGoroutines,
+			pyroscope.ProfileMutexCount,
+			pyroscope.ProfileMutexDuration,
+			pyroscope.ProfileBlockCount,
+			pyroscope.ProfileBlockDuration,
 		},
 	})
 	return err
