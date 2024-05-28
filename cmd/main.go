@@ -1,9 +1,10 @@
 package main
 
 import (
-	_ "go.uber.org/automaxprocs"
 	"os"
 	_ "time/tzdata"
+
+	_ "go.uber.org/automaxprocs"
 
 	"github.com/frain-dev/convoy/cmd/agent"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
@@ -81,6 +82,7 @@ func main() {
 	c.Flags().StringVar(&dbDatabase, "db-database", "", "Database Database")
 	c.Flags().StringVar(&dbDatabase, "db-options", "", "Database Options")
 	c.Flags().IntVar(&dbPort, "db-port", 0, "Database Port")
+	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling and exporting profile data to pyroscope")
 
 	// redis config
 	c.Flags().StringVar(&redisHost, "redis-host", "", "Redis Host")
@@ -92,7 +94,6 @@ func main() {
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
 	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
-	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
 
 	// tracing
 	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
