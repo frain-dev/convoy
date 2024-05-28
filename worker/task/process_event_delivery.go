@@ -65,27 +65,19 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		tx, err := db.BeginTx(ctx)
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
-		defer db.Rollback(tx, err)
-
-		cctx := context.WithValue(ctx, postgres.TransactionCtx, tx)
-
-		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(cctx, data.ProjectID, data.EventDeliveryID)
+		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
-		endpoint, err := endpointRepo.FindEndpointByID(cctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
+		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		project, err := projectRepo.FetchProjectByID(cctx, eventDelivery.ProjectID)
+		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
@@ -96,7 +88,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			return nil
 		}
 
-		err = rateLimiter.Allow(cctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
+		err = rateLimiter.Allow(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
 			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery id": data.EventDeliveryID}).
 				WithError(err).
@@ -104,6 +96,13 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
+
+		tx, err := db.BeginTx(ctx)
+		if err != nil {
+			return &EndpointError{Err: err, delay: 10 * time.Second}
+		}
+		defer db.Rollback(tx, err)
+		cctx := context.WithValue(ctx, postgres.TransactionCtx, tx)
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(cctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
