@@ -231,6 +231,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		telemetry.OptionBackend(mb))
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
+		a.DB,
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
