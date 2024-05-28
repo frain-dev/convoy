@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/transform"
-	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
@@ -121,7 +122,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		if s.Type == datastore.SubscriptionTypeAPI {
 			endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
+				return &EndpointError{Err: fmt.Errorf("CODE: 1006, err: %s", err.Error()), delay: defaultDelay}
 			}
 
 			if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
@@ -200,7 +201,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 
 		err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1008, err: %s", err.Error()), delay: defaultDelay}
 		}
 
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
