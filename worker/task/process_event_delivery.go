@@ -166,7 +166,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
-		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
+		resp, err := dispatch.SendRequest(ctx, targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
 
 		status := "-"
 		statusCode := 0
