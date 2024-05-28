@@ -69,6 +69,10 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 						EndpointID: "endpoint-id-1",
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 						AlertConfig:     nil,
 						RetryConfig:     nil,

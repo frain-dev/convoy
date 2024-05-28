@@ -303,6 +303,11 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	}
 
 	for _, s := range subscriptions {
+		if len(s.FilterConfig.Filter.Body.Map()) == 0 && len(s.FilterConfig.Filter.Headers.Map()) == 0 {
+			matched = append(matched, s)
+			continue
+		}
+
 		isBodyMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter.Body.Map())
 		if err != nil && soft {
 			log.WithError(err).Errorf("subcription (%s) failed to match body", s.UID)
