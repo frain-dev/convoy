@@ -75,7 +75,8 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultDelay}
 		}
 
-		event.Endpoints = getEndpointIDs(subscriptions)
+		es, ss := getEndpointIDs(subscriptions)
+		event.Endpoints = es
 
 		err = eventRepo.CreateEvent(cctx, event)
 		if err != nil {
@@ -88,24 +89,31 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 		}
 
 		return writeEventDeliveriesToQueue(
-			cctx, subscriptions, event, project, eventDeliveryRepo,
+			cctx, ss, event, project, eventDeliveryRepo,
 			eventQueue, deviceRepo, endpointRepo,
 		)
 	}
 }
 
-func getEndpointIDs(subs []datastore.Subscription) []string {
-	idMap := make(map[string]struct{})
-	ids := make([]string, 0, len(subs))
+func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscription) {
+	subMap := make(map[string]*datastore.Subscription)
+	endpointIds := make([]string, 0, len(subs))
+
 	var sub *datastore.Subscription
 	for i := range subs {
 		sub = &subs[i]
 		if sub.Type == datastore.SubscriptionTypeAPI && !util.IsStringEmpty(sub.EndpointID) {
-			if _, ok := idMap[sub.EndpointID]; !ok {
-				idMap[sub.EndpointID] = struct{}{}
-				ids = append(ids, sub.EndpointID)
+			if _, ok := subMap[sub.EndpointID]; !ok {
+				subMap[sub.EndpointID] = sub
+				endpointIds = append(endpointIds, sub.EndpointID)
 			}
 		}
 	}
-	return ids
+
+	subscriptionsIds := make([]datastore.Subscription, 0, len(subMap))
+	for _, s := range subMap {
+		subscriptionsIds = append(subscriptionsIds, *s)
+	}
+
+	return endpointIds, subscriptionsIds
 }
