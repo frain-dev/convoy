@@ -96,18 +96,17 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 }
 
 func getEndpointIDs(subs []datastore.Subscription) []string {
-	idMap := make(map[string]string)
+	idMap := make(map[string]struct{})
 	ids := make([]string, 0, len(subs))
 	var sub *datastore.Subscription
 	for i := range subs {
 		sub = &subs[i]
 		if sub.Type == datastore.SubscriptionTypeAPI && !util.IsStringEmpty(sub.EndpointID) {
 			if _, ok := idMap[sub.EndpointID]; !ok {
-				idMap[sub.EndpointID] = sub.EndpointID
+				idMap[sub.EndpointID] = struct{}{}
 				ids = append(ids, sub.EndpointID)
 			}
 		}
 	}
-
 	return ids
 }

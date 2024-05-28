@@ -116,6 +116,7 @@ const (
     where filter_config_event_types = '%s'
     AND id > $1
     AND project_id = $2
+    AND deleted_at is null
     ORDER BY id LIMIT $3`
 
 	baseFetchSubscriptionsPagedForward = `

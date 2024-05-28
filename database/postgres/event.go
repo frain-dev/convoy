@@ -19,6 +19,8 @@ import (
 )
 
 const (
+	PartitionSize = 30_000
+
 	createEvent = `
 	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
 	                           source_id,headers,raw,data,url_query_params,
@@ -234,11 +236,12 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	}
 
 	records := event.Endpoints
-	var recordsToInsert []string
 
-	for len(recordsToInsert) > 0 {
-		if len(recordsToInsert) >= 30000 {
-			recordsToInsert = records[:30000]
+	for len(records) > 0 {
+		var recordsToInsert []string
+
+		if len(records) >= PartitionSize {
+			recordsToInsert = records[:PartitionSize]
 		} else {
 			recordsToInsert = records
 		}
@@ -252,6 +255,8 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		if err != nil {
 			return err
 		}
+
+		records = records[max(len(recordsToInsert)-1, 1):]
 	}
 
 	if isWrapped {
