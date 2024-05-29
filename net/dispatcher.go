@@ -119,6 +119,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	}
 
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+	req.Close = true
 
 	response, err := d.client.Do(req)
 	if err != nil {
