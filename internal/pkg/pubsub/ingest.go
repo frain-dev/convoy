@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"strings"
 	"time"
@@ -29,23 +31,32 @@ var ingestCtx IngestCtxKey = "IngestCtx"
 const ConvoyMessageTypeHeader = "x-convoy-message-type"
 
 type Ingest struct {
-	ctx     context.Context
-	ticker  *time.Ticker
-	queue   queue.Queuer
-	sources map[string]*PubSubSource
-	table   *memorystore.Table
-	log     log.StdLogger
+	ctx         context.Context
+	ticker      *time.Ticker
+	instanceId  string
+	queue       queue.Queuer
+	rateLimiter limiter.RateLimiter
+	sources     map[string]*PubSubSource
+	table       *memorystore.Table
+	log         log.StdLogger
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger) (*Ingest, error) {
+func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter) (*Ingest, error) {
+	cfg, err := config.Get()
+	if err != nil {
+		return nil, err
+	}
+
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
-		ctx:     ctx,
-		queue:   queue,
-		log:     log,
-		table:   table,
-		sources: make(map[string]*PubSubSource),
-		ticker:  time.NewTicker(time.Duration(1) * time.Second),
+		ctx:         ctx,
+		log:         log,
+		table:       table,
+		queue:       queue,
+		rateLimiter: rateLimiter,
+		instanceId:  cfg.Host,
+		sources:     make(map[string]*PubSubSource),
+		ticker:      time.NewTicker(time.Duration(1) * time.Second),
 	}
 
 	return i, nil
@@ -125,8 +136,14 @@ func (i *Ingest) run() error {
 	return nil
 }
 
-func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, metadata []byte) error {
+func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg string, metadata []byte) error {
 	defer handlePanic(source)
+
+	// TODO(raymond): remove hardcoded rate limit
+	err := i.rateLimiter.Allow(ctx, i.instanceId, 18_000, 60)
+	if err != nil {
+		return err
+	}
 
 	// unmarshal to an interface{} struct
 	var raw any

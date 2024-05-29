@@ -176,7 +176,18 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 		return err
 	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger)
+	cfg, err := config.Get()
+	if err != nil {
+		a.Logger.Errorf("Failed to retrieve config: %v", err)
+		return err
+	}
+
+	rateLimiter, err := limiter.NewLimiter(cfg.Redis)
+	if err != nil {
+		return err
+	}
+
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger, rateLimiter)
 	if err != nil {
 		return err
 	}
@@ -204,8 +215,6 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 	configRepo := postgres.NewConfigRepo(a.DB)
 
-	rateLimiter := limiter.NewLimiter(a.DB)
-
 	counter := &telemetry.EventsCounter{}
 
 	pb := telemetry.NewposthogBackend()
@@ -214,6 +223,11 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	configuration, err := configRepo.LoadConfiguration(context.Background())
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to instance configuration")
+		return err
+	}
+
+	rateLimiter, err := limiter.NewLimiter(cfg.Redis)
+	if err != nil {
 		return err
 	}
 
