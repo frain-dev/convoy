@@ -245,7 +245,6 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		telemetry.OptionBackend(mb))
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-		a.DB,
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
@@ -273,7 +272,6 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
-		a.DB,
 		endpointRepo,
 		eventRepo,
 		projectRepo,
