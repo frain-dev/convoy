@@ -6398,9 +6398,6 @@
                 "idempotency_key": {
                     "description": "Specify a key for event deduplication",
                     "type": "string"
-                },
-                "jid": {
-                    "type": "string"
                 }
             }
         },

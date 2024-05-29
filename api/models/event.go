@@ -129,7 +129,7 @@ func (ds *DynamicEventStub) Validate() error {
 }
 
 type BroadcastEvent struct {
-	JobID string `json:"jid"`
+	JobID string `json:"jid" swaggerignore:"true"`
 
 	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
