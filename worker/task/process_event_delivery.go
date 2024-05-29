@@ -80,7 +80,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 		if err != nil {
 			if errors.Is(err, datastore.ErrEndpointNotFound) {
 				eventDelivery.Description = datastore.ErrEndpointNotFound.Error()
-				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(cctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
+				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 				if err != nil {
 					log.WithError(err).Error("failed to update event delivery status to discarded")
 				}
