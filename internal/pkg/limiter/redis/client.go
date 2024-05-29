@@ -2,11 +2,14 @@ package rlimiter
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/go-redis/redis_rate/v10"
 )
+
+var ErrRateLimitExceeded = errors.New("rate limit exceeded")
 
 type RedisLimiter struct {
 	limiter *redis_rate.Limiter
@@ -24,17 +27,21 @@ func NewRedisLimiter(addresses []string) (*RedisLimiter, error) {
 	return r, nil
 }
 
-func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int, duration time.Duration) (*redis_rate.Result, error) {
+func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int, duration int) error {
 	l := redis_rate.Limit{
-		Period: duration,
+		Period: time.Second * time.Duration(duration),
 		Rate:   limit,
 		Burst:  limit,
 	}
 
 	result, err := r.limiter.Allow(ctx, key, l)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return result, nil
+	if result.RetryAfter > 0 {
+		return ErrRateLimitExceeded
+	}
+
+	return nil
 }
