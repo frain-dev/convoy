@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -47,6 +48,7 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 			},
 			RetryDelayFunc: task.GetRetryDelay,
 			Logger:         lo,
+			StrictPriority: true,
 		},
 	)
 

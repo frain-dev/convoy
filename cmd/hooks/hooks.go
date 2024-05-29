@@ -79,7 +79,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 		queueNames := map[string]int{
-			string(convoy.EventQueue):       3,
+			string(convoy.EventQueue):       4,
 			string(convoy.CreateEventQueue): 3,
 			string(convoy.ScheduleQueue):    1,
 			string(convoy.DefaultQueue):     1,
