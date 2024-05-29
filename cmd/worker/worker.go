@@ -2,11 +2,11 @@ package worker
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/telemetry"
 
 	"github.com/frain-dev/convoy"
@@ -185,19 +185,20 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				render.JSON(w, r, "Convoy")
 			})
 
-			srv := &http.Server{
-				Handler: router,
-				Addr:    fmt.Sprintf(":%d", workerPort),
+			srv := server.NewServer(workerPort, func() {})
+			srv.SetHandler(router)
+
+			httpConfig := cfg.Server.HTTP
+			if httpConfig.SSL {
+				a.Logger.Infof("Worker started with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+
+				srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
+				return nil
 			}
 
 			a.Logger.Infof("Worker running on port %v", workerPort)
+			srv.Listen()
 
-			e := srv.ListenAndServe()
-			if e != nil {
-				return e
-			}
-
-			<-ctx.Done()
 			return ctx.Err()
 		},
 	}
