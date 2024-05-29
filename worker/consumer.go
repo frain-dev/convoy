@@ -48,7 +48,6 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 			},
 			RetryDelayFunc: task.GetRetryDelay,
 			Logger:         lo,
-			StrictPriority: true,
 		},
 	)
 
