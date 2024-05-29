@@ -117,7 +117,7 @@ const (
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
-    where  ARRAY[$4] <@ filter_config_event_types
+    where (ARRAY[$4] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)
     AND id > $1
     AND project_id = $2
     AND deleted_at is null
