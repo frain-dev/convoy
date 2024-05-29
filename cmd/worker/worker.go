@@ -116,7 +116,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				telemetry.OptionBackend(mb))
 
 			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-				a.DB,
 				endpointRepo,
 				eventDeliveryRepo,
 				projectRepo,
@@ -133,7 +132,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				deviceRepo), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
-				a.DB,
 				endpointRepo,
 				eventRepo,
 				projectRepo,
