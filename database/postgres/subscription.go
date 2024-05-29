@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
@@ -116,7 +117,7 @@ const (
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
-    where filter_config_event_types = '%s'
+    where  ARRAY[$4] <@ filter_config_event_types
     AND id > $1
     AND project_id = $2
     AND deleted_at is null
@@ -218,11 +219,10 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 
 func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]datastore.Subscription, error) {
 	var subs []datastore.Subscription
-	var cursor = "0"
+	cursor := "0"
 
 	for {
-		query := fmt.Sprintf(fetchSubscriptionsForBroadcast, eventType)
-		rows, err := s.db.QueryxContext(ctx, query, cursor, projectID, pageSize)
+		rows, err := s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, eventType)
 		if err != nil {
 			return nil, err
 		}
