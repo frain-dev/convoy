@@ -56,6 +56,8 @@ func (s *Server) SetHandler(handler http.Handler) {
 			pprofRouter.HandleFunc("/pprof/profile", pprof.Profile)
 			pprofRouter.HandleFunc("/pprof/symbol", pprof.Symbol)
 			pprofRouter.HandleFunc("/pprof/trace", pprof.Trace)
+
+			pprofRouter.Handle("/pprof/goroutine", pprof.Handler("goroutine"))
 		})
 	}
 
