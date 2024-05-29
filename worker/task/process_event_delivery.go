@@ -71,13 +71,23 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
-		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
+		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
+		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
 		if err != nil {
+			if errors.Is(err, datastore.ErrEndpointNotFound) {
+				eventDelivery.Description = datastore.ErrEndpointNotFound.Error()
+				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(cctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
+				if err != nil {
+					log.WithError(err).Error("failed to update event delivery status to discarded")
+				}
+
+				return nil
+			}
+
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
