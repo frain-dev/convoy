@@ -36,9 +36,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				UID: "",
 			},
 			dbFn: func(db *mocks.MockDatabase, a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter) {
-				db.EXPECT().BeginTx(gomock.Any())
-				db.EXPECT().Rollback(gomock.Any(), gomock.Any())
-
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
