@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -37,13 +36,6 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	}
 
 	a.E.URL = url
-	if a.E.RateLimit == 0 {
-		a.E.RateLimit = convoy.RATE_LIMIT
-	}
-
-	if a.E.RateLimitDuration == 0 {
-		a.E.RateLimitDuration = convoy.RATE_LIMIT_DURATION
-	}
 
 	truthValue := true
 	switch project.Type {
