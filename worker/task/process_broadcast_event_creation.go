@@ -92,17 +92,12 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			return nil
 		}
 
-		err = writeEventDeliveriesToQueue(
-			ctx, ss, event, project, eventDeliveryRepo,
-			eventQueue, deviceRepo, endpointRepo,
-		)
-
+		err = writeEventDeliveriesToQueue(ctx, ss, event, project, eventDeliveryRepo, eventQueue, deviceRepo, endpointRepo)
 		if err != nil {
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
 			return &EndpointError{Err: ErrFailedToWriteToQueue, delay: 10 * time.Second}
 		}
 
-		fmt.Println("HERE")
 		return nil
 	}
 }

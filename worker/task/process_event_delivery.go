@@ -193,7 +193,8 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			eventDelivery.Metadata.NextSendTime = nextTime
 			attempts := eventDelivery.Metadata.NumTrials + 1
 
-			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID, nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
+				nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
