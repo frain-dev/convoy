@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -65,27 +64,19 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		tx, err := db.BeginTx(ctx)
-		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
-		defer db.Rollback(tx, err)
-
-		cctx := context.WithValue(ctx, postgres.TransactionCtx, tx)
-
-		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(cctx, data.ProjectID, data.EventDeliveryID)
+		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
-		endpoint, err := endpointRepo.FindEndpointByID(cctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
+		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
 
-		project, err := projectRepo.FetchProjectByID(cctx, eventDelivery.ProjectID)
+		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
@@ -96,7 +87,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			return nil
 		}
 
-		err = rateLimiter.Allow(cctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
+		err = rateLimiter.Allow(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
 			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery id": data.EventDeliveryID}).
 				WithError(err).
@@ -105,7 +96,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(cctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
+		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
 			return &EndpointError{Err: err, delay: delayDuration}
 		}
@@ -131,7 +122,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 		}
 
 		if endpoint.Status == datastore.InactiveEndpointStatus {
-			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(cctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
+			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 			if err != nil {
 				return &EndpointError{Err: err, delay: delayDuration}
 			}
@@ -212,7 +203,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 
 		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
 			endpointStatus := datastore.ActiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(cctx, project.UID, endpoint.UID, endpointStatus)
+			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -226,7 +217,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 
 		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
 			endpointStatus := datastore.InactiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(cctx, project.UID, endpoint.UID, endpointStatus)
+			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
 				log.FromContext(ctx).Errorf("Failed to reactivate endpoint after successful retry")
 			}
@@ -251,7 +242,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
 				endpointStatus := datastore.InactiveEndpointStatus
 
-				err := endpointRepo.UpdateEndpointStatus(cctx, project.UID, endpoint.UID, endpointStatus)
+				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 				if err != nil {
 					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
@@ -264,7 +255,7 @@ func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointR
 			}
 		}
 
-		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(cctx, project.UID, *eventDelivery, attempt)
+		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
 			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}

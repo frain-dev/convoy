@@ -136,10 +136,14 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	jid := ulid.Make().String()
+	newMessage.JobID = jid
+
 	cbe := services.CreateBroadcastEventService{
 		Queue:          h.A.Queue,
 		BroadcastEvent: &newMessage,
 		Project:        project,
+		JobID:          jid,
 	}
 
 	err = cbe.Run(r.Context())

@@ -2,11 +2,13 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -18,6 +20,8 @@ import (
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 )
+
+var ErrFailedToWriteToQueue = errors.New("failed to write to event delivery queue")
 
 func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
@@ -33,17 +37,9 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			return &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: 10 * time.Second}
 		}
 
-		tx, err := db.BeginTx(ctx)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("CODE: 1003, err: %s", err.Error()), delay: 10 * time.Second}
-		}
-		defer db.Rollback(tx, err)
-
-		cctx := context.WithValue(ctx, postgres.TransactionCtx, tx)
-
 		var isDuplicate bool
 		if len(broadcastEvent.IdempotencyKey) > 0 {
-			events, err := eventRepo.FindEventsByIdempotencyKey(cctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
+			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
 			if err != nil {
 				return &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: 10 * time.Second}
 			}
@@ -70,7 +66,7 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 			UpdatedAt:        time.Now(),
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(cctx, event, subRepo, subscriptions, true)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
 		if err != nil {
 			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultDelay}
 		}
@@ -78,20 +74,36 @@ func ProcessBroadcastEventCreation(db database.Database, endpointRepo datastore.
 		es, ss := getEndpointIDs(subscriptions)
 		event.Endpoints = es
 
-		err = eventRepo.CreateEvent(cctx, event)
+		err = eventRepo.CreateEvent(ctx, event)
 		if err != nil {
 			return &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: 10 * time.Second}
 		}
 
-		if event.IsDuplicateEvent {
-			log.FromContext(cctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
+		q := eventQueue.(*redis.RedisQueue)
+		ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), broadcastEvent.JobID)
+		if err != nil {
+			log.WithError(err).Error("failed to get task from queue")
+			return &EndpointError{Err: fmt.Errorf("failed to get task from queue"), delay: 10 * time.Second}
+		}
+
+		lastRunErrored := ti.LastErr == ErrFailedToWriteToQueue.Error()
+		if event.IsDuplicateEvent && !lastRunErrored {
+			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
 			return nil
 		}
 
-		return writeEventDeliveriesToQueue(
-			cctx, ss, event, project, eventDeliveryRepo,
+		err = writeEventDeliveriesToQueue(
+			ctx, ss, event, project, eventDeliveryRepo,
 			eventQueue, deviceRepo, endpointRepo,
 		)
+
+		if err != nil {
+			log.WithError(err).Error(ErrFailedToWriteToQueue)
+			return &EndpointError{Err: ErrFailedToWriteToQueue, delay: 10 * time.Second}
+		}
+
+		fmt.Println("HERE")
+		return nil
 	}
 }
 
