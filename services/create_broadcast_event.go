@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"github.com/oklog/ulid/v2"
 	"net/http"
 
 	"github.com/frain-dev/convoy"
@@ -19,6 +18,7 @@ type CreateBroadcastEventService struct {
 	EventRepo      datastore.EventRepository
 	PortalLinkRepo datastore.PortalLinkRepository
 	Queue          queue.Queuer
+	JobID          string
 
 	BroadcastEvent *models.BroadcastEvent
 	Project        *datastore.Project
@@ -39,7 +39,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 	}
 
 	job := &queue.Job{
-		ID:      ulid.Make().String(),
+		ID:      e.JobID,
 		Payload: eventByte,
 		Delay:   0,
 	}

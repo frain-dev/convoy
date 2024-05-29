@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/pkg/transform"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -264,7 +265,9 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 	case "broadcast":
+		jid := ulid.Make().String()
 		broadcastEvent := models.BroadcastEvent{
+			JobID:          jid,
 			ProjectID:      source.ProjectID,
 			SourceID:       source.UID,
 			EventType:      convoyEvent.EventType,
@@ -279,7 +282,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		}
 
 		job := &queue.Job{
-			ID:      ulid.Make().String(),
+			ID:      jid,
 			Payload: eventByte,
 		}
 
