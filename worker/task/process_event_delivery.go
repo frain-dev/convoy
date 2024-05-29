@@ -6,7 +6,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -45,7 +44,7 @@ type EventDelivery struct {
 	ProjectID       string
 }
 
-func ProcessEventDelivery(db database.Database, endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
 	projectRepo datastore.ProjectRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {

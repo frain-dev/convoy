@@ -135,7 +135,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessBroadcastEventCreation(args.db, args.endpointRepo,
+			fn := ProcessBroadcastEventCreation(args.endpointRepo,
 				args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
