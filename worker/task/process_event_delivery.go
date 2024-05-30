@@ -50,6 +50,8 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 	projectRepo datastore.ProjectRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
+		return nil
+
 		var data EventDelivery
 
 		err := msgpack.DecodeMsgPack(t.Payload(), &data)
