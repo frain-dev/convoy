@@ -31,10 +31,10 @@ type Kafka struct {
 	handler     datastore.PubSubHandler
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
+	instanceId  string
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) *Kafka {
-
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) *Kafka {
 	return &Kafka{
 		Cfg:         source.PubSub.Kafka,
 		source:      source,
@@ -42,6 +42,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		handler:     handler,
 		log:         log,
 		rateLimiter: rateLimiter,
+		instanceId:  instanceId,
 	}
 }
 
@@ -138,11 +139,11 @@ func (k *Kafka) consume() {
 
 	cfg, err := config.Get()
 	if err != nil {
-		log.WithError(err).Errorf("failed to fetch rate limit key for kafka source %s with id %s", k.source.Name, k.source.UID)
+		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
 
-	rateLimitKey := cfg.Host
+	rateLimitKey := k.instanceId
 	ingestRate := cfg.PubSubIngestRate * 60
 
 	for {
@@ -153,7 +154,7 @@ func (k *Kafka) consume() {
 			if !util.IsStringEmpty(rateLimitKey) {
 				err := k.rateLimiter.Allow(k.ctx, rateLimitKey, int(ingestRate), 60)
 				if err != nil {
-					log.WithError(err).Errorf("failed to rate limit instance %s: kafka source %s with id %s from topic %s - kafka\n", rateLimitKey, k.source.Name, k.source.UID, k.Cfg.TopicName)
+					log.WithError(err).Errorf("failed to rate limit instance %s: kafka source %s with id %s from topic %s - kafka", rateLimitKey, k.source.Name, k.source.UID, k.Cfg.TopicName)
 				}
 
 				// apply rate limit
