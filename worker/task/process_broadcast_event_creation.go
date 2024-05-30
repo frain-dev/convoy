@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	ErrFailedToWriteToQueue               = errors.New("failed to write to event delivery queue")
-	defaultBroadcastDelay   time.Duration = 30
+	ErrFailedToWriteToQueue = errors.New("failed to write to event delivery queue")
+	defaultBroadcastDelay   = 30 * time.Second
 )
 
 func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {

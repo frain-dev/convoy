@@ -31,10 +31,10 @@ import (
 )
 
 var (
-	ErrDeliveryAttemptFailed               = errors.New("error sending event")
-	ErrRateLimit                           = errors.New("rate limit error")
-	defaultDelay             time.Duration = 10
-	defaultEventDelay        time.Duration = 120
+	ErrDeliveryAttemptFailed = errors.New("error sending event")
+	ErrRateLimit             = errors.New("rate limit error")
+	defaultDelay             = 10 * time.Second
+	defaultEventDelay        = 120 * time.Second
 )
 
 type SignatureValues struct {
