@@ -75,7 +75,6 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 		} else {
 			data.FilterBy.EndpointIDs = endpointIDs
 		}
-
 	}
 
 	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
@@ -86,7 +85,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if subscriptions == nil {
-		subscriptions = make([]datastore.Subscription, 0)
+		subscriptions = make([]*datastore.Subscription, 0)
 	}
 
 	var org *datastore.Organisation
@@ -114,8 +113,8 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 		fillSourceURL(subscriptions[i].Source, baseUrl, customDomain)
 	}
 
-	resp := models.NewListResponse(subscriptions, func(subscription datastore.Subscription) models.SubscriptionResponse {
-		return models.SubscriptionResponse{Subscription: &subscription}
+	resp := models.NewListResponse(subscriptions, func(subscription *datastore.Subscription) models.SubscriptionResponse {
+		return models.SubscriptionResponse{Subscription: subscription}
 	})
 	_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",
 		models.PagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK))

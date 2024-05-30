@@ -84,7 +84,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 		}
 
 		return writeEventDeliveriesToQueue(
-			ctx, []datastore.Subscription{*s}, event, project, eventDeliveryRepo,
+			ctx, []*datastore.Subscription{s}, event, project, eventDeliveryRepo,
 			eventQueue, deviceRepo, endpointRepo,
 		)
 	}
@@ -151,7 +151,7 @@ func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEv
 
 	switch {
 	case err == nil:
-		subscription = &subscriptions[0]
+		subscription = subscriptions[0]
 		if len(dynamicEvent.EventTypes) > 0 {
 			if subscription.FilterConfig == nil {
 				subscription.FilterConfig = &datastore.FilterConfiguration{}

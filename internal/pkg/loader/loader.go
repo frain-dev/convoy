@@ -43,7 +43,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 
 	var dSubKeys []string
 	for _, sub := range subscriptions {
-		key, err := s.generateSubKey(&sub)
+		key, err := s.generateSubKey(sub)
 		if err != nil {
 			return err
 		}
@@ -55,7 +55,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	if len(newRows) != 0 {
 		for _, idx := range newRows {
 			for _, sub := range subscriptions {
-				key, err := s.generateSubKey(&sub)
+				key, err := s.generateSubKey(sub)
 				if err != nil {
 					return err
 				}
@@ -78,14 +78,14 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	return nil
 }
 
-func (s *SubscriptionLoader) fetchSubscriptions(ctx context.Context) ([]datastore.Subscription, error) {
+func (s *SubscriptionLoader) fetchSubscriptions(ctx context.Context) ([]*datastore.Subscription, error) {
 	projects, err := s.projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
 	if err != nil {
 		return nil, err
 	}
 
 	var wg sync.WaitGroup
-	resultChan := make(chan []datastore.Subscription, len(projects))
+	resultChan := make(chan []*datastore.Subscription, len(projects))
 
 	for i := range projects {
 		wg.Add(1)
@@ -93,7 +93,7 @@ func (s *SubscriptionLoader) fetchSubscriptions(ctx context.Context) ([]datastor
 		go func(projectID string) {
 			defer wg.Done()
 
-			var subscriptions []datastore.Subscription
+			var subscriptions []*datastore.Subscription
 			subscriptions, err = s.fetchSubscriptionBatch(ctx, subscriptions, projectID, "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
@@ -109,7 +109,7 @@ func (s *SubscriptionLoader) fetchSubscriptions(ctx context.Context) ([]datastor
 		close(resultChan)
 	}()
 
-	var allSubscriptions []datastore.Subscription
+	var allSubscriptions []*datastore.Subscription
 	for projectSubs := range resultChan {
 		allSubscriptions = append(allSubscriptions, projectSubs...)
 	}
@@ -118,7 +118,8 @@ func (s *SubscriptionLoader) fetchSubscriptions(ctx context.Context) ([]datastor
 }
 
 func (s *SubscriptionLoader) fetchSubscriptionBatch(ctx context.Context,
-	subscriptions []datastore.Subscription, projectID string, cursor string) ([]datastore.Subscription, error) {
+	subscriptions []*datastore.Subscription, projectID string, cursor string,
+) ([]*datastore.Subscription, error) {
 	pageable := datastore.Pageable{
 		NextCursor: cursor,
 		Direction:  datastore.Next,
