@@ -113,10 +113,10 @@ func ProcessEventCreation(
 	}
 }
 
-func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
+func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []*datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
 	ec := &EventDeliveryConfig{project: project}
 	for _, s := range subscriptions {
-		ec.subscription = &s
+		ec.subscription = s
 		headers := event.Headers
 
 		if s.Type == datastore.SubscriptionTypeAPI {
@@ -185,7 +185,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			Headers:          headers,
 			IdempotencyKey:   event.IdempotencyKey,
 			URLQueryParams:   event.URLQueryParams,
-			Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
+			Status:           getEventDeliveryStatus(ctx, s, s.Endpoint, deviceRepo),
 			DeliveryAttempts: []datastore.DeliveryAttempt{},
 			CreatedAt:        time.Now(),
 			UpdatedAt:        time.Now(),
@@ -240,8 +240,8 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 
 func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository,
 	subRepo datastore.SubscriptionRepository, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool,
-) ([]datastore.Subscription, error) {
-	var subscriptions []datastore.Subscription
+) ([]*datastore.Subscription, error) {
+	var subscriptions []*datastore.Subscription
 	var err error
 
 	if project.Type == datastore.OutgoingProject {
@@ -265,7 +265,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 					return subscriptions, &EndpointError{Err: errors.New("error creating subscription for endpoint"), delay: defaultDelay}
 				}
 
-				subscriptions = append(subscriptions, *subs)
+				subscriptions = append(subscriptions, subs)
 				return subscriptions, nil
 			}
 
@@ -294,8 +294,8 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	return subscriptions, nil
 }
 
-func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription, soft bool) ([]datastore.Subscription, error) {
-	var matched []datastore.Subscription
+func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []*datastore.Subscription, soft bool) ([]*datastore.Subscription, error) {
+	var matched []*datastore.Subscription
 	var payload interface{}
 	err := json.Unmarshal(e.Data, &payload)
 	if err != nil {
@@ -334,8 +334,8 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	return matched, nil
 }
 
-func matchSubscriptions(eventType string, subscriptions []datastore.Subscription) []datastore.Subscription {
-	var matched []datastore.Subscription
+func matchSubscriptions(eventType string, subscriptions []*datastore.Subscription) []*datastore.Subscription {
+	var matched []*datastore.Subscription
 	for _, sub := range subscriptions {
 		for _, ev := range sub.FilterConfig.EventTypes {
 			if ev == eventType || ev == "*" { // if this event type matches, or is *, add the subscription to matched

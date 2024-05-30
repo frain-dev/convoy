@@ -108,16 +108,16 @@ type EndpointRepository interface {
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
 	UpdateSubscription(ctx context.Context, projectID string, subscription *Subscription) error
-	LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *FilterBy, pageable Pageable) ([]Subscription, PaginationData, error)
+	LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *FilterBy, pageable Pageable) ([]*Subscription, PaginationData, error)
 	DeleteSubscription(ctx context.Context, projectID string, subscription *Subscription) error
 	FindSubscriptionByID(ctx context.Context, projectID, id string) (*Subscription, error)
-	FindSubscriptionsBySourceID(ctx context.Context, projectID, sourceID string) ([]Subscription, error)
-	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
+	FindSubscriptionsBySourceID(ctx context.Context, projectID, sourceID string) ([]*Subscription, error)
+	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]*Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
-	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
+	FindCLISubscriptions(ctx context.Context, projectID string) ([]*Subscription, error)
 	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error)
-	FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]Subscription, error)
+	FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]*Subscription, error)
 }
 
 type SourceRepository interface {
