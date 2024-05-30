@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/pkg/transform"
 	"strings"
@@ -33,20 +32,15 @@ const ConvoyMessageTypeHeader = "x-convoy-message-type"
 type Ingest struct {
 	ctx         context.Context
 	ticker      *time.Ticker
-	instanceId  string
 	queue       queue.Queuer
 	rateLimiter limiter.RateLimiter
 	sources     map[string]*PubSubSource
 	table       *memorystore.Table
 	log         log.StdLogger
+	instanceId  string
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter) (*Ingest, error) {
-	cfg, err := config.Get()
-	if err != nil {
-		return nil, err
-	}
-
+func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) (*Ingest, error) {
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
 		ctx:         ctx,
@@ -54,7 +48,7 @@ func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer
 		table:       table,
 		queue:       queue,
 		rateLimiter: rateLimiter,
-		instanceId:  cfg.Host,
+		instanceId:  instanceId,
 		sources:     make(map[string]*PubSubSource),
 		ticker:      time.NewTicker(time.Duration(1) * time.Second),
 	}
@@ -123,7 +117,7 @@ func (i *Ingest) run() error {
 			return errors.New("invalid source in memory store")
 		}
 
-		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter)
+		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.instanceId)
 		if err != nil {
 			return err
 		}
