@@ -49,7 +49,7 @@ func (s *Server) SetHandler(handler http.Handler) {
 		log.WithError(err).Fatal("failed to start server")
 	}
 
-	if cfg.EnableProfiling {
+	if cfg.Pyroscope.EnableProfiling {
 		router.Route("/debug", func(pprofRouter chi.Router) {
 			pprofRouter.HandleFunc("/pprof/", pprof.Index)
 			pprofRouter.HandleFunc("/pprof/cmdline", pprof.Cmdline)
