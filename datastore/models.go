@@ -728,16 +728,28 @@ type Event struct {
 }
 
 func (e *Event) GetRawHeaders() interface{} {
-	h := map[string]interface{}{}
-	for k, v := range e.Headers {
+	// allocate enough mem in the map to accommodate all the items in e.Headers
+	// This avoids expensive map resizing operations.
+	h := make(map[string]interface{}, len(e.Headers))
+
+	// re-use mem allocated for these copied variables
+	var k string
+	var v []string
+
+	for k, v = range e.Headers {
 		h[k] = v[0]
 	}
 	return h
 }
 
 func (e *Event) GetRawHeadersJSON() ([]byte, error) {
-	h := map[string]interface{}{}
-	for k, v := range e.Headers {
+	h := make(map[string]interface{}, len(e.Headers))
+
+	// re-use mem allocated for these copied variables
+	var k string
+	var v []string
+
+	for k, v = range e.Headers {
 		h[k] = v[0]
 	}
 
@@ -751,7 +763,10 @@ type (
 )
 
 func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
-	for k, v := range h {
+	// re-use mem allocated for these copied variables
+	var k string
+	var v string
+	for k, v = range h {
 		r.Header.Set(k, v)
 	}
 }

@@ -218,11 +218,18 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 }
 
 func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]*datastore.Subscription, error) {
-	var count int64
+	var subCount int64
 
-	err := s.db.GetContext(ctx, &count, countProjectSubscriptions, projectID)
+	q := countProjectSubscriptions
+	q += ` AND (ARRAY[$2] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)`
+
+	err := s.db.GetContext(ctx, &subCount, q, projectID, eventType)
 	if err != nil {
 		return nil, err
+	}
+
+	if subCount == 0 {
+		return []*datastore.Subscription{}, nil
 	}
 
 	// This is a hot path, so a few perf tingz:
@@ -232,13 +239,13 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 	// 4. Calling defer in a loop can quickly fill up the function stack and cause a crash, so call closeWithError in every place we return
 	// 5. The for loop has no break condition, so we break it ourselves.
 
-	subs := make([]*datastore.Subscription, count)
+	subs := make([]*datastore.Subscription, subCount)
 	cursor := "0"
 	i := 0
+
 	for {
 		rows, err := s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, eventType)
 		if err != nil {
-			closeWithError(rows)
 			if errors.Is(err, sql.ErrNoRows) { // no more rows so return successfully
 				return subs[:i+1], nil
 			}
@@ -256,8 +263,7 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 			i++
 		}
 		closeWithError(rows)
-
-		cursor = subs[i].UID
+		cursor = subs[i-1].UID
 	}
 }
 
