@@ -5,10 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/uptrace/opentelemetry-go-extra/otelsql"
-	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 	"io"
 	"time"
+
+	"github.com/uptrace/opentelemetry-go-extra/otelsql"
+	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
@@ -38,7 +39,6 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	db, err := otelsqlx.Connect("postgres", dbConfig.BuildDsn(),
 		otelsql.WithDBName("postgres"),
 		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
-
 	if err != nil {
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}

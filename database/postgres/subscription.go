@@ -121,7 +121,7 @@ const (
     AND id > $1
     AND project_id = $2
     AND deleted_at is null
-    ORDER BY id LIMIT $3`
+    ORDER BY id ASC LIMIT $3`
 
 	baseFetchSubscriptionsPagedForward = `
 	%s
@@ -221,7 +221,7 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 	var subCount int64
 
 	q := countProjectSubscriptions
-	q += ` AND (ARRAY[$2] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)`
+	q += ` AND (ARRAY[$2] <@ s.filter_config_event_types OR ARRAY['*'] <@ s.filter_config_event_types)`
 
 	err := s.db.GetContext(ctx, &subCount, q, projectID, eventType)
 	if err != nil {
@@ -242,29 +242,41 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 	subs := make([]*datastore.Subscription, subCount)
 	cursor := "0"
 	i := 0
+	rowCount := 0
+	var rows *sqlx.Rows // reuse the mem
 
 	for {
-		rows, err := s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, eventType)
+		rows, err = s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, eventType)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) { // no more rows so return successfully
-				return subs[:i+1], nil
-			}
 			return nil, err
 		}
+
+		rowCount = 0
 
 		for rows.Next() {
 			sub := &datastore.Subscription{}
 			if err = rows.StructScan(sub); err != nil {
+				fmt.Println("ppppp", subs[:i+1], subs[:10])
 				closeWithError(rows)
 				return nil, err
 			}
+
 			nullifyEmptyConfig(sub)
 			subs[i] = sub
 			i++
+			rowCount++
 		}
+
+		if rowCount == 0 {
+			closeWithError(rows)
+			break
+		}
+
 		closeWithError(rows)
 		cursor = subs[i-1].UID
 	}
+
+	return subs[:i], nil
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
