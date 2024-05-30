@@ -8,7 +8,7 @@ const (
 )
 
 const (
-	HTTP_RATE_LIMIT         = 50
+	HTTP_RATE_LIMIT         = 25
 	HTTP_RATE_LIMIT_PER_MIN = HTTP_RATE_LIMIT * 60
 
 	INGRESS_RATE_LIMIT         = 100
