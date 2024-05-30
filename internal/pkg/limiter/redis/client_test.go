@@ -11,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -40,16 +41,29 @@ func Test_RateLimitAllow(t *testing.T) {
 			err = limiter.Allow(context.Background(), uid, limit, duration)
 			require.NoError(t, err)
 
+			dur := GetRetryAfter(err)
+			require.Equal(t, time.Duration(0), dur)
+
 			err = limiter.Allow(context.Background(), uid, limit, duration)
 			require.NoError(t, err)
 
-			err = limiter.Allow(context.Background(), uid, limit, duration)
-			require.Error(t, err)
-			require.ErrorIs(t, err, ErrRateLimitExceeded)
+			dur = GetRetryAfter(err)
+			require.Equal(t, time.Duration(0), dur)
 
 			err = limiter.Allow(context.Background(), uid, limit, duration)
 			require.Error(t, err)
-			require.ErrorIs(t, err, ErrRateLimitExceeded)
+			require.ErrorIs(t, GetRawError(err), ErrRateLimitExceeded)
+
+			dur = GetRetryAfter(err)
+			require.LessOrEqual(t, time.Duration(duration), dur)
+
+			err = limiter.Allow(context.Background(), uid, limit, duration)
+			require.Error(t, err)
+			require.ErrorIs(t, GetRawError(err), ErrRateLimitExceeded)
+
+			dur = GetRetryAfter(err)
+			require.LessOrEqual(t, time.Duration(duration), dur)
+
 		})
 	}
 }

@@ -123,7 +123,7 @@ func (i *Ingest) run() error {
 			return errors.New("invalid source in memory store")
 		}
 
-		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log)
+		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter)
 		if err != nil {
 			return err
 		}
@@ -136,14 +136,8 @@ func (i *Ingest) run() error {
 	return nil
 }
 
-func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg string, metadata []byte) error {
+func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, metadata []byte) error {
 	defer handlePanic(source)
-
-	// TODO(raymond): remove hardcoded rate limit
-	err := i.rateLimiter.Allow(ctx, i.instanceId, 18_000, 60)
-	if err != nil {
-		return err
-	}
 
 	// unmarshal to an interface{} struct
 	var raw any
@@ -281,7 +275,9 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 			return err
 		}
 	case "broadcast":
+		jid := ulid.Make().String()
 		broadcastEvent := models.BroadcastEvent{
+			JobID:          jid,
 			ProjectID:      source.ProjectID,
 			SourceID:       source.UID,
 			EventType:      convoyEvent.EventType,
@@ -296,7 +292,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		}
 
 		job := &queue.Job{
-			ID:      ulid.Make().String(),
+			ID:      jid,
 			Payload: eventByte,
 		}
 

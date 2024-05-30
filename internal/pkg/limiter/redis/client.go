@@ -39,9 +39,35 @@ func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int, duratio
 		return err
 	}
 
-	if result.RetryAfter > 0 {
-		return ErrRateLimitExceeded
+	if result.Remaining == 0 && result.RetryAfter > 0 {
+		return &RedisLimiterError{
+			delay: result.RetryAfter + result.ResetAfter,
+			err:   ErrRateLimitExceeded,
+		}
 	}
 
+	return nil
+}
+
+type RedisLimiterError struct {
+	delay time.Duration
+	err   error
+}
+
+func (e *RedisLimiterError) Error() string {
+	return e.err.Error()
+}
+
+func GetRetryAfter(err error) time.Duration {
+	if rateLimitError, ok := err.(*RedisLimiterError); ok {
+		return rateLimitError.delay
+	}
+	return time.Duration(0)
+}
+
+func GetRawError(err error) error {
+	if rateLimitError, ok := err.(*RedisLimiterError); ok {
+		return rateLimitError.err
+	}
 	return nil
 }
