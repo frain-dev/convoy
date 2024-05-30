@@ -256,7 +256,6 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 		for rows.Next() {
 			sub := &datastore.Subscription{}
 			if err = rows.StructScan(sub); err != nil {
-				fmt.Println("ppppp", subs[:i+1], subs[:10])
 				closeWithError(rows)
 				return nil, err
 			}
