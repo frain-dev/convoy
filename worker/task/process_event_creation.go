@@ -115,6 +115,8 @@ func ProcessEventCreation(
 
 func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
 	ec := &EventDeliveryConfig{project: project}
+
+	eventDeliveries := make([]*datastore.EventDelivery, 0)
 	for _, s := range subscriptions {
 		ec.subscription = &s
 		headers := event.Headers
@@ -199,11 +201,16 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			}
 		}
 
-		err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("CODE: 1008, err: %s", err.Error()), delay: defaultDelay}
-		}
+		eventDeliveries = append(eventDeliveries, eventDelivery)
+	}
 
+	err := eventDeliveryRepo.CreateEventDeliveries(ctx, eventDeliveries)
+	if err != nil {
+		return &EndpointError{Err: fmt.Errorf("CODE: 1008, err: %s", err.Error()), delay: defaultDelay}
+	}
+
+	for i, eventDelivery := range eventDeliveries {
+		s := subscriptions[i]
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			payload := EventDelivery{
 				EventDeliveryID: eventDelivery.UID,

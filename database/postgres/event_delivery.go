@@ -41,6 +41,10 @@ const (
     INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,created_at,updated_at)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
     `
+	createEventDeliveries = `
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,created_at,updated_at)
+    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :attempts, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :created_at, :updated_at);
+    `
 
 	baseFetchEventDelivery = `
     SELECT
@@ -254,6 +258,61 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 	}
 
 	return tx.Commit()
+}
+
+// CreateEventDeliveries creates event deliveries in bulk
+func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliveries []*datastore.EventDelivery) error {
+
+	values := make([]map[string]interface{}, 0, len(deliveries))
+
+	for _, delivery := range deliveries {
+		var endpointID *string
+		var deviceID *string
+
+		if !util.IsStringEmpty(delivery.EndpointID) {
+			endpointID = &delivery.EndpointID
+		}
+
+		if !util.IsStringEmpty(delivery.DeviceID) {
+			deviceID = &delivery.DeviceID
+		}
+
+		values = append(values, map[string]interface{}{
+			"id":               delivery.UID,
+			"project_id":       delivery.ProjectID,
+			"event_id":         delivery.EventID,
+			"endpoint_id":      endpointID,
+			"device_id":        deviceID,
+			"subscription_id":  delivery.SubscriptionID,
+			"headers":          delivery.Headers,
+			"attempts":         delivery.DeliveryAttempts,
+			"status":           delivery.Status,
+			"metadata":         delivery.Metadata,
+			"cli_metadata":     delivery.CLIMetadata,
+			"description":      delivery.Description,
+			"url_query_params": delivery.URLQueryParams,
+			"idempotency_key":  delivery.IdempotencyKey,
+			"event_type":       delivery.EventType,
+			"created_at":       delivery.CreatedAt,
+			"updated_at":       delivery.UpdatedAt,
+		})
+	}
+
+	result, err := e.db.NamedExecContext(ctx, createEventDeliveries, values)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrEventDeliveryNotCreated
+	}
+
+	return nil
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
