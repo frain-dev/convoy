@@ -20,7 +20,10 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-var ErrFailedToWriteToQueue = errors.New("failed to write to event delivery queue")
+var (
+	ErrFailedToWriteToQueue = errors.New("failed to write to event delivery queue")
+	defaultBroadcastDelay   = 30 * time.Second
+)
 
 func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
@@ -28,19 +31,19 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 
 		err = msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
 		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		project, err := projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
 		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		var isDuplicate bool
 		if len(broadcastEvent.IdempotencyKey) > 0 {
 			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
 			if err != nil {
-				return &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: 10 * time.Second}
+				return &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: defaultBroadcastDelay}
 			}
 
 			isDuplicate = len(events) > 0
@@ -48,7 +51,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 
 		subscriptions, err := subRepo.FetchSubscriptionsForBroadcast(ctx, broadcastEvent.ProjectID, broadcastEvent.EventType, 1000)
 		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("failed to fetch subscriptions with err: %s", err.Error()), delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("failed to fetch subscriptions with err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		event := &datastore.Event{
@@ -67,7 +70,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
 		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		es, ss := getEndpointIDs(subscriptions)
@@ -75,14 +78,14 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 
 		err = eventRepo.CreateEvent(ctx, event)
 		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		q := eventQueue.(*redis.RedisQueue)
 		ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), broadcastEvent.JobID)
 		if err != nil {
 			log.WithError(err).Error("failed to get task from queue")
-			return &EndpointError{Err: fmt.Errorf("failed to get task from queue"), delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("failed to get task from queue, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		lastRunErrored := ti.LastErr == ErrFailedToWriteToQueue.Error()
@@ -94,7 +97,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 		err = writeEventDeliveriesToQueue(ctx, ss, event, project, eventDeliveryRepo, eventQueue, deviceRepo, endpointRepo)
 		if err != nil {
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
-			return &EndpointError{Err: ErrFailedToWriteToQueue, delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		return nil
