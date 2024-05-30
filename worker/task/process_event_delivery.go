@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -33,6 +34,7 @@ var (
 	ErrDeliveryAttemptFailed               = errors.New("error sending event")
 	ErrRateLimit                           = errors.New("rate limit error")
 	defaultDelay             time.Duration = 10
+	defaultEventDelay        time.Duration = 120
 )
 
 type SignatureValues struct {
@@ -54,18 +56,18 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if err != nil {
 			err := json.Unmarshal(t.Payload(), &data)
 			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
+				return &EndpointError{Err: err, delay: defaultEventDelay}
 			}
 		}
 
 		cfg, err := config.Get()
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
 		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
@@ -102,7 +104,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				WithError(err).
 				Debugf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second)
 
-			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
+			return &RateLimitError{Err: fmt.Errorf("%s, err: %s", ErrRateLimit.Error(), err.Error()), delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
@@ -268,11 +270,11 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
-			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed.Error(), err.Error()), delay: delayDuration}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
-			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed.Error(), err.Error()), delay: delayDuration}
 		}
 
 		return nil
