@@ -164,6 +164,7 @@ func TestLoadConfig(t *testing.T) {
 						SampleTime: 5,
 					},
 				},
+				PubSubIngestRate: 50,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -237,6 +238,7 @@ func TestLoadConfig(t *testing.T) {
 						SampleTime: 5,
 					},
 				},
+				PubSubIngestRate: 50,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -309,6 +311,7 @@ func TestLoadConfig(t *testing.T) {
 						SampleTime: 5,
 					},
 				},
+				PubSubIngestRate: 50,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -354,6 +357,7 @@ func TestLoadConfig(t *testing.T) {
 
 			cfg, err := Get()
 			require.NoError(t, err)
+
 			require.Equal(t, tt.wantCfg, cfg)
 		})
 	}

@@ -4,6 +4,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
@@ -67,7 +68,12 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 
 			go memorystore.DefaultStore.Sync(cmd.Context(), interval)
 
-			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo)
+			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
+			if err != nil {
+				return err
+			}
+
+			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo, rateLimiter)
 			if err != nil {
 				return err
 			}

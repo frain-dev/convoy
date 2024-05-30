@@ -2,8 +2,8 @@ package limiter
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/internal/pkg/limiter/pg"
+	"github.com/frain-dev/convoy/config"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 )
 
 type RateLimiter interface {
@@ -11,7 +11,11 @@ type RateLimiter interface {
 	Allow(ctx context.Context, key string, rate int, duration int) error
 }
 
-func NewLimiter(db database.Database) RateLimiter {
-	ra := pg.NewRateLimiter(db)
-	return ra
+func NewLimiter(cfg config.RedisConfiguration) (RateLimiter, error) {
+	ra, err := rlimiter.NewRedisLimiter(cfg.BuildDsn())
+	if err != nil {
+		return nil, err
+	}
+
+	return ra, nil
 }

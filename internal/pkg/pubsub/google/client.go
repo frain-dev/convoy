@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
@@ -16,21 +17,23 @@ import (
 var ErrInvalidCredentials = errors.New("your google pub/sub credentials are invalid. please verify you're providing the correct credentials")
 
 type Google struct {
-	Cfg     *datastore.GooglePubSubConfig
-	source  *datastore.Source
-	workers int
-	ctx     context.Context
-	handler datastore.PubSubHandler
-	log     log.StdLogger
+	Cfg         *datastore.GooglePubSubConfig
+	source      *datastore.Source
+	workers     int
+	ctx         context.Context
+	handler     datastore.PubSubHandler
+	log         log.StdLogger
+	rateLimiter limiter.RateLimiter
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Google {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) *Google {
 	return &Google{
-		Cfg:     source.PubSub.Google,
-		source:  source,
-		workers: source.PubSub.Workers,
-		handler: handler,
-		log:     log,
+		Cfg:         source.PubSub.Google,
+		source:      source,
+		workers:     source.PubSub.Workers,
+		handler:     handler,
+		log:         log,
+		rateLimiter: rateLimiter,
 	}
 }
 
