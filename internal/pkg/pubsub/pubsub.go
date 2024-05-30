@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/datastore"
 	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
@@ -35,8 +36,8 @@ type PubSubSource struct {
 	hash string
 }
 
-func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (*PubSubSource, error) {
-	client, err := createClient(source, handler, log)
+func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) (*PubSubSource, error) {
+	client, err := createClient(source, handler, log, rateLimiter)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +46,7 @@ func NewPubSubSource(ctx context.Context, source *datastore.Source, handler data
 	pubSubSource := &PubSubSource{ctx: ctx, cancelFunc: cancelFunc, client: client, source: source}
 	pubSubSource.hash = generateSourceKey(source)
 	pubSubSource.cancelFunc = cancelFunc
+
 	return pubSubSource, nil
 }
 
@@ -56,21 +58,21 @@ func (p *PubSubSource) Stop() {
 	p.cancelFunc()
 }
 
-func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) (PubSub, error) {
+func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) (PubSub, error) {
 	if source.PubSub.Type == datastore.SqsPubSub {
-		return sqs.New(source, handler, log), nil
+		return sqs.New(source, handler, log, rateLimiter), nil
 	}
 
 	if source.PubSub.Type == datastore.GooglePubSub {
-		return google.New(source, handler, log), nil
+		return google.New(source, handler, log, rateLimiter), nil
 	}
 
 	if source.PubSub.Type == datastore.KafkaPubSub {
-		return kafka.New(source, handler, log), nil
+		return kafka.New(source, handler, log, rateLimiter), nil
 	}
 
 	if source.PubSub.Type == datastore.AmqpPubSub {
-		return rqm.New(source, handler, log), nil
+		return rqm.New(source, handler, log, rateLimiter), nil
 	}
 
 	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)

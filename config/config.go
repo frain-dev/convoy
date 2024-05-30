@@ -93,6 +93,7 @@ var DefaultConfiguration = Configuration{
 			SampleTime: 5,
 		},
 	},
+	PubSubIngestRate: 50,
 }
 
 type DatabaseConfiguration struct {
@@ -368,6 +369,7 @@ type Configuration struct {
 	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 	EnableProfiling    bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 	Metrics            MetricsConfiguration       `json:"metrics" envconfig:"CONVOY_METRICS"`
+	PubSubIngestRate   uint                       `json:"pub_sub_ingest_rate" envconfig:"CONVOY_PUB_SUB_INGEST_RATE"`
 }
 
 type PyroscopeConfiguration struct {

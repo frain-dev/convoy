@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -15,22 +16,24 @@ const (
 )
 
 type Amqp struct {
-	Cfg     *datastore.AmqpPubSubConfig
-	source  *datastore.Source
-	workers int
-	ctx     context.Context
-	handler datastore.PubSubHandler
-	log     log.StdLogger
+	Cfg         *datastore.AmqpPubSubConfig
+	source      *datastore.Source
+	workers     int
+	ctx         context.Context
+	handler     datastore.PubSubHandler
+	log         log.StdLogger
+	rateLimiter limiter.RateLimiter
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Amqp {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) *Amqp {
 
 	return &Amqp{
-		Cfg:     source.PubSub.Amqp,
-		source:  source,
-		workers: source.PubSub.Workers,
-		handler: handler,
-		log:     log,
+		Cfg:         source.PubSub.Amqp,
+		source:      source,
+		workers:     source.PubSub.Workers,
+		handler:     handler,
+		log:         log,
+		rateLimiter: rateLimiter,
 	}
 }
 
