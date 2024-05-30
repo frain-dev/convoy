@@ -298,18 +298,31 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 		})
 	}
 
-	result, err := e.db.NamedExecContext(ctx, createEventDeliveries, values)
-	if err != nil {
-		return err
-	}
+	var j int
+	for i := 0; i < len(values); i += PartitionSize {
+		j += PartitionSize
+		if j > len(values) {
+			j = len(values)
+		}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
+		var vs []interface{}
+		for _, v := range values[i:j] {
+			vs = append(vs, v)
+		}
 
-	if rowsAffected < 1 {
-		return ErrEventDeliveryNotCreated
+		result, err := e.db.NamedExecContext(ctx, createEventDeliveries, vs)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if len(vs) > 0 && rowsAffected < 1 {
+			return ErrEventDeliveryNotCreated
+		}
 	}
 
 	return nil
