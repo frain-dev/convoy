@@ -47,6 +47,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
 			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+			configRepo := postgres.NewConfigRepo(a.DB)
 
 			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("ingester")
@@ -73,7 +74,12 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo, rateLimiter)
+			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo, rateLimiter, instCfg.UID)
 			if err != nil {
 				return err
 			}

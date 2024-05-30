@@ -36,8 +36,8 @@ type PubSubSource struct {
 	hash string
 }
 
-func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) (*PubSubSource, error) {
-	client, err := createClient(source, handler, log, rateLimiter)
+func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) (*PubSubSource, error) {
+	client, err := createClient(source, handler, log, rateLimiter, instanceId)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (p *PubSubSource) Stop() {
 	p.cancelFunc()
 }
 
-func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) (PubSub, error) {
+func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) (PubSub, error) {
 	if source.PubSub.Type == datastore.SqsPubSub {
 		return sqs.New(source, handler, log, rateLimiter), nil
 	}
@@ -68,7 +68,7 @@ func createClient(source *datastore.Source, handler datastore.PubSubHandler, log
 	}
 
 	if source.PubSub.Type == datastore.KafkaPubSub {
-		return kafka.New(source, handler, log, rateLimiter), nil
+		return kafka.New(source, handler, log, rateLimiter, instanceId), nil
 	}
 
 	if source.PubSub.Type == datastore.AmqpPubSub {

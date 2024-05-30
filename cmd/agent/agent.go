@@ -167,6 +167,7 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 	sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
 	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+	configRepo := postgres.NewConfigRepo(a.DB)
 
 	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, a.Logger)
 	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
@@ -187,7 +188,12 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 		return err
 	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger, rateLimiter)
+	instCfg, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		return err
+	}
+
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger, rateLimiter, instCfg.UID)
 	if err != nil {
 		return err
 	}
