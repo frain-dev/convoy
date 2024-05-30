@@ -3,7 +3,6 @@ package net
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
@@ -36,15 +35,15 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 	}
 
 	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.
-	if !enforceSecure {
-		tr.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	} else {
-		tr.TLSClientConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		}
-	}
+	//if !enforceSecure {
+	//	tr.TLSClientConfig = &tls.Config{
+	//		InsecureSkipVerify: true,
+	//	}
+	//} else {
+	//	tr.TLSClientConfig = &tls.Config{
+	//		MinVersion: tls.VersionTLS12,
+	//	}
+	//}
 
 	d.client.Transport = tr
 
