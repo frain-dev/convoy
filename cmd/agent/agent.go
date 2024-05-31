@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/frain-dev/convoy/net"
+
 	"github.com/frain-dev/convoy/internal/telemetry"
 
 	"github.com/frain-dev/convoy"
@@ -250,12 +252,18 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
+	dispatcher, err := net.NewDispatcher(10*time.Second, cfg.Server.HTTP.HttpProxy, false)
+	if err != nil {
+		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
+		return err
+	}
+
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
 		a.Queue,
-		rateLimiter), newTelemetry)
+		rateLimiter, dispatcher), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 		endpointRepo,
