@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -32,6 +32,8 @@ type Kafka struct {
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
 	instanceId  string
+	counter     uint
+	mutex       sync.Mutex
 }
 
 func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) *Kafka {
@@ -43,6 +45,8 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		log:         log,
 		rateLimiter: rateLimiter,
 		instanceId:  instanceId,
+		counter:     0,
+		mutex:       sync.Mutex{},
 	}
 }
 
@@ -129,10 +133,11 @@ func (k *Kafka) consume() {
 
 	// make a new reader that consumes from topic
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: k.Cfg.Brokers,
-		GroupID: consumerGroup,
-		Topic:   k.Cfg.TopicName,
-		Dialer:  dialer,
+		Brokers:               k.Cfg.Brokers,
+		GroupID:               consumerGroup,
+		Topic:                 k.Cfg.TopicName,
+		Dialer:                dialer,
+		WatchPartitionChanges: true,
 	})
 
 	defer k.handleError(r)
@@ -143,24 +148,18 @@ func (k *Kafka) consume() {
 		return
 	}
 
-	rateLimitKey := k.instanceId
-	ingestRate := cfg.PubSubIngestRate * 60
-
 	for {
 		select {
 		case <-k.ctx.Done():
 			return
 		default:
-			if !util.IsStringEmpty(rateLimitKey) {
-				err := k.rateLimiter.Allow(k.ctx, rateLimitKey, int(ingestRate), 60)
-				if err != nil {
-					log.WithError(err).Errorf("failed to rate limit instance %s: kafka source %s with id %s from topic %s - kafka", rateLimitKey, k.source.Name, k.source.UID, k.Cfg.TopicName)
-				}
-
-				// apply rate limit
-				if waitTime := rlimiter.GetRetryAfter(err); waitTime > 0 {
-					time.Sleep(waitTime)
-				}
+			if !util.IsStringEmpty(k.instanceId) {
+				// this should block till after the rate limit
+				_ = k.rateLimiter.Allow(k.ctx, k.instanceId, int(cfg.PubSubIngestRate), 0)
+				//k.mutex.Lock()
+				//k.counter++
+				//fmt.Println(k.counter)
+				//k.mutex.Unlock()
 			}
 
 			m, err := r.FetchMessage(k.ctx)

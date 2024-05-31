@@ -101,7 +101,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
+			rateLimiter, err := limiter.NewLimiter(cfg.Redis, false)
 			if err != nil {
 				return err
 			}
