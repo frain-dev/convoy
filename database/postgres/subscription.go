@@ -123,6 +123,40 @@ const (
     AND deleted_at is null
     ORDER BY id LIMIT $3`
 
+	loadAllSubscriptionsConfiguration = `
+    select id, type, project_id, endpoint_id, function,
+    filter_config_event_types AS "filter_config.event_types",
+    filter_config_filter_headers AS "filter_config.filter.headers",
+	filter_config_filter_body AS "filter_config.filter.body"
+    from convoy.subscriptions
+    AND id > $1
+    AND project_id = $2
+    AND deleted_at is null
+    ORDER BY id LIMIT $3`
+
+	fetchUpdatedSubscriptions = `
+    select id, type, project_id, endpoint_id, function,
+    filter_config_event_types AS "filter_config.event_types",
+    filter_config_filter_headers AS "filter_config.filter.headers",
+	filter_config_filter_body AS "filter_config.filter.body"
+    from convoy.subscriptions
+    where updated_at > $4
+    AND id > $1
+    AND project_id = $2
+    AND deleted_at is null
+    ORDER BY id LIMIT $3`
+
+	fetchDeletedSubscriptions = `
+    select id, type, project_id, endpoint_id, function,
+    filter_config_event_types AS "filter_config.event_types",
+    filter_config_filter_headers AS "filter_config.filter.headers",
+	filter_config_filter_body AS "filter_config.filter.body"
+    from convoy.subscriptions
+    where deleted_at > $4
+    AND id > $1
+    AND project_id = $2
+    ORDER BY id LIMIT $3`
+
 	baseFetchSubscriptionsPagedForward = `
 	%s
 	%s
@@ -217,6 +251,58 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 	return &subscriptionRepo{db: db.GetDB(), cache: ca}
 }
 
+func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int) ([]datastore.Subscription, error) {
+	var subs []datastore.Subscription
+	cursor := "0"
+
+	for {
+		rows, err := s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, t)
+		if err != nil {
+			return nil, err
+		}
+
+		subscriptions, err := scanSubscriptions(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(subscriptions) == 0 {
+			break
+		}
+
+		subs = append(subs, subscriptions...)
+		cursor = subscriptions[len(subscriptions)-1].UID
+	}
+
+	return subs, nil
+}
+
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int) ([]datastore.Subscription, error) {
+	var subs []datastore.Subscription
+	cursor := "0"
+
+	for {
+		rows, err := s.db.QueryxContext(ctx, fetchDeletedSubscriptions, cursor, projectID, pageSize, t)
+		if err != nil {
+			return nil, err
+		}
+
+		subscriptions, err := scanSubscriptions(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(subscriptions) == 0 {
+			break
+		}
+
+		subs = append(subs, subscriptions...)
+		cursor = subscriptions[len(subscriptions)-1].UID
+	}
+
+	return subs, nil
+}
+
 func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]datastore.Subscription, error) {
 	subs, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, eventType), 10, func() ([]datastore.Subscription, error) {
 		var _subs []datastore.Subscription
@@ -246,6 +332,32 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 
 	if err != nil {
 		return nil, err
+	}
+
+	return subs, nil
+}
+
+func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectID string, pageSize int) ([]datastore.Subscription, error) {
+	var subs []datastore.Subscription
+	cursor := "0"
+
+	for {
+		rows, err := s.db.QueryxContext(ctx, loadAllSubscriptionsConfiguration, cursor, projectID, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		subscriptions, err := scanSubscriptions(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(subscriptions) == 0 {
+			break
+		}
+
+		subs = append(subs, subscriptions...)
+		cursor = subscriptions[len(subscriptions)-1].UID
 	}
 
 	return subs, nil

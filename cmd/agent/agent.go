@@ -292,7 +292,8 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo), newTelemetry)
+		deviceRepo,
+		subscriptionsTable), newTelemetry)
 
 	go task.QueueStuckEventDeliveries(ctx, eventDeliveryRepo, a.Queue)
 

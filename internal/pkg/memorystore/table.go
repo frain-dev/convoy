@@ -85,6 +85,21 @@ func (t *Table) Add(key string, value interface{}) *Row {
 	return row
 }
 
+// Add a new item if it doesn't exist.
+func (t *Table) Upsert(key string, value interface{}) *Row {
+	t.Lock()
+	defer t.Unlock()
+
+	row := t.getInternal(key)
+	if row != nil {
+		t.Delete(key)
+	}
+
+	row = &Row{key: key, value: value}
+	t.rows[key] = row
+	return row
+}
+
 // Removes an item from the store.
 func (t *Table) Delete(key string) {
 	t.Lock()

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 
@@ -25,7 +26,7 @@ var (
 	defaultBroadcastDelay   = 30 * time.Second
 )
 
-func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, subscriptionsTable memorystore.ITable) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var broadcastEvent models.BroadcastEvent
 
@@ -49,10 +50,8 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			isDuplicate = len(events) > 0
 		}
 
-		subscriptions, err := subRepo.FetchSubscriptionsForBroadcast(ctx, broadcastEvent.ProjectID, broadcastEvent.EventType, 10_000)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("failed to fetch subscriptions with err: %s", err.Error()), delay: defaultBroadcastDelay}
-		}
+		subRows := subscriptionsTable.GetItems()
+		subscriptions := getSubcriptionsFromRows(subRows)
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
@@ -68,6 +67,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			UpdatedAt:        time.Now(),
 		}
 
+		subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
 		if err != nil {
 			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
@@ -125,4 +125,15 @@ func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscr
 	}
 
 	return endpointIds, subscriptionsIds
+}
+
+func getSubcriptionsFromRows(rows []*memorystore.Row) []datastore.Subscription {
+	var subscriptions []datastore.Subscription
+
+	for _, row := range rows {
+		subscription, _ := row.Value().(datastore.Subscription)
+		subscriptions = append(subscriptions, subscription)
+	}
+
+	return subscriptions
 }
