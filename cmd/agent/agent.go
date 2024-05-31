@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/net"
 
 	"github.com/frain-dev/convoy/internal/telemetry"
+	"github.com/frain-dev/convoy/net"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api"

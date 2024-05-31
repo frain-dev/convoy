@@ -24,7 +24,14 @@ type Dispatcher struct {
 func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) (*Dispatcher, error) {
 	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
 
-	tr := &http.Transport{}
+	tr := &http.Transport{
+		MaxIdleConns:          100,
+		IdleConnTimeout:       10 * time.Second,
+		MaxIdleConnsPerHost:   10,
+		TLSHandshakeTimeout:   3 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	if !util.IsStringEmpty(httpProxy) {
 		proxyUrl, err := url.Parse(httpProxy)
 		if err != nil {
