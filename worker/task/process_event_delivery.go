@@ -47,7 +47,7 @@ type EventDelivery struct {
 }
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
+	projectRepo datastore.ProjectRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
@@ -114,18 +114,18 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		var attempt datastore.DeliveryAttempt
 
-		var httpDuration time.Duration
-		if endpoint.HttpTimeout == 0 {
-			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
-		} else {
-			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
-		}
+		//var httpDuration time.Duration
+		//if endpoint.HttpTimeout == 0 {
+		//	httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
+		//} else {
+		//	httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
+		//}
 
 		done := true
-		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
-		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
+		//dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
+		//if err != nil {
+		//	return &EndpointError{Err: err, delay: delayDuration}
+		//}
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
 			log.Debugf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID)
