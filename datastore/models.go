@@ -728,20 +728,20 @@ type Event struct {
 }
 
 func (e *Event) GetRawHeaders() interface{} {
-	h := map[string]interface{}{}
-	for k, v := range e.Headers {
+	h := make(map[string]interface{}, len(e.Headers))
+
+	// re-use mem allocated for these copied variables
+	var k string
+	var v []string
+
+	for k, v = range e.Headers {
 		h[k] = v[0]
 	}
 	return h
 }
 
 func (e *Event) GetRawHeadersJSON() ([]byte, error) {
-	h := map[string]interface{}{}
-	for k, v := range e.Headers {
-		h[k] = v[0]
-	}
-
-	return json.Marshal(h)
+	return json.Marshal(e.GetRawHeaders())
 }
 
 type (
