@@ -105,7 +105,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := []datastore.Subscription{
+				subscriptions := []*datastore.Subscription{
 					{
 						UID:        "456",
 						EndpointID: "endpoint-id-1",
@@ -183,7 +183,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := make([]datastore.Subscription, 0)
+				subscriptions := make([]*datastore.Subscription, 0)
 
 				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "project-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
 
@@ -242,7 +242,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := []datastore.Subscription{
+				subscriptions := []*datastore.Subscription{
 					{
 						UID:        "456",
 						EndpointID: "endpoint-id-1",
@@ -324,7 +324,7 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := []datastore.Subscription{
+				subscriptions := []*datastore.Subscription{
 					{
 						UID:       "456",
 						DeviceID:  "device-3",
@@ -414,7 +414,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := []datastore.Subscription{
+				subscriptions := []*datastore.Subscription{
 					{
 						UID:        "456",
 						EndpointID: "endpoint-id-1",
