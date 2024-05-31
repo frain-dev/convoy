@@ -302,8 +302,8 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	return events, nil
 }
 
-func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, id string) ([]datastore.Event, error) {
-	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, id, projectID)
+func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]datastore.Event, error) {
+	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, idempotencyKey, projectID)
 	if err != nil {
 		return nil, err
 	}

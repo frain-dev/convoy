@@ -3,7 +3,6 @@ package net
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
@@ -25,7 +24,14 @@ type Dispatcher struct {
 func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) (*Dispatcher, error) {
 	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
 
-	tr := &http.Transport{}
+	tr := &http.Transport{
+		MaxIdleConns:          100,
+		IdleConnTimeout:       10 * time.Second,
+		MaxIdleConnsPerHost:   10,
+		TLSHandshakeTimeout:   3 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
+
 	if !util.IsStringEmpty(httpProxy) {
 		proxyUrl, err := url.Parse(httpProxy)
 		if err != nil {
@@ -36,15 +42,15 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 	}
 
 	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.
-	if !enforceSecure {
-		tr.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	} else {
-		tr.TLSClientConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		}
-	}
+	//if !enforceSecure {
+	//	tr.TLSClientConfig = &tls.Config{
+	//		InsecureSkipVerify: true,
+	//	}
+	//} else {
+	//	tr.TLSClientConfig = &tls.Config{
+	//		MinVersion: tls.VersionTLS12,
+	//	}
+	//}
 
 	d.client.Transport = tr
 
@@ -119,7 +125,6 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	}
 
 	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
-	req.Close = true
 
 	response, err := d.client.Do(req)
 	if err != nil {

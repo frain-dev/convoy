@@ -213,6 +213,20 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) CountEventDeliveries(ctx, pro
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CountEventDeliveries), ctx, projectID, endpointIDs, eventID, status, params)
 }
 
+// CreateEventDeliveries mocks base method.
+func (m *MockEventDeliveryRepository) CreateEventDeliveries(arg0 context.Context, arg1 []*datastore.EventDelivery) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateEventDeliveries", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateEventDeliveries indicates an expected call of CreateEventDeliveries.
+func (mr *MockEventDeliveryRepositoryMockRecorder) CreateEventDeliveries(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEventDeliveries", reflect.TypeOf((*MockEventDeliveryRepository)(nil).CreateEventDeliveries), arg0, arg1)
+}
+
 // CreateEventDelivery mocks base method.
 func (m *MockEventDeliveryRepository) CreateEventDelivery(arg0 context.Context, arg1 *datastore.EventDelivery) error {
 	m.ctrl.T.Helper()

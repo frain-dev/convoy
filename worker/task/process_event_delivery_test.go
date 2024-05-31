@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/net"
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/datastore"
@@ -806,7 +809,10 @@ func TestProcessEventDelivery(t *testing.T) {
 				tc.dbFn(endpointRepo, projectRepo, msgRepo, q, rateLimiter)
 			}
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter)
+			dispatcher, err := net.NewDispatcher(3*time.Second, "", false)
+			require.NoError(t, err)
+
+			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

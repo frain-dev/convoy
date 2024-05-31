@@ -743,17 +743,7 @@ func (e *Event) GetRawHeaders() interface{} {
 }
 
 func (e *Event) GetRawHeadersJSON() ([]byte, error) {
-	h := make(map[string]interface{}, len(e.Headers))
-
-	// re-use mem allocated for these copied variables
-	var k string
-	var v []string
-
-	for k, v = range e.Headers {
-		h[k] = v[0]
-	}
-
-	return json.Marshal(h)
+	return json.Marshal(e.GetRawHeaders())
 }
 
 type (

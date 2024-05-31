@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -13,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/compare"
-	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 )
@@ -552,7 +552,7 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 }
 
 func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceID string) ([]*datastore.Subscription, error) {
-	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, sourceID), func() ([]*datastore.Subscription, error) {
+	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, sourceID), 0, func() ([]*datastore.Subscription, error) {
 		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.source_id"), projectID, sourceID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -572,7 +572,7 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 }
 
 func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]*datastore.Subscription, error) {
-	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectId, endpointID), func() ([]*datastore.Subscription, error) {
+	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectId, endpointID), 0, func() ([]*datastore.Subscription, error) {
 		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.endpoint_id"), projectId, endpointID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -615,7 +615,7 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 }
 
 func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]*datastore.Subscription, error) {
-	subscriptions, err := s.readManyFromCache(ctx, projectID, func() ([]*datastore.Subscription, error) {
+	subscriptions, err := s.readManyFromCache(ctx, projectID, 0, func() ([]*datastore.Subscription, error) {
 		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchCLISubscriptions, "s.project_id", "s.type"), projectID, datastore.SubscriptionTypeCLI)
 		if err != nil {
 			return nil, err
@@ -643,17 +643,21 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 }
 
 func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}) (bool, error) {
-	p, err := flatten.Flatten(payload)
-	if err != nil {
-		return false, err
+	//p, err := flatten.Flatten(payload)
+	//if err != nil {
+	//	return false, err
+	//}
+	//
+	//f, err := flatten.Flatten(filter)
+	//if err != nil {
+	//	return false, err
+	//}
+
+	if payload == nil || filter == nil {
+		return true, nil
 	}
 
-	f, err := flatten.Flatten(filter)
-	if err != nil {
-		return false, err
-	}
-
-	return compare.Compare(p, f)
+	return compare.Compare(payload.(map[string]interface{}), filter.(map[string]interface{}))
 }
 
 var (
@@ -720,7 +724,7 @@ func (s *subscriptionRepo) readFromCache(ctx context.Context, cacheKey string, r
 	return sub, err
 }
 
-func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey string, readManyFromDB func() ([]*datastore.Subscription, error)) ([]*datastore.Subscription, error) {
+func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey string, ttl time.Duration, readManyFromDB func() ([]*datastore.Subscription, error)) ([]*datastore.Subscription, error) {
 	var subscriptions []*datastore.Subscription
 
 	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(cacheKey).String()
@@ -738,7 +742,13 @@ func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey strin
 		return nil, err
 	}
 
-	err = s.cache.Set(ctx, subscriptionCacheKey, subs, config.DefaultCacheTTL)
+	if ttl != 0 {
+		ttl = config.DefaultCacheTTL
+	} else {
+		ttl = ttl * time.Second
+	}
+
+	err = s.cache.Set(ctx, subscriptionCacheKey, subs, ttl)
 	if err != nil {
 		return nil, err
 	}
