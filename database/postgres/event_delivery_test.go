@@ -498,7 +498,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 
 	ed := generateEventDelivery(project, endpoint, event, device, sub)
 
-	err = edRepo.CreateEventDelivery(context.Background(), ed)
+	err = edRepo.CreateEventDeliveries(context.Background(), []*datastore.EventDelivery{ed})
 	require.NoError(t, err)
 
 	filteredDeliveries, _, err := edRepo.LoadEventDeliveriesPaged(
