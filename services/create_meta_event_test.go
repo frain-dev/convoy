@@ -5,8 +5,8 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func provideMetaEvent(ctrl *gomock.Controller) *MetaEvent {
@@ -124,7 +124,6 @@ func Test_MetaEvent_Run(t *testing.T) {
 
 			err := mE.Run(tt.args.eventType, tt.args.projectID, tt.args.data)
 			require.Nil(t, err)
-
 		})
 	}
 }
