@@ -65,7 +65,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
-		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
+		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByIDSlim(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
