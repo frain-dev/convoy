@@ -135,7 +135,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -198,7 +198,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -282,7 +282,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(2).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(2).Return(nil)
@@ -370,7 +370,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 
@@ -440,7 +440,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)

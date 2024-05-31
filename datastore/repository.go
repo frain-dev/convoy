@@ -20,6 +20,7 @@ type APIKeyRepository interface {
 type EventDeliveryRepository interface {
 	ExportRepository
 	CreateEventDelivery(context.Context, *EventDelivery) error
+	CreateEventDeliveries(context.Context, []*EventDelivery) error
 	FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*EventDelivery, error)
 	FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]EventDelivery, error)
 	FindEventDeliveriesByEventID(ctx context.Context, projectID string, id string) ([]EventDelivery, error)
