@@ -49,7 +49,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			isDuplicate = len(events) > 0
 		}
 
-		subscriptions, err := subRepo.FetchSubscriptionsForBroadcast(ctx, broadcastEvent.ProjectID, broadcastEvent.EventType, 1000)
+		subscriptions, err := subRepo.FetchSubscriptionsForBroadcast(ctx, broadcastEvent.ProjectID, broadcastEvent.EventType, 10_000)
 		if err != nil {
 			return &EndpointError{Err: fmt.Errorf("failed to fetch subscriptions with err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
@@ -68,10 +68,10 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			UpdatedAt:        time.Now(),
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
-		}
+		//subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
+		//if err != nil {
+		//	return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
+		//}
 
 		es, ss := getEndpointIDs(subscriptions)
 		event.Endpoints = es
