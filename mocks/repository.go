@@ -316,6 +316,21 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByID(ctx, pr
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventDeliveryByID", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindEventDeliveryByID), ctx, projectID, id)
 }
 
+// FindEventDeliveryByIDSlim mocks base method.
+func (m *MockEventDeliveryRepository) FindEventDeliveryByIDSlim(ctx context.Context, projectID, id string) (*datastore.EventDelivery, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindEventDeliveryByIDSlim", ctx, projectID, id)
+	ret0, _ := ret[0].(*datastore.EventDelivery)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindEventDeliveryByIDSlim indicates an expected call of FindEventDeliveryByIDSlim.
+func (mr *MockEventDeliveryRepositoryMockRecorder) FindEventDeliveryByIDSlim(ctx, projectID, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventDeliveryByIDSlim", reflect.TypeOf((*MockEventDeliveryRepository)(nil).FindEventDeliveryByIDSlim), ctx, projectID, id)
+}
+
 // FindStuckEventDeliveriesByStatus mocks base method.
 func (m *MockEventDeliveryRepository) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
 	m.ctrl.T.Helper()
