@@ -298,6 +298,15 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 		})
 	}
 
+	tx, isWrapped, err := GetTx(ctx, e.db)
+	if err != nil {
+		return err
+	}
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
+
 	var j int
 	for i := 0; i < len(values); i += PartitionSize {
 		j += PartitionSize
@@ -310,7 +319,7 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 			vs = append(vs, v)
 		}
 
-		result, err := e.db.NamedExecContext(ctx, createEventDeliveries, vs)
+		result, err := tx.NamedExecContext(ctx, createEventDeliveries, vs)
 		if err != nil {
 			return err
 		}
@@ -325,7 +334,11 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 		}
 	}
 
-	return nil
+	if isWrapped {
+		return nil
+	}
+
+	return tx.Commit()
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
