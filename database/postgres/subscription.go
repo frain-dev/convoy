@@ -220,7 +220,7 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 
 func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]datastore.Subscription, error) {
 	subs, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, eventType), 10, func() ([]datastore.Subscription, error) {
-		var subs []datastore.Subscription
+		var _subs []datastore.Subscription
 		cursor := "0"
 
 		for {
@@ -238,11 +238,11 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 				break
 			}
 
-			subs = append(subs, subscriptions...)
+			_subs = append(_subs, subscriptions...)
 			cursor = subscriptions[len(subscriptions)-1].UID
 		}
 
-		return subs, nil
+		return _subs, nil
 	})
 
 	if err != nil {
