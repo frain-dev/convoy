@@ -78,7 +78,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", "project-id-1").Times(1).Return(endpoint, nil)
 
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := []datastore.Subscription{
+				subscriptions := []*datastore.Subscription{
 					{
 						UID:             "sub-1",
 						Name:            "test-sub",
