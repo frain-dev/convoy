@@ -47,7 +47,8 @@ const (
 	filter_config_filter_body=$13,
 	rate_limit_config_count=$14,
 	rate_limit_config_duration=$15,
-	function=$16
+	function=$16,
+    updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
     `
@@ -124,7 +125,7 @@ const (
     ORDER BY id LIMIT $3`
 
 	loadAllSubscriptionsConfiguration = `
-    select id, type, project_id, endpoint_id, function,
+    select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
@@ -135,7 +136,7 @@ const (
     ORDER BY id LIMIT $3`
 
 	fetchUpdatedSubscriptions = `
-    select id, type, project_id, endpoint_id, function,
+    select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
@@ -147,12 +148,12 @@ const (
     ORDER BY id LIMIT $3`
 
 	fetchDeletedSubscriptions = `
-    select id, type, project_id, endpoint_id, function,
+    select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
-    where (deleted_at > $4 AND deleted_at is not null)
+    where deleted_at is not null
     AND id > $1
     AND project_id = $2
     ORDER BY id LIMIT $3`
@@ -277,12 +278,12 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 	return subs, nil
 }
 
-func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectID string, pageSize int) ([]datastore.Subscription, error) {
 	var subs []datastore.Subscription
 	cursor := "0"
 
 	for {
-		rows, err := s.db.QueryxContext(ctx, fetchDeletedSubscriptions, cursor, projectID, pageSize, t)
+		rows, err := s.db.QueryxContext(ctx, fetchDeletedSubscriptions, cursor, projectID, pageSize)
 		if err != nil {
 			return nil, err
 		}

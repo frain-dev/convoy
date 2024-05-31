@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
 
@@ -15,18 +14,17 @@ import (
 )
 
 const (
-	perPage = 1000
+	perPage = 10_000
 )
 
 type SubscriptionLoader struct {
-	once sync.Once
-
 	subRepo     datastore.SubscriptionRepository
 	projectRepo datastore.ProjectRepository
 
-	loaded   bool
-	lastSync time.Time
-	log      log.StdLogger
+	loaded     bool
+	lastUpdate time.Time
+	lastDelete time.Time
+	log        log.StdLogger
 }
 
 func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger) *SubscriptionLoader {
@@ -38,7 +36,6 @@ func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo
 }
 
 func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore.Table) error {
-
 	if !s.loaded {
 		// fetch subscriptions.
 		subscriptions, err := s.fetchAllSubscriptions(ctx)
@@ -52,12 +49,16 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 			if err != nil {
 				return err
 			}
+
+			after := sub.UpdatedAt.After(s.lastUpdate)
+			if after {
+				s.lastUpdate = sub.UpdatedAt
+			}
+
 			table.Add(key, sub)
 		}
 
 		s.loaded = true
-		s.lastSync = time.Now()
-
 		return nil
 	}
 
@@ -67,7 +68,6 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		s.log.WithError(err).Error("failed to fetch subscriptions")
 		return err
 	}
-	fmt.Println(updatedSubs)
 
 	if len(updatedSubs) != 0 {
 		for _, sub := range updatedSubs {
@@ -76,6 +76,9 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 				return err
 			}
 
+			if sub.UpdatedAt.After(s.lastUpdate) {
+				s.lastUpdate = sub.UpdatedAt
+			}
 			_ = table.Upsert(key, sub)
 		}
 	}
@@ -86,7 +89,6 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		s.log.WithError(err).Error("failed to fetch subscriptions")
 		return err
 	}
-	fmt.Println(deletedSubs)
 
 	for _, sub := range deletedSubs {
 		key, err := s.generateSubKey(&sub)
@@ -94,10 +96,12 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 			return err
 		}
 
+		if sub.DeletedAt.Time.After(s.lastDelete) {
+			s.lastDelete = sub.DeletedAt.Time
+		}
+
 		table.Delete(key)
 	}
-
-	s.lastSync = time.Now()
 
 	return nil
 }
@@ -157,7 +161,7 @@ func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]d
 			defer wg.Done()
 
 			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, projectID, s.lastSync, 10_000)
+			subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, projectID, s.lastUpdate, 10_000)
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
 				return
@@ -196,7 +200,7 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 			defer wg.Done()
 
 			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, projectID, s.lastSync, 10_000)
+			subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, projectID, perPage)
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
 				return

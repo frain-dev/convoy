@@ -2,7 +2,6 @@ package memorystore
 
 import (
 	"context"
-	"fmt"
 	"sync"
 )
 
@@ -91,10 +90,13 @@ func (t *Table) Upsert(key string, value interface{}) *Row {
 	t.Lock()
 	defer t.Unlock()
 
-	fmt.Println(">>")
-	row := &Row{key: key, value: value}
+	row := t.getInternal(key)
+	if row != nil {
+		t.deleteInternal(key)
+	}
+
+	row = &Row{key: key, value: value}
 	t.rows[key] = row
-	fmt.Println(len(t.GetKeys()))
 	return row
 }
 
@@ -103,6 +105,10 @@ func (t *Table) Delete(key string) {
 	t.Lock()
 	defer t.Unlock()
 
+	t.deleteInternal(key)
+}
+
+func (t *Table) deleteInternal(key string) {
 	delete(t.rows, key)
 }
 
