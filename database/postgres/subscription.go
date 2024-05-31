@@ -129,7 +129,7 @@ const (
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
-    AND id > $1
+    where id > $1
     AND project_id = $2
     AND deleted_at is null
     ORDER BY id LIMIT $3`
@@ -152,7 +152,7 @@ const (
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
-    where deleted_at > $4
+    where (deleted_at > $4 AND deleted_at is not null)
     AND id > $1
     AND project_id = $2
     ORDER BY id LIMIT $3`
@@ -256,7 +256,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 	cursor := "0"
 
 	for {
-		rows, err := s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, t)
+		rows, err := s.db.QueryxContext(ctx, fetchUpdatedSubscriptions, cursor, projectID, pageSize, t)
 		if err != nil {
 			return nil, err
 		}
