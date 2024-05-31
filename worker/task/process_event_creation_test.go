@@ -487,8 +487,8 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 		name       string
 		payload    map[string]interface{}
 		dbFn       func(args *args)
-		inputSubs  []datastore.Subscription
-		wantSubs   []datastore.Subscription
+		inputSubs  []*datastore.Subscription
+		wantSubs   []*datastore.Subscription
 		wantErr    bool
 		wantErrMsg string
 	}{
@@ -503,7 +503,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 			},
-			inputSubs: []datastore.Subscription{
+			inputSubs: []*datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
@@ -521,7 +521,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					},
 				},
 			},
-			wantSubs: []datastore.Subscription{
+			wantSubs: []*datastore.Subscription{
 				{
 					UID: "123",
 				},
@@ -542,7 +542,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
 				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
 			},
-			inputSubs: []datastore.Subscription{
+			inputSubs: []*datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
