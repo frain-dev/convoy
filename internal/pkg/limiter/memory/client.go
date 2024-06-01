@@ -3,11 +3,9 @@ package mlimiter
 import (
 	"context"
 	"go.uber.org/ratelimit"
-	"sync"
 )
 
 type MemoryRateLimiter struct {
-	mu       sync.Mutex
 	limiters map[string]ratelimit.Limiter
 }
 
