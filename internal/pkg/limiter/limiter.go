@@ -13,10 +13,8 @@ type RateLimiter interface {
 }
 
 func NewLimiter(cfg config.RedisConfiguration, useMemory bool) (RateLimiter, error) {
-	ml := mlimiter.NewMemoryRateLimiter()
-
 	if useMemory {
-		ml = mlimiter.NewMemoryRateLimiter()
+		ml := mlimiter.NewMemoryRateLimiter()
 		return ml, nil
 	}
 
