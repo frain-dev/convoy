@@ -118,7 +118,8 @@ func (s *SubscriptionLoader) fetchSubscriptions(ctx context.Context) ([]datastor
 }
 
 func (s *SubscriptionLoader) fetchSubscriptionBatch(ctx context.Context,
-	subscriptions []datastore.Subscription, projectID string, cursor string) ([]datastore.Subscription, error) {
+	subscriptions []datastore.Subscription, projectID string, cursor string,
+) ([]datastore.Subscription, error) {
 	pageable := datastore.Pageable{
 		NextCursor: cursor,
 		Direction:  datastore.Next,
