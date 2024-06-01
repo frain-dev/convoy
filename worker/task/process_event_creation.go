@@ -124,6 +124,10 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		if s.Type == datastore.SubscriptionTypeAPI {
 			endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 			if err != nil {
+				if errors.Is(err, datastore.ErrEndpointNotFound) {
+					continue
+				}
+
 				return &EndpointError{Err: fmt.Errorf("CODE: 1006, err: %s", err.Error()), delay: defaultDelay}
 			}
 

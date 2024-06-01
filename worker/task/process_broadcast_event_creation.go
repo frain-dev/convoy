@@ -76,6 +76,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 		es, ss := getEndpointIDs(subscriptions)
 		event.Endpoints = es
 
+		fmt.Println(es)
 		err = eventRepo.CreateEvent(ctx, event)
 		if err != nil {
 			return &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: defaultBroadcastDelay}

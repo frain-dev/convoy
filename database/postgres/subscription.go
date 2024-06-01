@@ -153,7 +153,7 @@ const (
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
-    where deleted_at is not null
+    where (deleted_at > $4 AND deleted_at is not null)
     AND id > $1
     AND project_id = $2
     ORDER BY id LIMIT $3`
@@ -278,12 +278,12 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 	return subs, nil
 }
 
-func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectID string, pageSize int) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int) ([]datastore.Subscription, error) {
 	var subs []datastore.Subscription
 	cursor := "0"
 
 	for {
-		rows, err := s.db.QueryxContext(ctx, fetchDeletedSubscriptions, cursor, projectID, pageSize)
+		rows, err := s.db.QueryxContext(ctx, fetchDeletedSubscriptions, cursor, projectID, pageSize, t)
 		if err != nil {
 			return nil, err
 		}

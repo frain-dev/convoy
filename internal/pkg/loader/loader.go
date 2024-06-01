@@ -18,15 +18,17 @@ type SubscriptionLoader struct {
 	subRepo     datastore.SubscriptionRepository
 	projectRepo datastore.ProjectRepository
 
-	loaded     bool
-	lastUpdate time.Time
-	lastDelete time.Time
-	log        log.StdLogger
+	loaded        bool
+	batchSize     int
+	lastUpdatedAt time.Time
+	lastDelete    time.Time
+	log           log.StdLogger
 }
 
 func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger) *SubscriptionLoader {
 	return &SubscriptionLoader{
 		log:         log,
+		batchSize:   perPage,
 		subRepo:     subRepo,
 		projectRepo: projectRepo,
 	}
@@ -42,13 +44,11 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		}
 
 		for _, sub := range subscriptions {
-			after := sub.UpdatedAt.After(s.lastUpdate)
-			if after {
-				s.lastUpdate = sub.UpdatedAt
+			if sub.UpdatedAt.After(s.lastUpdatedAt) {
+				s.lastUpdatedAt = sub.UpdatedAt
 			}
 
-			key := sub.UID
-			table.Add(key, sub)
+			table.Add(sub.UID, sub)
 		}
 
 		s.loaded = true
@@ -64,11 +64,11 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 
 	if len(updatedSubs) != 0 {
 		for _, sub := range updatedSubs {
-			if sub.UpdatedAt.After(s.lastUpdate) {
-				s.lastUpdate = sub.UpdatedAt
+			if sub.UpdatedAt.After(s.lastUpdatedAt) {
+				s.lastUpdatedAt = sub.UpdatedAt
 			}
-			key := sub.UID
-			_ = table.Upsert(key, sub)
+
+			_ = table.Upsert(sub.UID, sub)
 		}
 	}
 
@@ -107,7 +107,7 @@ func (s *SubscriptionLoader) fetchAllSubscriptions(ctx context.Context) ([]datas
 			defer wg.Done()
 
 			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.LoadAllSubscriptionConfig(ctx, projectID, 10_000)
+			subscriptions, err := s.subRepo.LoadAllSubscriptionConfig(ctx, projectID, s.batchSize)
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
 				return
@@ -146,7 +146,7 @@ func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]d
 			defer wg.Done()
 
 			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, projectID, s.lastUpdate, 10_000)
+			subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, projectID, s.lastUpdatedAt, 10_000)
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
 				return
@@ -185,7 +185,7 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 			defer wg.Done()
 
 			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, projectID, perPage)
+			subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, projectID, s.lastUpdatedAt, perPage)
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
 				return
