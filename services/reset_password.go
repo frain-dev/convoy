@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -20,7 +21,7 @@ type ResetPasswordService struct {
 func (u *ResetPasswordService) Run(ctx context.Context) (*datastore.User, error) {
 	user, err := u.UserRepo.FindUserByToken(ctx, u.Token)
 	if err != nil {
-		if err == datastore.ErrUserNotFound {
+		if errors.Is(err, datastore.ErrUserNotFound) {
 			return nil, &ServiceError{ErrMsg: "invalid password reset token"}
 		}
 
