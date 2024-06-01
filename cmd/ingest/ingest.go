@@ -69,17 +69,22 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 
 			go memorystore.DefaultStore.Sync(cmd.Context(), interval)
 
-			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
-			if err != nil {
-				return err
-			}
-
 			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
 			if err != nil {
+				log.WithError(err).Error("Failed to load configuration")
+			}
+
+			var host string
+			if instCfg != nil {
+				host = instCfg.UID
+			}
+
+			rateLimiter, err := limiter.NewLimiter([]string{host}, cfg, true)
+			if err != nil {
 				return err
 			}
 
-			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo, rateLimiter, instCfg.UID)
+			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo, rateLimiter, host)
 			if err != nil {
 				return err
 			}
