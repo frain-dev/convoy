@@ -718,6 +718,10 @@ func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey strin
 		ttl = ttl * time.Second
 	}
 
+	if len(subs) == 0 {
+		return nil, err
+	}
+
 	err = s.cache.Set(ctx, subscriptionCacheKey, subs, ttl)
 	if err != nil {
 		return nil, err
