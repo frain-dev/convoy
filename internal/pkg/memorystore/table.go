@@ -29,6 +29,7 @@ func (k Key) String() string {
 const delim = ":"
 
 type ITable interface {
+	Get(key Key) *Row
 	GetItems(prefix string) []*Row
 }
 

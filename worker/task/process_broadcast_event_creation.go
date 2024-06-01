@@ -50,7 +50,8 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			isDuplicate = len(events) > 0
 		}
 
-		subRows := subscriptionsTable.GetItems(project.UID)
+		key := memorystore.NewKey(project.UID, broadcastEvent.EventType)
+		subRows := subscriptionsTable.Get(key)
 		subscriptions := getSubcriptionsFromRows(subRows)
 
 		event := &datastore.Event{
@@ -67,7 +68,8 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			UpdatedAt:        time.Now(),
 		}
 
-		subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
+		fmt.Println(subscriptions)
+		//subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
 		if err != nil {
 			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
@@ -127,13 +129,15 @@ func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscr
 	return endpointIds, subscriptionsIds
 }
 
-func getSubcriptionsFromRows(rows []*memorystore.Row) []datastore.Subscription {
-	var subscriptions []datastore.Subscription
-
-	for _, row := range rows {
-		subscription, _ := row.Value().(datastore.Subscription)
-		subscriptions = append(subscriptions, subscription)
+func getSubcriptionsFromRows(rows *memorystore.Row) []datastore.Subscription {
+	if rows == nil {
+		return []datastore.Subscription{}
 	}
 
-	return subscriptions
+	subs, ok := rows.Value().([]datastore.Subscription)
+	if !ok {
+		return []datastore.Subscription{}
+	}
+
+	return subs
 }

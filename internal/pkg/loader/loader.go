@@ -35,8 +35,6 @@ func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo
 }
 
 func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore.Table) error {
-	var key memorystore.Key
-
 	if !s.loaded {
 		// fetch subscriptions.
 		subscriptions, err := s.fetchAllSubscriptions(ctx)
@@ -50,8 +48,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 				s.lastUpdatedAt = sub.UpdatedAt
 			}
 
-			key = memorystore.NewKey(sub.ProjectID, sub.UID)
-			table.Add(key, sub)
+			s.addSubscriptionToTable(sub, table)
 		}
 
 		s.loaded = true
@@ -71,8 +68,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 				s.lastUpdatedAt = sub.UpdatedAt
 			}
 
-			key = memorystore.NewKey(sub.ProjectID, sub.UID)
-			_ = table.Upsert(key, sub)
+			s.addSubscriptionToTable(sub, table)
 		}
 	}
 
@@ -88,11 +84,80 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 			s.lastDelete = sub.DeletedAt.Time
 		}
 
-		key = memorystore.NewKey(sub.ProjectID, sub.UID)
-		table.Delete(key)
+		s.deleteSubscriptionToTable(sub, table)
 	}
 
 	return nil
+}
+
+func (s *SubscriptionLoader) addSubscriptionToTable(sub datastore.Subscription, table *memorystore.Table) {
+	eventTypes := sub.FilterConfig.EventTypes
+	if len(eventTypes) == 0 {
+		return
+	}
+
+	for _, ev := range eventTypes {
+		key := memorystore.NewKey(sub.ProjectID, ev)
+		row := table.Get(key)
+
+		var values []datastore.Subscription
+		var ok bool
+
+		switch {
+		case row != nil:
+			values, ok = row.Value().([]datastore.Subscription)
+			if !ok {
+				log.Errorf("malformed data in subscriptions memory store with event type: %s", ev)
+				continue
+			}
+		default:
+			values = make([]datastore.Subscription, 0)
+		}
+
+		values = append(values, sub)
+		table.Upsert(key, values)
+	}
+}
+
+func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscription, table *memorystore.Table) {
+	eventTypes := sub.FilterConfig.EventTypes
+	if len(eventTypes) == 0 {
+		return
+	}
+
+	for _, ev := range eventTypes {
+		key := memorystore.NewKey(sub.ProjectID, ev)
+		row := table.Get(key)
+
+		if row == nil {
+			continue
+		}
+
+		var values []datastore.Subscription
+		if row.Value() != nil {
+			var ok bool
+			values, ok = row.Value().([]datastore.Subscription)
+			if !ok {
+				log.Errorf("malformed data in subscriptions memory store with event type: %s", ev)
+				continue
+			}
+		}
+
+		for id, v := range values {
+			if v.UID == sub.UID {
+				b := values[:id]
+				a := values[id+1:]
+				values = append(b, a...)
+			}
+		}
+
+		if len(values) == 0 {
+			table.Delete(key)
+			return
+		}
+
+		table.Upsert(key, values)
+	}
 }
 
 func (s *SubscriptionLoader) fetchAllSubscriptions(ctx context.Context) ([]datastore.Subscription, error) {
