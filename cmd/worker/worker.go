@@ -103,10 +103,11 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			rateLimiter, err := limiter.NewLimiter(cfg.Redis)
+			rateLimiter, err := limiter.NewLimiter([]string{}, cfg, false)
 			if err != nil {
 				return err
 			}
+
 			counter := &telemetry.EventsCounter{}
 
 			pb := telemetry.NewposthogBackend()
