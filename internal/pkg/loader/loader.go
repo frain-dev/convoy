@@ -35,6 +35,8 @@ func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo
 }
 
 func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore.Table) error {
+	var key memorystore.Key
+
 	if !s.loaded {
 		// fetch subscriptions.
 		subscriptions, err := s.fetchAllSubscriptions(ctx)
@@ -48,7 +50,8 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 				s.lastUpdatedAt = sub.UpdatedAt
 			}
 
-			table.Add(sub.UID, sub)
+			key = memorystore.NewKey(sub.ProjectID, sub.UID)
+			table.Add(key, sub)
 		}
 
 		s.loaded = true
@@ -68,7 +71,8 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 				s.lastUpdatedAt = sub.UpdatedAt
 			}
 
-			_ = table.Upsert(sub.UID, sub)
+			key = memorystore.NewKey(sub.ProjectID, sub.UID)
+			_ = table.Upsert(key, sub)
 		}
 	}
 
@@ -84,7 +88,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 			s.lastDelete = sub.DeletedAt.Time
 		}
 
-		key := sub.UID
+		key = memorystore.NewKey(sub.ProjectID, sub.UID)
 		table.Delete(key)
 	}
 

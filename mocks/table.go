@@ -36,17 +36,17 @@ func (m *MockITable) EXPECT() *MockITableMockRecorder {
 }
 
 // GetItems mocks base method.
-func (m *MockITable) GetItems() []*memorystore.Row {
+func (m *MockITable) GetItems(prefix string) []*memorystore.Row {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetItems")
+	ret := m.ctrl.Call(m, "GetItems", prefix)
 	ret0, _ := ret[0].([]*memorystore.Row)
 	return ret0
 }
 
 // GetItems indicates an expected call of GetItems.
-func (mr *MockITableMockRecorder) GetItems() *gomock.Call {
+func (mr *MockITableMockRecorder) GetItems(prefix interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItems", reflect.TypeOf((*MockITable)(nil).GetItems))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItems", reflect.TypeOf((*MockITable)(nil).GetItems), prefix)
 }
 
 // MockSyncer is a mock of Syncer interface.

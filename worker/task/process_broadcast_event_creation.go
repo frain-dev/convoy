@@ -50,7 +50,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			isDuplicate = len(events) > 0
 		}
 
-		subRows := subscriptionsTable.GetItems()
+		subRows := subscriptionsTable.GetItems(project.UID)
 		subscriptions := getSubcriptionsFromRows(subRows)
 
 		event := &datastore.Event{
