@@ -3,7 +3,6 @@ package memorystore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -46,7 +45,6 @@ func (s *Store) Sync(ctx context.Context, interval int) {
 		// iterate through tables and sync.
 		for _, table := range s.tables {
 			_ = table.Sync(ctx)
-			fmt.Printf("sync total: %d\n", len(table.GetKeys()))
 		}
 	}
 }
