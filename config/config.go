@@ -93,7 +93,7 @@ var DefaultConfiguration = Configuration{
 			SampleTime: 5,
 		},
 	},
-	PubSubIngestRate: 300,
+	PubSubIngestRate: 50,
 }
 
 type DatabaseConfiguration struct {
