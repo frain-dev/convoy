@@ -12,23 +12,20 @@ type MemoryRateLimiter struct {
 }
 
 // NewMemoryRateLimiter creates a new instance of MemoryRateLimiter.
-func NewMemoryRateLimiter() *MemoryRateLimiter {
+func NewMemoryRateLimiter(keys []string, rate int) *MemoryRateLimiter {
+	m := make(map[string]ratelimit.Limiter, len(keys))
+	for i := 0; i < len(keys); i++ {
+		m[keys[i]] = ratelimit.New(rate)
+	}
+
 	return &MemoryRateLimiter{
-		limiters: make(map[string]ratelimit.Limiter),
+		limiters: m,
 	}
 }
 
 // Allow blocks till the window has completed then takes a token
-func (r *MemoryRateLimiter) Allow(_ context.Context, key string, rate, _ int) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	limiter, exists := r.limiters[key]
-	if !exists {
-		limiter = ratelimit.New(rate)
-		r.limiters[key] = limiter
-	}
-
+func (r *MemoryRateLimiter) Allow(_ context.Context, key string, _, _ int) error {
+	limiter := r.limiters[key]
 	limiter.Take()
 
 	return nil

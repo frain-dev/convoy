@@ -147,6 +147,7 @@ func (k *Kafka) consume() {
 		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
+	println("ingest rate:", cfg.PubSubIngestRate)
 
 	for {
 		select {
@@ -156,10 +157,6 @@ func (k *Kafka) consume() {
 			if !util.IsStringEmpty(k.instanceId) {
 				// this should block till after the rate limit
 				_ = k.rateLimiter.Allow(k.ctx, k.instanceId, int(cfg.PubSubIngestRate), 0)
-				//k.mutex.Lock()
-				//k.counter++
-				//fmt.Println(k.counter)
-				//k.mutex.Unlock()
 			}
 
 			m, err := r.FetchMessage(k.ctx)

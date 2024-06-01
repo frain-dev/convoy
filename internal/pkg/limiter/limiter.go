@@ -12,13 +12,13 @@ type RateLimiter interface {
 	Allow(ctx context.Context, key string, rate int, duration int) error
 }
 
-func NewLimiter(cfg config.RedisConfiguration, useMemory bool) (RateLimiter, error) {
+func NewLimiter(keys []string, cfg config.Configuration, useMemory bool) (RateLimiter, error) {
 	if useMemory {
-		ml := mlimiter.NewMemoryRateLimiter()
+		ml := mlimiter.NewMemoryRateLimiter(keys, int(cfg.PubSubIngestRate))
 		return ml, nil
 	}
 
-	ra, err := rlimiter.NewRedisLimiter(cfg.BuildDsn())
+	ra, err := rlimiter.NewRedisLimiter(cfg.Redis.BuildDsn())
 	if err != nil {
 		return nil, err
 	}

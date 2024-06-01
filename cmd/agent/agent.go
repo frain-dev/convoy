@@ -185,11 +185,6 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 		return err
 	}
 
-	rateLimiter, err := limiter.NewLimiter(cfg.Redis, true)
-	if err != nil {
-		return err
-	}
-
 	instCfg, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		log.WithError(err).Error("Failed to load configuration")
@@ -198,6 +193,11 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 	var host string
 	if instCfg != nil {
 		host = instCfg.UID
+	}
+
+	rateLimiter, err := limiter.NewLimiter([]string{host}, cfg, true)
+	if err != nil {
+		return err
 	}
 
 	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger, rateLimiter, host)
@@ -239,7 +239,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		return err
 	}
 
-	rateLimiter, err := limiter.NewLimiter(cfg.Redis, false)
+	rateLimiter, err := limiter.NewLimiter([]string{}, cfg, true)
 	if err != nil {
 		return err
 	}
