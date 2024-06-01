@@ -35,6 +35,20 @@ func (m *MockITable) EXPECT() *MockITableMockRecorder {
 	return m.recorder
 }
 
+// Get mocks base method.
+func (m *MockITable) Get(key memorystore.Key) *memorystore.Row {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", key)
+	ret0, _ := ret[0].(*memorystore.Row)
+	return ret0
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockITableMockRecorder) Get(key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockITable)(nil).Get), key)
+}
+
 // GetItems mocks base method.
 func (m *MockITable) GetItems(prefix string) []*memorystore.Row {
 	m.ctrl.T.Helper()
