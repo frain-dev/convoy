@@ -113,12 +113,7 @@ func (t *Table) Upsert(key Key, value interface{}) *Row {
 	t.Lock()
 	defer t.Unlock()
 
-	row := t.getInternal(key)
-	if row != nil {
-		t.deleteInternal(key)
-	}
-
-	row = &Row{key: string(key), value: value}
+	row := &Row{key: string(key), value: value}
 	t.rows[key] = row
 	return row
 }
