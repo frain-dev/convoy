@@ -2,9 +2,6 @@ package loader
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"sync"
 	"time"
 
@@ -45,16 +42,12 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		}
 
 		for _, sub := range subscriptions {
-			key, err := s.generateSubKey(&sub)
-			if err != nil {
-				return err
-			}
-
 			after := sub.UpdatedAt.After(s.lastUpdate)
 			if after {
 				s.lastUpdate = sub.UpdatedAt
 			}
 
+			key := sub.UID
 			table.Add(key, sub)
 		}
 
@@ -71,14 +64,10 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 
 	if len(updatedSubs) != 0 {
 		for _, sub := range updatedSubs {
-			key, err := s.generateSubKey(&sub)
-			if err != nil {
-				return err
-			}
-
 			if sub.UpdatedAt.After(s.lastUpdate) {
 				s.lastUpdate = sub.UpdatedAt
 			}
+			key := sub.UID
 			_ = table.Upsert(key, sub)
 		}
 	}
@@ -91,15 +80,11 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	}
 
 	for _, sub := range deletedSubs {
-		key, err := s.generateSubKey(&sub)
-		if err != nil {
-			return err
-		}
-
 		if sub.DeletedAt.Time.After(s.lastDelete) {
 			s.lastDelete = sub.DeletedAt.Time
 		}
 
+		key := sub.UID
 		table.Delete(key)
 	}
 
@@ -221,20 +206,4 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 	}
 
 	return allSubscriptions, nil
-}
-
-func (s *SubscriptionLoader) generateSubKey(sub *datastore.Subscription) (string, error) {
-	var hash string
-
-	bytes, err := json.Marshal(sub)
-	if err != nil {
-		return hash, err
-	}
-
-	sha256Hash := sha256.New()
-	sha256Hash.Write(bytes)
-	hashBytes := sha256Hash.Sum(nil)
-	hashString := hex.EncodeToString(hashBytes)
-
-	return hashString, nil
 }

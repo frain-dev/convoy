@@ -1396,18 +1396,18 @@ func (mr *MockSubscriptionRepositoryMockRecorder) DeleteSubscription(ctx, projec
 }
 
 // FetchDeletedSubscriptions mocks base method.
-func (m *MockSubscriptionRepository) FetchDeletedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int) ([]datastore.Subscription, error) {
+func (m *MockSubscriptionRepository) FetchDeletedSubscriptions(ctx context.Context, projectID string, pageSize int) ([]datastore.Subscription, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchDeletedSubscriptions", ctx, projectID, t, pageSize)
+	ret := m.ctrl.Call(m, "FetchDeletedSubscriptions", ctx, projectID, pageSize)
 	ret0, _ := ret[0].([]datastore.Subscription)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchDeletedSubscriptions indicates an expected call of FetchDeletedSubscriptions.
-func (mr *MockSubscriptionRepositoryMockRecorder) FetchDeletedSubscriptions(ctx, projectID, t, pageSize interface{}) *gomock.Call {
+func (mr *MockSubscriptionRepositoryMockRecorder) FetchDeletedSubscriptions(ctx, projectID, pageSize interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchDeletedSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).FetchDeletedSubscriptions), ctx, projectID, t, pageSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchDeletedSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).FetchDeletedSubscriptions), ctx, projectID, pageSize)
 }
 
 // FetchSubscriptionsForBroadcast mocks base method.
