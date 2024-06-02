@@ -26,7 +26,6 @@ type SubscriptionLoader struct {
 }
 
 func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger, batchSize int) *SubscriptionLoader {
-
 	if batchSize == 0 {
 		batchSize = DefaultBatchSize
 	}
@@ -232,7 +231,7 @@ func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]d
 			defer wg.Done()
 
 			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, projectID, s.lastUpdatedAt, 10_000)
+			subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, projectID, s.lastUpdatedAt, s.batchSize)
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
 				return
