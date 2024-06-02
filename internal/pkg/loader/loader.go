@@ -95,6 +95,10 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 }
 
 func (s *SubscriptionLoader) addSubscriptionToTable(sub datastore.Subscription, table *memorystore.Table) {
+	if sub.FilterConfig == nil {
+		return
+	}
+
 	eventTypes := sub.FilterConfig.EventTypes
 	if len(eventTypes) == 0 {
 		return
@@ -135,6 +139,10 @@ func (s *SubscriptionLoader) addSubscriptionToTable(sub datastore.Subscription, 
 }
 
 func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscription, table *memorystore.Table) {
+	if sub.FilterConfig == nil {
+		return
+	}
+
 	eventTypes := sub.FilterConfig.EventTypes
 	if len(eventTypes) == 0 {
 		return
