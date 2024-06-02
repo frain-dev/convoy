@@ -5,7 +5,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 
 	"github.com/frain-dev/convoy/datastore"
 	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
@@ -44,7 +46,7 @@ func NewPubSubSource(ctx context.Context, source *datastore.Source, handler data
 
 	ctx, cancelFunc := context.WithCancel(ctx)
 	pubSubSource := &PubSubSource{ctx: ctx, cancelFunc: cancelFunc, client: client, source: source}
-	pubSubSource.hash = generateSourceKey(source)
+	//pubSubSource.hash = generateSourceKey(source)
 	pubSubSource.cancelFunc = cancelFunc
 
 	return pubSubSource, nil
@@ -78,7 +80,7 @@ func createClient(source *datastore.Source, handler datastore.PubSubHandler, log
 	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)
 }
 
-func generateSourceKey(source *datastore.Source) string {
+func generateSourceKey(source *datastore.Source) memorystore.Key {
 	var hash string
 
 	if source.PubSub.Type == datastore.SqsPubSub {
@@ -104,5 +106,5 @@ func generateSourceKey(source *datastore.Source) string {
 	h := md5.Sum([]byte(hash))
 	hash = hex.EncodeToString(h[:])
 
-	return hash
+	return memorystore.NewKey(source.ProjectID, hash)
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -60,9 +61,9 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
-				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				subscriptions := []datastore.Subscription{
-					{
+				st, _ := args.subTable.(*mocks.MockITable)
+				st.EXPECT().GetItems("project-id-1").Return([]*memorystore.Row{
+					memorystore.NewRow("sub-1", datastore.Subscription{
 						UID:        "sub-1",
 						Name:       "test-sub",
 						Type:       datastore.SubscriptionTypeAPI,
@@ -70,20 +71,12 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 						EndpointID: "endpoint-id-1",
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
-							Filter: datastore.FilterSchema{
-								Headers: nil,
-								Body:    map[string]interface{}{"key": "value"},
-							},
 						},
 						AlertConfig:     nil,
 						RetryConfig:     nil,
 						RateLimitConfig: nil,
-					},
-				}
-				s.EXPECT().FetchSubscriptionsForBroadcast(gomock.Any(), "project-id-1", gomock.Any(), gomock.Any()).
-					Times(1).Return(subscriptions, nil)
-
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+					}),
+				})
 
 				d, _ := args.db.(*mocks.MockDatabase)
 				d.EXPECT().BeginTx(gomock.Any())
@@ -136,7 +129,8 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
 			fn := ProcessBroadcastEventCreation(args.endpointRepo,
-				args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
+				args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo,
+				args.deviceRepo, args.subTable)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

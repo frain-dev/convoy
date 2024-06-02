@@ -124,6 +124,10 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		if s.Type == datastore.SubscriptionTypeAPI {
 			endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 			if err != nil {
+				if errors.Is(err, datastore.ErrEndpointNotFound) {
+					continue
+				}
+
 				return &EndpointError{Err: fmt.Errorf("CODE: 1006, err: %s", err.Error()), delay: defaultDelay}
 			}
 
@@ -309,7 +313,14 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		return nil, err
 	}
 
+	checked := make(map[string]struct{})
+
 	for _, s := range subscriptions {
+		if _, ok := checked[s.UID]; ok {
+			continue
+		}
+		checked[s.UID] = struct{}{}
+
 		if len(s.FilterConfig.Filter.Body.Map()) == 0 && len(s.FilterConfig.Filter.Headers.Map()) == 0 {
 			matched = append(matched, s)
 			continue
