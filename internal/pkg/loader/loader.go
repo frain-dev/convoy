@@ -114,6 +114,17 @@ func (s *SubscriptionLoader) addSubscriptionToTable(sub datastore.Subscription, 
 			values = make([]datastore.Subscription, 0)
 		}
 
+		if s.loaded {
+			for id, v := range values {
+				if v.UID == sub.UID {
+					b := values[:id]
+					a := values[id+1:]
+					values = append(b, a...)
+					break
+				}
+			}
+		}
+
 		values = append(values, sub)
 		table.Upsert(key, values)
 	}
@@ -148,6 +159,7 @@ func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscriptio
 				b := values[:id]
 				a := values[id+1:]
 				values = append(b, a...)
+				break
 			}
 		}
 

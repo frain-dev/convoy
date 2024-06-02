@@ -74,8 +74,6 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			UpdatedAt:        time.Now(),
 		}
 
-		fmt.Println(subscriptions)
-		//subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
 		if err != nil {
 			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
