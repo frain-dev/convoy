@@ -119,7 +119,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger)
+			subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger, 0)
 			subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
 
 			err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)

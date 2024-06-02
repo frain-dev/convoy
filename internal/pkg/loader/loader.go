@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	perPage = 10_000
+	DefaultBatchSize = 10_000
 )
 
 type SubscriptionLoader struct {
@@ -25,10 +25,15 @@ type SubscriptionLoader struct {
 	log           log.StdLogger
 }
 
-func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger) *SubscriptionLoader {
+func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger, batchSize int) *SubscriptionLoader {
+
+	if batchSize == 0 {
+		batchSize = DefaultBatchSize
+	}
+
 	return &SubscriptionLoader{
 		log:         log,
-		batchSize:   perPage,
+		batchSize:   batchSize,
 		subRepo:     subRepo,
 		projectRepo: projectRepo,
 	}
@@ -266,7 +271,7 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 			defer wg.Done()
 
 			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, projectID, s.lastUpdatedAt, perPage)
+			subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, projectID, s.lastUpdatedAt, s.batchSize)
 			if err != nil {
 				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
 				return
