@@ -40,6 +40,7 @@ func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo
 
 func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore.Table) error {
 	if !s.loaded {
+		startTime := time.Now()
 		// fetch subscriptions.
 		subscriptions, err := s.fetchAllSubscriptions(ctx)
 		if err != nil {
@@ -56,6 +57,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		}
 
 		s.loaded = true
+		s.log.Info("syncing subscriptions completed in ", time.Since(startTime))
 		return nil
 	}
 

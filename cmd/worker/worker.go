@@ -127,6 +127,12 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
+			// initial sync.
+			err = subscriptionsLoader.SyncChanges(ctx, subscriptionsTable)
+			if err != nil {
+				return err
+			}
+
 			go memorystore.DefaultStore.Sync(ctx, interval)
 
 			newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
