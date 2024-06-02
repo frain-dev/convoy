@@ -316,9 +316,10 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	checked := make(map[string]struct{})
 
 	for _, s := range subscriptions {
-		if _, ok := checked[s.UID]; !ok {
+		if _, ok := checked[s.UID]; ok {
 			continue
 		}
+		checked[s.UID] = struct{}{}
 
 		if len(s.FilterConfig.Filter.Body.Map()) == 0 && len(s.FilterConfig.Filter.Headers.Map()) == 0 {
 			matched = append(matched, s)
@@ -346,8 +347,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		if isMatched {
 			matched = append(matched, s)
 		}
-
-		checked[s.UID] = struct{}{}
 	}
 
 	return matched, nil
