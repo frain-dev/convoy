@@ -58,7 +58,11 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 		subs := subscriptionsTable.Get(key)
 		eventTypeSubs := getSubcriptionsFromRows(subs)
 
-		subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
+		subscriptions := make([]datastore.Subscription, 0, len(matchAllSubs)+len(eventTypeSubs))
+		subscriptions = append(subscriptions, eventTypeSubs...)
+		subscriptions = append(subscriptions, matchAllSubs...)
+
+		//subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
@@ -146,25 +150,26 @@ func getSubcriptionsFromRows(rows *memorystore.Row) []datastore.Subscription {
 	return subs
 }
 
-func joinSubscriptions(sub1, sub2 []datastore.Subscription) []datastore.Subscription {
-	seen := make(map[string]bool)
-	result := []datastore.Subscription{}
-
-	// Iterate through the first slice and add unique subscriptions to the result
-	for _, sub := range sub1 {
-		if !seen[sub.UID] {
-			seen[sub.UID] = true
-			result = append(result, sub)
-		}
-	}
-
-	// Iterate through the second slice and add unique subscriptions to the result
-	for _, sub := range sub2 {
-		if !seen[sub.UID] {
-			seen[sub.UID] = true
-			result = append(result, sub)
-		}
-	}
-
-	return result
-}
+//func joinSubscriptions(sub1, sub2 []datastore.Subscription) []datastore.Subscription {
+//	seen := make(map[string]bool)
+//	result := []datastore.Subscription{}
+//
+//	// Iterate through the first slice and add unique subscriptions to the result
+//	for _, sub := range sub1 {
+//		if !seen[sub.UID] {
+//			seen[sub.UID] = true
+//			result = append(result, sub)
+//		}
+//	}
+//
+//	// Iterate through the second slice and add unique subscriptions to the result
+//	for _, sub := range sub2 {
+//		if !seen[sub.UID] {
+//			seen[sub.UID] = true
+//			result = append(result, sub)
+//		}
+//	}
+//
+//	return result
+//}
+//
