@@ -6,6 +6,14 @@ import (
 	"github.com/hibiken/asynq"
 )
 
+type DeliveryError struct {
+	Err error
+}
+
+func (d *DeliveryError) Error() string {
+	return d.Err.Error()
+}
+
 type EndpointError struct {
 	delay time.Duration
 	Err   error
@@ -42,5 +50,6 @@ func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
 	if rateLimitError, ok := err.(*RateLimitError); ok {
 		return rateLimitError.Delay()
 	}
-	return defaultDelay
+
+	return asynq.DefaultRetryDelayFunc(n, err, t)
 }
