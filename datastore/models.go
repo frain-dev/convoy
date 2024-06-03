@@ -564,6 +564,13 @@ func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration 
 	return RetentionPolicyConfiguration{}
 }
 
+func (p *ProjectConfig) GetSSLConfig() SSLConfiguration {
+	if p.SSL != nil {
+		return *p.SSL
+	}
+	return SSLConfiguration{}
+}
+
 func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
 	if p.MetaEvent != nil {
 		return *p.MetaEvent
