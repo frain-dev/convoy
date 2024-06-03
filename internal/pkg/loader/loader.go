@@ -19,13 +19,13 @@ type SubscriptionLoader struct {
 	projectRepo datastore.ProjectRepository
 
 	loaded        bool
-	batchSize     int
+	batchSize     int64
 	lastUpdatedAt time.Time
 	lastDelete    time.Time
 	log           log.StdLogger
 }
 
-func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger, batchSize int) *SubscriptionLoader {
+func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger, batchSize int64) *SubscriptionLoader {
 	if batchSize == 0 {
 		batchSize = DefaultBatchSize
 	}

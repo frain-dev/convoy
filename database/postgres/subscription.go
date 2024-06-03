@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -180,11 +181,11 @@ const (
 	SELECT * FROM subscriptions ORDER BY id DESC
 	`
 
-	countEndpointSubscriptions = `
+	countProjectSubscriptions = `
 	SELECT COUNT(DISTINCT(s.id)) AS count
 	FROM convoy.subscriptions s
 	WHERE s.deleted_at IS NULL
-	AND s.project_id = $1 AND s.endpoint_id = $2`
+	AND s.project_id = $1`
 
 	countPrevSubscriptions = `
 	SELECT COUNT(DISTINCT(s.id)) AS count
@@ -252,7 +253,7 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 	return &subscriptionRepo{db: db.GetDB(), cache: ca}
 }
 
-func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
 	var subs []datastore.Subscription
 	cursor := "0"
 
@@ -278,7 +279,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 	return subs, nil
 }
 
-func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
 	var subs []datastore.Subscription
 	cursor := "0"
 
@@ -330,7 +331,6 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 
 		return _subs, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -338,30 +338,48 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 	return subs, nil
 }
 
-func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectID string, pageSize int) ([]datastore.Subscription, error) {
-	var subs []datastore.Subscription
-	cursor := "0"
-
-	for {
-		rows, err := s.db.QueryxContext(ctx, loadAllSubscriptionsConfiguration, cursor, projectID, pageSize)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions, err := scanSubscriptions(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(subscriptions) == 0 {
-			break
-		}
-
-		subs = append(subs, subscriptions...)
-		cursor = subscriptions[len(subscriptions)-1].UID
+func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectID string, pageSize int64) ([]datastore.Subscription, error) {
+	var subCount int64
+	err := s.db.GetContext(ctx, &subCount, countProjectSubscriptions, projectID)
+	if err != nil {
+		return nil, err
 	}
 
-	return subs, nil
+	if subCount == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	subs := make([]datastore.Subscription, subCount)
+	cursor := "0"
+	var rows *sqlx.Rows // reuse the mem
+	counter := 0
+	numBatches := int64(math.Ceil(float64(subCount / pageSize)))
+
+	for i := int64(0); i < numBatches; i++ {
+		rows, err = s.db.QueryxContext(ctx, loadAllSubscriptionsConfiguration, cursor, projectID, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		for rows.Next() {
+			sub := datastore.Subscription{}
+			err = rows.StructScan(&sub)
+			closeWithError(rows)
+
+			if err != nil {
+				return nil, err
+			}
+
+			nullifyEmptyConfig(&sub)
+			subs[counter] = sub
+			counter++
+		}
+
+		closeWithError(rows)
+		cursor = subs[counter-1].UID
+	}
+
+	return subs[:counter], nil
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
@@ -717,7 +735,9 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 
 func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
 	var count int64
-	err := s.db.GetContext(ctx, &count, countEndpointSubscriptions, projectID, endpointID)
+
+	q := countProjectSubscriptions + ` AND s.endpoint_id = $2`
+	err := s.db.GetContext(ctx, &count, q, projectID, endpointID)
 	if err != nil {
 		return 0, err
 	}
