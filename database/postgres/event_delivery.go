@@ -108,6 +108,20 @@ const (
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
 
+	fetchEventDeliverySlim = `
+    SELECT
+        id,project_id,event_id,subscription_id,
+        headers,attempts,status,metadata,cli_metadata,
+        COALESCE(url_query_params, '') AS url_query_params,
+        COALESCE(idempotency_key, '') AS idempotency_key,created_at,updated_at,
+        COALESCE(event_type,'') AS "event_type",
+        COALESCE(device_id,'') AS "device_id",
+        COALESCE(endpoint_id,'') AS "endpoint_id"
+    FROM convoy.event_deliveries
+	WHERE deleted_at IS NULL
+    AND project_id = $1 AND id = $2
+    `
+
 	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '')
 	AND (ed.event_id = :event_id OR :event_id = '')
     AND (ed.event_type = :event_type OR :event_type = '')
@@ -262,7 +276,6 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 
 // CreateEventDeliveries creates event deliveries in bulk
 func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliveries []*datastore.EventDelivery) error {
-
 	values := make([]map[string]interface{}, 0, len(deliveries))
 
 	for _, delivery := range deliveries {
@@ -344,6 +357,19 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
 	err := e.db.QueryRowxContext(ctx, fetchEventDeliveryByID, id, projectID).StructScan(eventDelivery)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrEventDeliveryNotFound
+		}
+		return nil, err
+	}
+
+	return eventDelivery, nil
+}
+
+func (e *eventDeliveryRepo) FindEventDeliveryByIDSlim(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
+	eventDelivery := &datastore.EventDelivery{}
+	err := e.db.QueryRowxContext(ctx, fetchEventDeliverySlim, projectID, id).StructScan(eventDelivery)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventDeliveryNotFound

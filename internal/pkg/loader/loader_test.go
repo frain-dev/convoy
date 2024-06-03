@@ -10,9 +10,9 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/golang/mock/gomock"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestSyncChanges(t *testing.T) {

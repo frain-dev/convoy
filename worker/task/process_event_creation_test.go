@@ -14,10 +14,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 type args struct {
