@@ -9,8 +9,8 @@ import (
 	http "net/http"
 	reflect "reflect"
 
-	gomock "github.com/golang/mock/gomock"
 	newrelic "github.com/newrelic/go-agent/v3/newrelic"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockTracer is a mock of Tracer interface.

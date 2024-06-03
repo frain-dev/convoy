@@ -5,8 +5,8 @@ import (
 
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_Build(t *testing.T) {
