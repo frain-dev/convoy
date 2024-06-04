@@ -131,10 +131,10 @@ const (
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
-    where id > $1
-    AND project_id = $2
+    where id > ?
+    AND project_id IN ?
     AND deleted_at is null
-    ORDER BY id LIMIT $3`
+    ORDER BY id LIMIT ?`
 
 	fetchUpdatedSubscriptions = `
     select name, id, type, project_id, endpoint_id, function, updated_at,
@@ -149,10 +149,7 @@ const (
     ORDER BY id LIMIT $3`
 
 	fetchDeletedSubscriptions = `
-    select name, id, type, project_id, endpoint_id, function, updated_at,
-    filter_config_event_types AS "filter_config.event_types",
-    filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body"
+    select  id
     from convoy.subscriptions
     where (deleted_at > $4 AND deleted_at is not null)
     AND id > $1
@@ -253,56 +250,12 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 	return &subscriptionRepo{db: db.GetDB(), cache: ca}
 }
 
-func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	var subs []datastore.Subscription
-	cursor := "0"
-
-	for {
-		rows, err := s.db.QueryxContext(ctx, fetchUpdatedSubscriptions, cursor, projectID, pageSize, t)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions, err := scanSubscriptions(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(subscriptions) == 0 {
-			break
-		}
-
-		subs = append(subs, subscriptions...)
-		cursor = subscriptions[len(subscriptions)-1].UID
-	}
-
-	return subs, nil
+func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	return s.fetchChangedSubscriptionConfig(ctx, fetchUpdatedSubscriptions, projectIDs, t, pageSize)
 }
 
-func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	var subs []datastore.Subscription
-	cursor := "0"
-
-	for {
-		rows, err := s.db.QueryxContext(ctx, fetchDeletedSubscriptions, cursor, projectID, pageSize, t)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions, err := scanSubscriptions(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(subscriptions) == 0 {
-			break
-		}
-
-		subs = append(subs, subscriptions...)
-		cursor = subscriptions[len(subscriptions)-1].UID
-	}
-
-	return subs, nil
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	return s.fetchChangedSubscriptionConfig(ctx, fetchDeletedSubscriptions, projectIDs, t, pageSize)
 }
 
 func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]datastore.Subscription, error) {
@@ -338,9 +291,14 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 	return subs, nil
 }
 
-func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectID string, pageSize int64) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]datastore.Subscription, error) {
+	query, args, err := sqlx.In(countProjectSubscriptions, projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
 	var subCount int64
-	err := s.db.GetContext(ctx, &subCount, countProjectSubscriptions, projectID)
+	err = s.db.GetContext(ctx, &subCount, s.db.Rebind(query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -356,30 +314,74 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 	numBatches := int64(math.Ceil(float64(subCount / pageSize)))
 
 	for i := int64(0); i < numBatches; i++ {
-		rows, err = s.db.QueryxContext(ctx, loadAllSubscriptionsConfiguration, cursor, projectID, pageSize)
+		query, args, err = sqlx.In(loadAllSubscriptionsConfiguration, projectIDs)
+		if err != nil {
+			return nil, err
+		}
+		query = s.db.Rebind(query)
+
+		rows, err = s.db.QueryxContext(ctx, query, cursor, projectIDs, pageSize)
 		if err != nil {
 			return nil, err
 		}
 
-		for rows.Next() {
-			sub := datastore.Subscription{}
-			err = rows.StructScan(&sub)
-			closeWithError(rows)
+		// using func to avoid calling defer in a loo, that can easily fill up function stack and cause a crash
+		func() {
+			defer closeWithError(rows)
+			for rows.Next() {
+				sub := datastore.Subscription{}
+				if err = rows.StructScan(&sub); err != nil {
+					return
+				}
 
-			if err != nil {
-				return nil, err
+				nullifyEmptyConfig(&sub)
+				subs[counter] = sub
+				counter++
 			}
 
-			nullifyEmptyConfig(&sub)
-			subs[counter] = sub
-			counter++
+			cursor = subs[counter-1].UID
+		}()
+
+		if err != nil {
+			return nil, err
 		}
 
-		closeWithError(rows)
-		cursor = subs[counter-1].UID
 	}
 
 	return subs[:counter], nil
+}
+
+func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	// no one is gonna update or delete 10k subscriptions at a go
+	// so no need for counting and batching, we can reliably assume the loop will usually run once
+	subs := make([]datastore.Subscription, 0, 1)
+	cursor := "0"
+
+	for {
+		q, args, err := sqlx.In(query, cursor, projectIDs, pageSize, t)
+		if err != nil {
+			return nil, err
+		}
+
+		rows, err := s.db.QueryxContext(ctx, s.db.Rebind(q), args...)
+		if err != nil {
+			return nil, err
+		}
+
+		subscriptions, err := scanSubscriptions(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(subscriptions) == 0 {
+			break
+		}
+
+		subs = append(subs, subscriptions...)
+		cursor = subscriptions[len(subscriptions)-1].UID
+	}
+
+	return subs, nil
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {

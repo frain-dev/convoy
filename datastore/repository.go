@@ -120,9 +120,9 @@ type SubscriptionRepository interface {
 	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error)
 	FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]Subscription, error)
-	LoadAllSubscriptionConfig(ctx context.Context, projectID string, pageSize int64) ([]Subscription, error)
-	FetchDeletedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int64) ([]Subscription, error)
-	FetchUpdatedSubscriptions(ctx context.Context, projectID string, t time.Time, pageSize int64) ([]Subscription, error)
+	LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]Subscription, error)
+	FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]Subscription, error)
+	FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]Subscription, error)
 }
 
 type SourceRepository interface {
