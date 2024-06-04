@@ -46,6 +46,11 @@
 			<p class="text-neutral-10 text-12 font-light">IDEMPOTENCY KEY</p>
 			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
 		</div>
+
+		<div class="pl-30px">
+			<p class="text-neutral-10 text-12 font-light">DESCRIPTION</p>
+			<convoy-skeleton-loader className="mt-10px w-120px h-20px"></convoy-skeleton-loader>
+		</div>
 	</div>
 
 	<!-- event delivery details  -->
@@ -68,7 +73,7 @@
 		<div class="flex items-center">
 			<div class="px-30px">
 				<p class="text-neutral-10 text-12 font-light mb-6px">TIME</p>
-				<p class="text-12 font-medium">{{ eventDelsDetails?.updated_at | date: 'medium' }}</p>
+				<p class="text-12 font-medium">{{ eventDelsDetails?.updated_at | date : 'medium' }}</p>
 			</div>
 			<div class="w-[1px] h-40px bg-new.primary-25"></div>
 		</div>
@@ -101,9 +106,17 @@
 			<div class="w-[1px] h-40px bg-new.primary-25"></div>
 		</div>
 
+		<div class="flex items-center">
+			<div class="px-30px">
+				<p class="text-neutral-10 text-12 font-light mb-6px">IDEMPOTENCY KEY</p>
+				<p class="text-12 font-medium w-150px truncate">{{ eventDelsDetails?.idempotency_key || '-' }}</p>
+			</div>
+			<div class="w-[1px] h-40px bg-new.primary-25"></div>
+		</div>
+
 		<div class="pl-30px">
-			<p class="text-neutral-10 text-12 font-light mb-6px">IDEMPOTENCY KEY</p>
-			<p class="text-12 font-medium w-150px whitespace-nowrap overflow-hidden overflow-ellipsis">{{ eventDelsDetails?.idempotency_key || '-' }}</p>
+			<p class="text-neutral-10 text-12 font-light mb-6px">DESCRIPTION</p>
+			<p class="text-12 font-medium w-150px text-wrap">{{ eventDelsDetails?.description || '-' }}</p>
 		</div>
 	</div>
 
@@ -199,7 +212,7 @@
 					<div>
 						<p class="text-12 text-neutral-12 flex items-center">
 							<convoy-tag *ngIf="deliveryAttempt?.http_status" [color]="deliveryAttempt?.status ? 'success' : 'error'" className="ml-18px">{{ deliveryAttempt?.http_status }}</convoy-tag>
-							<span class="ml-8px">{{ deliveryAttempt.updated_at | date: 'medium' }}</span>
+							<span class="ml-8px">{{ deliveryAttempt.updated_at | date : 'medium' }}</span>
 						</p>
 					</div>
 
