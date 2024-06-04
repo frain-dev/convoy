@@ -113,18 +113,6 @@ const (
 	LEFT JOIN convoy.devices d ON s.device_id = d.id
 	WHERE s.deleted_at IS NULL `
 
-	fetchSubscriptionsForBroadcast = `
-    select id, type, project_id, endpoint_id, function,
-    filter_config_event_types AS "filter_config.event_types",
-    filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body"
-    from convoy.subscriptions
-    where (ARRAY[$4] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)
-    AND id > $1
-    AND project_id = $2
-    AND deleted_at is null
-    ORDER BY id LIMIT $3`
-
 	loadAllSubscriptionsConfiguration = `
     select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
@@ -132,7 +120,7 @@ const (
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
     where id > ?
-    AND project_id IN ?
+    AND project_id IN (?)
     AND deleted_at is null
     ORDER BY id LIMIT ?`
 
@@ -142,19 +130,19 @@ const (
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body"
     from convoy.subscriptions
-    where updated_at > $4
-    AND id > $1
-    AND project_id = $2
+    where updated_at > ?
+    AND id > ?
+    AND project_id IN (?)
     AND deleted_at is null
-    ORDER BY id LIMIT $3`
+    ORDER BY id LIMIT ?`
 
 	fetchDeletedSubscriptions = `
     select  id
     from convoy.subscriptions
-    where (deleted_at > $4 AND deleted_at is not null)
-    AND id > $1
-    AND project_id = $2
-    ORDER BY id LIMIT $3`
+    where (deleted_at > ? AND deleted_at is not null)
+    AND id > ?
+    AND project_id IN (?)
+    ORDER BY id LIMIT ?`
 
 	baseFetchSubscriptionsPagedForward = `
 	%s
@@ -179,10 +167,16 @@ const (
 	`
 
 	countProjectSubscriptions = `
-	SELECT COUNT(DISTINCT(s.id)) AS count
+	SELECT COUNT(s.id) AS count
 	FROM convoy.subscriptions s
 	WHERE s.deleted_at IS NULL
-	AND s.project_id = $1`
+	AND s.project_id IN (?)`
+
+	countEndpointSubscriptions = `
+	SELECT COUNT(s.id) AS count
+	FROM convoy.subscriptions s
+	WHERE s.deleted_at IS NULL
+	AND s.project_id = $1 AND s.endpoint_id = $2`
 
 	countPrevSubscriptions = `
 	SELECT COUNT(DISTINCT(s.id)) AS count
@@ -291,7 +285,7 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 			return nil, err
 		}
 
-		// using func to avoid calling defer in a loo, that can easily fill up function stack and cause a crash
+		// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
 		func() {
 			defer closeWithError(rows)
 			for rows.Next() {
@@ -324,7 +318,7 @@ func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, q
 	cursor := "0"
 
 	for {
-		q, args, err := sqlx.In(query, cursor, projectIDs, pageSize, t)
+		q, args, err := sqlx.In(query, t, cursor, projectIDs, pageSize)
 		if err != nil {
 			return nil, err
 		}
@@ -704,8 +698,7 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
 	var count int64
 
-	q := countProjectSubscriptions + ` AND s.endpoint_id = $2`
-	err := s.db.GetContext(ctx, &count, q, projectID, endpointID)
+	err := s.db.GetContext(ctx, &count, countEndpointSubscriptions, projectID, endpointID)
 	if err != nil {
 		return 0, err
 	}

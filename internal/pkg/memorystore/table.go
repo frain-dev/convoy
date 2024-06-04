@@ -9,7 +9,8 @@ import (
 type Key string
 
 func NewKey(prefix, hash string) Key {
-	var key strings.Builder
+	key := strings.Builder{}
+	key.Grow(len(prefix) + len(delim) + len(hash))
 
 	key.WriteString(prefix)
 	key.WriteString(delim)

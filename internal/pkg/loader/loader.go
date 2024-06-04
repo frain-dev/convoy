@@ -43,7 +43,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		// fetch subscriptions.
 		subscriptions, err := s.fetchAllSubscriptions(ctx)
 		if err != nil {
-			s.log.WithError(err).Error("failed to fetch subscriptions")
+			s.log.WithError(err).Error("failed to fetch all subscriptions")
 			return err
 		}
 
@@ -63,7 +63,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	// fetch subscriptions.
 	updatedSubs, err := s.fetchUpdatedSubscriptions(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch subscriptions")
+		s.log.WithError(err).Error("failed to fetch updated subscriptions")
 		return err
 	}
 
@@ -78,7 +78,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	// fetch subscriptions.
 	deletedSubs, err := s.fetchDeletedSubscriptions(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch subscriptions")
+		s.log.WithError(err).Error("failed to fetch deleted subscriptions")
 		return err
 	}
 
@@ -216,7 +216,7 @@ func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]d
 
 	subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, ids, s.lastUpdatedAt, s.batchSize)
 	if err != nil {
-		s.log.WithError(err).Errorf("failed to load subscriptions of all projects")
+		s.log.WithError(err).Errorf("failed to load updated subscriptions of all projects")
 		return nil, err
 	}
 
@@ -236,7 +236,7 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 
 	subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, ids, s.lastUpdatedAt, s.batchSize)
 	if err != nil {
-		s.log.WithError(err).Errorf("failed to load subscriptions of all projects")
+		s.log.WithError(err).Errorf("failed to load deleted subscriptions of all projects")
 		return nil, err
 	}
 
