@@ -311,16 +311,15 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 	cursor := "0"
 	var rows *sqlx.Rows // reuse the mem
 	counter := 0
-	numBatches := int64(math.Ceil(float64(subCount / pageSize)))
+	numBatches := int64(math.Ceil(float64(subCount) / float64(pageSize)))
 
 	for i := int64(0); i < numBatches; i++ {
-		query, args, err = sqlx.In(loadAllSubscriptionsConfiguration, projectIDs)
+		query, args, err = sqlx.In(loadAllSubscriptionsConfiguration, cursor, projectIDs, pageSize)
 		if err != nil {
 			return nil, err
 		}
-		query = s.db.Rebind(query)
 
-		rows, err = s.db.QueryxContext(ctx, query, cursor, projectIDs, pageSize)
+		rows, err = s.db.QueryxContext(ctx, s.db.Rebind(query), args...)
 		if err != nil {
 			return nil, err
 		}
