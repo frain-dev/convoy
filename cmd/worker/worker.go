@@ -2,6 +2,9 @@ package worker
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/queue"
+	redisQueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"time"
 
@@ -24,7 +27,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
@@ -42,6 +44,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var smtpReplyTo string
 	var smtpFrom string
 	var smtpProvider string
+	var executionMode string
 	var smtpUrl string
 	var smtpPort uint32
 
@@ -86,8 +89,42 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
+			redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+			if err != nil {
+				return err
+			}
+
+			events := map[string]int{
+				string(convoy.EventQueue):       6,
+				string(convoy.CreateEventQueue): 4,
+			}
+
+			retry := map[string]int{
+				string(convoy.RetryEventQueue): 7,
+				string(convoy.ScheduleQueue):   1,
+				string(convoy.DefaultQueue):    1,
+				string(convoy.MetaEventQueue):  1,
+			}
+
+			var queueNames map[string]int
+			if executionMode == "events" {
+				queueNames = events
+			} else if executionMode == "retry" {
+				queueNames = retry
+			}
+
+			opts := queue.QueueOptions{
+				Names:             queueNames,
+				RedisClient:       redis,
+				RedisAddress:      cfg.Redis.BuildDsn(),
+				Type:              string(config.RedisQueueProvider),
+				PrometheusAddress: cfg.Prometheus.Dsn,
+			}
+
+			q := redisQueue.NewQueue(opts)
+
 			// register worker.
-			consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, a.Queue, lo)
+			consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo)
 			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 			metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
 			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
@@ -146,12 +183,21 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-				endpointRepo,
-				eventDeliveryRepo,
-				projectRepo,
-				a.Queue, rateLimiter, dispatcher,
-			), newTelemetry)
+			if executionMode == "events" {
+				consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
+					endpointRepo,
+					eventDeliveryRepo,
+					projectRepo,
+					a.Queue, rateLimiter, dispatcher,
+				), newTelemetry)
+			} else if executionMode == "retry" {
+				consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
+					endpointRepo,
+					eventDeliveryRepo,
+					projectRepo,
+					a.Queue, rateLimiter, dispatcher,
+				), newTelemetry)
+			}
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
@@ -246,6 +292,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
+	cmd.Flags().StringVar(&executionMode, "mode", "events", "Execution Mode")
 
 	return cmd
 }

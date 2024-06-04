@@ -263,7 +263,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		return err
 	}
 
-	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
+	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,

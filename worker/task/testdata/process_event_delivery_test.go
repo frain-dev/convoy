@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/worker/task"
 	"testing"
 	"time"
 
@@ -60,8 +61,6 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				project := &datastore.Project{UID: "project-id-1"}
 				o.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(project, nil)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{
@@ -98,14 +97,12 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: &DeliveryError{Err: fmt.Errorf("%s, err: nil", ErrDeliveryAttemptFailed.Error())},
+			expectedError: &task.DeliveryError{Err: fmt.Errorf("%s, err: nil", task.ErrDeliveryAttemptFailed.Error())},
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
@@ -168,8 +165,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -253,8 +248,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -338,8 +331,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -423,8 +414,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -510,8 +499,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -594,8 +581,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -683,8 +668,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				q.EXPECT().
 					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -697,6 +680,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				}
 			},
 		},
+
 		{
 			name:          "Manual retry - send endpoint enabled notification",
 			cfgPath:       "./testdata/Config/basic-convoy-disable-endpoint.json",
@@ -773,8 +757,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				q.EXPECT().
 					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -831,9 +813,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			dispatcher, err := net.NewDispatcher(3*time.Second, "", false)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher)
+			processFn := task.ProcessRetryEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher)
 
-			payload := EventDelivery{
+			payload := task.EventDelivery{
 				EventDeliveryID: tc.msg.UID,
 				ProjectID:       tc.msg.ProjectID,
 			}
@@ -847,9 +829,9 @@ func TestProcessEventDelivery(t *testing.T) {
 				Payload: data,
 			}
 
-			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
+			newTask := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			err = processFn(context.Background(), task)
+			err = processFn(context.Background(), newTask)
 
 			// Assert.
 			assert.Equal(t, tc.expectedError, err)
@@ -864,7 +846,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 		project             *datastore.Project
 		endpoint            *datastore.Endpoint
 		wantRetryConfig     *datastore.StrategyConfiguration
-		wantRateLimitConfig *RateLimitConfig
+		wantRateLimitConfig *task.RateLimitConfig
 		wantDisableEndpoint bool
 	}{
 		{
@@ -895,7 +877,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				Duration:   2,
 				RetryCount: 3,
 			},
-			wantRateLimitConfig: &RateLimitConfig{
+			wantRateLimitConfig: &task.RateLimitConfig{
 				Rate:       100,
 				BucketSize: 60,
 			},
@@ -927,7 +909,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 				Duration:   3,
 				RetryCount: 4,
 			},
-			wantRateLimitConfig: &RateLimitConfig{
+			wantRateLimitConfig: &task.RateLimitConfig{
 				Rate:       100,
 				BucketSize: 600,
 			},
@@ -937,7 +919,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			evConfig := &EventDeliveryConfig{Subscription: tc.subscription, Project: tc.project, Endpoint: tc.endpoint}
+			evConfig := &task.EventDeliveryConfig{Subscription: tc.subscription, Project: tc.project, Endpoint: tc.endpoint}
 
 			if tc.wantRetryConfig != nil {
 				rc, err := evConfig.RetryConfig()
