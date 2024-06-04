@@ -21,7 +21,7 @@ func TestSyncChanges(t *testing.T) {
 		ctx := context.Background()
 		projectID := ulid.Make().String()
 		endpointID := "test-endpoint"
-		batchSize := 5
+		batchSize := int64(5)
 
 		ctrl := gomock.NewController(t)
 		subRepo := mocks.NewMockSubscriptionRepository(ctrl)
@@ -86,7 +86,7 @@ func TestSyncChanges(t *testing.T) {
 
 		// mock subscriptions repo
 		subRepo.EXPECT().
-			LoadAllSubscriptionConfig(ctx, projectID, batchSize).
+			LoadAllSubscriptionConfig(ctx, []string{projectID}, batchSize).
 			Times(1).
 			Return(subscriptions, nil)
 
@@ -108,7 +108,7 @@ func TestSyncChanges(t *testing.T) {
 		ctx := context.Background()
 		projectID := ulid.Make().String()
 		endpointID := "test-endpoint"
-		batchSize := 5
+		batchSize := int64(5)
 
 		ctrl := gomock.NewController(t)
 		subRepo := mocks.NewMockSubscriptionRepository(ctrl)
@@ -203,7 +203,7 @@ func TestSyncChanges(t *testing.T) {
 
 		// mock subscriptions repo
 		subRepo.EXPECT().
-			LoadAllSubscriptionConfig(ctx, projectID, batchSize).
+			LoadAllSubscriptionConfig(ctx, []string{projectID}, batchSize).
 			Times(1).
 			Return(subscriptions, nil)
 
@@ -223,12 +223,12 @@ func TestSyncChanges(t *testing.T) {
 		require.Equal(t, initialSubs, len(table.GetKeys()))
 
 		subRepo.EXPECT().
-			FetchUpdatedSubscriptions(ctx, projectID, lastUpdate, batchSize).
+			FetchUpdatedSubscriptions(ctx, []string{projectID}, lastUpdate, batchSize).
 			Times(1).
 			Return(newSubscriptions, nil)
 
 		subRepo.EXPECT().
-			FetchDeletedSubscriptions(ctx, projectID, lastUpdate, batchSize).
+			FetchDeletedSubscriptions(ctx, []string{projectID}, lastUpdate, batchSize).
 			Times(1).
 			Return(newSubscriptions, nil)
 
@@ -244,7 +244,7 @@ func TestSyncChanges(t *testing.T) {
 		ctx := context.Background()
 		projectID := ulid.Make().String()
 		endpointID := "test-endpoint"
-		batchSize := 5
+		batchSize := int64(5)
 
 		ctrl := gomock.NewController(t)
 		subRepo := mocks.NewMockSubscriptionRepository(ctrl)
@@ -325,7 +325,7 @@ func TestSyncChanges(t *testing.T) {
 
 		// mock subscriptions repo
 		subRepo.EXPECT().
-			LoadAllSubscriptionConfig(ctx, projectID, batchSize).
+			LoadAllSubscriptionConfig(ctx, []string{projectID}, batchSize).
 			Times(1).
 			Return(subscriptions, nil)
 
@@ -345,12 +345,12 @@ func TestSyncChanges(t *testing.T) {
 		require.Equal(t, initialSubs, len(table.GetKeys()))
 
 		subRepo.EXPECT().
-			FetchUpdatedSubscriptions(ctx, projectID, lastUpdate, batchSize).
+			FetchUpdatedSubscriptions(ctx, []string{projectID}, lastUpdate, batchSize).
 			Times(1).
 			Return(newSubscriptions, nil)
 
 		subRepo.EXPECT().
-			FetchDeletedSubscriptions(ctx, projectID, lastUpdate, batchSize).
+			FetchDeletedSubscriptions(ctx, []string{projectID}, lastUpdate, batchSize).
 			Times(1).
 			Return(deletedSubscriptions, nil)
 
@@ -367,7 +367,7 @@ func TestSyncChanges(t *testing.T) {
 		ctx := context.Background()
 		projectID := "test-project"
 		endpointID := "test-endpoint"
-		batchSize := 5
+		batchSize := int64(5)
 
 		ctrl := gomock.NewController(t)
 		subRepo := mocks.NewMockSubscriptionRepository(ctrl)
@@ -432,7 +432,7 @@ func TestSyncChanges(t *testing.T) {
 
 		// mock subscriptions repo
 		subRepo.EXPECT().
-			LoadAllSubscriptionConfig(ctx, projectID, batchSize).
+			LoadAllSubscriptionConfig(ctx, []string{projectID}, batchSize).
 			Times(1).
 			Return(subscriptions, nil)
 
