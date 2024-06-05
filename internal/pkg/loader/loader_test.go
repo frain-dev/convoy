@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/mocks"
@@ -117,6 +119,7 @@ func TestSyncChanges(t *testing.T) {
 
 		initialSubs := 5
 		lastUpdate := time.Now().Add(-5 * time.Second)
+		lastDelete := time.Time{}
 		subscriptions := []datastore.Subscription{
 			{
 				UID:        ulid.Make().String(),
@@ -167,6 +170,7 @@ func TestSyncChanges(t *testing.T) {
 					EventTypes: []string{"sub-5"},
 				},
 				UpdatedAt: lastUpdate,
+				DeletedAt: null.TimeFrom(lastDelete),
 			},
 		}
 
@@ -228,7 +232,7 @@ func TestSyncChanges(t *testing.T) {
 			Return(newSubscriptions, nil)
 
 		subRepo.EXPECT().
-			FetchDeletedSubscriptions(ctx, []string{projectID}, lastUpdate, batchSize).
+			FetchDeletedSubscriptions(ctx, []string{projectID}, lastDelete, batchSize).
 			Times(1).
 			Return(newSubscriptions, nil)
 
@@ -253,6 +257,7 @@ func TestSyncChanges(t *testing.T) {
 
 		initialSubs := 5
 		lastUpdate := time.Now().Add(-5 * time.Second)
+		lastDelete := time.Time{}
 		subscriptions := []datastore.Subscription{
 			{
 				UID:        ulid.Make().String(),
@@ -313,6 +318,7 @@ func TestSyncChanges(t *testing.T) {
 		for i := 0; i < deletedSubsCount; i++ {
 			subscription := subscriptions[i]
 			subscription.UpdatedAt = lastUpdate.Add(4 * time.Second)
+			subscription.DeletedAt = null.TimeFrom(lastDelete)
 			deletedSubscriptions = append(deletedSubscriptions, subscription)
 		}
 
@@ -350,7 +356,7 @@ func TestSyncChanges(t *testing.T) {
 			Return(newSubscriptions, nil)
 
 		subRepo.EXPECT().
-			FetchDeletedSubscriptions(ctx, []string{projectID}, lastUpdate, batchSize).
+			FetchDeletedSubscriptions(ctx, []string{projectID}, lastDelete, batchSize).
 			Times(1).
 			Return(deletedSubscriptions, nil)
 
