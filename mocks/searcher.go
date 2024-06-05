@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	datastore "github.com/frain-dev/convoy/datastore"
-	gomock "github.com/golang/mock/gomock"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockSearcher is a mock of Searcher interface.

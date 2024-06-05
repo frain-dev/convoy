@@ -3,11 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
-	"testing"
+	"go.uber.org/mock/gomock"
 )
 
 func provideMetaEventService(ctrl *gomock.Controller) *MetaEventService {
@@ -84,5 +85,4 @@ func TestMetaEventService(t *testing.T) {
 			require.Nil(t, err)
 		})
 	}
-
 }

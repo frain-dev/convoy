@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 
@@ -25,7 +26,7 @@ var (
 	defaultBroadcastDelay   = 30 * time.Second
 )
 
-func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, subscriptionsTable memorystore.ITable) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var broadcastEvent models.BroadcastEvent
 
@@ -49,10 +50,19 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			isDuplicate = len(events) > 0
 		}
 
-		subscriptions, err := subRepo.FetchSubscriptionsForBroadcast(ctx, broadcastEvent.ProjectID, broadcastEvent.EventType, 10_000)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("failed to fetch subscriptions with err: %s", err.Error()), delay: defaultBroadcastDelay}
-		}
+		mKeys := memorystore.NewKey(project.UID, "*")
+		matchAllSubRows := subscriptionsTable.Get(mKeys)
+		matchAllSubs := getSubcriptionsFromRows(matchAllSubRows)
+
+		key := memorystore.NewKey(project.UID, broadcastEvent.EventType)
+		subs := subscriptionsTable.Get(key)
+		eventTypeSubs := getSubcriptionsFromRows(subs)
+
+		subscriptions := make([]datastore.Subscription, 0, len(matchAllSubs)+len(eventTypeSubs))
+		subscriptions = append(subscriptions, eventTypeSubs...)
+		subscriptions = append(subscriptions, matchAllSubs...)
+
+		//subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
@@ -126,3 +136,40 @@ func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscr
 
 	return endpointIds, subscriptionsIds
 }
+
+func getSubcriptionsFromRows(rows *memorystore.Row) []datastore.Subscription {
+	if rows == nil {
+		return []datastore.Subscription{}
+	}
+
+	subs, ok := rows.Value().([]datastore.Subscription)
+	if !ok {
+		return []datastore.Subscription{}
+	}
+
+	return subs
+}
+
+//func joinSubscriptions(sub1, sub2 []datastore.Subscription) []datastore.Subscription {
+//	seen := make(map[string]bool)
+//	result := []datastore.Subscription{}
+//
+//	// Iterate through the first slice and add unique subscriptions to the result
+//	for _, sub := range sub1 {
+//		if !seen[sub.UID] {
+//			seen[sub.UID] = true
+//			result = append(result, sub)
+//		}
+//	}
+//
+//	// Iterate through the second slice and add unique subscriptions to the result
+//	for _, sub := range sub2 {
+//		if !seen[sub.UID] {
+//			seen[sub.UID] = true
+//			result = append(result, sub)
+//		}
+//	}
+//
+//	return result
+//}
+//
