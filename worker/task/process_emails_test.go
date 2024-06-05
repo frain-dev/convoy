@@ -8,9 +8,9 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func Test_ProcessEmails(t *testing.T) {

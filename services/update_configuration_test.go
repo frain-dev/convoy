@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"

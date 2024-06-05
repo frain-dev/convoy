@@ -12,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 func provideCreateFanoutEventService(ctrl *gomock.Controller, event *models.FanoutEvent, project *datastore.Project) *CreateFanoutEventService {
@@ -151,7 +151,6 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				p, _ := es.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
 				p.EXPECT().FindPortalLinkByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil, datastore.ErrPortalLinkNotFound)
-
 			},
 			args: args{
 				ctx: ctx,
