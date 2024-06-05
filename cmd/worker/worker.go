@@ -106,11 +106,23 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				string(convoy.MetaEventQueue):  1,
 			}
 
+			both := map[string]int{
+				string(convoy.EventQueue):       4,
+				string(convoy.CreateEventQueue): 3,
+				string(convoy.RetryEventQueue):  2,
+				string(convoy.ScheduleQueue):    1,
+				string(convoy.DefaultQueue):     1,
+				string(convoy.MetaEventQueue):   1,
+			}
+
 			var queueNames map[string]int
-			if executionMode == "events" {
-				queueNames = events
-			} else if executionMode == "retry" {
+			switch executionMode {
+			case "retry":
 				queueNames = retry
+			case "events":
+				queueNames = events
+			default:
+				queueNames = both
 			}
 
 			opts := queue.QueueOptions{
@@ -292,7 +304,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
-	cmd.Flags().StringVar(&executionMode, "mode", "events", "Execution Mode")
+	cmd.Flags().StringVar(&executionMode, "mode", "default", "Execution Mode")
 
 	return cmd
 }
