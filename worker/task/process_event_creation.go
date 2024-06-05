@@ -114,11 +114,11 @@ func ProcessEventCreation(
 }
 
 func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
-	ec := &EventDeliveryConfig{Project: project}
+	ec := &EventDeliveryConfig{project: project}
 
 	eventDeliveries := make([]*datastore.EventDelivery, 0)
 	for _, s := range subscriptions {
-		ec.Subscription = &s
+		ec.subscription = &s
 		headers := event.Headers
 
 		if s.Type == datastore.SubscriptionTypeAPI {

@@ -937,7 +937,7 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			evConfig := &EventDeliveryConfig{Subscription: tc.subscription, Project: tc.project, Endpoint: tc.endpoint}
+			evConfig := &EventDeliveryConfig{subscription: tc.subscription, project: tc.project, endpoint: tc.endpoint}
 
 			if tc.wantRetryConfig != nil {
 				rc, err := evConfig.RetryConfig()

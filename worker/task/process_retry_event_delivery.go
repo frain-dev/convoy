@@ -37,15 +37,6 @@ var (
 	defaultEventDelay        = 120 * time.Second
 )
 
-type SignatureValues struct {
-	HMAC      string
-	Timestamp string
-}
-type EventDelivery struct {
-	EventDeliveryID string
-	ProjectID       string
-}
-
 func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
 	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
 ) func(context.Context, *asynq.Task) error {
@@ -317,46 +308,4 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
-}
-
-type EventDeliveryConfig struct {
-	Project      *datastore.Project
-	Subscription *datastore.Subscription
-	Endpoint     *datastore.Endpoint
-}
-
-type RetryConfig struct {
-	Type       datastore.StrategyProvider
-	Duration   uint64
-	RetryCount uint64
-}
-
-type RateLimitConfig struct {
-	Rate       int
-	BucketSize int
-}
-
-func (ec *EventDeliveryConfig) RetryConfig() (*RetryConfig, error) {
-	rc := &RetryConfig{}
-
-	if ec.Subscription.RetryConfig != nil {
-		rc.Duration = ec.Subscription.RetryConfig.Duration
-		rc.RetryCount = ec.Subscription.RetryConfig.RetryCount
-		rc.Type = ec.Subscription.RetryConfig.Type
-	} else {
-		rc.Duration = ec.Project.Config.Strategy.Duration
-		rc.RetryCount = ec.Project.Config.Strategy.RetryCount
-		rc.Type = ec.Project.Config.Strategy.Type
-	}
-
-	return rc, nil
-}
-
-func (ec *EventDeliveryConfig) RateLimitConfig() *RateLimitConfig {
-	rlc := &RateLimitConfig{}
-
-	rlc.Rate = ec.Endpoint.RateLimit
-	rlc.BucketSize = int(ec.Endpoint.RateLimitDuration)
-
-	return rlc
 }
