@@ -133,7 +133,7 @@ func (t *Table) deleteInternal(key Key) {
 }
 
 func (t *Table) GetKeys() []Key {
-	var keys []Key
+	keys := make([]Key, 0, len(t.rows))
 	for k := range t.rows {
 		keys = append(keys, k)
 	}
