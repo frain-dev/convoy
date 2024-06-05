@@ -27,19 +27,19 @@ var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array
 //		  "$gte": 5
 //		}
 //	}
-func Flatten(input interface{}) (map[string]interface{}, error) {
+func Flatten(input interface{}) (M, error) {
 	return flatten("", input)
 }
 
-func FlattenWithPrefix(prefix string, input interface{}) (map[string]interface{}, error) {
+func FlattenWithPrefix(prefix string, input interface{}) (M, error) {
 	return flatten(prefix, input)
 }
 
-func flatten(prefix string, nested interface{}) (map[string]interface{}, error) {
-	f := map[string]interface{}{}
+func flatten(prefix string, nested interface{}) (M, error) {
+	f := M{}
 
 	switch n := nested.(type) {
-	case map[string]interface{}:
+	case M:
 		for key, value := range n {
 			if strings.HasPrefix(key, "$") && !strings.HasPrefix(key, "$.") {
 				if !isKeyValidOperator(key) {
@@ -60,7 +60,7 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 
 						f[key] = a
 						return f, nil
-					case []map[string]interface{}:
+					case []M:
 						for i := range a {
 							t, err := flatten("", a[i])
 							if err != nil {
@@ -104,11 +104,11 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 			}
 		}
 	case []interface{}:
-		ff := map[string]interface{}{}
+		ff := M{}
 
 		for i := range n {
 			switch t := n[i].(type) {
-			case map[string]interface{}:
+			case M:
 				var p string
 				if len(prefix) > 0 {
 					p = fmt.Sprintf("%v.%v", prefix, i)
@@ -138,7 +138,7 @@ func flatten(prefix string, nested interface{}) (map[string]interface{}, error) 
 		if prefix != "" {
 			f[prefix] = n
 		} else {
-			f = n.(map[string]interface{})
+			f = n.(M)
 		}
 	}
 
