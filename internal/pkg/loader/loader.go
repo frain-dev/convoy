@@ -56,7 +56,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		}
 
 		s.loaded = true
-		s.log.Info("syncing subscriptions completed in ", time.Since(startTime))
+		s.log.Infof("syncing subscriptions completed in %ss", time.Since(startTime).Seconds())
 		return nil
 	}
 
@@ -87,7 +87,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 			s.lastDelete = sub.DeletedAt.Time
 		}
 
-		s.deleteSubscriptionToTable(sub, table)
+		s.deleteSubscriptionFromTable(sub, table)
 	}
 
 	return nil
@@ -137,7 +137,7 @@ func (s *SubscriptionLoader) addSubscriptionToTable(sub datastore.Subscription, 
 	}
 }
 
-func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscription, table *memorystore.Table) {
+func (s *SubscriptionLoader) deleteSubscriptionFromTable(sub datastore.Subscription, table *memorystore.Table) {
 	if sub.FilterConfig == nil {
 		return
 	}
@@ -165,6 +165,11 @@ func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscriptio
 			}
 		}
 
+		if len(values) == 1 {
+			// set slice to nil, range below will skip and the key will be deleted from the table
+			values = nil
+		}
+
 		for id, v := range values {
 			if v.UID == sub.UID {
 				b := values[:id]
@@ -176,7 +181,7 @@ func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscriptio
 
 		if len(values) == 0 {
 			table.Delete(key)
-			return
+			continue
 		}
 
 		table.Upsert(key, values)
@@ -234,7 +239,7 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 		ids[i] = projects[i].UID
 	}
 
-	subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, ids, s.lastUpdatedAt, s.batchSize)
+	subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, ids, s.lastDelete, s.batchSize)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to load deleted subscriptions of all projects")
 		return nil, err

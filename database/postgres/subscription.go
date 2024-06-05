@@ -149,9 +149,10 @@ const (
     ORDER BY id LIMIT ?`
 
 	fetchDeletedSubscriptions = `
-    select  id
+    select  id,deleted_at, project_id,
+    filter_config_event_types AS "filter_config.event_types"
     from convoy.subscriptions
-    where (deleted_at > ? AND deleted_at is not null)
+    where (deleted_at IS NOT NULL AND deleted_at > ?)
     AND id > ?
     AND project_id IN (?)
     ORDER BY id LIMIT ?`
