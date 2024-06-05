@@ -113,6 +113,18 @@ const (
 	LEFT JOIN convoy.devices d ON s.device_id = d.id
 	WHERE s.deleted_at IS NULL `
 
+	fetchSubscriptionsForBroadcast = `
+    select id, type, project_id, endpoint_id, function,
+    filter_config_event_types AS "filter_config.event_types",
+    filter_config_filter_headers AS "filter_config.filter.headers",
+	filter_config_filter_body AS "filter_config.filter.body"
+    from convoy.subscriptions
+    where (ARRAY[$4] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)
+    AND id > $1
+    AND project_id = $2
+    AND deleted_at is null
+    ORDER BY id LIMIT $3`
+
 	loadAllSubscriptionsConfiguration = `
     select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
