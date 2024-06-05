@@ -56,7 +56,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		}
 
 		s.loaded = true
-		s.log.Infof("syncing subscriptions completed in %ss", time.Since(startTime).Seconds())
+		s.log.Infof("syncing subscriptions completed in %fs", time.Since(startTime).Seconds())
 		return nil
 	}
 
