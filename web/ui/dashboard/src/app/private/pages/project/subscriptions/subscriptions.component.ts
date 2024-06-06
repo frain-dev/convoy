@@ -34,7 +34,7 @@ export class SubscriptionsComponent implements OnInit {
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {}
 
 	async ngOnInit() {
-        const urlParam = this.route.snapshot.params.id;
+		const urlParam = this.route.snapshot.params.id;
 		if (urlParam) {
 			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
 			this.subscriptionDialog.nativeElement.showModal();
@@ -54,7 +54,7 @@ export class SubscriptionsComponent implements OnInit {
 		try {
 			const subscriptionsResponse = await this.privateService.getSubscriptions(requestDetails);
 			this.subscriptions = subscriptionsResponse.data;
-			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptionsResponse.data.content);
+			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptionsResponse.data.content, 'asc');
 			this.subscriptions?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
 			this.isLoadindingSubscriptions = false;
 		} catch (error) {
@@ -80,7 +80,7 @@ export class SubscriptionsComponent implements OnInit {
 			this.generalService.showNotification({ message: response?.message, style: 'success' });
 			this.getSubscriptions();
 			delete this.activeSubscription;
-            this.deleteDialog.nativeElement.close();
+			this.deleteDialog.nativeElement.close();
 			this.isDeletingSubscription = false;
 		} catch (error) {
 			this.isDeletingSubscription = false;

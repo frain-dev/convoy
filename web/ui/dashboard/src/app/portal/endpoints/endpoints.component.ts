@@ -70,7 +70,7 @@ export class EndpointsComponent implements OnInit {
 			const endpoints = await this.privateService.getEndpoints(requestDetails);
 			this.fetchedEndpoints = endpoints.data;
 			this.endpoints = endpoints.data.content;
-            this.displayedEndpoints = this.generalService.setContentDisplayed(endpoints.data.content);
+            this.displayedEndpoints = this.generalService.setContentDisplayed(endpoints.data.content, 'asc');
 
 			this.isloadingSubscriptions = false;
 		} catch (_error) {
