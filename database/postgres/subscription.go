@@ -148,6 +148,21 @@ const (
     AND deleted_at is null
     ORDER BY id LIMIT ?`
 
+	countDeletedSubscriptions = `
+    select COUNT(id) from convoy.subscriptions
+    where (deleted_at IS NOT NULL AND deleted_at > ?)
+    AND project_id IN (?)`
+
+	countUpdatedSubscriptions = `
+    SELECT COUNT(*)
+    FROM (
+        SELECT DISTINCT id
+        FROM convoy.subscriptions
+        WHERE deleted_at IS NULL
+            AND updated_at > ?
+            AND project_id IN (?)
+    ) AS distinct_ids`
+
 	fetchDeletedSubscriptions = `
     select  id,deleted_at, project_id,
     filter_config_event_types AS "filter_config.event_types"
@@ -258,11 +273,11 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 }
 
 func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	return s.fetchChangedSubscriptionConfig(ctx, fetchUpdatedSubscriptions, projectIDs, t, pageSize)
+	return s.fetchChangedSubscriptionConfig(ctx, countUpdatedSubscriptions, fetchUpdatedSubscriptions, projectIDs, t, pageSize)
 }
 
 func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	return s.fetchChangedSubscriptionConfig(ctx, fetchDeletedSubscriptions, projectIDs, t, pageSize)
+	return s.fetchChangedSubscriptionConfig(ctx, countDeletedSubscriptions, fetchDeletedSubscriptions, projectIDs, t, pageSize)
 }
 
 func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]datastore.Subscription, error) {
@@ -324,37 +339,62 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 	return subs[:counter], nil
 }
 
-func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	// no one is gonna update or delete 10k subscriptions at a go
-	// so no need for counting and batching, we can reliably assume the loop will usually run once
-	subs := make([]datastore.Subscription, 0, 1)
-	cursor := "0"
-
-	for {
-		q, args, err := sqlx.In(query, t, cursor, projectIDs, pageSize)
-		if err != nil {
-			return nil, err
-		}
-
-		rows, err := s.db.QueryxContext(ctx, s.db.Rebind(q), args...)
-		if err != nil {
-			return nil, err
-		}
-
-		subscriptions, err := scanSubscriptions(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		if len(subscriptions) == 0 {
-			break
-		}
-
-		subs = append(subs, subscriptions...)
-		cursor = subscriptions[len(subscriptions)-1].UID
+func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, countQuery, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	q, args, err := sqlx.In(countQuery, t, projectIDs)
+	if err != nil {
+		return nil, err
 	}
 
-	return subs, nil
+	var subCount int64
+	err = s.db.GetContext(ctx, &subCount, s.db.Rebind(q), args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if subCount == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	subs := make([]datastore.Subscription, subCount)
+	cursor := "0"
+	var rows *sqlx.Rows // reuse the mem
+	counter := 0
+	numBatches := int64(math.Ceil(float64(subCount) / float64(pageSize)))
+
+	for i := int64(0); i < numBatches; i++ {
+		q, args, err = sqlx.In(query, t, cursor, projectIDs, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		rows, err = s.db.QueryxContext(ctx, s.db.Rebind(q), args...)
+		if err != nil {
+			return nil, err
+		}
+
+		// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
+		func() {
+			defer closeWithError(rows)
+			for rows.Next() {
+				sub := datastore.Subscription{}
+				if err = rows.StructScan(&sub); err != nil {
+					return
+				}
+
+				nullifyEmptyConfig(&sub)
+				subs[counter] = sub
+				counter++
+			}
+
+			cursor = subs[counter-1].UID
+		}()
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return subs[:counter], nil
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
