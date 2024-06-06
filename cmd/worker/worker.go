@@ -2,10 +2,8 @@ package worker
 
 import (
 	"context"
-	"net/http"
-	"time"
-
 	"github.com/frain-dev/convoy/net"
+	"net/http"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
@@ -140,7 +138,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				telemetry.OptionBackend(pb),
 				telemetry.OptionBackend(mb))
 
-			dispatcher, err := net.NewDispatcher(10*time.Second, cfg.Server.HTTP.HttpProxy, false)
+			dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false)
 			if err != nil {
 				a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
 				return err

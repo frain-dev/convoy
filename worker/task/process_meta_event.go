@@ -121,7 +121,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 	}
 
 	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
-	dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
+	dispatch, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating http client")
 		return nil, err
@@ -146,7 +146,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 
 	url := project.Config.MetaEvent.URL
 
-	resp, err := dispatch.SendRequest(ctx, url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID))
+	resp, err := dispatch.SendRequest(ctx, url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID), httpDuration)
 	if err != nil {
 		return nil, err
 	}
