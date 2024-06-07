@@ -2,7 +2,6 @@ package loader
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -19,13 +18,13 @@ type SubscriptionLoader struct {
 	projectRepo datastore.ProjectRepository
 
 	loaded        bool
-	batchSize     int
+	batchSize     int64
 	lastUpdatedAt time.Time
 	lastDelete    time.Time
 	log           log.StdLogger
 }
 
-func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger, batchSize int) *SubscriptionLoader {
+func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger, batchSize int64) *SubscriptionLoader {
 	if batchSize == 0 {
 		batchSize = DefaultBatchSize
 	}
@@ -44,7 +43,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		// fetch subscriptions.
 		subscriptions, err := s.fetchAllSubscriptions(ctx)
 		if err != nil {
-			s.log.WithError(err).Error("failed to fetch subscriptions")
+			s.log.WithError(err).Error("failed to fetch all subscriptions")
 			return err
 		}
 
@@ -57,31 +56,29 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		}
 
 		s.loaded = true
-		s.log.Info("syncing subscriptions completed in ", time.Since(startTime))
+		s.log.Infof("syncing subscriptions completed in %fs", time.Since(startTime).Seconds())
 		return nil
 	}
 
 	// fetch subscriptions.
 	updatedSubs, err := s.fetchUpdatedSubscriptions(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch subscriptions")
+		s.log.WithError(err).Error("failed to fetch updated subscriptions")
 		return err
 	}
 
-	if len(updatedSubs) != 0 {
-		for _, sub := range updatedSubs {
-			if sub.UpdatedAt.After(s.lastUpdatedAt) {
-				s.lastUpdatedAt = sub.UpdatedAt
-			}
-
-			s.addSubscriptionToTable(sub, table)
+	for _, sub := range updatedSubs {
+		if sub.UpdatedAt.After(s.lastUpdatedAt) {
+			s.lastUpdatedAt = sub.UpdatedAt
 		}
+
+		s.addSubscriptionToTable(sub, table)
 	}
 
 	// fetch subscriptions.
 	deletedSubs, err := s.fetchDeletedSubscriptions(ctx)
 	if err != nil {
-		s.log.WithError(err).Error("failed to fetch subscriptions")
+		s.log.WithError(err).Error("failed to fetch deleted subscriptions")
 		return err
 	}
 
@@ -90,7 +87,7 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 			s.lastDelete = sub.DeletedAt.Time
 		}
 
-		s.deleteSubscriptionToTable(sub, table)
+		s.deleteSubscriptionFromTable(sub, table)
 	}
 
 	return nil
@@ -140,7 +137,7 @@ func (s *SubscriptionLoader) addSubscriptionToTable(sub datastore.Subscription, 
 	}
 }
 
-func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscription, table *memorystore.Table) {
+func (s *SubscriptionLoader) deleteSubscriptionFromTable(sub datastore.Subscription, table *memorystore.Table) {
 	if sub.FilterConfig == nil {
 		return
 	}
@@ -168,6 +165,11 @@ func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscriptio
 			}
 		}
 
+		if len(values) == 1 {
+			// set slice to nil, range below will skip and the key will be deleted from the table
+			values = nil
+		}
+
 		for id, v := range values {
 			if v.UID == sub.UID {
 				b := values[:id]
@@ -179,7 +181,7 @@ func (s *SubscriptionLoader) deleteSubscriptionToTable(sub datastore.Subscriptio
 
 		if len(values) == 0 {
 			table.Delete(key)
-			return
+			continue
 		}
 
 		table.Upsert(key, values)
@@ -192,37 +194,18 @@ func (s *SubscriptionLoader) fetchAllSubscriptions(ctx context.Context) ([]datas
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
-	resultChan := make(chan []datastore.Subscription, len(projects))
-
+	ids := make([]string, len(projects))
 	for i := range projects {
-		wg.Add(1)
-
-		go func(projectID string) {
-			defer wg.Done()
-
-			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.LoadAllSubscriptionConfig(ctx, projectID, s.batchSize)
-			if err != nil {
-				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
-				return
-			}
-
-			resultChan <- subscriptions
-		}(projects[i].UID)
+		ids[i] = projects[i].UID
 	}
 
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
-	var allSubscriptions []datastore.Subscription
-	for projectSubs := range resultChan {
-		allSubscriptions = append(allSubscriptions, projectSubs...)
+	subscriptions, err := s.subRepo.LoadAllSubscriptionConfig(ctx, ids, s.batchSize)
+	if err != nil {
+		s.log.WithError(err).Errorf("failed to load subscriptions of all projects")
+		return nil, err
 	}
 
-	return allSubscriptions, nil
+	return subscriptions, nil
 }
 
 func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]datastore.Subscription, error) {
@@ -231,37 +214,18 @@ func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]d
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
-	resultChan := make(chan []datastore.Subscription, len(projects))
-
+	ids := make([]string, len(projects))
 	for i := range projects {
-		wg.Add(1)
-
-		go func(projectID string) {
-			defer wg.Done()
-
-			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, projectID, s.lastUpdatedAt, s.batchSize)
-			if err != nil {
-				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
-				return
-			}
-
-			resultChan <- subscriptions
-		}(projects[i].UID)
+		ids[i] = projects[i].UID
 	}
 
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
-	var allSubscriptions []datastore.Subscription
-	for projectSubs := range resultChan {
-		allSubscriptions = append(allSubscriptions, projectSubs...)
+	subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, ids, s.lastUpdatedAt, s.batchSize)
+	if err != nil {
+		s.log.WithError(err).Errorf("failed to load updated subscriptions of all projects")
+		return nil, err
 	}
 
-	return allSubscriptions, nil
+	return subscriptions, nil
 }
 
 func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]datastore.Subscription, error) {
@@ -270,35 +234,16 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 		return nil, err
 	}
 
-	var wg sync.WaitGroup
-	resultChan := make(chan []datastore.Subscription, len(projects))
-
+	ids := make([]string, len(projects))
 	for i := range projects {
-		wg.Add(1)
-
-		go func(projectID string) {
-			defer wg.Done()
-
-			var subscriptions []datastore.Subscription
-			subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, projectID, s.lastUpdatedAt, s.batchSize)
-			if err != nil {
-				s.log.WithError(err).Errorf("failed to load subscriptions of project %s", projectID)
-				return
-			}
-
-			resultChan <- subscriptions
-		}(projects[i].UID)
+		ids[i] = projects[i].UID
 	}
 
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
-	var allSubscriptions []datastore.Subscription
-	for projectSubs := range resultChan {
-		allSubscriptions = append(allSubscriptions, projectSubs...)
+	subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, ids, s.lastDelete, s.batchSize)
+	if err != nil {
+		s.log.WithError(err).Errorf("failed to load deleted subscriptions of all projects")
+		return nil, err
 	}
 
-	return allSubscriptions, nil
+	return subscriptions, nil
 }

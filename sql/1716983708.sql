@@ -23,4 +23,5 @@ CREATE INDEX IF NOT
 -- +migrate Down
 DROP INDEX IF EXISTS convoy.idx_fetch_subscriptions_for_broadcast;
 DROP INDEX IF EXISTS convoy.idx_subscriptions_project_id_key;
+DROP INDEX IF EXISTS convoy.idx_subscriptions_name_key;
 DROP INDEX IF EXISTS convoy.idx_subscriptions_filter_config_event_types_key;
