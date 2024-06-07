@@ -41,6 +41,9 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
+	if dbConfig.SetMaxOpenConnections > 0 {
+		pgxCfg.MaxConns = int32(dbConfig.SetMaxOpenConnections)
+	}
 	pgxCfg.MaxConnLifetime = time.Second * time.Duration(dbConfig.SetConnMaxLifetime)
 	pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName())
 
