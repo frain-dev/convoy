@@ -77,6 +77,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	showTransformDialog = false;
 	sourceURL!: string;
 	subscription!: SUBSCRIPTION;
+	currentRoute = window.location.pathname.split('/').reverse()[0];
 	eventTypes!: string[];
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private createProjectService: CreateProjectComponentService) { }
@@ -302,6 +303,6 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	get isUpdateAction(): boolean {
-		return this.subscriptionId && this.subscriptionId !== 'new';
+		return this.subscriptionId && this.subscriptionId !== 'new' && this.currentRoute !== 'setup';
 	}
 }

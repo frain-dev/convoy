@@ -78,6 +78,7 @@ export class CreateEndpointComponent implements OnInit {
 	configurations = [{ uid: 'http_timeout', name: 'Timeout ', show: false }];
 	endpointCreated: boolean = false;
 	endpointSecret?: SECRET;
+	currentRoute = window.location.pathname.split('/').reverse()[0];
 	private rbacService = inject(RbacService);
 
 	constructor(
@@ -224,6 +225,6 @@ export class CreateEndpointComponent implements OnInit {
 	}
 
 	get isUpdateAction(): boolean {
-		return this.endpointUid && this.endpointUid !== 'new';
+		return this.endpointUid && this.endpointUid !== 'new' && this.currentRoute !== 'setup';
 	}
 }
