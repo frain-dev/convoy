@@ -339,6 +339,36 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 	return subs[:counter], nil
 }
 
+func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]datastore.Subscription, error) {
+	subs, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, eventType), 10, func() ([]datastore.Subscription, error) {
+		var _subs []datastore.Subscription
+		cursor := "0"
+
+		for {
+			rows, err := s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, eventType)
+			if err != nil {
+				return nil, err
+			}
+
+			subscriptions, err := scanSubscriptions(rows)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(subscriptions) == 0 {
+				break
+			}
+
+			_subs = append(_subs, subscriptions...)
+			cursor = subscriptions[len(subscriptions)-1].UID
+		}
+
+		return _subs, nil
+	})
+
+	return subs, err
+}
+
 func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, countQuery, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
 	q, args, err := sqlx.In(countQuery, t, projectIDs)
 	if err != nil {
