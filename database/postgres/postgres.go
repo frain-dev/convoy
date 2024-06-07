@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/uptrace/opentelemetry-go-extra/otelsql"
-	"github.com/uptrace/opentelemetry-go-extra/otelsqlx"
+	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"io"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/newrelic/go-agent/v3/integrations/nrpq"
-	semconv "go.opentelemetry.io/otel/semconv/v1.10.0"
 )
 
 const pkgName = "postgres"
@@ -35,17 +35,23 @@ type Postgres struct {
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
 	dbConfig := cfg.Database
-	db, err := otelsqlx.Connect("postgres", dbConfig.BuildDsn(),
-		otelsql.WithDBName("postgres"),
-		otelsql.WithAttributes(semconv.DBSystemPostgreSQL))
 
+	pgxCfg, err := pgxpool.ParseConfig(dbConfig.BuildDsn())
 	if err != nil {
+		return nil, fmt.Errorf("failed to create connection pool: %w", err)
+	}
+
+	pgxCfg.MaxConnLifetime = time.Second * time.Duration(dbConfig.SetConnMaxLifetime)
+	pgxCfg.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithTrimSQLInSpanName())
+
+	pool, err := pgxpool.NewWithConfig(context.Background(), pgxCfg)
+	if err != nil {
+		defer pool.Close()
 		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
 	}
 
-	db.SetMaxIdleConns(dbConfig.SetMaxIdleConnections)
-	db.SetMaxOpenConns(dbConfig.SetMaxOpenConnections)
-	db.SetConnMaxLifetime(time.Second * time.Duration(dbConfig.SetConnMaxLifetime))
+	sqlDB := stdlib.OpenDBFromPool(pool)
+	db := sqlx.NewDb(sqlDB, "pgx")
 
 	return &Postgres{dbx: db}, nil
 }
