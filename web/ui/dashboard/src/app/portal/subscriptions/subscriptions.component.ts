@@ -64,7 +64,7 @@ export class SubscriptionsComponent implements OnInit {
 			const subscriptions = await this.privateService.getSubscriptions({ endpointId, ...requestDetails });
 
 			this.subscriptions = subscriptions.data;
-			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptions.data.content, 'asc');
+			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptions.data.content, 'desc');
 
 			this.isLoadingSubscriptions = false;
 		} catch {}

@@ -54,7 +54,7 @@ export class SubscriptionsComponent implements OnInit {
 		try {
 			const subscriptionsResponse = await this.privateService.getSubscriptions(requestDetails);
 			this.subscriptions = subscriptionsResponse.data;
-			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptionsResponse.data.content, 'asc');
+			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptionsResponse.data.content, 'desc');
 			this.subscriptions?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
 			this.isLoadindingSubscriptions = false;
 		} catch (error) {
