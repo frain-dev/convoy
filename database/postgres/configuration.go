@@ -91,7 +91,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 
 	r, err := c.db.ExecContext(ctx, createConfiguration,
 		config.UID,
-		config.IsAnalyticsEnabled,
+		util.BoolToText(config.IsAnalyticsEnabled),
 		config.IsSignupEnabled,
 		config.StoragePolicy.Type,
 		config.StoragePolicy.OnPrem.Path,
