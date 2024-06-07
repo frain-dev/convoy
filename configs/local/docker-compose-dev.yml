@@ -1,0 +1,80 @@
+version: "3"
+
+services:
+    web:
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.5.1
+        command: ["/start.sh"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: unless-stopped
+        # ports:
+        #     - "5005:5005"
+        healthcheck:
+            test: ["CMD-SHELL", "wget -q --spider localhost:5005/health"]
+            interval: 5s
+            timeout: 15s
+            retries: 3
+            start_period: 5s
+        depends_on:
+            # - postgres
+            # - redis_server
+            - pgbouncer
+
+    worker:
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.5.1
+        command: ["./cmd", "worker", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: unless-stopped
+        depends_on:
+            web:
+                condition: service_healthy
+
+    ingest:
+        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.5.1
+        command: ["./cmd", "ingest", "--config", "convoy.json"]
+        volumes:
+            - ./convoy.json:/convoy.json
+        restart: unless-stopped
+        depends_on:
+            web:
+                condition: service_healthy
+
+    pgbouncer:
+        image: bitnami/pgbouncer:latest
+        hostname: pgbouncer
+        restart: unless-stopped
+        depends_on:
+            - postgres
+        env_file:
+            - ./conf/.env
+        volumes:
+            - ./conf/:/bitnami/pgbouncer/conf/
+            - ./conf/userlists.txt:/bitnami/userlists.txt
+        # ports:
+        #     - "6432:6432"
+
+    # postgres:
+    #     image: bitnami/postgresql:latest
+    #     restart: unless-stopped
+    #     ports:
+    #         - "5432:5432"
+    #     environment:
+    #         POSTGRESQL_DATABASE: convoy
+    #         POSTGRESQL_USERNAME: convoy
+    #         POSTGRES_PASSWORD: pg_password
+    #         POSTGRESQL_MAX_CONNECTIONS: 250
+    #         POSTGRESQL_POSTGRES_PASSWORD: postgres
+    #         POSTGRESQL_SHARED_PRELOAD_LIBRARIES: pg_stat_statements
+    #     volumes:
+    #       - postgresql_master_data:/bitnami/postgresql
+
+    # redis_server:
+    #     image: redis:alpine
+    #     restart: unless-stopped
+    #     volumes:
+    #       - redis_data:/data
+
+# volumes:
+#     postgresql_master_data:
+#     redis_data:
