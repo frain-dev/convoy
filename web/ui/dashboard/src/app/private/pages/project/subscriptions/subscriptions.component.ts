@@ -30,6 +30,8 @@ export class SubscriptionsComponent implements OnInit {
 	showSubscriptionDetails = false;
 	projectDetails?: PROJECT;
 	action: 'create' | 'update' = 'create';
+	subscriptionSearchString!: string;
+	userSearch = false;
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {}
 
@@ -48,8 +50,9 @@ export class SubscriptionsComponent implements OnInit {
 		});
 	}
 
-	async getSubscriptions(requestDetails?: CURSOR) {
+	async getSubscriptions(requestDetails?: CURSOR & { name?: string }) {
 		this.isLoadindingSubscriptions = true;
+		this.userSearch = !!requestDetails?.name;
 
 		try {
 			const subscriptionsResponse = await this.privateService.getSubscriptions(requestDetails);
