@@ -30,6 +30,7 @@ var ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, p
 type Postgres struct {
 	dbx  *sqlx.DB
 	hook *hooks.Hook
+	pool *pgxpool.Pool
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
@@ -52,7 +53,7 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	sqlDB := stdlib.OpenDBFromPool(pool)
 	db := sqlx.NewDb(sqlDB, "pgx")
 
-	return &Postgres{dbx: db}, nil
+	return &Postgres{dbx: db, pool: pool}, nil
 }
 
 func (p *Postgres) GetDB() *sqlx.DB {
@@ -60,6 +61,7 @@ func (p *Postgres) GetDB() *sqlx.DB {
 }
 
 func (p *Postgres) Close() error {
+	p.pool.Close()
 	return p.dbx.Close()
 }
 
