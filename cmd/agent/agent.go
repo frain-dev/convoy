@@ -257,7 +257,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
-	dispatcher, err := net.NewDispatcher(10*time.Second, cfg.Server.HTTP.HttpProxy, false)
+	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
 		return err

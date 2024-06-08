@@ -21,8 +21,8 @@ type Dispatcher struct {
 	client *http.Client
 }
 
-func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) (*Dispatcher, error) {
-	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
+func NewDispatcher(httpProxy string, enforceSecure bool) (*Dispatcher, error) {
+	d := &Dispatcher{client: &http.Client{}}
 
 	tr := &http.Transport{
 		MaxIdleConns:          100,
@@ -32,12 +32,12 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	if !util.IsStringEmpty(httpProxy) {
-		proxyUrl, err := url.Parse(httpProxy)
-		if err != nil {
-			return nil, err
-		}
+	proxyUrl, isValid, err := d.setProxy(httpProxy)
+	if err != nil {
+		return nil, err
+	}
 
+	if isValid {
 		tr.Proxy = http.ProxyURL(proxyUrl)
 	}
 
@@ -57,7 +57,27 @@ func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) 
 	return d, nil
 }
 
-func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string) (*Response, error) {
+func (d *Dispatcher) setProxy(proxyURL string) (*url.URL, bool, error) {
+	if !util.IsStringEmpty(proxyURL) {
+		pUrl, err := url.Parse(proxyURL)
+		if err != nil {
+			return nil, false, err
+		}
+
+		// we should only use the proxy if the url is valid
+		if !util.IsStringEmpty(pUrl.Host) && !util.IsStringEmpty(pUrl.Scheme) {
+			return pUrl, true, nil
+		}
+
+		return pUrl, false, nil
+	}
+	return nil, false, nil
+}
+
+func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	r := &Response{}
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")

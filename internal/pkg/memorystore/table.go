@@ -9,7 +9,8 @@ import (
 type Key string
 
 func NewKey(prefix, hash string) Key {
-	var key strings.Builder
+	key := strings.Builder{}
+	key.Grow(len(prefix) + len(delim) + len(hash))
 
 	key.WriteString(prefix)
 	key.WriteString(delim)
@@ -132,7 +133,7 @@ func (t *Table) deleteInternal(key Key) {
 }
 
 func (t *Table) GetKeys() []Key {
-	var keys []Key
+	keys := make([]Key, 0, len(t.rows))
 	for k := range t.rows {
 		keys = append(keys, k)
 	}
