@@ -19,6 +19,7 @@ import { PermissionDirective } from 'src/app/private/components/permission/permi
 import { TableCellComponent, TableComponent, TableRowComponent } from 'src/app/components/table/table.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
+import { FormsModule } from '@angular/forms';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
@@ -48,7 +49,8 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		DropdownComponent,
 		DropdownOptionDirective,
 		LoaderModule,
-        DialogDirective
+        DialogDirective,
+        FormsModule
 	]
 })
 export class SubscriptionsModule {}

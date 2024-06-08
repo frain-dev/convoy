@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PrivateService } from 'src/app/private/private.service';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -65,7 +65,7 @@ import { EventCatalogueComponent } from 'src/app/private/components/event-catalo
     templateUrl: './event-logs.component.html',
     styleUrls: ['./event-logs.component.scss']
 })
-export class EventLogsComponent implements OnInit {
+export class EventLogsComponent implements OnInit, OnDestroy {
     @ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
     @ViewChild('previewCatalog', { static: true }) previewCatalog!: ElementRef<HTMLDialogElement>;
 
