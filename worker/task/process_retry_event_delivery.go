@@ -147,7 +147,13 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
-		resp, err := dispatch.SendRequest(ctx, targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
+		var httpDuration time.Duration
+		if endpoint.HttpTimeout == 0 {
+			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
+		} else {
+			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
+		}
+		resp, err := dispatch.SendRequest(ctx, targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration)
 
 		status := "-"
 		statusCode := 0

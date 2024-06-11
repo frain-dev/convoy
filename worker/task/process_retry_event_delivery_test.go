@@ -4,11 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"testing"
-	"time"
-
 	"github.com/frain-dev/convoy/net"
 	"github.com/stretchr/testify/require"
+	"testing"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -808,7 +806,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				tc.dbFn(endpointRepo, projectRepo, msgRepo, q, rateLimiter)
 			}
 
-			dispatcher, err := net.NewDispatcher(3*time.Second, "", false)
+			dispatcher, err := net.NewDispatcher("", false)
 			require.NoError(t, err)
 
 			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher)

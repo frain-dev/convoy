@@ -2,20 +2,18 @@ package worker
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/queue"
-	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/go-chi/chi/v5"
-	"net/http"
-	"time"
-	"github.com/frain-dev/convoy/net"
-	"net/http"
-
+	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/telemetry"
+	"github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/queue"
+	redisQueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/go-chi/chi/v5"
+	"net/http"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -116,13 +114,15 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			}
 
 			var queueNames map[string]int
-			switch executionMode {
-			case "retry":
+			switch cfg.WorkerExecutionMode {
+			case config.RetryExecutionMode:
 				queueNames = retry
-			case "events":
+			case config.EventsExecutionMode:
 				queueNames = events
-			default:
+			case config.DefaultExecutionMode:
 				queueNames = both
+			default:
+				return fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
 			}
 
 			opts := queue.QueueOptions{
@@ -195,21 +195,12 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if executionMode == "events" {
-				consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-					endpointRepo,
-					eventDeliveryRepo,
-					projectRepo,
-					a.Queue, rateLimiter, dispatcher,
-				), newTelemetry)
-			} else if executionMode == "retry" {
-				consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
-					endpointRepo,
-					eventDeliveryRepo,
-					projectRepo,
-					a.Queue, rateLimiter, dispatcher,
-				), newTelemetry)
-			}
+			consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
+				endpointRepo,
+				eventDeliveryRepo,
+				projectRepo,
+				a.Queue, rateLimiter, dispatcher,
+			), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 				endpointRepo,
@@ -219,6 +210,13 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				a.Queue,
 				subRepo,
 				deviceRepo), newTelemetry)
+
+			consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
+				endpointRepo,
+				eventDeliveryRepo,
+				projectRepo,
+				a.Queue, rateLimiter, dispatcher,
+			), newTelemetry)
 
 			consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
 				endpointRepo,
@@ -273,7 +271,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				render.JSON(w, r, "Convoy")
 			})
 
-			srv := server.NewServer(workerPort, func() {})
+			srv := server.NewServer(cfg.Server.HTTP.WorkerPort, func() {})
 			srv.SetHandler(router)
 
 			httpConfig := cfg.Server.HTTP
@@ -284,7 +282,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return nil
 			}
 
-			a.Logger.Infof("Worker running on port %v", workerPort)
+			a.Logger.Infof("Worker running on port %v", cfg.Server.HTTP.WorkerPort)
 			srv.Listen()
 
 			return ctx.Err()
@@ -300,11 +298,11 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
 	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "SMTP Port")
 
-	cmd.Flags().Uint32Var(&workerPort, "worker-port", 5006, "Worker port")
+	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
-	cmd.Flags().StringVar(&executionMode, "mode", "default", "Execution Mode")
+	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")
 
 	return cmd
 }
@@ -327,6 +325,11 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		return nil, err
 	}
 
+	if consumerPoolSize >= 0 {
+		c.ConsumerPoolSize = consumerPoolSize
+	}
+
+	// CONVOY_WORKER_PORT
 	workerPort, err := cmd.Flags().GetUint32("worker-port")
 	if err != nil {
 		return nil, err
@@ -334,12 +337,6 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if workerPort != 0 {
 		c.Server.HTTP.WorkerPort = workerPort
-	}
-
-	c.Server.HTTP.WorkerPort = workerPort
-
-	if consumerPoolSize >= 0 {
-		c.ConsumerPoolSize = consumerPoolSize
 	}
 
 	// CONVOY_SMTP_PROVIDER
@@ -410,6 +407,16 @@ func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if smtpPort != 0 {
 		c.SMTP.Port = smtpPort
+	}
+
+	// CONVOY_WORKER_EXECUTION_MODE
+	executionMode, err := cmd.Flags().GetString("mode")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(executionMode) {
+		c.WorkerExecutionMode = config.ExecutionMode(executionMode)
 	}
 
 	return c, nil
