@@ -33,13 +33,21 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var data EventDelivery
 		defer func() {
-			// retrieve the value of err and write to the Retry Queue.
+			// retrieve the value of err
+			if err == nil {
+				return
+			}
+
+			// set the error to nil, so it's removed from the event queue
+			err = nil
+
 			job := &queue.Job{
 				Payload: t.Payload(),
 				Delay:   defaultEventDelay,
 				ID:      data.EventDeliveryID,
 			}
 
+			// write it to the retry queue.
 			deferErr := q.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
 			if deferErr != nil {
 				log.FromContext(ctx).WithError(deferErr).Error("[asynq]: an error occurred sending event delivery to the retry queue")
@@ -48,7 +56,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		err = msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
-			err := json.Unmarshal(t.Payload(), &data)
+			err = json.Unmarshal(t.Payload(), &data)
 			if err != nil {
 				return &DeliveryError{Err: err}
 			}
