@@ -145,27 +145,26 @@ func flatten(prefix string, nested interface{}) (M, error) {
 	return f, nil
 }
 
+func isOpKey(key string) bool {
+	return strings.HasPrefix(key, "$") && !strings.HasPrefix(key, "$.")
+}
+
+var operators = map[string]struct{}{
+	"$gte":   {},
+	"$gt":    {},
+	"$lte":   {},
+	"$lt":    {},
+	"$in":    {},
+	"$nin":   {},
+	"$eq":    {},
+	"$neq":   {},
+	"$or":    {},
+	"$and":   {},
+	"$exist": {},
+	"$regex": {},
+}
+
 func isKeyValidOperator(op string) bool {
-	operators := []string{
-		"$gte",
-		"$gt",
-		"$lte",
-		"$lt",
-		"$in",
-		"$nin",
-		"$eq",
-		"$neq",
-		"$or",
-		"$and",
-		"$exist",
-		"$regex",
-	}
-
-	for _, o := range operators {
-		if o == op {
-			return true
-		}
-	}
-
-	return false
+	_, ok := operators[op]
+	return ok
 }
