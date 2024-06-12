@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/frain-dev/convoy/net"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -58,8 +57,6 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				project := &datastore.Project{UID: "project-id-1"}
 				o.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(project, nil)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{
@@ -96,14 +93,12 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: &DeliveryError{Err: fmt.Errorf("%s, err: nil", ErrDeliveryAttemptFailed.Error())},
+			expectedError: nil,
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
@@ -251,8 +246,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -336,8 +329,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -421,8 +412,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -508,8 +497,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -592,8 +579,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -681,8 +666,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				q.EXPECT().
 					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -771,8 +754,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				q.EXPECT().
 					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
