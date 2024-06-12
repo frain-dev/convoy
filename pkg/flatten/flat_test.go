@@ -20,69 +20,69 @@ func TestFlattenMap(t *testing.T) {
 	tests := []struct {
 		name  string
 		given interface{}
-		want  map[string]interface{}
+		want  M
 		err   error
 	}{
 		/////////////////// string
 		{
 			name:  "string value",
-			given: map[string]interface{}{"name": "ukpe"},
-			want:  map[string]interface{}{"name": "ukpe"},
+			given: M{"name": "ukpe"},
+			want:  M{"name": "ukpe"},
 		},
 		{
 			name:  "nested string value",
-			given: map[string]interface{}{"$.venues.$.lagos": "lekki"},
-			want:  map[string]interface{}{"$.venues.$.lagos": "lekki"},
+			given: M{"$.venues.$.lagos": "lekki"},
+			want:  M{"$.venues.$.lagos": "lekki"},
 		},
 		{
 			name:  "invalid operator",
-			given: map[string]interface{}{"$venues": "bariga"},
+			given: M{"$venues": "bariga"},
 			err:   errors.New("$venues starts with a $ and is not a valid operator"),
 		},
 		{
 			name:  "weird case",
-			given: map[string]interface{}{"$$$$$": "lmao"},
+			given: M{"$$$$$": "lmao"},
 			err:   errors.New("$$$$$ starts with a $ and is not a valid operator"),
 		},
 		{
 			name:  "string value with trailing $",
-			given: map[string]interface{}{"lagos$": "lekki"},
-			want:  map[string]interface{}{"lagos$": "lekki"},
+			given: M{"lagos$": "lekki"},
+			want:  M{"lagos$": "lekki"},
 		},
 		{
 			name:  "nested string value - trailing .$",
-			given: map[string]interface{}{"$.venues.$.lagos.$": "lekki"},
-			want:  map[string]interface{}{"$.venues.$.lagos.$": "lekki"},
+			given: M{"$.venues.$.lagos.$": "lekki"},
+			want:  M{"$.venues.$.lagos.$": "lekki"},
 		},
 		{
 			name:  "nested string value - trailing .$ with inner operator",
-			given: map[string]interface{}{"$.venues.$lagos.$": "lekki"},
-			want:  map[string]interface{}{"$.venues.$lagos.$": "lekki"},
+			given: M{"$.venues.$lagos.$": "lekki"},
+			want:  M{"$.venues.$lagos.$": "lekki"},
 		},
 		{
 			name:  "nested string value - trailing .$ with invalid operator prefix",
-			given: map[string]interface{}{"$venues.$.lagos.$": "bariga"},
+			given: M{"$venues.$.lagos.$": "bariga"},
 			err:   errors.New("$venues.$.lagos.$ starts with a $ and is not a valid operator"),
 		},
 		{
 			name:  "empty map",
-			given: map[string]interface{}{},
-			want:  map[string]interface{}{},
+			given: M{},
+			want:  M{},
 		},
 		{
 			name:  "empty array",
 			given: []interface{}{},
-			want:  map[string]interface{}{},
+			want:  M{},
 		},
 		{
 			name:  "nothing",
 			given: nil,
-			want:  map[string]interface{}{},
+			want:  M{},
 		},
 		{
 			name:  "string",
 			given: "random_string",
-			want:  map[string]interface{}{},
+			want:  M{},
 		},
 	}
 	for _, tt := range tests {
@@ -106,98 +106,98 @@ func TestFlatten(t *testing.T) {
 	tests := []struct {
 		name  string
 		given string
-		want  map[string]interface{}
+		want  M
 	}{
 		/////////////////// string
 		{
 			name:  "string value",
 			given: `{"hello": "world"}`,
-			want:  map[string]interface{}{"hello": "world"},
+			want:  M{"hello": "world"},
 		},
 		{
 			name:  "string value",
 			given: `{"$.name": "ukpe"}`,
-			want:  map[string]interface{}{"$.name": "ukpe"},
+			want:  M{"$.name": "ukpe"},
 		},
 		{
 			name:  "string value",
 			given: `{"$.venues.$.lagos": "lekki"}`,
-			want:  map[string]interface{}{"$.venues.$.lagos": "lekki"},
+			want:  M{"$.venues.$.lagos": "lekki"},
 		},
 		{
 			name:  "nested string value",
 			given: `{"hello":{"world":"good morning"}}`,
-			want:  map[string]interface{}{"hello.world": "good morning"},
+			want:  M{"hello.world": "good morning"},
 		},
 		{
 			name:  "double nested string value",
 			given: `{"hello":{"world":{"again":"good morning"}}}`,
-			want:  map[string]interface{}{"hello.world.again": "good morning"},
+			want:  M{"hello.world.again": "good morning"},
 		},
 
 		/////////////////// float
 		{
 			name:  "float",
 			given: `{"hello": 1234.99}`,
-			want:  map[string]interface{}{"hello": 1234.99},
+			want:  M{"hello": 1234.99},
 		},
 		{
 			name:  "nested float value",
 			given: `{"hello":{"world":1234.99}}`,
-			want:  map[string]interface{}{"hello.world": 1234.99},
+			want:  M{"hello.world": 1234.99},
 		},
 
 		/////////////////// boolean
 		{
 			name:  "boolean value",
 			given: `{"hello": true}`,
-			want:  map[string]interface{}{"hello": true},
+			want:  M{"hello": true},
 		},
 		{
 			name:  "nested boolean",
 			given: `{"hello":{"world":true}}`,
-			want:  map[string]interface{}{"hello.world": true},
+			want:  M{"hello.world": true},
 		},
 
 		/////////////////// nil
 		{
 			name:  "nil value",
 			given: `{"hello": null}`,
-			want:  map[string]interface{}{"hello": nil},
+			want:  M{"hello": nil},
 		},
 		{
 			name:  "nested nil value",
 			given: `{"hello":{"world":null}}`,
-			want:  map[string]interface{}{"hello.world": nil},
+			want:  M{"hello.world": nil},
 		},
 
 		/////////////////// map
 		{
 			name:  "empty value",
 			given: `{"hello":{}}`,
-			want:  map[string]interface{}{"hello": map[string]interface{}{}},
+			want:  M{"hello": M{}},
 		},
 		{
 			name:  "empty object",
 			given: `{"hello":{"empty":{"nested":{}}}}`,
-			want:  map[string]interface{}{"hello.empty.nested": map[string]interface{}{}},
+			want:  M{"hello.empty.nested": M{}},
 		},
 
 		/////////////////// slice
 		{
 			name:  "empty slice",
 			given: `{"hello":[]}`,
-			want:  map[string]interface{}{"hello": []interface{}{}},
+			want:  M{"hello": []interface{}{}},
 		},
 		{
 			name:  "nested empty slice",
 			given: `{"hello":{"world":[]}}`,
-			want:  map[string]interface{}{"hello.world": []interface{}{}},
+			want:  M{"hello.world": []interface{}{}},
 		},
 		{
 			name:  "nested slice",
 			given: `{"hello":{"world":["one","two"]}}`,
-			want: map[string]interface{}{
+			want: M{
 				"hello.world": []interface{}{"one", "two"},
 			},
 		},
@@ -219,7 +219,7 @@ func TestFlatten(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"hello.lorem.ipsum": "again",
 				"hello.lorem.dolor": "sit",
 				"world.lorem.ipsum": "again",
@@ -238,7 +238,7 @@ func TestFlatten(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"hallo.lorem":       []interface{}{"10", "1"},
 				"hallo.ipsum.dolor": []interface{}{"1", "10"},
 			},
@@ -253,7 +253,7 @@ func TestFlatten(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"hallo.lorem":       []interface{}{float64(10), float64(1)},
 				"hallo.ipsum.dolor": []interface{}{float64(1), float64(10)},
 			},
@@ -270,7 +270,7 @@ func TestFlatten(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"hallo.lorem":       []interface{}{float64(10), float64(1)},
 				"hallo.ipsum.dolor": []interface{}{"1", "10"},
 			},
@@ -301,88 +301,88 @@ func TestFlattenWithPrefix(t *testing.T) {
 	tests := []struct {
 		name  string
 		given string
-		want  map[string]interface{}
+		want  M
 	}{
 		/////////////////// string
 		{
 			name:  "string value",
 			given: `{"hello": "world"}`,
-			want:  map[string]interface{}{"data.hello": "world"},
+			want:  M{"data.hello": "world"},
 		},
 		{
 			name:  "nested string value",
 			given: `{"hello":{"world":"good morning"}}`,
-			want:  map[string]interface{}{"data.hello.world": "good morning"},
+			want:  M{"data.hello.world": "good morning"},
 		},
 		{
 			name:  "double nested string value",
 			given: `{"hello":{"world":{"again":"good morning"}}}`,
-			want:  map[string]interface{}{"data.hello.world.again": "good morning"},
+			want:  M{"data.hello.world.again": "good morning"},
 		},
 
 		/////////////////// float
 		{
 			name:  "float",
 			given: `{"hello": 1234.99}`,
-			want:  map[string]interface{}{"data.hello": 1234.99},
+			want:  M{"data.hello": 1234.99},
 		},
 		{
 			name:  "nested float value",
 			given: `{"hello":{"world":1234.99}}`,
-			want:  map[string]interface{}{"data.hello.world": 1234.99},
+			want:  M{"data.hello.world": 1234.99},
 		},
 
 		/////////////////// boolean
 		{
 			name:  "boolean value",
 			given: `{"hello": true}`,
-			want:  map[string]interface{}{"data.hello": true},
+			want:  M{"data.hello": true},
 		},
 		{
 			name:  "nested boolean",
 			given: `{"hello":{"world":true}}`,
-			want:  map[string]interface{}{"data.hello.world": true},
+			want:  M{"data.hello.world": true},
 		},
 
 		/////////////////// nil
 		{
 			name:  "nil value",
 			given: `{"hello": null}`,
-			want:  map[string]interface{}{"data.hello": nil},
+			want:  M{"data.hello": nil},
 		},
 		{
 			name:  "nested nil value",
 			given: `{"hello":{"world":null}}`,
-			want:  map[string]interface{}{"data.hello.world": nil},
+			want:  M{"data.hello.world": nil},
 		},
 
 		/////////////////// map
 		{
 			name:  "empty value",
 			given: `{"hello":{}}`,
-			want:  map[string]interface{}{"data.hello": map[string]interface{}{}},
+			want:  M{"data.hello": M{}},
 		},
 		{
 			name:  "empty object",
 			given: `{"hello":{"empty":{"nested":{}}}}`,
-			want:  map[string]interface{}{"data.hello.empty.nested": map[string]interface{}{}},
+			want:  M{"data.hello.empty.nested": M{}},
 		},
 
 		/////////////////// slice
 		{
 			name:  "empty slice",
 			given: `{"hello":[]}`,
-			want:  map[string]interface{}{"data.hello": []interface{}{}},
+			want:  M{"data.hello": []interface{}{}},
 		},
 		{
 			name:  "nested empty slice",
 			given: `{"hello":{"world":[]}}`,
-			want:  map[string]interface{}{"data.hello.world": []interface{}{}},
+			want:  M{"data.hello.world": []interface{}{}},
 		},
 		{
 			name:  "nested slice",
 			given: `{"hello":{"world":["one","two"]}}`,
-			want: map[string]interface{}{
+			want: M{
 				"data.hello.world": []interface{}{"one", "two"},
 			},
 		},
@@ -404,7 +404,7 @@ func TestFlattenWithPrefix(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"data.hello.lorem.ipsum": "again",
 				"data.hello.lorem.dolor": "sit",
 				"data.world.lorem.ipsum": "again",
@@ -423,7 +423,7 @@ func TestFlattenWithPrefix(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"data.hallo.lorem":       []interface{}{"10", "1"},
 				"data.hallo.ipsum.dolor": []interface{}{"1", "10"},
 			},
@@ -438,7 +438,7 @@ func TestFlattenWithPrefix(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"data.hallo.lorem":       []interface{}{float64(10), float64(1)},
 				"data.hallo.ipsum.dolor": []interface{}{float64(1), float64(10)},
 			},
@@ -455,7 +455,7 @@ func TestFlattenWithPrefix(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"data.hallo.lorem":       []interface{}{float64(10), float64(1)},
 				"data.hallo.ipsum.dolor": []interface{}{"1", "10"},
 			},
@@ -486,14 +486,14 @@ func TestFlattenWithOperator(t *testing.T) {
 	tests := []struct {
 		name  string
 		given string
-		want  map[string]interface{}
+		want  M
 	}{
 		/////////////////// string operator
 		{
 			name:  "nested string value",
 			given: `{"name":{"$eq":"raymond"}}`,
-			want: map[string]interface{}{
-				"name": map[string]interface{}{
+			want: M{
+				"name": M{
 					"$eq": "raymond",
 				},
 			},
@@ -509,8 +509,8 @@ func TestFlattenWithOperator(t *testing.T) {
 					}
 				}
 			}`,
-			want: map[string]interface{}{
-				"filter.person.age": map[string]interface{}{
+			want: M{
+				"filter.person.age": M{
 					"$eq": float64(5),
 				},
 			},
@@ -520,8 +520,8 @@ func TestFlattenWithOperator(t *testing.T) {
 		{
 			name:  "double nested string value",
 			given: `{"person":{"age":{"$gte":10}}}`,
-			want: map[string]interface{}{
-				"person.age": map[string]interface{}{
+			want: M{
+				"person.age": M{
 					"$gte": float64(10),
 				},
 			},
@@ -531,8 +531,8 @@ func TestFlattenWithOperator(t *testing.T) {
 		{
 			name:  "double nested string value",
 			given: `{"person":{"age":{"$in":[10, 20]}}}`,
-			want: map[string]interface{}{
-				"person.age": map[string]interface{}{
+			want: M{
+				"person.age": M{
 					"$in": []interface{}{float64(10), float64(20)},
 				},
 			},
@@ -541,7 +541,7 @@ func TestFlattenWithOperator(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var given map[string]interface{}
+			var given M
 			err := json.Unmarshal([]byte(test.given), &given)
 			if err != nil {
 				t.Errorf("failed to unmarshal JSON: %v", err)
@@ -562,36 +562,36 @@ func TestFlattenWithOperator(t *testing.T) {
 func TestFlattenWithOperatorAndMaps(t *testing.T) {
 	tests := []struct {
 		name  string
-		given map[string]interface{}
-		want  map[string]interface{}
+		given M
+		want  M
 	}{
 		/////////////////// string operator
 		{
 			name: "nested string value",
-			given: map[string]interface{}{
-				"name": map[string]interface{}{
+			given: M{
+				"name": M{
 					"$eq": "raymond",
 				},
 			},
-			want: map[string]interface{}{
-				"name": map[string]interface{}{
+			want: M{
+				"name": M{
 					"$eq": "raymond",
 				},
 			},
 		},
 		{
 			name: "nested string value",
-			given: map[string]interface{}{
-				"filter": map[string]interface{}{
-					"person": map[string]interface{}{
-						"age": map[string]interface{}{
+			given: M{
+				"filter": M{
+					"person": M{
+						"age": M{
 							"$eq": float64(5),
 						},
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"filter.person.age": map[string]interface{}{
+			want: M{
+				"filter.person.age": M{
 					"$eq": float64(5),
 				},
 			},
@@ -600,15 +600,15 @@ func TestFlattenWithOperatorAndMaps(t *testing.T) {
 		/////////////////// number operator
 		{
 			name: "double nested string value",
-			given: map[string]interface{}{
-				"person": map[string]interface{}{
-					"age": map[string]interface{}{
+			given: M{
+				"person": M{
+					"age": M{
 						"$gte": float64(10),
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"person.age": map[string]interface{}{
+			want: M{
+				"person.age": M{
 					"$gte": float64(10),
 				},
 			},
@@ -617,15 +617,15 @@ func TestFlattenWithOperatorAndMaps(t *testing.T) {
 		/////////////////// array operator
 		{
 			name: "double nested string value",
-			given: map[string]interface{}{
-				"person": map[string]interface{}{
-					"age": map[string]interface{}{
+			given: M{
+				"person": M{
+					"age": M{
 						"$in": []interface{}{float64(10), float64(20)},
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"person.age": map[string]interface{}{
+			want: M{
+				"person.age": M{
 					"$in": []interface{}{float64(10), float64(20)},
 				},
 			},
@@ -649,18 +649,18 @@ func TestFlattenWithOperatorAndMaps(t *testing.T) {
 func TestFlattenWithOrAndOperator(t *testing.T) {
 	tests := []struct {
 		name    string
-		given   map[string]interface{}
-		want    map[string]interface{}
+		given   M
+		want    M
 		wantErr bool
 		err     error
 	}{
 		/////////////////// $or operator
 		{
 			name: "top level $or operator - nothing to flatten",
-			given: map[string]interface{}{
-				"$or": []map[string]interface{}{
+			given: M{
+				"$or": []M{
 					{
-						"age": map[string]interface{}{
+						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -669,10 +669,10 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"$or": []map[string]interface{}{
+			want: M{
+				"$or": []M{
 					{
-						"age": map[string]interface{}{
+						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -685,26 +685,26 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 
 		{
 			name: "top level $or operator - flatten children",
-			given: map[string]interface{}{
-				"$or": []map[string]interface{}{
+			given: M{
+				"$or": []M{
 					{
-						"person": map[string]interface{}{
-							"age": map[string]interface{}{
+						"person": M{
+							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
 					{
-						"places": map[string]interface{}{
+						"places": M{
 							"temperatures": 39.9,
 						},
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"$or": []map[string]interface{}{
+			want: M{
+				"$or": []M{
 					{
-						"person.age": map[string]interface{}{
+						"person.age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -717,26 +717,26 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 
 		{
 			name: "top level $or operator - flatten children",
-			given: map[string]interface{}{
-				"$or": []map[string]interface{}{
+			given: M{
+				"$or": []M{
 					{
-						"person": map[string]interface{}{
-							"age": map[string]interface{}{
+						"person": M{
+							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
 					{
-						"places": map[string]interface{}{
+						"places": M{
 							"temperatures": 39.9,
 						},
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"$or": []map[string]interface{}{
+			want: M{
+				"$or": []M{
 					{
-						"person.age": map[string]interface{}{
+						"person.age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -749,14 +749,14 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 
 		{
 			name: "top level $or operator - or is not an array",
-			given: map[string]interface{}{
-				"$or": map[string]interface{}{
-					"person": map[string]interface{}{
-						"age": map[string]interface{}{
+			given: M{
+				"$or": M{
+					"person": M{
+						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
-					"places": map[string]interface{}{
+					"places": M{
 						"temperatures": 39.9,
 					},
 				},
@@ -768,10 +768,10 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		/////////////////// $and operator
 		{
 			name: "top level $and operator - nothing to flatten",
-			given: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			given: M{
+				"$and": []M{
 					{
-						"age": map[string]interface{}{
+						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -780,10 +780,10 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			want: M{
+				"$and": []M{
 					{
-						"age": map[string]interface{}{
+						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -796,26 +796,26 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 
 		{
 			name: "top level $and operator - flatten children",
-			given: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			given: M{
+				"$and": []M{
 					{
-						"person": map[string]interface{}{
-							"age": map[string]interface{}{
+						"person": M{
+							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
 					{
-						"places": map[string]interface{}{
+						"places": M{
 							"temperatures": 39.9,
 						},
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			want: M{
+				"$and": []M{
 					{
-						"person.age": map[string]interface{}{
+						"person.age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -828,26 +828,26 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 
 		{
 			name: "top level $and operator - flatten children",
-			given: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			given: M{
+				"$and": []M{
 					{
-						"person": map[string]interface{}{
-							"age": map[string]interface{}{
+						"person": M{
+							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
 					{
-						"places": map[string]interface{}{
+						"places": M{
 							"temperatures": 39.9,
 						},
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			want: M{
+				"$and": []M{
 					{
-						"person.age": map[string]interface{}{
+						"person.age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -860,14 +860,14 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 
 		{
 			name: "top level $and operator - or is not an array",
-			given: map[string]interface{}{
-				"$and": map[string]interface{}{
-					"person": map[string]interface{}{
-						"age": map[string]interface{}{
+			given: M{
+				"$and": M{
+					"person": M{
+						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
-					"places": map[string]interface{}{
+					"places": M{
 						"temperatures": 39.9,
 					},
 				},
@@ -879,12 +879,12 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		/////////////////// combine $and and $or operators
 		{
 			name: "combine $and and $or operators - nothing to flatten",
-			given: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			given: M{
+				"$and": []M{
 					{
-						"$or": []map[string]interface{}{
+						"$or": []M{
 							{
-								"age": map[string]interface{}{
+								"age": M{
 									"$in": []int{10, 11, 12},
 								},
 							},
@@ -898,12 +898,12 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			want: M{
+				"$and": []M{
 					{
-						"$or": []map[string]interface{}{
+						"$or": []M{
 							{
-								"age": map[string]interface{}{
+								"age": M{
 									"$in": []int{10, 11, 12},
 								},
 							},
@@ -921,19 +921,19 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 
 		{
 			name: "combine $and and $or operators - nothing to flatten",
-			given: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			given: M{
+				"$and": []M{
 					{
-						"$or": []map[string]interface{}{
+						"$or": []M{
 							{
-								"person": map[string]interface{}{
-									"age": map[string]interface{}{
+								"person": M{
+									"age": M{
 										"$in": []int{10, 11, 12},
 									},
 								},
 							},
 							{
-								"places": map[string]interface{}{
+								"places": M{
 									"temperatures": 39.9,
 								},
 							},
@@ -944,12 +944,12 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
-				"$and": []map[string]interface{}{
+			want: M{
+				"$and": []M{
 					{
-						"$or": []map[string]interface{}{
+						"$or": []M{
 							{
-								"person.age": map[string]interface{}{
+								"person.age": M{
 									"$in": []int{10, 11, 12},
 								},
 							},
@@ -988,7 +988,6 @@ func TestFlattenArray(t *testing.T) {
 		given string
 		want  interface{}
 	}{
-
 		/////////////////// arrays
 		{
 			name: "array of numbers and strings",
@@ -1019,7 +1018,7 @@ func TestFlattenArray(t *testing.T) {
 					  }
 				  }
 			  ]`,
-			want: map[string]interface{}{
+			want: M{
 				"0.hallo.lorem":             []interface{}{float64(20), float64(2)},
 				"0.hallo.ipsum.dolor":       []interface{}{"1", "10"},
 				"1.game.authors.first_name": "George",
@@ -1043,7 +1042,7 @@ func TestFlattenArray(t *testing.T) {
 				"speakers": ["raymond", "subomi"],
 				"swag": "hoodies"
 			}`,
-			want: map[string]interface{}{
+			want: M{
 				"data.0.event": "meetup",
 				"data.1.venue": "test",
 				"speakers": []interface{}{
@@ -1074,19 +1073,19 @@ func TestFlattenArray(t *testing.T) {
 				  }
 				]
 			  }`,
-			want: map[string]interface{}{
+			want: M{
 				"$and": []interface{}{
-					map[string]interface{}{
-						"age": map[string]interface{}{
+					M{
+						"age": M{
 							"$gte": float64(10),
 						},
 					},
-					map[string]interface{}{
+					M{
 						"$or": []interface{}{
-							map[string]interface{}{
+							M{
 								"type": "weekly",
 							},
-							map[string]interface{}{
+							M{
 								"cities": "lagos",
 							},
 						},
@@ -1117,7 +1116,7 @@ func TestFlattenArray(t *testing.T) {
 				],
 				"swag": "hoodies"
 			  }`,
-			want: map[string]interface{}{
+			want: M{
 				"data.0.event":           "meetup",
 				"data.1.venue":           "test",
 				"data.2.speakers.0.name": "raymond",
@@ -1209,7 +1208,7 @@ func BenchmarkFlattenArray(b *testing.B) {
             }
         ]`
 
-	want := map[string]interface{}{
+	want := M{
 		"0.hallo.lorem":             []interface{}{float64(20), float64(2)},
 		"0.hallo.ipsum.dolor":       []interface{}{"1", "10"},
 		"1.game.authors.first_name": "George",
@@ -1239,19 +1238,19 @@ func BenchmarkFlattenArray(b *testing.B) {
 }
 
 func BenchmarkFlattenMap(b *testing.B) {
-	test := map[string]interface{}{
-		"$and": []map[string]interface{}{
+	test := M{
+		"$and": []M{
 			{
-				"$or": []map[string]interface{}{
+				"$or": []M{
 					{
-						"person": map[string]interface{}{
-							"age": map[string]interface{}{
+						"person": M{
+							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
 					{
-						"places": map[string]interface{}{
+						"places": M{
 							"temperatures": 39.9,
 						},
 					},
@@ -1263,12 +1262,12 @@ func BenchmarkFlattenMap(b *testing.B) {
 		},
 	}
 
-	want := map[string]interface{}{
-		"$and": []map[string]interface{}{
+	want := M{
+		"$and": []M{
 			{
-				"$or": []map[string]interface{}{
+				"$or": []M{
 					{
-						"person.age": map[string]interface{}{
+						"person.age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
@@ -1323,17 +1322,17 @@ func BenchmarkFlattenLargeJson(b *testing.B) {
 }
 
 func BenchmarkFlattenOperators(b *testing.B) {
-	given := map[string]interface{}{
-		"filter": map[string]interface{}{
-			"person": map[string]interface{}{
-				"age": map[string]interface{}{
+	given := M{
+		"filter": M{
+			"person": M{
+				"age": M{
 					"$eq": float64(5),
 				},
 			},
 		},
 	}
-	want := map[string]interface{}{
-		"filter.person.age": map[string]interface{}{
+	want := M{
+		"filter.person.age": M{
 			"$eq": float64(5),
 		},
 	}
@@ -1368,7 +1367,7 @@ func BenchmarkFlattenWithPrefix(b *testing.B) {
 				}
 			}`
 
-	want := map[string]interface{}{
+	want := M{
 		"data.hello.lorem.ipsum": "again",
 		"data.hello.lorem.dolor": "sit",
 		"data.world.lorem.ipsum": "again",

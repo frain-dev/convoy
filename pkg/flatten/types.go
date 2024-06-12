@@ -1,3 +1,3 @@
 package flatten
 
-type M map[string]interface{}
+type M = map[string]interface{}
