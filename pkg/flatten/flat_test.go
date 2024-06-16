@@ -229,18 +229,32 @@ func TestFlatten(t *testing.T) {
 
 		/////////////////// nested slices
 		{
-			name: "array of strings",
+			name: "daniel case of strings",
 			given: `{
+				"goodbye": "thanks",
+				"empty": {},
 				"hallo": {
 					"lorem": ["10", "1"],
+					"floats": [10.44, 1.999],
+					"nums": [10, 13],
 					"ipsum": {
-						"dolor": ["1", "10"]
+						"dolor": ["1", "10"],
+						"lola": [],
+                        "name": "daniel",
+                        "age": 14
 					}
 				}
 			}`,
 			want: M{
+				"goodbye":           "thanks",
+				"empty":             M{},
 				"hallo.lorem":       []interface{}{"10", "1"},
 				"hallo.ipsum.dolor": []interface{}{"1", "10"},
+				"hallo.ipsum.lola":  []interface{}{},
+				"hallo.floats":      []interface{}{10.44, 1.999},
+				"hallo.nums":        []interface{}{10, 13},
+				"hallo.ipsum.name":  "daniel",
+				"hallo.ipsum.age":   14,
 			},
 		},
 		{

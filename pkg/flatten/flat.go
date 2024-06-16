@@ -28,11 +28,11 @@ var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array
 //		}
 //	}
 func Flatten(input interface{}) (M, error) {
-	return flatten("", input)
+	return flatFast2("", input)
 }
 
 func FlattenWithPrefix(prefix string, input interface{}) (M, error) {
-	return flatten(prefix, input)
+	return flatFast2(prefix, input)
 }
 
 func flatten(prefix string, nested interface{}) (M, error) {
