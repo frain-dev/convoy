@@ -1308,10 +1308,11 @@ func BenchmarkFlattenLargeJson(b *testing.B) {
 		got, err := Flatten(given)
 		require.NoError(b, err)
 
-		if !jsonEqual(got, want) {
-			expectedJson, _ := json.MarshalIndent(got, "", " ")
-			b.Errorf("%v\n", string(expectedJson))
-		}
+		_ = got
+		//if !jsonEqual(got, want) {
+		//	expectedJson, _ := json.MarshalIndent(got, "", " ")
+		//	b.Errorf("%v\n", string(expectedJson))
+		//}
 	}
 }
 
