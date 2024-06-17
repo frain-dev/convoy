@@ -104,7 +104,6 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		EventsSent:   eventsSent,
 		Period:       period,
 		PeriodData:   &messages,
-		CacheTime:    time.Now(),
 	}
 
 	err = h.A.Cache.Set(r.Context(), qs, dashboard, time.Hour)
@@ -156,7 +155,6 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 			EventsSent:   eventsSent,
 			Period:       period,
 			PeriodData:   &messages,
-			CacheTime:    time.Now(),
 		}
 
 		err = h.A.Cache.Set(ctx, qs, dashboard, time.Hour)
