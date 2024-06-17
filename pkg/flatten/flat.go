@@ -87,7 +87,6 @@ func flatten(prefix string, nested interface{}) (M, error) {
 		nestedInner  interface{}
 
 		ok        bool
-		si        string
 		newPrefix string
 	)
 
@@ -193,20 +192,19 @@ func flatten(prefix string, nested interface{}) (M, error) {
 			for i := range n {
 				switch t := n[i].(type) {
 				case M:
+					newPrefix = strconv.Itoa(i)
 					if len(prefixInner) > 0 {
-						si = strconv.Itoa(i)
 
-						b.Grow(len(si) + len(prefixInner) + 1)
+						b.Grow(len(newPrefix) + len(prefixInner) + 1)
 						b.WriteString(prefixInner)
 						b.WriteString(".")
-						b.WriteString(si)
+						b.WriteString(newPrefix)
 
 						newPrefix = b.String()
 
 						b.Reset()
-					} else {
-						newPrefix = strconv.Itoa(i)
 					}
+
 					stack = append(stack, stackFrame{newPrefix, t})
 				}
 			}
