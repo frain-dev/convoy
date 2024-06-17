@@ -56,11 +56,12 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 						switch a := value.(type) {
 						case []interface{}:
 							for i := range a {
+								// we only recurse for $or or $and operators
+								// tried the stackFrame but it was a much more complex solution, so going with this for now
 								newM, err := flatFast2("", a[i])
 								if err != nil {
 									return nil, err
 								}
-								fmt.Println("nnn", newM)
 								a[i] = newM
 							}
 
@@ -75,7 +76,8 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 							return nil, ErrOrAndMustBeArray
 						}
 					}
-					//
+					// it's one of the unary ops [$in, $lt, ...] and so forth
+					// so just set it directly
 					k := M{key: value}
 					if len(prefix) > 0 {
 						result[prefix] = k
@@ -111,15 +113,6 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 						newPrefix = fmt.Sprintf("%v", i)
 					}
 					stack = append(stack, stackFrame{newPrefix, t})
-				default:
-					var newPrefix string
-					if len(prefix) > 0 {
-						newPrefix = fmt.Sprintf("%v.%v", prefix, i)
-					} else {
-						newPrefix = fmt.Sprintf("%v", i)
-					}
-					result[newPrefix] = t
-					continue
 				}
 			}
 		case nil:
