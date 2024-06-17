@@ -125,7 +125,6 @@ export class EventsComponent implements OnInit {
 	}
 
 	getSelectedDateRange(dateRange?: { startDate: Date; endDate: Date }) {
-        console.log('fsdf ', dateRange)
 		this.dateRangeValue = dateRange;
 		this.statsDateRange.patchValue({
 			startDate: dateRange?.startDate || new Date(new Date().setDate(new Date().getDate() - 30)),
