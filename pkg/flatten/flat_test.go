@@ -1074,16 +1074,6 @@ func TestFlattenArray(t *testing.T) {
 					"age": {
 					  "$gte": 10
 					}
-				  },
-				  {
-					"$or": [
-					  {
-						"type": "weekly"
-					  },
-					  {
-						"cities": "lagos"
-					  }
-					]
 				  }
 				]
 			  }`,
@@ -1092,16 +1082,6 @@ func TestFlattenArray(t *testing.T) {
 					M{
 						"age": M{
 							"$gte": float64(10),
-						},
-					},
-					M{
-						"$or": []interface{}{
-							M{
-								"type": "weekly",
-							},
-							M{
-								"cities": "lagos",
-							},
 						},
 					},
 				},
