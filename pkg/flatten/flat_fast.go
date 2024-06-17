@@ -2,6 +2,7 @@ package flatten
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -35,10 +36,14 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 	b := &strings.Builder{}
 
 	var (
+		// reused vars
 		currentFrame stackFrame
 		prefixInner  string
 		nestedInner  interface{}
-		ok           bool
+
+		ok        bool
+		si        string
+		newPrefix string
 	)
 
 	// outer:
@@ -122,7 +127,7 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 				}
 
 				if len(prefixInner) > 0 {
-					growBuilder(b, len(key)+len(prefixInner)+1)
+					b.Grow(len(key) + len(prefixInner) + 1)
 					b.WriteString(prefixInner)
 					b.WriteString(".")
 					b.WriteString(key)
@@ -143,21 +148,23 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 			for i := range n {
 				switch t := n[i].(type) {
 				case M:
-					var newPrefix string
 					if len(prefixInner) > 0 {
-						newPrefix = fmt.Sprintf("%v.%v", prefixInner, i)
+						si = strconv.Itoa(i)
+
+						b.Grow(len(si) + len(prefixInner) + 1)
+						b.WriteString(prefixInner)
+						b.WriteString(".")
+						b.WriteString(si)
+
+						newPrefix = b.String()
+
+						b.Reset()
 					} else {
-						newPrefix = fmt.Sprintf("%v", i)
+						newPrefix = strconv.Itoa(i)
 					}
 					stack = append(stack, stackFrame{newPrefix, t})
 				}
 			}
-		// case nil:
-		//	result[prefixInner] = n
-		// case string, int:
-		//	if prefixInner != "" {
-		//		result[prefixInner] = n
-		//	}
 		// default will handle string and int and nil
 		default:
 			if prefixInner != "" {
@@ -182,8 +189,4 @@ func isHomogenousArray(v []interface{}) bool {
 	}
 
 	return false
-}
-
-func growBuilder(b *strings.Builder, len int) {
-	b.Grow(len)
 }
