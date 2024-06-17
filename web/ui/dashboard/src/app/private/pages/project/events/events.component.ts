@@ -110,9 +110,8 @@ export class EventsComponent implements OnInit {
 
 	async fetchDashboardData() {
 		try {
-			const { startDate, endDate } = this.setDateForFilter(this.statsDateRange.value);
 
-			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate: startDate || '', endDate: endDate || '', type: this.dashboardFrequency });
+			const dashboardResponse = await this.eventsService.dashboardSummary({ ...this.statsDateRange.value, type: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
 			this.initConvoyChart(dashboardResponse);
 
@@ -132,13 +131,6 @@ export class EventsComponent implements OnInit {
 			endDate: dateRange?.endDate || new Date()
 		});
 		this.fetchDashboardData();
-	}
-
-	setDateForFilter(requestDetails: { startDate: Date; endDate: Date; startTime?: string; endTime?: string }) {
-		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
-		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
-		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
-		return { startDate, endDate };
 	}
 
 	initConvoyChart(dashboardResponse: HTTP_RESPONSE) {
