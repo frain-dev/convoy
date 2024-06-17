@@ -8,7 +8,6 @@ import (
 type stackFrame struct {
 	prefix string
 	nested interface{}
-	// setPrevious *interface{}
 }
 
 func flatFast2(prefix string, nested interface{}) (M, error) {
@@ -55,17 +54,35 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 					if key == "$or" || key == "$and" {
 						switch a := value.(type) {
 						case []interface{}:
+
+							// a might look like:
+							//{
+							//    "person": M{
+							//        "age": M{
+							//            "$in": []int{10, 11, 12},
+							//        },
+							//    },
+							//},
+
 							for i := range a {
 								// we only recurse for $or or $and operators
 								// tried the stackFrame but it was a much more complex solution, so going with this for now
+								// flatten the current item in the array
 								newM, err := flatFast2("", a[i])
 								if err != nil {
 									return nil, err
 								}
+
+								// change the item to the flattened version
 								a[i] = newM
 							}
 
-							k := M{key: a}
+							// by the time we get here a will look like:
+							//{
+							//    "person.age": M{
+							//    "$in": []int{10, 11, 12},
+							//},
+							k := M{key: a} // set key [$or or $and] to the new value of a and set it in result
 							if len(prefix) > 0 {
 								result[prefix] = k
 							} else {
@@ -76,8 +93,9 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 							return nil, ErrOrAndMustBeArray
 						}
 					}
-					// it's one of the unary ops [$in, $lt, ...] and so forth
-					// so just set it directly
+
+					// it's one of the unary ops [$in, $lt, ...] these do not require recursion or expansion
+					// and so forth so just set it directly
 					k := M{key: value}
 					if len(prefix) > 0 {
 						result[prefix] = k
@@ -144,4 +162,7 @@ func isHomogenousArray(v []interface{}) bool {
 	}
 
 	return false
+}
+
+func getBUilder() {
 }
