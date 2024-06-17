@@ -672,25 +672,25 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		{
 			name: "top level $or operator - nothing to flatten",
 			given: M{
-				"$or": []M{
-					{
+				"$or": []interface{}{
+					M{
 						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
-					{
+					M{
 						"temperatures": 39.9,
 					},
 				},
 			},
 			want: M{
-				"$or": []M{
-					{
+				"$or": []interface{}{
+					M{
 						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
-					{
+					M{
 						"temperatures": 39.9,
 					},
 				},
@@ -700,15 +700,15 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		{
 			name: "top level $or operator - flatten children",
 			given: M{
-				"$or": []M{
-					{
+				"$or": []interface{}{
+					M{
 						"person": M{
 							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
-					{
+					M{
 						"places": M{
 							"temperatures": 39.9,
 						},
@@ -732,15 +732,15 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		{
 			name: "top level $or operator - flatten children",
 			given: M{
-				"$or": []M{
-					{
+				"$or": []interface{}{
+					M{
 						"person": M{
 							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
-					{
+					M{
 						"places": M{
 							"temperatures": 39.9,
 						},
@@ -783,13 +783,13 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		{
 			name: "top level $and operator - nothing to flatten",
 			given: M{
-				"$and": []M{
-					{
+				"$and": []interface{}{
+					M{
 						"age": M{
 							"$in": []int{10, 11, 12},
 						},
 					},
-					{
+					M{
 						"temperatures": 39.9,
 					},
 				},
@@ -811,15 +811,15 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		{
 			name: "top level $and operator - flatten children",
 			given: M{
-				"$and": []M{
-					{
+				"$and": []interface{}{
+					M{
 						"person": M{
 							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
-					{
+					M{
 						"places": M{
 							"temperatures": 39.9,
 						},
@@ -843,15 +843,15 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		{
 			name: "top level $and operator - flatten children",
 			given: M{
-				"$and": []M{
-					{
+				"$and": []interface{}{
+					M{
 						"person": M{
 							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
-					{
+					M{
 						"places": M{
 							"temperatures": 39.9,
 						},
@@ -894,20 +894,20 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		{
 			name: "combine $and and $or operators - nothing to flatten",
 			given: M{
-				"$and": []M{
-					{
-						"$or": []M{
-							{
+				"$and": []interface{}{
+					M{
+						"$or": []interface{}{
+							M{
 								"age": M{
 									"$in": []int{10, 11, 12},
 								},
 							},
-							{
+							M{
 								"temperatures": 39.9,
 							},
 						},
 					},
-					{
+					M{
 						"temperatures": 39.9,
 					},
 				},
@@ -936,24 +936,24 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		{
 			name: "combine $and and $or operators - nothing to flatten",
 			given: M{
-				"$and": []M{
-					{
-						"$or": []M{
-							{
+				"$and": []interface{}{
+					M{
+						"$or": []interface{}{
+							M{
 								"person": M{
 									"age": M{
 										"$in": []int{10, 11, 12},
 									},
 								},
 							},
-							{
+							M{
 								"places": M{
 									"temperatures": 39.9,
 								},
 							},
 						},
 					},
-					{
+					M{
 						"city": "lagos",
 					},
 				},
