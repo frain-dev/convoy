@@ -5,6 +5,9 @@ import (
 	"strings"
 )
 
+// This package https://github.com/tidwall/gjson might
+// offer us a good technique for significantly reducing the number of allocations we do here
+
 type stackFrame struct {
 	prefix string
 	nested interface{}
@@ -29,25 +32,34 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 		}
 	}
 
+	b := &strings.Builder{}
+
+	var (
+		currentFrame stackFrame
+		prefixInner  string
+		nestedInner  interface{}
+		ok           bool
+	)
+
 	// outer:
 	for len(stack) > 0 {
 		// Pop from stack
-		currentFrame := stack[len(stack)-1]
+		currentFrame = stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
-		prefix := currentFrame.prefix
-		nested := currentFrame.nested
+		prefixInner = currentFrame.prefix
+		nestedInner = currentFrame.nested
 
-		switch n := nested.(type) {
+		switch n := nestedInner.(type) {
 		case M:
 			if len(n) == 0 {
 				// nothing in n, but its prefix exists, so add empty map to result
-				result[prefix] = M{}
+				result[prefixInner] = M{}
 				continue
 			}
 
 			for key, value := range n {
 				if strings.HasPrefix(key, "$") && !strings.HasPrefix(key, "$.") {
-					if !isKeyValidOperator(key) {
+					if _, ok = operators[key]; !ok {
 						return nil, fmt.Errorf("%s starts with a $ and is not a valid operator", key)
 					}
 
@@ -64,9 +76,12 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 							//    },
 							//},
 
+							// In the future, we can flatten large $and and $or array items concurrently
+							// say if len(a) > 10, use goroutines to concurrently flatten each item
+
 							for i := range a {
 								// we only recurse for $or or $and operators
-								// tried the stackFrame but it was a much more complex solution, so going with this for now
+								// tried the stackFrame, but it was a much more complex solution, so going with this for now
 								// flatten the current item in the array
 								newM, err := flatFast2("", a[i])
 								if err != nil {
@@ -83,8 +98,8 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 							//    "$in": []int{10, 11, 12},
 							//},
 							k := M{key: a} // set key [$or or $and] to the new value of a and set it in result
-							if len(prefix) > 0 {
-								result[prefix] = k
+							if len(prefixInner) > 0 {
+								result[prefixInner] = k
 							} else {
 								result = k
 							}
@@ -97,8 +112,8 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 					// it's one of the unary ops [$in, $lt, ...] these do not require recursion or expansion
 					// and so forth so just set it directly
 					k := M{key: value}
-					if len(prefix) > 0 {
-						result[prefix] = k
+					if len(prefixInner) > 0 {
+						result[prefixInner] = k
 					} else {
 						result = k
 					}
@@ -106,18 +121,22 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 					continue
 				}
 
-				nk := key
-				if len(prefix) > 0 {
-					nk = prefix + "." + key
+				if len(prefixInner) > 0 {
+					growBuilder(b, len(key)+len(prefixInner)+1)
+					b.WriteString(prefixInner)
+					b.WriteString(".")
+					b.WriteString(key)
+					key = b.String()
+					b.Reset()
 				}
 
-				stack = append(stack, stackFrame{nk, value})
+				stack = append(stack, stackFrame{key, value})
 			}
 		case []interface{}:
 			// either this is a nested array of maps, or a string or int float array
 			// if it is the latter, we don't need to expand it, just add it to the result
 			if isHomogenousArray(n) {
-				result[prefix] = n
+				result[prefixInner] = n
 				continue
 			}
 
@@ -125,23 +144,24 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 				switch t := n[i].(type) {
 				case M:
 					var newPrefix string
-					if len(prefix) > 0 {
-						newPrefix = fmt.Sprintf("%v.%v", prefix, i)
+					if len(prefixInner) > 0 {
+						newPrefix = fmt.Sprintf("%v.%v", prefixInner, i)
 					} else {
 						newPrefix = fmt.Sprintf("%v", i)
 					}
 					stack = append(stack, stackFrame{newPrefix, t})
 				}
 			}
-		case nil:
-			result[prefix] = n
-		case string, int:
-			if prefix != "" {
-				result[prefix] = n
-			}
+		// case nil:
+		//	result[prefixInner] = n
+		// case string, int:
+		//	if prefixInner != "" {
+		//		result[prefixInner] = n
+		//	}
+		// default will handle string and int and nil
 		default:
-			if prefix != "" {
-				result[prefix] = n
+			if prefixInner != "" {
+				result[prefixInner] = n
 			}
 		}
 	}
@@ -164,5 +184,6 @@ func isHomogenousArray(v []interface{}) bool {
 	return false
 }
 
-func getBUilder() {
+func growBuilder(b *strings.Builder, len int) {
+	b.Grow(len)
 }
