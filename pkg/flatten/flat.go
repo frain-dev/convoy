@@ -52,14 +52,14 @@ var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array
 //		}
 //	}
 func Flatten(input interface{}) (M, error) {
-	return flatFast2("", input)
+	return flatten("", input)
 }
 
 func FlattenWithPrefix(prefix string, input interface{}) (M, error) {
-	return flatFast2(prefix, input)
+	return flatten(prefix, input)
 }
 
-func flatFast2(prefix string, nested interface{}) (M, error) {
+func flatten(prefix string, nested interface{}) (M, error) {
 	stack := []stackFrame{{prefix, nested}}
 	result := M{}
 
@@ -133,7 +133,7 @@ func flatFast2(prefix string, nested interface{}) (M, error) {
 								// we only recurse for $or or $and operators
 								// tried the stackFrame, but it was a much more complex solution, so going with this for now
 								// flatten the current item in the array
-								newM, err := flatFast2("", a[i])
+								newM, err := flatten("", a[i])
 								if err != nil {
 									return nil, err
 								}
