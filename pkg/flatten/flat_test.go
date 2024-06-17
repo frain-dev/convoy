@@ -1233,24 +1233,24 @@ func BenchmarkFlattenArray(b *testing.B) {
 
 func BenchmarkFlattenMap(b *testing.B) {
 	test := M{
-		"$and": []M{
-			{
-				"$or": []M{
-					{
+		"$and": []interface{}{
+			M{
+				"$or": []interface{}{
+					M{
 						"person": M{
 							"age": M{
 								"$in": []int{10, 11, 12},
 							},
 						},
 					},
-					{
+					M{
 						"places": M{
 							"temperatures": 39.9,
 						},
 					},
 				},
 			},
-			{
+			M{
 				"city": "lagos",
 			},
 		},
