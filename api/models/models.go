@@ -108,6 +108,7 @@ type DashboardSummary struct {
 	Applications int                        `json:"apps" bson:"apps"`
 	Period       string                     `json:"period" bson:"period"`
 	PeriodData   *[]datastore.EventInterval `json:"event_data,omitempty" bson:"event_data"`
+	CacheTime    time.Time                  `json:"cache_time" bson:"cache_time"`
 }
 
 type WebhookRequest struct {

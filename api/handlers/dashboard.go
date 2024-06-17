@@ -80,6 +80,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if data != nil {
+		h.cacheNewDashboardDataInBackground(project, searchParams, p, period, qs)
 		_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 			data, http.StatusOK))
 		return
@@ -103,9 +104,10 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		EventsSent:   eventsSent,
 		Period:       period,
 		PeriodData:   &messages,
+		CacheTime:    time.Now(),
 	}
 
-	err = h.A.Cache.Set(r.Context(), qs, dashboard, time.Minute)
+	err = h.A.Cache.Set(r.Context(), qs, dashboard, time.Hour)
 
 	if err != nil {
 		h.A.Logger.WithError(err)
@@ -113,6 +115,60 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 
 	_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 		dashboard, http.StatusOK))
+}
+
+func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, searchParams datastore.SearchParams, p datastore.Period, period string, qs string) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	qsQuery := qs + ":query"
+	var dashboardQ *models.DashboardSummary
+	_ = h.A.Cache.Get(ctx, qsQuery, &dashboardQ)
+	if dashboardQ != nil {
+		log.Warn("Query still running in a Goroutine")
+		return
+	}
+
+	go func() {
+		dashboardQ = &models.DashboardSummary{}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+
+		err := h.A.Cache.Set(ctx, qsQuery, dashboardQ, 2*time.Minute)
+		if err != nil {
+			h.A.Logger.WithError(err).Error("failed to cache query item: " + qsQuery)
+			return
+		}
+
+		apps, err := postgres.NewEndpointRepo(h.A.DB, h.A.Cache).CountProjectEndpoints(ctx, project.UID)
+		if err != nil {
+			log.WithError(err).Error("failed to count project endpoints")
+			return
+		}
+		eventsSent, messages, err := h.computeDashboardMessages(ctx, project.UID, searchParams, p)
+		if err != nil {
+			log.WithError(err).Error("an error occurred while fetching messages")
+			return
+		}
+
+		dashboard := models.DashboardSummary{
+			Applications: int(apps),
+			EventsSent:   eventsSent,
+			Period:       period,
+			PeriodData:   &messages,
+			CacheTime:    time.Now(),
+		}
+
+		err = h.A.Cache.Set(ctx, qs, dashboard, time.Hour)
+		if err != nil {
+			h.A.Logger.WithError(err).Error("failed to cache item")
+		}
+
+		err = h.A.Cache.Delete(ctx, qsQuery)
+		if err != nil {
+			h.A.Logger.WithError(err).Error("failed to delete cache item")
+		}
+	}()
 }
 
 func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
