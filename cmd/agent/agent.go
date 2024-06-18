@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/asyncbreaker"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -59,6 +60,21 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			if err = config.Override(cliConfig); err != nil {
 				return err
 			}
+
+			cfg, err := config.Get()
+			if err != nil {
+				a.Logger.Errorf("failed to retrieve config: %v", err)
+				return err
+			}
+
+			db := a.DB.GetDB()
+			asyncBreaker, err := asyncbreaker.NewAsyncBreaker(db, &cfg.CircuitBreaker)
+			if err != nil {
+				return err
+			}
+
+			// run breaker loop
+			go asyncBreaker.Run(cmd.Context())
 
 			// start sync configuration from the database.
 			go memorystore.DefaultStore.Sync(ctx, interval)

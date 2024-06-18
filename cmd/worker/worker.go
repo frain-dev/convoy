@@ -2,9 +2,11 @@ package worker
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/net"
 	"net/http"
 
+	"github.com/frain-dev/convoy/net"
+
+	"github.com/frain-dev/convoy/internal/pkg/asyncbreaker"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
@@ -132,6 +134,14 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			}
 
 			go memorystore.DefaultStore.Sync(ctx, interval)
+
+			db := a.DB.GetDB()
+			asyncBreaker, err := asyncbreaker.NewAsyncBreaker(db, &cfg.CircuitBreaker)
+			if err != nil {
+				return err
+			}
+
+			go asyncBreaker.Run(cmd.Context())
 
 			newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
 				telemetry.OptionTracker(counter),

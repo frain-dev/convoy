@@ -93,6 +93,10 @@ var DefaultConfiguration = Configuration{
 			SampleTime: 5,
 		},
 	},
+	CircuitBreaker: CircuitBreakerConfiguration{
+		SampleTime: 5,
+		Duration:   20,
+	},
 	PubSubIngestRate: 50,
 }
 
@@ -349,27 +353,37 @@ func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 }
 
 type Configuration struct {
-	APIVersion         string                     `json:"api_version" envconfig:"CONVOY_API_VERSION"`
-	Auth               AuthConfiguration          `json:"auth,omitempty"`
-	Database           DatabaseConfiguration      `json:"database"`
-	Redis              RedisConfiguration         `json:"redis"`
-	Prometheus         PrometheusConfiguration    `json:"prometheus"`
-	Server             ServerConfiguration        `json:"server"`
-	MaxResponseSize    uint64                     `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP               SMTPConfiguration          `json:"smtp"`
-	Environment        string                     `json:"env" envconfig:"CONVOY_ENV"`
-	Logger             LoggerConfiguration        `json:"logger"`
-	Tracer             TracerConfiguration        `json:"tracer"`
-	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
-	Pyroscope          PyroscopeConfiguration     `json:"pyroscope"`
-	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	FeatureFlag        FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
-	Analytics          AnalyticsConfiguration     `json:"analytics"`
-	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
-	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
-	EnableProfiling    bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
-	Metrics            MetricsConfiguration       `json:"metrics" envconfig:"CONVOY_METRICS"`
-	PubSubIngestRate   uint                       `json:"pub_sub_ingest_rate" envconfig:"CONVOY_PUB_SUB_INGEST_RATE"`
+	APIVersion         string                      `json:"api_version" envconfig:"CONVOY_API_VERSION"`
+	Auth               AuthConfiguration           `json:"auth,omitempty"`
+	Database           DatabaseConfiguration       `json:"database"`
+	Redis              RedisConfiguration          `json:"redis"`
+	Prometheus         PrometheusConfiguration     `json:"prometheus"`
+	Server             ServerConfiguration         `json:"server"`
+	MaxResponseSize    uint64                      `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP               SMTPConfiguration           `json:"smtp"`
+	Environment        string                      `json:"env" envconfig:"CONVOY_ENV"`
+	Logger             LoggerConfiguration         `json:"logger"`
+	Tracer             TracerConfiguration         `json:"tracer"`
+	Host               string                      `json:"host" envconfig:"CONVOY_HOST"`
+	Pyroscope          PyroscopeConfiguration      `json:"pyroscope"`
+	CustomDomainSuffix string                      `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	FeatureFlag        FlagLevel                   `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
+	Analytics          AnalyticsConfiguration      `json:"analytics"`
+	StoragePolicy      StoragePolicyConfiguration  `json:"storage_policy"`
+	ConsumerPoolSize   int                         `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	EnableProfiling    bool                        `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	Metrics            MetricsConfiguration        `json:"metrics" envconfig:"CONVOY_METRICS"`
+	PubSubIngestRate   uint                        `json:"pub_sub_ingest_rate" envconfig:"CONVOY_PUB_SUB_INGEST_RATE"`
+	CircuitBreaker     CircuitBreakerConfiguration `json:"circuit_breaker"`
+}
+
+type CircuitBreakerConfiguration struct {
+	SampleTime             uint   `json:"sample_time" envconfig:"CONVOY_CIRCUIT_BREAKER_SAMPLE_TIME"`
+	Duration               uint   `json:"duration" envconfig:"CONVOY_CIRCUIT_BREAKER_DURATION"`
+	ErrorTimeout           uint   `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
+	SuccessThreshold       uint   `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
+	ErrorThreshold         uint   `json:"error_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_THRESHOLD"`
+	NotificationThresholds []uint `json:"notification_thresholds" envconfig:"CONVOY_CIRCUIT_BREAKER_NOTIFICATION_THRESHOLDS"`
 }
 
 type PyroscopeConfiguration struct {
