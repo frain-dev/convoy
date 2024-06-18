@@ -51,6 +51,7 @@ export class EventsComponent implements OnInit {
 		await this.getProjectStats();
 
 		if (this.isProjectConfigurationComplete) {
+			console.log(true);
 			await this.checkEventsOnFirstLoad();
 
 			if (this.privateService.getProjectDetails?.type === 'incoming' && !this.hasEvents) {
@@ -101,6 +102,13 @@ export class EventsComponent implements OnInit {
 		if (this.privateService.getProjectDetails?.type === 'incoming' && this.isProjectConfigurationComplete) await this.getLatestSource();
 	}
 
+	setDateForFilter(requestDetails: { startDate: Date; endDate: Date; startTime?: string; endTime?: string }) {
+		if (!requestDetails.endDate && !requestDetails.startDate) return { startDate: '', endDate: '' };
+		const startDate = requestDetails.startDate ? `${format(requestDetails.startDate, 'yyyy-MM-dd')}${requestDetails?.startTime || 'T00:00:00'}` : '';
+		const endDate = requestDetails.endDate ? `${format(requestDetails.endDate, 'yyyy-MM-dd')}${requestDetails?.endTime || 'T23:59:59'}` : '';
+		return { startDate, endDate };
+	}
+
 	continueToDashboard() {
 		this.fetchDashboardData();
 		this.privateService.getProjectStat({ refresh: true });
@@ -109,9 +117,12 @@ export class EventsComponent implements OnInit {
 	}
 
 	async fetchDashboardData() {
-		try {
+        const setDate = typeof this.statsDateRange.value.startDate !== 'string';
 
-			const dashboardResponse = await this.eventsService.dashboardSummary({ ...this.statsDateRange.value, type: this.dashboardFrequency });
+		const { startDate, endDate } = setDate ? this.setDateForFilter(this.statsDateRange.value) : this.statsDateRange.value;
+
+        try {
+			const dashboardResponse = await this.eventsService.dashboardSummary({ startDate, endDate, type: this.dashboardFrequency });
 			this.dashboardData = dashboardResponse.data;
 			this.initConvoyChart(dashboardResponse);
 
