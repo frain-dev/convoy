@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/compare"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 )
@@ -790,21 +791,21 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 }
 
 func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}) (bool, error) {
-	//p, err := flatten.Flatten(payload)
-	//if err != nil {
-	//	return false, err
-	//}
-	//
-	//f, err := flatten.Flatten(filter)
-	//if err != nil {
-	//	return false, err
-	//}
+	p, err := flatten.Flatten(payload)
+	if err != nil {
+		return false, err
+	}
+
+	f, err := flatten.Flatten(filter)
+	if err != nil {
+		return false, err
+	}
 
 	if payload == nil || filter == nil {
 		return true, nil
 	}
 
-	return compare.Compare(payload.(map[string]interface{}), filter.(map[string]interface{}))
+	return compare.Compare(p, f)
 }
 
 var (
