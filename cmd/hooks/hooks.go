@@ -8,8 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/grafana/pyroscope-go"
 
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -197,7 +195,7 @@ func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
 
 		// you can disable logging by setting this to nil
 		// Logger: pyroscope.StandardLogger,
-		Logger:     logrus.StandardLogger(),
+		Logger:     log.NewLogger(io.Discard),
 		UploadRate: time.Second * 5,
 
 		// optionally, if authentication is enabled, specify the API key:
