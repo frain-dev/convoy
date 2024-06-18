@@ -195,7 +195,6 @@ func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
 
 		// you can disable logging by setting this to nil
 		// Logger: pyroscope.StandardLogger,
-		Logger:     log.NewLogger(io.Discard),
 		UploadRate: time.Second * 5,
 
 		// optionally, if authentication is enabled, specify the API key:
