@@ -154,9 +154,7 @@ const (
         created_at >= $2 AND
         created_at <= $3
     GROUP BY
-        "data.group_only", "data.index"
-    ORDER BY
-        "data.total_time";
+        "data.group_only", "data.index";
     `
 
 	fetchEventDeliveries = `
