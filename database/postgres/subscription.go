@@ -49,7 +49,7 @@ const (
 	filter_config_filter_headers=$12,
 	filter_config_filter_body=$13,
 	filter_config_filter_is_flattened=$14,
-	rate_limit_config_count=$14,
+	rate_limit_config_count=$15,
 	rate_limit_config_duration=$16,
 	function=$17,
     updated_at=now()
