@@ -1,45 +1,34 @@
 package retrystrategies
 
 import (
+	"math"
 	"math/rand"
 	"time"
 )
 
 type JitterFn func(uint) int
 
-// based off https://blog.gopheracademy.com/advent-2014/backoff/
 type ExponentialBackoffRetryStrategy struct {
-	millis   []uint
-	jitterFn JitterFn
+	intervalSeconds uint64
+	retryLimit      uint64
 }
 
 func (r *ExponentialBackoffRetryStrategy) NextDuration(attempts uint64) time.Duration {
-	if int(attempts) >= len(r.millis) {
-		attempts = uint64(len(r.millis) - 1)
-	}
 
-	return time.Duration(r.jitterFn(r.millis[attempts])) * time.Millisecond
+	retrySeconds := float64(r.intervalSeconds) * math.Pow(2, float64(attempts%18)) // reset after 18 attempts
+
+	d := time.Duration(retrySeconds) * time.Second
+
+	jitter := time.Duration(rand.Uint64() % 10e9)
+
+	d += jitter / 2
+	return d
 }
 
-func jitter(millis uint) int {
-	if millis == 0 {
-		return 0
-	}
-
-	return int(millis/2) + rand.Intn(int(millis))
-}
-
-func NewExponential(millis []uint) *ExponentialBackoffRetryStrategy {
+func NewExponential(intervalSeconds uint64, retryLimit uint64) *ExponentialBackoffRetryStrategy {
 	return &ExponentialBackoffRetryStrategy{
-		millis:   millis,
-		jitterFn: jitter,
-	}
-}
-
-func NewExponentialWithJitter(millis []uint, customJitter JitterFn) *ExponentialBackoffRetryStrategy {
-	return &ExponentialBackoffRetryStrategy{
-		millis:   millis,
-		jitterFn: customJitter,
+		intervalSeconds: intervalSeconds,
+		retryLimit:      retryLimit,
 	}
 }
 

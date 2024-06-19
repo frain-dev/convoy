@@ -13,20 +13,8 @@ type RetryStrategy interface {
 
 func NewRetryStrategyFromMetadata(m datastore.Metadata) RetryStrategy {
 	if string(m.Strategy) == string(datastore.ExponentialStrategyProvider) {
-		return NewExponential(getProgression(uint(m.IntervalSeconds), uint(m.RetryLimit)))
+		return NewExponential(m.IntervalSeconds, m.RetryLimit)
 	}
 
 	return NewDefault(m.IntervalSeconds)
-}
-
-func getProgression(start, limit uint) []uint {
-	pgs := make([]uint, limit)
-
-	n := start
-	for i := range pgs {
-		pgs[i] = n
-		n *= 2
-	}
-
-	return pgs
 }
