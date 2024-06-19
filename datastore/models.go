@@ -1229,8 +1229,9 @@ func (h M) Value() (driver.Value, error) {
 }
 
 type FilterSchema struct {
-	Headers M `json:"headers" db:"headers"`
-	Body    M `json:"body" db:"body"`
+	IsFlattened bool `json:"is_flattened" db:"is_flattened"`
+	Headers     M    `json:"headers" db:"headers"`
+	Body        M    `json:"body" db:"body"`
 }
 
 type ProviderConfig struct {

@@ -29,9 +29,10 @@ const (
 	retry_config_type,retry_config_duration,
 	retry_config_retry_count,filter_config_event_types,
 	filter_config_filter_headers,filter_config_filter_body,
+    filter_config_filter_is_flattened,
 	rate_limit_config_count,rate_limit_config_duration,function
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19);
     `
 
 	updateSubscription = `
@@ -47,9 +48,10 @@ const (
 	filter_config_event_types=$11,
 	filter_config_filter_headers=$12,
 	filter_config_filter_body=$13,
+	filter_config_filter_is_flattened=$14,
 	rate_limit_config_count=$14,
-	rate_limit_config_duration=$15,
-	function=$16,
+	rate_limit_config_duration=$16,
+	function=$17,
     updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
@@ -74,6 +76,7 @@ const (
 	s.filter_config_event_types AS "filter_config.event_types",
 	s.filter_config_filter_headers AS "filter_config.filter.headers",
 	s.filter_config_filter_body AS "filter_config.filter.body",
+	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
 	s.rate_limit_config_count AS "rate_limit_config.count",
 	s.rate_limit_config_duration AS "rate_limit_config.duration",
 
@@ -118,7 +121,8 @@ const (
     select id, type, project_id, endpoint_id, function,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body"
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
     from convoy.subscriptions
     where (ARRAY[$4] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)
     AND id > $1
@@ -130,7 +134,8 @@ const (
     select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body"
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
     from convoy.subscriptions
     where id > ?
     AND project_id IN (?)
@@ -141,7 +146,8 @@ const (
     select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body"
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
     from convoy.subscriptions
     where updated_at > ?
     AND id > ?
@@ -451,6 +457,26 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		deviceID = &subscription.DeviceID
 	}
 
+	if fc.Filter.Body != nil {
+		p, err := flatten.Flatten(fc.Filter.Body)
+		if err != nil {
+			return fmt.Errorf("failed to flatten body filter: %v", err)
+		}
+
+		fc.Filter.Body = p
+		fc.Filter.IsFlattened = true
+	}
+
+	if fc.Filter.Headers != nil {
+		h, err := flatten.Flatten(fc.Filter.Headers)
+		if err != nil {
+			return fmt.Errorf("failed to flatten body filter: %v", err)
+		}
+
+		fc.Filter.Headers = h
+		fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
+	}
+
 	result, err := s.db.ExecContext(
 		ctx, createSubscription, subscription.UID,
 		subscription.Name, subscription.Type, subscription.ProjectID,
@@ -502,6 +528,26 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 	var sourceID *string
 	if !util.IsStringEmpty(subscription.SourceID) {
 		sourceID = &subscription.SourceID
+	}
+
+	if fc.Filter.Body != nil {
+		p, err := flatten.Flatten(fc.Filter.Body)
+		if err != nil {
+			return fmt.Errorf("failed to flatten body filter: %v", err)
+		}
+
+		fc.Filter.Body = p
+		fc.Filter.IsFlattened = true
+	}
+
+	if fc.Filter.Headers != nil {
+		h, err := flatten.Flatten(fc.Filter.Headers)
+		if err != nil {
+			return fmt.Errorf("failed to flatten body filter: %v", err)
+		}
+
+		fc.Filter.Headers = h
+		fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
 	}
 
 	result, err := s.db.ExecContext(
@@ -790,22 +836,24 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 	return count, nil
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}) (bool, error) {
+func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload interface{}, filter map[string]interface{}, isFlattened bool) (bool, error) {
+	if payload == nil || filter == nil {
+		return true, nil
+	}
+
 	p, err := flatten.Flatten(payload)
 	if err != nil {
 		return false, err
 	}
 
-	f, err := flatten.Flatten(filter)
-	if err != nil {
-		return false, err
+	if !isFlattened {
+		filter, err = flatten.Flatten(filter)
+		if err != nil {
+			return false, err
+		}
 	}
 
-	if payload == nil || filter == nil {
-		return true, nil
-	}
-
-	return compare.Compare(p, f)
+	return compare.Compare(p, filter)
 }
 
 var (
