@@ -482,7 +482,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		subscription.Name, subscription.Type, subscription.ProjectID,
 		endpointID, deviceID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 	)
 	if err != nil {
@@ -554,7 +554,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		ctx, updateSubscription, subscription.UID, projectID,
 		subscription.Name, subscription.EndpointID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 	)
 	if err != nil {
