@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -20,8 +19,6 @@ import (
 	"github.com/segmentio/kafka-go/sasl/plain"
 	"github.com/segmentio/kafka-go/sasl/scram"
 )
-
-var ErrInvalidCredentials = errors.New("your kafka credentials are invalid. please verify you're providing the correct credentials")
 
 type Kafka struct {
 	Cfg         *datastore.KafkaPubSubConfig
@@ -147,7 +144,7 @@ func (k *Kafka) consume() {
 		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
-	println("ingest rate:", cfg.PubSubIngestRate)
+	println("ingest rate:", cfg.InstanceIngestRate)
 
 	for {
 		select {
@@ -155,8 +152,11 @@ func (k *Kafka) consume() {
 			return
 		default:
 			if !util.IsStringEmpty(k.instanceId) {
-				// this should block till after the rate limit
-				_ = k.rateLimiter.Allow(k.ctx, k.instanceId, int(cfg.PubSubIngestRate), 0)
+				err = k.rateLimiter.Allow(k.ctx, k.instanceId, cfg.InstanceIngestRate)
+				if err != nil {
+					time.Sleep(time.Millisecond * 250)
+					continue
+				}
 			}
 
 			m, err := r.FetchMessage(k.ctx)

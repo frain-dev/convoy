@@ -79,7 +79,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 				host = instCfg.UID
 			}
 
-			rateLimiter, err := limiter.NewLimiter([]string{host}, cfg, true)
+			rateLimiter, err := limiter.NewLimiter(cfg)
 			if err != nil {
 				return err
 			}

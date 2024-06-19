@@ -162,6 +162,7 @@ func StartConvoyServer(a *cli.App) error {
 			Queue:  a.Queue,
 			Logger: lo,
 			Cache:  a.Cache,
+			Rate:   a.Rate,
 		})
 	if err != nil {
 		return err
