@@ -60,9 +60,6 @@ func FlattenWithPrefix(prefix string, input interface{}) (M, error) {
 }
 
 func flatten(prefix string, nested interface{}) (M, error) {
-	stack := []stackFrame{{prefix, nested}}
-	result := M{}
-
 	if nested == nil {
 		return M{}, nil
 	}
@@ -78,6 +75,8 @@ func flatten(prefix string, nested interface{}) (M, error) {
 		}
 	}
 
+	stack := []stackFrame{{prefix, nested}}
+	result := M{}
 	b := &strings.Builder{}
 
 	var (

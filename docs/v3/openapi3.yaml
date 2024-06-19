@@ -283,6 +283,8 @@ components:
           $ref: '#/components/schemas/datastore.M'
         headers:
           $ref: '#/components/schemas/datastore.M'
+        is_flattened:
+          type: boolean
       type: object
     datastore.GooglePubSubConfig:
       properties:
@@ -1084,8 +1086,12 @@ components:
       type: object
     models.FilterSchema:
       properties:
-        body: {}
-        header: {}
+        body:
+          additionalProperties: true
+          type: object
+        header:
+          additionalProperties: true
+          type: object
       type: object
     models.FunctionRequest:
       properties:

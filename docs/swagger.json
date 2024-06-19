@@ -5844,6 +5844,9 @@
                 },
                 "headers": {
                     "$ref": "#/definitions/datastore.M"
+                },
+                "is_flattened": {
+                    "type": "boolean"
                 }
             }
         },
@@ -6964,8 +6967,14 @@
         "models.FilterSchema": {
             "type": "object",
             "properties": {
-                "body": {},
-                "header": {}
+                "body": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "header": {
+                    "type": "object",
+                    "additionalProperties": true
+                }
             }
         },
         "models.FunctionRequest": {
