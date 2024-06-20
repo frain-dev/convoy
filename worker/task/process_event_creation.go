@@ -307,21 +307,34 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription, soft bool) ([]datastore.Subscription, error) {
 	var matched []datastore.Subscription
+
+	// payload is interface{} and not map[string]interface{} because
+	// map[string]interface{} won't work for array based json e.g:
+	// [
+	//	{
+	//		"organization": "frain-dev"
+	//	},
+	//	{
+	//		".members_url": "danvixent"
+	//	}
+	//]
 	var payload interface{}
-	err := json.Unmarshal(e.Data, &payload)
+	err := json.Unmarshal(e.Data, &payload) // TODO(all): find a way to stop doing this repeatedly, json.Unmarshal is slow and costly
 	if err != nil {
 		return nil, err
 	}
 
-	checked := make(map[string]struct{})
+	// TODO(all): why do we even need this check in this first place
+	checked := make(map[string]struct{}, len(subscriptions))
 
+	// TODO(all): subscription is a big struct, avoid the copying in this loop
 	for _, s := range subscriptions {
 		if _, ok := checked[s.UID]; ok {
 			continue
 		}
 		checked[s.UID] = struct{}{}
 
-		if len(s.FilterConfig.Filter.Body.Map()) == 0 && len(s.FilterConfig.Filter.Headers.Map()) == 0 {
+		if len(s.FilterConfig.Filter.Body) == 0 && len(s.FilterConfig.Filter.Headers) == 0 {
 			matched = append(matched, s)
 			continue
 		}
@@ -426,6 +439,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 	}
 
 	if util.IsStringEmpty(eventParams.AppID) && util.IsStringEmpty(eventParams.EndpointID) && util.IsStringEmpty(eventParams.OwnerID) {
+		// TODO(all): we should discard events without endpoint id here.
 		return nil, errors.New("please provide an endpoint ID")
 	}
 
