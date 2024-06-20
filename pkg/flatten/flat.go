@@ -30,6 +30,10 @@ type stackFrame struct {
 	nested interface{}
 }
 
+type counterStackFrame struct {
+	nested interface{}
+}
+
 var ErrOrAndMustBeArray = errors.New("the value of $or and $and must be an array")
 
 // Flatten flattens extended JSON which is used to build and store queries.
@@ -64,20 +68,33 @@ func flatten(prefix string, nested interface{}) (M, error) {
 		return M{}, nil
 	}
 
+	var result M
+	var stack []stackFrame
+
 	switch v := nested.(type) {
 	case M:
 		if len(v) == 0 {
 			return M{}, nil
 		}
+
+		kc, sf := countKeys(v)
+		stack = make([]stackFrame, 0, sf)
+		result = make(M, kc)
+
 	case []interface{}:
 		if len(v) == 0 {
 			return M{}, nil
 		}
+
+		kc, sf := countKeys(v)
+		stack = make([]stackFrame, 0, sf)
+		result = make(M, kc)
+
+	default:
+		result = M{}
 	}
 
-	stack := []stackFrame{{prefix, nested}}
-	result := M{}
-	b := &strings.Builder{}
+	stack = append(stack, stackFrame{prefix, nested})
 
 	var (
 		// reused vars
@@ -145,11 +162,11 @@ func flatten(prefix string, nested interface{}) (M, error) {
 							//    "person.age": M{
 							//    "$in": []int{10, 11, 12},
 							//},
-							k := M{key: a} // set key [$or or $and] to the new value of a and set it in result
+							// set key [$or or $and] to the new value of a and set it in result
 							if len(prefixInner) > 0 {
-								result[prefixInner] = k
+								result[prefixInner] = M{key: a}
 							} else {
-								result = k
+								result = M{key: a}
 							}
 						default:
 							return nil, ErrOrAndMustBeArray
@@ -158,23 +175,24 @@ func flatten(prefix string, nested interface{}) (M, error) {
 
 					// it's one of the unary ops [$in, $lt, ...] these do not require recursion or expansion
 					// and so forth so just set it directly
-					k := M{key: value}
 					if len(prefixInner) > 0 {
-						result[prefixInner] = k
+						result[prefixInner] = M{key: value}
 					} else {
-						result = k
+						result = M{key: value}
 					}
 
 					continue
 				}
 
 				if len(prefixInner) > 0 {
-					b.Grow(len(key) + len(prefixInner) + 1)
-					b.WriteString(prefixInner)
-					b.WriteString(".")
-					b.WriteString(key)
-					key = b.String()
-					b.Reset()
+					// b.Grow(len(key) + len(prefixInner) + 1)
+					// b.WriteString(prefixInner)
+					// b.WriteString(".")
+					// b.WriteString(key)
+					// key = b.String()
+					// b.Reset()
+
+					key = prefixInner + "." + key
 				}
 
 				stack = append(stack, stackFrame{key, value})
@@ -192,15 +210,14 @@ func flatten(prefix string, nested interface{}) (M, error) {
 				case M:
 					newPrefix = strconv.Itoa(i)
 					if len(prefixInner) > 0 {
+						// b.Grow(len(newPrefix) + len(prefixInner) + 1)
+						// b.WriteString(prefixInner)
+						// b.WriteString(".")
+						// b.WriteString(newPrefix)
 
-						b.Grow(len(newPrefix) + len(prefixInner) + 1)
-						b.WriteString(prefixInner)
-						b.WriteString(".")
-						b.WriteString(newPrefix)
+						newPrefix = prefixInner + "." + newPrefix
 
-						newPrefix = b.String()
-
-						b.Reset()
+						// b.Reset()
 					}
 
 					stack = append(stack, stackFrame{newPrefix, t})
@@ -230,4 +247,53 @@ func isHomogenousArray(v []interface{}) bool {
 	}
 
 	return false
+}
+
+func countKeys(nested interface{}) (int, int) {
+	stack := []counterStackFrame{{nested}}
+	keyCount := 0
+
+	var (
+		// reused vars
+		currentFrame counterStackFrame
+		nestedInner  interface{}
+		value        interface{}
+	)
+
+	for len(stack) > 0 {
+		currentFrame = stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		nestedInner = currentFrame.nested
+
+		switch n := nestedInner.(type) {
+		case M:
+			if len(n) == 0 {
+				keyCount++
+				continue
+			}
+
+			// we're now flattening filters before hand so i don't expect this to be a problem "HENCEFORTH"
+			for _, value = range n {
+				keyCount++
+				stack = append(stack, counterStackFrame{value})
+			}
+		case []interface{}:
+			if isHomogenousArray(n) {
+				keyCount++
+				continue
+			}
+
+			for i := range n {
+				switch t := n[i].(type) {
+				case M:
+					stack = append(stack, counterStackFrame{t})
+				}
+			}
+		default:
+			fmt.Println("ffffff")
+			// keyCount++
+		}
+	}
+
+	return keyCount, cap(stack)
 }
