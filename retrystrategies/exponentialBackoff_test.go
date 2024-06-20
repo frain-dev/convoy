@@ -23,7 +23,7 @@ func TestExponentialBackoffRetryStrategy_NextDuration(t *testing.T) {
 		d := r.NextDuration(uint64(i))
 		expected := time.Duration(float64(m.IntervalSeconds)*math.Pow(2, float64(i))) * time.Second
 		fmt.Println("i: " + fmt.Sprint(i) + " diff: " + expected.String() + " d: " + d.String())
-		assert.True(t, d <= 2*time.Hour)
+		assert.True(t, d < 3*time.Hour)
 	}
 }
 
@@ -42,6 +42,6 @@ func TestExponentialBackoffRetryStrategy_NextDuration_MaxFourHours(t *testing.T)
 		d := r.NextDuration(uint64(i))
 		expected := time.Duration(float64(m.IntervalSeconds)*math.Pow(2, float64(i))) * time.Second
 		fmt.Println("i: " + fmt.Sprint(i) + " diff: " + expected.String() + " d: " + d.String())
-		assert.True(t, d <= 4*time.Hour)
+		assert.True(t, d < 5*time.Hour)
 	}
 }

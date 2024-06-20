@@ -17,7 +17,7 @@ func (r *ExponentialBackoffRetryStrategy) NextDuration(attempts uint64) time.Dur
 
 	retrySeconds := float64(r.intervalSeconds) * math.Pow(2, float64(attempts))
 	if uint64(retrySeconds) > r.maxRetrySeconds {
-		return time.Duration(r.maxRetrySeconds) * time.Second
+		retrySeconds = float64(r.maxRetrySeconds)
 	}
 
 	d := time.Duration(retrySeconds) * time.Second
