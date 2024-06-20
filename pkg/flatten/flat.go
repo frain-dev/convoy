@@ -290,8 +290,7 @@ func countKeys(nested interface{}) (int, int) {
 				}
 			}
 		default:
-			fmt.Println("ffffff")
-			// keyCount++
+			keyCount++
 		}
 	}
 
