@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/flatten"
+
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
@@ -734,7 +736,7 @@ type Event struct {
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
-func (e *Event) GetRawHeaders() interface{} {
+func (e *Event) GetRawHeaders() map[string]interface{} {
 	h := make(map[string]interface{}, len(e.Headers))
 
 	// re-use mem allocated for these copied variables
@@ -1193,13 +1195,24 @@ type FilterConfiguration struct {
 
 type M map[string]interface{}
 
-func (h M) Map() map[string]interface{} {
-	m := map[string]interface{}{}
-	x := map[string]interface{}(h)
-	for k, v := range x {
-		m[k] = v
+// Flatten is only intended for use for filter body & headers
+// It will modify the calling M map, so use with carefully.
+func (h *M) Flatten() error {
+	if h == nil {
+		return nil
 	}
-	return h
+
+	// The flatten.M conversion is important here, because flatten.Flatten cannot
+	// reconcile M to map[string]interface{}, they are distinct types
+	// whereas flatten.M = map[string]interface{} they are identical. See
+	// https://go.dev/ref/spec#Type_identity for more info.
+	f, err := flatten.Flatten(flatten.M(*h))
+	if err != nil {
+		return err
+	}
+
+	*h = f
+	return nil
 }
 
 func (h *M) Scan(value interface{}) error {
