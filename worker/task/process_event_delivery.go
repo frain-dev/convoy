@@ -34,7 +34,6 @@ var (
 	ErrDeliveryAttemptFailed = errors.New("error sending event")
 	ErrRateLimit             = errors.New("rate limit error")
 	defaultDelay             = 10 * time.Second
-	defaultEventDelay        = 120 * time.Second
 )
 
 type SignatureValues struct {
@@ -69,6 +68,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if err != nil {
 			return &DeliveryError{Err: err}
 		}
+		eventDelivery.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 

@@ -370,6 +370,7 @@ type Configuration struct {
 	EnableProfiling    bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 	Metrics            MetricsConfiguration       `json:"metrics" envconfig:"CONVOY_METRICS"`
 	PubSubIngestRate   uint                       `json:"pub_sub_ingest_rate" envconfig:"CONVOY_PUB_SUB_INGEST_RATE"`
+	MaxRetrySeconds    uint64                     `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 }
 
 type PyroscopeConfiguration struct {

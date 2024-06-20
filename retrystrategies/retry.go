@@ -13,7 +13,7 @@ type RetryStrategy interface {
 
 func NewRetryStrategyFromMetadata(m datastore.Metadata) RetryStrategy {
 	if string(m.Strategy) == string(datastore.ExponentialStrategyProvider) {
-		return NewExponential(m.IntervalSeconds, m.RetryLimit)
+		return NewExponential(m.IntervalSeconds, m.MaxRetrySeconds)
 	}
 
 	return NewDefault(m.IntervalSeconds)

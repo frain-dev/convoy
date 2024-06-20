@@ -480,6 +480,12 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		}
 	}
 
+	maxRetrySeconds, err := cmd.Flags().GetUint64("max-retry-seconds")
+	if err != nil {
+		return nil, err
+	}
+	c.MaxRetrySeconds = maxRetrySeconds
+
 	return c, nil
 }
 
