@@ -457,25 +457,17 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		deviceID = &subscription.DeviceID
 	}
 
-	if fc.Filter.Body != nil {
-		p, err := flatten.Flatten(fc.Filter.Body)
-		if err != nil {
-			return fmt.Errorf("failed to flatten body filter: %v", err)
-		}
-
-		fc.Filter.Body = p
-		fc.Filter.IsFlattened = true
+	err := fc.Filter.Body.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten body filter: %v", err)
 	}
 
-	if fc.Filter.Headers != nil {
-		h, err := flatten.Flatten(fc.Filter.Headers)
-		if err != nil {
-			return fmt.Errorf("failed to flatten body filter: %v", err)
-		}
-
-		fc.Filter.Headers = h
-		fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
+	err = fc.Filter.Headers.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten header filter: %v", err)
 	}
+
+	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
 
 	result, err := s.db.ExecContext(
 		ctx, createSubscription, subscription.UID,
@@ -530,25 +522,17 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		sourceID = &subscription.SourceID
 	}
 
-	if fc.Filter.Body != nil {
-		p, err := flatten.Flatten(fc.Filter.Body)
-		if err != nil {
-			return fmt.Errorf("failed to flatten body filter: %v", err)
-		}
-
-		fc.Filter.Body = p
-		fc.Filter.IsFlattened = true
+	err := fc.Filter.Body.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten body filter: %v", err)
 	}
 
-	if fc.Filter.Headers != nil {
-		h, err := flatten.Flatten(fc.Filter.Headers)
-		if err != nil {
-			return fmt.Errorf("failed to flatten body filter: %v", err)
-		}
-
-		fc.Filter.Headers = h
-		fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
+	err = fc.Filter.Headers.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten header filter: %v", err)
 	}
+
+	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
 
 	result, err := s.db.ExecContext(
 		ctx, updateSubscription, subscription.UID, projectID,
@@ -836,7 +820,7 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 	return count, nil
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload interface{}, filter map[string]interface{}, isFlattened bool) (bool, error) {
+func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload interface{}, filter flatten.M, isFlattened bool) (bool, error) {
 	if payload == nil || filter == nil {
 		return true, nil
 	}
