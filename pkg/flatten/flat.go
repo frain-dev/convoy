@@ -151,7 +151,6 @@ func flatten(prefix string, nested interface{}) (M, error) {
 							} else {
 								result = k
 							}
-
 						default:
 							return nil, ErrOrAndMustBeArray
 						}

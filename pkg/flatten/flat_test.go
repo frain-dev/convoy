@@ -978,6 +978,48 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name: "combine $and and $or operators - should stay the same",
+			given: M{
+				"$and": []interface{}{
+					M{
+						"$or": []interface{}{
+							M{
+								"person.age": M{
+									"$in": []int{10, 11, 12},
+								},
+							},
+							M{
+								"places.temperatures": 39.9,
+							},
+						},
+					},
+					M{
+						"city": "lagos",
+					},
+				},
+			},
+			want: M{
+				"$and": []M{
+					{
+						"$or": []M{
+							{
+								"person.age": M{
+									"$in": []int{10, 11, 12},
+								},
+							},
+							{
+								"places.temperatures": 39.9,
+							},
+						},
+					},
+					{
+						"city": "lagos",
+					},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
