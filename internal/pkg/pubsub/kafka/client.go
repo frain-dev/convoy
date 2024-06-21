@@ -8,7 +8,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -29,8 +28,6 @@ type Kafka struct {
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
 	instanceId  string
-	counter     uint
-	mutex       sync.Mutex
 }
 
 func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) *Kafka {
@@ -42,8 +39,6 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		log:         log,
 		rateLimiter: rateLimiter,
 		instanceId:  instanceId,
-		counter:     0,
-		mutex:       sync.Mutex{},
 	}
 }
 
@@ -144,7 +139,7 @@ func (k *Kafka) consume() {
 		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
-	println("ingest rate:", cfg.InstanceIngestRate)
+	println("kafka ingest rate:", cfg.InstanceIngestRate)
 
 	for {
 		select {
