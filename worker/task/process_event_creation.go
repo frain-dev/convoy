@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/flatten"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/transform"
 
@@ -324,22 +326,22 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		return nil, err
 	}
 
-	// TODO(all): why do we even need this check in this first place
-	checked := make(map[string]struct{}, len(subscriptions))
+	flatPayload, err := flatten.Flatten(payload)
+	if err != nil {
+		return nil, err
+	}
 
-	// TODO(all): subscription is a big struct, avoid the copying in this loop
-	for _, s := range subscriptions {
-		if _, ok := checked[s.UID]; ok {
-			continue
-		}
-		checked[s.UID] = struct{}{}
+	headers := e.GetRawHeaders()
+	var s *datastore.Subscription
 
+	for i := range subscriptions {
+		s = &subscriptions[i]
 		if len(s.FilterConfig.Filter.Body) == 0 && len(s.FilterConfig.Filter.Headers) == 0 {
-			matched = append(matched, s)
+			matched = append(matched, *s)
 			continue
 		}
 
-		isBodyMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter.Body, s.FilterConfig.Filter.IsFlattened)
+		isBodyMatched, err := subRepo.CompareFlattenedPayload(ctx, flatPayload, s.FilterConfig.Filter.Body, s.FilterConfig.Filter.IsFlattened)
 		if err != nil && soft {
 			log.WithError(err).Errorf("subcription (%s) failed to match body", s.UID)
 			continue
@@ -347,7 +349,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 			return nil, err
 		}
 
-		isHeaderMatched, err := subRepo.TestSubscriptionFilter(ctx, e.GetRawHeaders(), s.FilterConfig.Filter.Headers, s.FilterConfig.Filter.IsFlattened)
+		isHeaderMatched, err := subRepo.CompareFlattenedPayload(ctx, headers, s.FilterConfig.Filter.Headers, s.FilterConfig.Filter.IsFlattened)
 		if err != nil && soft {
 			log.WithError(err).Errorf("subscription (%s) failed to match header", s.UID)
 			continue
@@ -358,7 +360,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		isMatched := isHeaderMatched && isBodyMatched
 
 		if isMatched {
-			matched = append(matched, s)
+			matched = append(matched, *s)
 		}
 	}
 
