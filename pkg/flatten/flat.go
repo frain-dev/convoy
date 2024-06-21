@@ -101,9 +101,9 @@ func flatten(prefix string, nested interface{}) (M, error) {
 		currentFrame stackFrame
 		prefixInner  string
 		nestedInner  interface{}
-
-		ok        bool
-		newPrefix string
+		b            strings.Builder
+		ok           bool
+		newPrefix    string
 	)
 
 	// outer:
@@ -185,14 +185,12 @@ func flatten(prefix string, nested interface{}) (M, error) {
 				}
 
 				if len(prefixInner) > 0 {
-					// b.Grow(len(key) + len(prefixInner) + 1)
-					// b.WriteString(prefixInner)
-					// b.WriteString(".")
-					// b.WriteString(key)
-					// key = b.String()
-					// b.Reset()
-
-					key = prefixInner + "." + key
+					b.Grow(len(key) + len(prefixInner) + 1)
+					b.WriteString(prefixInner)
+					b.WriteByte('.')
+					b.WriteString(key)
+					key = b.String()
+					b.Reset()
 				}
 
 				stack = append(stack, stackFrame{key, value})
@@ -208,16 +206,16 @@ func flatten(prefix string, nested interface{}) (M, error) {
 			for i := range n {
 				switch t := n[i].(type) {
 				case M:
-					newPrefix = strconv.Itoa(i)
 					if len(prefixInner) > 0 {
-						// b.Grow(len(newPrefix) + len(prefixInner) + 1)
-						// b.WriteString(prefixInner)
-						// b.WriteString(".")
-						// b.WriteString(newPrefix)
+						b.Grow(len(newPrefix) + len(prefixInner) + 1)
+						b.WriteString(prefixInner)
+						b.WriteByte('.')
+						b.WriteString(newPrefix)
 
-						newPrefix = prefixInner + "." + newPrefix
-
-						// b.Reset()
+						newPrefix = b.String()
+						b.Reset()
+					} else {
+						newPrefix = strconv.Itoa(i)
 					}
 
 					stack = append(stack, stackFrame{newPrefix, t})
@@ -239,7 +237,7 @@ func isHomogenousArray(v []interface{}) bool {
 		return true
 	}
 
-	// arrays in json are homogenous, so if the first element of this array is int or float
+	// arrays in json are homogenous, so if the first element of this array is int, float or string
 	// the remaining are the same type.
 	switch v[0].(type) {
 	case int, float64, string:
@@ -249,6 +247,11 @@ func isHomogenousArray(v []interface{}) bool {
 	return false
 }
 
+// countKeys helps us pre-allocate the result map and stackFrame slice in flatten.
+// prior to adding this profiling showed that we spent a lot of time in
+// runtime.growWork_faststr & runtime.evacuate_faststr, which are responsible
+// for resizing maps. For large payloads countKeys is very useful to help us pre-allocate
+// a result map that can hold all the result keys.
 func countKeys(nested interface{}) (int, int) {
 	stack := []counterStackFrame{{nested}}
 	keyCount := 0
