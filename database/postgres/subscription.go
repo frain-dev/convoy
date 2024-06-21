@@ -840,6 +840,22 @@ func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload int
 	return compare.Compare(p, filter)
 }
 
+func (s *subscriptionRepo) CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error) {
+	if payload == nil || filter == nil {
+		return true, nil
+	}
+
+	if !isFlattened {
+		var err error
+		filter, err = flatten.Flatten(filter)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return compare.Compare(payload, filter)
+}
+
 var (
 	emptyAlertConfig     = datastore.AlertConfiguration{}
 	emptyRetryConfig     = datastore.RetryConfiguration{}

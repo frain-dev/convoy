@@ -1196,7 +1196,7 @@ type FilterConfiguration struct {
 type M map[string]interface{}
 
 // Flatten is only intended for use for filter body & headers
-// It will modify the calling M map, so use with carefully.
+// It will modify the calling M map, so use carefully.
 func (h *M) Flatten() error {
 	if h == nil {
 		return nil
