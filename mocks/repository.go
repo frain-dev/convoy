@@ -16,6 +16,7 @@ import (
 	time "time"
 
 	datastore "github.com/frain-dev/convoy/datastore"
+	flatten "github.com/frain-dev/convoy/pkg/flatten"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -1372,6 +1373,21 @@ func (m *MockSubscriptionRepository) EXPECT() *MockSubscriptionRepositoryMockRec
 	return m.recorder
 }
 
+// CompareFlattenedPayload mocks base method.
+func (m *MockSubscriptionRepository) CompareFlattenedPayload(arg0 context.Context, payload, filter flatten.M, isFlattened bool) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CompareFlattenedPayload", arg0, payload, filter, isFlattened)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CompareFlattenedPayload indicates an expected call of CompareFlattenedPayload.
+func (mr *MockSubscriptionRepositoryMockRecorder) CompareFlattenedPayload(arg0, payload, filter, isFlattened any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CompareFlattenedPayload", reflect.TypeOf((*MockSubscriptionRepository)(nil).CompareFlattenedPayload), arg0, payload, filter, isFlattened)
+}
+
 // CountEndpointSubscriptions mocks base method.
 func (m *MockSubscriptionRepository) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
 	m.ctrl.T.Helper()
@@ -1552,7 +1568,7 @@ func (mr *MockSubscriptionRepositoryMockRecorder) LoadSubscriptionsPaged(ctx, pr
 }
 
 // TestSubscriptionFilter mocks base method.
-func (m *MockSubscriptionRepository) TestSubscriptionFilter(ctx context.Context, payload any, filter map[string]any, isFlattened bool) (bool, error) {
+func (m *MockSubscriptionRepository) TestSubscriptionFilter(ctx context.Context, payload any, filter flatten.M, isFlattened bool) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TestSubscriptionFilter", ctx, payload, filter, isFlattened)
 	ret0, _ := ret[0].(bool)
