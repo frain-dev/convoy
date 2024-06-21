@@ -206,6 +206,7 @@ func flatten(prefix string, nested interface{}) (M, error) {
 			for i := range n {
 				switch t := n[i].(type) {
 				case M:
+					newPrefix = strconv.Itoa(i)
 					if len(prefixInner) > 0 {
 						b.Grow(len(newPrefix) + len(prefixInner) + 1)
 						b.WriteString(prefixInner)
@@ -214,8 +215,6 @@ func flatten(prefix string, nested interface{}) (M, error) {
 
 						newPrefix = b.String()
 						b.Reset()
-					} else {
-						newPrefix = strconv.Itoa(i)
 					}
 
 					stack = append(stack, stackFrame{newPrefix, t})

@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"strings"
 	"testing"
 
 	"github.com/nsf/jsondiff"
@@ -1428,51 +1427,5 @@ func BenchmarkFlattenWithPrefix(b *testing.B) {
 			expectedJson, _ := json.MarshalIndent(got, "", " ")
 			b.Errorf("%v\n", string(expectedJson))
 		}
-	}
-}
-
-var testData = []string{
-	"check_run",
-	"output",
-	"title",
-	"pull_requests",
-	"url",
-	"owner",
-	"organizations_url",
-	"name",
-	"description",
-	"external_url",
-	"administration",
-}
-
-func BenchmarkConcatRepeated(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		s := testData[0]
-		s += ":"
-		s += testData[1]
-		s += ":"
-		s += testData[2]
-		s += ":"
-		s += testData[3]
-		s += ":"
-		s += testData[4]
-		_ = s
-	}
-}
-
-func BenchmarkBuilder(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		var b strings.Builder
-		b.WriteString(testData[0])
-		b.WriteByte(':')
-		b.WriteString(testData[1])
-		b.WriteByte(':')
-		b.WriteString(testData[2])
-		b.WriteByte(':')
-		b.WriteString(testData[3])
-		b.WriteByte(':')
-		b.WriteString(testData[4])
-		s := b.String()
-		_ = s
 	}
 }
