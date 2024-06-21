@@ -381,8 +381,8 @@ type CircuitBreakerConfiguration struct {
 	SampleTime             uint   `json:"sample_time" envconfig:"CONVOY_CIRCUIT_BREAKER_SAMPLE_TIME"`
 	Duration               uint   `json:"duration" envconfig:"CONVOY_CIRCUIT_BREAKER_DURATION"`
 	ErrorTimeout           uint   `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
-	SuccessThreshold       uint   `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
 	ErrorThreshold         uint   `json:"error_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_THRESHOLD"`
+	SuccessThreshold       uint   `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
 	NotificationThresholds []uint `json:"notification_thresholds" envconfig:"CONVOY_CIRCUIT_BREAKER_NOTIFICATION_THRESHOLDS"`
 }
 

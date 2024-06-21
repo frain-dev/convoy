@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
@@ -23,19 +25,20 @@ const (
 
 type endpoint struct {
 	Key             string       `json:"key" db:"key"`
-	State           CircuitState `json:"state" db:"state"`
-	LastError       string       `json:"last_error" db:"last_error"`
-	Successes       uint         `json:"successes" db:"successes"`
+	URL             string       `json:"url" db:"url"`
+	State           CircuitState `json:"state" redis:"state"`
+	LastError       string       `json:"last_error" redis:"last_error"`
+	Successes       uint         `json:"successes" redis:"successes"`
 	ErrorRate       float32      `json:"error_rate" db:"error_rate"`
 	CircuitOpenedAt null.Time    `json:"circuit_opened_at" db:"circuit_opened_at,omitempty"`
 }
 
 type endpointErrorRate struct {
-	EndpointID string  `db:"endpoint_id"`
-	ErrorRate  float32 `db:"error_rate"`
+	URL       string  `db:"url"`
+	ErrorRate float32 `db:"error_rate"`
 }
 
-type endpoints map[string]endpoint
+type endpoints map[string]*endpoint
 
 const (
 	calculateEndpointErrorRateQuery = `
@@ -70,8 +73,9 @@ const (
 )
 
 type AsyncBreaker struct {
-	db  *sqlx.DB
-	cfg *config.CircuitBreakerConfiguration
+	db    *sqlx.DB
+	store CircuitStore
+	cfg   *config.CircuitBreakerConfiguration
 }
 
 func NewAsyncBreaker(db *sqlx.DB, cfg *config.CircuitBreakerConfiguration) (*AsyncBreaker, error) {
@@ -82,49 +86,87 @@ func NewAsyncBreaker(db *sqlx.DB, cfg *config.CircuitBreakerConfiguration) (*Asy
 func (ab *AsyncBreaker) Run(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(ab.cfg.SampleTime) * time.Second)
 
+	var endpointMap endpoints
 	for range ticker.C {
-		endpoints, err := ab.retrieveEndpointState(ctx)
+		processedEndpoints := make(map[string]struct{})
+
+		err := ab.store.GetAllCircuits(ctx, endpointMap)
 		if err != nil {
 			log.WithError(err).Error("failed to refresh local endpoint state")
 			continue
 		}
 
-		err = ab.retrieveEndpointErrorRate(ctx, endpoints)
+		rows, err := ab.db.QueryxContext(ctx, calculateEndpointErrorRateQuery)
 		if err != nil {
-			log.WithError(err).Error("failed to retrieve endpoint error rate")
+			log.WithError(err).Error("failed to query endpoint state")
 			continue
 		}
 
-		//err = ab.transitionEndpointState(ctx, endpoints)
-		//if err != nil {
-		//	log.WithError(err).Errorf("failed to fully transition endpoint state")
-		//	continue
-		//}
-	}
-}
+		for rows.Next() {
+			var er endpointErrorRate
+			err = rows.StructScan(&er)
+			if err != nil {
+				log.WithError(err).Errorf("failed to scan endpoint error rate")
+				continue
+			}
 
-func (ab *AsyncBreaker) retrieveEndpointState(ctx context.Context) (endpoints, error) {
-	endpointMap := make(endpoints)
+			fmt.Printf("endpoint: %s, error_rate: %f\n", er.URL, er.ErrorRate)
+			processedEndpoints[er.URL] = struct{}{}
 
-	rows, err := ab.db.QueryxContext(ctx, retrieveEndpointStateQuery)
-	if err != nil {
-		return endpointMap, err
-	}
+			e, ok := endpointMap[er.URL]
+			if !ok {
+				// initialise endpoint in redis
+				e := &endpoint{URL: er.URL}
+				err = ab.store.UpsertCircuit(ctx, newKey(er.URL).String(), e)
+				if err != nil {
+					log.WithError(err).Error("failed to update circuit state")
+					continue
+				}
+			}
 
-	var e endpoint
-	for rows.Next() {
-		// add it to map
-		err = rows.StructScan(&e)
-		if err != nil {
-			log.WithError(err).Errorf("failed to scan endpoint breaker")
-			continue
+			err = ab.transitionEndpointState(ctx, e)
+			if err != nil {
+				log.WithError(err).Errorf("failed to fully transition endpoint state")
+				continue
+			}
 		}
 
-		endpointMap[e.Key] = e
-	}
+		for k, e := range endpointMap {
+			if _, ok := processedEndpoints[k]; !ok {
+				continue
+			}
 
-	return endpointMap, nil
+			err = ab.transitionEndpointState(ctx, e)
+			if err != nil {
+				log.WithError(err).Errorf("failed to fully transition endpoint state")
+				continue
+			}
+		}
+	}
 }
+
+//func (ab *AsyncBreaker) retrieveEndpointState(ctx context.Context) (endpoints, error) {
+//	endpointMap := make(endpoints)
+//
+//	rows, err := ab.db.QueryxContext(ctx, retrieveEndpointStateQuery)
+//	if err != nil {
+//		return endpointMap, err
+//	}
+//
+//	var e endpoint
+//	for rows.Next() {
+// add it to map
+//		err = rows.StructScan(&e)
+//		if err != nil {
+//			log.WithError(err).Errorf("failed to scan endpoint breaker")
+//			continue
+//		}
+//
+//		endpointMap[e.Key] = e
+//	}
+//
+//	return endpointMap, nil
+//}
 
 func (ab *AsyncBreaker) retrieveEndpointErrorRate(ctx context.Context, endpointMap endpoints) error {
 	rows, err := ab.db.QueryxContext(ctx, calculateEndpointErrorRateQuery)
@@ -141,22 +183,22 @@ func (ab *AsyncBreaker) retrieveEndpointErrorRate(ctx context.Context, endpointM
 			continue
 		}
 
-		fmt.Printf("endpoint: %s, error_rate: %f\n", er.EndpointID, er.ErrorRate)
-		if _, ok := endpointMap[er.EndpointID]; !ok {
+		fmt.Printf("endpoint: %s, error_rate: %f\n", er.URL, er.ErrorRate)
+		if _, ok := endpointMap[er.URL]; !ok {
 			// insert new record.
 			query :=
 				`
 			insert into convoy.circuit_breaker (key, state)
 			values ($1, 'closed')
 			`
-			_, err = ab.db.ExecContext(ctx, query, er.EndpointID)
+			_, err = ab.db.ExecContext(ctx, query, er.URL)
 			if err != nil {
-				log.WithError(err).Errorf("failed to insert endpoint breaker - %s", er.EndpointID)
+				log.WithError(err).Errorf("failed to insert endpoint breaker - %s", er.URL)
 				continue
 			}
 
-			endpointMap[er.EndpointID] = endpoint{
-				Key:       er.EndpointID,
+			endpointMap[er.URL] = &endpoint{
+				URL:       er.URL,
 				State:     ClosedState,
 				Successes: 0,
 				ErrorRate: er.ErrorRate,
@@ -165,84 +207,87 @@ func (ab *AsyncBreaker) retrieveEndpointErrorRate(ctx context.Context, endpointM
 			continue
 		}
 
-		endpoint := endpointMap[er.EndpointID]
+		endpoint := endpointMap[er.URL]
 		endpoint.ErrorRate = er.ErrorRate
 	}
 	return nil
 }
 
-func (ab *AsyncBreaker) transitionEndpointState(ctx context.Context, endpointMap endpoints) error {
-	for _, endpoint := range endpointMap {
-		switch endpoint.State {
-		case ClosedState:
-			fmt.Println("closed state")
-			if endpoint.ErrorRate > float32(ab.cfg.ErrorThreshold) {
-				fmt.Println("switching to the open state")
-				query2 :=
-					`
+func (ab *AsyncBreaker) transitionEndpointState(ctx context.Context, endpoint *endpoint) error {
+	switch endpoint.State {
+	case ClosedState:
+		fmt.Println("closed state")
+		if endpoint.ErrorRate > float32(ab.cfg.ErrorThreshold) {
+			fmt.Println("switching to the open state")
+			err := ab.store.UpsertCircuit(ctx, newKey().String(), e)
+			if err != nil {
+				return err
+			}
+
+			query2 :=
+				`
 				update convoy.circuit_breaker
 				set state = open, successes = 0, circuit_opened_at = now(), last_error = null
 				where key = $1
 				`
 
-				_, err := ab.db.ExecContext(ctx, query2)
-				if err != nil {
-					log.WithError(err).Errorf("failed to update state for endpoint - %s", endpoint.Key)
-					continue
-				}
+			_, err := ab.db.ExecContext(ctx, query2)
+			if err != nil {
+				log.WithError(err).Errorf("failed to update state for endpoint - %s", endpoint.Key)
+				continue
 			}
-			return nil
-		case OpenState:
-			openedAt := endpoint.CircuitOpenedAt.ValueOrZero()
-			if time.Since(openedAt) > time.Duration(ab.cfg.ErrorTimeout) {
-				fmt.Println("switching to the half open state")
-				query :=
-					`
+		}
+		return nil
+	case OpenState:
+		openedAt := endpoint.CircuitOpenedAt.ValueOrZero()
+		if time.Since(openedAt) > time.Duration(ab.cfg.ErrorTimeout) {
+			fmt.Println("switching to the half open state")
+			query :=
+				`
 				update convoy.circuit_breaker set circuit_opened_at = null, state = $1
 				where key = $2
 				`
 
-				_, err := ab.db.ExecContext(ctx, query)
-				if err != nil {
-					log.WithError(err).Errorf("failed to update state for endpoint - %s", endpoint.Key)
-					continue
-				}
+			_, err := ab.db.ExecContext(ctx, query)
+			if err != nil {
+				log.WithError(err).Errorf("failed to update state for endpoint - %s", endpoint.Key)
+				continue
 			}
+		}
 
-			fmt.Println("Otherwise continue in the open state")
-		case HalfOpenState:
-			if !util.IsStringEmpty(endpoint.LastError) {
-				fmt.Println("switching back to the open state")
-				query :=
-					`
+		fmt.Println("Otherwise continue in the open state")
+	case HalfOpenState:
+		if !util.IsStringEmpty(endpoint.LastError) {
+			fmt.Println("switching back to the open state")
+			query :=
+				`
 				update convoy.circuit_breaker 
 				set circuit_opened_at = now(), state = $1, successes = 0, last_error = null
 				where key = $2`
 
-				_, err := ab.db.ExecContext(ctx, query)
-				if err != nil {
-					log.WithError(err).Errorf("failed to update state for endpoint - %s", endpoint.Key)
-					continue
-				}
-				return nil
+			_, err := ab.db.ExecContext(ctx, query)
+			if err != nil {
+				log.WithError(err).Errorf("failed to update state for endpoint - %s", endpoint.Key)
+				continue
 			}
+			return nil
+		}
 
-			if endpoint.Successes > ab.cfg.SuccessThreshold {
-				fmt.Println("switching to the closed state")
-				query :=
-					`
+		if endpoint.Successes > ab.cfg.SuccessThreshold {
+			fmt.Println("switching to the closed state")
+			query :=
+				`
 				update convoy.circuit_breaker set state = $1, successes = 0
 				where key = $2`
 
-				_, err := ab.db.ExecContext(ctx, query)
-				if err != nil {
-					log.WithError(err).Errorf("failed to update state for endpoint - %s", endpoint.Key)
-					continue
-				}
+			_, err := ab.db.ExecContext(ctx, query)
+			if err != nil {
+				log.WithError(err).Errorf("failed to update state for endpoint - %s", endpoint.Key)
+				continue
 			}
-
-			fmt.Println("Otherwise continue in the half open state")
 		}
+
+		fmt.Println("Otherwise continue in the half open state")
 	}
 
 	return nil
@@ -250,18 +295,116 @@ func (ab *AsyncBreaker) transitionEndpointState(ctx context.Context, endpointMap
 
 var ErrCircuitOpen error = errors.New("circuit is open")
 
-// EndpointBreaker is the actual breaker used in the dispatch flow
-type EndpointBreaker struct {
-	db       *sqlx.DB
-	endpoint *endpoint
+type Breaker interface {
+	Run(ctx context.Context, key string, fn func() error) error
 }
 
-func (eb *EndpointBreaker) Run(ctx context.Context, fn func() error) error {
+type CircuitStore interface {
+	GetCircuit(ctx context.Context, key string, output *endpoint) error
+	GetAllCircuits(ctx context.Context, output endpoints) error
+	UpsertCircuit(ctx context.Context, key string, input *endpoint) error
+	ResetCircuit(ctx context.Context, key string) error
+	IncrementSuccess(ctx context.Context, key string) error
+}
+
+const (
+	namespace  = "convoy"
+	delimiter  = ":"
+	breakerKey = "circuit_breaker"
+)
+
+type redisStore struct {
+	client *rdb.Redis
+}
+
+func NewRedisStore(client *rdb.Redis) *redisStore {
+	return &redisStore{client: client}
+}
+
+func (rs *redisStore) GetCircuit(ctx context.Context, key string, e *endpoint) error {
+	c := rs.client.Client()
+	cmd := c.HGetAll(ctx, newKey(key).String())
+	if cmd.Err() != nil {
+		return cmd.Err()
+	}
+
+	err := cmd.Scan(e)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (rs *redisStore) GetAllCircuits(ctx context.Context, output endpoints) error {
+	return nil
+}
+
+func (rs *redisStore) UpsertCircuit(ctx context.Context, key string, e *endpoint) error {
+	c := rs.client.Client()
+	cmd := c.HSet(ctx, newKey(key).String())
+	if cmd.Err() != nil {
+		return cmd.Err()
+	}
+
+	return nil
+}
+
+func (rs *redisStore) IncrementSuccess(ctx context.Context, key string) error {
+	c := rs.client.Client()
+	cmd := c.HIncrBy(ctx, key, "successes", 1)
+	if cmd.Err() != nil {
+		return cmd.Err()
+	}
+
+	return nil
+}
+
+type key string
+
+func newKey(k string) key {
+	var s strings.Builder
+
+	s.WriteString(namespace)
+	s.WriteString(delimiter)
+	s.WriteString(breakerKey)
+	s.WriteString(delimiter)
+	s.WriteString(k)
+
+	return key(s.String())
+}
+
+func (k key) String() string {
+	return string(k)
+}
+
+// EndpointBreaker is the actual breaker used in the dispatch flow
+type EndpointBreaker struct {
+	db     *sqlx.DB
+	store  CircuitStore
+	config *config.CircuitBreakerConfiguration
+}
+
+func NewEndpointBreaker(db *sqlx.DB, config *config.CircuitBreakerConfiguration) *EndpointBreaker {
+	return &EndpointBreaker{db: db, config: config}
+}
+
+func (eb *EndpointBreaker) Run(ctx context.Context, key string, fn func() error) error {
+	var e endpoint
+
+	//e, err := eb.retrieveEndpointState(ctx, key)
+	err := eb.store.GetCircuit(ctx, key, &e)
+	if err != nil {
+		// fail open ?
+		// log the error.
+		return fn()
+	}
+
 	var state CircuitState
-	if eb.endpoint == nil {
+	if e == (endpoint{}) || util.IsStringEmpty(string(e.State)) {
 		state = ClosedState
 	} else {
-		state = eb.endpoint.State
+		state = e.State
 	}
 
 	switch state {
@@ -275,14 +418,16 @@ func (eb *EndpointBreaker) Run(ctx context.Context, fn func() error) error {
 	case HalfOpenState:
 		// here we are waiting for the async breaker to catch up
 		// and transition to the open state.
-		if !util.IsStringEmpty(eb.endpoint.LastError) {
+		if !util.IsStringEmpty(e.LastError) {
 			return ErrCircuitOpen
 		}
 
 		err := fn()
 		if err != nil {
 			if isValidErr := eb.isValidError(err); isValidErr {
-				err = eb.updateCircuitWithError(ctx, err)
+				e.Successes = 0
+				e.LastError = err.Error()
+				err = eb.store.UpsertCircuit(ctx, newKey(key).String(), &e)
 				return err
 			}
 
@@ -290,7 +435,7 @@ func (eb *EndpointBreaker) Run(ctx context.Context, fn func() error) error {
 			return err
 		}
 
-		err = eb.updateCircuitWithSuccess(ctx)
+		err = eb.store.IncrementSuccess(ctx, newKey(key).String())
 		if err != nil {
 			return err
 		}

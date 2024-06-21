@@ -148,7 +148,9 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				telemetry.OptionBackend(pb),
 				telemetry.OptionBackend(mb))
 
-			dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false)
+			breaker := asyncbreaker.NewEndpointBreaker(a.DB.GetDB(), &cfg.CircuitBreaker)
+			dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false,
+				net.OptionCircuitBreaker(breaker))
 			if err != nil {
 				a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
 				return err

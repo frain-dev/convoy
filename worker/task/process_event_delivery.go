@@ -160,6 +160,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		} else {
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
 		}
+
 		resp, err := dispatch.SendRequest(ctx, targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration)
 
 		status := "-"

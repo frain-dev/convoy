@@ -12,16 +12,26 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/asyncbreaker"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
-type Dispatcher struct {
-	client *http.Client
+type Option func(*Dispatcher)
+
+func OptionCircuitBreaker(breaker asyncbreaker.Breaker) func(*Dispatcher) {
+	return func(d *Dispatcher) {
+		d.breaker = breaker
+	}
 }
 
-func NewDispatcher(httpProxy string, enforceSecure bool) (*Dispatcher, error) {
+type Dispatcher struct {
+	client  *http.Client
+	breaker asyncbreaker.Breaker
+}
+
+func NewDispatcher(httpProxy string, enforceSecure bool, options ...Option) (*Dispatcher, error) {
 	d := &Dispatcher{client: &http.Client{}}
 
 	tr := &http.Transport{
@@ -53,6 +63,10 @@ func NewDispatcher(httpProxy string, enforceSecure bool) (*Dispatcher, error) {
 	//}
 
 	d.client.Transport = tr
+
+	for _, opt := range options {
+		opt(d)
+	}
 
 	return d, nil
 }
@@ -108,7 +122,12 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.do(req, r, maxResponseSize)
+	if d.breaker != nil {
+		fn := func() error { return d.do(req, r, maxResponseSize) }
+		err = d.breaker.Run(ctx, endpoint, fn)
+	} else {
+		err = d.do(req, r, maxResponseSize)
+	}
 
 	return r, err
 }
