@@ -6,7 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// Namespace used in fully-qualified metrics names.
+// Namespace used in fully qualified metrics names.
 const namespace = "convoy"
 
 // Descriptors used by RedisQueue
@@ -18,15 +18,15 @@ var (
 	)
 )
 
-func (rq *RedisQueue) Describe(ch chan<- *prometheus.Desc) {
-	if rq == nil {
+func (q *RedisQueue) Describe(ch chan<- *prometheus.Desc) {
+	if q == nil {
 		return
 	}
-	prometheus.DescribeByCollect(rq, ch)
+	prometheus.DescribeByCollect(q, ch)
 }
 
-func (rq *RedisQueue) Collect(ch chan<- prometheus.Metric) {
-	if rq == nil {
+func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
+	if q == nil {
 		return
 	}
 	cfg, err := config.Get()
@@ -36,7 +36,7 @@ func (rq *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 	if !cfg.Metrics.IsEnabled {
 		return
 	}
-	qinfo, err := rq.inspector.GetQueueInfo(string(convoy.CreateEventQueue))
+	qinfo, err := q.inspector.GetQueueInfo(string(convoy.CreateEventQueue))
 	if err != nil {
 		return
 	}
