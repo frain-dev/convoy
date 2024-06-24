@@ -140,7 +140,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			s.Endpoint = endpoint
 		}
 
-		rc, err := ec.retryConfig()
+		rc, err := ec.RetryConfig()
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
