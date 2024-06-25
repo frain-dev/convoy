@@ -65,7 +65,6 @@ func RateLimiterHandler(rateLimiter limiter.RateLimiter) func(next http.Handler)
 			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(rlimiter.GetRetryAfter(err)).Unix()))
 
 			_ = render.Render(w, r, util.NewErrorResponse("exceeded rate limit", http.StatusTooManyRequests))
-			return
 		})
 	}
 }
