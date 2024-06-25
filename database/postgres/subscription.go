@@ -820,7 +820,7 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 	return count, nil
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload interface{}, filter flatten.M, isFlattened bool) (bool, error) {
+func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}, isFlattened bool) (bool, error) {
 	if payload == nil || filter == nil {
 		return true, nil
 	}
@@ -837,7 +837,13 @@ func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload int
 		}
 	}
 
-	return compare.Compare(p, filter)
+	// The filter must be of type flatten.M, because flatten.Flatten always returns that type,
+	// so whether pre-flattened or not, this must hold true
+	v, ok := filter.(flatten.M)
+	if !ok {
+		return false, fmt.Errorf("unknown type %T for filter", filter)
+	}
+	return compare.Compare(p, v)
 }
 
 func (s *subscriptionRepo) CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error) {

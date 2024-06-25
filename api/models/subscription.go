@@ -106,8 +106,8 @@ func (qs *QueryListSubscription) Transform(r *http.Request) *QueryListSubscripti
 }
 
 type FilterSchema struct {
-	Headers map[string]interface{} `json:"header"`
-	Body    map[string]interface{} `json:"body"`
+	Headers interface{} `json:"header"`
+	Body    interface{} `json:"body"`
 }
 
 type TestFilter struct {

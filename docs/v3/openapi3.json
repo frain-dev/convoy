@@ -1538,14 +1538,8 @@
 			},
 			"models.FilterSchema": {
 				"properties": {
-					"body": {
-						"additionalProperties": true,
-						"type": "object"
-					},
-					"header": {
-						"additionalProperties": true,
-						"type": "object"
-					}
+					"body": {},
+					"header": {}
 				},
 				"type": "object"
 			},

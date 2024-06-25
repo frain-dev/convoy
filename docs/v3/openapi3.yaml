@@ -1086,12 +1086,8 @@ components:
       type: object
     models.FilterSchema:
       properties:
-        body:
-          additionalProperties: true
-          type: object
-        header:
-          additionalProperties: true
-          type: object
+        body: {}
+        header: {}
       type: object
     models.FunctionRequest:
       properties:

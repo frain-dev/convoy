@@ -6967,14 +6967,8 @@
         "models.FilterSchema": {
             "type": "object",
             "properties": {
-                "body": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "header": {
-                    "type": "object",
-                    "additionalProperties": true
-                }
+                "body": {},
+                "header": {}
             }
         },
         "models.FunctionRequest": {
