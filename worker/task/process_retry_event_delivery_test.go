@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/frain-dev/convoy/net"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -20,7 +21,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func TestProcessEventDelivery(t *testing.T) {
+func TestProcessRetryEventDelivery(t *testing.T) {
 	tt := []struct {
 		name          string
 		cfgPath       string
@@ -38,7 +39,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			},
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter) {
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						EndpointID:     "endpoint-id-1",
 						SubscriptionID: "sub-id-1",
@@ -74,11 +75,11 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.InactiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{Config: &datastore.DefaultProjectConfig}, nil)
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -98,7 +99,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		{
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: nil,
+			expectedError: &EndpointError{Err: fmt.Errorf("%s, err: nil", ErrDeliveryAttemptFailed.Error()), delay: defaultEventDelay},
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
@@ -114,10 +115,10 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -161,8 +162,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
-
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -194,10 +193,10 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -277,14 +276,14 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -360,10 +359,10 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
@@ -444,10 +443,10 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Status:         datastore.ScheduledEventStatus,
 						URLQueryParams: "name=ref&category=food",
@@ -528,10 +527,10 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
@@ -611,10 +610,10 @@ func TestProcessEventDelivery(t *testing.T) {
 						RateLimitDuration: 60,
 					}, nil).Times(1)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
@@ -699,10 +698,10 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
-				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
-					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
 						Status: datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
@@ -810,7 +809,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dispatcher, err := net.NewDispatcher("", false)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher)
+			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,
@@ -836,7 +835,7 @@ func TestProcessEventDelivery(t *testing.T) {
 	}
 }
 
-func TestProcessEventDeliveryConfig(t *testing.T) {
+func TestProcessRetryEventDeliveryConfig(t *testing.T) {
 	tt := []struct {
 		name                string
 		subscription        *datastore.Subscription
