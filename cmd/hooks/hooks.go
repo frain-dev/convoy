@@ -181,11 +181,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		instCfg, err := configRepo.LoadConfiguration(cmd.Context())
 		if err != nil {
 			log.WithError(err).Error("Failed to load configuration")
-		}
-
-		cfg.InstanceId = instCfg.UID
-		if err = config.Override(&cfg); err != nil {
-			return err
+		} else {
+			cfg.InstanceId = instCfg.UID
+			if err = config.Override(&cfg); err != nil {
+				return err
+			}
 		}
 
 		return nil
