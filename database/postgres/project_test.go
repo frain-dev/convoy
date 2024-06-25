@@ -5,6 +5,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -391,6 +392,12 @@ func Test_DeleteProject(t *testing.T) {
 		ProjectID: endpoint.ProjectID,
 		Endpoints: []string{endpoint.UID},
 		Headers:   httpheader.HTTPHeader{},
+		Data: json.RawMessage(`{
+                              "userId": 1,
+                              "id": 1,
+                              "title": "delectus aut autem",
+                              "completed": false
+                            }`),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -62,17 +63,23 @@ func getConfig() config.Configuration {
 	return cfg
 }
 
+var once sync.Once
+var pDB *postgres.Postgres
+
 func getDB() database.Database {
-	db, err := postgres.NewDB(getConfig())
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to db: %v", err))
-	}
-	_ = os.Setenv("TZ", "") // Use UTC by default :)
+	once.Do(func() {
+		db, err := postgres.NewDB(getConfig())
+		if err != nil {
+			panic(fmt.Sprintf("failed to connect to db: %v", err))
+		}
+		_ = os.Setenv("TZ", "") // Use UTC by default :)
 
-	dbHooks := hooks.Init()
-	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
+		dbHooks := hooks.Init()
+		dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
 
-	return db
+		pDB = db
+	})
+	return pDB
 }
 
 func getQueueOptions() (queue.QueueOptions, error) {
