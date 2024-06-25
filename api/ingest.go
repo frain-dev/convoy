@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"io"
@@ -214,7 +215,12 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	if event.IsDuplicateEvent {
 		_ = render.Render(w, r, util.NewServerResponse("Duplicate event received, but will not be sent", len(payload), http.StatusOK))
 	} else {
-		_ = render.Render(w, r, util.NewServerResponse("Event received", len(payload), http.StatusOK))
+		responseData := map[string]interface {
+		}{
+			"eventId": event.UID,
+			"size":    len(payload),
+		}
+		_ = render.Render(w, r, util.NewServerResponse("Event received", responseData, http.StatusOK))
 	}
 }
 
