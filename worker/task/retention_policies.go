@@ -59,6 +59,11 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			return err
 		}
 
+		if len(projects) == 0 {
+			log.Infof("no existing projects, retention policy job exiting")
+			return nil
+		}
+
 		for _, p := range projects {
 			exporter, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config)
 			if err != nil {
