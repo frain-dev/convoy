@@ -557,13 +557,6 @@ func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
 	return SignatureConfiguration{}
 }
 
-func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
-	if p.RetentionPolicy != nil {
-		return *p.RetentionPolicy
-	}
-	return RetentionPolicyConfiguration{}
-}
-
 func (p *ProjectConfig) GetSSLConfig() SSLConfiguration {
 	if p.SSL != nil {
 		return *p.SSL

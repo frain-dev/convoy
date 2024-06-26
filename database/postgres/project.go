@@ -352,7 +352,6 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectNotUpdated
 	}
 
-	rc := project.Config.GetRetentionPolicyConfig()
 	rlc := project.Config.GetRateLimitConfig()
 	sc := project.Config.GetStrategyConfig()
 	sgc := project.Config.GetSignatureConfig()
@@ -361,10 +360,8 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.ProjectConfigID,
-		rc.Policy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
-		project.Config.IsRetentionPolicyEnabled,
 		rlc.Count,
 		rlc.Duration,
 		sc.Type,
