@@ -19,7 +19,11 @@ func NewRateLimiter(db database.Database) *SlidingWindowRateLimiter {
 	return &SlidingWindowRateLimiter{db: db}
 }
 
-func (p *SlidingWindowRateLimiter) Allow(ctx context.Context, key string, rate int, bucketSize int) error {
+func (p *SlidingWindowRateLimiter) Allow(ctx context.Context, key string, rate int) error {
+	return p.takeToken(ctx, key, rate, 1)
+}
+
+func (p *SlidingWindowRateLimiter) AllowWithDuration(ctx context.Context, key string, rate int, bucketSize int) error {
 	return p.takeToken(ctx, key, rate, bucketSize)
 }
 

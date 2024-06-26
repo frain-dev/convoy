@@ -62,7 +62,7 @@ func (p *PubSubSource) Stop() {
 
 func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) (PubSub, error) {
 	if source.PubSub.Type == datastore.SqsPubSub {
-		return sqs.New(source, handler, log, rateLimiter), nil
+		return sqs.New(source, handler, log, rateLimiter, instanceId), nil
 	}
 
 	if source.PubSub.Type == datastore.GooglePubSub {

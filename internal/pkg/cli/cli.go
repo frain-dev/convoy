@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
@@ -18,6 +19,7 @@ type App struct {
 	Queue   queue.Queuer
 	Logger  log.StdLogger
 	Cache   cache.Cache
+	Rate    limiter.RateLimiter
 
 	// TODO(subomi): Let's make this cleaner.
 	TracerShutdown func(context.Context) error

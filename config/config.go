@@ -93,7 +93,7 @@ var DefaultConfiguration = Configuration{
 			SampleTime: 5,
 		},
 	},
-	PubSubIngestRate:    50,
+	InstanceIngestRate:  50,
 	WorkerExecutionMode: DefaultExecutionMode,
 }
 
@@ -282,7 +282,7 @@ type MetricsConfiguration struct {
 }
 
 type PrometheusMetricsConfiguration struct {
-	SampleTime uint64 `json:"sample_time"`
+	SampleTime uint64 `json:"sample_time" envconfig:"CONVOY_METRICS_SAMPLE_TIME"`
 }
 
 const (
@@ -291,9 +291,8 @@ const (
 )
 
 const (
-	OTelTracerProvider    TracerProvider = "otel"
-	SentryTracerProvider  TracerProvider = "sentry"
-	DatadogTracerProvider TracerProvider = "datadog"
+	OTelTracerProvider   TracerProvider = "otel"
+	SentryTracerProvider TracerProvider = "sentry"
 )
 
 const (
@@ -357,6 +356,7 @@ const (
 )
 
 type Configuration struct {
+	InstanceId          string                     `json:"instance_id"`
 	APIVersion          string                     `json:"api_version" envconfig:"CONVOY_API_VERSION"`
 	Auth                AuthConfiguration          `json:"auth,omitempty"`
 	Database            DatabaseConfiguration      `json:"database"`
@@ -377,7 +377,7 @@ type Configuration struct {
 	ConsumerPoolSize    int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 	EnableProfiling     bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 	Metrics             MetricsConfiguration       `json:"metrics" envconfig:"CONVOY_METRICS"`
-	PubSubIngestRate    uint                       `json:"pub_sub_ingest_rate" envconfig:"CONVOY_PUB_SUB_INGEST_RATE"`
+	InstanceIngestRate  int                        `json:"pub_sub_ingest_rate" envconfig:"CONVOY_PUB_SUB_INGEST_RATE"`
 	WorkerExecutionMode ExecutionMode              `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 }
 

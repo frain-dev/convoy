@@ -3,7 +3,6 @@ package api
 import (
 	"embed"
 	authz "github.com/Subomi/go-authz"
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
@@ -14,7 +13,6 @@ import (
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/httprate"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/subomi/requestmigrations"
@@ -22,7 +20,6 @@ import (
 	"net/http"
 	"path"
 	"strings"
-	"time"
 )
 
 //go:embed ui/build
@@ -139,18 +136,9 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			r.Use(chiMiddleware.AllowContentType("application/json"))
 			r.Use(middleware.JsonResponse)
 			r.Use(middleware.RequireAuth())
-			r.Use(httprate.Limit(
-				convoy.HTTP_RATE_LIMIT_PER_MIN,
-				time.Minute,
-				httprate.WithKeyFuncs(func(r *http.Request) (string, error) {
-					return a.Instance, nil
-				}),
-				httprate.WithLimitHandler(func(w http.ResponseWriter, r *http.Request) {
-					http.Error(w, "exceeded rate limit", http.StatusTooManyRequests)
-				}),
-			))
 
 			r.Route("/projects", func(projectRouter chi.Router) {
+				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate))
 				projectRouter.Get("/", handler.GetProjects)
 				projectRouter.Post("/", handler.CreateProject)
 

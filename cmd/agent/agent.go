@@ -139,6 +139,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 			Queue:  a.Queue,
 			Logger: lo,
 			Cache:  a.Cache,
+			Rate:   a.Rate,
 		})
 	if err != nil {
 		return err
@@ -195,7 +196,7 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 		host = instCfg.UID
 	}
 
-	rateLimiter, err := limiter.NewLimiter([]string{host}, cfg, true)
+	rateLimiter, err := limiter.NewLimiter(cfg)
 	if err != nil {
 		return err
 	}
@@ -239,7 +240,7 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		return err
 	}
 
-	rateLimiter, err := limiter.NewLimiter([]string{}, cfg, true)
+	rateLimiter, err := limiter.NewLimiter(cfg)
 	if err != nil {
 		return err
 	}
