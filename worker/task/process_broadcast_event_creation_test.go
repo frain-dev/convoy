@@ -62,8 +62,8 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 				a, _ := args.endpointRepo.(*mocks.MockEndpointRepository)
 
 				st, _ := args.subTable.(*mocks.MockITable)
-				st.EXPECT().GetItems("project-id-1").Return([]*memorystore.Row{
-					memorystore.NewRow("sub-1", datastore.Subscription{
+				st.EXPECT().Get(memorystore.Key("project-id-1:*")).Return(
+					memorystore.NewRow("project-id-1:*", datastore.Subscription{
 						UID:        "sub-1",
 						Name:       "test-sub",
 						Type:       datastore.SubscriptionTypeAPI,
@@ -76,7 +76,23 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 						RetryConfig:     nil,
 						RateLimitConfig: nil,
 					}),
-				})
+				)
+
+				st.EXPECT().Get(memorystore.Key("project-id-1:some.*")).Return(
+					memorystore.NewRow("project-id-1:some.*", datastore.Subscription{
+						UID:        "sub-1",
+						Name:       "test-sub",
+						Type:       datastore.SubscriptionTypeAPI,
+						ProjectID:  "project-id-1",
+						EndpointID: "endpoint-id-1",
+						FilterConfig: &datastore.FilterConfiguration{
+							EventTypes: []string{"*"},
+						},
+						AlertConfig:     nil,
+						RetryConfig:     nil,
+						RateLimitConfig: nil,
+					}),
+				)
 
 				d, _ := args.db.(*mocks.MockDatabase)
 				d.EXPECT().BeginTx(gomock.Any())

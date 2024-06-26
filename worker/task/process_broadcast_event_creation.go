@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/queue/redis"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -51,18 +52,16 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 		}
 
 		mKeys := memorystore.NewKey(project.UID, "*")
-		matchAllSubRows := subscriptionsTable.Get(mKeys)
-		matchAllSubs := getSubcriptionsFromRows(matchAllSubRows)
+		matchAllSubs := getSubscriptionsFromRow(subscriptionsTable.Get(mKeys))
 
 		key := memorystore.NewKey(project.UID, broadcastEvent.EventType)
-		subs := subscriptionsTable.Get(key)
-		eventTypeSubs := getSubcriptionsFromRows(subs)
+		eventTypeSubs := getSubscriptionsFromRow(subscriptionsTable.Get(key))
 
 		subscriptions := make([]datastore.Subscription, 0, len(matchAllSubs)+len(eventTypeSubs))
 		subscriptions = append(subscriptions, eventTypeSubs...)
 		subscriptions = append(subscriptions, matchAllSubs...)
 
-		//subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
+		// subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
@@ -137,12 +136,12 @@ func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscr
 	return endpointIds, subscriptionsIds
 }
 
-func getSubcriptionsFromRows(rows *memorystore.Row) []datastore.Subscription {
-	if rows == nil {
+func getSubscriptionsFromRow(row *memorystore.Row) []datastore.Subscription {
+	if row == nil {
 		return []datastore.Subscription{}
 	}
 
-	subs, ok := rows.Value().([]datastore.Subscription)
+	subs, ok := row.Value().([]datastore.Subscription)
 	if !ok {
 		return []datastore.Subscription{}
 	}
