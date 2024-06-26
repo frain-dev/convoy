@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"io"
 	"os"
 	"time"
@@ -59,6 +60,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err = config.Override(cliConfig); err != nil {
 			return err
 		}
+
 		cfg, err = config.Get() // updated
 		if err != nil {
 			return err
@@ -161,6 +163,25 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			err = t.Identify(cmd.Context(), dbCfg.UID)
 			if err != nil {
 				// do nothing?
+				return err
+			}
+		}
+
+		rateLimiter, err := limiter.NewLimiter(cfg)
+		if err != nil {
+			return err
+		}
+
+		app.Rate = rateLimiter
+
+		// update config singleton with the instance id
+		configRepo := postgres.NewConfigRepo(app.DB)
+		instCfg, err := configRepo.LoadConfiguration(cmd.Context())
+		if err != nil {
+			log.WithError(err).Error("Failed to load configuration")
+		} else {
+			cfg.InstanceId = instCfg.UID
+			if err = config.Override(&cfg); err != nil {
 				return err
 			}
 		}

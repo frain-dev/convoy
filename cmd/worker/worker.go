@@ -152,7 +152,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			rateLimiter, err := limiter.NewLimiter([]string{}, cfg, false)
+			rateLimiter, err := limiter.NewLimiter(cfg)
 			if err != nil {
 				return err
 			}

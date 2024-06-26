@@ -74,7 +74,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.InactiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{Config: &datastore.DefaultProjectConfig}, nil)
 				m.EXPECT().
@@ -114,7 +114,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -194,7 +194,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -277,7 +277,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
@@ -360,7 +360,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -444,7 +444,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -528,7 +528,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -611,7 +611,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						RateLimitDuration: 60,
 					}, nil).Times(1)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -699,7 +699,7 @@ func TestProcessEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).

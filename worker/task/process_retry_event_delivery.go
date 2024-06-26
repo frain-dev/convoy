@@ -89,7 +89,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			return nil
 		}
 
-		err = rateLimiter.Allow(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
+		err = rateLimiter.AllowWithDuration(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
 			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery id": data.EventDeliveryID}).
 				WithError(err).

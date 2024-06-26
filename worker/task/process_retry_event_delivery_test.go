@@ -75,7 +75,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						Status:            datastore.InactiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				o.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Return(&datastore.Project{Config: &datastore.DefaultProjectConfig}, nil)
 				m.EXPECT().
@@ -115,7 +115,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						Status: datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -193,7 +193,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -276,7 +276,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
@@ -359,7 +359,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -443,7 +443,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -527,7 +527,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -610,7 +610,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						RateLimitDuration: 60,
 					}, nil).Times(1)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -698,7 +698,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 						Status:            datastore.ActiveEndpointStatus,
 					}, nil).Times(1)
 
-				r.EXPECT().Allow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				m.EXPECT().
 					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).

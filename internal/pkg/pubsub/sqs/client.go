@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
+	"time"
 
 	"github.com/frain-dev/convoy/util"
 
@@ -29,9 +31,10 @@ type Sqs struct {
 	handler     datastore.PubSubHandler
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
+	instanceId  string
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) *Sqs {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) *Sqs {
 	return &Sqs{
 		Cfg:         source.PubSub.Sqs,
 		source:      source,
@@ -39,6 +42,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		handler:     handler,
 		log:         log,
 		rateLimiter: rateLimiter,
+		instanceId:  instanceId,
 	}
 }
 
@@ -116,15 +120,29 @@ func (s *Sqs) consume() {
 
 	queueURL := url.QueueUrl
 
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Errorf("failed to load config.Get() in sqs source %s with id %s", s.source.Name, s.source.UID)
+		return
+	}
+	println("sqs ingest rate:", cfg.InstanceIngestRate)
+
 	for {
 		select {
 		case <-s.ctx.Done():
 			return
 		default:
+			if !util.IsStringEmpty(s.instanceId) {
+				err = s.rateLimiter.Allow(s.ctx, s.instanceId, cfg.InstanceIngestRate)
+				if err != nil {
+					time.Sleep(time.Millisecond * 250)
+					continue
+				}
+			}
+
 			allAttr := "All"
 			output, err := svc.ReceiveMessageWithContext(s.ctx, &sqs.ReceiveMessageInput{
 				QueueUrl:              queueURL,
-				MaxNumberOfMessages:   aws.Int64(10),
 				WaitTimeSeconds:       aws.Int64(1),
 				MessageAttributeNames: []*string{&allAttr},
 			})
