@@ -136,7 +136,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			go memorystore.DefaultStore.Sync(ctx, interval)
 
 			db := a.DB.GetDB()
-			asyncBreaker, err := asyncbreaker.NewAsyncBreaker(db, &cfg.CircuitBreaker)
+			store := asyncbreaker.NewRedisStore(rd)
+			asyncBreaker, err := asyncbreaker.NewAsyncBreaker(db, store, &cfg.CircuitBreaker)
 			if err != nil {
 				return err
 			}
@@ -148,7 +149,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				telemetry.OptionBackend(pb),
 				telemetry.OptionBackend(mb))
 
-			breaker := asyncbreaker.NewEndpointBreaker(a.DB.GetDB(), &cfg.CircuitBreaker)
+			breaker := asyncbreaker.NewEndpointBreaker(&cfg.CircuitBreaker)
 			dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false,
 				net.OptionCircuitBreaker(breaker))
 			if err != nil {
