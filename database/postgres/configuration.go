@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -97,7 +98,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 
 	r, err := c.db.ExecContext(ctx, createConfiguration,
 		config.UID,
-		config.IsAnalyticsEnabled,
+		util.BoolToText(config.IsAnalyticsEnabled),
 		config.IsSignupEnabled,
 		config.StoragePolicy.Type,
 		config.StoragePolicy.OnPrem.Path,
@@ -161,7 +162,7 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 
 	result, err := c.db.ExecContext(ctx, updateConfiguration,
 		cfg.UID,
-		cfg.IsAnalyticsEnabled,
+		util.BoolToText(cfg.IsAnalyticsEnabled),
 		cfg.IsSignupEnabled,
 		cfg.StoragePolicy.Type,
 		cfg.StoragePolicy.OnPrem.Path,

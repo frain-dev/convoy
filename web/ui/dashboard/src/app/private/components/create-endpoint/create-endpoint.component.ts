@@ -47,7 +47,7 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 export class CreateEndpointComponent implements OnInit {
 	@Input('editMode') editMode = false;
 	@Input('showAction') showAction: 'true' | 'false' = 'false';
-	@Input('type') type: 'in-app' | 'portal' = 'in-app';
+	@Input('type') type: 'in-app' | 'portal' | 'subscription' = 'in-app';
 	@Output() onAction = new EventEmitter<any>();
 	savingEndpoint = false;
 	isLoadingEndpointDetails = false;
@@ -73,11 +73,12 @@ export class CreateEndpointComponent implements OnInit {
 		advanced_signatures: [false, Validators.required]
 	});
 	token: string = this.route.snapshot.params.token;
-	@Input('endpointId') endpointUid: string = this.route.snapshot.params.id;
+	@Input('endpointId') endpointUid = this.route.snapshot.params.id;
 	enableMoreConfig = false;
 	configurations = [{ uid: 'http_timeout', name: 'Timeout ', show: false }];
 	endpointCreated: boolean = false;
 	endpointSecret?: SECRET;
+	currentRoute = window.location.pathname.split('/').reverse()[0];
 	private rbacService = inject(RbacService);
 
 	constructor(
@@ -99,7 +100,9 @@ export class CreateEndpointComponent implements OnInit {
 				{ uid: 'auth', name: 'Auth', show: false },
 				{ uid: 'signature', name: 'Signature Format', show: false }
 			);
-		if (this.endpointUid && this.editMode) this.getEndpointDetails();
+
+		if (!this.endpointUid) this.endpointUid = this.route.snapshot.params.id;
+		if ((this.isUpdateAction || this.editMode) && this.type !== 'subscription') this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
 	}
 
@@ -141,7 +144,8 @@ export class CreateEndpointComponent implements OnInit {
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
 
 		try {
-			const response = this.endpointUid && this.editMode ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
+			const response =
+				(this.isUpdateAction || this.editMode) && this.type !== 'subscription' ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
 			this.onAction.emit({ action: this.endpointUid && this.editMode ? 'update' : 'save', data: response.data });
 			this.addNewEndpointForm.reset();
@@ -218,5 +222,9 @@ export class CreateEndpointComponent implements OnInit {
 
 	get shouldShowBorder(): number {
 		return this.configurations.filter(config => config.show).length;
+	}
+
+	get isUpdateAction(): boolean {
+		return this.endpointUid && this.endpointUid !== 'new' && this.currentRoute !== 'setup';
 	}
 }

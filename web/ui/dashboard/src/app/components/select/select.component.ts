@@ -36,6 +36,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('value') value!: any;
 	@Input('tooltipContent') tooltipContent!: string;
 	@Input('searchable') searchable: boolean = false;
+	@Input('selectedValues') selectedValues: any = [];
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();
 	@Output('searchString') searchString = new EventEmitter<any>();
 	@ViewChild('searchFilter', { static: false }) searchFilter!: ElementRef;
@@ -52,8 +53,8 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 
 	selectOption(option?: any) {
 		if (this.multiple) {
-			const selectOption = this.selectedOptions?.find((item: any) => item === option) || this.selectedOptions?.find((item: any) => item.uid === option);
-			if (!selectOption) this.selectedOptions.push(option);
+			const selectOption = this.selectedOptions?.find((item: any) => item === option) || this.selectedOptions?.find((item: any) => item.uid === option) || this.selectedOptions?.find((item: any) => item.uid === option.uid);
+			if (!selectOption) this.selectedOptions?.push(option);
 			this.updateSelectedOptions();
 		} else {
 			this.selectedValue = option;
@@ -67,6 +68,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	updateSelectedOptions() {
+		if (!this.selectedOptions?.length) return;
 		const selectedIds = typeof this.selectedOptions[0] !== 'string' ? this.selectedOptions.map((item: any) => item.uid) : this.selectedOptions;
 		this.selectedOption.emit(selectedIds);
 	}
@@ -82,7 +84,8 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	writeValue(value: string | Array<any>) {
 		if (value) {
 			if (this.options?.length && typeof this.options[0] !== 'string' && !this.multiple) return (this.selectedValue = this.options?.find(option => option.uid === value));
-			if (this.multiple && typeof value !== 'string' && this.selectedOptions?.length === 0) {
+			if (this.multiple && typeof value !== 'string' && this.selectedValues?.length) this.selectedOptions = this.selectedValues;
+			if (this.multiple && typeof value !== 'string' && this.selectedOptions?.length === 0 && this.selectedValues?.length === 0) {
 				setTimeout(() => {
 					value.forEach((item: any) => {
 						this.selectedOptions.push({

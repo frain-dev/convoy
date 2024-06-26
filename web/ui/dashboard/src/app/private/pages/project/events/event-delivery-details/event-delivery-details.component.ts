@@ -116,7 +116,7 @@ export class EventDeliveryDetailsComponent implements OnInit {
 		this.isloadingEndpoint = true;
 
 		try {
-			const response = await this.endpointService.getEndpoint(this.eventDelsDetails?.endpoint_id);
+			const response = await this.endpointService.getEndpoint(this.eventDelsDetails?.endpoint_id, true);
 			this.eventDelsDetails.endpoint_metadata = response.data;
 
 			this.isloadingEndpoint = false;

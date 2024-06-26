@@ -3,19 +3,21 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/frain-dev/convoy/database"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 type args struct {
@@ -28,6 +30,7 @@ type args struct {
 	eventQueue        queue.Queuer
 	subRepo           datastore.SubscriptionRepository
 	deviceRepo        datastore.DeviceRepository
+	subTable          memorystore.ITable
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
@@ -40,6 +43,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	db := mocks.NewMockDatabase(ctrl)
+	subTable := mocks.NewMockITable(ctrl)
 
 	return &args{
 		endpointRepo:      endpointRepo,
@@ -51,6 +55,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 		cache:             mockCache,
 		eventQueue:        mockQueuer,
 		subRepo:           subRepo,
+		subTable:          subTable,
 	}
 }
 
@@ -107,6 +112,10 @@ func TestProcessEventCreated(t *testing.T) {
 						Type:       datastore.SubscriptionTypeAPI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 					},
 				}
@@ -115,7 +124,7 @@ func TestProcessEventCreated(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 
 				s.EXPECT().FindSubscriptionsByEndpointID(gomock.Any(), "project-id-1", "endpoint-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
@@ -126,7 +135,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -189,7 +198,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -241,6 +250,10 @@ func TestProcessEventCreated(t *testing.T) {
 						Type:       datastore.SubscriptionTypeAPI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 					},
 					{
@@ -248,14 +261,17 @@ func TestProcessEventCreated(t *testing.T) {
 						ProjectID:  "project-id-1",
 						EndpointID: "endpoint-id-1",
 						FilterConfig: &datastore.FilterConfiguration{
-							Filter: datastore.FilterSchema{},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 						Type: datastore.SubscriptionTypeAPI,
 					},
 				}
 
 				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(4).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
@@ -266,7 +282,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(2).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(2).Return(nil)
@@ -316,6 +332,10 @@ func TestProcessEventCreated(t *testing.T) {
 						Type:      datastore.SubscriptionTypeCLI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 					},
 					{
@@ -323,14 +343,17 @@ func TestProcessEventCreated(t *testing.T) {
 						ProjectID: "project-id-1",
 						DeviceID:  "device-3",
 						FilterConfig: &datastore.FilterConfiguration{
-							Filter: datastore.FilterSchema{},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 						Type: datastore.SubscriptionTypeCLI,
 					},
 				}
 
 				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(4).Return(true, nil)
 
 				d, _ := args.deviceRepo.(*mocks.MockDeviceRepository)
 				d.EXPECT().FetchDeviceByID(gomock.Any(), "device-3", "", "project-id-1").Times(2).Return(
@@ -347,7 +370,7 @@ func TestProcessEventCreated(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(2).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 
@@ -398,12 +421,16 @@ func TestProcessEventCreated(t *testing.T) {
 						Type:       datastore.SubscriptionTypeAPI,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
+							Filter: datastore.FilterSchema{
+								Headers: nil,
+								Body:    map[string]interface{}{"key": "value"},
+							},
 						},
 					},
 				}
 
 				s.EXPECT().FindSubscriptionsBySourceID(gomock.Any(), "project-id-1", "source-id-1").Times(1).Return(subscriptions, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
@@ -413,7 +440,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Times(1).Return(endpoint, nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -474,19 +501,23 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
 					UID: "123",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{"person.age": 10}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{"person.age": 10},
+						},
 					},
 				},
 				{
 					UID: "1234",
 					FilterConfig: &datastore.FilterConfiguration{
-						Filter: datastore.FilterSchema{Body: map[string]interface{}{}},
+						Filter: datastore.FilterSchema{
+							Body: map[string]interface{}{},
+						},
 					},
 				},
 			},
@@ -508,8 +539,8 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
@@ -540,8 +571,8 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
@@ -578,8 +609,8 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
@@ -616,8 +647,8 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
@@ -660,7 +691,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(4).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
@@ -706,8 +737,8 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(4).Return(false, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(4).Return(false, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{
@@ -762,8 +793,8 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			},
 			dbFn: func(args *args) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(false, nil)
-				s.EXPECT().TestSubscriptionFilter(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(true, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
+				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 			},
 			inputSubs: []datastore.Subscription{
 				{

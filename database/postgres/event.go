@@ -19,6 +19,8 @@ import (
 )
 
 const (
+	PartitionSize = 30_000
+
 	createEvent = `
 	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
 	                           source_id,headers,raw,data,url_query_params,
@@ -233,9 +235,16 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		return err
 	}
 
-	var ids []interface{}
-	if len(event.Endpoints) > 0 {
-		for _, endpointID := range event.Endpoints {
+	records := event.Endpoints
+	var j int
+	for i := 0; i < len(records); i += PartitionSize {
+		j += PartitionSize
+		if j > len(records) {
+			j = len(records)
+		}
+
+		var ids []interface{}
+		for _, endpointID := range records[i:j] {
 			ids = append(ids, &EventEndpoint{EventID: event.UID, EndpointID: endpointID})
 		}
 
@@ -293,8 +302,8 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	return events, nil
 }
 
-func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, id string) ([]datastore.Event, error) {
-	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, id, projectID)
+func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]datastore.Event, error) {
+	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, idempotencyKey, projectID)
 	if err != nil {
 		return nil, err
 	}

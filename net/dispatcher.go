@@ -2,7 +2,7 @@ package net
 
 import (
 	"bytes"
-	"crypto/tls"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -21,36 +21,63 @@ type Dispatcher struct {
 	client *http.Client
 }
 
-func NewDispatcher(timeout time.Duration, httpProxy string, enforceSecure bool) (*Dispatcher, error) {
-	d := &Dispatcher{client: &http.Client{Timeout: timeout}}
+func NewDispatcher(httpProxy string, enforceSecure bool) (*Dispatcher, error) {
+	d := &Dispatcher{client: &http.Client{}}
 
-	tr := &http.Transport{}
-	if !util.IsStringEmpty(httpProxy) {
-		proxyUrl, err := url.Parse(httpProxy)
-		if err != nil {
-			return nil, err
-		}
+	tr := &http.Transport{
+		MaxIdleConns:          100,
+		IdleConnTimeout:       10 * time.Second,
+		MaxIdleConnsPerHost:   10,
+		TLSHandshakeTimeout:   3 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 
+	proxyUrl, isValid, err := d.setProxy(httpProxy)
+	if err != nil {
+		return nil, err
+	}
+
+	if isValid {
 		tr.Proxy = http.ProxyURL(proxyUrl)
 	}
 
 	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.
-	if !enforceSecure {
-		tr.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	} else {
-		tr.TLSClientConfig = &tls.Config{
-			MinVersion: tls.VersionTLS12,
-		}
-	}
+	//if !enforceSecure {
+	//	tr.TLSClientConfig = &tls.Config{
+	//		InsecureSkipVerify: true,
+	//	}
+	//} else {
+	//	tr.TLSClientConfig = &tls.Config{
+	//		MinVersion: tls.VersionTLS12,
+	//	}
+	//}
 
 	d.client.Transport = tr
 
 	return d, nil
 }
 
-func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string) (*Response, error) {
+func (d *Dispatcher) setProxy(proxyURL string) (*url.URL, bool, error) {
+	if !util.IsStringEmpty(proxyURL) {
+		pUrl, err := url.Parse(proxyURL)
+		if err != nil {
+			return nil, false, err
+		}
+
+		// we should only use the proxy if the url is valid
+		if !util.IsStringEmpty(pUrl.Host) && !util.IsStringEmpty(pUrl.Scheme) {
+			return pUrl, true, nil
+		}
+
+		return pUrl, false, nil
+	}
+	return nil, false, nil
+}
+
+func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	r := &Response{}
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")
@@ -59,7 +86,7 @@ func (d *Dispatcher) SendRequest(endpoint, method string, jsonData json.RawMessa
 		return r, err
 	}
 
-	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.WithError(err).Error("error occurred while creating request")
 		return r, err
@@ -113,7 +140,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			res.IP = connInfo.Conn.RemoteAddr().String()
-			log.Infof("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
+			log.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
 		},
 	}
 
@@ -125,6 +152,8 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 		res.Error = err.Error()
 		return err
 	}
+	defer response.Body.Close()
+
 	updateDispatchHeaders(res, response)
 
 	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
@@ -140,7 +169,6 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 		log.WithError(err).Error("couldn't parse response body")
 		return err
 	}
-	defer response.Body.Close()
 
 	return nil
 }

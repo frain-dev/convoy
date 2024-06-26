@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
@@ -19,7 +20,7 @@ type LoginUserService struct {
 func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
 	user, err := u.UserRepo.FindUserByEmail(ctx, u.Data.Username)
 	if err != nil {
-		if err == datastore.ErrUserNotFound {
+		if errors.Is(err, datastore.ErrUserNotFound) {
 			return nil, nil, &ServiceError{ErrMsg: "invalid username or password", Err: err}
 		}
 

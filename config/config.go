@@ -97,6 +97,8 @@ var DefaultConfiguration = Configuration{
 			SampleTime: 5,
 		},
 	},
+	PubSubIngestRate:    50,
+	WorkerExecutionMode: DefaultExecutionMode,
 }
 
 type DatabaseConfiguration struct {
@@ -307,7 +309,6 @@ const (
 	RedisQueueProvider       QueueProvider           = "redis"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
-	TypesenseSearchProvider  SearchProvider          = "typesense"
 )
 
 const (
@@ -356,27 +357,46 @@ func (ft FlagLevel) MarshalJSON() ([]byte, error) {
 	}
 }
 
+type ExecutionMode string
+
+const (
+	EventsExecutionMode  ExecutionMode = "events"
+	RetryExecutionMode   ExecutionMode = "retry"
+	DefaultExecutionMode ExecutionMode = "default"
+)
+
 type Configuration struct {
-	APIVersion         string                       `json:"api_version" envconfig:"CONVOY_API_VERSION"`
-	Auth               AuthConfiguration            `json:"auth,omitempty"`
-	Database           DatabaseConfiguration        `json:"database"`
-	Redis              RedisConfiguration           `json:"redis"`
-	Prometheus         PrometheusConfiguration      `json:"prometheus"`
-	Server             ServerConfiguration          `json:"server"`
-	MaxResponseSize    uint64                       `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP               SMTPConfiguration            `json:"smtp"`
-	Environment        string                       `json:"env" envconfig:"CONVOY_ENV"`
-	Logger             LoggerConfiguration          `json:"logger"`
-	Tracer             TracerConfiguration          `json:"tracer"`
-	Host               string                       `json:"host" envconfig:"CONVOY_HOST"`
-	CustomDomainSuffix string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	FeatureFlag        FlagLevel                    `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
-	Analytics          AnalyticsConfiguration       `json:"analytics"`
+	APIVersion          string                     `json:"api_version" envconfig:"CONVOY_API_VERSION"`
+	Auth                AuthConfiguration          `json:"auth,omitempty"`
+	Database            DatabaseConfiguration      `json:"database"`
+	Redis               RedisConfiguration         `json:"redis"`
+	Prometheus          PrometheusConfiguration    `json:"prometheus"`
+	Server              ServerConfiguration        `json:"server"`
+	MaxResponseSize     uint64                     `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP                SMTPConfiguration          `json:"smtp"`
+	Environment         string                     `json:"env" envconfig:"CONVOY_ENV"`
+	Logger              LoggerConfiguration        `json:"logger"`
+	Tracer              TracerConfiguration        `json:"tracer"`
+	Host                string                     `json:"host" envconfig:"CONVOY_HOST"`
+	Pyroscope           PyroscopeConfiguration     `json:"pyroscope"`
+	CustomDomainSuffix  string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	FeatureFlag         FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
 	RetentionPolicy    RetentionPolicyConfiguration `json:"retention_policy"`
-	StoragePolicy      StoragePolicyConfiguration   `json:"storage_policy"`
-	ConsumerPoolSize   int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
-	EnableProfiling    bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
-	Metrics            MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
+  Analytics           AnalyticsConfiguration     `json:"analytics"`
+	StoragePolicy       StoragePolicyConfiguration `json:"storage_policy"`
+	ConsumerPoolSize    int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	EnableProfiling     bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	Metrics             MetricsConfiguration       `json:"metrics" envconfig:"CONVOY_METRICS"`
+	PubSubIngestRate    uint                       `json:"pub_sub_ingest_rate" envconfig:"CONVOY_PUB_SUB_INGEST_RATE"`
+	WorkerExecutionMode ExecutionMode              `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
+}
+
+type PyroscopeConfiguration struct {
+	EnableProfiling bool   `json:"enabled" envconfig:"CONVOY_ENABLE_PYROSCOPE_PROFILING"`
+	URL             string `json:"url" envconfig:"CONVOY_PYROSCOPE_URL"`
+	Username        string `json:"username" envconfig:"CONVOY_PYROSCOPE_USERNAME"`
+	Password        string `json:"password" envconfig:"CONVOY_PYROSCOPE_PASSWORD"`
+	ProfileID       string `json:"profile_id" envconfig:"CONVOY_PYROSCOPE_PROFILE_ID"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

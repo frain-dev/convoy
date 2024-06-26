@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/pkg/transform"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -29,23 +31,27 @@ var ingestCtx IngestCtxKey = "IngestCtx"
 const ConvoyMessageTypeHeader = "x-convoy-message-type"
 
 type Ingest struct {
-	ctx     context.Context
-	ticker  *time.Ticker
-	queue   queue.Queuer
-	sources map[string]*PubSubSource
-	table   *memorystore.Table
-	log     log.StdLogger
+	ctx         context.Context
+	ticker      *time.Ticker
+	queue       queue.Queuer
+	rateLimiter limiter.RateLimiter
+	sources     map[memorystore.Key]*PubSubSource
+	table       *memorystore.Table
+	log         log.StdLogger
+	instanceId  string
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger) (*Ingest, error) {
+func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) (*Ingest, error) {
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
-		ctx:     ctx,
-		queue:   queue,
-		log:     log,
-		table:   table,
-		sources: make(map[string]*PubSubSource),
-		ticker:  time.NewTicker(time.Duration(1) * time.Second),
+		ctx:         ctx,
+		log:         log,
+		table:       table,
+		queue:       queue,
+		rateLimiter: rateLimiter,
+		instanceId:  instanceId,
+		sources:     make(map[memorystore.Key]*PubSubSource),
+		ticker:      time.NewTicker(time.Duration(1) * time.Second),
 	}
 
 	return i, nil
@@ -75,8 +81,8 @@ func (i *Ingest) Run() {
 	}
 }
 
-func (i *Ingest) getSourceKeys() []string {
-	var s []string
+func (i *Ingest) getSourceKeys() []memorystore.Key {
+	var s []memorystore.Key
 	for k := range i.sources {
 		s = append(s, k)
 	}
@@ -88,7 +94,7 @@ func (i *Ingest) run() error {
 	i.log.Info("refreshing runner...", len(i.sources))
 
 	// cancel all stale/outdated source runners.
-	staleRows := util.Difference(i.getSourceKeys(), i.table.GetKeys())
+	staleRows := memorystore.Difference(i.getSourceKeys(), i.table.GetKeys())
 	for _, key := range staleRows {
 		ps, ok := i.sources[key]
 		if !ok {
@@ -100,7 +106,7 @@ func (i *Ingest) run() error {
 	}
 
 	// start all new/updated source runners.
-	newSourceKeys := util.Difference(i.table.GetKeys(), i.getSourceKeys())
+	newSourceKeys := memorystore.Difference(i.table.GetKeys(), i.getSourceKeys())
 	for _, key := range newSourceKeys {
 		sr := i.table.Get(key)
 		if sr == nil {
@@ -112,12 +118,12 @@ func (i *Ingest) run() error {
 			return errors.New("invalid source in memory store")
 		}
 
-		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log)
+		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.instanceId)
 		if err != nil {
 			return err
 		}
 
-		ps.hash = key
+		//ps.hash = key
 		ps.Start()
 		i.sources[key] = ps
 	}
@@ -264,7 +270,9 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 	case "broadcast":
+		jid := ulid.Make().String()
 		broadcastEvent := models.BroadcastEvent{
+			JobID:          jid,
 			ProjectID:      source.ProjectID,
 			SourceID:       source.UID,
 			EventType:      convoyEvent.EventType,
@@ -279,7 +287,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		}
 
 		job := &queue.Job{
-			ID:      ulid.Make().String(),
+			ID:      jid,
 			Payload: eventByte,
 		}
 

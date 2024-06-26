@@ -1,7 +1,7 @@
 <form class="relative mt-40px" [formGroup]="subscriptionForm" (ngSubmit)="saveSubscription()">
 	<convoy-loader *ngIf="isLoadingForm"></convoy-loader>
 
-	<ng-container *ngIf="showAction === 'true'">
+	<ng-container *ngIf="isPortal === 'false' && showAction === 'true'">
 		<ng-container *ngIf="projectType === 'incoming' && !token">
 			<h3 class="font-semibold text-14">Source</h3>
 			<p class="text-12 text-neutral-10 mt-6px">Incoming event source this subscription is connected to.</p>
@@ -28,13 +28,15 @@
 				</convoy-create-source>
 			</div>
 		</ng-container>
+	</ng-container>
 
+	<ng-container *ngIf="(!endpointId && !isUpdateAction) || isPortal === 'false'">
 		<h3 class="font-semibold text-14 mt-40px">Endpoint</h3>
 		<p class="text-12 text-neutral-10 mt-6px">Endpoint this subscription routes events into.</p>
 		<div convoy-card class="px-24px py-24px mt-20px mb-70px" *ngIf="!showCreateEndpointForm">
 			<convoy-select
 				className="mb-0 mt-24px"
-				[options]="endPoints"
+				[options]="endpoints"
 				name="endpoint"
 				formControlName="endpoint_id"
 				errorMessage="Select or create an endpoint"
@@ -49,7 +51,7 @@
 			<button size="sm" convoy-button fill="text" type="button" class="mt-24px font-medium" (click)="showCreateEndpointForm = true; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Create New Endpoint</button>
 		</div>
 
-		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)" class="block mb-70px">
+		<convoy-create-endpoint *ngIf="showCreateEndpointForm" (onAction)="$event.action === 'close' ? (showCreateEndpointForm = false) : onCreateEndpoint($event.data)" type="subscription" class="block mb-70px">
 			<button size="sm" convoy-permission="Subscriptions|MANAGE" convoy-button fill="text" type="button" class="mt-40px font-medium" (click)="showCreateEndpointForm = false; subscriptionForm.patchValue({ endpoint_id: null })" *ngIf="!token">Use Existing Endpoint</button>
 		</convoy-create-endpoint>
 	</ng-container>
@@ -59,7 +61,7 @@
 		<p class="text-12 text-neutral-10 mt-6px">Configure how you want this endpoint to receive webhook events.</p>
 	</ng-container>
 	<div class="mt-24px relative" [ngClass]="{ 'border border-neutral-4 p-24px rounded-8px pt-24px': showAction == 'true' }">
-		<ng-container *ngIf="isPortal === 'false' && showAction === 'true'">
+		<ng-container *ngIf="showAction === 'true'">
 			<convoy-input-field className="mb-40px">
 				<label for="subscription-name" required="true" convoy-label>Subscription name</label>
 				<input type="text" id="subscription-name" convoy-input autocomplete="subscription-name" formControlName="name" placeholder="e.g paystack-live" />
@@ -190,7 +192,7 @@
 
 	<div class="flex justify-end mt-40px pb-40px" [ngClass]="{ hidden: showAction === 'false' }">
 		<button convoy-button size="sm" [disabled]="isCreatingSubscription || subscriptionForm.disabled">
-			{{ action == 'update' ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
+			{{ action == 'update' || isUpdateAction ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100" *ngIf="action === 'create'">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>

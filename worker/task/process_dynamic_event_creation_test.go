@@ -15,8 +15,8 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 
 	"github.com/frain-dev/convoy"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
@@ -100,7 +100,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -142,10 +142,8 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 					ProjectID:          project.UID,
 					Name:               fmt.Sprintf("endpoint-%s", ulid.Make().String()),
 					Url:                "https:/google.com",
-					RateLimit:          convoy.RATE_LIMIT,
 					HttpTimeout:        convoy.HTTP_TIMEOUT,
 					AdvancedSignatures: true,
-					RateLimitDuration:  convoy.RATE_LIMIT_DURATION,
 					Status:             datastore.ActiveEndpointStatus,
 					CreatedAt:          time.Now(),
 					UpdatedAt:          time.Now(),
@@ -164,7 +162,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)

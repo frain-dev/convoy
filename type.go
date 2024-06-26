@@ -82,6 +82,7 @@ func GetVersionFromFS(fs embed.FS) string {
 
 const (
 	EventProcessor                TaskName = "EventProcessor"
+	RetryEventProcessor           TaskName = "RetryEventProcessor"
 	CreateEventProcessor          TaskName = "CreateEventProcessor"
 	CreateDynamicEventProcessor   TaskName = "CreateDynamicEventProcessor"
 	CreateBroadcastEventProcessor TaskName = "CreateBroadcastEventProcessor"
@@ -97,15 +98,13 @@ const (
 	ExpireSecretsProcessor        TaskName = "ExpireSecretsProcessor"
 	DeleteArchivedTasksProcessor  TaskName = "DeleteArchivedTasksProcessor"
 
-	EndpointCacheKey           CacheKey = "endpoints"
-	UserCacheKey               CacheKey = "users"
-	ApiKeyCacheKey             CacheKey = "api_keys"
-	OrganisationCacheKey       CacheKey = "organisations"
-	OrganisationMemberCacheKey CacheKey = "organisation_members"
-	ProjectsCacheKey           CacheKey = "projects"
-	SubscriptionCacheKey       CacheKey = "subscriptions"
-	TokenCacheKey              CacheKey = "tokens"
-	SourceCacheKey             CacheKey = "sources"
+	EndpointCacheKey     CacheKey = "endpoints"
+	ApiKeyCacheKey       CacheKey = "api_keys"
+	OrganisationCacheKey CacheKey = "organisations"
+	ProjectsCacheKey     CacheKey = "projects"
+	SubscriptionCacheKey CacheKey = "subscriptions"
+	TokenCacheKey        CacheKey = "tokens"
+	SourceCacheKey       CacheKey = "sources"
 )
 
 // queues
@@ -113,7 +112,7 @@ const (
 	EventQueue       QueueName = "EventQueue"
 	CreateEventQueue QueueName = "CreateEventQueue"
 	MetaEventQueue   QueueName = "MetaEventQueue"
-	SearchIndexQueue QueueName = "SearchIndexQueue"
+	RetryEventQueue  QueueName = "RetryEventQueue"
 	StreamQueue      QueueName = "StreamQueue"
 	ScheduleQueue    QueueName = "ScheduleQueue"
 	DefaultQueue     QueueName = "DefaultQueue"

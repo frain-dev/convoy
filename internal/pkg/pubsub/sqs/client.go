@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
@@ -21,21 +22,23 @@ import (
 var ErrInvalidCredentials = errors.New("your sqs credentials are invalid. please verify you're providing the correct credentials")
 
 type Sqs struct {
-	Cfg     *datastore.SQSPubSubConfig
-	source  *datastore.Source
-	workers int
-	ctx     context.Context
-	handler datastore.PubSubHandler
-	log     log.StdLogger
+	Cfg         *datastore.SQSPubSubConfig
+	source      *datastore.Source
+	workers     int
+	ctx         context.Context
+	handler     datastore.PubSubHandler
+	log         log.StdLogger
+	rateLimiter limiter.RateLimiter
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Sqs {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) *Sqs {
 	return &Sqs{
-		Cfg:     source.PubSub.Sqs,
-		source:  source,
-		workers: source.PubSub.Workers,
-		handler: handler,
-		log:     log,
+		Cfg:         source.PubSub.Sqs,
+		source:      source,
+		workers:     source.PubSub.Workers,
+		handler:     handler,
+		log:         log,
+		rateLimiter: rateLimiter,
 	}
 }
 
@@ -114,7 +117,6 @@ func (s *Sqs) consume() {
 	queueURL := url.QueueUrl
 
 	for {
-
 		select {
 		case <-s.ctx.Done():
 			return

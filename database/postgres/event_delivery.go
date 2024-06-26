@@ -41,6 +41,10 @@ const (
     INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,created_at,updated_at)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
     `
+	createEventDeliveries = `
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,created_at,updated_at)
+    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :attempts, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :created_at, :updated_at);
+    `
 
 	baseFetchEventDelivery = `
     SELECT
@@ -104,6 +108,20 @@ const (
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
 
+	fetchEventDeliverySlim = `
+    SELECT
+        id,project_id,event_id,subscription_id,
+        headers,attempts,status,metadata,cli_metadata,
+        COALESCE(url_query_params, '') AS url_query_params,
+        COALESCE(idempotency_key, '') AS idempotency_key,created_at,updated_at,
+        COALESCE(event_type,'') AS "event_type",
+        COALESCE(device_id,'') AS "device_id",
+        COALESCE(endpoint_id,'') AS "endpoint_id"
+    FROM convoy.event_deliveries
+	WHERE deleted_at IS NULL
+    AND project_id = $1 AND id = $2
+    `
+
 	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '')
 	AND (ed.event_id = :event_id OR :event_id = '')
     AND (ed.event_type = :event_type OR :event_type = '')
@@ -136,9 +154,7 @@ const (
         created_at >= $2 AND
         created_at <= $3
     GROUP BY
-        "data.group_only", "data.index"
-    ORDER BY
-        "data.total_time";
+        "data.group_only", "data.index";
     `
 
 	fetchEventDeliveries = `
@@ -188,7 +204,7 @@ const (
     `
 
 	updateEventDeliveriesStatus = `
-    UPDATE convoy.event_deliveries SET status = ?, updated_at = NOW() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET status = ?, description = ?, updated_at = NOW() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
     `
 
 	updateEventDeliveryAttempts = `
@@ -256,9 +272,102 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 	return tx.Commit()
 }
 
+// CreateEventDeliveries creates event deliveries in bulk
+func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliveries []*datastore.EventDelivery) error {
+	values := make([]map[string]interface{}, 0, len(deliveries))
+
+	for _, delivery := range deliveries {
+		var endpointID *string
+		var deviceID *string
+
+		if !util.IsStringEmpty(delivery.EndpointID) {
+			endpointID = &delivery.EndpointID
+		}
+
+		if !util.IsStringEmpty(delivery.DeviceID) {
+			deviceID = &delivery.DeviceID
+		}
+
+		values = append(values, map[string]interface{}{
+			"id":               delivery.UID,
+			"project_id":       delivery.ProjectID,
+			"event_id":         delivery.EventID,
+			"endpoint_id":      endpointID,
+			"device_id":        deviceID,
+			"subscription_id":  delivery.SubscriptionID,
+			"headers":          delivery.Headers,
+			"attempts":         delivery.DeliveryAttempts,
+			"status":           delivery.Status,
+			"metadata":         delivery.Metadata,
+			"cli_metadata":     delivery.CLIMetadata,
+			"description":      delivery.Description,
+			"url_query_params": delivery.URLQueryParams,
+			"idempotency_key":  delivery.IdempotencyKey,
+			"event_type":       delivery.EventType,
+			"created_at":       delivery.CreatedAt,
+			"updated_at":       delivery.UpdatedAt,
+		})
+	}
+
+	tx, isWrapped, err := GetTx(ctx, e.db)
+	if err != nil {
+		return err
+	}
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
+
+	var j int
+	for i := 0; i < len(values); i += PartitionSize {
+		j += PartitionSize
+		if j > len(values) {
+			j = len(values)
+		}
+
+		var vs []interface{}
+		for _, v := range values[i:j] {
+			vs = append(vs, v)
+		}
+
+		result, err := tx.NamedExecContext(ctx, createEventDeliveries, vs)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if len(vs) > 0 && rowsAffected < 1 {
+			return ErrEventDeliveryNotCreated
+		}
+	}
+
+	if isWrapped {
+		return nil
+	}
+
+	return tx.Commit()
+}
+
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
 	err := e.db.QueryRowxContext(ctx, fetchEventDeliveryByID, id, projectID).StructScan(eventDelivery)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrEventDeliveryNotFound
+		}
+		return nil, err
+	}
+
+	return eventDelivery, nil
+}
+
+func (e *eventDeliveryRepo) FindEventDeliveryByIDSlim(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
+	eventDelivery := &datastore.EventDelivery{}
+	err := e.db.QueryRowxContext(ctx, fetchEventDeliverySlim, projectID, id).StructScan(eventDelivery)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventDeliveryNotFound
@@ -360,7 +469,7 @@ func (e *eventDeliveryRepo) FindStuckEventDeliveriesByStatus(ctx context.Context
 }
 
 func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, projectID string, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
-	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, projectID, []string{delivery.UID})
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, delivery.Description, projectID, projectID, []string{delivery.UID})
 	if err != nil {
 		return err
 	}
@@ -385,7 +494,7 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, pro
 }
 
 func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status datastore.EventDeliveryStatus) error {
-	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, projectID, ids)
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, "", projectID, projectID, ids)
 	if err != nil {
 		return err
 	}

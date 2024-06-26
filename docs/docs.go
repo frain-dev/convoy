@@ -5847,6 +5847,9 @@ const docTemplate = `{
                 },
                 "headers": {
                     "$ref": "#/definitions/datastore.M"
+                },
+                "is_flattened": {
+                    "type": "boolean"
                 }
             }
         },

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/flatten"
+
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
@@ -555,6 +557,20 @@ func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
 	return SignatureConfiguration{}
 }
 
+func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
+	if p.RetentionPolicy != nil {
+		return *p.RetentionPolicy
+	}
+	return RetentionPolicyConfiguration{}
+}
+
+func (p *ProjectConfig) GetSSLConfig() SSLConfiguration {
+	if p.SSL != nil {
+		return *p.SSL
+	}
+	return SSLConfiguration{}
+}
+
 func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
 	if p.MetaEvent != nil {
 		return *p.MetaEvent
@@ -718,21 +734,21 @@ type Event struct {
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
-func (e *Event) GetRawHeaders() interface{} {
-	h := map[string]interface{}{}
-	for k, v := range e.Headers {
+func (e *Event) GetRawHeaders() map[string]interface{} {
+	h := make(map[string]interface{}, len(e.Headers))
+
+	// re-use mem allocated for these copied variables
+	var k string
+	var v []string
+
+	for k, v = range e.Headers {
 		h[k] = v[0]
 	}
 	return h
 }
 
 func (e *Event) GetRawHeadersJSON() ([]byte, error) {
-	h := map[string]interface{}{}
-	for k, v := range e.Headers {
-		h[k] = v[0]
-	}
-
-	return json.Marshal(h)
+	return json.Marshal(e.GetRawHeaders())
 }
 
 type (
@@ -1177,13 +1193,24 @@ type FilterConfiguration struct {
 
 type M map[string]interface{}
 
-func (h M) Map() map[string]interface{} {
-	m := map[string]interface{}{}
-	x := map[string]interface{}(h)
-	for k, v := range x {
-		m[k] = v
+// Flatten is only intended for use for filter body & headers
+// It will modify the calling M map, so use carefully.
+func (h *M) Flatten() error {
+	if h == nil {
+		return nil
 	}
-	return h
+
+	// The flatten.M conversion is important here, because flatten.Flatten cannot
+	// reconcile M to map[string]interface{}, they are distinct types
+	// whereas flatten.M = map[string]interface{} they are identical. See
+	// https://go.dev/ref/spec#Type_identity for more info.
+	f, err := flatten.Flatten(flatten.M(*h))
+	if err != nil {
+		return err
+	}
+
+	*h = f
+	return nil
 }
 
 func (h *M) Scan(value interface{}) error {
@@ -1213,8 +1240,9 @@ func (h M) Value() (driver.Value, error) {
 }
 
 type FilterSchema struct {
-	Headers M `json:"headers" db:"headers"`
-	Body    M `json:"body" db:"body"`
+	IsFlattened bool `json:"is_flattened" db:"is_flattened"`
+	Headers     M    `json:"headers" db:"headers"`
+	Body        M    `json:"body" db:"body"`
 }
 
 type ProviderConfig struct {

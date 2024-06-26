@@ -112,7 +112,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 		}
 		metricsConfig = &cfg.Metrics
 	}
-	if metricsConfig.IsEnabled {
+	if !metricsConfig.IsEnabled {
 		return
 	}
 

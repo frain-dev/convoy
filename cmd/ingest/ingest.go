@@ -4,6 +4,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
@@ -46,6 +47,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
 			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+			configRepo := postgres.NewConfigRepo(a.DB)
 
 			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("ingester")
@@ -67,7 +69,22 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 
 			go memorystore.DefaultStore.Sync(cmd.Context(), interval)
 
-			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo)
+			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
+			if err != nil {
+				log.WithError(err).Error("Failed to load configuration")
+			}
+
+			var host string
+			if instCfg != nil {
+				host = instCfg.UID
+			}
+
+			rateLimiter, err := limiter.NewLimiter([]string{host}, cfg, true)
+			if err != nil {
+				return err
+			}
+
+			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo, rateLimiter, host)
 			if err != nil {
 				return err
 			}

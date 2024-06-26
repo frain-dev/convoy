@@ -352,18 +352,26 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectNotUpdated
 	}
 
+	rc := project.Config.GetRetentionPolicyConfig()
+	rlc := project.Config.GetRateLimitConfig()
+	sc := project.Config.GetStrategyConfig()
+	sgc := project.Config.GetSignatureConfig()
+	ssl := project.Config.GetSSLConfig()
 	me := project.Config.GetMetaEventConfig()
+
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.ProjectConfigID,
+		rc.Policy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
-		project.Config.RateLimit.Count,
-		project.Config.RateLimit.Duration,
-		project.Config.Strategy.Type,
-		project.Config.Strategy.Duration,
-		project.Config.Strategy.RetryCount,
-		project.Config.Signature.Header,
-		project.Config.Signature.Versions,
+		project.Config.IsRetentionPolicyEnabled,
+		rlc.Count,
+		rlc.Duration,
+		sc.Type,
+		sc.Duration,
+		sc.RetryCount,
+		sgc.Header,
+		sgc.Versions,
 		project.Config.DisableEndpoint,
 		me.IsEnabled,
 		me.Type,
@@ -371,8 +379,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.URL,
 		me.Secret,
 		me.PubSub,
-		project.Config.SearchPolicy,
-		project.Config.SSL.EnforceSecureEndpoints,
+		ssl.EnforceSecureEndpoints,
 		project.Config.MultipleEndpointSubscriptions,
 	)
 	if err != nil {

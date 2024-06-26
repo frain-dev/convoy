@@ -5,8 +5,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"sync"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -21,22 +24,29 @@ import (
 var ErrInvalidCredentials = errors.New("your kafka credentials are invalid. please verify you're providing the correct credentials")
 
 type Kafka struct {
-	Cfg     *datastore.KafkaPubSubConfig
-	source  *datastore.Source
-	workers int
-	ctx     context.Context
-	handler datastore.PubSubHandler
-	log     log.StdLogger
+	Cfg         *datastore.KafkaPubSubConfig
+	source      *datastore.Source
+	workers     int
+	ctx         context.Context
+	handler     datastore.PubSubHandler
+	log         log.StdLogger
+	rateLimiter limiter.RateLimiter
+	instanceId  string
+	counter     uint
+	mutex       sync.Mutex
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Kafka {
-
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) *Kafka {
 	return &Kafka{
-		Cfg:     source.PubSub.Kafka,
-		source:  source,
-		workers: source.PubSub.Workers,
-		handler: handler,
-		log:     log,
+		Cfg:         source.PubSub.Kafka,
+		source:      source,
+		workers:     source.PubSub.Workers,
+		handler:     handler,
+		log:         log,
+		rateLimiter: rateLimiter,
+		instanceId:  instanceId,
+		counter:     0,
+		mutex:       sync.Mutex{},
 	}
 }
 
@@ -123,19 +133,32 @@ func (k *Kafka) consume() {
 
 	// make a new reader that consumes from topic
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: k.Cfg.Brokers,
-		GroupID: consumerGroup,
-		Topic:   k.Cfg.TopicName,
-		Dialer:  dialer,
+		Brokers:               k.Cfg.Brokers,
+		GroupID:               consumerGroup,
+		Topic:                 k.Cfg.TopicName,
+		Dialer:                dialer,
+		WatchPartitionChanges: true,
 	})
 
 	defer k.handleError(r)
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
+		return
+	}
+	println("ingest rate:", cfg.PubSubIngestRate)
 
 	for {
 		select {
 		case <-k.ctx.Done():
 			return
 		default:
+			if !util.IsStringEmpty(k.instanceId) {
+				// this should block till after the rate limit
+				_ = k.rateLimiter.Allow(k.ctx, k.instanceId, int(cfg.PubSubIngestRate), 0)
+			}
+
 			m, err := r.FetchMessage(k.ctx)
 			if err != nil {
 				log.WithError(err).Errorf("failed to fetch message from kafka source %s with id %s from topic %s - kafka", k.source.Name, k.source.UID, k.Cfg.TopicName)
@@ -146,19 +169,17 @@ func (k *Kafka) consume() {
 			mm.IncrementIngestTotal(k.source)
 
 			var d D = m.Headers
-
-			ctx := context.Background()
 			headers, err := msgpack.EncodeMsgPack(d.Map())
 			if err != nil {
 				k.log.WithError(err).Error("failed to marshall message headers")
 			}
 
-			if err := k.handler(ctx, k.source, string(m.Value), headers); err != nil {
+			if err := k.handler(k.ctx, k.source, string(m.Value), headers); err != nil {
 				k.log.WithError(err).Errorf("failed to write message from kafka source %s with id %s to create event queue - kafka pub sub", k.source.Name, k.source.UID)
 				mm.IncrementIngestErrorsTotal(k.source)
 			} else {
 				// acknowledge the message
-				err := r.CommitMessages(ctx, m)
+				err := r.CommitMessages(k.ctx, m)
 				if err != nil {
 					k.log.WithError(err).Error("failed to commit message - kafka pub sub")
 					mm.IncrementIngestErrorsTotal(k.source)

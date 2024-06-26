@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/util"
+	"github.com/grafana/pyroscope-go"
 
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 
@@ -77,8 +78,8 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 		queueNames := map[string]int{
-			string(convoy.EventQueue):       3,
-			string(convoy.CreateEventQueue): 3,
+			string(convoy.EventQueue):       5,
+			string(convoy.CreateEventQueue): 2,
 			string(convoy.ScheduleQueue):    1,
 			string(convoy.DefaultQueue):     1,
 			string(convoy.MetaEventQueue):   1,
@@ -91,6 +92,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			Type:              string(config.RedisQueueProvider),
 			PrometheusAddress: cfg.Prometheus.Dsn,
 		}
+
+		if cfg.Pyroscope.EnableProfiling {
+			err = enableProfiling(cfg, cmd)
+			if err != nil {
+				return err
+			}
+		}
+
 		q = redisQueue.NewQueue(opts)
 
 		lo := log.NewLogger(os.Stdout)
@@ -174,6 +183,40 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 		}
 		return err
 	}
+}
+
+func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
+	_, err := pyroscope.Start(pyroscope.Config{
+		ApplicationName: cfg.Pyroscope.ProfileID,
+		Tags: map[string]string{
+			"cmd": cmd.Use,
+		},
+		// replace this with the address of pyroscope server
+		ServerAddress: cfg.Pyroscope.URL,
+
+		// you can disable logging by setting this to nil
+		// Logger: pyroscope.StandardLogger,
+		UploadRate: time.Second * 5,
+
+		// optionally, if authentication is enabled, specify the API key:
+		BasicAuthUser:     cfg.Pyroscope.Username,
+		BasicAuthPassword: cfg.Pyroscope.Password,
+
+		// but you can select the ones you want to use:
+		ProfileTypes: []pyroscope.ProfileType{
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileInuseSpace,
+			pyroscope.ProfileAllocSpace,
+			pyroscope.ProfileGoroutines,
+			pyroscope.ProfileMutexCount,
+			pyroscope.ProfileMutexDuration,
+			pyroscope.ProfileBlockCount,
+			pyroscope.ProfileBlockDuration,
+		},
+	})
+	return err
 }
 
 func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configuration) (*datastore.Configuration, error) {

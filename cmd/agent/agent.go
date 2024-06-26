@@ -2,10 +2,13 @@ package agent
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/internal/telemetry"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/frain-dev/convoy/net"
+
+	"github.com/frain-dev/convoy/internal/telemetry"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api"
@@ -16,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/server"
@@ -55,6 +59,9 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			if err = config.Override(cliConfig); err != nil {
 				return err
 			}
+
+			// start sync configuration from the database.
+			go memorystore.DefaultStore.Sync(ctx, interval)
 
 			err = startServerComponent(ctx, a)
 			if err != nil {
@@ -162,6 +169,7 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 	sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
 	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+	configRepo := postgres.NewConfigRepo(a.DB)
 
 	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, a.Logger)
 	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
@@ -171,9 +179,28 @@ func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
 		return err
 	}
 
-	go memorystore.DefaultStore.Sync(ctx, interval)
+	cfg, err := config.Get()
+	if err != nil {
+		a.Logger.Errorf("Failed to retrieve config: %v", err)
+		return err
+	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger)
+	instCfg, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		log.WithError(err).Error("Failed to load configuration")
+	}
+
+	var host string
+	if instCfg != nil {
+		host = instCfg.UID
+	}
+
+	rateLimiter, err := limiter.NewLimiter([]string{host}, cfg, true)
+	if err != nil {
+		return err
+	}
+
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger, rateLimiter, host)
 	if err != nil {
 		return err
 	}
@@ -201,8 +228,6 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 	configRepo := postgres.NewConfigRepo(a.DB)
 
-	rateLimiter := limiter.NewLimiter(a.DB)
-
 	counter := &telemetry.EventsCounter{}
 
 	pb := telemetry.NewposthogBackend()
@@ -214,17 +239,36 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 		return err
 	}
 
+	rateLimiter, err := limiter.NewLimiter([]string{}, cfg, true)
+	if err != nil {
+		return err
+	}
+
+	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger, 0)
+	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
+
+	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
+	if err != nil {
+		return err
+	}
+
 	newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
 		telemetry.OptionTracker(counter),
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
-	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
+	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false)
+	if err != nil {
+		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
+		return err
+	}
+
+	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
 		a.Queue,
-		rateLimiter), newTelemetry)
+		rateLimiter, dispatcher), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 		endpointRepo,
@@ -247,14 +291,14 @@ func startWorkerComponent(ctx context.Context, a *cli.App) error {
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
-		a.DB,
 		endpointRepo,
 		eventRepo,
 		projectRepo,
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo), newTelemetry)
+		deviceRepo,
+		subscriptionsTable), newTelemetry)
 
 	go task.QueueStuckEventDeliveries(ctx, eventDeliveryRepo, a.Queue)
 

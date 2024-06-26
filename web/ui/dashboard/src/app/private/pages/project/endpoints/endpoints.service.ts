@@ -8,13 +8,14 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class EndpointsService {
 	constructor(private http: HttpService) {}
 
-	getEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {
+	getEndpoint(endpointId: string, hideNotification?: boolean): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
 					url: `/endpoints/${endpointId}`,
 					method: 'get',
-					level: 'org_project'
+					level: 'org_project',
+					hideNotification
 				});
 
 				return resolve(response);
