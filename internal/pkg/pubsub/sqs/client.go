@@ -142,8 +142,7 @@ func (s *Sqs) consume() {
 
 			allAttr := "All"
 			output, err := svc.ReceiveMessageWithContext(s.ctx, &sqs.ReceiveMessageInput{
-				QueueUrl: queueURL,
-				//MaxNumberOfMessages:   aws.Int64(10), commented out because this means that an unknown number of messages is read which can't be properly rate limited
+				QueueUrl:              queueURL,
 				WaitTimeSeconds:       aws.Int64(1),
 				MessageAttributeNames: []*string{&allAttr},
 			})
