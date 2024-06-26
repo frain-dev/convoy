@@ -283,6 +283,8 @@ components:
           $ref: '#/components/schemas/datastore.M'
         headers:
           $ref: '#/components/schemas/datastore.M'
+        is_flattened:
+          type: boolean
       type: object
     datastore.GooglePubSubConfig:
       properties:

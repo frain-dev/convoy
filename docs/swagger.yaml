@@ -283,6 +283,8 @@ definitions:
         $ref: '#/definitions/datastore.M'
       headers:
         $ref: '#/definitions/datastore.M'
+      is_flattened:
+        type: boolean
     type: object
   datastore.GooglePubSubConfig:
     properties:
