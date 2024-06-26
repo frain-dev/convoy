@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/frain-dev/convoy"
@@ -340,7 +341,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 
 	pRes, err := tx.ExecContext(ctx, updateProjectById, project.UID, project.Name, project.LogoURL, project.RetainedEvents)
 	if err != nil {
-		return err
+		return fmt.Errorf("update project err: %v", err)
 	}
 
 	rowsAffected, err := pRes.RowsAffected()
@@ -376,11 +377,12 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.URL,
 		me.Secret,
 		me.PubSub,
+		project.Config.SearchPolicy,
 		ssl.EnforceSecureEndpoints,
 		project.Config.MultipleEndpointSubscriptions,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("update project config err: %v", err)
 	}
 
 	rowsAffected, err = cRes.RowsAffected()
