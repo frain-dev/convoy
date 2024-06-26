@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"io"
 	"math/rand"
 	"net/http"
@@ -113,12 +114,14 @@ func buildServer() *ApplicationHandler {
 
 	db := getDB()
 	qOpts, _ = getQueueOptions()
+	cfg := getConfig()
 
 	newQueue := redisqueue.NewQueue(qOpts)
 	logger = log.NewLogger(os.Stderr)
 	logger.SetLevel(log.FatalLevel)
 
 	noopCache := ncache.NewNoopCache()
+	r, _ := rlimiter.NewRedisLimiter(cfg.Redis.BuildDsn())
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
@@ -126,6 +129,7 @@ func buildServer() *ApplicationHandler {
 			Queue:  newQueue,
 			Logger: logger,
 			Cache:  noopCache,
+			Rate:   r,
 		})
 
 	_ = ah.RegisterPolicy()

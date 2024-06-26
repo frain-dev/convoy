@@ -40,15 +40,29 @@ func (m *MockRateLimiter) EXPECT() *MockRateLimiterMockRecorder {
 }
 
 // Allow mocks base method.
-func (m *MockRateLimiter) Allow(ctx context.Context, key string, rate, duration int) error {
+func (m *MockRateLimiter) Allow(ctx context.Context, key string, rate int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Allow", ctx, key, rate, duration)
+	ret := m.ctrl.Call(m, "Allow", ctx, key, rate)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Allow indicates an expected call of Allow.
-func (mr *MockRateLimiterMockRecorder) Allow(ctx, key, rate, duration any) *gomock.Call {
+func (mr *MockRateLimiterMockRecorder) Allow(ctx, key, rate any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Allow", reflect.TypeOf((*MockRateLimiter)(nil).Allow), ctx, key, rate, duration)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Allow", reflect.TypeOf((*MockRateLimiter)(nil).Allow), ctx, key, rate)
+}
+
+// AllowWithDuration mocks base method.
+func (m *MockRateLimiter) AllowWithDuration(ctx context.Context, key string, rate, duration int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AllowWithDuration", ctx, key, rate, duration)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AllowWithDuration indicates an expected call of AllowWithDuration.
+func (mr *MockRateLimiterMockRecorder) AllowWithDuration(ctx, key, rate, duration any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllowWithDuration", reflect.TypeOf((*MockRateLimiter)(nil).AllowWithDuration), ctx, key, rate, duration)
 }
