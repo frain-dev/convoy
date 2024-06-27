@@ -14,8 +14,10 @@ var ErrTrailingDollarOpNotAllowed = errors.New("invalid filter syntax, found tra
 
 type CompareFunc func(x, y interface{}) (bool, error)
 
-func defaultCompareMap() map[string]CompareFunc {
-	return map[string]CompareFunc{
+var cmp map[string]CompareFunc
+
+func init() {
+	cmp = map[string]CompareFunc{
 		"$gte":   gte,
 		"$gt":    gt,
 		"$lte":   lte,
@@ -37,7 +39,6 @@ func Compare(payload map[string]interface{}, filter map[string]interface{}) (boo
 
 func compare(payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
 	var pass []bool
-	cmp := defaultCompareMap()
 	for key, filterVal := range filter {
 		slen := len(key)
 
