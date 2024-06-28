@@ -178,8 +178,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		URLQueryParams:   r.URL.RawQuery,
 		IdempotencyKey:   checksum,
 		Headers:          httpheader.HTTPHeader(r.Header),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		AcknowledgedAt:   time.Now(),
 	}
 
 	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}

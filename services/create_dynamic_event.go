@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
@@ -28,6 +29,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 	}
 
 	e.DynamicEvent.ProjectID = e.Project.UID
+	e.DynamicEvent.AcknowledgedAt = time.Now()
 
 	if len(e.DynamicEvent.EventTypes) == 0 {
 		e.DynamicEvent.EventTypes = []string{"*"}

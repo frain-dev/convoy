@@ -69,8 +69,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			Headers:          getCustomHeaders(dynamicEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
 			Raw:              string(dynamicEvent.Data),
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
+			AcknowledgedAt:   time.Now(),
 		}
 
 		err = eventRepo.CreateEvent(ctx, event)

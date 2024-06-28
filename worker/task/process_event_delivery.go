@@ -188,7 +188,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
-			eventDelivery.Latency = time.Since(eventDelivery.CreatedAt).String()
+			eventDelivery.Latency = time.Since(eventDelivery.GetLatencyStartTime()).String()
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false

@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
+	"time"
 )
 
 type ReplayEventService struct {
@@ -21,6 +22,7 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 	createEvent := task.CreateEvent{
 		Event: e.Event,
 	}
+	createEvent.Event.AcknowledgedAt = time.Now()
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {

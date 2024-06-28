@@ -73,8 +73,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			Headers:          getCustomHeaders(broadcastEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
 			Raw:              string(broadcastEvent.Data),
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
+			AcknowledgedAt:   time.Now(),
 		}
 
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
