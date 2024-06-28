@@ -41,6 +41,10 @@ const (
     INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
     `
+	createEventDeliveryWithCreatedAt = `
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,created_at,acknowledged_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
+    `
 	createEventDeliveries = `
     INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
     VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :attempts, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at);
@@ -248,13 +252,24 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		defer rollbackTx(tx)
 	}
 
-	result, err := tx.ExecContext(
-		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
-		delivery.EventID, endpointID, deviceID,
-		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
-		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey, delivery.EventType,
-		delivery.AcknowledgedAt,
-	)
+	var result sql.Result
+	if delivery.CreatedAt.IsZero() {
+		result, err = tx.ExecContext(
+			ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
+			delivery.EventID, endpointID, deviceID,
+			delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
+			delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey, delivery.EventType,
+			delivery.AcknowledgedAt,
+		)
+	} else {
+		result, err = tx.ExecContext(
+			ctx, createEventDeliveryWithCreatedAt, delivery.UID, delivery.ProjectID,
+			delivery.EventID, endpointID, deviceID,
+			delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
+			delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey, delivery.EventType,
+			delivery.CreatedAt, delivery.AcknowledgedAt,
+		)
+	}
 	if err != nil {
 		return err
 	}
