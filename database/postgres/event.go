@@ -27,12 +27,6 @@ const (
 	                           idempotency_key,is_duplicate_event,acknowledged_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
-	createEventWithCreatedAt = `
-	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
-	                           source_id,headers,raw,data,url_query_params,
-	                           idempotency_key,is_duplicate_event,created_at,acknowledged_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-	`
 
 	createEventEndpoints = `
 	INSERT INTO convoy.events_endpoints (endpoint_id, event_id) VALUES (:endpoint_id, :event_id)
@@ -223,39 +217,20 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		defer rollbackTx(tx)
 	}
 
-	if event.CreatedAt.IsZero() {
-		_, err = tx.ExecContext(ctx, createEvent,
-			event.UID,
-			event.EventType,
-			event.Endpoints,
-			event.ProjectID,
-			sourceID,
-			event.Headers,
-			event.Raw,
-			event.Data,
-			event.URLQueryParams,
-			event.IdempotencyKey,
-			event.IsDuplicateEvent,
-			event.CreatedAt,
-			event.AcknowledgedAt,
-		)
-	} else {
-		_, err = tx.ExecContext(ctx, createEventWithCreatedAt,
-			event.UID,
-			event.EventType,
-			event.Endpoints,
-			event.ProjectID,
-			sourceID,
-			event.Headers,
-			event.Raw,
-			event.Data,
-			event.URLQueryParams,
-			event.IdempotencyKey,
-			event.IsDuplicateEvent,
-			event.CreatedAt,
-			event.AcknowledgedAt,
-		)
-	}
+	_, err = tx.ExecContext(ctx, createEvent,
+		event.UID,
+		event.EventType,
+		event.Endpoints,
+		event.ProjectID,
+		sourceID,
+		event.Headers,
+		event.Raw,
+		event.Data,
+		event.URLQueryParams,
+		event.IdempotencyKey,
+		event.IsDuplicateEvent,
+		event.AcknowledgedAt,
+	)
 	if err != nil {
 		return err
 	}

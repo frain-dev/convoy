@@ -320,7 +320,17 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 		return nil, err
 	}
 
-	return ev, nil
+	ev1, err := eventRepo.FindEventByID(context.TODO(), projectID, uid)
+	if err != nil {
+		return nil, err
+	}
+	ev1.CreatedAt = time.Unix(filter.CreatedAt.Unix(), 0)
+	_, err = db.GetDB().ExecContext(context.Background(), "UPDATE convoy.events SET created_at=$1 WHERE id=$2", ev1.CreatedAt, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	return ev1, nil
 }
 
 func seedEventDelivery(db database.Database, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subscriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
@@ -357,6 +367,11 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 	// Seed Data.
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
+	if err != nil {
+		return nil, err
+	}
+	eventDelivery.CreatedAt = time.Unix(filter.CreatedAt.Unix(), 0)
+	_, err = db.GetDB().ExecContext(context.Background(), "UPDATE convoy.event_deliveries SET created_at=$1 WHERE id=$2", eventDelivery.CreatedAt, uid)
 	if err != nil {
 		return nil, err
 	}
