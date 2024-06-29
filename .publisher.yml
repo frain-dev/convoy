@@ -82,7 +82,7 @@ brews:
     commit_author:
       name: frain-dev
       email: dev@frain.dev
-    tap:
+    repository:
       owner: frain-dev
       name: homebrew-tools
     url_template: https://dl.cloudsmith.io/public/convoy/convoy/raw/versions/{{.Version}}/{{ .ArtifactName }}
