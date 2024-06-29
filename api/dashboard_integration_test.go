@@ -446,6 +446,9 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 	for i := range eventDeliveries {
 		err = eventDelivery.CreateEventDelivery(ctx, &eventDeliveries[i])
 		require.NoError(s.T(), err)
+		_, err = s.DB.GetDB().ExecContext(context.Background(), "UPDATE convoy.event_deliveries SET created_at=$1,updated_at=$2 WHERE id=$3",
+			eventDeliveries[i].CreatedAt, eventDeliveries[i].UpdatedAt, eventDeliveries[i].UID)
+		require.NoError(s.T(), err)
 	}
 
 	type urlQuery struct {

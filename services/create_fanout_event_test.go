@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -191,8 +192,8 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 
 			require.Nil(t, err)
 			require.NotEmpty(t, event.UID)
-			require.NotEmpty(t, event.CreatedAt)
-			require.NotEmpty(t, event.UpdatedAt)
+			require.Empty(t, event.CreatedAt)
+			require.Empty(t, event.UpdatedAt)
 			require.Empty(t, event.DeletedAt)
 
 			stripVariableFields(t, "event", event)
@@ -205,6 +206,7 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				require.Equal(t, m1, m2)
 			}
 
+			event.AcknowledgedAt = time.Time{}
 			require.Equal(t, tc.wantEvent, event)
 		})
 	}
