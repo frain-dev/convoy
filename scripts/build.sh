@@ -35,6 +35,10 @@ buildConvoy() {
 	cd ../../../
 	mv web/ui/dashboard/dist/* $UIDIR
 
+    export CGO_ENABLED=0
+    export GOOS=linux
+    export GOARCH=arm64
+
 	# Build Binary
 	if [[ "$build" == "ce" ]]; then
 		go build -o convoy ./cmd/*.go
