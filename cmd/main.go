@@ -4,8 +4,6 @@ import (
 	"os"
 	_ "time/tzdata"
 
-	_ "go.uber.org/automaxprocs"
-
 	"github.com/frain-dev/convoy/cmd/agent"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
 
