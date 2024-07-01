@@ -377,7 +377,7 @@ type Configuration struct {
 	ConsumerPoolSize    int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 	EnableProfiling     bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 	Metrics             MetricsConfiguration       `json:"metrics" envconfig:"CONVOY_METRICS"`
-	InstanceIngestRate  int                        `json:"pub_sub_ingest_rate" envconfig:"CONVOY_PUB_SUB_INGEST_RATE"`
+	InstanceIngestRate  int                        `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
 	WorkerExecutionMode ExecutionMode              `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 }
 
