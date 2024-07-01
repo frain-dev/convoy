@@ -94,8 +94,8 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 			}
 
 			events := map[string]int{
-				string(convoy.EventQueue):       6,
-				string(convoy.CreateEventQueue): 4,
+				string(convoy.EventQueue):       5,
+				string(convoy.CreateEventQueue): 5,
 			}
 
 			retry := map[string]int{
