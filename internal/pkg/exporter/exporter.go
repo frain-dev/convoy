@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -31,8 +32,8 @@ const (
 var tables = []tablename{eventDeliveriesTable, eventsTable}
 
 var tableToFileMapping = map[tablename]string{
-	eventsTable:          "%s/orgs/%s/projects/%s/events/%s.json",
-	eventDeliveriesTable: "%s/orgs/%s/projects/%s/eventdeliveries/%s.json",
+	eventsTable:          "%s/orgs/%s/projects/%s/events/%s.json.gz",
+	eventDeliveriesTable: "%s/orgs/%s/projects/%s/eventdeliveries/%s.json.gz",
 }
 
 type (
@@ -234,7 +235,25 @@ func getOutputWriter(out string) (io.WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return file, err
+
+	return compressWriter{gw: gzip.NewWriter(file), file: file}, err
+}
+
+type compressWriter struct {
+	gw   *gzip.Writer
+	file *os.File
+}
+
+func (c compressWriter) Write(b []byte) (int, error) {
+	return c.gw.Write(b)
+}
+
+func (c compressWriter) Close() error {
+	if err := c.gw.Close(); err != nil {
+		return err
+	}
+
+	return c.file.Close()
 }
 
 func toUniversalPath(path string) string {
