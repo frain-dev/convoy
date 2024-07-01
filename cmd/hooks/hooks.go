@@ -177,14 +177,16 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Rate = rateLimiter
 
 		// update config singleton with the instance id
-		configRepo := postgres.NewConfigRepo(app.DB)
-		instCfg, err := configRepo.LoadConfiguration(cmd.Context())
-		if err != nil {
-			log.WithError(err).Error("Failed to load configuration")
-		} else {
-			cfg.InstanceId = instCfg.UID
-			if err = config.Override(&cfg); err != nil {
-				return err
+		if cmd.Use != "bootstrap" { // bootstrap does not need this
+			configRepo := postgres.NewConfigRepo(app.DB)
+			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
+			if err != nil {
+				log.WithError(err).Error("Failed to load configuration")
+			} else {
+				cfg.InstanceId = instCfg.UID
+				if err = config.Override(&cfg); err != nil {
+					return err
+				}
 			}
 		}
 
