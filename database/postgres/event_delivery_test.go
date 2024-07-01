@@ -5,6 +5,7 @@ package postgres
 
 import (
 	"context"
+	"gopkg.in/guregu/null.v4"
 	"testing"
 	"time"
 
@@ -40,7 +41,7 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 	require.NotEmpty(t, dbEventDelivery.CreatedAt)
 	require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
-	dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt, dbEventDelivery.AcknowledgedAt = time.Time{}, time.Time{}, time.Time{}
+	dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt, dbEventDelivery.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 	dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source, dbEventDelivery.Device = nil, nil, nil, nil
 
 	require.Equal(t, "", dbEventDelivery.Latency)
@@ -49,7 +50,7 @@ func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {
 	ed.Metadata.NextSendTime = time.Time{}
 	dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
-	ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, time.Time{}
+	ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 	require.Equal(t, ed, dbEventDelivery)
 }
 
@@ -124,14 +125,14 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 		require.NotEmpty(t, dbEventDelivery.CreatedAt)
 		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
-		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt, dbEventDelivery.AcknowledgedAt = time.Time{}, time.Time{}, time.Time{}
+		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt, dbEventDelivery.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}
 		dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
-		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, time.Time{}
+		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 
 		require.Equal(t, ed.Headers, dbEventDelivery.Headers)
 		require.Equal(t, ed, dbEventDelivery)
@@ -179,14 +180,14 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 		require.NotEmpty(t, dbEventDelivery.CreatedAt)
 		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
-		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt, dbEventDelivery.AcknowledgedAt = time.Time{}, time.Time{}, time.Time{}
+		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt, dbEventDelivery.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 		dbEventDelivery.Event, dbEventDelivery.Endpoint, dbEventDelivery.Source = nil, nil, nil
 
 		require.Equal(t, ed.Metadata.NextSendTime.UTC(), dbEventDelivery.Metadata.NextSendTime.UTC())
 		ed.Metadata.NextSendTime = time.Time{}
 		dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
-		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, time.Time{}
+		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 		require.Equal(t, ed, dbEventDelivery)
 	}
 }
@@ -478,7 +479,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		require.NotEmpty(t, dbEventDelivery.CreatedAt)
 		require.NotEmpty(t, dbEventDelivery.UpdatedAt)
 
-		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt, dbEventDelivery.AcknowledgedAt = time.Time{}, time.Time{}, time.Time{}
+		dbEventDelivery.CreatedAt, dbEventDelivery.UpdatedAt, dbEventDelivery.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 
 		require.Equal(t, event.EventType, dbEventDelivery.Event.EventType)
 		require.Equal(t, endpoint.UID, dbEventDelivery.Endpoint.UID)
@@ -488,7 +489,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		ed.Metadata.NextSendTime = time.Time{}
 		dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
-		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, time.Time{}
+		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 
 		require.Equal(t, ed, dbEventDelivery)
 	}

@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"gopkg.in/guregu/null.v4"
 	"testing"
 	"time"
 
@@ -329,7 +330,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 		Headers:        httpheader.HTTPHeader{},
 		ProjectID:      projectID,
 		SourceID:       sourceID,
-		AcknowledgedAt: time.Now(),
+		AcknowledgedAt: null.TimeFrom(time.Now()),
 	}
 
 	// Seed Data.
@@ -357,7 +358,7 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 		Headers:        httpheader.HTTPHeader{},
 		Metadata:       &datastore.Metadata{},
 		ProjectID:      projectID,
-		AcknowledgedAt: time.Now(),
+		AcknowledgedAt: null.TimeFrom(time.Now()),
 	}
 
 	// Seed Data.

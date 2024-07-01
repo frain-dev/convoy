@@ -309,7 +309,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 		Data:           data,
 		Endpoints:      []string{endpointID},
 		ProjectID:      projectID,
-		AcknowledgedAt: time.Unix(filter.AcknowledgedAt.Unix(), 0),
+		AcknowledgedAt: null.TimeFrom(time.Unix(filter.AcknowledgedAt.Unix(), 0)),
 		CreatedAt:      time.Unix(filter.CreatedAt.Unix(), 0),
 	}
 
@@ -360,7 +360,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 		},
 		CLIMetadata:    &datastore.CLIMetadata{},
 		Description:    "test",
-		AcknowledgedAt: filter.AcknowledgedAt,
+		AcknowledgedAt: null.TimeFrom(filter.AcknowledgedAt),
 		CreatedAt:      filter.CreatedAt,
 	}
 

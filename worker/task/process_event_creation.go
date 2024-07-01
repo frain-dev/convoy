@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -196,7 +197,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			URLQueryParams:   event.URLQueryParams,
 			Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 			DeliveryAttempts: []datastore.DeliveryAttempt{},
-			AcknowledgedAt:   time.Now(),
+			AcknowledgedAt:   null.TimeFrom(time.Now()),
 		}
 
 		if s.Type == datastore.SubscriptionTypeCLI {
@@ -221,7 +222,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			payload := EventDelivery{
 				EventDeliveryID: eventDelivery.UID,
 				ProjectID:       eventDelivery.ProjectID,
-				AcknowledgedAt:  eventDelivery.AcknowledgedAt,
+				AcknowledgedAt:  eventDelivery.AcknowledgedAt.Time,
 			}
 
 			data, err := msgpack.EncodeMsgPack(payload)
@@ -469,7 +470,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		IdempotencyKey:   eventParams.IdempotencyKey,
 		IsDuplicateEvent: isDuplicate,
 		Headers:          getCustomHeaders(eventParams.CustomHeaders),
-		AcknowledgedAt:   time.Now(),
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 		Endpoints:        endpointIDs,
 		SourceID:         eventParams.SourceID,
 		ProjectID:        project.UID,

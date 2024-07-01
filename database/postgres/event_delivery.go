@@ -995,7 +995,7 @@ type EventDeliveryPaginated struct {
 	Metadata         *datastore.Metadata           `json:"metadata" db:"metadata"`
 	CLIMetadata      *CLIMetadata                  `json:"cli_metadata" db:"cli_metadata"`
 	Description      string                        `json:"description,omitempty" db:"description"`
-	AcknowledgedAt   time.Time                     `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
+	AcknowledgedAt   null.Time                     `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
 	CreatedAt        time.Time                     `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time                     `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time                     `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`

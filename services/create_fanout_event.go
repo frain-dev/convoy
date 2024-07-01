@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -119,7 +120,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		Headers:          getCustomHeaders(newMessage.CustomHeaders),
 		Endpoints:        endpointIDs,
 		ProjectID:        g.UID,
-		AcknowledgedAt:   time.Now(),
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

@@ -3,12 +3,11 @@ package services
 import (
 	"bytes"
 	"context"
-	"testing"
-	"time"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
+	"testing"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -206,7 +205,7 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				require.Equal(t, m1, m2)
 			}
 
-			event.AcknowledgedAt = time.Time{}
+			event.AcknowledgedAt = null.Time{}
 			require.Equal(t, tc.wantEvent, event)
 		})
 	}

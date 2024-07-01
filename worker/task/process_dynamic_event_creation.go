@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -69,7 +70,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			Headers:          getCustomHeaders(dynamicEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
 			Raw:              string(dynamicEvent.Data),
-			AcknowledgedAt:   time.Now(),
+			AcknowledgedAt:   null.TimeFrom(time.Now()),
 		}
 
 		err = eventRepo.CreateEvent(ctx, event)
