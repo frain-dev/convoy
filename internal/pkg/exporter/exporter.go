@@ -31,8 +31,8 @@ const (
 var tables = []tablename{eventDeliveriesTable, eventsTable}
 
 var tableToFileMapping = map[tablename]string{
-	eventsTable:          "%s/orgs/%s/projects/%s/events/%s.json.gz",
-	eventDeliveriesTable: "%s/orgs/%s/projects/%s/eventdeliveries/%s.json.gz",
+	eventsTable:          "%s/orgs/%s/projects/%s/events/%s.json",
+	eventDeliveriesTable: "%s/orgs/%s/projects/%s/eventdeliveries/%s.json",
 }
 
 type (
