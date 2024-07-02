@@ -474,6 +474,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	router := a.buildRouter()
+	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}))
 
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
