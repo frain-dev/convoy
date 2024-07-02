@@ -1,7 +1,6 @@
 package exporter
 
 import (
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
@@ -236,25 +235,25 @@ func getOutputWriter(out string) (io.WriteCloser, error) {
 		return nil, err
 	}
 
-	return compressWriter{gw: gzip.NewWriter(file), file: file}, err
+	return file, err
 }
 
-type compressWriter struct {
-	gw   *gzip.Writer
-	file *os.File
-}
-
-func (c compressWriter) Write(b []byte) (int, error) {
-	return c.gw.Write(b)
-}
-
-func (c compressWriter) Close() error {
-	if err := c.gw.Close(); err != nil {
-		return err
-	}
-
-	return c.file.Close()
-}
+//type compressWriter struct {
+//	gw   *gzip.Writer
+//	file *os.File
+//}
+//
+//func (c compressWriter) Write(b []byte) (int, error) {
+//	return c.gw.Write(b)
+//}
+//
+//func (c compressWriter) Close() error {
+//	if err := c.gw.Close(); err != nil {
+//		return err
+//	}
+//
+//	return c.file.Close()
+//}
 
 func toUniversalPath(path string) string {
 	return filepath.FromSlash(path)
