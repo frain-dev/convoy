@@ -921,8 +921,10 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
-	Latency        string                `json:"latency" db:"latency"`
-	EventType      EventType             `json:"event_type,omitempty" db:"event_type"`
+	// Deprecated: Latency is deprecated.
+	Latency        string    `json:"latency" db:"latency"`
+	LatencySeconds float64   `json:"latency_seconds" db:"latency_seconds"`
+	EventType      EventType `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`

@@ -62,7 +62,6 @@ type SignatureValues struct {
 type EventDelivery struct {
 	EventDeliveryID string
 	ProjectID       string
-	AcknowledgedAt  time.Time
 }
 
 type EventDeliveryConfig struct {

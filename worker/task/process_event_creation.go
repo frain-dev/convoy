@@ -222,7 +222,6 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			payload := EventDelivery{
 				EventDeliveryID: eventDelivery.UID,
 				ProjectID:       eventDelivery.ProjectID,
-				AcknowledgedAt:  eventDelivery.AcknowledgedAt.Time,
 			}
 
 			data, err := msgpack.EncodeMsgPack(payload)

@@ -63,7 +63,7 @@ const (
         COALESCE(ep.url, '') AS "endpoint_metadata.url",
         ev.id AS "event_metadata.id",
         ev.event_type AS "event_metadata.event_type",
-		COALESCE(ed.latency,'') AS latency,
+		COALESCE(ed.latency_seconds, 0) AS latency_seconds,
 
 		COALESCE(d.id,'') AS "device_metadata.id",
 		COALESCE(d.status,'') AS "device_metadata.status",
@@ -211,7 +211,7 @@ const (
     `
 
 	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3, latency = $4,  updated_at = NOW() WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3, latency_seconds = $4,  updated_at = NOW() WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
@@ -548,7 +548,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
 	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
 
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.Latency, delivery.UID, projectID)
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.LatencySeconds, delivery.UID, projectID)
 	if err != nil {
 		return err
 	}
@@ -733,6 +733,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			Headers:        ev.Headers,
 			URLQueryParams: ev.URLQueryParams,
 			Latency:        ev.Latency,
+			LatencySeconds: ev.LatencySeconds,
 			EventType:      ev.EventType,
 			Endpoint: &datastore.Endpoint{
 				UID:          ev.Endpoint.UID.ValueOrZero(),
@@ -982,8 +983,10 @@ type EventDeliveryPaginated struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
-	Latency        string                `json:"latency" db:"latency"`
-	EventType      datastore.EventType   `json:"event_type,omitempty" db:"event_type"`
+	// Deprecated: Latency is deprecated.
+	Latency        string              `json:"latency" db:"latency_seconds"`
+	LatencySeconds float64             `json:"latency_seconds" db:"latency_seconds"`
+	EventType      datastore.EventType `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
