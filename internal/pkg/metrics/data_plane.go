@@ -17,10 +17,11 @@ const (
 
 // Metrics for the data plane
 type Metrics struct {
-	IsEnabled           bool
-	IngestTotal         *prometheus.CounterVec
-	IngestConsumedTotal *prometheus.CounterVec
-	IngestErrorsTotal   *prometheus.CounterVec
+	IsEnabled            bool
+	IngestTotal          *prometheus.CounterVec
+	IngestConsumedTotal  *prometheus.CounterVec
+	IngestErrorsTotal    *prometheus.CounterVec
+	EventDeliveryLatency *prometheus.HistogramVec
 }
 
 func GetDPInstance() *Metrics {
@@ -38,6 +39,7 @@ func newMetrics(pr prometheus.Registerer) *Metrics {
 			m.IngestTotal,
 			m.IngestConsumedTotal,
 			m.IngestErrorsTotal,
+			m.EventDeliveryLatency,
 		)
 	}
 	return m
@@ -81,8 +83,23 @@ func InitMetrics() *Metrics {
 			},
 			[]string{projectLabel, sourceLabel},
 		),
+		EventDeliveryLatency: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "convoy_end_to_end_latency",
+				Help:    "Total time (in seconds) an event spends in Convoy.",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{projectLabel},
+		),
 	}
 	return m
+}
+
+func (m *Metrics) RecordLatency(ev *datastore.EventDelivery) {
+	if !m.IsEnabled {
+		return
+	}
+	m.EventDeliveryLatency.With(prometheus.Labels{projectLabel: ev.ProjectID}).Observe(ev.LatencySeconds)
 }
 
 func (m *Metrics) IncrementIngestTotal(source *datastore.Source) {

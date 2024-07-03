@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -189,6 +190,11 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
 			eventDelivery.LatencySeconds = time.Since(eventDelivery.GetLatencyStartTime()).Seconds()
+
+			// register latency
+			mm := metrics.GetDPInstance()
+			mm.RecordLatency(eventDelivery)
+
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
