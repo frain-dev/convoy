@@ -13,9 +13,8 @@ export class SettingsComponent implements OnInit {
 	activePage: SETTINGS = 'organisation settings';
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
-		{ name: 'team', icon: 'team', svg: 'stroke' }
-		// hidden for cloud instance
-		// { name: 'configuration settings', icon: 'settings' },
+		{ name: 'team', icon: 'team', svg: 'stroke' },
+		{ name: 'configuration settings', icon: 'settings', svg: 'fill' }
 	];
 
 	constructor(private router: Router, private route: ActivatedRoute, private location: Location) {}

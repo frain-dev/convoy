@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"io"
 	"os"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+
+	"github.com/frain-dev/convoy/util"
 	"github.com/grafana/pyroscope-go"
 
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -175,19 +177,28 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Rate = rateLimiter
 
 		// update config singleton with the instance id
-		configRepo := postgres.NewConfigRepo(app.DB)
-		instCfg, err := configRepo.LoadConfiguration(cmd.Context())
-		if err != nil {
-			log.WithError(err).Error("Failed to load configuration")
-		} else {
-			cfg.InstanceId = instCfg.UID
-			if err = config.Override(&cfg); err != nil {
-				return err
+		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
+			configRepo := postgres.NewConfigRepo(app.DB)
+			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
+			if err != nil {
+				log.WithError(err).Error("Failed to load configuration")
+			} else {
+				cfg.InstanceId = instCfg.UID
+				if err = config.Override(&cfg); err != nil {
+					return err
+				}
 			}
 		}
 
 		return nil
 	}
+}
+
+// these commands don't need to load instance config
+var skipConfigLoadCmd = map[string]struct{}{
+	"bootstrap": {},
+	"version":   {},
+	"migrate":   {},
 }
 
 func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -262,6 +273,11 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		OnPrem: &onPrem,
 	}
 
+	retentionPolicy := &datastore.RetentionPolicyConfiguration{
+		Policy:                   cfg.RetentionPolicy.Policy,
+		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
+	}
+
 	configuration, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
@@ -271,6 +287,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 				StoragePolicy:      storagePolicy,
 				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				RetentionPolicy:    retentionPolicy,
 				CreatedAt:          time.Now(),
 				UpdatedAt:          time.Now(),
 			}
@@ -284,6 +301,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	configuration.RetentionPolicy = retentionPolicy
 	configuration.UpdatedAt = time.Now()
 
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
@@ -387,6 +405,27 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Password: redisPassword,
 		Database: redisDatabase,
 		Port:     redisPort,
+	}
+
+	// CONVOY_RETENTION_POLICY
+	retentionPolicy, err := cmd.Flags().GetString("retention-policy")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(retentionPolicy) {
+		c.RetentionPolicy.Policy = retentionPolicy
+	}
+
+	// CONVOY_RETENTION_POLICY_ENABLED
+	isretentionPolicyEnabledSet := cmd.Flags().Changed("retention-policy-enabled")
+	if isretentionPolicyEnabledSet {
+		retentionPolicyEnabled, err := cmd.Flags().GetBool("retention-policy-enabled")
+		if err != nil {
+			return nil, err
+		}
+
+		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
 	}
 
 	// Feature flags
