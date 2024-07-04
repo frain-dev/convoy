@@ -95,6 +95,10 @@ func generateConfig() *datastore.Configuration {
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		IsSignupEnabled:    false,
+		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
+			Policy:                   "720h",
+			IsRetentionPolicyEnabled: true,
+		},
 		StoragePolicy: &datastore.StoragePolicyConfiguration{
 			Type: datastore.OnPrem,
 			S3: &datastore.S3Storage{

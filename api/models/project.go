@@ -47,17 +47,14 @@ type ProjectConfig struct {
 	// Controls if your project will add a timestamp to it's webhook signature header to prevent a replay attack, See this blog post[https://getconvoy.io/blog/generating-stripe-like-webhook-signatures] for more]
 	ReplayAttacks bool `json:"replay_attacks_prevention_enabled"`
 
-	// Controls whether the retention policy is active on this project.
-	IsRetentionPolicyEnabled bool `json:"retention_policy_enabled"`
-
 	// Controls of the Event ID and Event Delivery ID Headers are added to the request when events are dispatched to endpoints
 	AddEventIDTraceHeaders bool `json:"add_event_id_trace_headers"`
 
 	// Controls if the project will disable and endpoint after the retry threshold for an event is reached
 	DisableEndpoint bool `json:"disable_endpoint"`
 
-	// RetentionPolicy is used configure values for our retention and search tokenization policies
-	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy"`
+	// Specify the interval in hours for which the event tokenizer runs
+	SearchPolicy string `json:"search_policy" db:"search_policy"`
 
 	// RateLimit is used to configure the projects rate limiting config values
 	RateLimit *RateLimitConfiguration `json:"ratelimit"`
@@ -85,18 +82,16 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 	}
 
 	return &datastore.ProjectConfig{
-		MaxIngestSize:            pc.MaxIngestSize,
-		ReplayAttacks:            pc.ReplayAttacks,
-		IsRetentionPolicyEnabled: pc.IsRetentionPolicyEnabled,
-		DisableEndpoint:          pc.DisableEndpoint,
-		AddEventIDTraceHeaders:   pc.AddEventIDTraceHeaders,
+		MaxIngestSize:                 pc.MaxIngestSize,
+		ReplayAttacks:                 pc.ReplayAttacks,
+		DisableEndpoint:               pc.DisableEndpoint,
+		AddEventIDTraceHeaders:        pc.AddEventIDTraceHeaders,
 		MultipleEndpointSubscriptions: pc.MultipleEndpointSubscriptions,
-    SSL:                      pc.SSL.transform(),
-		RetentionPolicy:          pc.RetentionPolicy.transform(),
-		RateLimit:                pc.RateLimit.Transform(),
-		Strategy:                 pc.Strategy.transform(),
-		Signature:                pc.Signature.transform(),
-		MetaEvent:                pc.MetaEvent.transform(),
+		SSL:                           pc.SSL.transform(),
+		RateLimit:                     pc.RateLimit.Transform(),
+		Strategy:                      pc.Strategy.transform(),
+		Signature:                     pc.Signature.transform(),
+		MetaEvent:                     pc.MetaEvent.transform(),
 	}
 }
 
@@ -112,22 +107,6 @@ func (r *SSLConfiguration) transform() *datastore.SSLConfiguration {
 	return &datastore.SSLConfiguration{
 		EnforceSecureEndpoints: r.EnforceSecureEndpoints,
 	}
-}
-
-type RetentionPolicyConfiguration struct {
-	// Specify the number of hours the policy job should go back before deleting events and deliveries.
-	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
-
-	// Specify the interval in hours for which the event tokenizer runs
-	SearchPolicy string `json:"search_policy" db:"search_policy"`
-}
-
-func (r *RetentionPolicyConfiguration) transform() *datastore.RetentionPolicyConfiguration {
-	if r == nil {
-		return nil
-	}
-
-	return &datastore.RetentionPolicyConfiguration{Policy: r.Policy, SearchPolicy: r.SearchPolicy}
 }
 
 type RateLimitConfiguration struct {

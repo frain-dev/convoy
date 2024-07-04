@@ -21,6 +21,8 @@ import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { TeamsModule } from './teams/teams.module';
+import { ConfigButtonComponent } from '../../components/config-button/config-button.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
@@ -38,6 +40,7 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		RadioComponent,
 		ToggleComponent,
 		ButtonComponent,
+        ConfigButtonComponent,
 		SkeletonLoaderComponent,
 		TagComponent,
 		CopyButtonComponent,
@@ -49,7 +52,8 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		InputDirective,
 		LabelComponent,
 		DialogDirective,
-		TeamsModule
+		TeamsModule,
+        TooltipComponent
 	]
 })
 export class SettingsModule {}

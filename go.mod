@@ -11,6 +11,7 @@ require (
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dop251/goja v0.0.0-20231014103939-873a1496dc8e
 	github.com/dop251/goja_nodejs v0.0.0-20230821135201-94e508132562
+	github.com/exaring/otelpgx v0.5.4
 	github.com/fatih/structs v1.1.0
 	github.com/felixge/httpsnoop v1.0.3
 	github.com/getkin/kin-openapi v0.123.0
@@ -18,7 +19,6 @@ require (
 	github.com/getsentry/sentry-go/otel v0.25.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi/v5 v5.0.10
-	github.com/go-chi/httprate v0.9.0
 	github.com/go-chi/render v1.0.1
 	github.com/go-redis/cache/v9 v9.0.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
@@ -28,6 +28,7 @@ require (
 	github.com/grafana/pyroscope-go v1.1.1
 	github.com/hibiken/asynq v0.24.1
 	github.com/hibiken/asynq/x v0.0.0-20221219051101-0b8cfad70341
+	github.com/jackc/pgx/v5 v5.6.0
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/jaswdr/faker v1.10.2
 	github.com/jmoiron/sqlx v1.3.5
@@ -36,7 +37,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/mixpanel/mixpanel-go v1.2.1
 	github.com/newrelic/go-agent/v3 v3.20.4
-	github.com/newrelic/go-agent/v3/integrations/nrpq v1.1.1
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/posthog/posthog-go v0.0.0-20240115103626-fbd687c18571
@@ -57,17 +57,13 @@ require (
 	github.com/subomi/requestmigrations v0.4.0
 	github.com/swaggo/swag v1.16.3
 	github.com/tidwall/gjson v1.16.0
-	github.com/uptrace/opentelemetry-go-extra/otelsql v0.2.3
-	github.com/uptrace/opentelemetry-go-extra/otelsqlx v0.2.3
 	github.com/xdg-go/pbkdf2 v1.0.0
 	go.opentelemetry.io/otel v1.23.1
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.21.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.21.0
 	go.opentelemetry.io/otel/sdk v1.21.0
 	go.opentelemetry.io/otel/trace v1.23.1
-	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/mock v0.4.0
-	go.uber.org/ratelimit v0.3.1
 	golang.org/x/crypto v0.21.0
 	google.golang.org/api v0.128.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
@@ -76,10 +72,8 @@ require (
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
-	github.com/exaring/otelpgx v0.5.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-redis/redis/v7 v7.4.1 // indirect
@@ -95,7 +89,6 @@ require (
 	github.com/invopop/yaml v0.2.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.6.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect

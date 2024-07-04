@@ -15,10 +15,29 @@ type Configuration struct {
 
 	// Used to configure where events removed by retention policies are stored
 	StoragePolicy *StoragePolicyConfiguration `json:"storage_policy"`
+
+	// Used to configure whether the retention policy job runs and at what intervals
+	RetentionPolicy *RetentionPolicyConfiguration
 }
 
 func (c *Configuration) Validate() error {
 	return util.Validate(c)
+}
+
+type RetentionPolicyConfiguration struct {
+	// Controls whether the retention policy is active on this instance.
+	IsRetentionPolicyEnabled bool `json:"retention_policy_enabled"`
+
+	// Specify the number of hours the policy job should go back before deleting events and deliveries.
+	Policy string `json:"policy" valid:"duration~please provide a valid retention policy time duration"`
+}
+
+func (r *RetentionPolicyConfiguration) Transform() *datastore.RetentionPolicyConfiguration {
+	if r == nil {
+		return nil
+	}
+
+	return &datastore.RetentionPolicyConfiguration{Policy: r.Policy, IsRetentionPolicyEnabled: r.IsRetentionPolicyEnabled}
 }
 
 type ConfigurationResponse struct {

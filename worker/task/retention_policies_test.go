@@ -81,13 +81,9 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 			Duration:   20,
 			RetryCount: 4,
 		},
-		SSL: &datastore.DefaultSSLConfig,
-		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy: "72h",
-		},
-		RateLimit:                &datastore.DefaultRateLimitConfig,
-		ReplayAttacks:            true,
-		IsRetentionPolicyEnabled: true,
+		SSL:           &datastore.DefaultSSLConfig,
+		RateLimit:     &datastore.DefaultRateLimitConfig,
+		ReplayAttacks: true,
 	}
 	project, err := testdb.SeedProject(r.ConvoyApp.database, ulid.Make().String(), "test", r.DefaultOrg.UID, datastore.OutgoingProject, projectConfig)
 	require.NoError(r.T(), err)
@@ -171,12 +167,8 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 			Duration:   20,
 			RetryCount: 4,
 		},
-		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy: "72h",
-		},
-		RateLimit:                &datastore.DefaultRateLimitConfig,
-		ReplayAttacks:            true,
-		IsRetentionPolicyEnabled: true,
+		RateLimit:     &datastore.DefaultRateLimitConfig,
+		ReplayAttacks: true,
 	}
 	project, err := testdb.SeedProject(r.ConvoyApp.database, ulid.Make().String(), "test", r.DefaultOrg.UID, datastore.OutgoingProject, projectConfig)
 	require.NoError(r.T(), err)
@@ -366,6 +358,10 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		StoragePolicy:      defaultStorage,
+		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
+			Policy:                   "72h",
+			IsRetentionPolicyEnabled: true,
+		},
 	}
 
 	// Seed Data

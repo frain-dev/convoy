@@ -3,6 +3,8 @@ package worker
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
@@ -13,7 +15,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/go-chi/chi/v5"
-	"net/http"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
