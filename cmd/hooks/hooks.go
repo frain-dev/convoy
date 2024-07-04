@@ -177,7 +177,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Rate = rateLimiter
 
 		// update config singleton with the instance id
-		if cmd.Use != "bootstrap" && cmd.Use != "version" { // bootstrap & version don't need this
+		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
 			configRepo := postgres.NewConfigRepo(app.DB)
 			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
 			if err != nil {
@@ -192,6 +192,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		return nil
 	}
+}
+
+// these commands don't need to load instance config
+var skipConfigLoadCmd = map[string]struct{}{
+	"bootstrap": {},
+	"version":   {},
+	"migrate":   {},
 }
 
 func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
