@@ -103,6 +103,10 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) ([]datastore.Sou
 		return nil, err
 	}
 
+	if len(projects) == 0 {
+		return []datastore.Source{}, nil
+	}
+
 	ids := make([]string, len(projects))
 	for i := range projects {
 		ids[i] = projects[i].UID

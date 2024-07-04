@@ -35,11 +35,13 @@ var tableToFileMapping = map[tablename]string{
 	eventDeliveriesTable: "%s/orgs/%s/projects/%s/eventdeliveries/%s.json",
 }
 
-type ExportResult map[tablename]ExportTableResult
-type ExportTableResult struct {
-	NumDocs    int64
-	ExportFile string
-}
+type (
+	ExportResult      map[tablename]ExportTableResult
+	ExportTableResult struct {
+		NumDocs    int64
+		ExportFile string
+	}
+)
 
 type Exporter struct {
 	config  *datastore.Configuration
@@ -57,9 +59,9 @@ type Exporter struct {
 func NewExporter(projectRepo datastore.ProjectRepository,
 	eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
-	p *datastore.Project, c *datastore.Configuration) (*Exporter, error) {
-
-	policy, err := time.ParseDuration(p.Config.RetentionPolicy.Policy)
+	p *datastore.Project, c *datastore.Configuration,
+) (*Exporter, error) {
+	policy, err := time.ParseDuration(c.RetentionPolicy.Policy)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +79,7 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 }
 
 func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
-	if !ex.project.Config.IsRetentionPolicyEnabled {
+	if !ex.config.RetentionPolicy.IsRetentionPolicyEnabled {
 		return nil, nil
 	}
 
@@ -232,8 +234,26 @@ func getOutputWriter(out string) (io.WriteCloser, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return file, err
 }
+
+//type compressWriter struct {
+//	gw   *gzip.Writer
+//	file *os.File
+//}
+//
+//func (c compressWriter) Write(b []byte) (int, error) {
+//	return c.gw.Write(b)
+//}
+//
+//func (c compressWriter) Close() error {
+//	if err := c.gw.Close(); err != nil {
+//		return err
+//	}
+//
+//	return c.file.Close()
+//}
 
 func toUniversalPath(path string) string {
 	return filepath.FromSlash(path)

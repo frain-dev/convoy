@@ -32,6 +32,7 @@ export class CreateProjectComponent implements OnInit {
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
+			search_policy: [720],
 			strategy: this.formBuilder.group({
 				duration: [null],
 				retry_count: [null],
@@ -44,10 +45,6 @@ export class CreateProjectComponent implements OnInit {
 			ratelimit: this.formBuilder.group({
 				count: [null],
 				duration: [null]
-			}),
-			retention_policy: this.formBuilder.group({
-				policy: [720],
-				search_policy: [720]
 			}),
 			ssl: this.formBuilder.group({
 				enforce_secure_endpoints: [true]
@@ -110,6 +107,50 @@ export class CreateProjectComponent implements OnInit {
     showEventsButton = false;
     confirmPreviewCatalogue = false;
     showCatalogPreview = false;
+			meta_event: this.formBuilder.group({
+				is_enabled: [false, Validators.required],
+				type: ['http', Validators.required],
+				event_type: [[], Validators.required],
+				url: ['', Validators.required],
+				secret: [null]
+			})
+		}),
+		type: [null, Validators.required]
+	});
+	newSignatureForm: FormGroup = this.formBuilder.group({
+		encoding: [null],
+		hash: [null]
+	});
+	isCreatingProject = false;
+	enableMoreConfig = false;
+	regeneratingKey = false;
+	apiKey!: string;
+	hashAlgorithms = ['SHA256', 'SHA512'];
+	retryLogicTypes = [
+		{ uid: 'linear', name: 'Linear time retry' },
+		{ uid: 'exponential', name: 'Exponential time backoff' }
+	];
+	encodings = ['base64', 'hex'];
+	@Output('onAction') onAction = new EventEmitter<any>();
+	@Input('action') action: 'create' | 'update' = 'create';
+	projectDetails!: PROJECT;
+	signatureVersions!: { date: string; content: VERSIONS[] }[];
+	configurations = [
+		{ uid: 'strategy', name: 'Retry Config', show: false },
+		{ uid: 'ratelimit', name: 'Rate Limit', show: false },
+		{ uid: 'search_policy', name: 'Search Policy', show: false },
+		{ uid: 'signature', name: 'Signature Format', show: false }
+	];
+	public rbacService = inject(RbacService);
+	tabs: TAB[] = [
+		{ label: 'project config', svg: 'fill', icon: 'settings' },
+		{ label: 'signature history', svg: 'fill', icon: 'sig-history' },
+		{ label: 'endpoints config', svg: 'stroke', icon: 'endpoints' },
+		{ label: 'meta events config', svg: 'stroke', icon: 'meta-events' },
+		{ label: 'secrets', svg: 'stroke', icon: 'secret' }
+	];
+	activeTab = this.tabs[0];
+	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
 
     constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) { }
 
@@ -142,12 +183,11 @@ export class CreateProjectComponent implements OnInit {
         this.versions.push(this.newVersion());
     }
 
-    toggleConfigForm(configValue: string) {
-        this.configurations.forEach(config => {
-            if (config.uid === configValue) config.show = !config.show;
-            if (configValue === 'retention_policy' && config.uid === 'retention_policy') this.projectForm.patchValue({ config: { retention_policy_enabled: config.show } });
-        });
-    }
+	toggleConfigForm(configValue: string) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) config.show = !config.show;
+		});
+	}
 
     showConfig(configValue: string): boolean {
         return this.configurations.find(config => config.uid === configValue)?.show || false;
@@ -165,23 +205,17 @@ export class CreateProjectComponent implements OnInit {
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
 			this.projectForm.get('config.signature')?.patchValue(this.projectDetails.config.signature);
 			this.projectForm.get('config.ratelimit')?.patchValue(this.projectDetails.config.ratelimit);
+			this.projectForm.get('config.search_policy')?.patchValue(this.getHours(this.projectDetails.config.search_policy));
 
 			// set meta events config
 			this.projectDetails.config.meta_event && this.projectDetails.config.meta_event.is_enabled
 				? this.projectForm.get('config.meta_event.is_enabled')?.patchValue(this.projectDetails.config.meta_event.is_enabled)
 				: this.projectForm.get('config.meta_event.is_enabled')?.patchValue(false);
 
-			const search_policy = this.projectDetails.config.retention_policy.search_policy.match(/\d+/g);
-
-			this.projectForm.get('config.retention_policy.search_policy')?.patchValue(search_policy);
-			const policy = this.projectDetails.config.retention_policy.policy.match(/\d+/g);
-			this.projectForm.get('config.retention_policy.policy')?.patchValue(policy);
-
 			this.projectForm.get('config.meta_event.type')?.patchValue('http');
 
-            let filteredConfigs: string[] = [];
-            if (this.projectDetails?.type === 'incoming') filteredConfigs.push('signature');
-            if (!this.projectDetails?.config.retention_policy_enabled) filteredConfigs.push('retention_policy');
+			let filteredConfigs: string[] = [];
+			if (this.projectDetails?.type === 'incoming') filteredConfigs.push('signature');
 
 			this.configurations.filter(item => !filteredConfigs.includes(item.uid)).forEach(config => this.toggleConfigForm(config.uid));
 		} catch {}
@@ -231,19 +265,16 @@ export class CreateProjectComponent implements OnInit {
         }
     }
 
-    async updateProject() {
-        this.checkMetaEventsConfig();
-        if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
-        if (typeof this.projectForm.value.config.ratelimit.duration === 'string') this.projectForm.value.config.ratelimit.duration = this.getTimeValue(this.projectForm.value.config.ratelimit.duration);
-        if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
-        if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
-        if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
-        if (this.projectForm.value.config.retention_policy.search_policy)
-            this.projectForm.value.config.retention_policy.search_policy =
-                typeof this.projectForm.value.config.retention_policy.search_policy === 'string' ? this.projectForm.value.config.retention_policy.search_policy : `${this.projectForm.value.config.retention_policy.search_policy}h`;
-        if (this.projectForm.value.config.retention_policy.policy)
-            this.projectForm.value.config.retention_policy.policy = typeof this.projectForm.value.config.retention_policy.policy === 'string' ? this.projectForm.value.config.retention_policy.policy : `${this.projectForm.value.config.retention_policy.policy}h`;
-        this.isCreatingProject = true;
+	async updateProject() {
+		this.checkMetaEventsConfig();
+		if (this.projectForm.invalid) return this.projectForm.markAllAsTouched();
+		if (typeof this.projectForm.value.config.ratelimit.duration === 'string') this.projectForm.value.config.ratelimit.duration = this.getTimeValue(this.projectForm.value.config.ratelimit.duration);
+		if (typeof this.projectForm.value.config.strategy.duration === 'string') this.projectForm.value.config.strategy.duration = this.getTimeValue(this.projectForm.value.config.strategy.duration);
+		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
+		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
+		if (typeof this.projectForm.value.config.search_policy === 'number') this.projectForm.value.config.search_policy = `${this.projectForm.value.config.search_policy}h`;
+
+		this.isCreatingProject = true;
 
         try {
             // this updateProject service also updates project in localstorage
@@ -283,33 +314,34 @@ export class CreateProjectComponent implements OnInit {
         this.getProjectDetails();
     }
 
-    getProjectData() {
-        const configKeys = Object.keys(this.projectForm.value.config);
-        const projectData = this.projectForm.value;
-        configKeys.forEach(configKey => {
-            if (!this.showConfig(configKey)) delete projectData.config[configKey];
-        });
+	getProjectData() {
+		const configKeys = Object.keys(this.projectForm.value.config);
+		const projectData = this.projectForm.value;
 
-        if (this.showConfig('retention_policy')) {
-            projectData.config.retention_policy_enabled = true;
-            projectData.config.retention_policy.search_policy = typeof projectData.config.retention_policy.search_policy === 'string' ? projectData.config.retention_policy.search_policy : `${projectData.config.retention_policy.search_policy}h`;
-            projectData.config.retention_policy.policy = typeof projectData.config.retention_policy.policy === 'string' ? projectData.config.retention_policy.policy : `${projectData.config.retention_policy.policy}h`;
-        }
+		configKeys.forEach(configKey => {
+			if (!this.showConfig(configKey)) delete projectData.config[configKey];
+			if (this.showConfig('search_policy') && typeof projectData.config.search_policy === 'number') projectData.config.search_policy = `${projectData.config.search_policy}h`;
+		});
 
         return projectData;
     }
 
-    checkMetaEventsConfig() {
-        const is_meta_events_enabled = this.projectForm.value.config.meta_event.is_enabled;
-        const metaEventsConfig = Object.keys(this.projectForm.value.config.meta_event).slice(1, -1);
-        if (!is_meta_events_enabled) {
-            metaEventsConfig.forEach(config => {
-                this.projectForm.get(`config.meta_event.${config}`)?.clearValidators();
-                this.projectForm.get(`config.meta_event.${config}`)?.setErrors(null);
-                this.projectForm.updateValueAndValidity();
-            });
-        }
-    }
+	checkMetaEventsConfig() {
+		const is_meta_events_enabled = this.projectForm.value.config.meta_event.is_enabled;
+		const metaEventsConfig = Object.keys(this.projectForm.value.config.meta_event).slice(1, -1);
+		if (!is_meta_events_enabled) {
+			metaEventsConfig.forEach(config => {
+				this.projectForm.get(`config.meta_event.${config}`)?.clearValidators();
+				this.projectForm.get(`config.meta_event.${config}`)?.setErrors(null);
+				this.projectForm.updateValueAndValidity();
+			});
+		}
+	}
+
+	getHours(hours: any) {
+		const [digits, _] = hours.match(/\D+|\d+/g);
+		return parseInt(digits);
+	}
 
     getTimeString(timeValue: number) {
         if (timeValue > 59) return `${Math.round(timeValue / 60)}m`;
