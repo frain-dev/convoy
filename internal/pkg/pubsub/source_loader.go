@@ -79,7 +79,7 @@ func (s *SourceLoader) fetchSources(ctx context.Context, sources []datastore.Sou
 	}
 
 	if len(projectIDs) == 0 {
-		projectIDs = []string{""}
+		return []datastore.Source{}, nil
 	}
 
 	newSources, pagination, err := s.sourceRepo.LoadPubSubSourcesByProjectIDs(ctx, projectIDs, pageable)
