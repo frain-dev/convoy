@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"gopkg.in/guregu/null.v4"
 
 	"io"
 	"net/http"
@@ -178,8 +179,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		URLQueryParams:   r.URL.RawQuery,
 		IdempotencyKey:   checksum,
 		Headers:          httpheader.HTTPHeader(r.Header),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
 	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}

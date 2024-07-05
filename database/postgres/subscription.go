@@ -288,6 +288,10 @@ func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projec
 }
 
 func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
 	query, args, err := sqlx.In(countProjectSubscriptions, projectIDs)
 	if err != nil {
 		return nil, err
@@ -377,6 +381,10 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 }
 
 func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, countQuery, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
 	q, args, err := sqlx.In(countQuery, t, projectIDs)
 	if err != nil {
 		return nil, err
@@ -618,11 +626,6 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	query = s.db.Rebind(query)
 
 	rows, err = s.db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-	defer closeWithError(rows)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

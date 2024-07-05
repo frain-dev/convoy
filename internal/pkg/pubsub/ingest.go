@@ -244,6 +244,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 				Data:           convoyEvent.Data,
 				CustomHeaders:  headers,
 				IdempotencyKey: convoyEvent.IdempotencyKey,
+				AcknowledgedAt: time.Now(),
 			},
 			CreateSubscription: !util.IsStringEmpty(convoyEvent.EndpointID),
 		}
@@ -279,6 +280,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			Data:           convoyEvent.Data,
 			CustomHeaders:  headers,
 			IdempotencyKey: convoyEvent.IdempotencyKey,
+			AcknowledgedAt: time.Now(),
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(broadcastEvent)

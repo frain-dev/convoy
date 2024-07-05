@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -34,6 +35,7 @@ type CreateEventTaskParams struct {
 	EventType      string            `json:"event_type"`
 	CustomHeaders  map[string]string `json:"custom_headers"`
 	IdempotencyKey string            `json:"idempotency_key"`
+	AcknowledgedAt time.Time         `json:"acknowledged_at,omitempty"`
 }
 
 type CreateEvent struct {
@@ -195,8 +197,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			URLQueryParams:   event.URLQueryParams,
 			Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 			DeliveryAttempts: []datastore.DeliveryAttempt{},
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
+			AcknowledgedAt:   null.TimeFrom(time.Now()),
 		}
 
 		if s.Type == datastore.SubscriptionTypeCLI {
@@ -468,8 +469,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		IdempotencyKey:   eventParams.IdempotencyKey,
 		IsDuplicateEvent: isDuplicate,
 		Headers:          getCustomHeaders(eventParams.CustomHeaders),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 		Endpoints:        endpointIDs,
 		SourceID:         eventParams.SourceID,
 		ProjectID:        project.UID,

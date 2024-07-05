@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -30,6 +31,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 	}
 
 	e.BroadcastEvent.ProjectID = e.Project.UID
+	e.BroadcastEvent.AcknowledgedAt = time.Now()
 
 	taskName := convoy.CreateBroadcastEventProcessor
 
