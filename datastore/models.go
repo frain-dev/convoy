@@ -723,9 +723,10 @@ type Event struct {
 	Data json.RawMessage `json:"data,omitempty" db:"data"`
 	Raw  string          `json:"raw,omitempty" db:"raw"`
 
-	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
+	CreatedAt      time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
 func (e *Event) GetRawHeaders() map[string]interface{} {
@@ -912,8 +913,10 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
-	Latency        string                `json:"latency" db:"latency"`
-	EventType      EventType             `json:"event_type,omitempty" db:"event_type"`
+	// Deprecated: Latency is deprecated.
+	Latency        string    `json:"latency" db:"latency"`
+	LatencySeconds float64   `json:"latency_seconds" db:"latency_seconds"`
+	EventType      EventType `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -925,9 +928,17 @@ type EventDelivery struct {
 	Metadata         *Metadata           `json:"metadata" db:"metadata"`
 	CLIMetadata      *CLIMetadata        `json:"cli_metadata" db:"cli_metadata"`
 	Description      string              `json:"description,omitempty" db:"description"`
+	AcknowledgedAt   null.Time           `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
 	CreatedAt        time.Time           `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time           `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time           `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (d *EventDelivery) GetLatencyStartTime() time.Time {
+	if d.AcknowledgedAt.IsZero() {
+		return d.CreatedAt
+	}
+	return d.AcknowledgedAt.Time
 }
 
 type CLIMetadata struct {

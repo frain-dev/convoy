@@ -63,6 +63,8 @@ type DynamicEvent struct {
 
 	// Specify a key for event deduplication
 	IdempotencyKey string `json:"idempotency_key"`
+
+	AcknowledgedAt time.Time `json:"acknowledged_at,omitempty"`
 }
 
 func (de *DynamicEvent) Validate() error {
@@ -146,6 +148,8 @@ type BroadcastEvent struct {
 
 	// Specify a key for event deduplication
 	IdempotencyKey string `json:"idempotency_key"`
+
+	AcknowledgedAt time.Time `json:"acknowledged_at,omitempty"`
 }
 
 func (bs *BroadcastEvent) Validate() error {

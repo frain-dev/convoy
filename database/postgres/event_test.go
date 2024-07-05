@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gopkg.in/guregu/null.v4"
 	"testing"
 	"time"
 
@@ -33,7 +34,8 @@ func Test_CreateEvent(t *testing.T) {
 
 	newEvent.CreatedAt = time.Time{}
 	newEvent.UpdatedAt = time.Time{}
-	event.CreatedAt, event.UpdatedAt = time.Time{}, time.Time{}
+	newEvent.AcknowledgedAt = null.Time{}
+	event.CreatedAt, event.UpdatedAt, event.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 
 	require.Equal(t, event, newEvent)
 }
@@ -57,8 +59,9 @@ func Test_FindEventByID(t *testing.T) {
 
 	newEvent.CreatedAt = time.Time{}
 	newEvent.UpdatedAt = time.Time{}
+	newEvent.AcknowledgedAt = null.Time{}
 
-	event.CreatedAt, event.UpdatedAt = time.Time{}, time.Time{}
+	event.CreatedAt, event.UpdatedAt, event.UpdatedAt = time.Time{}, time.Time{}, time.Time{}
 	require.Equal(t, event, newEvent)
 }
 

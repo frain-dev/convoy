@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -45,6 +46,7 @@ type newEvent struct {
 	CustomHeaders  map[string]string
 	IdempotencyKey string
 	IsDuplicate    bool
+	AcknowledgedAt time.Time
 }
 
 func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, error) {
@@ -90,6 +92,7 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 		Raw:            string(e.NewMessage.Data),
 		CustomHeaders:  e.NewMessage.CustomHeaders,
 		IsDuplicate:    isDuplicate,
+		AcknowledgedAt: time.Now(),
 	}
 
 	event, err := createEvent(ctx, endpoints, ev, e.Project, e.Queue)
@@ -115,10 +118,9 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		IdempotencyKey:   newMessage.IdempotencyKey,
 		IsDuplicateEvent: newMessage.IsDuplicate,
 		Headers:          getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
 		Endpoints:        endpointIDs,
 		ProjectID:        g.UID,
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

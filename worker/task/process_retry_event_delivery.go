@@ -178,7 +178,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
-			eventDelivery.Latency = time.Since(eventDelivery.CreatedAt).String()
+			eventDelivery.LatencySeconds = time.Since(eventDelivery.CreatedAt).Seconds()
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false

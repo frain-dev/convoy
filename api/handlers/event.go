@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -91,6 +92,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 			Data:           newMessage.Data,
 			CustomHeaders:  newMessage.CustomHeaders,
 			IdempotencyKey: newMessage.IdempotencyKey,
+			AcknowledgedAt: time.Now(),
 		},
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}

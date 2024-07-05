@@ -3,11 +3,11 @@ package services
 import (
 	"bytes"
 	"context"
-	"testing"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
+	"testing"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -191,8 +191,8 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 
 			require.Nil(t, err)
 			require.NotEmpty(t, event.UID)
-			require.NotEmpty(t, event.CreatedAt)
-			require.NotEmpty(t, event.UpdatedAt)
+			require.Empty(t, event.CreatedAt)
+			require.Empty(t, event.UpdatedAt)
 			require.Empty(t, event.DeletedAt)
 
 			stripVariableFields(t, "event", event)
@@ -205,6 +205,7 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				require.Equal(t, m1, m2)
 			}
 
+			event.AcknowledgedAt = null.Time{}
 			require.Equal(t, tc.wantEvent, event)
 		})
 	}

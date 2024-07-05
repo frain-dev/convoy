@@ -202,10 +202,16 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	e, err := r.ConvoyApp.eventRepo.FindEventByID(context.Background(), project.UID, event.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), e.UID, event.UID)
+	require.NotEqual(r.T(), e.AcknowledgedAt, time.Time{})
+	require.NotEqual(r.T(), e.CreatedAt, time.Time{})
+	require.NotEqual(r.T(), e.UpdatedAt, time.Time{})
 
 	ed, err := r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), project.UID, eventDelivery.UID)
 	require.NoError(r.T(), err)
 	require.Equal(r.T(), ed.UID, eventDelivery.UID)
+	require.NotEqual(r.T(), ed.AcknowledgedAt, time.Time{})
+	require.NotEqual(r.T(), ed.CreatedAt, time.Time{})
+	require.NotEqual(r.T(), ed.UpdatedAt, time.Time{})
 }
 
 func TestRetentionPoliciesIntegrationSuiteTest(t *testing.T) {
@@ -290,13 +296,13 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 	}
 
 	ev := &datastore.Event{
-		UID:       uid,
-		EventType: datastore.EventType(eventType),
-		Data:      data,
-		Endpoints: []string{endpointID},
-		ProjectID: projectID,
-		CreatedAt: time.Unix(filter.CreatedAt.Unix(), 0),
-		UpdatedAt: time.Now(),
+		UID:            uid,
+		EventType:      datastore.EventType(eventType),
+		Data:           data,
+		Endpoints:      []string{endpointID},
+		ProjectID:      projectID,
+		AcknowledgedAt: null.TimeFrom(time.Unix(filter.AcknowledgedAt.Unix(), 0)),
+		CreatedAt:      time.Unix(filter.CreatedAt.Unix(), 0),
 	}
 
 	// Seed Data.
@@ -306,7 +312,17 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 		return nil, err
 	}
 
-	return ev, nil
+	ev1, err := eventRepo.FindEventByID(context.TODO(), projectID, uid)
+	if err != nil {
+		return nil, err
+	}
+	ev1.CreatedAt = time.Unix(filter.CreatedAt.Unix(), 0)
+	_, err = db.GetDB().ExecContext(context.Background(), "UPDATE convoy.events SET created_at=$1 WHERE id=$2", ev1.CreatedAt, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	return ev1, nil
 }
 
 func seedEventDelivery(db database.Database, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subscriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
@@ -334,15 +350,20 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 			IntervalSeconds: 10,
 			RetryLimit:      20,
 		},
-		CLIMetadata: &datastore.CLIMetadata{},
-		Description: "test",
-		CreatedAt:   filter.CreatedAt,
-		UpdatedAt:   time.Now(),
+		CLIMetadata:    &datastore.CLIMetadata{},
+		Description:    "test",
+		AcknowledgedAt: null.TimeFrom(filter.AcknowledgedAt),
+		CreatedAt:      filter.CreatedAt,
 	}
 
 	// Seed Data.
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
+	if err != nil {
+		return nil, err
+	}
+	eventDelivery.CreatedAt = time.Unix(filter.CreatedAt.Unix(), 0)
+	_, err = db.GetDB().ExecContext(context.Background(), "UPDATE convoy.event_deliveries SET created_at=$1 WHERE id=$2", eventDelivery.CreatedAt, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -374,5 +395,6 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 }
 
 type SeedFilter struct {
-	CreatedAt time.Time
+	AcknowledgedAt time.Time
+	CreatedAt      time.Time
 }
