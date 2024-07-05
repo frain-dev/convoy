@@ -43,8 +43,11 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 		ProjectID: g.UID,
 		OwnerID:   ownerID,
 		Status:    status,
-		Secrets:   datastore.Secrets{},
-		AppID:     uid,
+		Secrets: []datastore.Secret{
+			{Value: "1234"},
+		},
+		AppID: uid,
+		Url:   "http://localhost:8889",
 	}
 
 	// Seed Data.
