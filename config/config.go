@@ -70,6 +70,10 @@ var DefaultConfiguration = Configuration{
 			Path: convoy.DefaultOnPremDir,
 		},
 	},
+	RetentionPolicy: RetentionPolicyConfiguration{
+		Policy:                   "720h",
+		IsRetentionPolicyEnabled: false,
+	},
 	Auth: AuthConfiguration{
 		IsSignupEnabled: true,
 		Native: NativeRealmOptions{
@@ -252,6 +256,11 @@ type SentryConfiguration struct {
 	DSN string `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
 }
 
+type RetentionPolicyConfiguration struct {
+	Policy                   string `json:"policy" envconfig:"CONVOY_RETENTION_POLICY"`
+	IsRetentionPolicyEnabled bool   `json:"enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
+}
+
 type AnalyticsConfiguration struct {
 	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
@@ -373,7 +382,8 @@ type Configuration struct {
 	Pyroscope           PyroscopeConfiguration     `json:"pyroscope"`
 	CustomDomainSuffix  string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	FeatureFlag         FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
-	Analytics           AnalyticsConfiguration     `json:"analytics"`
+	RetentionPolicy    RetentionPolicyConfiguration `json:"retention_policy"`
+  Analytics           AnalyticsConfiguration     `json:"analytics"`
 	StoragePolicy       StoragePolicyConfiguration `json:"storage_policy"`
 	ConsumerPoolSize    int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
 	EnableProfiling     bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`

@@ -13,6 +13,10 @@
         "scheme": "redis",
         "host": "localhost"
     },
+    "retention_policy": {
+        "enabled": true,
+        "policy": "720h"
+    },
     "max_response_size": 40,
     "server": {
         "http": {

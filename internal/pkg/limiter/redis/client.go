@@ -50,6 +50,10 @@ func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int) error {
 }
 
 func (r *RedisLimiter) AllowWithDuration(ctx context.Context, key string, limit int, duration int) error {
+	if limit == 0 || duration == 0 { // this should never happen
+		return nil
+	}
+
 	l := redis_rate.Limit{
 		Period: time.Second * time.Duration(duration),
 		Rate:   limit,
