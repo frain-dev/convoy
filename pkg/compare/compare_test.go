@@ -10,6 +10,34 @@ import (
 	"github.com/nsf/jsondiff"
 )
 
+func TestGenCombos(t *testing.T) {
+	f, err := flatten.Flatten(comboTestPayload)
+	require.NoError(t, err)
+
+	combos, err := genCombos(f, "data.mentioned_profiles.$.fid")
+	require.NoError(t, err)
+
+	require.Len(t, combos, 6)
+}
+
+func TestNestedPositionalArrayFilter(t *testing.T) {
+	p, err := flatten.Flatten(comboTestPayload)
+	if err != nil {
+		t.Errorf("failed to flatten JSON: %v", err)
+	}
+
+	f, err := flatten.Flatten(comboTestFilter)
+	if err != nil {
+		t.Errorf("failed to flatten JSON: %v", err)
+	}
+
+	matched, err := Compare(p, f)
+	if err != nil {
+		t.Error(err)
+	}
+	require.True(t, matched)
+}
+
 func TestCompare(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -1073,4 +1101,372 @@ func BenchmarkCompareRegex(b *testing.B) {
 			b.Errorf("mismatch:\ngot:  %+v\nwant: %+v", matched, true)
 		}
 	}
+}
+
+var comboTestPayload = map[string]interface{}{
+	"created_at": 1720530480,
+	"type":       "cast.created",
+	"data": map[string]interface{}{
+		"object":          "cast",
+		"hash":            "0xdc7236eb81905f125dcf629a07abfb0b5f8bcd48",
+		"thread_hash":     "0xdc7236eb81905f125dcf629a07abfb0b5f8bcd48",
+		"parent_hash":     nil,
+		"parent_url":      nil,
+		"root_parent_url": nil,
+		"parent_author": map[string]interface{}{
+			"fid": nil,
+		},
+		"author": map[string]interface{}{
+			"object":          "user",
+			"fid":             19960,
+			"custody_address": "0xd1b702203b1b3b641a699997746bd4a12d157909",
+			"username":        "shreyas-chorge",
+			"display_name":    "Shreyas",
+			"pfp_url":         "https://i.imgur.com/LPzRlQl.jpg",
+			"profile": map[string]interface{}{
+				"bio": map[string]interface{}{
+					"text": "Everyday regular normal guy | 👨‍💻 @neynar ...",
+				},
+			},
+			"follower_count":  192,
+			"following_count": 115,
+			"verifications": []interface{}{
+				"0xd1b702203b1b3b641a699997746bd4a12d157909",
+				"0x7ea5dada4021c2c625e73d2a78882e91b93c174c",
+			},
+			"verified_addresses": map[string]interface{}{
+				"eth_addresses": []interface{}{
+					"0xd1b702203b1b3b641a699997746bd4a12d157909",
+					"0x7ea5dada4021c2c625e73d2a78882e91b93c174c",
+				},
+				"sol_addresses": []interface{}{},
+			},
+			"active_status": "inactive",
+			"power_badge":   false,
+		},
+		"text":      "@rishav @dylsteck.eth @antimofm.eth @kevinoconnell",
+		"timestamp": "2024-07-09T05:55:21.000Z",
+		"embeds":    []interface{}{},
+		"reactions": map[string]interface{}{
+			"likes_count":   0,
+			"recasts_count": 0,
+			"likes":         []interface{}{},
+			"recasts":       []interface{}{},
+		},
+		"replies": map[string]interface{}{
+			"count": 0,
+		},
+		"channel": nil,
+		"mentioned_profiles": []interface{}{
+			map[string]interface{}{
+				"object":          "user",
+				"fid":             12,
+				"custody_address": "0x7355b6af053e5d0fdcbc23cc8a45b0cd85034378",
+				"username":        "rishav",
+				"display_name":    "rtest",
+				"pfp_url":         "https://i.imgur.com/j1phftZ.jpg",
+				"profile": map[string]interface{}{
+					"bio": map[string]interface{}{
+						"text":               "rtest",
+						"mentioned_profiles": []interface{}{},
+					},
+				},
+				"follower_count":  4,
+				"following_count": 50,
+				"verifications":   []interface{}{},
+				"verified_addresses": map[string]interface{}{
+					"eth_addresses": []interface{}{},
+					"sol_addresses": []interface{}{},
+				},
+				"active_status": "inactive",
+				"power_badge":   false,
+			},
+			map[string]interface{}{
+				"object":          "user",
+				"fid":             123,
+				"custody_address": "0x5e79f690ccd42007d5a0ad678cd47474339400e3",
+				"username":        "dylsteck.eth",
+				"display_name":    "dylan",
+				"pfp_url":         "https://i.imgur.com/2UTZYvn.png",
+				"profile": map[string]interface{}{
+					"bio": map[string]interface{}{
+						"text":               "building products /neynar, hacking /farhack, yapping /dylan | dylansteck.com",
+						"mentioned_profiles": []interface{}{},
+					},
+				},
+				"follower_count":  72663,
+				"following_count": 1280,
+				"verifications": []interface{}{
+					"0x7e37c3a9349227b60503ddb1574a76d10c6bc48e",
+				},
+				"verified_addresses": map[string]interface{}{
+					"eth_addresses": []interface{}{
+						"0x7e37c3a9349227b60503ddb1574a76d10c6bc48e",
+					},
+					"sol_addresses": []interface{}{
+						"CYzdpr7xtH3SBf81tpdRsPyhZqv4s6BbkwHzHYkc6FDr",
+					},
+				},
+				"active_status": "inactive",
+				"power_badge":   true,
+			},
+			map[string]interface{}{
+				"object":          "user",
+				"fid":             112,
+				"custody_address": "0xb6452061188bf3f456aabfa46b648773779e6961",
+				"username":        "antimofm.eth",
+				"display_name":    "antimo 🎩",
+				"pfp_url":         "https://i.imgur.com/t4LDaI8.jpg",
+				"profile": map[string]interface{}{
+					"bio": map[string]interface{}{
+						"text":               "/red designer /design host /condensed author /gang leader /nfs maxi /hyperclient founder",
+						"mentioned_profiles": []interface{}{},
+					},
+				},
+				"follower_count":  103282,
+				"following_count": 1064,
+				"verifications": []interface{}{
+					"0xfa922ce609fed47950e3f48662c9651d42ada194",
+				},
+				"verified_addresses": map[string]interface{}{
+					"eth_addresses": []interface{}{
+						"0xfa922ce609fed47950e3f48662c9651d42ada194",
+					},
+					"sol_addresses": []interface{}{},
+				},
+				"active_status": "inactive",
+				"power_badge":   true,
+			},
+			map[string]interface{}{
+				"object":          "user",
+				"fid":             12334,
+				"custody_address": "0x4622146b77ecefe4ca7552a81949d54eac991512",
+				"username":        "kevinoconnell",
+				"display_name":    "kevin",
+				"pfp_url":         "https://imagedelivery.net/BXluQx4ige9GuW0Ia56BHw/132d2b90-59f1-4624-a6d3-433f879ecd00/rectcrop3",
+				"profile": map[string]interface{}{
+					"bio": map[string]interface{}{
+						"text":               "I like building things and exploring new places. MrKevinOConnell.github @neynar prev @hypeshot i ask questions in /braindump",
+						"mentioned_profiles": []interface{}{},
+					},
+				},
+				"follower_count":  46543,
+				"following_count": 2465,
+				"verifications": []interface{}{
+					"0xedd3783e8c7c52b80cfbd026a63c207edc9cbee7",
+					"0x69689f02c4154b049fb42761ef8fa00808f1b7ea",
+				},
+				"verified_addresses": map[string]interface{}{
+					"eth_addresses": []interface{}{
+						"0xedd3783e8c7c52b80cfbd026a63c207edc9cbee7",
+						"0x69689f02c4154b049fb42761ef8fa00808f1b7ea",
+					},
+					"sol_addresses": []interface{}{},
+				},
+				"active_status": "inactive",
+				"power_badge":   true,
+			},
+			map[string]interface{}{
+				"object": "user",
+				"fid":    1232323,
+			},
+			map[string]interface{}{
+				"object": "user",
+				"fid":    1,
+			},
+		},
+	},
+}
+
+var comboTestFilter = map[string]interface{}{
+	"$or": []interface{}{
+		map[string]interface{}{
+			"$and": []interface{}{
+				map[string]interface{}{
+					"type": "user.updated",
+				},
+				map[string]interface{}{
+					"data": map[string]interface{}{
+						"fid": map[string]interface{}{
+							"$in": []interface{}{},
+						},
+					},
+				},
+			},
+		},
+		map[string]interface{}{
+			"$and": []interface{}{
+				map[string]interface{}{
+					"type": "cast.created",
+				},
+				map[string]interface{}{
+					"$or": []interface{}{
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"author": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{},
+									},
+								},
+							},
+						},
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"parent_author": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{},
+									},
+								},
+							},
+						},
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"mentioned_profiles.$": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{
+											1232323,
+										},
+									},
+								},
+							},
+						},
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"parent_url": map[string]interface{}{
+									"$in": []interface{}{},
+								},
+							},
+						},
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"root_parent_url": map[string]interface{}{
+									"$in": []interface{}{},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		map[string]interface{}{
+			"$and": []interface{}{
+				map[string]interface{}{
+					"type": "follow.created",
+				},
+				map[string]interface{}{
+					"$or": []interface{}{
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"user": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{},
+									},
+								},
+							},
+						},
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"target_user": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		map[string]interface{}{
+			"$and": []interface{}{
+				map[string]interface{}{
+					"type": "follow.deleted",
+				},
+				map[string]interface{}{
+					"$or": []interface{}{
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"user": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{},
+									},
+								},
+							},
+						},
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"target_user": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		map[string]interface{}{
+			"$and": []interface{}{
+				map[string]interface{}{
+					"type": "reaction.created",
+				},
+				map[string]interface{}{
+					"$or": []interface{}{
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"user": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{},
+									},
+								},
+							},
+						},
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"cast": map[string]interface{}{
+									"author": map[string]interface{}{
+										"fid": map[string]interface{}{
+											"$in": []interface{}{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		map[string]interface{}{
+			"$and": []interface{}{
+				map[string]interface{}{
+					"type": "reaction.deleted",
+				},
+				map[string]interface{}{
+					"$or": []interface{}{
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"user": map[string]interface{}{
+									"fid": map[string]interface{}{
+										"$in": []interface{}{},
+									},
+								},
+							},
+						},
+						map[string]interface{}{
+							"data": map[string]interface{}{
+								"cast": map[string]interface{}{
+									"author": map[string]interface{}{
+										"fid": map[string]interface{}{
+											"$in": []interface{}{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 }
