@@ -3,6 +3,7 @@ package rlimiter
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy/config"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -28,6 +29,10 @@ func NewRedisLimiter(addresses []string) (*RedisLimiter, error) {
 }
 
 func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int) error {
+	cfg, _ := config.Get()
+	if !cfg.APIRateLimitEnabled {
+		return nil
+	}
 	l := redis_rate.Limit{
 		Period: time.Second,
 		Rate:   limit,
@@ -51,6 +56,10 @@ func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int) error {
 
 func (r *RedisLimiter) AllowWithDuration(ctx context.Context, key string, limit int, duration int) error {
 	if limit == 0 || duration == 0 { // this should never happen
+		return nil
+	}
+	cfg, _ := config.Get()
+	if !cfg.APIRateLimitEnabled {
 		return nil
 	}
 

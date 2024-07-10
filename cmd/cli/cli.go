@@ -65,6 +65,8 @@ func Build() (*logrus.Logger, *cli.ConvoyCli) {
 	var retentionPolicy string
 	var retentionPolicyEnabled bool
 
+	var apiRateLimitEnabled bool
+
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
@@ -105,6 +107,8 @@ func Build() (*logrus.Logger, *cli.ConvoyCli) {
 
 	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "SMTP Port")
 	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "SMTP Port")
+
+	c.Flags().BoolVar(&apiRateLimitEnabled, "api_rate_limit_enabled", false, "API Rate Limit")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))

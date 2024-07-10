@@ -111,6 +111,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err != nil {
 			return err
 		}
+		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
+		if err != nil {
+			return err
+		}
 
 		postgresDB, err := postgres.NewDB(cfg)
 		if err != nil {

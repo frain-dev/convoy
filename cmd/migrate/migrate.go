@@ -53,6 +53,7 @@ func addUpCommand() *cobra.Command {
 			if err != nil {
 				log.Fatalf("migration up failed with error: %+v", err)
 			}
+			log.Info("migration up succeeded")
 		},
 	}
 

@@ -1,0 +1,84 @@
+version: "3"
+
+volumes:
+    postgres_data:
+    redis_data:
+
+services:
+    web:
+        build:
+            context: ../../
+            dockerfile: Dockerfile.dev
+        command: [ "/start.sh" ]
+        volumes:
+            - ./convoy-test.json:/convoy.json
+        restart: on-failure
+        ports:
+            - "5015:5005"
+        depends_on:
+            - postgres
+            - redis_server
+            - migrate
+
+    migrate:
+        build:
+            context: ../../
+            dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "migrate", "up"]
+        volumes:
+            - ./convoy-test.json:/convoy.json
+        restart: on-failure
+        depends_on:
+            postgres:
+                condition: service_healthy
+
+    worker:
+        build:
+            context: ../../
+            dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
+        volumes:
+            - ./convoy-test.json:/convoy.json
+        restart: on-failure
+        ports:
+            - "5016:5006"
+        depends_on:
+            - postgres
+            - redis_server
+
+    ingest:
+        build:
+            context: ../../
+            dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "ingest", "--config", "convoy.json"]
+        volumes:
+            - ./convoy-test.json:/convoy.json
+        restart: on-failure
+        ports:
+            - "5018:5008"
+        depends_on:
+            - postgres
+            - redis_server
+            - migrate
+
+    postgres:
+        image: postgres:15.2-alpine
+        restart: unless-stopped
+        ports:
+            - "5430:5432"
+        environment:
+            POSTGRES_DB: convoy
+            POSTGRES_USER: convoy
+            POSTGRES_PASSWORD: convoy
+            PGDATA: /data/postgres
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+            interval: 5s
+            timeout: 5s
+            retries: 5
+
+    redis_server:
+        image: redis:alpine
+        ports:
+            - "6370:6379"
+        restart: always
