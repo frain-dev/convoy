@@ -310,6 +310,9 @@
 			},
 			"datastore.Event": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"app_id": {
 						"description": "Deprecated",
 						"type": "string"
@@ -951,6 +954,9 @@
 			},
 			"models.BroadcastEvent": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"custom_headers": {
 						"additionalProperties": {
 							"type": "string"
@@ -1207,6 +1213,9 @@
 			},
 			"models.DynamicEvent": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"custom_headers": {
 						"additionalProperties": {
 							"type": "string"
@@ -1325,6 +1334,9 @@
 			},
 			"models.EventDeliveryResponse": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"cli_metadata": {
 						"$ref": "#/components/schemas/datastore.CLIMetadata"
 					},
@@ -1365,7 +1377,11 @@
 						"type": "string"
 					},
 					"latency": {
+						"description": "Deprecated: Latency is deprecated.",
 						"type": "string"
+					},
+					"latency_seconds": {
+						"type": "number"
 					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
@@ -1396,6 +1412,9 @@
 			},
 			"models.EventResponse": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"app_id": {
 						"description": "Deprecated",
 						"type": "string"

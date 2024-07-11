@@ -5739,6 +5739,9 @@
         "datastore.Event": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "app_id": {
                     "description": "Deprecated",
                     "type": "string"
@@ -6380,6 +6383,9 @@
         "models.BroadcastEvent": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "custom_headers": {
                     "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
@@ -6636,6 +6642,9 @@
         "models.DynamicEvent": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "custom_headers": {
                     "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
@@ -6754,6 +6763,9 @@
         "models.EventDeliveryResponse": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "cli_metadata": {
                     "$ref": "#/definitions/datastore.CLIMetadata"
                 },
@@ -6794,7 +6806,11 @@
                     "type": "string"
                 },
                 "latency": {
+                    "description": "Deprecated: Latency is deprecated.",
                     "type": "string"
+                },
+                "latency_seconds": {
+                    "type": "number"
                 },
                 "metadata": {
                     "$ref": "#/definitions/datastore.Metadata"
@@ -6825,6 +6841,9 @@
         "models.EventResponse": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "app_id": {
                     "description": "Deprecated",
                     "type": "string"
