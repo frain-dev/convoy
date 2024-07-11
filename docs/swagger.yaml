@@ -1362,7 +1362,7 @@ definitions:
       filter_config:
         $ref: '#/definitions/datastore.FilterConfiguration'
       function:
-        $ref: '#/definitions/null.String'
+        type: string
       name:
         type: string
       rate_limit_config:
@@ -1557,14 +1557,6 @@ definitions:
       type:
         $ref: '#/definitions/datastore.VerifierType'
     type: object
-  null.String:
-    properties:
-      string:
-        type: string
-      valid:
-        description: Valid is true if String is not NULL
-        type: boolean
-    type: object
   util.ServerResponse:
     properties:
       message:
@@ -1709,8 +1701,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2780,8 +2772,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3087,8 +3079,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3151,8 +3143,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/handlers.Stub'
         "400":
@@ -3209,8 +3201,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3596,8 +3588,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3947,8 +3939,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4298,8 +4290,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'

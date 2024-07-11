@@ -26,7 +26,7 @@ import (
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			endpoint	body		models.CreateEndpoint	true	"Endpoint Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Success		201			{object}	util.ServerResponse{data=models.EndpointResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints [post]

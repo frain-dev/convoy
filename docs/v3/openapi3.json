@@ -1951,7 +1951,7 @@
 						"$ref": "#/components/schemas/datastore.FilterConfiguration"
 					},
 					"function": {
-						"$ref": "#/components/schemas/null.String"
+						"type": "string"
 					},
 					"name": {
 						"type": "string"
@@ -2206,18 +2206,6 @@
 					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.VerifierType"
-					}
-				},
-				"type": "object"
-			},
-			"null.String": {
-				"properties": {
-					"string": {
-						"type": "string"
-					},
-					"valid": {
-						"description": "Valid is true if String is not NULL",
-						"type": "boolean"
 					}
 				},
 				"type": "object"
@@ -2479,7 +2467,7 @@
 					"x-originalParamName": "endpoint"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2499,7 +2487,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -4603,7 +4591,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4623,7 +4611,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -4960,7 +4948,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4980,7 +4968,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -5088,7 +5076,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5096,7 +5084,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -5204,7 +5192,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5224,7 +5212,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -6218,7 +6206,7 @@
 					"x-originalParamName": "portallink"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6238,7 +6226,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -6923,7 +6911,7 @@
 					"x-originalParamName": "source"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6943,7 +6931,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -7629,7 +7617,7 @@
 					"x-originalParamName": "subscription"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7649,7 +7637,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {

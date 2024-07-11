@@ -231,8 +231,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2105,8 +2105,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2421,8 +2421,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2534,8 +2534,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/handlers.Stub"
                         }
@@ -2635,8 +2635,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -3538,8 +3538,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -4163,8 +4163,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -4788,8 +4788,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -7380,7 +7380,7 @@
                     "$ref": "#/definitions/datastore.FilterConfiguration"
                 },
                 "function": {
-                    "$ref": "#/definitions/null.String"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -7635,18 +7635,6 @@
                 },
                 "type": {
                     "$ref": "#/definitions/datastore.VerifierType"
-                }
-            }
-        },
-        "null.String": {
-            "type": "object",
-            "properties": {
-                "string": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if String is not NULL",
-                    "type": "boolean"
                 }
             }
         },

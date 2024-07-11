@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -34,7 +35,7 @@ import (
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.CreateEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
@@ -127,7 +128,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			event		body		models.BroadcastEvent	true	"Broadcast Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		201			{object}	util.ServerResponse{data=models.EventResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/broadcast [post]
@@ -192,7 +193,7 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.FanoutEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
@@ -260,7 +261,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.DynamicEvent	true	"Event Details"
-//	@Success		200			{object}	Stub
+//	@Success		201			{object}	Stub
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]
