@@ -16,10 +16,10 @@ export class TagComponent implements OnInit {
 
 	@Input('fill') fill: 'outline' | 'soft' | 'solid' | 'soft-outline' = 'soft';
 	@Input('color') color: 'primary' | 'error' | 'warning' | 'gray' | 'success' = 'gray';
-	@Input('size') size: 'sm' | 'md' | 'lg' = 'md';
+	@Input('size') size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
 
-	fontSizes = { sm: 'text-10', md: `text-12`, lg: `text-14` };
-	spacing = { sm: `py-2px px-6px`, md: `py-4px px-12px`, lg: `py-8px px-14px w-full` };
+	fontSizes = { xs: 'text-10', sm: 'text-10', md: `text-12`, lg: `text-14` };
+	spacing = { xs: 'px-8px py-0', sm: `py-2px px-6px`, md: `py-4px px-12px`, lg: `py-8px px-14px w-full` };
 
 	constructor() {}
 

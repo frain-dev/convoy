@@ -35,6 +35,8 @@ module.exports = {
 		'bg-primary-400',
 		'bg-danger-100',
 
+		'text-new.warning-400',
+		'bg-new.warning-50',
 		'text-new.primary-400',
 		'bg-new.primary-25',
 		'bg-new.gray-50',
@@ -81,7 +83,8 @@ module.exports = {
 		},
 		screens: {
 			desktop: { max: '1050px' },
-			md: { min: '850px' }
+			md: { min: '850px' },
+			xs: { min: '768px' }
 		},
 		borderRadius: {
 			'4px': '4px',
