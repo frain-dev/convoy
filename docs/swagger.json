@@ -785,8 +785,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2661,8 +2661,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2978,8 +2978,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -3091,8 +3091,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/handlers.Stub"
                         }
@@ -3192,8 +3192,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -4095,8 +4095,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -4720,8 +4720,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -5345,8 +5345,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -6307,6 +6307,9 @@
         "datastore.Event": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "app_id": {
                     "description": "Deprecated",
                     "type": "string"
@@ -7020,6 +7023,9 @@
         "models.BroadcastEvent": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "custom_headers": {
                     "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
@@ -7029,10 +7035,7 @@
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -7276,6 +7279,9 @@
         "models.DynamicEvent": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "custom_headers": {
                     "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",
@@ -7285,10 +7291,7 @@
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -7394,6 +7397,9 @@
         "models.EventDeliveryResponse": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "cli_metadata": {
                     "$ref": "#/definitions/datastore.CLIMetadata"
                 },
@@ -7434,7 +7440,11 @@
                     "type": "string"
                 },
                 "latency": {
+                    "description": "Deprecated: Latency is deprecated.",
                     "type": "string"
+                },
+                "latency_seconds": {
+                    "type": "number"
                 },
                 "metadata": {
                     "$ref": "#/definitions/datastore.Metadata"
@@ -7465,6 +7475,9 @@
         "models.EventResponse": {
             "type": "object",
             "properties": {
+                "acknowledged_at": {
+                    "type": "string"
+                },
                 "app_id": {
                     "description": "Deprecated",
                     "type": "string"
@@ -7565,10 +7578,7 @@
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -8010,7 +8020,7 @@
                     "$ref": "#/definitions/datastore.FilterConfiguration"
                 },
                 "function": {
-                    "$ref": "#/definitions/null.String"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -8265,18 +8275,6 @@
                 },
                 "type": {
                     "$ref": "#/definitions/datastore.VerifierType"
-                }
-            }
-        },
-        "null.String": {
-            "type": "object",
-            "properties": {
-                "string": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if String is not NULL",
-                    "type": "boolean"
                 }
             }
         },

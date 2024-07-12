@@ -215,6 +215,8 @@ definitions:
     - PausedEndpointStatus
   datastore.Event:
     properties:
+      acknowledged_at:
+        type: string
       app_id:
         description: Deprecated
         type: string
@@ -702,6 +704,8 @@ definitions:
     type: object
   models.BroadcastEvent:
     properties:
+      acknowledged_at:
+        type: string
       custom_headers:
         additionalProperties:
           type: string
@@ -712,9 +716,7 @@ definitions:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
-        items:
-          type: integer
-        type: array
+        type: object
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -906,6 +908,8 @@ definitions:
     type: object
   models.DynamicEvent:
     properties:
+      acknowledged_at:
+        type: string
       custom_headers:
         additionalProperties:
           type: string
@@ -916,9 +920,7 @@ definitions:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
-        items:
-          type: integer
-        type: array
+        type: object
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -992,6 +994,8 @@ definitions:
     type: object
   models.EventDeliveryResponse:
     properties:
+      acknowledged_at:
+        type: string
       cli_metadata:
         $ref: '#/definitions/datastore.CLIMetadata'
       created_at:
@@ -1019,7 +1023,10 @@ definitions:
       idempotency_key:
         type: string
       latency:
+        description: 'Deprecated: Latency is deprecated.'
         type: string
+      latency_seconds:
+        type: number
       metadata:
         $ref: '#/definitions/datastore.Metadata'
       project_id:
@@ -1039,6 +1046,8 @@ definitions:
     type: object
   models.EventResponse:
     properties:
+      acknowledged_at:
+        type: string
       app_id:
         description: Deprecated
         type: string
@@ -1115,9 +1124,7 @@ definitions:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
-        items:
-          type: integer
-        type: array
+        type: object
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -1412,7 +1419,7 @@ definitions:
       filter_config:
         $ref: '#/definitions/datastore.FilterConfiguration'
       function:
-        $ref: '#/definitions/null.String'
+        type: string
       name:
         type: string
       rate_limit_config:
@@ -1606,14 +1613,6 @@ definitions:
         $ref: '#/definitions/models.HMac'
       type:
         $ref: '#/definitions/datastore.VerifierType'
-    type: object
-  null.String:
-    properties:
-      string:
-        type: string
-      valid:
-        description: Valid is true if String is not NULL
-        type: boolean
     type: object
   util.ServerResponse:
     properties:
@@ -2065,8 +2064,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3137,8 +3136,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3445,8 +3444,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3509,8 +3508,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/handlers.Stub'
         "400":
@@ -3567,8 +3566,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3954,8 +3953,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4305,8 +4304,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4656,8 +4655,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
