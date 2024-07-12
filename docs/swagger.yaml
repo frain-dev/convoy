@@ -207,6 +207,8 @@ definitions:
     - PausedEndpointStatus
   datastore.Event:
     properties:
+      acknowledged_at:
+        type: string
       app_id:
         description: Deprecated
         type: string
@@ -645,6 +647,8 @@ definitions:
     type: object
   models.BroadcastEvent:
     properties:
+      acknowledged_at:
+        type: string
       custom_headers:
         additionalProperties:
           type: string
@@ -849,6 +853,8 @@ definitions:
     type: object
   models.DynamicEvent:
     properties:
+      acknowledged_at:
+        type: string
       custom_headers:
         additionalProperties:
           type: string
@@ -935,6 +941,8 @@ definitions:
     type: object
   models.EventDeliveryResponse:
     properties:
+      acknowledged_at:
+        type: string
       cli_metadata:
         $ref: '#/definitions/datastore.CLIMetadata'
       created_at:
@@ -962,7 +970,10 @@ definitions:
       idempotency_key:
         type: string
       latency:
+        description: 'Deprecated: Latency is deprecated.'
         type: string
+      latency_seconds:
+        type: number
       metadata:
         $ref: '#/definitions/datastore.Metadata'
       project_id:
@@ -982,6 +993,8 @@ definitions:
     type: object
   models.EventResponse:
     properties:
+      acknowledged_at:
+        type: string
       app_id:
         description: Deprecated
         type: string

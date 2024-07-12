@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -377,6 +378,10 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Filter.Project = p
+	ep := datastore.Pageable{}
+	if data.Filter.Pageable == ep {
+		data.Filter.Pageable.PerPage = 2000000000
+	}
 
 	bs := services.BatchReplayEventService{
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
@@ -498,6 +503,28 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": 0}, http.StatusOK))
+			return
+		}
+
+		data.Filter.EndpointIDs = endpointIDs
 	}
 
 	count, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).CountEvents(r.Context(), p.UID, data.Filter)
