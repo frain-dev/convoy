@@ -231,8 +231,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2105,8 +2105,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2421,8 +2421,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2534,8 +2534,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/handlers.Stub"
                         }
@@ -2635,8 +2635,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -3538,8 +3538,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -4163,8 +4163,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -4788,8 +4788,8 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -6395,10 +6395,7 @@
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -6654,10 +6651,7 @@
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -6944,10 +6938,7 @@
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -7389,7 +7380,7 @@
                     "$ref": "#/definitions/datastore.FilterConfiguration"
                 },
                 "function": {
-                    "$ref": "#/definitions/null.String"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -7644,18 +7635,6 @@
                 },
                 "type": {
                     "$ref": "#/definitions/datastore.VerifierType"
-                }
-            }
-        },
-        "null.String": {
-            "type": "object",
-            "properties": {
-                "string": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if String is not NULL",
-                    "type": "boolean"
                 }
             }
         },
