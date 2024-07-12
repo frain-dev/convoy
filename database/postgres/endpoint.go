@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
-	"strings"
-	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
@@ -240,7 +241,6 @@ func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID strin
 
 		return endpoint, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

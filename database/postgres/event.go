@@ -82,8 +82,8 @@ const (
 	SELECT COUNT(DISTINCT(ev.id)) FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON ee.endpoint_id = e.id
-	WHERE ev.project_id = $1 AND (e.id = $2 OR $2 = '' )
-	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
+	WHERE ev.project_id = :project_id
+	AND ev.created_at >= :start_date AND ev.created_at <= :end_date AND ev.deleted_at IS NULL;
 	`
 
 	baseEventsPaged = `
@@ -358,7 +358,35 @@ func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *d
 	var count int64
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
-	err := e.db.QueryRowxContext(ctx, countEvents, projectID, filter.EndpointID, filter.SourceID, startDate, endDate).Scan(&count)
+	arg := map[string]interface{}{
+		"endpoint_ids": filter.EndpointIDs,
+		"project_id":   projectID,
+		"source_id":    filter.SourceID,
+		"start_date":   startDate,
+		"end_date":     endDate,
+	}
+
+	query := countEvents
+	if len(filter.EndpointIDs) > 0 {
+		query += ` AND e.id IN (:endpoint_ids) `
+	}
+
+	if !util.IsStringEmpty(filter.SourceID) {
+		query += ` AND ev.source_id = :source_id `
+	}
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return 0, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	query = e.db.Rebind(query)
+	err = e.db.QueryRowxContext(ctx, query, args...).Scan(&count)
 	if err != nil {
 		return count, err
 	}
