@@ -39,6 +39,7 @@ var DefaultConfiguration = Configuration{
 			Port:       5005,
 			WorkerPort: 5006,
 			AgentPort:  5008,
+			IngestPort: 5009,
 		},
 	},
 	Database: DatabaseConfiguration{
