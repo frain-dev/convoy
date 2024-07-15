@@ -361,6 +361,8 @@ definitions:
         type: array
       interval_seconds:
         type: integer
+      max_retry_seconds:
+        type: integer
       next_send_time:
         type: string
       num_trials:
@@ -1888,8 +1890,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2017,8 +2019,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3715,8 +3717,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4126,8 +4128,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4477,8 +4479,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
