@@ -6,6 +6,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"net/http"
 	"strconv"
 	"strings"
@@ -43,6 +46,27 @@ type AuthorizedLogin struct {
 	Username   string    `json:"username,omitempty"`
 	Token      string    `json:"token"`
 	ExpiryTime time.Time `json:"expiry_time"`
+}
+
+func RateLimiterHandler(rateLimiter limiter.RateLimiter) func(next http.Handler) http.Handler {
+	limit := convoy.HTTP_RATE_LIMIT_PER_MIN
+	key := "http-api"
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := rateLimiter.AllowWithDuration(r.Context(), key, limit, 60)
+			if err == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
+			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", 0))
+			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%f", rlimiter.GetRetryAfter(err).Seconds()))
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(rlimiter.GetRetryAfter(err)).Unix()))
+
+			_ = render.Render(w, r, util.NewErrorResponse("exceeded rate limit", http.StatusTooManyRequests))
+		})
+	}
 }
 
 func InstrumentPath(path string) func(http.Handler) http.Handler {

@@ -3,6 +3,7 @@ package api
 import (
 	"errors"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"gopkg.in/guregu/null.v4"
 
 	"io"
 	"net/http"
@@ -26,6 +27,18 @@ import (
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = a.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	// s.AppService.CountProjectApplications()
 	// 1. Retrieve mask ID
 	maskID := chi.URLParam(r, "maskID")
@@ -166,8 +179,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		URLQueryParams:   r.URL.RawQuery,
 		IdempotencyKey:   checksum,
 		Headers:          httpheader.HTTPHeader(r.Header),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
 	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}

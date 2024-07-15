@@ -8,14 +8,17 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 var ErrTrailingDollarOpNotAllowed = errors.New("invalid filter syntax, found trailing $")
 
 type CompareFunc func(x, y interface{}) (bool, error)
 
-func defaultCompareMap() map[string]CompareFunc {
-	return map[string]CompareFunc{
+var cmp map[string]CompareFunc
+
+func init() {
+	cmp = map[string]CompareFunc{
 		"$gte":   gte,
 		"$gt":    gt,
 		"$lte":   lte,
@@ -37,7 +40,6 @@ func Compare(payload map[string]interface{}, filter map[string]interface{}) (boo
 
 func compare(payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
 	var pass []bool
-	cmp := defaultCompareMap()
 	for key, filterVal := range filter {
 		slen := len(key)
 
@@ -48,7 +50,7 @@ func compare(payload map[string]interface{}, filter map[string]interface{}) (boo
 
 		if strings.Contains(key, "$.") {
 			var chks []bool
-			possibleKeys, err := genCombos(key)
+			possibleKeys, err := genCombos(payload, key)
 			if err != nil {
 				return false, err
 			}
@@ -405,7 +407,7 @@ func toFloat64(v interface{}) (float64, bool) {
 // and returns a slice of strings representing all possible combinations.
 // If the number of segments in the input string is more than 3, the function
 // returns an error with a message indicating the number of segments.
-func genCombos(s string) ([]string, error) {
+func genCombos(payload map[string]interface{}, s string) ([]string, error) {
 	n := 0
 	for i := 0; i < len(s); {
 		if s[i] == '$' {
@@ -424,6 +426,31 @@ func genCombos(s string) ([]string, error) {
 	}
 
 	segments := strings.Split(s, "$")
+	largestIndex := 0
+
+	for k := range payload {
+		prevIndex := 0
+		num := ""
+		for i, kk := range k {
+			if unicode.IsDigit(kk) {
+				if prevIndex == 0 || prevIndex+1 == i {
+					num = fmt.Sprintf("%s%s", num, string(kk))
+					curLargest, err := strconv.Atoi(num)
+					if err != nil {
+						return nil, err
+					}
+
+					if curLargest > largestIndex {
+						largestIndex = curLargest
+					}
+				}
+				prevIndex = i
+			}
+		}
+	}
+
+	comboCount := (len(segments) - 1) * largestIndex
+
 	combinations := make([]string, 2*len(segments)-1)
 	for i := range combinations {
 		if i%2 == 0 {
@@ -432,7 +459,7 @@ func genCombos(s string) ([]string, error) {
 			combinations[i] = "$"
 		}
 	}
-	return generateCombinations(combinations, 1, n), nil
+	return generateCombinations(combinations, 1, comboCount), nil
 }
 
 // generateCombinations takes an array of strings representing a combination of

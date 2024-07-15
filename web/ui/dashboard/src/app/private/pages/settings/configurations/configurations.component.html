@@ -25,47 +25,89 @@
 
 	<hr class="border-t border-t-neutral-a3 my-20px" />
 
-	<h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2>
-	<div formGroupName="storage_policy">
-		<div class="grid grid-cols-2 gap-24px mb-24px">
-			<convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
-			<convoy-radio formControlName="type" label="S3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
+	<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="configForm.get('retention_policy_enabled')?.value && showConfig('retention_policy')">
+		<div class="flex justify-between items-center mb-24px">
+			<p class="flex items-center text-12 font-medium text-neutral-11">
+				Retention Period
+				<convoy-tooltip size="sm" position="top-right" class="ml-4px">This is the interval at which events would be reviewed and retained for this project. E.g 720h, 20m, 30s</convoy-tooltip>
+			</p>
+			<button convoy-button type="button" size="xs" fill="soft-outline" convoy-permission="Project Settings|MANAGE" color="neutral" (click)="toggleConfigForm('retention_policy')">
+				<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+					<use xlink:href="#delete-icon2"></use>
+				</svg>
+			</button>
 		</div>
+		<div formGroupName="retention_policy">
+			<convoy-input-field>
+				<div class="relative">
+					<input type="number" id="policy" convoy-input autocomplete="policy" formControlName="policy" placeholder="e.g. 720" />
+					<div class="absolute top-[50%] right-14px text-12 text-neutral-a30 opacity-40 translate-y-[-50%]">hour(s)</div>
+				</div>
+				<convoy-input-error *ngIf="configForm.get('retention_policy.policy')?.touched && configForm.get('retention_policy.policy')?.invalid">Enter retention policy value</convoy-input-error>
+			</convoy-input-field>
+		</div>
+	</div>
 
-		<ng-container *ngIf="configForm.value.storage_policy.type === 'on_prem'">
-			<div formGroupName="on_prem">
-				<convoy-input-field>
-					<label for="path" convoy-label required="true">Storage Path</label>
-					<input id="path" convoy-input autocomplete="path" formControlName="path" placeholder="e.g ../path/to/storage" />
-					<convoy-input-error *ngIf="configForm.get('storage_policy.on_prem.path')?.touched && configForm.get('storage_policy.on_prem.path')?.invalid">Please enter a storage path relative to your current device</convoy-input-error>
-				</convoy-input-field>
-			</div>
-		</ng-container>
+	<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('storage_policy')">
+		<div class="flex justify-between items-center mb-24px">
+			<p class="text-12 font-medium text-neutral-11">Storage Policy</p>
+			<button convoy-button type="button" size="xs" fill="soft-outline" convoy-permission="Project Settings|MANAGE" color="neutral" (click)="toggleConfigForm('storage_policy')">
+				<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+					<use xlink:href="#delete-icon2"></use>
+				</svg>
+			</button>
+		</div>
+		<!-- <h2 class="font-semibold mb-12px mt-24px">Storage Policy</h2> -->
 
-		<ng-container *ngIf="configForm.value.storage_policy.type === 's3'">
-			<div formGroupName="s3" class="grid grid-cols-2 gap-x-6">
-				<convoy-input-field>
-					<label for="bucket" convoy-label required="true">Bucket</label>
-					<input id="bucket" convoy-input autocomplete="bucket" formControlName="bucket" placeholder="Bucket name" />
-					<convoy-input-error *ngIf="configForm.get('storage_policy.s3.bucket')?.touched && configForm.get('storage_policy.s3.bucket')?.invalid">Please enter bucket name</convoy-input-error>
-				</convoy-input-field>
-				<convoy-select label="Region" name="region" formControlName="region" [options]="regions" errorMessage="Please select a region" [required]="true" (selectedOption)="configForm.get('storage_policy.s3')?.patchValue({ region: $event })"></convoy-select>
-				<convoy-input-field>
-					<label for="access_key" convoy-label required="true">Access Key</label>
-					<input id="access_key" convoy-input autocomplete="access_key" formControlName="access_key" placeholder="Access Key" />
-					<convoy-input-error *ngIf="configForm.get('storage_policy.s3.access_key')?.touched && configForm.get('storage_policy.s3.access_key')?.invalid">Please enter access key</convoy-input-error>
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="secret_key" convoy-label required="true">Secret Key</label>
-					<input id="secret_key" convoy-input autocomplete="secret_key" formControlName="secret_key" placeholder="Secret Key" />
-					<convoy-input-error *ngIf="configForm.get('storage_policy.s3.secret_key')?.touched && configForm.get('storage_policy.s3.secret_key')?.invalid">Please enter secret key</convoy-input-error>
-				</convoy-input-field>
-				<convoy-input-field>
-					<label for="session_token" convoy-label required="true">Session Key</label>
-					<input id="session_token" convoy-input autocomplete="session_token" formControlName="session_token" placeholder="Session Key" />
-					<convoy-input-error *ngIf="configForm.get('storage_policy.s3.session_token')?.touched && configForm.get('storage_policy.s3.session_token')?.invalid">Please enter session token</convoy-input-error>
-				</convoy-input-field>
+		<div formGroupName="storage_policy">
+			<div class="grid grid-cols-2 gap-24px mb-24px">
+				<convoy-radio formControlName="type" label="On Prem" _name="type" value="on_prem" _id="on_prem" description="Retain events in a specified path on your device"></convoy-radio>
+				<convoy-radio formControlName="type" label="S3" _name="type" value="s3" _id="s3" description="Retain events in an external aws server"></convoy-radio>
 			</div>
+
+			<ng-container *ngIf="configForm.value.storage_policy.type === 'on_prem'">
+				<div formGroupName="on_prem">
+					<convoy-input-field>
+						<label for="path" convoy-label required="true">Storage Path</label>
+						<input id="path" convoy-input autocomplete="path" formControlName="path" placeholder="e.g ../path/to/storage" />
+						<convoy-input-error *ngIf="configForm.get('storage_policy.on_prem.path')?.touched && configForm.get('storage_policy.on_prem.path')?.invalid">Please enter a storage path relative to your current device</convoy-input-error>
+					</convoy-input-field>
+				</div>
+			</ng-container>
+
+			<ng-container *ngIf="configForm.value.storage_policy.type === 's3'">
+				<div formGroupName="s3" class="grid grid-cols-2 gap-x-6">
+					<convoy-input-field>
+						<label for="bucket" convoy-label required="true">Bucket</label>
+						<input id="bucket" convoy-input autocomplete="bucket" formControlName="bucket" placeholder="Bucket name" />
+						<convoy-input-error *ngIf="configForm.get('storage_policy.s3.bucket')?.touched && configForm.get('storage_policy.s3.bucket')?.invalid">Please enter bucket name</convoy-input-error>
+					</convoy-input-field>
+					<convoy-select label="Region" name="region" formControlName="region" [options]="regions" errorMessage="Please select a region" [required]="true" (selectedOption)="configForm.get('storage_policy.s3')?.patchValue({ region: $event })"></convoy-select>
+					<convoy-input-field>
+						<label for="access_key" convoy-label required="true">Access Key</label>
+						<input id="access_key" convoy-input autocomplete="access_key" formControlName="access_key" placeholder="Access Key" />
+						<convoy-input-error *ngIf="configForm.get('storage_policy.s3.access_key')?.touched && configForm.get('storage_policy.s3.access_key')?.invalid">Please enter access key</convoy-input-error>
+					</convoy-input-field>
+					<convoy-input-field>
+						<label for="secret_key" convoy-label required="true">Secret Key</label>
+						<input id="secret_key" convoy-input autocomplete="secret_key" formControlName="secret_key" placeholder="Secret Key" />
+						<convoy-input-error *ngIf="configForm.get('storage_policy.s3.secret_key')?.touched && configForm.get('storage_policy.s3.secret_key')?.invalid">Please enter secret key</convoy-input-error>
+					</convoy-input-field>
+					<convoy-input-field>
+						<label for="session_token" convoy-label required="true">Session Key</label>
+						<input id="session_token" convoy-input autocomplete="session_token" formControlName="session_token" placeholder="Session Key" />
+						<convoy-input-error *ngIf="configForm.get('storage_policy.s3.session_token')?.touched && configForm.get('storage_policy.s3.session_token')?.invalid">Please enter session token</convoy-input-error>
+					</convoy-input-field>
+				</div>
+			</ng-container>
+		</div>
+	</div>
+
+	<div class="flex gap-24px items-center mb-24px">
+		<ng-container *ngFor="let config of configurations; let i = index">
+			<ng-container *ngIf="!config.show">
+				<convoy-config-button (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
+			</ng-container>
 		</ng-container>
 	</div>
 </form>

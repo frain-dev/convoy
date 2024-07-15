@@ -4,8 +4,6 @@ import (
 	"os"
 	_ "time/tzdata"
 
-	_ "go.uber.org/automaxprocs"
-
 	"github.com/frain-dev/convoy/cmd/agent"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
 
@@ -69,6 +67,9 @@ func main() {
 	var metricsBackend string
 	var prometheusMetricsSampleTime uint64
 
+	var retentionPolicy string
+	var retentionPolicyEnabled bool
+
 	var maxRetrySeconds uint64
 
 	var configFile string
@@ -108,6 +109,9 @@ func main() {
 	// metrics
 	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('experimental' feature flag level required")
 	c.Flags().Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
+
+	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "SMTP Port")
+	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "SMTP Port")
 
 	c.Flags().Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 

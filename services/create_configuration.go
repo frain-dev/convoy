@@ -23,10 +23,16 @@ func (c *CreateConfigService) Run(ctx context.Context) (*datastore.Configuration
 		storagePolicy = &datastore.DefaultStoragePolicy
 	}
 
+	rc := c.NewConfig.RetentionPolicy.Transform()
+	if rc == nil {
+		rc = &datastore.DefaultRetentionPolicy
+	}
+
 	config := &datastore.Configuration{
 		UID:                ulid.Make().String(),
 		StoragePolicy:      storagePolicy,
 		IsAnalyticsEnabled: true,
+		RetentionPolicy:    rc,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
 	}

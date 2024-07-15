@@ -207,6 +207,8 @@ components:
       - PausedEndpointStatus
     datastore.Event:
       properties:
+        acknowledged_at:
+          type: string
         app_id:
           description: Deprecated
           type: string
@@ -283,6 +285,8 @@ components:
           $ref: '#/components/schemas/datastore.M'
         headers:
           $ref: '#/components/schemas/datastore.M'
+        is_flattened:
+          type: boolean
       type: object
     datastore.GooglePubSubConfig:
       properties:
@@ -643,6 +647,8 @@ components:
       type: object
     models.BroadcastEvent:
       properties:
+        acknowledged_at:
+          type: string
         custom_headers:
           additionalProperties:
             type: string
@@ -653,9 +659,7 @@ components:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
-          items:
-            type: integer
-          type: array
+          type: object
         event_type:
           description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
@@ -847,6 +851,8 @@ components:
       type: object
     models.DynamicEvent:
       properties:
+        acknowledged_at:
+          type: string
         custom_headers:
           additionalProperties:
             type: string
@@ -857,9 +863,7 @@ components:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
-          items:
-            type: integer
-          type: array
+          type: object
         event_type:
           description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
@@ -933,6 +937,8 @@ components:
       type: object
     models.EventDeliveryResponse:
       properties:
+        acknowledged_at:
+          type: string
         cli_metadata:
           $ref: '#/components/schemas/datastore.CLIMetadata'
         created_at:
@@ -960,7 +966,10 @@ components:
         idempotency_key:
           type: string
         latency:
+          description: 'Deprecated: Latency is deprecated.'
           type: string
+        latency_seconds:
+          type: number
         metadata:
           $ref: '#/components/schemas/datastore.Metadata'
         project_id:
@@ -980,6 +989,8 @@ components:
       type: object
     models.EventResponse:
       properties:
+        acknowledged_at:
+          type: string
         app_id:
           description: Deprecated
           type: string
@@ -1056,9 +1067,7 @@ components:
           description: |-
             Data is an arbitrary JSON value that gets sent as the body of the
             webhook to the endpoints
-          items:
-            type: integer
-          type: array
+          type: object
         event_type:
           description: Event Type is used for filtering and debugging e.g invoice.paid
           type: string
@@ -1353,7 +1362,7 @@ components:
         filter_config:
           $ref: '#/components/schemas/datastore.FilterConfiguration'
         function:
-          $ref: '#/components/schemas/null.String'
+          type: string
         name:
           type: string
         rate_limit_config:
@@ -1548,14 +1557,6 @@ components:
         type:
           $ref: '#/components/schemas/datastore.VerifierType'
       type: object
-    null.String:
-      properties:
-        string:
-          type: string
-        valid:
-          description: Valid is true if String is not NULL
-          type: boolean
-      type: object
     util.ServerResponse:
       properties:
         message:
@@ -1710,7 +1711,7 @@ paths:
         required: true
         x-originalParamName: endpoint
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
@@ -1720,7 +1721,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.EndpointResponse'
                   type: object
-          description: OK
+          description: Created
         "400":
           content:
             application/json:
@@ -2882,7 +2883,7 @@ paths:
         required: true
         x-originalParamName: event
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
@@ -2892,7 +2893,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/handlers.Stub'
                   type: object
-          description: OK
+          description: Created
         "400":
           content:
             application/json:
@@ -3216,7 +3217,7 @@ paths:
         required: true
         x-originalParamName: event
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
@@ -3226,7 +3227,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.EventResponse'
                   type: object
-          description: OK
+          description: Created
         "400":
           content:
             application/json:
@@ -3287,12 +3288,12 @@ paths:
         required: true
         x-originalParamName: event
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/handlers.Stub'
-          description: OK
+          description: Created
         "400":
           content:
             application/json:
@@ -3352,7 +3353,7 @@ paths:
         required: true
         x-originalParamName: event
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
@@ -3362,7 +3363,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/handlers.Stub'
                   type: object
-          description: OK
+          description: Created
         "400":
           content:
             application/json:
@@ -3770,7 +3771,7 @@ paths:
         required: true
         x-originalParamName: portallink
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
@@ -3780,7 +3781,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.PortalLinkResponse'
                   type: object
-          description: OK
+          description: Created
         "400":
           content:
             application/json:
@@ -4154,7 +4155,7 @@ paths:
         required: true
         x-originalParamName: source
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
@@ -4164,7 +4165,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.SourceResponse'
                   type: object
-          description: OK
+          description: Created
         "400":
           content:
             application/json:
@@ -4539,7 +4540,7 @@ paths:
         required: true
         x-originalParamName: subscription
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
@@ -4549,7 +4550,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.SubscriptionResponse'
                   type: object
-          description: OK
+          description: Created
         "400":
           content:
             application/json:

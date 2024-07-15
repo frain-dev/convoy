@@ -27,7 +27,33 @@ func NewRedisLimiter(addresses []string) (*RedisLimiter, error) {
 	return r, nil
 }
 
-func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int, duration int) error {
+func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int) error {
+	l := redis_rate.Limit{
+		Period: time.Second,
+		Rate:   limit,
+		Burst:  limit,
+	}
+
+	result, err := r.limiter.Allow(ctx, key, l)
+	if err != nil {
+		return err
+	}
+
+	if result.Remaining == 0 && result.RetryAfter > 0 {
+		return &RedisLimiterError{
+			delay: result.RetryAfter,
+			err:   ErrRateLimitExceeded,
+		}
+	}
+
+	return nil
+}
+
+func (r *RedisLimiter) AllowWithDuration(ctx context.Context, key string, limit int, duration int) error {
+	if limit == 0 || duration == 0 { // this should never happen
+		return nil
+	}
+
 	l := redis_rate.Limit{
 		Period: time.Second * time.Duration(duration),
 		Rate:   limit,
@@ -41,7 +67,7 @@ func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int, duratio
 
 	if result.Remaining == 0 && result.RetryAfter > 0 {
 		return &RedisLimiterError{
-			delay: result.RetryAfter + result.ResetAfter,
+			delay: result.RetryAfter,
 			err:   ErrRateLimitExceeded,
 		}
 	}

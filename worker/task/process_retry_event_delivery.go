@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -15,6 +14,9 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
 	"github.com/frain-dev/convoy/pkg/url"
+
+	"github.com/frain-dev/convoy/pkg/signature"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -28,72 +30,57 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+var (
+	ErrDeliveryAttemptFailed = errors.New("error sending event")
+	ErrRateLimit             = errors.New("rate limit error")
+	defaultDelay             = 10 * time.Second
+	defaultEventDelay        = 120 * time.Second
+)
+
+func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
 	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
 ) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) (err error) {
+	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
-		defer func() {
-			// retrieve the value of err
-			if err == nil {
-				return
-			}
 
-			// set the error to nil, so it's removed from the event queue
-			err = nil
-
-			job := &queue.Job{
-				Payload: t.Payload(),
-				Delay:   defaultEventDelay,
-				ID:      data.EventDeliveryID,
-			}
-
-			// write it to the retry queue.
-			deferErr := q.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
-			if deferErr != nil {
-				log.FromContext(ctx).WithError(deferErr).Error("[asynq]: an error occurred sending event delivery to the retry queue")
-			}
-		}()
-
-		err = msgpack.DecodeMsgPack(t.Payload(), &data)
+		err := msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
-			err = json.Unmarshal(t.Payload(), &data)
-			if err != nil {
-				return &DeliveryError{Err: err}
+			innerErr := json.Unmarshal(t.Payload(), &data)
+			if innerErr != nil {
+				return &EndpointError{Err: innerErr, delay: defaultEventDelay}
 			}
 		}
 
 		cfg, err := config.Get()
 		if err != nil {
-			return &DeliveryError{Err: err}
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
-		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByIDSlim(ctx, data.ProjectID, data.EventDeliveryID)
+		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
-			return &DeliveryError{Err: err}
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
-		eventDelivery.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
 		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
-			return &DeliveryError{Err: err}
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
 		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
 		if err != nil {
 			if errors.Is(err, datastore.ErrEndpointNotFound) {
 				eventDelivery.Description = datastore.ErrEndpointNotFound.Error()
-				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
-				if err != nil {
-					log.WithError(err).Error("failed to update event delivery status to discarded")
+				innerErr := eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
+				if innerErr != nil {
+					log.WithError(innerErr).Error("failed to update event delivery status to discarded")
 				}
 
 				return nil
 			}
 
-			return &DeliveryError{Err: err}
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
 		switch eventDelivery.Status {
@@ -104,7 +91,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		err = rateLimiter.AllowWithDuration(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
-			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery_id": data.EventDeliveryID}).
+			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery id": data.EventDeliveryID}).
 				WithError(err).
 				Debugf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second)
 
@@ -113,9 +100,10 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
-			return &DeliveryError{Err: err}
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
+		var attempt datastore.DeliveryAttempt
 		done := true
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
@@ -126,7 +114,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if endpoint.Status == datastore.InactiveEndpointStatus {
 			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 			if err != nil {
-				return &DeliveryError{Err: err}
+				return &EndpointError{Err: err, delay: defaultEventDelay}
 			}
 
 			log.Debugf("endpoint %s is inactive, failing to send.", endpoint.Url)
@@ -136,7 +124,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		sig := newSignature(endpoint, project, json.RawMessage(eventDelivery.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
-			return &DeliveryError{Err: err}
+			return &EndpointError{Err: err, delay: defaultEventDelay}
 		}
 
 		targetURL := endpoint.Url
@@ -144,7 +132,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
 			if err != nil {
 				log.WithError(err).Error("failed to concat url query params")
-				return &DeliveryError{Err: err}
+				return &EndpointError{Err: err, delay: defaultEventDelay}
 			}
 		}
 
@@ -190,12 +178,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
-			eventDelivery.LatencySeconds = time.Since(eventDelivery.GetLatencyStartTime()).Seconds()
-
-			// register latency
-			mm := metrics.GetDPInstance()
-			mm.RecordLatency(eventDelivery)
-
+			eventDelivery.LatencySeconds = time.Since(eventDelivery.CreatedAt).Seconds()
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
@@ -237,7 +220,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 		}
 
-		attempt := parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
+		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
 
 		eventDelivery.Metadata.NumTrials++
 
@@ -272,7 +255,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error()), delay: defaultEventDelay}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
@@ -280,9 +263,55 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			if err != nil {
 				errS = err.Error()
 			}
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS)}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS), delay: defaultEventDelay}
 		}
 
 		return nil
+	}
+}
+
+func newSignature(endpoint *datastore.Endpoint, g *datastore.Project, data json.RawMessage) *signature.Signature {
+	s := &signature.Signature{Advanced: endpoint.AdvancedSignatures, Payload: data}
+
+	for _, version := range g.Config.Signature.Versions {
+		scheme := signature.Scheme{
+			Hash:     version.Hash,
+			Encoding: version.Encoding.String(),
+		}
+
+		for _, sc := range endpoint.Secrets {
+			if sc.DeletedAt.IsZero() {
+				// the secret has not been expired
+				scheme.Secret = append(scheme.Secret, sc.Value)
+			}
+		}
+		s.Schemes = append(s.Schemes, scheme)
+	}
+
+	return s
+}
+
+func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
+	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
+	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
+
+	return datastore.DeliveryAttempt{
+		UID:        ulid.Make().String(),
+		URL:        resp.URL.String(),
+		Method:     resp.Method,
+		MsgID:      m.UID,
+		EndpointID: e.UID,
+		APIVersion: convoy.GetVersion(),
+
+		IPAddress:        resp.IP,
+		ResponseHeader:   *responseHeader,
+		RequestHeader:    *requestHeader,
+		HttpResponseCode: resp.Status,
+		ResponseData:     string(resp.Body),
+		Error:            resp.Error,
+		Status:           attemptStatus,
+
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }

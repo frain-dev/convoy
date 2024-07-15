@@ -38,26 +38,26 @@ func Test_RateLimitAllow(t *testing.T) {
 			limiter, err := NewRedisLimiter(dsn)
 			require.NoError(t, err)
 
-			err = limiter.Allow(context.Background(), uid, limit, duration)
+			err = limiter.AllowWithDuration(context.Background(), uid, limit, duration)
 			require.NoError(t, err)
 
 			dur := GetRetryAfter(err)
 			require.Equal(t, time.Duration(0), dur)
 
-			err = limiter.Allow(context.Background(), uid, limit, duration)
+			err = limiter.AllowWithDuration(context.Background(), uid, limit, duration)
 			require.NoError(t, err)
 
 			dur = GetRetryAfter(err)
 			require.Equal(t, time.Duration(0), dur)
 
-			err = limiter.Allow(context.Background(), uid, limit, duration)
+			err = limiter.AllowWithDuration(context.Background(), uid, limit, duration)
 			require.Error(t, err)
 			require.ErrorIs(t, GetRawError(err), ErrRateLimitExceeded)
 
 			dur = GetRetryAfter(err)
 			require.LessOrEqual(t, time.Duration(duration), dur)
 
-			err = limiter.Allow(context.Background(), uid, limit, duration)
+			err = limiter.AllowWithDuration(context.Background(), uid, limit, duration)
 			require.Error(t, err)
 			require.ErrorIs(t, GetRawError(err), ErrRateLimitExceeded)
 

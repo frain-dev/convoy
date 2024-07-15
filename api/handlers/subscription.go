@@ -167,7 +167,7 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID		path		string						true	"Project ID"
 //	@Param			subscription	body		models.CreateSubscription	true	"Subscription details"
-//	@Success		200				{object}	util.ServerResponse{data=models.SubscriptionResponse}
+//	@Success		201				{object}	util.ServerResponse{data=models.SubscriptionResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions [post]
@@ -408,14 +408,14 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 	}
 
 	subRepo := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache)
-	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
+	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body, false)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
 		return
 	}
 
-	isHeaderValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers)
+	isHeaderValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers, false)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))

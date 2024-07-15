@@ -191,7 +191,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 func (p *Postgres) collectMetrics() (*Metrics, error) {
 	metrics := &Metrics{}
 
-	queryEventQueueMetrics := "select project_id, coalesce(source_id, 'http') as source_id, count(*) as total from events group by project_id, source_id"
+	queryEventQueueMetrics := "select project_id, coalesce(source_id, 'http') as source_id, count(*) as total from convoy.events group by project_id, source_id"
 	rows, err := p.GetDB().Queryx(queryEventQueueMetrics)
 	if err != nil {
 		return nil, err
@@ -211,14 +211,14 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	backlogQM := `with a1 as (
     select ed.project_id, coalesce(source_id, 'http') as source_id,
            EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
-    from event_deliveries ed left join convoy.events e on e.id = ed.event_id
+    from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
     where status = 'Processing'
     group by ed.project_id, source_id limit 1000 --samples
     )
     select * from a1
     union all
     select ed.project_id, coalesce(source_id, 'http'), 0 as age_seconds
-    from event_deliveries ed left join convoy.events e on e.id = ed.event_id
+    from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
     where status = 'Success' and source_id not in (select source_id from a1)
     group by ed.project_id, source_id
     limit 1000 -- samples`
@@ -238,7 +238,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueBacklogMetrics = eventQueueBacklogMetrics
 
-	queryDeliveryQ := "select project_id, endpoint_id, status, count(*) as total from event_deliveries group by project_id, endpoint_id, status"
+	queryDeliveryQ := "select project_id, endpoint_id, status, count(*) as total from convoy.event_deliveries group by project_id, endpoint_id, status"
 	rows2, err := p.GetDB().Queryx(queryDeliveryQ)
 	if err != nil {
 		return nil, err
@@ -258,14 +258,14 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	backlogEQM := `with a1 as (
     select ed.project_id, coalesce(source_id, 'http') as source_id, endpoint_id,
            EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
-    from event_deliveries ed left join convoy.events e on e.id = ed.event_id
+    from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
     where status = 'Processing'
     group by ed.project_id, source_id, endpoint_id limit 1000 --samples
     )
     select * from a1
     union all
     select ed.project_id, coalesce(source_id, 'http'), endpoint_id, 0 as age_seconds
-    from event_deliveries ed left join convoy.events e on e.id = ed.event_id
+    from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
     where status = 'Success' and endpoint_id not in (select endpoint_id from a1)
     group by ed.project_id, source_id, endpoint_id
     limit 1000 -- samples`

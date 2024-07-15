@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/guregu/null.v4"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/flatten"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/transform"
@@ -32,6 +35,7 @@ type CreateEventTaskParams struct {
 	EventType      string            `json:"event_type"`
 	CustomHeaders  map[string]string `json:"custom_headers"`
 	IdempotencyKey string            `json:"idempotency_key"`
+	AcknowledgedAt time.Time         `json:"acknowledged_at,omitempty"`
 }
 
 type CreateEvent struct {
@@ -140,7 +144,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			s.Endpoint = endpoint
 		}
 
-		rc, err := ec.retryConfig()
+		rc, err := ec.RetryConfig()
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -193,8 +197,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			URLQueryParams:   event.URLQueryParams,
 			Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 			DeliveryAttempts: []datastore.DeliveryAttempt{},
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
+			AcknowledgedAt:   null.TimeFrom(time.Now()),
 		}
 
 		if s.Type == datastore.SubscriptionTypeCLI {
@@ -307,26 +310,39 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription, soft bool) ([]datastore.Subscription, error) {
 	var matched []datastore.Subscription
+
+	// payload is interface{} and not map[string]interface{} because
+	// map[string]interface{} won't work for array based json e.g:
+	// [
+	//	{
+	//		"organization": "frain-dev"
+	//	},
+	//	{
+	//		".members_url": "danvixent"
+	//	}
+	//]
 	var payload interface{}
-	err := json.Unmarshal(e.Data, &payload)
+	err := json.Unmarshal(e.Data, &payload) // TODO(all): find a way to stop doing this repeatedly, json.Unmarshal is slow and costly
 	if err != nil {
 		return nil, err
 	}
 
-	checked := make(map[string]struct{})
+	flatPayload, err := flatten.Flatten(payload)
+	if err != nil {
+		return nil, err
+	}
 
-	for _, s := range subscriptions {
-		if _, ok := checked[s.UID]; ok {
+	headers := e.GetRawHeaders()
+	var s *datastore.Subscription
+
+	for i := range subscriptions {
+		s = &subscriptions[i]
+		if len(s.FilterConfig.Filter.Body) == 0 && len(s.FilterConfig.Filter.Headers) == 0 {
+			matched = append(matched, *s)
 			continue
 		}
-		checked[s.UID] = struct{}{}
 
-		if len(s.FilterConfig.Filter.Body.Map()) == 0 && len(s.FilterConfig.Filter.Headers.Map()) == 0 {
-			matched = append(matched, s)
-			continue
-		}
-
-		isBodyMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter.Body.Map())
+		isBodyMatched, err := subRepo.CompareFlattenedPayload(ctx, flatPayload, s.FilterConfig.Filter.Body, s.FilterConfig.Filter.IsFlattened)
 		if err != nil && soft {
 			log.WithError(err).Errorf("subcription (%s) failed to match body", s.UID)
 			continue
@@ -334,7 +350,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 			return nil, err
 		}
 
-		isHeaderMatched, err := subRepo.TestSubscriptionFilter(ctx, e.GetRawHeaders(), s.FilterConfig.Filter.Headers.Map())
+		isHeaderMatched, err := subRepo.CompareFlattenedPayload(ctx, headers, s.FilterConfig.Filter.Headers, s.FilterConfig.Filter.IsFlattened)
 		if err != nil && soft {
 			log.WithError(err).Errorf("subscription (%s) failed to match header", s.UID)
 			continue
@@ -345,7 +361,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		isMatched := isHeaderMatched && isBodyMatched
 
 		if isMatched {
-			matched = append(matched, s)
+			matched = append(matched, *s)
 		}
 	}
 
@@ -426,6 +442,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 	}
 
 	if util.IsStringEmpty(eventParams.AppID) && util.IsStringEmpty(eventParams.EndpointID) && util.IsStringEmpty(eventParams.OwnerID) {
+		// TODO(all): we should discard events without endpoint id here.
 		return nil, errors.New("please provide an endpoint ID")
 	}
 
@@ -452,8 +469,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		IdempotencyKey:   eventParams.IdempotencyKey,
 		IsDuplicateEvent: isDuplicate,
 		Headers:          getCustomHeaders(eventParams.CustomHeaders),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 		Endpoints:        endpointIDs,
 		SourceID:         eventParams.SourceID,
 		ProjectID:        project.UID,

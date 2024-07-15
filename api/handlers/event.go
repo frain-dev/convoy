@@ -3,6 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -32,13 +35,25 @@ import (
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.CreateEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
 func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	var newMessage models.CreateEvent
-	err := util.ReadJSON(r, &newMessage)
+	err = util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -78,6 +93,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 			Data:           newMessage.Data,
 			CustomHeaders:  newMessage.CustomHeaders,
 			IdempotencyKey: newMessage.IdempotencyKey,
+			AcknowledgedAt: time.Now(),
 		},
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
@@ -112,13 +128,25 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			event		body		models.BroadcastEvent	true	"Broadcast Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventResponse}
+//	@Success		201			{object}	util.ServerResponse{data=models.EventResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/broadcast [post]
 func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	var newMessage models.BroadcastEvent
-	err := util.ReadJSON(r, &newMessage)
+	err = util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -165,13 +193,25 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.FanoutEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
 func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	var newMessage models.FanoutEvent
-	err := util.ReadJSON(r, &newMessage)
+	err = util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -221,13 +261,25 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.DynamicEvent	true	"Event Details"
-//	@Success		200			{object}	Stub
+//	@Success		201			{object}	Stub
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]
 func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	var newMessage models.DynamicEvent
-	err := util.ReadJSON(r, &newMessage)
+	err = util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -326,6 +378,10 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Filter.Project = p
+	ep := datastore.Pageable{}
+	if data.Filter.Pageable == ep {
+		data.Filter.Pageable.PerPage = 2000000000
+	}
 
 	bs := services.BatchReplayEventService{
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
@@ -447,6 +503,28 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": 0}, http.StatusOK))
+			return
+		}
+
+		data.Filter.EndpointIDs = endpointIDs
 	}
 
 	count, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).CountEvents(r.Context(), p.UID, data.Filter)

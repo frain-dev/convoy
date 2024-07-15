@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/compare"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 )
@@ -28,9 +29,10 @@ const (
 	retry_config_type,retry_config_duration,
 	retry_config_retry_count,filter_config_event_types,
 	filter_config_filter_headers,filter_config_filter_body,
+    filter_config_filter_is_flattened,
 	rate_limit_config_count,rate_limit_config_duration,function
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19);
     `
 
 	updateSubscription = `
@@ -46,9 +48,10 @@ const (
 	filter_config_event_types=$11,
 	filter_config_filter_headers=$12,
 	filter_config_filter_body=$13,
-	rate_limit_config_count=$14,
-	rate_limit_config_duration=$15,
-	function=$16,
+	filter_config_filter_is_flattened=$14,
+	rate_limit_config_count=$15,
+	rate_limit_config_duration=$16,
+	function=$17,
     updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
@@ -73,6 +76,7 @@ const (
 	s.filter_config_event_types AS "filter_config.event_types",
 	s.filter_config_filter_headers AS "filter_config.filter.headers",
 	s.filter_config_filter_body AS "filter_config.filter.body",
+	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
 	s.rate_limit_config_count AS "rate_limit_config.count",
 	s.rate_limit_config_duration AS "rate_limit_config.duration",
 
@@ -117,7 +121,8 @@ const (
     select id, type, project_id, endpoint_id, function,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body"
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
     from convoy.subscriptions
     where (ARRAY[$4] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)
     AND id > $1
@@ -129,7 +134,8 @@ const (
     select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body"
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
     from convoy.subscriptions
     where id > ?
     AND project_id IN (?)
@@ -140,7 +146,8 @@ const (
     select name, id, type, project_id, endpoint_id, function, updated_at,
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body"
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
     from convoy.subscriptions
     where updated_at > ?
     AND id > ?
@@ -281,6 +288,10 @@ func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projec
 }
 
 func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
 	query, args, err := sqlx.In(countProjectSubscriptions, projectIDs)
 	if err != nil {
 		return nil, err
@@ -370,6 +381,10 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 }
 
 func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, countQuery, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
 	q, args, err := sqlx.In(countQuery, t, projectIDs)
 	if err != nil {
 		return nil, err
@@ -450,12 +465,24 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		deviceID = &subscription.DeviceID
 	}
 
+	err := fc.Filter.Body.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten body filter: %v", err)
+	}
+
+	err = fc.Filter.Headers.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten header filter: %v", err)
+	}
+
+	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
+
 	result, err := s.db.ExecContext(
 		ctx, createSubscription, subscription.UID,
 		subscription.Name, subscription.Type, subscription.ProjectID,
 		endpointID, deviceID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 	)
 	if err != nil {
@@ -503,11 +530,23 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		sourceID = &subscription.SourceID
 	}
 
+	err := fc.Filter.Body.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten body filter: %v", err)
+	}
+
+	err = fc.Filter.Headers.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten header filter: %v", err)
+	}
+
+	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
+
 	result, err := s.db.ExecContext(
 		ctx, updateSubscription, subscription.UID, projectID,
 		subscription.Name, subscription.EndpointID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 	)
 	if err != nil {
@@ -587,11 +626,6 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	query = s.db.Rebind(query)
 
 	rows, err = s.db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-	defer closeWithError(rows)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -789,22 +823,46 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 	return count, nil
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}) (bool, error) {
-	//p, err := flatten.Flatten(payload)
-	//if err != nil {
-	//	return false, err
-	//}
-	//
-	//f, err := flatten.Flatten(filter)
-	//if err != nil {
-	//	return false, err
-	//}
-
+func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}, isFlattened bool) (bool, error) {
 	if payload == nil || filter == nil {
 		return true, nil
 	}
 
-	return compare.Compare(payload.(map[string]interface{}), filter.(map[string]interface{}))
+	p, err := flatten.Flatten(payload)
+	if err != nil {
+		return false, err
+	}
+
+	if !isFlattened {
+		filter, err = flatten.Flatten(filter)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	// The filter must be of type flatten.M, because flatten.Flatten always returns that type,
+	// so whether pre-flattened or not, this must hold true
+	v, ok := filter.(flatten.M)
+	if !ok {
+		return false, fmt.Errorf("unknown type %T for filter", filter)
+	}
+	return compare.Compare(p, v)
+}
+
+func (s *subscriptionRepo) CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error) {
+	if payload == nil || filter == nil {
+		return true, nil
+	}
+
+	if !isFlattened {
+		var err error
+		filter, err = flatten.Flatten(filter)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return compare.Compare(payload, filter)
 }
 
 var (
