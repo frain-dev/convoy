@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"net/http"
+
+	"github.com/frain-dev/convoy/pkg/transform"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -29,7 +30,7 @@ import (
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			source		body		models.CreateSource	true	"Source Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.SourceResponse}
+//	@Success		201			{object}	util.ServerResponse{data=models.SourceResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources [post]

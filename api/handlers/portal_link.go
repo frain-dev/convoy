@@ -28,7 +28,7 @@ import (
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			portallink	body		models.PortalLink	true	"Portal Link Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.PortalLinkResponse}
+//	@Success		201			{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
