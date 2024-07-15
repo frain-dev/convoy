@@ -70,7 +70,7 @@ export class CreateEndpointComponent implements OnInit {
 				header_value: ['']
 			})
 		}),
-		advanced_signatures: [false, Validators.required]
+		advanced_signatures: [null]
 	});
 	token: string = this.route.snapshot.params.token;
 	@Input('endpointId') endpointUid: string = this.route.snapshot.params.id;
@@ -106,6 +106,7 @@ export class CreateEndpointComponent implements OnInit {
 	async runEndpointValidation() {
 		const configFields: any = {
 			http_timeout: ['http_timeout'],
+			signature: ['advanced_signatures'],
 			rate_limit: ['rate_limit', 'rate_limit_duration'],
 			alert_config: ['support_email', 'slack_webhook_url'],
 			auth: ['authentication.api_key.header_name', 'authentication.api_key.header_value']
