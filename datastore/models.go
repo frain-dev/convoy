@@ -801,6 +801,8 @@ type Metadata struct {
 	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds"`
 
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
+
+	MaxRetrySeconds uint64 `json:"max_retry_seconds" bson:"max_retry_seconds"`
 }
 
 func (m *Metadata) Scan(value interface{}) error {

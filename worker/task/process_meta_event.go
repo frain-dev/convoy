@@ -64,6 +64,12 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 			log.WithError(err).Error("failed to update meta event status")
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
+		cfg, err := config.Get()
+		if err != nil {
+			log.WithError(err).Error("failed to get config")
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
+		metaEvent.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*metaEvent.Metadata).NextDuration(metaEvent.Metadata.NumTrials)
 

@@ -70,6 +70,8 @@ func main() {
 	var retentionPolicy string
 	var retentionPolicyEnabled bool
 
+	var maxRetrySeconds uint64
+
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
@@ -110,6 +112,8 @@ func main() {
 
 	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "SMTP Port")
 	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "SMTP Port")
+
+	c.Flags().Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))

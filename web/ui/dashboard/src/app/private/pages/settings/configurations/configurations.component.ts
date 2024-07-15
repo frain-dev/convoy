@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { SettingsService } from '../settings.service';
-import { GeneralService } from 'src/app/services/general/general.service';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {SettingsService} from '../settings.service';
+import {GeneralService} from 'src/app/services/general/general.service';
 
 @Component({
 	selector: 'configurations',

@@ -1,6 +1,8 @@
 package retrystrategies
 
 import (
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
@@ -42,5 +44,21 @@ func TestDefaultRetryStrategy(t *testing.T) {
 				t.Errorf("Want duration '%v' for attempts '%d', got '%v'", tc.expectedDuration, tc.attempts, got)
 			}
 		})
+	}
+}
+
+func TestDefaultRetryStrategy_NextDuration(t *testing.T) {
+	m := datastore.Metadata{
+		Strategy:        "linear",
+		RetryLimit:      20,
+		IntervalSeconds: 5,
+	}
+	var r = NewRetryStrategyFromMetadata(m)
+	_, isDefault := r.(*DefaultRetryStrategy)
+	assert.True(t, isDefault)
+
+	for i := 1; i < 100; i++ {
+		d := r.NextDuration(uint64(i))
+		assert.Equal(t, 5*time.Second, d)
 	}
 }
