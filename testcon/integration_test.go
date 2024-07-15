@@ -1,11 +1,9 @@
-//go:build integration
-// +build integration
-
 package testcon
 
 import (
 	"context"
 	"fmt"
+	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
@@ -18,10 +16,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"io"
-	"net/http"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -106,6 +101,25 @@ func seed(t *testing.T, b *IntegrationTestSuite) {
 
 func (b *IntegrationTestSuite) SetupTest() {
 	fmt.Println("setting up test")
+	ctx := context.Background()
+	t := b.T()
+
+	projectID := b.DefaultProject.UID
+	baseURL := "http://localhost:5015/api/v1/projects/" + projectID + "/events"
+	apiKey := b.APIKey
+
+	c := convoy.New(baseURL, apiKey, projectID)
+
+	body := &convoy.CreateEndpointRequest{
+		Name:         "endpoint-name",
+		URL:          "http://play.getconvoy.io/ingest/DQzxCcNKTB7SGqzm",
+		Secret:       "endpoint-secret",
+		SupportEmail: "notifications@getconvoy.io",
+	}
+
+	endpoint, err := c.Endpoints.Create(ctx, body, &convoy.EndpointParams{})
+	require.NoError(t, err)
+	log.Printf(endpoint.UID)
 }
 
 func (b *IntegrationTestSuite) TearDownTest() {
@@ -118,7 +132,7 @@ func (b *IntegrationTestSuite) Test_Ingest() {
 
 	const eventThreshold = 10_000
 	start := time.Now()
-	go publishIntermittently(b.DefaultSub, b.DefaultProject)
+	//go publishIntermittently(b.DefaultSub, b.DefaultProject)
 
 	testTimeout := time.After(3 * time.Minute)
 	done := make(chan bool)
@@ -138,71 +152,51 @@ func (b *IntegrationTestSuite) Test_Ingest() {
 	fmt.Printf(" in %v seconds (RPS = %v event deliveries/s)\n", duration.Seconds(), float64(c.Count)/duration.Seconds())
 }
 
-func publishIntermittently(sub *datastore.Subscription, project *datastore.Project) {
-	const events = 20_000
-	jobs := make(chan int, events)
-	results := make(chan int, events)
-
-	const sourceWorkers = 10
-	for w := 1; w <= sourceWorkers; w++ {
-		go publish(jobs, results, w, sub, project)
-	}
-
-	for j := 1; j <= events; j++ {
-		jobs <- j
-	}
-	close(jobs)
-
-	for a := 1; a <= events; a++ {
-		<-results
-	}
-}
-
-func publish(jobs chan int, results chan int, id int, sub *datastore.Subscription, project *datastore.Project) {
-	for j := range jobs {
-		log.Printf("source %d started  job %d\n", id, j)
-		url := "http://localhost:5015/api/v1/projects/" + project.UID + "/events"
-		method := "POST"
-
-		payload := strings.NewReader(`{
-            "endpoint_id": "` + sub.EndpointID + `",
-            "event_type": "test.webbook.event.docker",
-            "data": { "Hello": "World", "Test": "Data" }
-            }`)
-
-		client := &http.Client{}
-		req, err := http.NewRequest(method, url, payload)
-
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("Authorization", "Basic ZGVmYXVsdEB1c2VyLmNvbTpwYXNzd29yZA==")
-
-		res, err := client.Do(req)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		log.Println(string(body))
-		err = res.Body.Close()
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		time.Sleep(10 * time.Millisecond)
-		log.Printf("source %d finished  job %d\n", id, j)
-		results <- j * 2
-	}
-}
+//func publish(jobs chan int, results chan int, id int, sub *datastore.Subscription, project *datastore.Project) {
+//	for j := range jobs {
+//		log.Printf("source %d started  job %d\n", id, j)
+//
+//		method := "POST"
+//
+//		payload := strings.NewReader(`{
+//            "endpoint_id": "` + sub.EndpointID + `",
+//            "event_type": "test.webbook.event.docker",
+//            "data": { "Hello": "World", "Test": "Data" }
+//            }`)
+//
+//		client := &http.Client{}
+//		req, err := http.NewRequest(method, url, payload)
+//
+//		if err != nil {
+//			fmt.Println(err)
+//			return
+//		}
+//		req.Header.Add("Content-Type", "application/json")
+//		req.Header.Add("Authorization", "Basic ZGVmYXVsdEB1c2VyLmNvbTpwYXNzd29yZA==")
+//
+//		res, err := client.Do(req)
+//		if err != nil {
+//			fmt.Println(err)
+//			return
+//		}
+//
+//		body, err := io.ReadAll(res.Body)
+//		if err != nil {
+//			fmt.Println(err)
+//			return
+//		}
+//		log.Println(string(body))
+//		err = res.Body.Close()
+//		if err != nil {
+//			fmt.Println(err)
+//			return
+//		}
+//
+//		time.Sleep(10 * time.Millisecond)
+//		log.Printf("source %d finished  job %d\n", id, j)
+//		results <- j * 2
+//	}
+//}
 
 func checkDBPeriodically(done *chan bool, db database.Database, threshold int) {
 	ticker := time.NewTicker(5 * time.Second)

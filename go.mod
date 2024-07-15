@@ -14,6 +14,7 @@ require (
 	github.com/exaring/otelpgx v0.5.4
 	github.com/fatih/structs v1.1.0
 	github.com/felixge/httpsnoop v1.0.4
+	github.com/frain-dev/convoy-go/v2 v2.1.8
 	github.com/getkin/kin-openapi v0.123.0
 	github.com/getsentry/sentry-go v0.25.0
 	github.com/getsentry/sentry-go/otel v0.25.0
@@ -48,7 +49,7 @@ require (
 	github.com/riandyrn/otelchi v0.5.1
 	github.com/rubenv/sql-migrate v1.3.0
 	github.com/sebdah/goldie/v2 v2.5.3
-	github.com/segmentio/kafka-go v0.4.42
+	github.com/segmentio/kafka-go v0.4.44
 	github.com/sirupsen/logrus v1.9.3
 	github.com/slack-go/slack v0.10.2
 	github.com/spf13/cobra v1.8.1
@@ -57,8 +58,7 @@ require (
 	github.com/subomi/requestmigrations v0.4.0
 	github.com/swaggo/swag v1.16.3
 	github.com/testcontainers/testcontainers-go v0.32.0
-	github.com/testcontainers/testcontainers-go/modules/postgres v0.32.0
-	github.com/testcontainers/testcontainers-go/modules/redis v0.32.0
+	github.com/testcontainers/testcontainers-go/modules/compose v0.32.0
 	github.com/tidwall/gjson v1.16.0
 	github.com/xdg-go/pbkdf2 v1.0.0
 	go.opentelemetry.io/otel v1.24.0
@@ -91,6 +91,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.10.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.10 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.18.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.26.7 // indirect
@@ -135,6 +136,7 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20230926050212-f7f687d19a98 // indirect
 	github.com/google/s2a-go v0.1.5 // indirect
@@ -195,7 +197,6 @@ require (
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 // indirect
-	github.com/testcontainers/testcontainers-go/modules/compose v0.32.0 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
@@ -223,7 +224,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.21.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
-	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/term v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
