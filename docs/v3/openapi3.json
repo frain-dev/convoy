@@ -601,6 +601,9 @@
 					"interval_seconds": {
 						"type": "integer"
 					},
+					"max_retry_seconds": {
+						"type": "integer"
+					},
 					"next_send_time": {
 						"type": "string"
 					},
@@ -3560,7 +3563,7 @@
 					"x-originalParamName": "endpoint"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3580,7 +3583,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -3822,7 +3825,7 @@
 					}
 				],
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3842,7 +3845,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -7178,7 +7181,7 @@
 					"x-originalParamName": "portallink"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7198,7 +7201,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -8006,7 +8009,7 @@
 					"x-originalParamName": "source"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -8026,7 +8029,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -8968,7 +8971,7 @@
 					"x-originalParamName": "subscription"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -8988,7 +8991,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
