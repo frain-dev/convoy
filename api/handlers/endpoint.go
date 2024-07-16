@@ -239,7 +239,7 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			endpointID	path		string					true	"Endpoint ID"
 //	@Param			endpoint	body		models.UpdateEndpoint	true	"Endpoint Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Success		202			{object}	util.ServerResponse{data=models.EndpointResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [put]
@@ -415,7 +415,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
 //	@Param			endpointID	path		string	true	"Endpoint ID"
-//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Success		202			{object}	util.ServerResponse{data=models.EndpointResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/pause [put]

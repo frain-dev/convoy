@@ -39,6 +39,7 @@ var DefaultConfiguration = Configuration{
 			Port:       5005,
 			WorkerPort: 5006,
 			AgentPort:  5008,
+			IngestPort: 5009,
 		},
 	},
 	Database: DatabaseConfiguration{
@@ -99,7 +100,6 @@ var DefaultConfiguration = Configuration{
 	},
 	InstanceIngestRate:  50,
 	WorkerExecutionMode: DefaultExecutionMode,
-	APIRateLimitEnabled: true,
 }
 
 type DatabaseConfiguration struct {
@@ -390,7 +390,7 @@ type Configuration struct {
 	Metrics             MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
 	InstanceIngestRate  int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
 	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
-	APIRateLimitEnabled bool                         `json:"api_rate_limit_enabled" envconfig:"CONVOY_API_RATE_LIMIT_ENABLED"`
+	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 }
 
 type PyroscopeConfiguration struct {

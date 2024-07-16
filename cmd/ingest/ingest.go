@@ -1,6 +1,8 @@
 package ingest
 
 import (
+	"context"
+	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -44,71 +46,81 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
-			projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
-			endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
-			configRepo := postgres.NewConfigRepo(a.DB)
-
-			lo := a.Logger.(*log.Logger)
-			lo.SetPrefix("ingester")
-
-			lvl, err := log.ParseLevel(cfg.Logger.Level)
+			err = StartIngest(cmd.Context(), a, cfg, interval)
 			if err != nil {
 				return err
 			}
-
-			lo.SetLevel(lvl)
-
-			sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
-			sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
-
-			err = memorystore.DefaultStore.Register("sources", sourceTable)
-			if err != nil {
-				return err
-			}
-
-			go memorystore.DefaultStore.Sync(cmd.Context(), interval)
-
-			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
-			if err != nil {
-				log.WithError(err).Error("Failed to load configuration")
-			}
-
-			var host string
-			if instCfg != nil {
-				host = instCfg.UID
-			}
-
-			rateLimiter, err := limiter.NewLimiter(cfg)
-			if err != nil {
-				return err
-			}
-
-			ingest, err := pubsub.NewIngest(cmd.Context(), sourceTable, a.Queue, lo, rateLimiter, host)
-			if err != nil {
-				return err
-			}
-
-			go ingest.Run()
 
 			srv := server.NewServer(cfg.Server.HTTP.IngestPort, func() {})
 			mux := chi.NewMux()
 			mux.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}))
 			srv.SetHandler(mux)
 
-			a.Logger.Info("Starting Convoy Message Broker Ingester...")
-
+			fmt.Printf("Starting Convoy Message Broker Ingester on port %v\n", cfg.Server.HTTP.IngestPort)
 			srv.Listen()
 
 			return nil
 		},
 	}
 
-	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 5009, "Ingest port")
+	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 0, "Ingest port")
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "ingest log level")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds, at which the database should be polled for new pub sub sources")
 
 	return cmd
+}
+
+func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
+	sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
+	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
+	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+	configRepo := postgres.NewConfigRepo(a.DB)
+
+	lo := a.Logger.(*log.Logger)
+	lo.SetPrefix("ingester")
+
+	lvl, err := log.ParseLevel(cfg.Logger.Level)
+	if err != nil {
+		return err
+	}
+
+	lo.SetLevel(lvl)
+
+	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
+	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
+
+	err = memorystore.DefaultStore.Register("sources", sourceTable)
+	if err != nil {
+		return err
+	}
+
+	go memorystore.DefaultStore.Sync(ctx, interval)
+
+	instCfg, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		log.WithError(err).Error("Failed to load configuration")
+	}
+
+	var host string
+	if instCfg != nil {
+		host = instCfg.UID
+	}
+
+	rateLimiter, err := limiter.NewLimiter(cfg)
+	if err != nil {
+		return err
+	}
+
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, lo, rateLimiter, host)
+	if err != nil {
+		return err
+	}
+
+	go ingest.Run()
+
+	fmt.Println("Starting Convoy Ingester")
+
+	return nil
 }
 
 func buildCliFlagConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
@@ -131,8 +143,6 @@ func buildCliFlagConfiguration(cmd *cobra.Command) (*config.Configuration, error
 	if ingestPort != 0 {
 		c.Server.HTTP.IngestPort = ingestPort
 	}
-
-	c.Server.HTTP.IngestPort = ingestPort
 
 	return c, nil
 }

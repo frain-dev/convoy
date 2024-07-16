@@ -146,7 +146,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			sourceID	path		string				true	"source id"
 //	@Param			source		body		models.UpdateSource	true	"Source Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.SourceResponse}
+//	@Success		202			{object}	util.ServerResponse{data=models.SourceResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/sources/{sourceID} [put]

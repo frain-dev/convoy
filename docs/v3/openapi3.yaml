@@ -361,6 +361,8 @@ components:
           type: array
         interval_seconds:
           type: integer
+        max_retry_seconds:
+          type: integer
         next_send_time:
           type: string
         num_trials:
@@ -1918,7 +1920,7 @@ paths:
         required: true
         x-originalParamName: endpoint
       responses:
-        "200":
+        "202":
           content:
             application/json:
               schema:
@@ -1928,7 +1930,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.EndpointResponse'
                   type: object
-          description: OK
+          description: Accepted
         "400":
           content:
             application/json:
@@ -2061,7 +2063,7 @@ paths:
         schema:
           type: string
       responses:
-        "200":
+        "202":
           content:
             application/json:
               schema:
@@ -2071,7 +2073,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.EndpointResponse'
                   type: object
-          description: OK
+          description: Accepted
         "400":
           content:
             application/json:
@@ -3912,7 +3914,7 @@ paths:
         required: true
         x-originalParamName: portallink
       responses:
-        "200":
+        "202":
           content:
             application/json:
               schema:
@@ -3922,7 +3924,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.PortalLinkResponse'
                   type: object
-          description: OK
+          description: Accepted
         "400":
           content:
             application/json:
@@ -4362,7 +4364,7 @@ paths:
         required: true
         x-originalParamName: source
       responses:
-        "200":
+        "202":
           content:
             application/json:
               schema:
@@ -4372,7 +4374,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.SourceResponse'
                   type: object
-          description: OK
+          description: Accepted
         "400":
           content:
             application/json:
@@ -4747,7 +4749,7 @@ paths:
         required: true
         x-originalParamName: subscription
       responses:
-        "200":
+        "202":
           content:
             application/json:
               schema:
@@ -4757,7 +4759,7 @@ paths:
                     data:
                       $ref: '#/components/schemas/models.SubscriptionResponse'
                   type: object
-          description: OK
+          description: Accepted
         "400":
           content:
             application/json:

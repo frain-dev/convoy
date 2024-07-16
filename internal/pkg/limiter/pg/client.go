@@ -3,7 +3,6 @@ package pg
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/jmoiron/sqlx"
@@ -21,18 +20,10 @@ func NewRateLimiter(db database.Database) *SlidingWindowRateLimiter {
 }
 
 func (p *SlidingWindowRateLimiter) Allow(ctx context.Context, key string, rate int) error {
-	cfg, _ := config.Get()
-	if !cfg.APIRateLimitEnabled {
-		return nil
-	}
 	return p.takeToken(ctx, key, rate, 1)
 }
 
 func (p *SlidingWindowRateLimiter) AllowWithDuration(ctx context.Context, key string, rate int, bucketSize int) error {
-	cfg, _ := config.Get()
-	if !cfg.APIRateLimitEnabled {
-		return nil
-	}
 	return p.takeToken(ctx, key, rate, bucketSize)
 }
 
