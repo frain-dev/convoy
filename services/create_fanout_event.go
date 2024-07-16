@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"gopkg.in/guregu/null.v4"
 	"time"
 
@@ -67,6 +68,8 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 
 		isDuplicate = len(events) > 0
 	}
+	fmt.Println("Owner id in newMessage " + e.NewMessage.OwnerID)
+	fmt.Printf("NewMessage: %+v\n", e.NewMessage)
 
 	endpoints, err := e.EndpointRepo.FindEndpointsByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 	if err != nil {

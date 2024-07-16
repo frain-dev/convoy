@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -25,4 +26,10 @@ func IncEndpoint(k string) {
 	count := endpoints[k]
 	count++
 	endpoints[k] = count
+}
+
+func PrintEndpoints() {
+	lock.RLock()
+	defer lock.RUnlock()
+	fmt.Printf("Size: %d Endpoints: %+v\n", len(endpoints), endpoints)
 }

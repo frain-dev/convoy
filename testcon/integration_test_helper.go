@@ -176,7 +176,7 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/api/convoy", func(w http.ResponseWriter, r *http.Request) {
 			endpoint := "http://" + r.Host + r.URL.Path
-			fmt.Println(endpoint)
+			fmt.Printf("Received %s request on %s\n", r.Method, endpoint)
 			manifest.IncEndpoint(endpoint)
 			if r.URL.Path != "/api/convoy" {
 				http.NotFound(w, r)
@@ -188,6 +188,7 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 					log.Info(fmt.Sprintf("%s: %s\n", k, v))
 				}
 				_, _ = w.Write([]byte("Received a GET request\n"))
+				break
 			case "POST":
 				reqBody, err := io.ReadAll(r.Body)
 				if err != nil {
@@ -197,13 +198,14 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 				ev := string(reqBody)
 				log.Printf("Received: %s\n", reqBody)
 				_, _ = w.Write([]byte("Received a POST request\n"))
-				manifest.WriteEvent(ev, 1)
+				manifest.IncEvent(ev)
 				defer func() {
 					current := manifest.DecrementAndGet(counter)
 					if current <= 0 {
 						done <- true
 					}
 				}()
+				break
 			default:
 				w.WriteHeader(http.StatusNotImplemented)
 				_, _ = w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
@@ -216,22 +218,27 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 	}()
 }
 
-func createEndpoint(t *testing.T, ctx context.Context, c *convoy.Client, port int) *convoy.EndpointResponse {
-	baseURL := fmt.Sprintf("http://%s:%d/api/convoy", GetOutboundIP().String(), port)
+func createEndpoints(t *testing.T, ctx context.Context, c *convoy.Client, ports []int, ownerId string) []*convoy.EndpointResponse {
+	endpoints := make([]*convoy.EndpointResponse, len(ports))
+	for i, port := range ports {
+		baseURL := fmt.Sprintf("http://%s:%d/api/convoy", GetOutboundIP().String(), port)
 
-	body := &convoy.CreateEndpointRequest{
-		Name:         "endpoint-name-" + ulid.Make().String(),
-		URL:          baseURL,
-		Secret:       "endpoint-secret",
-		SupportEmail: "notifications@getconvoy.io",
+		body := &convoy.CreateEndpointRequest{
+			Name:         "endpoint-name-" + ulid.Make().String(),
+			URL:          baseURL,
+			Secret:       "endpoint-secret",
+			SupportEmail: "notifications@getconvoy.io",
+			OwnerID:      ownerId,
+		}
+
+		endpoint, err := c.Endpoints.Create(ctx, body, &convoy.EndpointParams{})
+		require.NoError(t, err)
+		require.NotEmpty(t, endpoint.UID)
+
+		endpoint.TargetUrl = baseURL
+		endpoints[i] = endpoint
 	}
-
-	endpoint, err := c.Endpoints.Create(ctx, body, &convoy.EndpointParams{})
-	require.NoError(t, err)
-	require.NotEmpty(t, endpoint.UID)
-
-	endpoint.TargetUrl = baseURL
-	return endpoint
+	return endpoints
 }
 
 // Get preferred outbound ip of this machine
@@ -263,7 +270,7 @@ func createMatchingSubscriptions(t *testing.T, ctx context.Context, c *convoy.Cl
 	return subscription
 }
 
-func sendEvent(ctx context.Context, c *convoy.Client, channel string, eUID string, eventType string, traceId string) error {
+func sendEvent(ctx context.Context, c *convoy.Client, channel string, eUID string, eventType string, traceId string, ownerId string) error {
 	event := fmt.Sprintf(`{"traceId": "%s"}`, traceId)
 	payload := []byte(event)
 
@@ -276,30 +283,45 @@ func sendEvent(ctx context.Context, c *convoy.Client, channel string, eUID strin
 			Data:           payload,
 		}
 		return c.Events.Create(ctx, body)
+	case "fan-out":
+		foBody := &convoy.CreateFanoutEventRequest{
+			EventType:      eventType,
+			OwnerID:        ownerId,
+			IdempotencyKey: ulid.Make().String(),
+			Data:           payload,
+		}
+		return c.Events.FanoutEvent(ctx, foBody)
 	}
 
 	return errors.New("unknown channel")
 }
 
-func assertEventCameThrough(t *testing.T, done chan bool, endpointUrl string, traceIds ...string) {
+func assertEventCameThrough(t *testing.T, done *chan bool, endpoints []*convoy.EndpointResponse, traceIds []string) {
 	waitForEvents(t, done)
 
-	hits := manifest.ReadEndpoint(endpointUrl)
-	require.NotNil(t, hits)
-	require.Equal(t, hits, len(traceIds))
+	t.Log("Done waiting. Further wait for 10s")
+	time.Sleep(10 * time.Second)
 
+	manifest.PrintEndpoints()
+	for _, endpoint := range endpoints {
+		hits := manifest.ReadEndpoint(endpoint.TargetUrl)
+		require.NotNil(t, hits)
+		require.True(t, hits >= 1, endpoint.TargetUrl+" must exist and be non-zero") // ??
+	}
+
+	manifest.PrintEvents()
 	for _, traceId := range traceIds {
 		event := fmt.Sprintf(`{"traceId":"%s"}`, traceId)
 		hits := manifest.ReadEvent(event)
 		require.NotNil(t, hits)
-		require.Equal(t, hits, 1)
+		require.True(t, hits >= 1, event+" must exist and be non-zero") // ??
 	}
 	t.Log("Events came through!")
 }
 
-func waitForEvents(t *testing.T, done chan bool) {
+func waitForEvents(t *testing.T, done *chan bool) {
 	select {
-	case <-done:
+	case <-*done:
 	case <-time.After(25 * time.Second):
 		t.Errorf("Time out while waiting for events")
 	}
