@@ -188,7 +188,6 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 					log.Info(fmt.Sprintf("%s: %s\n", k, v))
 				}
 				_, _ = w.Write([]byte("Received a GET request\n"))
-				break
 			case "POST":
 				reqBody, err := io.ReadAll(r.Body)
 				if err != nil {
@@ -205,7 +204,6 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 						done <- true
 					}
 				}()
-				break
 			default:
 				w.WriteHeader(http.StatusNotImplemented)
 				_, _ = w.Write([]byte(http.StatusText(http.StatusNotImplemented)))

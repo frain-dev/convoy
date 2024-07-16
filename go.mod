@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.327
 	github.com/danvixent/asynqmon v0.7.3
 	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
+	github.com/docker/compose/v2 v2.28.1
 	github.com/dop251/goja v0.0.0-20231014103939-873a1496dc8e
 	github.com/dop251/goja_nodejs v0.0.0-20230821135201-94e508132562
 	github.com/exaring/otelpgx v0.5.4
@@ -112,7 +113,6 @@ require (
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/docker/buildx v0.15.1 // indirect
 	github.com/docker/cli v27.0.3+incompatible // indirect
-	github.com/docker/compose/v2 v2.28.1 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker v27.0.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.0 // indirect
