@@ -47,20 +47,20 @@ services:
             - redis_server
             - migrate
 
-#    ingest:
-#        build:
-#            context: ../../
-#            dockerfile: Dockerfile.dev
-#        entrypoint: ["./cmd", "ingest", "--config", "convoy.json"]
-#        volumes:
-#            - ./convoy-test.json:/convoy.json
-#        restart: on-failure
-#        ports:
-#            - "5018:5008"
-#        depends_on:
-#            - postgres
-#            - redis_server
-#            - migrate
+    ingest:
+        build:
+            context: ../../
+            dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "ingest", "--config", "convoy.json"]
+        volumes:
+            - ./convoy-test.json:/convoy.json
+        restart: on-failure
+        ports:
+            - "5018:5008"
+        depends_on:
+            - postgres
+            - redis_server
+            - migrate
 
     postgres:
         image: postgres:15.2-alpine
