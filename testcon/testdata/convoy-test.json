@@ -23,6 +23,9 @@
         "jwt": {
             "enabled": true
         },
+        "native": {
+            "enabled": true
+        },
         "file": {
             "basic": [
                 {
