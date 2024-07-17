@@ -23,7 +23,7 @@ func (i *IntegrationTestSuite) Test_DirectEvent_Success_AllSubscriptions() {
 	require.NoError(t, sendEvent(ctx, c, "direct", endpoint.UID, "any.event", traceId, ""))
 	require.NoError(t, sendEvent(ctx, c, "direct", endpoint.UID, "any.other.event", secondTraceId, ""))
 
-	assertEventCameThrough(t, done, []*convoy.EndpointResponse{endpoint}, []string{traceId, secondTraceId})
+	assertEventCameThrough(t, done, []*convoy.EndpointResponse{endpoint}, []string{traceId, secondTraceId}, []string{})
 }
 
 func (i *IntegrationTestSuite) Test_DirectEvent_Success_MustMatchSubscription() {
@@ -37,10 +37,10 @@ func (i *IntegrationTestSuite) Test_DirectEvent_Success_MustMatchSubscription() 
 
 	createMatchingSubscriptions(t, ctx, c, endpoint.UID, []string{"invoice.created"})
 
-	traceId, secondTraceId := "event-direct-some-0-"+ulid.Make().String(), "event-direct-some-1"+ulid.Make().String()
+	traceId, secondTraceId := "event-direct-some-0-"+ulid.Make().String(), "event-direct-some-1-"+ulid.Make().String()
 
 	require.NoError(t, sendEvent(ctx, c, "direct", endpoint.UID, "mismatched.event", traceId, ""))
 	require.NoError(t, sendEvent(ctx, c, "direct", endpoint.UID, "invoice.created", secondTraceId, ""))
 
-	assertEventCameThrough(t, done, []*convoy.EndpointResponse{endpoint}, []string{secondTraceId})
+	assertEventCameThrough(t, done, []*convoy.EndpointResponse{endpoint}, []string{secondTraceId}, []string{traceId})
 }

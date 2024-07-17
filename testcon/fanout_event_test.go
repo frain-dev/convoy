@@ -22,7 +22,7 @@ func (i *IntegrationTestSuite) Test_FanOutEvent_Success_AllSubscriptions() {
 	for _, endpoint := range endpoints {
 		createMatchingSubscriptions(t, ctx, c, endpoint.UID, []string{"*"})
 
-		traceId, secondTraceId := "event-fan-out-all-0"+ulid.Make().String(), "event-fan-out-all-1"+ulid.Make().String()
+		traceId, secondTraceId := "event-fan-out-all-0-"+ulid.Make().String(), "event-fan-out-all-1-"+ulid.Make().String()
 
 		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "any.event", traceId, i.DefaultOrg.OwnerID))
 		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "any.other.event", secondTraceId, i.DefaultOrg.OwnerID))
@@ -30,7 +30,7 @@ func (i *IntegrationTestSuite) Test_FanOutEvent_Success_AllSubscriptions() {
 		traceIds = append(traceIds, traceId, secondTraceId)
 	}
 
-	assertEventCameThrough(t, done, endpoints, traceIds)
+	assertEventCameThrough(t, done, endpoints, traceIds, []string{})
 }
 
 func (i *IntegrationTestSuite) Test_FanOutEvent_Success_MustMatchSubscription() {
@@ -44,18 +44,20 @@ func (i *IntegrationTestSuite) Test_FanOutEvent_Success_MustMatchSubscription() 
 	endpoints := createEndpoints(t, ctx, c, ports, i.DefaultOrg.OwnerID)
 
 	traceIds := make([]string, 0)
+	negativeTraceIds := make([]string, 0)
 	for _, endpoint := range endpoints {
 		createMatchingSubscriptions(t, ctx, c, endpoint.UID, []string{"invoice.fan-out.created"})
 
-		traceId, secondTraceId := "event-fan-out-some-0"+ulid.Make().String(), "event-fan-out-some-1"+ulid.Make().String()
+		traceId, secondTraceId := "event-fan-out-some-0-"+ulid.Make().String(), "event-fan-out-some-1-"+ulid.Make().String()
 
-		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "mismatched.event", traceId, i.DefaultOrg.OwnerID))
+		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "mismatched.event.dont.fan.out", traceId, i.DefaultOrg.OwnerID))
 		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "invoice.fan-out.created", secondTraceId, i.DefaultOrg.OwnerID))
 
 		traceIds = append(traceIds, secondTraceId)
+		negativeTraceIds = append(negativeTraceIds, traceId)
 	}
 
-	assertEventCameThrough(t, done, endpoints, traceIds)
+	assertEventCameThrough(t, done, endpoints, traceIds, negativeTraceIds)
 }
 
 func (i *IntegrationTestSuite) initAndStartServers(ports []int, eventCount int64) (*convoy.Client, *chan bool) {

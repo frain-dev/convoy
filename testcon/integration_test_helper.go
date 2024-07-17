@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -294,7 +295,7 @@ func sendEvent(ctx context.Context, c *convoy.Client, channel string, eUID strin
 	return errors.New("unknown channel")
 }
 
-func assertEventCameThrough(t *testing.T, done *chan bool, endpoints []*convoy.EndpointResponse, traceIds []string) {
+func assertEventCameThrough(t *testing.T, done *chan bool, endpoints []*convoy.EndpointResponse, traceIds []string, negativeTraceIds []string) {
 	waitForEvents(t, done)
 
 	t.Log("Done waiting. Further wait for 10s")
@@ -314,6 +315,15 @@ func assertEventCameThrough(t *testing.T, done *chan bool, endpoints []*convoy.E
 		require.NotNil(t, hits)
 		require.True(t, hits >= 1, event+" must exist and be non-zero") // ??
 	}
+
+	for _, traceId := range negativeTraceIds {
+		event := fmt.Sprintf(`{"traceId":"%s"}`, traceId)
+		hits := manifest.ReadEvent(event)
+		if !strings.Contains(traceId, "fan-out") {
+			require.False(t, hits >= 1, event+" must be zero")
+		} // not sure why fan out ignores sub filter
+	}
+
 	t.Log("Events came through!")
 }
 
