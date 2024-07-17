@@ -782,6 +782,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			portalLinkRepo := mocks.NewMockPortalLinkRepository(ctrl)
 			q := mocks.NewMockQueuer(ctrl)
 			rateLimiter := mocks.NewMockRateLimiter(ctrl)
+			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -810,7 +811,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dispatcher, err := net.NewDispatcher("", false)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher)
+			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher, attemptsRepo)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

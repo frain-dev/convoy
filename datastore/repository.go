@@ -196,3 +196,8 @@ type MetaEventRepository interface {
 type ExportRepository interface {
 	ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error)
 }
+
+type DeliveryAttemptsRepository interface {
+	CreateDeliveryAttempt(context.Context, *DeliveryAttempt) error
+	FindDeliveryAttempts(ctx context.Context, eventDeliveryId string) ([]DeliveryAttempt, error)
+}

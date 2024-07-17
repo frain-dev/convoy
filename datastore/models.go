@@ -847,12 +847,12 @@ type EventInterval struct {
 }
 
 type DeliveryAttempt struct {
-	UID        string `json:"uid" db:"id"`
-	MsgID      string `json:"msg_id" db:"msg_id"`
-	URL        string `json:"url" db:"url"`
-	Method     string `json:"method" db:"method"`
-	EndpointID string `json:"endpoint_id" db:"endpoint_id"`
-	APIVersion string `json:"api_version" db:"api_version"`
+	UID             string `json:"uid" db:"id"`
+	EventDeliveryId string `json:"msg_id" db:"event_delivery_id"`
+	URL             string `json:"url" db:"url"`
+	Method          string `json:"method" db:"method"`
+	EndpointID      string `json:"endpoint_id" db:"endpoint_id"`
+	APIVersion      string `json:"api_version" db:"api_version"`
 
 	IPAddress        string     `json:"ip_address,omitempty" db:"ip_address"`
 	RequestHeader    HttpHeader `json:"request_http_header,omitempty" db:"request_http_header"`
