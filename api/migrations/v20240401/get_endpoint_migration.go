@@ -31,7 +31,7 @@ func (c *GetEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]byte,
 
 	endpoint := endpointResp.Endpoint
 
-	var old oldEndpointResponse
+	var old OldEndpointResponse
 	err = migrateEndpoint(&endpoint, &old)
 	if err != nil {
 		fmt.Printf("err: %+v\n", err)
