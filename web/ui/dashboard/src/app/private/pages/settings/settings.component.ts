@@ -1,6 +1,6 @@
-import { Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import {Location} from '@angular/common';
+import {Component, OnInit} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
 
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team';
 
@@ -14,7 +14,7 @@ export class SettingsComponent implements OnInit {
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
 		{ name: 'team', icon: 'team', svg: 'stroke' },
-		{ name: 'configuration settings', icon: 'settings', svg: 'fill' }
+		// { name: 'configuration settings', icon: 'settings', svg: 'fill' }
 	];
 
 	constructor(private router: Router, private route: ActivatedRoute, private location: Location) {}

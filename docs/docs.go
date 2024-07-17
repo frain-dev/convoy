@@ -234,8 +234,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -463,8 +463,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "allOf": [
                                 {
@@ -803,8 +803,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "allOf": [
                                 {
@@ -2108,8 +2108,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2424,8 +2424,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -2537,8 +2537,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/handlers.Stub"
                         }
@@ -2638,8 +2638,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -3541,8 +3541,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -3770,8 +3770,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "allOf": [
                                 {
@@ -4166,8 +4166,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -4395,8 +4395,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "allOf": [
                                 {
@@ -4791,8 +4791,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "allOf": [
                                 {
@@ -5246,8 +5246,8 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "202": {
+                        "description": "Accepted",
                         "schema": {
                             "allOf": [
                                 {
@@ -5967,6 +5967,9 @@ const docTemplate = `{
                 "interval_seconds": {
                     "type": "integer"
                 },
+                "max_retry_seconds": {
+                    "type": "integer"
+                },
                 "next_send_time": {
                     "type": "string"
                 },
@@ -6398,10 +6401,7 @@ const docTemplate = `{
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -6657,10 +6657,7 @@ const docTemplate = `{
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -6947,10 +6944,7 @@ const docTemplate = `{
                 },
                 "data": {
                     "description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "type": "object"
                 },
                 "event_type": {
                     "description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -7392,7 +7386,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/datastore.FilterConfiguration"
                 },
                 "function": {
-                    "$ref": "#/definitions/null.String"
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"
@@ -7647,18 +7641,6 @@ const docTemplate = `{
                 },
                 "type": {
                     "$ref": "#/definitions/datastore.VerifierType"
-                }
-            }
-        },
-        "null.String": {
-            "type": "object",
-            "properties": {
-                "string": {
-                    "type": "string"
-                },
-                "valid": {
-                    "description": "Valid is true if String is not NULL",
-                    "type": "boolean"
                 }
             }
         },

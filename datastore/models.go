@@ -801,6 +801,8 @@ type Metadata struct {
 	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds"`
 
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
+
+	MaxRetrySeconds uint64 `json:"max_retry_seconds" bson:"max_retry_seconds"`
 }
 
 func (m *Metadata) Scan(value interface{}) error {
@@ -1002,7 +1004,7 @@ type Subscription struct {
 	SourceID   string           `json:"-" db:"source_id"`
 	EndpointID string           `json:"-" db:"endpoint_id"`
 	DeviceID   string           `json:"-" db:"device_id"`
-	Function   null.String      `json:"function" db:"function"`
+	Function   null.String      `json:"function" db:"function" swaggertype:"string"`
 
 	Source   *Source   `json:"source_metadata" db:"source_metadata"`
 	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`

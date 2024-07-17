@@ -128,6 +128,7 @@ func TestLoadConfig(t *testing.T) {
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
+						IngestPort: 5009,
 						AgentPort:  5008,
 						WorkerPort: 5006,
 					},
@@ -169,7 +170,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				WorkerExecutionMode: DefaultExecutionMode,
-				InstanceIngestRate:    50,
+				InstanceIngestRate:  50,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -205,6 +206,7 @@ func TestLoadConfig(t *testing.T) {
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
 						AgentPort:  5008,
+						IngestPort: 5009,
 						WorkerPort: 5006,
 					},
 				},
@@ -244,7 +246,7 @@ func TestLoadConfig(t *testing.T) {
 						SampleTime: 5,
 					},
 				},
-				InstanceIngestRate:    50,
+				InstanceIngestRate:  50,
 				WorkerExecutionMode: DefaultExecutionMode,
 			},
 			wantErr:    false,
@@ -280,6 +282,7 @@ func TestLoadConfig(t *testing.T) {
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
 						AgentPort:  5008,
+						IngestPort: 5009,
 						WorkerPort: 5006,
 					},
 				},
@@ -319,7 +322,7 @@ func TestLoadConfig(t *testing.T) {
 						SampleTime: 5,
 					},
 				},
-				InstanceIngestRate:    50,
+				InstanceIngestRate:  50,
 				WorkerExecutionMode: DefaultExecutionMode,
 			},
 			wantErr:    false,

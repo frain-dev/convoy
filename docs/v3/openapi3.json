@@ -535,6 +535,9 @@
 					"interval_seconds": {
 						"type": "integer"
 					},
+					"max_retry_seconds": {
+						"type": "integer"
+					},
 					"next_send_time": {
 						"type": "string"
 					},
@@ -966,10 +969,7 @@
 					},
 					"data": {
 						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
+						"type": "object"
 					},
 					"event_type": {
 						"description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -1225,10 +1225,7 @@
 					},
 					"data": {
 						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
+						"type": "object"
 					},
 					"event_type": {
 						"description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -1515,10 +1512,7 @@
 					},
 					"data": {
 						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
+						"type": "object"
 					},
 					"event_type": {
 						"description": "Event Type is used for filtering and debugging e.g invoice.paid",
@@ -1960,7 +1954,7 @@
 						"$ref": "#/components/schemas/datastore.FilterConfiguration"
 					},
 					"function": {
-						"$ref": "#/components/schemas/null.String"
+						"type": "string"
 					},
 					"name": {
 						"type": "string"
@@ -2215,18 +2209,6 @@
 					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.VerifierType"
-					}
-				},
-				"type": "object"
-			},
-			"null.String": {
-				"properties": {
-					"string": {
-						"type": "string"
-					},
-					"valid": {
-						"description": "Valid is true if String is not NULL",
-						"type": "boolean"
 					}
 				},
 				"type": "object"
@@ -2488,7 +2470,7 @@
 					"x-originalParamName": "endpoint"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2508,7 +2490,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -2871,7 +2853,7 @@
 					"x-originalParamName": "endpoint"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -2891,7 +2873,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -3133,7 +3115,7 @@
 					}
 				],
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3153,7 +3135,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -4612,7 +4594,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4632,7 +4614,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -4969,7 +4951,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -4989,7 +4971,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -5097,7 +5079,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5105,7 +5087,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -5213,7 +5195,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5233,7 +5215,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -6227,7 +6209,7 @@
 					"x-originalParamName": "portallink"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6247,7 +6229,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -6487,7 +6469,7 @@
 					"x-originalParamName": "portallink"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6507,7 +6489,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -6932,7 +6914,7 @@
 					"x-originalParamName": "source"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6952,7 +6934,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -7315,7 +7297,7 @@
 					"x-originalParamName": "source"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7335,7 +7317,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -7638,7 +7620,7 @@
 					"x-originalParamName": "subscription"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7658,7 +7640,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -8277,7 +8259,7 @@
 					"x-originalParamName": "subscription"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -8297,7 +8279,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {

@@ -361,6 +361,8 @@ definitions:
         type: array
       interval_seconds:
         type: integer
+      max_retry_seconds:
+        type: integer
       next_send_time:
         type: string
       num_trials:
@@ -659,9 +661,7 @@ definitions:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
-        items:
-          type: integer
-        type: array
+        type: object
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -865,9 +865,7 @@ definitions:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
-        items:
-          type: integer
-        type: array
+        type: object
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -1071,9 +1069,7 @@ definitions:
         description: |-
           Data is an arbitrary JSON value that gets sent as the body of the
           webhook to the endpoints
-        items:
-          type: integer
-        type: array
+        type: object
       event_type:
         description: Event Type is used for filtering and debugging e.g invoice.paid
         type: string
@@ -1368,7 +1364,7 @@ definitions:
       filter_config:
         $ref: '#/definitions/datastore.FilterConfiguration'
       function:
-        $ref: '#/definitions/null.String'
+        type: string
       name:
         type: string
       rate_limit_config:
@@ -1563,14 +1559,6 @@ definitions:
       type:
         $ref: '#/definitions/datastore.VerifierType'
     type: object
-  null.String:
-    properties:
-      string:
-        type: string
-      valid:
-        description: Valid is true if String is not NULL
-        type: boolean
-    type: object
   util.ServerResponse:
     properties:
       message:
@@ -1715,8 +1703,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -1902,8 +1890,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2031,8 +2019,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -2786,8 +2774,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3093,8 +3081,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3157,8 +3145,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             $ref: '#/definitions/handlers.Stub'
         "400":
@@ -3215,8 +3203,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3602,8 +3590,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3729,8 +3717,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -3953,8 +3941,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4140,8 +4128,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4304,8 +4292,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "201":
+          description: Created
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'
@@ -4491,8 +4479,8 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted
           schema:
             allOf:
             - $ref: '#/definitions/util.ServerResponse'

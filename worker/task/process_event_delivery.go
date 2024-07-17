@@ -72,6 +72,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if err != nil {
 			return &DeliveryError{Err: err}
 		}
+		eventDelivery.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
