@@ -32,26 +32,11 @@ services:
             postgres:
                 condition: service_healthy
 
-    worker:
+    agent:
         build:
             context: ../../
             dockerfile: Dockerfile.dev
-        entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
-        volumes:
-            - ./convoy-test.json:/convoy.json
-        restart: on-failure
-        ports:
-            - "5016:5006"
-        depends_on:
-            - postgres
-            - redis_server
-            - migrate
-
-    ingest:
-        build:
-            context: ../../
-            dockerfile: Dockerfile.dev
-        entrypoint: ["./cmd", "ingest", "--config", "convoy.json"]
+        entrypoint: ["./cmd", "agent", "--config", "convoy.json"]
         volumes:
             - ./convoy-test.json:/convoy.json
         restart: on-failure
