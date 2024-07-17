@@ -1,10 +1,11 @@
-package v20240101
+package v20240401
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
-	v20240401 "github.com/frain-dev/convoy/api/migrations/v20240401"
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -22,29 +23,32 @@ func (c *GetEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]byte,
 		return b, h, nil
 	}
 
-	var endpointResp v20240401.OldEndpointResponse
+	var endpointResp *models.EndpointResponse
 	err = json.Unmarshal(serverResponse.Data, &endpointResp)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	var oldEndpoint oldEndpoint
-	err = migrateEndpoint(&endpointResp, &oldEndpoint, backward)
+	endpoint := endpointResp.Endpoint
+
+	var old OldEndpointResponse
+	err = migrateEndpoint(&endpoint, &old)
 	if err != nil {
+		fmt.Printf("err: %+v\n", err)
 		return nil, nil, err
 	}
 
-	newEndpointResponse := &endpointResponse{&oldEndpoint}
-
-	b, err = json.Marshal(newEndpointResponse)
+	b, err = json.Marshal(old)
 	if err != nil {
+		fmt.Printf("err2: %+v\n", err)
 		return nil, nil, err
 	}
 
-	serverResponse.Data = json.RawMessage(b)
+	serverResponse.Data = b
 
 	sb, err := json.Marshal(serverResponse)
 	if err != nil {
+		fmt.Printf("err3: %+v\n", err)
 		return nil, nil, err
 	}
 
