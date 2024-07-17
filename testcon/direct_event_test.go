@@ -37,7 +37,7 @@ func (i *IntegrationTestSuite) Test_DirectEvent_Success_MustMatchSubscription() 
 
 	createMatchingSubscriptions(t, ctx, c, endpoint.UID, []string{"invoice.created"})
 
-	traceId, secondTraceId := "event-direct-some-0-"+ulid.Make().String(), "event-direct-some-0"+ulid.Make().String()
+	traceId, secondTraceId := "event-direct-some-0-"+ulid.Make().String(), "event-direct-some-1"+ulid.Make().String()
 
 	require.NoError(t, sendEvent(ctx, c, "direct", endpoint.UID, "mismatched.event", traceId, ""))
 	require.NoError(t, sendEvent(ctx, c, "direct", endpoint.UID, "invoice.created", secondTraceId, ""))
