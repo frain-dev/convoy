@@ -2,16 +2,17 @@ package v20240401
 
 import (
 	"encoding/json"
-	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/datastore"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/util"
 	"gopkg.in/guregu/null.v4"
 )
 
-type oldEndpointResponse struct {
+type OldEndpointResponse struct {
 	UID                string            `json:"uid" db:"id"`
 	ProjectID          string            `json:"project_id" db:"project_id"`
 	OwnerID            string            `json:"owner_id,omitempty" db:"owner_id"`
@@ -59,7 +60,7 @@ func (c *CreateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]by
 
 	endpoint := endpointResp.Endpoint
 
-	var old oldEndpointResponse
+	var old OldEndpointResponse
 	err = migrateEndpoint(&endpoint, &old)
 	if err != nil {
 		return nil, nil, err
