@@ -6,6 +6,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -374,6 +375,50 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_WriteToQueueFailed() {
 	i.T().Skip("Depends on mocking")
 }
 
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPayloadSize() {
+	maskID := "123456"
+	sourceID := "123456789"
+	expectedStatusCode := http.StatusRequestEntityTooLarge
+
+	// Just Before
+	v := &datastore.VerifierConfig{
+		Type: datastore.NoopVerifier,
+	}
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
+
+	url := fmt.Sprintf("/ingest/%s", maskID)
+	body := &fixedSizeReader{size: 1024 * 1024 * 100} // 100MB
+	req := createRequest(http.MethodPost, url, "", body)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	i.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(i.T(), expectedStatusCode, w.Code)
+}
+
 func TestIngestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IngestIntegrationTestSuite))
+}
+
+type fixedSizeReader struct {
+	size int64
+	read int64
+}
+
+func (r *fixedSizeReader) Read(p []byte) (n int, err error) {
+	remaining := r.size - r.read
+	if remaining == 0 {
+		return 0, io.EOF
+	}
+	if int64(len(p)) > remaining {
+		p = p[:remaining]
+	}
+	for i := range p {
+		p[i] = 'a'
+	}
+	r.read += int64(len(p))
+	return len(p), nil
 }
