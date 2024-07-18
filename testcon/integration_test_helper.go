@@ -298,11 +298,11 @@ func sendEvent(ctx context.Context, c *convoy.Client, channel string, eUID strin
 	return errors.New("unknown channel")
 }
 
-func assertEventCameThrough(t *testing.T, done *chan bool, endpoints []*convoy.EndpointResponse, traceIds []string, negativeTraceIds []string) {
+func assertEventCameThrough(t *testing.T, done chan bool, endpoints []*convoy.EndpointResponse, traceIds []string, negativeTraceIds []string) {
 	waitForEvents(t, done)
 
-	t.Log("Done waiting. Further wait for 10s")
-	time.Sleep(10 * time.Second)
+	t.Log("Done waiting. Further wait for 3s")
+	time.Sleep(3 * time.Second)
 
 	manifest.PrintEndpoints()
 	for _, endpoint := range endpoints {
@@ -330,9 +330,9 @@ func assertEventCameThrough(t *testing.T, done *chan bool, endpoints []*convoy.E
 	t.Log("Events came through!")
 }
 
-func waitForEvents(t *testing.T, done *chan bool) {
+func waitForEvents(t *testing.T, done chan bool) {
 	select {
-	case <-*done:
+	case <-done:
 	case <-time.After(25 * time.Second):
 		t.Errorf("Time out while waiting for events")
 	}

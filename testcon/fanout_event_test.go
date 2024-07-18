@@ -63,7 +63,7 @@ func (i *IntegrationTestSuite) Test_FanOutEvent_Success_MustMatchSubscription() 
 	assertEventCameThrough(t, done, endpoints, traceIds, negativeTraceIds)
 }
 
-func (i *IntegrationTestSuite) initAndStartServers(ports []int, eventCount int64) (*convoy.Client, *chan bool) {
+func (i *IntegrationTestSuite) initAndStartServers(ports []int, eventCount int64) (*convoy.Client, chan bool) {
 	baseURL := "http://localhost:5015/api/v1"
 	c := convoy.New(baseURL, i.APIKey, i.DefaultProject.UID)
 
@@ -76,5 +76,5 @@ func (i *IntegrationTestSuite) initAndStartServers(ports []int, eventCount int64
 		go startHTTPServer(done, &counter, port)
 	}
 
-	return c, &done
+	return c, done
 }
