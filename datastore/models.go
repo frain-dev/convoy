@@ -751,6 +751,15 @@ type (
 	HttpHeader          map[string]string
 )
 
+func (h *HttpHeader) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("HttpHeader: expected []byte, got %T", value)
+	}
+
+	return json.Unmarshal(bytes, h)
+}
+
 func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 	for k, v := range h {
 		r.Header.Set(k, v)

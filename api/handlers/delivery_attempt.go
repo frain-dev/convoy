@@ -1,12 +1,12 @@
 package handlers
 
 import (
+	"github.com/frain-dev/convoy/database/postgres"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -33,15 +33,14 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deliveryAttemptID := chi.URLParam(r, "deliveryAttemptID")
-	attempts := (*[]datastore.DeliveryAttempt)(&eventDelivery.DeliveryAttempts)
-	deliveryAttempt, err := findDeliveryAttempt(attempts, deliveryAttemptID)
+	attemptsRepo := postgres.NewDeliveryAttemptRepo(h.A.DB)
+	deliveryAttempt, err := attemptsRepo.FindDeliveryAttemptById(r.Context(), eventDelivery.UID, deliveryAttemptID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempt fetched successfully",
-		deliveryAttempt, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempt fetched successfully", deliveryAttempt, http.StatusOK))
 }
 
 // GetDeliveryAttempts
@@ -65,16 +64,13 @@ func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	attempts := (*[]datastore.DeliveryAttempt)(&eventDelivery.DeliveryAttempts)
+	attemptsRepo := postgres.NewDeliveryAttemptRepo(h.A.DB)
+	attempts, err := attemptsRepo.FindDeliveryAttempts(r.Context(), eventDelivery.UID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempts fetched successfully",
 		attempts, http.StatusOK))
-}
-
-func findDeliveryAttempt(attempts *[]datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
-	for _, a := range *attempts {
-		if a.UID == id {
-			return &a, nil
-		}
-	}
-	return nil, datastore.ErrEventDeliveryAttemptNotFound
 }

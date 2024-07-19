@@ -52,11 +52,12 @@ func (e *EventDeliveryListener) AfterUpdate(data interface{}, _ interface{}) {
 		return
 	}
 
+	// todo(raymond): query delivery attempts table to fetch the attempts
 	mEventDelivery := getMetaEventDelivery(eventDelivery)
-	if len(eventDelivery.DeliveryAttempts) > 0 {
-		attempt := eventDelivery.DeliveryAttempts[len(eventDelivery.DeliveryAttempts)-1]
-		mEventDelivery.DeliveryAttempts = attempt
-	}
+	//if len(eventDelivery.DeliveryAttempts) > 0 {
+	//	attempt := eventDelivery.DeliveryAttempts[len(eventDelivery.DeliveryAttempts)-1]
+	//	mEventDelivery.DeliveryAttempts = attempt
+	//}
 
 	if eventDelivery.Status == datastore.SuccessEventStatus {
 		err := e.mEvent.Run(string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)

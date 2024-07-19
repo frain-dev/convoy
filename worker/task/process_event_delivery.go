@@ -275,7 +275,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
 		}
 
-		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
+		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
 			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}

@@ -32,7 +32,7 @@ type EventDeliveryRepository interface {
 	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status EventDeliveryStatus) error
 	FindDiscardedEventDeliveries(ctx context.Context, projectID, deviceId string, params SearchParams) ([]EventDelivery, error)
 	FindStuckEventDeliveriesByStatus(ctx context.Context, status EventDeliveryStatus) ([]EventDelivery, error)
-	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
+	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
@@ -199,5 +199,6 @@ type ExportRepository interface {
 
 type DeliveryAttemptsRepository interface {
 	CreateDeliveryAttempt(context.Context, *DeliveryAttempt) error
-	FindDeliveryAttempts(ctx context.Context, eventDeliveryId string) ([]DeliveryAttempt, error)
+	FindDeliveryAttemptById(context.Context, string, string) (*DeliveryAttempt, error)
+	FindDeliveryAttempts(context.Context, string) ([]DeliveryAttempt, error)
 }

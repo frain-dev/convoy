@@ -38,12 +38,12 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
     `
 	createEventDeliveries = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
-    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :attempts, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
+    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at);
     `
 
 	baseFetchEventDelivery = `
@@ -211,7 +211,7 @@ const (
     `
 
 	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3, latency_seconds = $4,  updated_at = NOW() WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET status = $1, metadata = $2, latency_seconds = $3,  updated_at = NOW() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
@@ -251,7 +251,7 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 	result, err := tx.ExecContext(
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
-		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
+		delivery.SubscriptionID, delivery.Headers, delivery.Status,
 		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey, delivery.EventType,
 		delivery.AcknowledgedAt,
 	)
@@ -299,7 +299,6 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 			"device_id":        deviceID,
 			"subscription_id":  delivery.SubscriptionID,
 			"headers":          delivery.Headers,
-			"attempts":         delivery.DeliveryAttempts,
 			"status":           delivery.Status,
 			"metadata":         delivery.Metadata,
 			"cli_metadata":     delivery.CLIMetadata,
@@ -545,10 +544,8 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 	return eventDeliveries, nil
 }
 
-func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
-	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
-
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.LatencySeconds, delivery.UID, projectID)
+func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery) error {
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.Status, delivery.Metadata, delivery.LatencySeconds, delivery.UID, projectID)
 	if err != nil {
 		return err
 	}
@@ -752,16 +749,15 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				HostName: ev.Device.HostName.ValueOrZero(),
 				Status:   datastore.DeviceStatus(ev.Device.Status.ValueOrZero()),
 			},
-			Event:            &datastore.Event{EventType: datastore.EventType(ev.Event.EventType.ValueOrZero())},
-			DeliveryAttempts: ev.DeliveryAttempts,
-			Status:           ev.Status,
-			Metadata:         ev.Metadata,
-			CLIMetadata:      cli,
-			Description:      ev.Description,
-			AcknowledgedAt:   ev.AcknowledgedAt,
-			CreatedAt:        ev.CreatedAt,
-			UpdatedAt:        ev.UpdatedAt,
-			DeletedAt:        ev.DeletedAt,
+			Event:          &datastore.Event{EventType: datastore.EventType(ev.Event.EventType.ValueOrZero())},
+			Status:         ev.Status,
+			Metadata:       ev.Metadata,
+			CLIMetadata:    cli,
+			Description:    ev.Description,
+			AcknowledgedAt: ev.AcknowledgedAt,
+			CreatedAt:      ev.CreatedAt,
+			UpdatedAt:      ev.UpdatedAt,
+			DeletedAt:      ev.DeletedAt,
 		})
 	}
 

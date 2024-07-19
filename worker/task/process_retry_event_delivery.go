@@ -251,13 +251,14 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 				}
 			}
 		}
+
 		err = attemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
 		if err != nil {
 			log.WithError(err).Error("failed to create delivery attempt", eventDelivery.UID)
 			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
 		}
 
-		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
+		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
 			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error()), delay: defaultEventDelay}
