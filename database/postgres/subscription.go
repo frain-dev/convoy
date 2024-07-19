@@ -338,7 +338,9 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 				counter++
 			}
 
-			cursor = subs[counter-1].UID
+			if counter > 0 {
+				cursor = subs[counter-1].UID
+			}
 		}()
 
 		if err != nil {
@@ -431,7 +433,9 @@ func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, c
 				counter++
 			}
 
-			cursor = subs[counter-1].UID
+			if counter > 0 {
+				cursor = subs[counter-1].UID
+			}
 		}()
 
 		if err != nil {
