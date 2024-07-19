@@ -100,3 +100,7 @@ jobs:
                   TEST_TYPESENSE_HOST: http://localhost:8108
                   TEST_TYPESENSE_API_KEY: some-api-key
                   TEST_SEARCH_TYPE: typesense
+
+            - name: Run integration tests (with test containers)
+              run: make docker_e2e_tests
+
