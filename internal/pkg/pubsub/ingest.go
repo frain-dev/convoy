@@ -333,7 +333,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 	default:
-		err := fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single and broadcast", messageType)
+		err := fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single, fanout or broadcast", messageType)
 		log.Error(err)
 		return err
 	}
