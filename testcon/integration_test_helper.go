@@ -301,8 +301,8 @@ func sendEvent(ctx context.Context, c *convoy.Client, channel string, eUID strin
 func assertEventCameThrough(t *testing.T, done chan bool, endpoints []*convoy.EndpointResponse, traceIds []string, negativeTraceIds []string) {
 	waitForEvents(t, done)
 
-	t.Log("Done waiting. Further wait for 3s")
-	time.Sleep(3 * time.Second)
+	t.Log("Done waiting. Further wait for 10s")
+	time.Sleep(10 * time.Second)
 
 	manifest.PrintEndpoints()
 	for _, endpoint := range endpoints {
