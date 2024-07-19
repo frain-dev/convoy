@@ -64,7 +64,13 @@ func (s *Signature) ComputeHeaderValue() (string, error) {
 
 	// Generate Simple Signatures
 	if !s.Advanced {
+		if len(s.Schemes) == 0 {
+			return "", errors.New("signature scheme cannot be empty")
+		}
 		sch := s.Schemes[len(s.Schemes)-1]
+		if len(sch.Secret) == 0 {
+			return "", errors.New("signature secret cannot be empty")
+		}
 		sec := sch.Secret[len(sch.Secret)-1]
 
 		sig, err := s.generateSignature(sch, sec, tBuf)
