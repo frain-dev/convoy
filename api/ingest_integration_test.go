@@ -378,7 +378,6 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_WriteToQueueFailed() {
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPayloadSize() {
 	maskID := "123456"
 	sourceID := "123456789"
-	expectedStatusCode := http.StatusRequestEntityTooLarge
 
 	// Just Before
 	v := &datastore.VerifierConfig{
@@ -396,7 +395,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPa
 	i.Router.ServeHTTP(w, req)
 
 	// Assert.
-	require.Equal(i.T(), expectedStatusCode, w.Code)
+	require.Equal(i.T(), http.StatusRequestEntityTooLarge, w.Code)
 }
 
 func TestIngestIntegrationTestSuite(t *testing.T) {
