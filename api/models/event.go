@@ -51,7 +51,7 @@ type DynamicEvent struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+	Data json.RawMessage `json:"data" valid:"required~please provide your data" swaggertype:"object"`
 
 	ProjectID string `json:"project_id" swaggerignore:"true"`
 
@@ -63,6 +63,8 @@ type DynamicEvent struct {
 
 	// Specify a key for event deduplication
 	IdempotencyKey string `json:"idempotency_key"`
+
+	AcknowledgedAt time.Time `json:"acknowledged_at,omitempty"`
 }
 
 func (de *DynamicEvent) Validate() error {
@@ -119,7 +121,7 @@ type DynamicEventStub struct {
 	ProjectID string `json:"project_id"`
 	EventType string `json:"event_type" valid:"required~please provide an event type"`
 	// Data is an arbitrary JSON value that gets sent as the body of the webhook to the endpoints
-	Data           json.RawMessage   `json:"data" valid:"required~please provide your data"`
+	Data           json.RawMessage   `json:"data" valid:"required~please provide your data" swaggertype:"object"`
 	CustomHeaders  map[string]string `json:"custom_headers"`
 	IdempotencyKey string            `json:"idempotency_key"`
 }
@@ -139,13 +141,15 @@ type BroadcastEvent struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+	Data json.RawMessage `json:"data" valid:"required~please provide your data" swaggertype:"object"`
 
 	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
 	CustomHeaders map[string]string `json:"custom_headers"`
 
 	// Specify a key for event deduplication
 	IdempotencyKey string `json:"idempotency_key"`
+
+	AcknowledgedAt time.Time `json:"acknowledged_at,omitempty"`
 }
 
 func (bs *BroadcastEvent) Validate() error {
@@ -161,7 +165,7 @@ type FanoutEvent struct {
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" valid:"required~please provide your data"`
+	Data json.RawMessage `json:"data" valid:"required~please provide your data" swaggertype:"object"`
 
 	// Specifies custom headers you want convoy to add when the event is dispatched to your endpoint
 	CustomHeaders map[string]string `json:"custom_headers"`

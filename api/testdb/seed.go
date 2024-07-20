@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"gopkg.in/guregu/null.v4"
 	"testing"
 	"time"
 
@@ -42,8 +43,11 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 		ProjectID: g.UID,
 		OwnerID:   ownerID,
 		Status:    status,
-		Secrets:   datastore.Secrets{},
-		AppID:     uid,
+		Secrets: []datastore.Secret{
+			{Value: "1234"},
+		},
+		AppID: uid,
+		Url:   "http://localhost:8889",
 	}
 
 	// Seed Data.
@@ -98,6 +102,9 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 }
 
 func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project, error) {
+	return SeedDefaultProjectWithSSL(db, orgID, &datastore.DefaultSSLConfig)
+}
+func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastore.SSLConfiguration) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = ulid.Make().String()
 	}
@@ -113,7 +120,7 @@ func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project,
 				Duration:   10,
 				RetryCount: 2,
 			},
-			SSL: &datastore.DefaultSSLConfig,
+			SSL: ssl,
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
 				Versions: []datastore.SignatureVersion{
@@ -322,15 +329,14 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 	}
 
 	ev := &datastore.Event{
-		UID:       uid,
-		EventType: datastore.EventType(eventType),
-		Data:      data,
-		Endpoints: []string{endpoint.UID},
-		Headers:   httpheader.HTTPHeader{},
-		ProjectID: projectID,
-		SourceID:  sourceID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:            uid,
+		EventType:      datastore.EventType(eventType),
+		Data:           data,
+		Endpoints:      []string{endpoint.UID},
+		Headers:        httpheader.HTTPHeader{},
+		ProjectID:      projectID,
+		SourceID:       sourceID,
+		AcknowledgedAt: null.TimeFrom(time.Now()),
 	}
 
 	// Seed Data.
@@ -358,8 +364,7 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 		Headers:        httpheader.HTTPHeader{},
 		Metadata:       &datastore.Metadata{},
 		ProjectID:      projectID,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		AcknowledgedAt: null.TimeFrom(time.Now()),
 	}
 
 	// Seed Data.

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/flatten"
+
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
@@ -269,17 +271,16 @@ const (
 
 var (
 	DefaultProjectConfig = ProjectConfig{
-		RetentionPolicy:          &DefaultRetentionPolicy,
-		MaxIngestSize:            config.MaxResponseSize,
-		ReplayAttacks:            false,
-		IsRetentionPolicyEnabled: false,
-		DisableEndpoint:          false,
-		AddEventIDTraceHeaders:   false,
-		SSL:                      &DefaultSSLConfig,
-		RateLimit:                &DefaultRateLimitConfig,
-		Strategy:                 &DefaultStrategyConfig,
-		Signature:                GetDefaultSignatureConfig(),
-		MetaEvent:                &MetaEventConfiguration{IsEnabled: false},
+		SearchPolicy:           "720h",
+		MaxIngestSize:          config.MaxResponseSize,
+		ReplayAttacks:          false,
+		DisableEndpoint:        false,
+		AddEventIDTraceHeaders: false,
+		SSL:                    &DefaultSSLConfig,
+		RateLimit:              &DefaultRateLimitConfig,
+		Strategy:               &DefaultStrategyConfig,
+		Signature:              GetDefaultSignatureConfig(),
+		MetaEvent:              &MetaEventConfiguration{IsEnabled: false},
 	}
 
 	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
@@ -313,8 +314,8 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy:       "720h",
-		SearchPolicy: "720h",
+		IsRetentionPolicyEnabled: false,
+		Policy:                   "720h",
 	}
 )
 
@@ -522,18 +523,17 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize                 uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks                 bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled      bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
-	AddEventIDTraceHeaders        bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint               bool                          `json:"disable_endpoint" db:"disable_endpoint"`
-	MultipleEndpointSubscriptions bool                          `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
-	SSL                           *SSLConfiguration             `json:"ssl" db:"ssl"`
-	RetentionPolicy               *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	RateLimit                     *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
-	Strategy                      *StrategyConfiguration        `json:"strategy" db:"strategy"`
-	Signature                     *SignatureConfiguration       `json:"signature" db:"signature"`
-	MetaEvent                     *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                  `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                    `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	AddEventIDTraceHeaders        bool                    `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                    `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                    `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	SearchPolicy                  string                  `json:"search_policy" db:"search_policy"`
+	SSL                           *SSLConfiguration       `json:"ssl" db:"ssl"`
+	RateLimit                     *RateLimitConfiguration `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration  `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -555,13 +555,6 @@ func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
 		return *p.Signature
 	}
 	return SignatureConfiguration{}
-}
-
-func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
-	if p.RetentionPolicy != nil {
-		return *p.RetentionPolicy
-	}
-	return RetentionPolicyConfiguration{}
 }
 
 func (p *ProjectConfig) GetSSLConfig() SSLConfiguration {
@@ -617,8 +610,8 @@ type SSLConfiguration struct {
 }
 
 type RetentionPolicyConfiguration struct {
-	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
-	SearchPolicy string `json:"search_policy" db:"search_policy"`
+	Policy                   string `json:"policy" db:"policy"`
+	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"enabled"`
 }
 
 type ProjectStatistics struct {
@@ -729,12 +722,13 @@ type Event struct {
 	Data json.RawMessage `json:"data,omitempty" db:"data"`
 	Raw  string          `json:"raw,omitempty" db:"raw"`
 
-	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
+	CreatedAt      time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
-func (e *Event) GetRawHeaders() interface{} {
+func (e *Event) GetRawHeaders() map[string]interface{} {
 	h := make(map[string]interface{}, len(e.Headers))
 
 	// re-use mem allocated for these copied variables
@@ -807,6 +801,8 @@ type Metadata struct {
 	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds"`
 
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
+
+	MaxRetrySeconds uint64 `json:"max_retry_seconds" bson:"max_retry_seconds"`
 }
 
 func (m *Metadata) Scan(value interface{}) error {
@@ -918,8 +914,10 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
-	Latency        string                `json:"latency" db:"latency"`
-	EventType      EventType             `json:"event_type,omitempty" db:"event_type"`
+	// Deprecated: Latency is deprecated.
+	Latency        string    `json:"latency" db:"latency"`
+	LatencySeconds float64   `json:"latency_seconds" db:"latency_seconds"`
+	EventType      EventType `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -931,9 +929,17 @@ type EventDelivery struct {
 	Metadata         *Metadata           `json:"metadata" db:"metadata"`
 	CLIMetadata      *CLIMetadata        `json:"cli_metadata" db:"cli_metadata"`
 	Description      string              `json:"description,omitempty" db:"description"`
+	AcknowledgedAt   null.Time           `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
 	CreatedAt        time.Time           `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time           `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time           `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (d *EventDelivery) GetLatencyStartTime() time.Time {
+	if d.AcknowledgedAt.IsZero() {
+		return d.CreatedAt
+	}
+	return d.AcknowledgedAt.Time
 }
 
 type CLIMetadata struct {
@@ -998,7 +1004,7 @@ type Subscription struct {
 	SourceID   string           `json:"-" db:"source_id"`
 	EndpointID string           `json:"-" db:"endpoint_id"`
 	DeviceID   string           `json:"-" db:"device_id"`
-	Function   null.String      `json:"function" db:"function"`
+	Function   null.String      `json:"function" db:"function" swaggertype:"string"`
 
 	Source   *Source   `json:"source_metadata" db:"source_metadata"`
 	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`
@@ -1193,13 +1199,24 @@ type FilterConfiguration struct {
 
 type M map[string]interface{}
 
-func (h M) Map() map[string]interface{} {
-	m := map[string]interface{}{}
-	x := map[string]interface{}(h)
-	for k, v := range x {
-		m[k] = v
+// Flatten is only intended for use for filter body & headers
+// It will modify the calling M map, so use carefully.
+func (h *M) Flatten() error {
+	if h == nil {
+		return nil
 	}
-	return h
+
+	// The flatten.M conversion is important here, because flatten.Flatten cannot
+	// reconcile M to map[string]interface{}, they are distinct types
+	// whereas flatten.M = map[string]interface{} they are identical. See
+	// https://go.dev/ref/spec#Type_identity for more info.
+	f, err := flatten.Flatten(flatten.M(*h))
+	if err != nil {
+		return err
+	}
+
+	*h = f
+	return nil
 }
 
 func (h *M) Scan(value interface{}) error {
@@ -1229,8 +1246,9 @@ func (h M) Value() (driver.Value, error) {
 }
 
 type FilterSchema struct {
-	Headers M `json:"headers" db:"headers"`
-	Body    M `json:"body" db:"body"`
+	IsFlattened bool `json:"is_flattened" db:"is_flattened"`
+	Headers     M    `json:"headers" db:"headers"`
+	Body        M    `json:"body" db:"body"`
 }
 
 type ProviderConfig struct {
@@ -1277,14 +1295,22 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	UID                string                      `json:"uid" db:"id"`
-	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" db:"is_analytics_enabled"`
-	IsSignupEnabled    bool                        `json:"is_signup_enabled" db:"is_signup_enabled"`
-	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" db:"storage_policy"`
+	UID                string                        `json:"uid" db:"id"`
+	IsAnalyticsEnabled bool                          `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsSignupEnabled    bool                          `json:"is_signup_enabled" db:"is_signup_enabled"`
+	StoragePolicy      *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
+	RetentionPolicy    *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
+	if c.RetentionPolicy != nil {
+		return *c.RetentionPolicy
+	}
+	return RetentionPolicyConfiguration{}
 }
 
 type StoragePolicyConfiguration struct {

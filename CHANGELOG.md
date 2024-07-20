@@ -1,3 +1,55 @@
+# 24.6.3
+
+### Bug Fixes
+- Fixed api migration bug #2087
+
+# 24.6.2
+
+### Bug Fixes
+
+- Remove default config value for advanced signatures #2090
+
+# 24.6.1
+
+### Features
+- Add rate limiter to event entry points, HTTP APIs, and message brokers #2072 #2035
+- Add retry queue #2058
+- Add search bar for subscriptions #2062
+- Use asynq's exponential backoff for event delivery retries #2052
+- Add PyroScope profiling #1737
+- Added Prometheus metrics #2005
+- Endpoint subscriptions can now be created and viewed on portal links #2015
+- Subscriptions can now be filtered by name #2014
+
+### Enhancements
+- Optimise flatten and compare packages #2066 #2077
+- Changed the Postgres driver to pgx #2064
+- Optimized dashboard query and run time #2070
+- Fixed order of endpoints and subscriptions #2060
+- Optimise Subscription loader queries #2056
+- Make dispatcher proxy less strict, allowing requests to be sent if the proxy URL is invalid #2059
+- Load subscriptions synchronously on worker startup #2053
+- Remove cache from userRepo since it's not a hot path #2050
+- Added cache to retrieving subscriptions for broadcast #2044
+- Refactored net.Dispatcher
+    - Create dispatcher once #2043
+    - Fixed a bug where we were closing the response body late #2029
+- Refactor ProcessBroadcastEventCreation and ProcessEventCreation handlers
+    - Deduplicate endpoint IDs #2024
+- Refactor Repository
+    - Add FindEventDeliveryByIDSlim #2054
+    - Refactored event creation to insert in bulk #2038
+    - Add indexes for FetchSubscriptionsForBroadcast #2033
+
+### Bug Fixes
+- Fix dashboard summary filters #2071
+- Fix events summary date filter #2069
+- Fixed panic that occurred when updating project when setting the SSL config #2055
+- Fixed a bug where we were creating events for the number of matched subscriptions instead of the number of matched endpoints #2025
+- Fixed a bug where we would try to filter even when none is set on the subscription #2027
+- Fixed a bug where the default log level was set to debug #2013
+- Fixed a bug where portal links won't load in iframes because of a missing project reference #2008
+
 # 24.5.1
 
 ### Features

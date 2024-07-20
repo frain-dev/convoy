@@ -24,8 +24,8 @@ const (
 	createEvent = `
 	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
 	                           source_id,headers,raw,data,url_query_params,
-	                           idempotency_key,is_duplicate_event,created_at,updated_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	                           idempotency_key,is_duplicate_event,acknowledged_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
 
 	createEventEndpoints = `
@@ -37,7 +37,8 @@ const (
     raw, data, headers, is_duplicate_event,
 	COALESCE(source_id, '') AS source_id,
 	COALESCE(idempotency_key, '') AS idempotency_key,
-	COALESCE(url_query_params, '') AS url_query_params
+	COALESCE(url_query_params, '') AS url_query_params,
+	created_at,updated_at,acknowledged_at
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -62,7 +63,7 @@ const (
 	COALESCE(ev.idempotency_key, '') AS idempotency_key,
 	COALESCE(ev.url_query_params, '') AS url_query_params,
 	ev.headers, ev.raw, ev.data, ev.created_at,
-	ev.updated_at, ev.deleted_at,
+	ev.updated_at, ev.deleted_at,ev.acknowledged_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
@@ -81,8 +82,8 @@ const (
 	SELECT COUNT(DISTINCT(ev.id)) FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON ee.endpoint_id = e.id
-	WHERE ev.project_id = $1 AND (e.id = $2 OR $2 = '' )
-	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
+	WHERE ev.project_id = :project_id
+	AND ev.created_at >= :start_date AND ev.created_at <= :end_date AND ev.deleted_at IS NULL;
 	`
 
 	baseEventsPaged = `
@@ -92,7 +93,7 @@ const (
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
-	ev.updated_at, ev.deleted_at,
+	ev.updated_at, ev.deleted_at,ev.acknowledged_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
@@ -105,7 +106,7 @@ const (
 	SELECT ev.id, ev.project_id,
 	ev.id AS event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at,
+	ev.headers, ev.raw, ev.data, ev.created_at,ev.acknowledged_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
 	ev.updated_at, ev.deleted_at,
@@ -228,8 +229,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		event.URLQueryParams,
 		event.IdempotencyKey,
 		event.IsDuplicateEvent,
-		event.CreatedAt,
-		event.UpdatedAt,
+		event.AcknowledgedAt,
 	)
 	if err != nil {
 		return err
@@ -358,7 +358,35 @@ func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *d
 	var count int64
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
-	err := e.db.QueryRowxContext(ctx, countEvents, projectID, filter.EndpointID, filter.SourceID, startDate, endDate).Scan(&count)
+	arg := map[string]interface{}{
+		"endpoint_ids": filter.EndpointIDs,
+		"project_id":   projectID,
+		"source_id":    filter.SourceID,
+		"start_date":   startDate,
+		"end_date":     endDate,
+	}
+
+	query := countEvents
+	if len(filter.EndpointIDs) > 0 {
+		query += ` AND e.id IN (:endpoint_ids) `
+	}
+
+	if !util.IsStringEmpty(filter.SourceID) {
+		query += ` AND ev.source_id = :source_id `
+	}
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return 0, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	query = e.db.Rebind(query)
+	err = e.db.QueryRowxContext(ctx, query, args...).Scan(&count)
 	if err != nil {
 		return count, err
 	}

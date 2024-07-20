@@ -8,8 +8,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
+	"github.com/frain-dev/convoy/util"
 	"github.com/grafana/pyroscope-go"
 
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -61,6 +62,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err = config.Override(cliConfig); err != nil {
 			return err
 		}
+
 		cfg, err = config.Get() // updated
 		if err != nil {
 			return err
@@ -106,6 +108,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		lo := log.NewLogger(os.Stdout)
 
 		ca, err = cache.NewCache(cfg.Redis)
+		if err != nil {
+			return err
+		}
+		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
 		if err != nil {
 			return err
 		}
@@ -167,8 +173,36 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
+		rateLimiter, err := limiter.NewLimiter(cfg)
+		if err != nil {
+			return err
+		}
+
+		app.Rate = rateLimiter
+
+		// update config singleton with the instance id
+		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
+			configRepo := postgres.NewConfigRepo(app.DB)
+			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
+			if err != nil {
+				log.WithError(err).Error("Failed to load configuration")
+			} else {
+				cfg.InstanceId = instCfg.UID
+				if err = config.Override(&cfg); err != nil {
+					return err
+				}
+			}
+		}
+
 		return nil
 	}
+}
+
+// these commands don't need to load instance config
+var skipConfigLoadCmd = map[string]struct{}{
+	"bootstrap": {},
+	"version":   {},
+	"migrate":   {},
 }
 
 func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -197,7 +231,6 @@ func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
 
 		// you can disable logging by setting this to nil
 		// Logger: pyroscope.StandardLogger,
-		Logger:     logrus.StandardLogger(),
 		UploadRate: time.Second * 5,
 
 		// optionally, if authentication is enabled, specify the API key:
@@ -244,6 +277,11 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		OnPrem: &onPrem,
 	}
 
+	retentionPolicy := &datastore.RetentionPolicyConfiguration{
+		Policy:                   cfg.RetentionPolicy.Policy,
+		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
+	}
+
 	configuration, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
@@ -253,6 +291,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 				StoragePolicy:      storagePolicy,
 				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				RetentionPolicy:    retentionPolicy,
 				CreatedAt:          time.Now(),
 				UpdatedAt:          time.Now(),
 			}
@@ -266,6 +305,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	configuration.RetentionPolicy = retentionPolicy
 	configuration.UpdatedAt = time.Now()
 
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
@@ -369,6 +409,27 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Password: redisPassword,
 		Database: redisDatabase,
 		Port:     redisPort,
+	}
+
+	// CONVOY_RETENTION_POLICY
+	retentionPolicy, err := cmd.Flags().GetString("retention-policy")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(retentionPolicy) {
+		c.RetentionPolicy.Policy = retentionPolicy
+	}
+
+	// CONVOY_RETENTION_POLICY_ENABLED
+	isretentionPolicyEnabledSet := cmd.Flags().Changed("retention-policy-enabled")
+	if isretentionPolicyEnabledSet {
+		retentionPolicyEnabled, err := cmd.Flags().GetBool("retention-policy-enabled")
+		if err != nil {
+			return nil, err
+		}
+
+		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
 	}
 
 	// Feature flags
@@ -479,6 +540,12 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			log.Warn("No metrics-backend specified")
 		}
 	}
+
+	maxRetrySeconds, err := cmd.Flags().GetUint64("max-retry-seconds")
+	if err != nil {
+		return nil, err
+	}
+	c.MaxRetrySeconds = maxRetrySeconds
 
 	return c, nil
 }

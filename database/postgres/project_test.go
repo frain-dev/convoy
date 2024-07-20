@@ -5,6 +5,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -140,10 +141,8 @@ func Test_UpdateProject(t *testing.T) {
 		OrganisationID:  project.OrganisationID,
 		ProjectConfigID: project.ProjectConfigID, // TODO(all): if i comment this line this test never exits, weird problem
 		Config: &datastore.ProjectConfig{
-			MaxIngestSize:            8483,
-			ReplayAttacks:            true,
-			IsRetentionPolicyEnabled: true,
-			RetentionPolicy:          &datastore.RetentionPolicyConfiguration{Policy: "99d"},
+			MaxIngestSize: 8483,
+			ReplayAttacks: true,
 			RateLimit: &datastore.RateLimitConfiguration{
 				Count:    8773,
 				Duration: 7766,
@@ -391,6 +390,12 @@ func Test_DeleteProject(t *testing.T) {
 		ProjectID: endpoint.ProjectID,
 		Endpoints: []string{endpoint.UID},
 		Headers:   httpheader.HTTPHeader{},
+		Data: json.RawMessage(`{
+                              "userId": 1,
+                              "id": 1,
+                              "title": "delectus aut autem",
+                              "completed": false
+                            }`),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

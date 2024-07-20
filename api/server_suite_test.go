@@ -7,12 +7,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -62,17 +64,23 @@ func getConfig() config.Configuration {
 	return cfg
 }
 
+var once sync.Once
+var pDB *postgres.Postgres
+
 func getDB() database.Database {
-	db, err := postgres.NewDB(getConfig())
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to db: %v", err))
-	}
-	_ = os.Setenv("TZ", "") // Use UTC by default :)
+	once.Do(func() {
+		db, err := postgres.NewDB(getConfig())
+		if err != nil {
+			panic(fmt.Sprintf("failed to connect to db: %v", err))
+		}
+		_ = os.Setenv("TZ", "") // Use UTC by default :)
 
-	dbHooks := hooks.Init()
-	dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
+		dbHooks := hooks.Init()
+		dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
 
-	return db
+		pDB = db
+	})
+	return pDB
 }
 
 func getQueueOptions() (queue.QueueOptions, error) {
@@ -106,12 +114,14 @@ func buildServer() *ApplicationHandler {
 
 	db := getDB()
 	qOpts, _ = getQueueOptions()
+	cfg := getConfig()
 
 	newQueue := redisqueue.NewQueue(qOpts)
 	logger = log.NewLogger(os.Stderr)
 	logger.SetLevel(log.FatalLevel)
 
 	noopCache := ncache.NewNoopCache()
+	r, _ := rlimiter.NewRedisLimiter(cfg.Redis.BuildDsn())
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
@@ -119,6 +129,7 @@ func buildServer() *ApplicationHandler {
 			Queue:  newQueue,
 			Logger: logger,
 			Cache:  noopCache,
+			Rate:   r,
 		})
 
 	_ = ah.RegisterPolicy()

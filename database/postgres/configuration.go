@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -17,9 +18,10 @@ const (
 		id, is_analytics_enabled, is_signup_enabled,
 		storage_policy_type, on_prem_path, s3_prefix,
 		s3_bucket, s3_access_key, s3_secret_key,
-		s3_region, s3_session_token, s3_endpoint
+		s3_region, s3_session_token, s3_endpoint,
+		retention_policy_policy, retention_policy_enabled
 	  )
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
 	`
 
 	fetchConfiguration = `
@@ -27,6 +29,8 @@ const (
 		id,
 		is_analytics_enabled,
 		is_signup_enabled,
+		retention_policy_enabled AS "retention_policy.enabled",
+		retention_policy_policy AS "retention_policy.policy",
 		storage_policy_type AS "storage_policy.type",
 		on_prem_path AS "storage_policy.on_prem.path",
 		s3_bucket AS "storage_policy.s3.bucket",
@@ -58,6 +62,8 @@ const (
 		s3_session_token = $10,
 		s3_endpoint = $11,
 		s3_prefix = $12,
+		retention_policy_policy = $13,
+		retention_policy_enabled = $14,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -88,9 +94,11 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		}
 	}
 
+	rc := config.GetRetentionPolicyConfig()
+
 	r, err := c.db.ExecContext(ctx, createConfiguration,
 		config.UID,
-		config.IsAnalyticsEnabled,
+		util.BoolToText(config.IsAnalyticsEnabled),
 		config.IsSignupEnabled,
 		config.StoragePolicy.Type,
 		config.StoragePolicy.OnPrem.Path,
@@ -101,6 +109,8 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		config.StoragePolicy.S3.Region,
 		config.StoragePolicy.S3.SessionToken,
 		config.StoragePolicy.S3.Endpoint,
+		rc.Policy,
+		rc.IsRetentionPolicyEnabled,
 	)
 	if err != nil {
 		return err
@@ -148,9 +158,11 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		}
 	}
 
+	rc := cfg.GetRetentionPolicyConfig()
+
 	result, err := c.db.ExecContext(ctx, updateConfiguration,
 		cfg.UID,
-		cfg.IsAnalyticsEnabled,
+		util.BoolToText(cfg.IsAnalyticsEnabled),
 		cfg.IsSignupEnabled,
 		cfg.StoragePolicy.Type,
 		cfg.StoragePolicy.OnPrem.Path,
@@ -161,6 +173,8 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		cfg.StoragePolicy.S3.SessionToken,
 		cfg.StoragePolicy.S3.Endpoint,
 		cfg.StoragePolicy.S3.Prefix,
+		rc.Policy,
+		rc.IsRetentionPolicyEnabled,
 	)
 	if err != nil {
 		return err

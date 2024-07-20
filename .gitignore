@@ -35,6 +35,9 @@ convoy.json
 docker-compose.yml
 compose.yml
 typesense_data
-postgres_data
+postgres_data**
 redis_data
 /.run/go test github.com_frain-dev_convoy_server.run.xml
+
+convoy-ee
+convoy-ce

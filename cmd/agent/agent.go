@@ -2,37 +2,44 @@ package agent
 
 import (
 	"context"
+	"fmt"
+	workerSrv "github.com/frain-dev/convoy/cmd/worker"
+	"github.com/frain-dev/convoy/util"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/frain-dev/convoy/net"
-
-	"github.com/frain-dev/convoy/internal/telemetry"
-
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
+	ingestSrv "github.com/frain-dev/convoy/cmd/ingest"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/worker"
-	"github.com/frain-dev/convoy/worker/task"
 	"github.com/spf13/cobra"
 )
 
 func AddAgentCommand(a *cli.App) *cobra.Command {
-	var port uint32
-	var interval int
+	var agentPort uint32
+	var ingestPort uint32
+	var workerPort uint32
+	var logLevel string
 	var consumerPoolSize int
+	var interval int
+
+	var smtpSSL bool
+	var smtpUsername string
+	var smtpPassword string
+	var smtpReplyTo string
+	var smtpFrom string
+	var smtpProvider string
+	var executionMode string
+	var smtpUrl string
+	var smtpPort uint32
 
 	cmd := &cobra.Command{
 		Use:   "agent",
@@ -60,12 +67,11 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			//cfg, err := config.Get()
-			//if err != nil {
-			//	a.Logger.Errorf("failed to retrieve config: %v", err)
-			//	return err
-			//}
-
+      cfg, err := config.Get()
+			if err != nil {
+				a.Logger.WithError(err).Fatal("Failed to load configuration")
+			}
+      
 			//db := a.DB.GetDB()
 			//			asyncBreaker, err := asyncbreaker.NewAsyncBreaker(db, &cfg.CircuitBreaker)
 			//			if err != nil {
@@ -75,24 +81,25 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			//			// run breaker loop
 			//			go asyncBreaker.Run(cmd.Context())
 			//
+
 			// start sync configuration from the database.
 			go memorystore.DefaultStore.Sync(ctx, interval)
 
-			err = startServerComponent(ctx, a)
+			err = workerSrv.StartWorker(ctx, a, cfg, interval)
 			if err != nil {
-				a.Logger.Errorf("Error starting data plane server component: %v", err)
+				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
 				return err
 			}
 
-			err = startIngestComponent(ctx, a, interval)
+			err = ingestSrv.StartIngest(cmd.Context(), a, cfg, interval)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane ingest component: %v", err)
 				return err
 			}
 
-			err = startWorkerComponent(ctx, a)
+			err = startServerComponent(ctx, a)
 			if err != nil {
-				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
+				a.Logger.Errorf("Error starting data plane server component: %v", err)
 				return err
 			}
 
@@ -106,9 +113,23 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().Uint32Var(&port, "port", 0, "Agent port")
-	cmd.Flags().IntVar(&interval, "interval", 300, "the time interval, measured in seconds, at which the database should be polled for new pub sub sources")
+	cmd.Flags().BoolVar(&smtpSSL, "smtp-ssl", false, "Enable SMTP SSL")
+	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP authentication username")
+	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
+	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
+	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
+	cmd.Flags().StringVar(&smtpProvider, "smtp-provider", "", "SMTP provider")
+	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
+	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "SMTP Port")
+
+	cmd.Flags().Uint32Var(&agentPort, "agent-port", 0, "Agent port")
+	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
+	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 0, "Ingest port")
+
+	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
+	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
+	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")
 
 	return cmd
 }
@@ -154,6 +175,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 			Queue:  a.Queue,
 			Logger: lo,
 			Cache:  a.Cache,
+			Rate:   a.Rate,
 		})
 	if err != nil {
 		return err
@@ -161,7 +183,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 
 	srv.SetHandler(evHandler.BuildDataPlaneRoutes())
 
-	a.Logger.Infof("Started convoy server in %s", time.Since(start))
+	fmt.Printf("Started convoy server in %s\n", time.Since(start))
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
@@ -170,156 +192,10 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 		return nil
 	}
 
-	a.Logger.Infof("Server running on port %v", cfg.Server.HTTP.AgentPort)
+	fmt.Printf("Starting Convoy Agent on port %v\n", cfg.Server.HTTP.AgentPort)
 
 	go func() {
 		srv.Listen()
-	}()
-
-	return nil
-}
-
-func startIngestComponent(ctx context.Context, a *cli.App, interval int) error {
-	// start message broker ingest.
-	sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
-	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
-	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
-	configRepo := postgres.NewConfigRepo(a.DB)
-
-	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, a.Logger)
-	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
-
-	err := memorystore.DefaultStore.Register("sources", sourceTable)
-	if err != nil {
-		return err
-	}
-
-	cfg, err := config.Get()
-	if err != nil {
-		a.Logger.Errorf("Failed to retrieve config: %v", err)
-		return err
-	}
-
-	instCfg, err := configRepo.LoadConfiguration(ctx)
-	if err != nil {
-		log.WithError(err).Error("Failed to load configuration")
-	}
-
-	var host string
-	if instCfg != nil {
-		host = instCfg.UID
-	}
-
-	rateLimiter, err := limiter.NewLimiter([]string{host}, cfg, true)
-	if err != nil {
-		return err
-	}
-
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, a.Logger, rateLimiter, host)
-	if err != nil {
-		return err
-	}
-
-	go ingest.Run()
-
-	return nil
-}
-
-func startWorkerComponent(ctx context.Context, a *cli.App) error {
-	cfg, err := config.Get()
-	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to load configuration")
-		return err
-	}
-
-	// register worker.
-	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, a.Queue, a.Logger)
-	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
-	metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
-	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
-	eventRepo := postgres.NewEventRepo(a.DB, a.Cache)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
-	subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
-	deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
-	configRepo := postgres.NewConfigRepo(a.DB)
-
-	counter := &telemetry.EventsCounter{}
-
-	pb := telemetry.NewposthogBackend()
-	mb := telemetry.NewmixpanelBackend()
-
-	configuration, err := configRepo.LoadConfiguration(context.Background())
-	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to instance configuration")
-		return err
-	}
-
-	rateLimiter, err := limiter.NewLimiter([]string{}, cfg, true)
-	if err != nil {
-		return err
-	}
-
-	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger, 0)
-	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
-
-	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
-	if err != nil {
-		return err
-	}
-
-	newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
-		telemetry.OptionTracker(counter),
-		telemetry.OptionBackend(pb),
-		telemetry.OptionBackend(mb))
-
-	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false)
-	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
-		return err
-	}
-
-	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-		endpointRepo,
-		eventDeliveryRepo,
-		projectRepo,
-		a.Queue,
-		rateLimiter, dispatcher), newTelemetry)
-
-	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		eventDeliveryRepo,
-		a.Queue,
-		subRepo,
-		deviceRepo), newTelemetry)
-
-	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		eventDeliveryRepo,
-		a.Queue,
-		subRepo,
-		deviceRepo), newTelemetry)
-
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
-
-	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		eventDeliveryRepo,
-		a.Queue,
-		subRepo,
-		deviceRepo,
-		subscriptionsTable), newTelemetry)
-
-	go task.QueueStuckEventDeliveries(ctx, eventDeliveryRepo, a.Queue)
-
-	go func() {
-		consumer.Start()
-		<-ctx.Done()
 	}()
 
 	return nil
@@ -329,13 +205,131 @@ func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, erro
 	c := &config.Configuration{}
 
 	// PORT
-	port, err := cmd.Flags().GetUint32("port")
+	port, err := cmd.Flags().GetUint32("agent-port")
 	if err != nil {
 		return nil, err
 	}
 
 	if port != 0 {
 		c.Server.HTTP.AgentPort = port
+	}
+
+	ingestPort, err := cmd.Flags().GetUint32("ingest-port")
+	if err != nil {
+		return nil, err
+	}
+
+	if ingestPort != 0 {
+		c.Server.HTTP.IngestPort = ingestPort
+	}
+
+	// CONVOY_WORKER_PORT
+	workerPort, err := cmd.Flags().GetUint32("worker-port")
+	if err != nil {
+		return nil, err
+	}
+
+	if workerPort != 0 {
+		c.Server.HTTP.WorkerPort = workerPort
+	}
+
+	logLevel, err := cmd.Flags().GetString("log-level")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(logLevel) {
+		c.Logger.Level = logLevel
+	}
+
+	// CONVOY_WORKER_POOL_SIZE
+	consumerPoolSize, err := cmd.Flags().GetInt("consumers")
+	if err != nil {
+		return nil, err
+	}
+
+	if consumerPoolSize >= 0 {
+		c.ConsumerPoolSize = consumerPoolSize
+	}
+
+	// CONVOY_SMTP_PROVIDER
+	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpProvider) {
+		c.SMTP.Provider = smtpProvider
+	}
+
+	// CONVOY_SMTP_URL
+	smtpUrl, err := cmd.Flags().GetString("smtp-url")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpUrl) {
+		c.SMTP.URL = smtpUrl
+	}
+
+	// CONVOY_SMTP_USERNAME
+	smtpUsername, err := cmd.Flags().GetString("smtp-username")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpUsername) {
+		c.SMTP.Username = smtpUsername
+	}
+
+	// CONVOY_SMTP_PASSWORD
+	smtpPassword, err := cmd.Flags().GetString("smtp-password")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpPassword) {
+		c.SMTP.Password = smtpPassword
+	}
+
+	// CONVOY_SMTP_FROM
+	smtpFrom, err := cmd.Flags().GetString("smtp-from")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpFrom) {
+		c.SMTP.From = smtpFrom
+	}
+
+	// CONVOY_SMTP_REPLY_TO
+	smtpReplyTo, err := cmd.Flags().GetString("smtp-reply-to")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(smtpReplyTo) {
+		c.SMTP.ReplyTo = smtpReplyTo
+	}
+
+	// CONVOY_SMTP_PORT
+	smtpPort, err := cmd.Flags().GetUint32("smtp-port")
+	if err != nil {
+		return nil, err
+	}
+
+	if smtpPort != 0 {
+		c.SMTP.Port = smtpPort
+	}
+
+	// CONVOY_WORKER_EXECUTION_MODE
+	executionMode, err := cmd.Flags().GetString("mode")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(executionMode) {
+		c.WorkerExecutionMode = config.ExecutionMode(executionMode)
 	}
 
 	return c, nil

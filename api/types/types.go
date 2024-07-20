@@ -5,6 +5,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -18,4 +19,5 @@ type APIOptions struct {
 	Logger log.StdLogger
 	Cache  cache.Cache
 	Authz  *authz.Authz
+	Rate   limiter.RateLimiter
 }

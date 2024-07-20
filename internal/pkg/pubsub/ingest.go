@@ -229,8 +229,6 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		headers = headerMap
 	}
 
-	//fmt.Printf("payload: %s\n %+v\n %+v\n\n", source.Name, payload, headers)
-
 	messageType := headers[ConvoyMessageTypeHeader]
 	switch messageType {
 	case "single":
@@ -244,14 +242,51 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 				Data:           convoyEvent.Data,
 				CustomHeaders:  headers,
 				IdempotencyKey: convoyEvent.IdempotencyKey,
+				AcknowledgedAt: time.Now(),
 			},
 			CreateSubscription: !util.IsStringEmpty(convoyEvent.EndpointID),
 		}
 
 		if util.IsStringEmpty(ce.Params.EndpointID) {
-			err := fmt.Errorf("the payload for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
-				" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+			return fmt.Errorf("the payload with message type %s for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
+				" use transfrom functions to properly format it, got: %+v", messageType, source.Name, source.UID, convoyEvent)
+		}
+
+		eventByte, err := msgpack.EncodeMsgPack(ce)
+		if err != nil {
 			return err
+		}
+
+		job := &queue.Job{
+			ID:      ce.Params.UID,
+			Payload: eventByte,
+		}
+
+		// write to our queue if it's a normal event
+		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+		if err != nil {
+			return err
+		}
+	case "fanout":
+		ce := task.CreateEvent{
+			Params: task.CreateEventTaskParams{
+				UID:            ulid.Make().String(),
+				CustomHeaders:  headers,
+				SourceID:       source.UID,
+				Data:           convoyEvent.Data,
+				ProjectID:      source.ProjectID,
+				OwnerID:        convoyEvent.OwnerID,
+				EventType:      convoyEvent.EventType,
+				EndpointID:     convoyEvent.EndpointID,
+				IdempotencyKey: convoyEvent.IdempotencyKey,
+				AcknowledgedAt: time.Now(),
+			},
+			CreateSubscription: !util.IsStringEmpty(convoyEvent.EndpointID),
+		}
+
+		if util.IsStringEmpty(ce.Params.OwnerID) {
+			return fmt.Errorf("the payload with message type %s for %s with id (%s) doesn't include an owner id, please refer to the documentation or"+
+				" use transfrom functions to properly format it, got: %+v", messageType, source.Name, source.UID, convoyEvent)
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(ce)
@@ -279,6 +314,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			Data:           convoyEvent.Data,
 			CustomHeaders:  headers,
 			IdempotencyKey: convoyEvent.IdempotencyKey,
+			AcknowledgedAt: time.Now(),
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(broadcastEvent)
@@ -297,7 +333,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 	default:
-		err := fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single and broadcast", messageType)
+		err := fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single, fanout or broadcast", messageType)
 		log.Error(err)
 		return err
 	}
@@ -306,17 +342,18 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 }
 
 func mergeHeaders(dest map[string]string, src map[string]string) {
+	var k, v string
 	// convert all the dest header values to lowercase
-	for k, v := range dest {
+	for k, v = range dest {
 		dest[strings.ToLower(k)] = v
 	}
 
 	// convert all the src header values to lowercase
-	for k, v := range src {
+	for k, v = range src {
 		src[strings.ToLower(k)] = v
 	}
 
-	for k, v := range src {
+	for k, v = range src {
 		if _, ok := dest[k]; ok {
 			continue
 		}

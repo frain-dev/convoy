@@ -194,6 +194,10 @@ func (s *SubscriptionLoader) fetchAllSubscriptions(ctx context.Context) ([]datas
 		return nil, err
 	}
 
+	if len(projects) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
 	ids := make([]string, len(projects))
 	for i := range projects {
 		ids[i] = projects[i].UID
@@ -214,6 +218,10 @@ func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]d
 		return nil, err
 	}
 
+	if len(projects) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
 	ids := make([]string, len(projects))
 	for i := range projects {
 		ids[i] = projects[i].UID
@@ -232,6 +240,10 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 	projects, err := s.projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
 	if err != nil {
 		return nil, err
+	}
+
+	if len(projects) == 0 {
+		return []datastore.Subscription{}, nil
 	}
 
 	ids := make([]string, len(projects))
