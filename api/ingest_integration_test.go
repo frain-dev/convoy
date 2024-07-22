@@ -402,6 +402,10 @@ func TestIngestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IngestIntegrationTestSuite))
 }
 
+// THis implements `io.ReadSeeker` instead of `io.Reader` because HTTP is unable
+// to detect the size of the request of our custom struct automatically.
+// `fixedSizeReader` knows its size internally (in the size field), but this information isn't
+// automatically communicated to the HTTP client.
 type fixedSizeReader struct {
 	size int64
 	read int64
@@ -420,4 +424,21 @@ func (r *fixedSizeReader) Read(p []byte) (n int, err error) {
 	}
 	r.read += int64(len(p))
 	return len(p), nil
+}
+
+func (r *fixedSizeReader) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+		r.read = offset
+	case io.SeekCurrent:
+		r.read += offset
+	case io.SeekEnd:
+		r.read = r.size + offset
+	}
+	if r.read < 0 {
+		r.read = 0
+	} else if r.read > r.size {
+		r.read = r.size
+	}
+	return r.read, nil
 }
