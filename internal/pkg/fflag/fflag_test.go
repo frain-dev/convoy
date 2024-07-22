@@ -186,7 +186,7 @@ func TestNewFFlag(t *testing.T) {
 			name: "all disabled state",
 			args: args{
 				&config.Configuration{
-					DisableFeatureFlag: []string{"search"},
+					DisableFeatureFlag: []string{"search_tokenizer"},
 				},
 			},
 			want: &FFlag{
