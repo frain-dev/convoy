@@ -6,9 +6,9 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/frain-dev/convoy/database"
@@ -386,7 +386,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPa
 	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
 
 	url := fmt.Sprintf("/ingest/%s", maskID)
-	body := &fixedSizeReader{size: 1024 * 1024 * 100} // 100MB
+	bodyStr := fmt.Sprintf(`{ "payload": %s }`, strings.Repeat("abcdef", 100))
+	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	w := httptest.NewRecorder()
@@ -400,45 +401,4 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPa
 
 func TestIngestIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(IngestIntegrationTestSuite))
-}
-
-// THis implements `io.ReadSeeker` instead of `io.Reader` because HTTP is unable
-// to detect the size of the request of our custom struct automatically.
-// `fixedSizeReader` knows its size internally (in the size field), but this information isn't
-// automatically communicated to the HTTP client.
-type fixedSizeReader struct {
-	size int64
-	read int64
-}
-
-func (r *fixedSizeReader) Read(p []byte) (n int, err error) {
-	remaining := r.size - r.read
-	if remaining == 0 {
-		return 0, io.EOF
-	}
-	if int64(len(p)) > remaining {
-		p = p[:remaining]
-	}
-	for i := range p {
-		p[i] = 'a'
-	}
-	r.read += int64(len(p))
-	return len(p), nil
-}
-
-func (r *fixedSizeReader) Seek(offset int64, whence int) (int64, error) {
-	switch whence {
-	case io.SeekStart:
-		r.read = offset
-	case io.SeekCurrent:
-		r.read += offset
-	case io.SeekEnd:
-		r.read = r.size + offset
-	}
-	if r.read < 0 {
-		r.read = 0
-	} else if r.read > r.size {
-		r.read = r.size
-	}
-	return r.read, nil
 }
