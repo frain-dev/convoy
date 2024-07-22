@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -118,6 +119,11 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	var maxIngestSize uint64
 	if project.Config != nil && project.Config.MaxIngestSize != 0 {
 		maxIngestSize = project.Config.MaxIngestSize
+	}
+
+	fmt.Println("project.COnfig is nil", project.Config == nil)
+	if project.Config != nil {
+		fmt.Println("maxingestsize ===>>> ", project.Config.MaxIngestSize)
 	}
 
 	if maxIngestSize == 0 {
