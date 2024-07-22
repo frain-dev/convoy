@@ -141,7 +141,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	flag, err := fflag.NewFFlag()
+	flag, err := fflag.NewFFlag(&cfg)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to create fflag controller")
 	}

@@ -93,14 +93,7 @@ func WriteRequestIDHeader(next http.Handler) http.Handler {
 func CanAccessFeature(fflag *fflag.FFlag, featureKey fflag.FeatureFlagKey) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cfg, err := config.Get()
-			if err != nil {
-				log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
-				_ = render.Render(w, r, util.NewErrorResponse("something went wrong", http.StatusInternalServerError))
-				return
-			}
-
-			if !fflag.CanAccessFeature(featureKey, &cfg) {
+			if !fflag.CanAccessFeature(featureKey) {
 				_ = render.Render(w, r, util.NewErrorResponse("this feature is not enabled in this server", http.StatusForbidden))
 				return
 			}
