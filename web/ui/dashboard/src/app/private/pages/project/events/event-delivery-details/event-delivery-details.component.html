@@ -73,7 +73,7 @@
 		<div class="flex items-center">
 			<div class="px-30px">
 				<p class="text-neutral-10 text-12 font-light mb-6px">TIME</p>
-				<p class="text-12 font-medium">{{ eventDelsDetails?.created_at | date : 'medium' }}</p>
+				<p class="text-12 font-medium">{{ eventDelsDetails?.updated_at | date : 'medium' }}</p>
 			</div>
 			<div class="w-[1px] h-40px bg-new.primary-25"></div>
 		</div>
@@ -212,7 +212,7 @@
 					<div>
 						<p class="text-12 text-neutral-12 flex items-center">
 							<convoy-tag *ngIf="deliveryAttempt?.http_status" [color]="deliveryAttempt?.status ? 'success' : 'error'" className="ml-18px">{{ deliveryAttempt?.http_status }}</convoy-tag>
-							<span class="ml-8px">{{ deliveryAttempt.created_at | date : 'medium' }}</span>
+							<span class="ml-8px">{{ deliveryAttempt.updated_at | date : 'medium' }}</span>
 						</p>
 					</div>
 

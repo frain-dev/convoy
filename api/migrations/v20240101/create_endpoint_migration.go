@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	v20240401 "github.com/frain-dev/convoy/api/migrations/v20240401"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -103,14 +102,16 @@ func (c *CreateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]by
 		return b, h, nil
 	}
 
-	var endpointResp v20240401.OldEndpointResponse
+	var endpointResp *models.EndpointResponse
 	err = json.Unmarshal(serverResponse.Data, &endpointResp)
 	if err != nil {
 		return nil, nil, err
 	}
 
+	endpoint := endpointResp.Endpoint
+
 	var oldEndpoint oldEndpoint
-	err = migrateEndpoint(&endpointResp, &oldEndpoint, backward)
+	err = migrateEndpoint(&endpoint, &oldEndpoint, backward)
 	if err != nil {
 		return nil, nil, err
 	}

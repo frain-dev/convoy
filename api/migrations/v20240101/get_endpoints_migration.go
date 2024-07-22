@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	v20240401 "github.com/frain-dev/convoy/api/migrations/v20240401"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/util"
 )
@@ -43,14 +42,16 @@ func (g *GetEndpointsResponseMigration) Migrate(b []byte, h http.Header) ([]byte
 			return nil, nil, err
 		}
 
-		var endpointResp v20240401.OldEndpointResponse
+		var endpointResp models.EndpointResponse
 		err = json.Unmarshal(endpointBytes, &endpointResp)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		var oldEndpointBody oldEndpoint
-		err = migrateEndpoint(&endpointResp, &oldEndpointBody, backward)
+		endpoint := endpointResp.Endpoint
+
+		err = migrateEndpoint(&endpoint, &oldEndpointBody, backward)
 		if err != nil {
 			return nil, nil, err
 		}

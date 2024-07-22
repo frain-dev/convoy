@@ -1,14 +1,3 @@
-# 24.6.3
-
-### Bug Fixes
-- Fixed api migration bug #2087
-
-# 24.6.2
-
-### Bug Fixes
-
-- Remove default config value for advanced signatures #2090
-
 # 24.6.1
 
 ### Features

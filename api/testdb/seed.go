@@ -43,11 +43,8 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 		ProjectID: g.UID,
 		OwnerID:   ownerID,
 		Status:    status,
-		Secrets: []datastore.Secret{
-			{Value: "1234"},
-		},
-		AppID: uid,
-		Url:   "http://localhost:8889",
+		Secrets:   datastore.Secrets{},
+		AppID:     uid,
 	}
 
 	// Seed Data.
@@ -102,9 +99,6 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 }
 
 func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project, error) {
-	return SeedDefaultProjectWithSSL(db, orgID, &datastore.DefaultSSLConfig)
-}
-func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastore.SSLConfiguration) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = ulid.Make().String()
 	}
@@ -120,7 +114,7 @@ func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastor
 				Duration:   10,
 				RetryCount: 2,
 			},
-			SSL: ssl,
+			SSL: &datastore.DefaultSSLConfig,
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
 				Versions: []datastore.SignatureVersion{
