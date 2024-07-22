@@ -32,28 +32,9 @@ const (
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13);
     `
 
-	findDeliveryAttempts = `SELECT
-    id,
-    event_delivery_id,
-    url,
-    method,
-    endpoint_id,
-    api_version,
-    ip_address,
-    to_json(request_http_header) as request_http_header,
-    to_json(response_http_header) as response_data,
-    http_status,
-    response_data,
-    error,
-    status,
-    created_at
-    FROM convoy.delivery_attempts WHERE event_delivery_id = $1;`
+	findDeliveryAttempts = `SELECT * FROM convoy.delivery_attempts WHERE event_delivery_id = $1 order by id;`
 
-	findOneDeliveryAttempt = `SELECT
-    *,
-    to_json(request_http_header) as request_http_header,
-    to_json(response_http_header) as response_data
-    FROM convoy.delivery_attempts WHERE id = $1 and event_delivery_id = $2;`
+	findOneDeliveryAttempt = `SELECT * FROM convoy.delivery_attempts WHERE id = $1 and event_delivery_id = $2;`
 )
 
 func (d *deliveryAttemptRepo) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.DeliveryAttempt) error {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -26,13 +27,24 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID} [get]
 func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
+	deliveryAttemptID := chi.URLParam(r, "deliveryAttemptID")
 	eventDelivery, err := h.retrieveEventDelivery(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	deliveryAttemptID := chi.URLParam(r, "deliveryAttemptID")
+	if len(eventDelivery.DeliveryAttempts) > 0 {
+		deliveryAttempt, deliveryErr := findDeliveryAttempt(eventDelivery.DeliveryAttempts, deliveryAttemptID)
+		if deliveryErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(deliveryErr))
+			return
+		}
+
+		_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", deliveryAttempt, http.StatusOK))
+		return
+	}
+
 	attemptsRepo := postgres.NewDeliveryAttemptRepo(h.A.DB)
 	deliveryAttempt, err := attemptsRepo.FindDeliveryAttemptById(r.Context(), eventDelivery.UID, deliveryAttemptID)
 	if err != nil {
@@ -40,7 +52,7 @@ func (h *Handler) GetDeliveryAttempt(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempt fetched successfully", deliveryAttempt, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempt fetched successfully", deliveryAttempt, http.StatusOK))
 }
 
 // GetDeliveryAttempts
@@ -71,6 +83,16 @@ func (h *Handler) GetDeliveryAttempts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("App event delivery attempts fetched successfully",
-		attempts, http.StatusOK))
+	eventDelivery.DeliveryAttempts = append(eventDelivery.DeliveryAttempts, attempts...)
+
+	_ = render.Render(w, r, util.NewServerResponse("Event delivery attempts fetched successfully", eventDelivery.DeliveryAttempts, http.StatusOK))
+}
+
+func findDeliveryAttempt(attempts []datastore.DeliveryAttempt, id string) (*datastore.DeliveryAttempt, error) {
+	for _, a := range attempts {
+		if a.UID == id {
+			return &a, nil
+		}
+	}
+	return nil, datastore.ErrEventDeliveryAttemptNotFound
 }
