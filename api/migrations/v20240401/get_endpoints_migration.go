@@ -34,7 +34,7 @@ func (g *GetEndpointsResponseMigration) Migrate(b []byte, h http.Header) ([]byte
 		return b, h, nil
 	}
 
-	var res []oldEndpointResponse
+	var res []OldEndpointResponse
 
 	for _, endpointPayload := range endpoints {
 		endpointBytes, err := json.Marshal(endpointPayload)
@@ -48,7 +48,7 @@ func (g *GetEndpointsResponseMigration) Migrate(b []byte, h http.Header) ([]byte
 			return nil, nil, err
 		}
 
-		var old oldEndpointResponse
+		var old OldEndpointResponse
 		endpoint := endpointResp.Endpoint
 
 		err = migrateEndpoint(&endpoint, &old)
