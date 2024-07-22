@@ -137,6 +137,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		maxIngestSize = cfg.MaxResponseSize
 	}
 
+	fmt.Println(r.ContentLength, "ths is the content length")
+
 	// The Content-Length header indicates the size of the message body, in bytes, sent to the recipient.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Length
 	// We use this to check the size of the request content, this is to ensure that we return the appropriate
