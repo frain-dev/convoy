@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -120,6 +121,11 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		maxIngestSize = project.Config.MaxIngestSize
 	}
 
+	fmt.Println("project.COnfig is nil", project.Config == nil)
+	if project.Config != nil {
+		fmt.Println("maxingestsize ===>>> ", project.Config.MaxIngestSize)
+	}
+
 	if maxIngestSize == 0 {
 		cfg, err := config.Get()
 		if err != nil {
@@ -130,6 +136,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 		maxIngestSize = cfg.MaxResponseSize
 	}
+
+	fmt.Println(r.ContentLength, "ths is the content length")
 
 	// The Content-Length header indicates the size of the message body, in bytes, sent to the recipient.
 	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Length
