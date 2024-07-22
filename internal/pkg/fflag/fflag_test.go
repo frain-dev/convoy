@@ -25,8 +25,8 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: disabled,
-					Search:     enabled,
+					Prometheus:      disabled,
+					SearchTokenizer: enabled,
 				},
 			},
 			args: struct {
@@ -42,14 +42,14 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: disabled,
-					Search:     enabled,
+					Prometheus:      disabled,
+					SearchTokenizer: enabled,
 				},
 			},
 			args: struct {
 				key FeatureFlagKey
 			}{
-				key: Search,
+				key: SearchTokenizer,
 			},
 			want: true,
 		},
@@ -59,8 +59,8 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: enabled,
-					Search:     enabled,
+					Prometheus:      enabled,
+					SearchTokenizer: enabled,
 				},
 			},
 			args: struct {
@@ -76,14 +76,14 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: enabled,
-					Search:     enabled,
+					Prometheus:      enabled,
+					SearchTokenizer: enabled,
 				},
 			},
 			args: struct {
 				key FeatureFlagKey
 			}{
-				key: Search,
+				key: SearchTokenizer,
 			},
 			want: true,
 		},
@@ -93,8 +93,8 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: disabled,
-					Search:     disabled,
+					Prometheus:      disabled,
+					SearchTokenizer: disabled,
 				},
 			},
 			args: struct {
@@ -110,14 +110,14 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: disabled,
-					Search:     disabled,
+					Prometheus:      disabled,
+					SearchTokenizer: disabled,
 				},
 			},
 			args: struct {
 				key FeatureFlagKey
 			}{
-				key: Search,
+				key: SearchTokenizer,
 			},
 			want: false,
 		},
@@ -161,8 +161,8 @@ func TestNewFFlag(t *testing.T) {
 			},
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: disabled,
-					Search:     enabled,
+					Prometheus:      disabled,
+					SearchTokenizer: enabled,
 				},
 			},
 			wantErr: false,
@@ -176,8 +176,8 @@ func TestNewFFlag(t *testing.T) {
 			},
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: enabled,
-					Search:     enabled,
+					Prometheus:      enabled,
+					SearchTokenizer: enabled,
 				},
 			},
 			wantErr: false,
@@ -191,8 +191,8 @@ func TestNewFFlag(t *testing.T) {
 			},
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus: disabled,
-					Search:     disabled,
+					Prometheus:      disabled,
+					SearchTokenizer: disabled,
 				},
 			},
 			wantErr: false,
