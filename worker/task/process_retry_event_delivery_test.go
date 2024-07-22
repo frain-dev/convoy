@@ -162,7 +162,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -247,7 +247,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -332,7 +332,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -417,7 +417,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -504,7 +504,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -588,7 +588,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -673,7 +673,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				q.EXPECT().
@@ -763,7 +763,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				q.EXPECT().

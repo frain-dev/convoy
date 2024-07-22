@@ -65,9 +65,6 @@ func generateEventDelivery(project *datastore.Project, endpoint *datastore.Endpo
 		SubscriptionID: sub.UID,
 		EventType:      event.EventType,
 		Headers:        httpheader.HTTPHeader{"X-sig": []string{"3787 fmmfbf"}},
-		DeliveryAttempts: []datastore.DeliveryAttempt{
-			{UID: ulid.Make().String()},
-		},
 		URLQueryParams: "name=ref&category=food",
 		Status:         datastore.SuccessEventStatus,
 		Metadata: &datastore.Metadata{
@@ -338,24 +335,18 @@ func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
 	err := edRepo.CreateEventDelivery(context.Background(), ed)
 	require.NoError(t, err)
 
-	newAttempt := datastore.DeliveryAttempt{
-		UID: ulid.Make().String(),
-	}
-
 	latency := "1h2m"
 	latencySeconds := 3720.0
 
 	ed.Latency = latency
 	ed.LatencySeconds = latencySeconds
 
-	err = edRepo.UpdateEventDeliveryWithAttempt(context.Background(), project.UID, *ed, newAttempt)
+	err = edRepo.UpdateEventDeliveryWithAttempt(context.Background(), project.UID, *ed)
 	require.NoError(t, err)
 
 	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), project.UID, ed.UID)
 	require.NoError(t, err)
 
-	require.Equal(t, ed.DeliveryAttempts[0], dbEventDelivery.DeliveryAttempts[0])
-	require.Equal(t, newAttempt, dbEventDelivery.DeliveryAttempts[1])
 	require.Equal(t, "", dbEventDelivery.Latency)
 	require.Equal(t, latencySeconds, dbEventDelivery.LatencySeconds)
 }
