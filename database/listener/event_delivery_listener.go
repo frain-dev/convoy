@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"context"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -11,7 +12,8 @@ import (
 )
 
 type EventDeliveryListener struct {
-	mEvent *services.MetaEvent
+	mEvent       *services.MetaEvent
+	attemptsRepo datastore.DeliveryAttemptsRepository
 }
 
 type MetaEventDelivery struct {
@@ -30,19 +32,19 @@ type MetaEventDelivery struct {
 	Source   *datastore.Source   `json:"source_metadata,omitempty"`
 	Device   *datastore.Device   `json:"device_metadata,omitempty"`
 
-	DeliveryAttempts datastore.DeliveryAttempt     `json:"attempt"`
-	Status           datastore.EventDeliveryStatus `json:"status"`
-	Metadata         *datastore.Metadata           `json:"metadata"`
-	CLIMetadata      *datastore.CLIMetadata        `json:"cli_metadata"`
-	Description      string                        `json:"description,omitempty"`
-	CreatedAt        time.Time                     `json:"created_at,omitempty"`
-	UpdatedAt        time.Time                     `json:"updated_at,omitempty"`
-	DeletedAt        null.Time                     `json:"deleted_at,omitempty"`
+	DeliveryAttempt datastore.DeliveryAttempt     `json:"attempt"`
+	Status          datastore.EventDeliveryStatus `json:"status"`
+	Metadata        *datastore.Metadata           `json:"metadata"`
+	CLIMetadata     *datastore.CLIMetadata        `json:"cli_metadata"`
+	Description     string                        `json:"description,omitempty"`
+	CreatedAt       time.Time                     `json:"created_at,omitempty"`
+	UpdatedAt       time.Time                     `json:"updated_at,omitempty"`
+	DeletedAt       null.Time                     `json:"deleted_at,omitempty"`
 }
 
-func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository) *EventDeliveryListener {
+func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, attemptsRepo datastore.DeliveryAttemptsRepository) *EventDeliveryListener {
 	mEvent := services.NewMetaEvent(queue, projectRepo, metaEventRepo)
-	return &EventDeliveryListener{mEvent: mEvent}
+	return &EventDeliveryListener{mEvent: mEvent, attemptsRepo: attemptsRepo}
 }
 
 func (e *EventDeliveryListener) AfterUpdate(data interface{}, _ interface{}) {
@@ -52,12 +54,16 @@ func (e *EventDeliveryListener) AfterUpdate(data interface{}, _ interface{}) {
 		return
 	}
 
-	// todo(raymond): query delivery attempts table to fetch the attempts
 	mEventDelivery := getMetaEventDelivery(eventDelivery)
-	//if len(eventDelivery.DeliveryAttempts) > 0 {
-	//	attempt := eventDelivery.DeliveryAttempts[len(eventDelivery.DeliveryAttempts)-1]
-	//	mEventDelivery.DeliveryAttempts = attempt
-	//}
+	attempts, err := e.attemptsRepo.FindDeliveryAttempts(context.Background(), mEventDelivery.UID)
+	if err != nil {
+		log.WithError(err).Error("event delivery meta event failed")
+	}
+
+	if len(attempts) > 0 {
+		attempt := attempts[len(attempts)-1]
+		mEventDelivery.DeliveryAttempt = attempt
+	}
 
 	if eventDelivery.Status == datastore.SuccessEventStatus {
 		err := e.mEvent.Run(string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)
