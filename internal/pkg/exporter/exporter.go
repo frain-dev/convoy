@@ -22,17 +22,22 @@ var (
 type tablename string
 
 const (
-	eventsTable          tablename = "convoy.events"
-	eventDeliveriesTable tablename = "convoy.event_deliveries"
+	eventsTable           tablename = "convoy.events"
+	eventDeliveriesTable  tablename = "convoy.event_deliveries"
+	deliveryAttemptsTable tablename = "convoy.delivery_attempts"
 )
 
-// order is important here, event_deliveries references
-// event id, so event_deliveries must be deleted first
-var tables = []tablename{eventDeliveriesTable, eventsTable}
+// order is important here,
+// delivery_attempts references the event delivery id and
+// event_deliveries references event id,
+// so delivery_attempts must be deleted first,
+// then event_deliveries then events.
+var tables = []tablename{deliveryAttemptsTable, eventDeliveriesTable, eventsTable}
 
 var tableToFileMapping = map[tablename]string{
-	eventsTable:          "%s/orgs/%s/projects/%s/events/%s.json",
-	eventDeliveriesTable: "%s/orgs/%s/projects/%s/eventdeliveries/%s.json",
+	eventsTable:           "%s/orgs/%s/projects/%s/events/%s.json",
+	eventDeliveriesTable:  "%s/orgs/%s/projects/%s/eventdeliveries/%s.json",
+	deliveryAttemptsTable: "%s/orgs/%s/projects/%s/deliveryattempts/%s.json",
 }
 
 type (

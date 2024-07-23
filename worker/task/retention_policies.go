@@ -65,12 +65,12 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 		}
 
 		for _, p := range projects {
-			exporter, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config)
+			e, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config)
 			if err != nil {
 				return err
 			}
 
-			result, err := exporter.Export(ctx)
+			result, err := e.Export(ctx)
 			if err != nil {
 				log.WithError(err).Errorf("Failed to archive project id's (%s) events ", p.UID)
 			}
@@ -91,13 +91,13 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 
 			// prune tables and files.
-			err = exporter.Cleanup(ctx)
+			err = e.Cleanup(ctx)
 			if err != nil {
 				return err
 			}
 		}
 
-		fmt.Printf("Retention policy job took %f minutes to run", time.Since(c).Minutes())
+		log.Printf("Retention policy job took %f minutes to run", time.Since(c).Minutes())
 		return nil
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
+	"io"
+	"time"
 )
 
 type deliveryAttemptRepo struct {
@@ -92,4 +94,8 @@ func (d *deliveryAttemptRepo) FindDeliveryAttempts(ctx context.Context, eventDel
 	}
 
 	return attempts, nil
+}
+
+func (e *deliveryAttemptRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+	return exportRecords(ctx, e.db, "convoy.delivery_attempts", projectID, createdAt, w)
 }

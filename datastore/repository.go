@@ -198,6 +198,7 @@ type ExportRepository interface {
 }
 
 type DeliveryAttemptsRepository interface {
+	ExportRepository
 	CreateDeliveryAttempt(context.Context, *DeliveryAttempt) error
 	FindDeliveryAttemptById(context.Context, string, string) (*DeliveryAttempt, error)
 	FindDeliveryAttempts(context.Context, string) ([]DeliveryAttempt, error)

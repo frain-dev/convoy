@@ -2493,6 +2493,21 @@ func (mr *MockDeliveryAttemptsRepositoryMockRecorder) CreateDeliveryAttempt(arg0
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeliveryAttempt", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).CreateDeliveryAttempt), arg0, arg1)
 }
 
+// ExportRecords mocks base method.
+func (m *MockDeliveryAttemptsRepository) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportRecords", ctx, projectID, createdAt, w)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExportRecords indicates an expected call of ExportRecords.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) ExportRecords(ctx, projectID, createdAt, w any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).ExportRecords), ctx, projectID, createdAt, w)
+}
+
 // FindDeliveryAttemptById mocks base method.
 func (m *MockDeliveryAttemptsRepository) FindDeliveryAttemptById(arg0 context.Context, arg1, arg2 string) (*datastore.DeliveryAttempt, error) {
 	m.ctrl.T.Helper()
