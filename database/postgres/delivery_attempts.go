@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 	"io"
@@ -13,8 +12,7 @@ import (
 )
 
 type deliveryAttemptRepo struct {
-	db   *sqlx.DB
-	hook *hooks.Hook
+	db *sqlx.DB
 }
 
 func NewDeliveryAttemptRepo(db database.Database) datastore.DeliveryAttemptsRepository {
