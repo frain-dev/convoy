@@ -308,6 +308,7 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		EventDeliveryId: m.UID,
 		EndpointID:      e.UID,
 		APIVersion:      convoy.GetVersion(),
+		ProjectId:       m.ProjectID,
 
 		IPAddress:        resp.IP,
 		ResponseHeader:   *responseHeader,
