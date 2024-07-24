@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/frain-dev/convoy/database"
@@ -372,6 +373,30 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestB
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_WriteToQueueFailed() {
 	i.T().Skip("Depends on mocking")
+}
+
+func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPayloadSize() {
+	maskID := "123456"
+	sourceID := "123456789"
+
+	// Just Before
+	v := &datastore.VerifierConfig{
+		Type: datastore.NoopVerifier,
+	}
+	_, _ = testdb.SeedSource(i.ConvoyApp.A.DB, i.DefaultProject, sourceID, maskID, "", v, "", "")
+
+	url := fmt.Sprintf("/ingest/%s", maskID)
+	bodyStr := fmt.Sprintf(`{ "payload": %s }`, strings.Repeat("abcdef", 100))
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, "", body)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	i.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(i.T(), http.StatusRequestEntityTooLarge, w.Code)
 }
 
 func TestIngestIntegrationTestSuite(t *testing.T) {

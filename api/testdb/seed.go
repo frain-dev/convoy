@@ -6,9 +6,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"gopkg.in/guregu/null.v4"
 	"testing"
 	"time"
+
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
@@ -133,6 +134,7 @@ func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastor
 				},
 			},
 			ReplayAttacks: false,
+			MaxIngestSize: 50,
 		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),

@@ -131,6 +131,15 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		maxIngestSize = cfg.MaxResponseSize
 	}
 
+	// The Content-Length header indicates the size of the message body, in bytes, sent to the recipient.
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Length
+	// We use this to check the size of the request content, this is to ensure that we return the appropriate
+	// status code when the size of a request payload exceeds the configured MaxResponseSize.
+	if r.ContentLength > int64(maxIngestSize) {
+		_ = render.Render(w, r, util.NewErrorResponse("request body too large", http.StatusRequestEntityTooLarge))
+		return
+	}
+
 	var checksum string
 	var isDuplicate bool
 	if len(source.IdempotencyKeys) > 0 {
