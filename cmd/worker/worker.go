@@ -295,6 +295,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		projectRepo,
 		eventRepo,
 		eventDeliveryRepo,
+		attemptRepo,
 		rd,
 	), nil)
 

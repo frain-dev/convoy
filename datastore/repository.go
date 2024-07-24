@@ -202,4 +202,5 @@ type DeliveryAttemptsRepository interface {
 	CreateDeliveryAttempt(context.Context, *DeliveryAttempt) error
 	FindDeliveryAttemptById(context.Context, string, string) (*DeliveryAttempt, error)
 	FindDeliveryAttempts(context.Context, string) ([]DeliveryAttempt, error)
+	DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *DeliveryAttemptsFilter, hardDelete bool) error
 }

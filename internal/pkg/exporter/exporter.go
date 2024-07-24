@@ -56,15 +56,17 @@ type Exporter struct {
 	result  ExportResult
 
 	// repositories
-	eventRepo         datastore.EventRepository
-	projectRepo       datastore.ProjectRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
+	eventRepo            datastore.EventRepository
+	projectRepo          datastore.ProjectRepository
+	eventDeliveryRepo    datastore.EventDeliveryRepository
+	deliveryAttemptsRepo datastore.DeliveryAttemptsRepository
 }
 
 func NewExporter(projectRepo datastore.ProjectRepository,
 	eventRepo datastore.EventRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	p *datastore.Project, c *datastore.Configuration,
+	attemptsRepo datastore.DeliveryAttemptsRepository,
 ) (*Exporter, error) {
 	policy, err := time.ParseDuration(c.RetentionPolicy.Policy)
 	if err != nil {
@@ -77,9 +79,10 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 		result:  ExportResult{},
 		expDate: time.Now().UTC().Add(-policy),
 
-		projectRepo:       projectRepo,
-		eventRepo:         eventRepo,
-		eventDeliveryRepo: eventDeliveryRepo,
+		eventRepo:            eventRepo,
+		projectRepo:          projectRepo,
+		deliveryAttemptsRepo: attemptsRepo,
+		eventDeliveryRepo:    eventDeliveryRepo,
 	}, nil
 }
 
@@ -103,9 +106,9 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 }
 
 func (ex *Exporter) Cleanup(ctx context.Context) error {
-	for _, table := range tables {
-		if ex.result[table].NumDocs > 0 {
-			switch table {
+	for i := range tables {
+		if ex.result[tables[i]].NumDocs > 0 {
+			switch tables[i] {
 			case eventsTable:
 				eventFilter := &datastore.EventFilter{
 					CreatedAtStart: 0,
@@ -121,7 +124,7 @@ func (ex *Exporter) Cleanup(ctx context.Context) error {
 					return err
 				}
 
-				ex.project.RetainedEvents += int(ex.result[table].NumDocs)
+				ex.project.RetainedEvents += int(ex.result[tables[i]].NumDocs)
 				err = ex.projectRepo.UpdateProject(ctx, ex.project)
 				if err != nil {
 					return err
@@ -136,7 +139,16 @@ func (ex *Exporter) Cleanup(ctx context.Context) error {
 				if err != nil {
 					return err
 				}
+			case deliveryAttemptsTable:
+				deliveryFilter := &datastore.DeliveryAttemptsFilter{
+					CreatedAtStart: 0,
+					CreatedAtEnd:   ex.expDate.Unix(),
+				}
 
+				err := ex.deliveryAttemptsRepo.DeleteProjectDeliveriesAttempts(ctx, ex.project.UID, deliveryFilter, true)
+				if err != nil {
+					return err
+				}
 			default:
 				return ErrInvalidTable
 			}
@@ -144,7 +156,7 @@ func (ex *Exporter) Cleanup(ctx context.Context) error {
 
 		// remove export file.
 		if ex.config.StoragePolicy.Type == datastore.S3 {
-			err := os.Remove(ex.result[table].ExportFile)
+			err := os.Remove(ex.result[tables[i]].ExportFile)
 			if err != nil {
 				return err
 			}
@@ -219,6 +231,8 @@ func (ex *Exporter) getRepo(table tablename) (datastore.ExportRepository, error)
 		return ex.eventRepo, nil
 	case eventDeliveriesTable:
 		return ex.eventDeliveryRepo, nil
+	case deliveryAttemptsTable:
+		return ex.deliveryAttemptsRepo, nil
 	default:
 		return nil, ErrInvalidTable
 	}

@@ -22,14 +22,21 @@ func NewDeliveryAttemptRepo(db database.Database) datastore.DeliveryAttemptsRepo
 }
 
 var (
-	_                          datastore.DeliveryAttemptsRepository = (*deliveryAttemptRepo)(nil)
-	ErrDeliveryAttemptNotFound                                      = errors.New("job not found")
+	_ datastore.DeliveryAttemptsRepository = (*deliveryAttemptRepo)(nil)
 )
 
 const (
 	creatDeliveryAttempt = `
-    INSERT INTO convoy.delivery_attempts (id, url, method, api_version, endpoint_id, event_delivery_id, ip_address, request_http_header, response_http_header, http_status, response_data, error, status)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13);
+    INSERT INTO convoy.delivery_attempts (id, url, method, api_version, endpoint_id, event_delivery_id, project_id, ip_address, request_http_header, response_http_header, http_status, response_data, error, status)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
+    `
+
+	softDeleteProjectDeliveryAttempts = `
+    UPDATE convoy.delivery_attempts SET deleted_at = NOW() WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
+    `
+
+	hardDeleteProjectDeliveryAttempts = `
+    DELETE FROM convoy.delivery_attempts WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
     `
 
 	findDeliveryAttempts = `SELECT * FROM convoy.delivery_attempts WHERE event_delivery_id = $1 order by id;`
@@ -40,7 +47,7 @@ const (
 func (d *deliveryAttemptRepo) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.DeliveryAttempt) error {
 	result, err := d.db.ExecContext(
 		ctx, creatDeliveryAttempt, attempt.UID, attempt.URL, attempt.Method, attempt.APIVersion, attempt.EndpointID,
-		attempt.EventDeliveryId, attempt.IPAddress, attempt.RequestHeader, attempt.ResponseHeader, attempt.HttpResponseCode,
+		attempt.EventDeliveryId, attempt.ProjectId, attempt.IPAddress, attempt.RequestHeader, attempt.ResponseHeader, attempt.HttpResponseCode,
 		attempt.ResponseData, attempt.Error, attempt.Status,
 	)
 	if err != nil {
@@ -64,7 +71,7 @@ func (d *deliveryAttemptRepo) FindDeliveryAttemptById(ctx context.Context, event
 	err := d.db.QueryRowxContext(ctx, findOneDeliveryAttempt, id, eventDeliveryId).StructScan(attempt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrDeliveryAttemptNotFound
+			return nil, datastore.ErrDeliveryAttemptNotFound
 		}
 		return nil, err
 	}
@@ -94,6 +101,35 @@ func (d *deliveryAttemptRepo) FindDeliveryAttempts(ctx context.Context, eventDel
 	return attempts, nil
 }
 
-func (e *deliveryAttemptRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	return exportRecords(ctx, e.db, "convoy.delivery_attempts", projectID, createdAt, w)
+func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *datastore.DeliveryAttemptsFilter, hardDelete bool) error {
+	var result sql.Result
+	var err error
+
+	start := time.Unix(filter.CreatedAtStart, 0)
+	end := time.Unix(filter.CreatedAtEnd, 0)
+
+	if hardDelete {
+		result, err = d.db.ExecContext(ctx, hardDeleteProjectDeliveryAttempts, projectID, start, end)
+	} else {
+		result, err = d.db.ExecContext(ctx, softDeleteProjectDeliveryAttempts, projectID, start, end)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return datastore.ErrDeliveryAttemptsNotDeleted
+	}
+
+	return nil
+}
+
+func (d *deliveryAttemptRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+	return exportRecords(ctx, d.db, "convoy.delivery_attempts", projectID, createdAt, w)
 }

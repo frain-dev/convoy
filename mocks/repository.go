@@ -2493,6 +2493,20 @@ func (mr *MockDeliveryAttemptsRepositoryMockRecorder) CreateDeliveryAttempt(arg0
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeliveryAttempt", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).CreateDeliveryAttempt), arg0, arg1)
 }
 
+// DeleteProjectDeliveriesAttempts mocks base method.
+func (m *MockDeliveryAttemptsRepository) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *datastore.DeliveryAttemptsFilter, hardDelete bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteProjectDeliveriesAttempts", ctx, projectID, filter, hardDelete)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteProjectDeliveriesAttempts indicates an expected call of DeleteProjectDeliveriesAttempts.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) DeleteProjectDeliveriesAttempts(ctx, projectID, filter, hardDelete any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectDeliveriesAttempts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).DeleteProjectDeliveriesAttempts), ctx, projectID, filter, hardDelete)
+}
+
 // ExportRecords mocks base method.
 func (m *MockDeliveryAttemptsRepository) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
 	m.ctrl.T.Helper()

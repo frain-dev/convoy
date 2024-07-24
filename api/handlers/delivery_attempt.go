@@ -94,5 +94,5 @@ func findDeliveryAttempt(attempts []datastore.DeliveryAttempt, id string) (*data
 			return &a, nil
 		}
 	}
-	return nil, datastore.ErrEventDeliveryAttemptNotFound
+	return nil, datastore.ErrDeliveryAttemptNotFound
 }
