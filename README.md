@@ -3,13 +3,13 @@
 [![golangci-lint](https://github.com/frain-dev/convoy/actions/workflows/linter.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/linter.yml)
 [![Build and run all tests](https://github.com/frain-dev/convoy/actions/workflows/go.yml/badge.svg)](https://github.com/frain-dev/convoy/actions/workflows/go.yml)
 - Website: https://getconvoy.io
-- Forum: [Github Discussions](https://github.com/frain-dev/convoy/discussions)
+- Forum: [Convoy Community](https://community.getconvoy.io)
 - Documentation: [docs.getconvoy.io](https://docs.getconvoy.io)
 - Deploy: [Install Convoy](https://docs.getconvoy.io/deployment/install-convoy/docker)
 - Slack: [Join the Community](https://join.slack.com/t/convoy-community/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ)
 
 
-[Convoy](https://getconvoy.io) is an open source high-performance webhooks gateway used to securely ingest, persist, debug, deliver and manage millions of events reliably with rich features such as retries, rate limiting, static ips, circuit breaking, rolling secrets and more. To get started import the [openapi spec](https://github.com/frain-dev/convoy/blob/main/docs/v3/openapi3.yaml) into Postman or Insomnia.
+[Convoy](https://getconvoy.io) is an open source high-performance webhooks gateway used to securely ingest, persist, debug, deliver and manage millions of events reliably with rich features such as retries, rate limiting, static ips, circuit breaking, rolling secrets and more. 
 
 Convoy provides several key features:
 
