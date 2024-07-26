@@ -99,7 +99,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 		{
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: &EndpointError{Err: fmt.Errorf("%s, err: nil", ErrDeliveryAttemptFailed.Error()), delay: defaultEventDelay},
+			expectedError: &EndpointError{Err: fmt.Errorf("%s, err: nil", ErrDeliveryAttemptFailed.Error()), delay: 20000000000},
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
