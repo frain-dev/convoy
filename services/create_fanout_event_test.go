@@ -142,15 +142,17 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 		},
 
 		{
-			name: "should_error_for_empty_endpoints",
+			name: "should_not_error_for_empty_endpoints",
 			dbFn: func(es *CreateFanoutEventService) {
 				a, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return([]datastore.Endpoint{}, nil)
-
 				p, _ := es.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
 				p.EXPECT().FindPortalLinkByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil, datastore.ErrPortalLinkNotFound)
+					Times(1).Return(&datastore.PortalLink{UID: "12345"}, nil)
+				eq, _ := es.Queue.(*mocks.MockQueuer)
+				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+					Times(1).Return(nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -159,10 +161,26 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 					EventType: "payment.created",
 					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Project{},
+				g: &datastore.Project{
+					UID:  "abc",
+					Name: "test_project",
+					Config: &datastore.ProjectConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   1000,
+							RetryCount: 10,
+						},
+						Signature:     &datastore.SignatureConfiguration{},
+						ReplayAttacks: false,
+					},
+				},
 			},
-			wantErr:    true,
-			wantErrMsg: ErrNoValidOwnerIDEndpointFound.Error(),
+			wantEvent: &datastore.Event{
+				EventType: datastore.EventType("payment.created"),
+				Raw:       `{"name":"convoy"}`,
+				Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				ProjectID: "abc",
+			},
 		},
 	}
 
