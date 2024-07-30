@@ -70,7 +70,7 @@ func (u *UpdateEndpointResponseMigration) Migrate(b []byte, h http.Header) ([]by
 
 	endpoint := endpointResp.Endpoint
 
-	var old oldEndpointResponse
+	var old OldEndpointResponse
 	err = migrateEndpoint(&endpoint, &old)
 	if err != nil {
 		return nil, nil, err

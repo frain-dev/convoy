@@ -1,0 +1,56 @@
+{
+    "host": "localhost:5015",
+    "database": {
+        "host": "postgres",
+        "username": "convoy",
+        "password": "convoy",
+        "database": "convoy",
+        "port": 5432
+    },
+    "redis": {
+        "port": 6379,
+        "host": "redis_server"
+    },
+    "metrics": {
+        "metrics_backend": "prometheus",
+        "prometheus_metrics": {
+            "sample_time": 10
+        }
+    },
+    "instance_ingest_rate": 50,
+    "api_rate_limit_enabled": false,
+    "auth": {
+        "jwt": {
+            "enabled": true
+        },
+        "native": {
+            "enabled": true
+        },
+        "file": {
+            "basic": [
+                {
+                    "username": "test",
+                    "password": "test",
+                    "role": {
+                        "type": "super_user"
+                    }
+                },
+                {
+                    "username": "default@user.com",
+                    "password": "password",
+                    "role": {
+                        "type": "super_user"
+                    }
+                },
+                {
+                    "username": "test-group-filter",
+                    "password": "test-group-filter",
+                    "role": {
+                        "group": "abcdef",
+                        "type": "super_user"
+                    }
+                }
+            ]
+        }
+    }
+}

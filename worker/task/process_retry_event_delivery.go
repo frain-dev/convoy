@@ -263,7 +263,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			if err != nil {
 				errS = err.Error()
 			}
-			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS), delay: defaultEventDelay}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS), delay: delayDuration}
 		}
 
 		return nil
