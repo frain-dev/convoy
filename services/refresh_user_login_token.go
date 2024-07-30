@@ -33,20 +33,18 @@ func (u *RefreshTokenService) Run(ctx context.Context) (*jwt.Token, error) {
 				return nil, &ServiceError{ErrMsg: err.Error()}
 			}
 		} else {
-			log.FromContext(ctx).WithError(err).Error("failed to validate access token")
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 	}
 
 	verified, err := u.JWT.ValidateRefreshToken(u.Data.RefreshToken)
 	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to validate refresh token")
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	user, err := u.UserRepo.FindUserByID(ctx, verified.UserID)
 	if err != nil {
-		if err == datastore.ErrUserNotFound {
+		if errors.Is(err, datastore.ErrUserNotFound) {
 			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 
