@@ -219,7 +219,7 @@ const (
     `
 
 	hardDeleteProjectEventDeliveries = `
-    DELETE FROM convoy.event_deliveries WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
+    DELETE FROM convoy.event_deliveries WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3;
     `
 )
 

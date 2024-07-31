@@ -36,7 +36,7 @@ const (
     `
 
 	hardDeleteProjectDeliveryAttempts = `
-    DELETE FROM convoy.delivery_attempts WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
+    DELETE FROM convoy.delivery_attempts WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3;
     `
 
 	findDeliveryAttempts = `with att as (SELECT * FROM convoy.delivery_attempts WHERE event_delivery_id = $1 order by created_at desc limit 10) select * from att order by created_at;`
