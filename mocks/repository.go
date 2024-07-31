@@ -392,18 +392,18 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), ctx, projectID, endpointIDs, eventID, subscriptionID, status, params, pageable, idempotencyKey, eventType)
 }
 
-// UpdateEventDeliveryWithAttempt mocks base method.
-func (m *MockEventDeliveryRepository) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
+// UpdateEventDeliveryMetadata mocks base method.
+func (m *MockEventDeliveryRepository) UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery *datastore.EventDelivery) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateEventDeliveryWithAttempt", ctx, projectID, eventDelivery, attempt)
+	ret := m.ctrl.Call(m, "UpdateEventDeliveryMetadata", ctx, projectID, eventDelivery)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateEventDeliveryWithAttempt indicates an expected call of UpdateEventDeliveryWithAttempt.
-func (mr *MockEventDeliveryRepositoryMockRecorder) UpdateEventDeliveryWithAttempt(ctx, projectID, eventDelivery, attempt any) *gomock.Call {
+// UpdateEventDeliveryMetadata indicates an expected call of UpdateEventDeliveryMetadata.
+func (mr *MockEventDeliveryRepositoryMockRecorder) UpdateEventDeliveryMetadata(ctx, projectID, eventDelivery any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventDeliveryWithAttempt", reflect.TypeOf((*MockEventDeliveryRepository)(nil).UpdateEventDeliveryWithAttempt), ctx, projectID, eventDelivery, attempt)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventDeliveryMetadata", reflect.TypeOf((*MockEventDeliveryRepository)(nil).UpdateEventDeliveryMetadata), ctx, projectID, eventDelivery)
 }
 
 // UpdateStatusOfEventDeliveries mocks base method.
@@ -2534,4 +2534,100 @@ func (m *MockExportRepository) ExportRecords(ctx context.Context, projectID stri
 func (mr *MockExportRepositoryMockRecorder) ExportRecords(ctx, projectID, createdAt, w any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockExportRepository)(nil).ExportRecords), ctx, projectID, createdAt, w)
+}
+
+// MockDeliveryAttemptsRepository is a mock of DeliveryAttemptsRepository interface.
+type MockDeliveryAttemptsRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockDeliveryAttemptsRepositoryMockRecorder
+}
+
+// MockDeliveryAttemptsRepositoryMockRecorder is the mock recorder for MockDeliveryAttemptsRepository.
+type MockDeliveryAttemptsRepositoryMockRecorder struct {
+	mock *MockDeliveryAttemptsRepository
+}
+
+// NewMockDeliveryAttemptsRepository creates a new mock instance.
+func NewMockDeliveryAttemptsRepository(ctrl *gomock.Controller) *MockDeliveryAttemptsRepository {
+	mock := &MockDeliveryAttemptsRepository{ctrl: ctrl}
+	mock.recorder = &MockDeliveryAttemptsRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockDeliveryAttemptsRepository) EXPECT() *MockDeliveryAttemptsRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateDeliveryAttempt mocks base method.
+func (m *MockDeliveryAttemptsRepository) CreateDeliveryAttempt(arg0 context.Context, arg1 *datastore.DeliveryAttempt) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDeliveryAttempt", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateDeliveryAttempt indicates an expected call of CreateDeliveryAttempt.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) CreateDeliveryAttempt(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeliveryAttempt", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).CreateDeliveryAttempt), arg0, arg1)
+}
+
+// DeleteProjectDeliveriesAttempts mocks base method.
+func (m *MockDeliveryAttemptsRepository) DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *datastore.DeliveryAttemptsFilter, hardDelete bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteProjectDeliveriesAttempts", ctx, projectID, filter, hardDelete)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteProjectDeliveriesAttempts indicates an expected call of DeleteProjectDeliveriesAttempts.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) DeleteProjectDeliveriesAttempts(ctx, projectID, filter, hardDelete any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProjectDeliveriesAttempts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).DeleteProjectDeliveriesAttempts), ctx, projectID, filter, hardDelete)
+}
+
+// ExportRecords mocks base method.
+func (m *MockDeliveryAttemptsRepository) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ExportRecords", ctx, projectID, createdAt, w)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ExportRecords indicates an expected call of ExportRecords.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) ExportRecords(ctx, projectID, createdAt, w any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRecords", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).ExportRecords), ctx, projectID, createdAt, w)
+}
+
+// FindDeliveryAttemptById mocks base method.
+func (m *MockDeliveryAttemptsRepository) FindDeliveryAttemptById(arg0 context.Context, arg1, arg2 string) (*datastore.DeliveryAttempt, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindDeliveryAttemptById", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*datastore.DeliveryAttempt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindDeliveryAttemptById indicates an expected call of FindDeliveryAttemptById.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) FindDeliveryAttemptById(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDeliveryAttemptById", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).FindDeliveryAttemptById), arg0, arg1, arg2)
+}
+
+// FindDeliveryAttempts mocks base method.
+func (m *MockDeliveryAttemptsRepository) FindDeliveryAttempts(arg0 context.Context, arg1 string) ([]datastore.DeliveryAttempt, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindDeliveryAttempts", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.DeliveryAttempt)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindDeliveryAttempts indicates an expected call of FindDeliveryAttempts.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) FindDeliveryAttempts(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDeliveryAttempts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).FindDeliveryAttempts), arg0, arg1)
 }

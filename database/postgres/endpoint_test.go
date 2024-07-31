@@ -211,8 +211,6 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 			endpoint.Name += " daniel"
 		}
 
-		fmt.Printf("%+v\n", endpoint.Name)
-
 		err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 		require.NoError(t, err)
 
