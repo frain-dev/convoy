@@ -161,7 +161,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
@@ -248,7 +248,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -333,7 +333,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -418,7 +418,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -505,7 +505,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -589,7 +589,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 			},
 			nFn: func() func() {
@@ -674,7 +674,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				q.EXPECT().
@@ -764,7 +764,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryWithAttempt(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				q.EXPECT().
