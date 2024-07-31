@@ -210,7 +210,7 @@ const (
     UPDATE convoy.event_deliveries SET status = ?, description = ?, updated_at = NOW() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
     `
 
-	updateEventDeliveryAttempts = `
+	updateEventDeliveryMetadata = `
     UPDATE convoy.event_deliveries SET status = $1, metadata = $2, latency_seconds = $3,  updated_at = NOW() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
     `
 
@@ -544,8 +544,8 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 	return eventDeliveries, nil
 }
 
-func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery) error {
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.Status, delivery.Metadata, delivery.LatencySeconds, delivery.UID, projectID)
+func (e *eventDeliveryRepo) UpdateEventDeliveryMetadata(ctx context.Context, projectID string, delivery datastore.EventDelivery) error {
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryMetadata, delivery.Status, delivery.Metadata, delivery.LatencySeconds, delivery.UID, projectID)
 	if err != nil {
 		return err
 	}

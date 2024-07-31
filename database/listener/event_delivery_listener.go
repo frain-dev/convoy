@@ -61,8 +61,7 @@ func (e *EventDeliveryListener) AfterUpdate(data interface{}, _ interface{}) {
 	}
 
 	if len(attempts) > 0 {
-		attempt := attempts[len(attempts)-1]
-		mEventDelivery.DeliveryAttempt = attempt
+		mEventDelivery.DeliveryAttempt = attempts[len(attempts)-1]
 	}
 
 	if eventDelivery.Status == datastore.SuccessEventStatus {

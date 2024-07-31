@@ -393,9 +393,9 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(ctx,
 }
 
 // UpdateEventDeliveryWithAttempt mocks base method.
-func (m *MockEventDeliveryRepository) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery datastore.EventDelivery) error {
+func (m *MockEventDeliveryRepository) UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery datastore.EventDelivery) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateEventDeliveryWithAttempt", ctx, projectID, eventDelivery)
+	ret := m.ctrl.Call(m, "UpdateEventDeliveryMetadata", ctx, projectID, eventDelivery)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
@@ -403,7 +403,7 @@ func (m *MockEventDeliveryRepository) UpdateEventDeliveryWithAttempt(ctx context
 // UpdateEventDeliveryWithAttempt indicates an expected call of UpdateEventDeliveryWithAttempt.
 func (mr *MockEventDeliveryRepositoryMockRecorder) UpdateEventDeliveryWithAttempt(ctx, projectID, eventDelivery any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventDeliveryWithAttempt", reflect.TypeOf((*MockEventDeliveryRepository)(nil).UpdateEventDeliveryWithAttempt), ctx, projectID, eventDelivery)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventDeliveryMetadata", reflect.TypeOf((*MockEventDeliveryRepository)(nil).UpdateEventDeliveryMetadata), ctx, projectID, eventDelivery)
 }
 
 // UpdateStatusOfEventDeliveries mocks base method.

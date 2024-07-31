@@ -341,7 +341,7 @@ func Test_eventDeliveryRepo_UpdateEventDeliveryWithAttempt(t *testing.T) {
 	ed.Latency = latency
 	ed.LatencySeconds = latencySeconds
 
-	err = edRepo.UpdateEventDeliveryWithAttempt(context.Background(), project.UID, *ed)
+	err = edRepo.UpdateEventDeliveryMetadata(context.Background(), project.UID, *ed)
 	require.NoError(t, err)
 
 	dbEventDelivery, err := edRepo.FindEventDeliveryByID(context.Background(), project.UID, ed.UID)
