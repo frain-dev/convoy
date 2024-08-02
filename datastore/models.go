@@ -1317,6 +1317,7 @@ type Configuration struct {
 	IsSignupEnabled    bool                          `json:"is_signup_enabled" db:"is_signup_enabled"`
 	StoragePolicy      *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
 	RetentionPolicy    *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	LicenseKey         string                        `json:"license_key" db:"license_key"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

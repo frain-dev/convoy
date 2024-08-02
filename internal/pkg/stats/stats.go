@@ -13,10 +13,13 @@ import (
 	"time"
 )
 
+const statsUpstream = "https://stats.getconvoy.io"
+
 type Stats struct {
-	client   *http.Client
-	edr      datastore.EventDeliveryRepository
-	upstream string
+	client       *http.Client
+	deliveryRepo datastore.EventDeliveryRepository
+	configRepo   datastore.ConfigurationRepository
+	upstream     string
 }
 
 // Entry represents an instance's hourly usage entry
@@ -30,7 +33,7 @@ type Entry struct {
 	Timestamp time.Time `json:"timestamp,omitempty"`
 }
 
-func NewStats(upstream string, edr datastore.EventDeliveryRepository) *Stats {
+func NewStats(deliveryRepo datastore.EventDeliveryRepository, configRepo datastore.ConfigurationRepository) *Stats {
 	// will retry if the number of retries is
 	// - less than 5
 	// - the request times out
@@ -44,7 +47,7 @@ func NewStats(upstream string, edr datastore.EventDeliveryRepository) *Stats {
 	// - the error code matches
 	httpStatusRetryFn := rehttp.RetryAll(
 		rehttp.RetryMaxRetries(5),
-		rehttp.RetryStatuses(400, 404, 500),
+		RetryStatusGreaterThan(399),
 	)
 
 	tr := rehttp.NewTransport(
@@ -59,21 +62,27 @@ func NewStats(upstream string, edr datastore.EventDeliveryRepository) *Stats {
 	}
 
 	return &Stats{
-		edr:      edr,
-		client:   client,
-		upstream: upstream,
+		client:       client,
+		configRepo:   configRepo,
+		deliveryRepo: deliveryRepo,
+		upstream:     statsUpstream,
 	}
 }
 
 // Record sends a request to the statistics server, retries 5 times if an error occurs
-func (s *Stats) Record(ctx context.Context, license string) error {
-	count, err := s.edr.CountInstanceEventDeliveries(ctx)
+func (s *Stats) Record(ctx context.Context) error {
+	count, err := s.deliveryRepo.CountInstanceEventDeliveries(ctx)
+	if err != nil {
+		return err
+	}
+
+	config, err := s.configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		return err
 	}
 
 	entry := Entry{
-		License:   license,
+		License:   config.UID,
 		Count:     count,
 		Timestamp: time.Now(),
 	}
@@ -112,4 +121,15 @@ func (s *Stats) Record(ctx context.Context, license string) error {
 
 func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
+}
+
+// RetryStatusGreaterThan returns a RetryFn that retries if the
+// response's status code is greater than the provided code.
+func RetryStatusGreaterThan(status int) rehttp.RetryFn {
+	return func(attempt rehttp.Attempt) bool {
+		if attempt.Response == nil {
+			return false
+		}
+		return attempt.Response.StatusCode > status
+	}
 }
