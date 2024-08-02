@@ -221,6 +221,8 @@ const (
 	hardDeleteProjectEventDeliveries = `
     DELETE FROM convoy.event_deliveries WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3;
     `
+
+	countInstanceEventDeliveries = `select count(id) from convoy.event_deliveries where created_at >= $2 AND created_at <= $3;`
 )
 
 func NewEventDeliveryRepo(db database.Database, cache cache.Cache) datastore.EventDeliveryRepository {
@@ -1052,4 +1054,20 @@ func reverseOrder(sortOrder string) string {
 	default:
 		return "ASC"
 	}
+}
+
+func (e *eventDeliveryRepo) CountInstanceEventDeliveries(ctx context.Context) (uint64, error) {
+	counter := struct {
+		Count uint64
+	}{}
+
+	end := time.Now()
+	start := end.Add(-time.Hour)
+
+	err := e.db.QueryRowxContext(ctx, countInstanceEventDeliveries, start, end).StructScan(&counter)
+	if err != nil {
+		return 0, err
+	}
+
+	return counter.Count, nil
 }
