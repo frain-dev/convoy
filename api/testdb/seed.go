@@ -650,6 +650,7 @@ func PurgeDB(t *testing.T, db database.Database) {
 func truncateTables(db database.Database) error {
 	tables := `
 		convoy.event_deliveries,
+		convoy.delivery_attempts,
 		convoy.events,
 		convoy.api_keys,
 		convoy.subscriptions,

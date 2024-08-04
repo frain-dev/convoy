@@ -184,20 +184,19 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		}
 
 		eventDelivery := &datastore.EventDelivery{
-			UID:              ulid.Make().String(),
-			SubscriptionID:   s.UID,
-			EventType:        event.EventType,
-			Metadata:         metadata,
-			ProjectID:        project.UID,
-			EventID:          event.UID,
-			EndpointID:       s.EndpointID,
-			DeviceID:         s.DeviceID,
-			Headers:          headers,
-			IdempotencyKey:   event.IdempotencyKey,
-			URLQueryParams:   event.URLQueryParams,
-			Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
-			DeliveryAttempts: []datastore.DeliveryAttempt{},
-			AcknowledgedAt:   null.TimeFrom(time.Now()),
+			UID:            ulid.Make().String(),
+			SubscriptionID: s.UID,
+			EventType:      event.EventType,
+			Metadata:       metadata,
+			ProjectID:      project.UID,
+			EventID:        event.UID,
+			EndpointID:     s.EndpointID,
+			DeviceID:       s.DeviceID,
+			Headers:        headers,
+			IdempotencyKey: event.IdempotencyKey,
+			URLQueryParams: event.URLQueryParams,
+			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
+			AcknowledgedAt: null.TimeFrom(time.Now()),
 		}
 
 		if s.Type == datastore.SubscriptionTypeCLI {
