@@ -3,7 +3,9 @@ package rqm
 import (
 	"context"
 	"fmt"
+
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -23,10 +25,10 @@ type Amqp struct {
 	handler     datastore.PubSubHandler
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
+	licenser    license.Licenser
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) *Amqp {
-
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser) *Amqp {
 	return &Amqp{
 		Cfg:         source.PubSub.Amqp,
 		source:      source,
@@ -34,6 +36,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		handler:     handler,
 		log:         log,
 		rateLimiter: rateLimiter,
+		licenser:    licenser,
 	}
 }
 
@@ -79,7 +82,6 @@ func (k *Amqp) Verify() error {
 	defer ch.Close()
 
 	return nil
-
 }
 
 func (k *Amqp) consume() {
@@ -135,13 +137,12 @@ func (k *Amqp) consume() {
 		false,  // no-wait
 		nil,    // args
 	)
-
 	if err != nil {
 		log.WithError(err).Error("failed to consume messages")
 		return
 	}
 
-	mm := metrics.GetDPInstance()
+	mm := metrics.GetDPInstance(k.licenser)
 	mm.IncrementIngestTotal(k.source)
 
 	for d := range messages {
@@ -159,7 +160,6 @@ func (k *Amqp) consume() {
 				mm.IncrementIngestConsumedTotal(k.source)
 			}
 		} else {
-
 			// Reject the message and send it to DLQ
 			if err := d.Nack(false, false); err != nil {
 				k.log.WithError(err).Error("failed to nack message")
@@ -167,5 +167,4 @@ func (k *Amqp) consume() {
 			}
 		}
 	}
-
 }

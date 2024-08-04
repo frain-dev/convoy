@@ -8,6 +8,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
+
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/util"
@@ -181,6 +184,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Rate = rateLimiter
 
+		app.Licenser, err = license.NewLicenser(&license.Config{
+			KeyGen: keygen.Config{
+				LicenseKey:    cfg.LicenseKey,
+				OrgRepo:       postgres.NewOrgRepo(app.DB, app.Cache),
+				OrgMemberRepo: postgres.NewOrgMemberRepo(app.DB, app.Cache),
+			},
+		})
+
 		// update config singleton with the instance id
 		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
 			configRepo := postgres.NewConfigRepo(app.DB)
@@ -314,6 +325,14 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
+
+	// CONVOY_LICENSE_KEY
+	licenseKey, err := cmd.Flags().GetString("license-key")
+	if err != nil {
+		return nil, err
+	}
+
+	c.LicenseKey = licenseKey
 
 	// CONVOY_DB_TYPE
 	dbType, err := cmd.Flags().GetString("db-type")

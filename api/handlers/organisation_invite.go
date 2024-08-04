@@ -104,6 +104,7 @@ func (h *Handler) ProcessOrganisationMemberInvite(w http.ResponseWriter, r *http
 		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
 		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		Licenser:      h.A.Licenser,
 		Token:         token,
 		Accepted:      accepted,
 		NewUser:       newUser,

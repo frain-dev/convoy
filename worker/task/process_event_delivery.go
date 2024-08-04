@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -29,7 +31,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser,
 	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
@@ -194,7 +196,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.LatencySeconds = time.Since(eventDelivery.GetLatencyStartTime()).Seconds()
 
 			// register latency
-			mm := metrics.GetDPInstance()
+			mm := metrics.GetDPInstance(licenser)
 			mm.RecordLatency(eventDelivery)
 
 		} else {
@@ -223,10 +225,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, false, resp.Error, string(resp.Body), resp.StatusCode)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to send notification")
+			if licenser.AdvancedEndpointMgmt() {
+				// send endpoint reactivation notification
+				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, false, resp.Error, string(resp.Body), resp.StatusCode)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("failed to send notification")
+				}
 			}
 		}
 
@@ -262,10 +266,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
-				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.WithError(err).Error("failed to send notification")
+				if licenser.AdvancedEndpointMgmt() {
+					// send endpoint deactivation notification
+					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
+					if err != nil {
+						log.WithError(err).Error("failed to send notification")
+					}
 				}
 			}
 		}

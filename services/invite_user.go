@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy"
@@ -26,9 +28,19 @@ type InviteUserService struct {
 	Role         auth.Role
 	User         *datastore.User
 	Organisation *datastore.Organisation
+	Licenser     license.Licenser
 }
 
 func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationInvite, error) {
+	ok, err := iu.Licenser.CanCreateOrgMember(ctx)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !ok {
+		return nil, &ServiceError{ErrMsg: license.ErrOrgMemberLimit.Error()}
+	}
+
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
 		OrganisationID: iu.Organisation.UID,
@@ -41,7 +53,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 		UpdatedAt:      time.Now(),
 	}
 
-	err := iu.InviteRepo.CreateOrganisationInvite(ctx, iv)
+	err = iu.InviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
 		errMsg := "failed to invite member"
 		log.FromContext(ctx).WithError(err).Error(errMsg)

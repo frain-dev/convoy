@@ -3,6 +3,8 @@ package worker
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -26,7 +28,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
-	"net/http"
 )
 
 func AddWorkerCommand(a *cli.App) *cobra.Command {
@@ -236,7 +237,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
-	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false)
+	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, a.Licenser, false)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
 		return err
@@ -245,6 +246,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
+		a.Licenser,
 		projectRepo,
 		a.Queue,
 		rateLimiter,

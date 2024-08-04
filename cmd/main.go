@@ -72,9 +72,12 @@ func main() {
 
 	var maxRetrySeconds uint64
 
+	var licenseKey string
+
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
+	c.Flags().StringVar(&licenseKey, "license-key", "", "Convoy license key")
 
 	// db config
 	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")
