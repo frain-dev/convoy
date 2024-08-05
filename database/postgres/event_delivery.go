@@ -1062,7 +1062,7 @@ func (e *eventDeliveryRepo) CountInstanceEventDeliveries(ctx context.Context) (u
 	}{}
 
 	end := time.Now()
-	start := end.Add(-time.Hour)
+	start := end.Add(-time.Hour*24)
 
 	err := e.db.QueryRowxContext(ctx, countInstanceEventDeliveries, start, end).StructScan(&counter)
 	if err != nil {
