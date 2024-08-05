@@ -2,6 +2,11 @@ package api
 
 import (
 	"embed"
+	"io/fs"
+	"net/http"
+	"path"
+	"strings"
+
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
@@ -16,10 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/subomi/requestmigrations"
-	"io/fs"
-	"net/http"
-	"path"
-	"strings"
 )
 
 //go:embed ui/build
@@ -119,7 +120,6 @@ func (a *ApplicationHandler) buildRouter() *chi.Mux {
 }
 
 func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
-
 	router := a.buildRouter()
 
 	handler := &handlers.Handler{A: a.A, RM: a.rm}
@@ -458,15 +458,20 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
 			subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
 		})
-
 	})
 
-	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
-	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
+	if a.A.Licenser.AsynqMonitoring() {
+		router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+	}
+
+	if a.A.Licenser.CanExportPrometheusMetrics() {
+		router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
+		metrics.RegisterQueueMetrics(a.A.Queue, a.A.DB)
+		prometheus.MustRegister(metrics.RequestDuration())
+	}
+
 	router.HandleFunc("/*", reactRootHandler)
 
-	metrics.RegisterQueueMetrics(a.A.Queue, a.A.DB)
-	prometheus.MustRegister(metrics.RequestDuration())
 	a.Router = router
 
 	return router

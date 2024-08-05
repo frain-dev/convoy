@@ -261,7 +261,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo), newTelemetry)
+		deviceRepo, a.Licenser), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,

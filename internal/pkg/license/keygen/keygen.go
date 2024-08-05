@@ -224,3 +224,8 @@ func (k *KeygenLicenser) AsynqMonitoring() bool {
 	_, ok := k.featureList[AsynqMonitoring]
 	return ok
 }
+
+func (k *KeygenLicenser) SynchronousWebhooks() bool {
+	_, ok := k.featureList[SynchronousWebhooks]
+	return ok
+}

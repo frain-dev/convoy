@@ -13,15 +13,17 @@ type Licenser interface {
 	CanUseForwardProxy() bool
 	CanExportPrometheusMetrics() bool
 	AdvancedEndpointMgmt() bool
-	AdvancedRetentionPolicy() bool
-	AdvancedMsgBroker() bool
 	AdvancedSubscriptions() bool
 	Transformations() bool
-	HADeployment() bool // needs more fleshing out
-	WebhookAnalytics() bool
-	MutualTLS() bool // needs more fleshing out
 	AsynqMonitoring() bool
-	// SynchronousWebhooks() bool
+
+	// need more fleshing out
+	AdvancedRetentionPolicy() bool
+	AdvancedMsgBroker() bool
+	WebhookAnalytics() bool
+	HADeployment() bool
+	MutualTLS() bool
+	SynchronousWebhooks() bool
 }
 
 var _ Licenser = &keygen.KeygenLicenser{}
