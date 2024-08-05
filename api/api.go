@@ -461,8 +461,12 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 	})
 
+	router.Route("/metrics", func(metricsRouter chi.Router) {
+		metricsRouter.Use(middleware.RequireAuth())
+		metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+	})
+
 	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
-	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
 	router.HandleFunc("/*", reactRootHandler)
 
 	metrics.RegisterQueueMetrics(a.A.Queue, a.A.DB)
@@ -474,7 +478,11 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	router := a.buildRouter()
-	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}))
+
+	router.Route("/metrics", func(metricsRouter chi.Router) {
+		metricsRouter.Use(middleware.RequireAuth())
+		metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+	})
 
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
