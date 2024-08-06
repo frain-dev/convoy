@@ -312,7 +312,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
-	consumer.RegisterHandlers(convoy.RecordStatsProcessor, task.RecordStats(rd, eventDeliveryRepo, configRepo), nil)
+	consumer.RegisterHandlers(convoy.RecordStatsProcessor, task.RecordStats(rd.Client(), eventDeliveryRepo, configRepo), nil)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB)
 

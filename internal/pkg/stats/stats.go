@@ -13,8 +13,6 @@ import (
 	"time"
 )
 
-const statsUpstream = "https://stats.getconvoy.io"
-
 type Stats struct {
 	client       *http.Client
 	deliveryRepo datastore.EventDeliveryRepository
@@ -33,7 +31,7 @@ type Entry struct {
 	Timestamp time.Time `json:"timestamp,omitempty"`
 }
 
-func NewStats(deliveryRepo datastore.EventDeliveryRepository, configRepo datastore.ConfigurationRepository) *Stats {
+func NewStats(upstream string, deliveryRepo datastore.EventDeliveryRepository, configRepo datastore.ConfigurationRepository) *Stats {
 	// will retry if the number of retries is
 	// - less than 5
 	// - the request times out
@@ -65,7 +63,7 @@ func NewStats(deliveryRepo datastore.EventDeliveryRepository, configRepo datasto
 		client:       client,
 		configRepo:   configRepo,
 		deliveryRepo: deliveryRepo,
-		upstream:     statsUpstream,
+		upstream:     upstream,
 	}
 }
 
