@@ -466,7 +466,11 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
 	})
 
-	router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+	router.Route("/queue", func(metricsRouter chi.Router) {
+		metricsRouter.Use(middleware.RequireAuth())
+		metricsRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+	})
+
 	router.HandleFunc("/*", reactRootHandler)
 
 	metrics.RegisterQueueMetrics(a.A.Queue, a.A.DB)
