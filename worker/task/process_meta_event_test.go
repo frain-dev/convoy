@@ -134,6 +134,7 @@ func TestProcessMetaEvent(t *testing.T) {
 			metaEventRepo := mocks.NewMockMetaEventRepository(ctrl)
 			projectRepo := mocks.NewMockProjectRepository(ctrl)
 			licenser := mocks.NewMockLicenser(ctrl)
+			licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
 
 			dispatcher, err := net.NewDispatcher("", licenser, false)
 			require.NoError(t, err)
