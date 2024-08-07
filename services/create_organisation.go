@@ -36,7 +36,16 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	}
 
 	if !ok {
-		return nil, &ServiceError{ErrMsg: ErrOrgLimit.Error()}
+		return nil, &ServiceError{ErrMsg: ErrOrgLimit.Error(), Err: ErrOrgLimit}
+	}
+
+	ok, err = co.Licenser.CanCreateOrgMember(ctx)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !ok {
+		return nil, &ServiceError{ErrMsg: ErrOrgMemberLimit.Error(), Err: ErrOrgMemberLimit}
 	}
 
 	err = util.Validate(co.NewOrg)

@@ -38,7 +38,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	}
 
 	if !ok {
-		return nil, &ServiceError{ErrMsg: license.ErrOrgMemberLimit.Error()}
+		return nil, &ServiceError{ErrMsg: ErrOrgMemberLimit.Error()}
 	}
 
 	iv := &datastore.OrganisationInvite{

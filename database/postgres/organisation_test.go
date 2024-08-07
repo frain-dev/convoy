@@ -47,6 +47,33 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 	require.Equal(t, 2, len(organisations))
 }
 
+func TestCountOrganisations(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	orgRepo := NewOrgRepo(db, nil)
+
+	user := seedUser(t, db)
+	count := 10
+	for i := 0; i < count; i++ {
+		org := &datastore.Organisation{
+			UID:            ulid.Make().String(),
+			OwnerID:        user.UID,
+			Name:           fmt.Sprintf("org%d", i),
+			CustomDomain:   null.NewString(ulid.Make().String(), true),
+			AssignedDomain: null.NewString(ulid.Make().String(), true),
+		}
+
+		err := orgRepo.CreateOrganisation(context.Background(), org)
+		require.NoError(t, err)
+	}
+
+	orgCount, err := orgRepo.CountOrganisations(context.Background())
+
+	require.NoError(t, err)
+	require.Equal(t, count, orgCount)
+}
+
 func TestCreateOrganisation(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()

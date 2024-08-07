@@ -23,6 +23,7 @@ func provideProcessInviteService(ctrl *gomock.Controller, token string, accepted
 		UserRepo:      mocks.NewMockUserRepository(ctrl),
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+		Licenser:      mocks.NewMockLicenser(ctrl),
 
 		Token:    token,
 		Accepted: accepted,
@@ -100,6 +101,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				om, _ := pis.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr: false,
 		},
@@ -131,6 +135,39 @@ func TestProcessInviteService_Run(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "organisation member invite already accepted",
+		},
+
+		{
+			name: "should_error_for_licence_cant_create_org_member",
+			args: args{
+				ctx:      ctx,
+				token:    "abcdef",
+				accepted: true,
+				newUser:  nil,
+			},
+			dbFn: func(pis *ProcessInviteService) {
+				oir, _ := pis.InviteRepo.(*mocks.MockOrganisationInviteRepository)
+				oir.EXPECT().FetchOrganisationInviteByToken(gomock.Any(), "abcdef").
+					Times(1).Return(
+					&datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusPending,
+						InviteeEmail:   "test@email.com",
+						ExpiresAt:      time.Now().Add(time.Hour),
+						Role: auth.Role{
+							Type:     auth.RoleAdmin,
+							Project:  "ref",
+							Endpoint: "",
+						},
+					},
+					nil,
+				)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(false, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: ErrOrgMemberLimit.Error(),
 		},
 		{
 			name: "should_error_for_invite_already_declined",
@@ -272,6 +309,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").
 					Times(1).Return(nil, errors.New("failed"))
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to find user by email",
@@ -332,6 +372,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				om, _ := pis.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr: false,
 		},
@@ -363,6 +406,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").
 					Times(1).Return(nil, datastore.ErrUserNotFound)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "new user is nil",
@@ -401,6 +447,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").
 					Times(1).Return(nil, datastore.ErrUserNotFound)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "first_name:please provide a first name",
@@ -441,6 +490,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 					Times(1).Return(nil, datastore.ErrUserNotFound)
 
 				u.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create user",
@@ -482,6 +534,8 @@ func TestProcessInviteService_Run(t *testing.T) {
 				o, _ := pis.OrgRepo.(*mocks.MockOrganisationRepository)
 				o.EXPECT().FetchOrganisationByID(gomock.Any(), "123ab").
 					Times(1).Return(nil, errors.New("failed"))
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to fetch organisation by id",
@@ -588,6 +642,9 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				om, _ := pis.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update accepted organisation invite",

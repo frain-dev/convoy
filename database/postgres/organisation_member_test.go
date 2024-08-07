@@ -61,6 +61,39 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 	}
 }
 
+func TestCountOrganisationMembers(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	organisationMemberRepo := NewOrgMemberRepo(db, nil)
+	org := seedOrg(t, db)
+	project := seedProject(t, db)
+
+	userRepo := NewUserRepo(db, nil)
+	count := 10
+
+	for i := 0; i < count; i++ {
+		user := generateUser(t)
+
+		require.NoError(t, userRepo.CreateUser(context.Background(), user))
+
+		member := &datastore.OrganisationMember{
+			UID:            ulid.Make().String(),
+			OrganisationID: org.UID,
+			UserID:         user.UID,
+			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+		}
+
+		err := organisationMemberRepo.CreateOrganisationMember(context.Background(), member)
+		require.NoError(t, err)
+	}
+
+	memberCount, err := organisationMemberRepo.CountOrganisationMembers(context.Background())
+
+	require.NoError(t, err)
+	require.Equal(t, count, memberCount)
+}
+
 func TestLoadUserOrganisationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()

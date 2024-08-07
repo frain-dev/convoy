@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/email"
@@ -26,6 +28,7 @@ type RegisterUserService struct {
 	Queue         queue.Queuer
 	JWT           *jwt.Jwt
 	ConfigRepo    datastore.ConfigurationRepository
+	Licenser      license.Licenser
 
 	BaseURL string
 	Data    *models.RegisterUser
@@ -77,13 +80,16 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 	co := CreateOrganisationService{
 		OrgRepo:       u.OrgRepo,
 		OrgMemberRepo: u.OrgMemberRepo,
+		Licenser:      u.Licenser,
 		NewOrg:        &models.Organisation{Name: u.Data.OrganisationName},
 		User:          user,
 	}
 
 	_, err = co.Run(ctx)
 	if err != nil {
-		return nil, nil, err
+		if !errors.Is(err, ErrOrgLimit) && !errors.Is(err, ErrOrgMemberLimit) {
+			return nil, nil, err
+		}
 	}
 
 	token, err := u.JWT.GenerateToken(user)

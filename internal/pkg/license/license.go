@@ -3,6 +3,8 @@ package license
 import (
 	"context"
 
+	"github.com/frain-dev/convoy/internal/pkg/license/noop"
+
 	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
 )
 
@@ -26,7 +28,10 @@ type Licenser interface {
 	SynchronousWebhooks() bool
 }
 
-var _ Licenser = &keygen.KeygenLicenser{}
+var (
+	_ Licenser = &keygen.KeygenLicenser{}
+	_ Licenser = &noop.Licenser{}
+)
 
 type Config struct {
 	KeyGen keygen.Config

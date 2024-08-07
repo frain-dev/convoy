@@ -96,7 +96,7 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		subscription.FilterConfig = &datastore.FilterConfiguration{}
 	}
 
-	if subscription.FilterConfig.EventTypes == nil || len(subscription.FilterConfig.EventTypes) == 0 {
+	if len(subscription.FilterConfig.EventTypes) == 0 {
 		subscription.FilterConfig.EventTypes = []string{"*"}
 	}
 

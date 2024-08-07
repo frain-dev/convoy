@@ -281,6 +281,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		a.Queue,
 		subRepo,
 		deviceRepo,
+		a.Licenser,
 		subscriptionsTable), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
@@ -290,7 +291,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo), newTelemetry)
+		deviceRepo, a.Licenser), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 		configRepo,
@@ -312,7 +313,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB)
