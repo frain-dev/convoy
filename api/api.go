@@ -18,7 +18,6 @@ import (
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/subomi/requestmigrations"
 )
@@ -461,17 +460,17 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	})
 
 	if a.A.Licenser.AsynqMonitoring() {
-	router.Route("/queue", func(metricsRouter chi.Router) {
-		metricsRouter.Use(middleware.RequireAuth())
-		metricsRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
-	})
+		router.Route("/queue", func(metricsRouter chi.Router) {
+			metricsRouter.Use(middleware.RequireAuth())
+			metricsRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+		})
 	}
 
 	if a.A.Licenser.CanExportPrometheusMetrics() {
-	router.Route("/metrics", func(metricsRouter chi.Router) {
-		metricsRouter.Use(middleware.RequireAuth())
-		metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
-	})
+		router.Route("/metrics", func(metricsRouter chi.Router) {
+			metricsRouter.Use(middleware.RequireAuth())
+			metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+		})
 	}
 
 	router.HandleFunc("/*", reactRootHandler)
