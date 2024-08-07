@@ -191,6 +191,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				OrgMemberRepo: postgres.NewOrgMemberRepo(app.DB, app.Cache),
 			},
 		})
+		if err != nil {
+			return err
+		}
 
 		// update config singleton with the instance id
 		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {

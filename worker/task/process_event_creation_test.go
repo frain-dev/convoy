@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 
@@ -31,6 +33,7 @@ type args struct {
 	subRepo           datastore.SubscriptionRepository
 	deviceRepo        datastore.DeviceRepository
 	subTable          memorystore.ITable
+	licenser          license.Licenser
 }
 
 func provideArgs(ctrl *gomock.Controller) *args {
@@ -56,6 +59,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 		eventQueue:        mockQueuer,
 		subRepo:           subRepo,
 		subTable:          subTable,
+		licenser:          mocks.NewMockLicenser(ctrl),
 	}
 }
 
@@ -468,7 +472,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
+			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.licenser)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)
@@ -842,7 +846,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 			payload, err := json.Marshal(tt.payload)
 			require.NoError(t, err)
 
-			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, tt.inputSubs, false)
+			subs, err := matchSubscriptionsUsingFilter(context.Background(), &datastore.Event{Data: payload}, args.subRepo, args.licenser, tt.inputSubs, false)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				return

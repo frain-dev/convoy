@@ -6,6 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/net"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -129,8 +133,12 @@ func TestProcessMetaEvent(t *testing.T) {
 
 			metaEventRepo := mocks.NewMockMetaEventRepository(ctrl)
 			projectRepo := mocks.NewMockProjectRepository(ctrl)
+			licenser := mocks.NewMockLicenser(ctrl)
 
-			err := config.LoadConfig(tc.cfgPath)
+			dispatcher, err := net.NewDispatcher("", licenser, false)
+			require.NoError(t, err)
+
+			err = config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("failed to load config file: %v", err)
 			}
@@ -144,7 +152,7 @@ func TestProcessMetaEvent(t *testing.T) {
 				tc.dbFn(metaEventRepo, projectRepo)
 			}
 
-			processFn := ProcessMetaEvent(projectRepo, metaEventRepo)
+			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher)
 			payload := MetaEvent{
 				MetaEventID: tc.msg.MetaEventID,
 				ProjectID:   tc.msg.ProjectID,

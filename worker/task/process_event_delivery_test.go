@@ -3,9 +3,10 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/frain-dev/convoy/net"
 	"github.com/stretchr/testify/require"
-	"testing"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -799,6 +800,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			q := mocks.NewMockQueuer(ctrl)
 			rateLimiter := mocks.NewMockRateLimiter(ctrl)
 			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
+			licenser := mocks.NewMockLicenser(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -824,10 +826,10 @@ func TestProcessEventDelivery(t *testing.T) {
 				tc.dbFn(endpointRepo, projectRepo, msgRepo, q, rateLimiter, attemptsRepo)
 			}
 
-			dispatcher, err := net.NewDispatcher("", false)
+			dispatcher, err := net.NewDispatcher("", licenser, false)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher, attemptsRepo)
+			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,
