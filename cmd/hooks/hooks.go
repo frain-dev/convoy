@@ -66,6 +66,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		postgresDB, err := postgres.NewDB(cfg)
+		if err != nil {
+			return err
+		}
+
+		*db = *postgresDB
+
 		if _, ok := skipHook[cmd.Use]; ok {
 			return nil
 		}
@@ -122,13 +129,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err != nil {
 			return err
 		}
-
-		postgresDB, err := postgres.NewDB(cfg)
-		if err != nil {
-			return err
-		}
-
-		*db = *postgresDB
 
 		hooks := dbhook.Init()
 
