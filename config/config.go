@@ -324,37 +324,11 @@ type (
 	LimiterProvider         string
 	DatabaseProvider        string
 	SearchProvider          string
-	FeatureFlagProvider     string
 	MetricsBackend          string
 )
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
-}
-
-type FlagLevel int
-
-const (
-	ExperimentalFlagLevel FlagLevel = iota + 1
-)
-
-const Experimental = "experimental"
-
-func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
-	switch string(v) {
-	case Experimental:
-		*ft = ExperimentalFlagLevel
-	}
-	return nil
-}
-
-func (ft FlagLevel) MarshalJSON() ([]byte, error) {
-	switch ft {
-	case ExperimentalFlagLevel:
-		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
-	default:
-		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
-	}
 }
 
 type ExecutionMode string
@@ -381,7 +355,8 @@ type Configuration struct {
 	Host                string                       `json:"host" envconfig:"CONVOY_HOST"`
 	Pyroscope           PyroscopeConfiguration       `json:"pyroscope"`
 	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	FeatureFlag         FlagLevel                    `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
+	EnableFeatureFlag   []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
+	DisableFeatureFlag  []string                     `json:"disable_feature_flag" envconfig:"CONVOY_DISABLE_FEATURE_FLAG"`
 	RetentionPolicy     RetentionPolicyConfiguration `json:"retention_policy"`
 	Analytics           AnalyticsConfiguration       `json:"analytics"`
 	StoragePolicy       StoragePolicyConfiguration   `json:"storage_policy"`
