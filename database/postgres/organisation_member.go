@@ -179,7 +179,7 @@ const (
 
 	countOrgMembers = `
 	SELECT COUNT(*) AS count
-	FROM convoy.organisations_member
+	FROM convoy.organisation_members
 	WHERE deleted_at IS NULL`
 )
 

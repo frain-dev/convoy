@@ -91,7 +91,7 @@ func TestCountOrganisationMembers(t *testing.T) {
 	memberCount, err := organisationMemberRepo.CountOrganisationMembers(context.Background())
 
 	require.NoError(t, err)
-	require.Equal(t, count, memberCount)
+	require.Equal(t, int64(count), memberCount)
 }
 
 func TestLoadUserOrganisationsPaged(t *testing.T) {

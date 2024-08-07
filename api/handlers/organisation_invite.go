@@ -47,6 +47,7 @@ func (h *Handler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Reques
 		Queue:        h.A.Queue,
 		InviteRepo:   postgres.NewOrgInviteRepo(h.A.DB, h.A.Cache),
 		InviteeEmail: newIV.InviteeEmail,
+		Licenser:     h.A.Licenser,
 		Role:         newIV.Role,
 		User:         user,
 		Organisation: org,

@@ -71,7 +71,7 @@ func TestCountOrganisations(t *testing.T) {
 	orgCount, err := orgRepo.CountOrganisations(context.Background())
 
 	require.NoError(t, err)
-	require.Equal(t, count, orgCount)
+	require.Equal(t, int64(count), orgCount)
 }
 
 func TestCreateOrganisation(t *testing.T) {
