@@ -11,7 +11,7 @@ services:
             dockerfile: Dockerfile.dev
         command: [ "/start.sh" ]
         volumes:
-            - ./convoy-test.json:/convoy.json
+            - ./convoy-docker.json:/convoy.json
         restart: on-failure
         ports:
             - "5015:5005"
@@ -26,7 +26,7 @@ services:
             dockerfile: Dockerfile.dev
         entrypoint: ["./cmd", "migrate", "up"]
         volumes:
-            - ./convoy-test.json:/convoy.json
+            - ./convoy-docker.json:/convoy.json
         restart: on-failure
         depends_on:
             postgres:
@@ -38,7 +38,7 @@ services:
             dockerfile: Dockerfile.dev
         entrypoint: ["./cmd", "agent", "--config", "convoy.json"]
         volumes:
-            - ./convoy-test.json:/convoy.json
+            - ./convoy-docker.json:/convoy.json
         restart: on-failure
         ports:
             - "5018:5008"

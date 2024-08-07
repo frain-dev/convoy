@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build docker_testcon
+// +build docker_testcon
 
 package testcon
 
@@ -10,14 +10,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func (i *IntegrationTestSuite) Test_DirectEvent_Success_AllSubscriptions() {
+func (d *DockerE2EIntegrationTestSuite) Test_DirectEvent_Success_AllSubscriptions() {
 	ctx := context.Background()
-	t := i.T()
+	t := d.T()
+	ownerID := d.DefaultOrg.OwnerID + "_0"
+
 	var ports = []int{9909}
 
-	c, done := i.initAndStartServers(ports, 2)
+	c, done := d.initAndStartServers(ports, 2)
 
-	endpoint := createEndpoints(t, ctx, c, ports, i.DefaultOrg.OwnerID)[0]
+	endpoint := createEndpoints(t, ctx, c, ports, ownerID)[0]
 
 	createMatchingSubscriptions(t, ctx, c, endpoint.UID, []string{"*"})
 
@@ -29,14 +31,16 @@ func (i *IntegrationTestSuite) Test_DirectEvent_Success_AllSubscriptions() {
 	assertEventCameThrough(t, done, []*convoy.EndpointResponse{endpoint}, []string{traceId, secondTraceId}, []string{})
 }
 
-func (i *IntegrationTestSuite) Test_DirectEvent_Success_MustMatchSubscription() {
+func (d *DockerE2EIntegrationTestSuite) Test_DirectEvent_Success_MustMatchSubscription() {
 	ctx := context.Background()
-	t := i.T()
+	t := d.T()
+	ownerID := d.DefaultOrg.OwnerID + "_1"
+
 	var ports = []int{9910}
 
-	c, done := i.initAndStartServers(ports, 1)
+	c, done := d.initAndStartServers(ports, 1)
 
-	endpoint := createEndpoints(t, ctx, c, ports, i.DefaultOrg.OwnerID)[0]
+	endpoint := createEndpoints(t, ctx, c, ports, ownerID)[0]
 
 	createMatchingSubscriptions(t, ctx, c, endpoint.UID, []string{"invoice.created"})
 
