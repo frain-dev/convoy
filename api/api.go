@@ -461,13 +461,17 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	})
 
 	if a.A.Licenser.AsynqMonitoring() {
-		router.Handle("/queue/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+	router.Route("/queue", func(metricsRouter chi.Router) {
+		metricsRouter.Use(middleware.RequireAuth())
+		metricsRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+	})
 	}
 
 	if a.A.Licenser.CanExportPrometheusMetrics() {
-		router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
-		metrics.RegisterQueueMetrics(a.A.Queue, a.A.DB)
-		prometheus.MustRegister(metrics.RequestDuration())
+	router.Route("/metrics", func(metricsRouter chi.Router) {
+		metricsRouter.Use(middleware.RequireAuth())
+		metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+	})
 	}
 
 	router.HandleFunc("/*", reactRootHandler)
@@ -479,7 +483,11 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	router := a.buildRouter()
-	router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}))
+
+	router.Route("/metrics", func(metricsRouter chi.Router) {
+		metricsRouter.Use(middleware.RequireAuth())
+		metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+	})
 
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
