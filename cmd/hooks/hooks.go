@@ -66,6 +66,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		if _, ok := skipHook[cmd.Use]; ok {
+			return nil
+		}
+
 		cfg, err = config.Get() // updated
 		if err != nil {
 			return err
@@ -216,8 +220,16 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 // these commands don't need to load instance config
 var skipConfigLoadCmd = map[string]struct{}{
 	"bootstrap": {},
-	"version":   {},
-	"migrate":   {},
+}
+
+// commands dont need the hooks
+var skipHook = map[string]struct{}{
+	// migrate commands
+	"up":     {},
+	"down":   {},
+	"create": {},
+
+	"version": {},
 }
 
 func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
