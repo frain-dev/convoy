@@ -50,6 +50,8 @@ func setEnv(dbPort int, redisPort int) {
 	_ = os.Setenv("CONVOY_DB_PASSWORD", "convoy")
 	_ = os.Setenv("CONVOY_DB_DATABASE", "convoy")
 	_ = os.Setenv("CONVOY_DB_PORT", strconv.Itoa(dbPort))
+
+	fmt.Println("tresss", os.Getenv("TEST_LICENSE_KEY"))
 	_ = os.Setenv("CONVOY_LICENSE_KEY", os.Getenv("TEST_LICENSE_KEY"))
 }
 
