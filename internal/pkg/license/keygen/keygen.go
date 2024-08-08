@@ -2,13 +2,12 @@ package keygen
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/mitchellh/mapstructure"
 
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -50,7 +49,7 @@ func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
 	fingerprint := uuid.New().String()
 
 	l, err := keygen.Validate(ctx, fingerprint)
-	if err != nil {
+	if err != nil && !allowKeygenError(err) {
 		return nil, fmt.Errorf("failed to validate error: %v", err)
 	}
 
@@ -63,9 +62,9 @@ func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
 		return nil, err
 	}
 
-	p := l.Metadata["plan_type"]
+	p := l.Metadata["planType"]
 	if p == nil {
-		return nil, fmt.Errorf("nil license metadata")
+		return nil, fmt.Errorf("license plan type unspecified in metadata")
 	}
 
 	pt, ok := p.(string)
@@ -121,6 +120,17 @@ func (k *KeygenLicenser) Activate() error {
 	return nil
 }
 
+func allowKeygenError(err error) bool {
+	switch {
+	case errors.Is(err, keygen.ErrLicenseNotActivated):
+		return true
+	case errors.Is(err, keygen.ErrHeartbeatRequired):
+		return true
+	}
+
+	return false
+}
+
 var (
 	ErrNoFeatureList  = errors.New("license has no feature list")
 	ErrUnexpectedType = errors.New("license feature list has unexpected type")
@@ -132,13 +142,13 @@ func getFeatureList(l *keygen.License) (map[Feature]Properties, error) {
 		return nil, ErrNoFeatureList
 	}
 
-	v, ok := m.(map[string]interface{})
+	v, ok := m.(string)
 	if !ok {
 		return nil, ErrUnexpectedType
 	}
 
 	featureList := map[Feature]Properties{}
-	err := mapstructure.Decode(v, &featureList)
+	err := json.Unmarshal([]byte(v), &featureList)
 	return featureList, err
 }
 
