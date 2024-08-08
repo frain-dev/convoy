@@ -7,6 +7,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
 	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
@@ -21,20 +32,12 @@ import (
 	"github.com/frain-dev/convoy/testcon/manifest"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
-	"io"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"testing"
-	"time"
 )
 
-var once sync.Once
-var pDB *postgres.Postgres
+var (
+	once sync.Once
+	pDB  *postgres.Postgres
+)
 
 func setEnv(dbPort int, redisPort int) {
 	_ = os.Setenv("CONVOY_REDIS_HOST", "localhost")
@@ -47,6 +50,7 @@ func setEnv(dbPort int, redisPort int) {
 	_ = os.Setenv("CONVOY_DB_PASSWORD", "convoy")
 	_ = os.Setenv("CONVOY_DB_DATABASE", "convoy")
 	_ = os.Setenv("CONVOY_DB_PORT", strconv.Itoa(dbPort))
+	_ = os.Setenv("CONVOY_LICENSE_KEY", os.Getenv("TEST_LICENSE_KEY"))
 }
 
 func getConfig() config.Configuration {

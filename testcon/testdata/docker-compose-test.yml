@@ -10,8 +10,6 @@ services:
             context: ../../
             dockerfile: Dockerfile.dev
         command: [ "/start.sh" ]
-        environment:
-            CONVOY_LICENSE_KEY: $TEST_LICENSE_KEY
         volumes:
             - ./convoy-test.json:/convoy.json
         restart: on-failure
@@ -27,8 +25,6 @@ services:
             context: ../../
             dockerfile: Dockerfile.dev
         entrypoint: ["./cmd", "migrate", "up"]
-        environment:
-            CONVOY_LICENSE_KEY: $TEST_LICENSE_KEY
         volumes:
             - ./convoy-test.json:/convoy.json
         restart: on-failure
@@ -41,8 +37,6 @@ services:
             context: ../../
             dockerfile: Dockerfile.dev
         entrypoint: ["./cmd", "agent", "--config", "convoy.json"]
-        environment:
-            CONVOY_LICENSE_KEY: $TEST_LICENSE_KEY
         volumes:
             - ./convoy-test.json:/convoy.json
         restart: on-failure
