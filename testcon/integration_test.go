@@ -5,13 +5,14 @@ package testcon
 
 import (
 	"context"
+	"testing"
+	"time"
+
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"testing"
-	"time"
 )
 
 type IntegrationTestSuite struct {
@@ -42,11 +43,9 @@ func (i *IntegrationTestSuite) SetupSuite() {
 }
 
 func (i *IntegrationTestSuite) SetupTest() {
-
 }
 
 func (i *IntegrationTestSuite) TearDownTest() {
-
 }
 
 func TestIntegrationTestSuite(t *testing.T) {
