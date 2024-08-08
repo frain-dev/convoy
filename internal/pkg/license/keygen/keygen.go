@@ -36,9 +36,9 @@ type Config struct {
 }
 
 func init() {
-	keygen.Account = "1fddcec8-8dd3-4d8d-9b16-215cac0f9b52"
-	keygen.Product = "1f086ec9-a943-46ea-9da4-e62c2180c2f4"
-	keygen.PublicKey = "e8601e48b69383ba520245fd07971e983d06d22c4257cfd82304601479cee788"
+	keygen.Account = "cb3ba418-a9a0-4aa1-8c20-a844a06eeac9"
+	keygen.Product = "c1374f6f-cdca-4a96-8d37-12a0ab8da241"
+	keygen.PublicKey = "a64878b9361988b6943a9a93a0d4dd4056dfbe511da257ed0cf1476be8c0c34e"
 }
 
 func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
@@ -149,6 +149,11 @@ func (k *KeygenLicenser) CanCreateOrg(ctx context.Context) (bool, error) {
 	}
 
 	p := k.featureList[CreateOrg]
+
+	if p.Limit == -1 { // no limit
+		return true, nil
+	}
+
 	if c >= p.Limit {
 		return false, nil
 	}
@@ -163,6 +168,11 @@ func (k *KeygenLicenser) CanCreateOrgMember(ctx context.Context) (bool, error) {
 	}
 
 	p := k.featureList[CreateOrgMember]
+
+	if p.Limit == -1 { // no limit
+		return true, nil
+	}
+
 	if c >= p.Limit {
 		return false, nil
 	}
