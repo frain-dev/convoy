@@ -97,6 +97,7 @@ const (
 	EmailProcessor                TaskName = "EmailProcessor"
 	ExpireSecretsProcessor        TaskName = "ExpireSecretsProcessor"
 	DeleteArchivedTasksProcessor  TaskName = "DeleteArchivedTasksProcessor"
+	RecordStatsProcessor          TaskName = "RecordStatsProcessor"
 
 	EndpointCacheKey     CacheKey = "endpoints"
 	ApiKeyCacheKey       CacheKey = "api_keys"

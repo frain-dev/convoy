@@ -37,6 +37,7 @@ type EventDeliveryRepository interface {
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period) ([]EventInterval, error)
+	CountInstanceEventDeliveries(ctx context.Context) (uint64, error)
 }
 
 type EventRepository interface {
