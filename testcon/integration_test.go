@@ -5,13 +5,15 @@ package testcon
 
 import (
 	"context"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"testing"
-	"time"
 )
 
 type IntegrationTestSuite struct {
@@ -33,7 +35,11 @@ func (i *IntegrationTestSuite) SetupSuite() {
 	t.Cleanup(cancel)
 
 	// ignore ryuk error
-	_ = compose.WaitForService("postgres", wait.NewLogStrategy("ready").WithStartupTimeout(60*time.Second)).
+	_ = compose.
+		WithEnv(map[string]string{
+			"CONVOY_LICENSE_KEY": os.Getenv("TEST_LICENSE_KEY"),
+		}).
+		WaitForService("postgres", wait.NewLogStrategy("ready").WithStartupTimeout(60*time.Second)).
 		WaitForService("redis_server", wait.NewLogStrategy("Ready to accept connections").WithStartupTimeout(10*time.Second)).
 		WaitForService("migrate", wait.NewLogStrategy("migration up succeeded").WithStartupTimeout(60*time.Second)).
 		Up(ctx, tc.Wait(true), tc.WithRecreate(api.RecreateNever))
@@ -42,11 +48,9 @@ func (i *IntegrationTestSuite) SetupSuite() {
 }
 
 func (i *IntegrationTestSuite) SetupTest() {
-
 }
 
 func (i *IntegrationTestSuite) TearDownTest() {
-
 }
 
 func TestIntegrationTestSuite(t *testing.T) {

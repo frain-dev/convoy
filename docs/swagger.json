@@ -5557,6 +5557,9 @@
                 "msg_id": {
                     "type": "string"
                 },
+                "project_id": {
+                    "type": "string"
+                },
                 "request_http_header": {
                     "$ref": "#/definitions/datastore.HttpHeader"
                 },

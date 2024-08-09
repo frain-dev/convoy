@@ -216,6 +216,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 		SubRepo:         postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
 		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		SourceRepo:      postgres.NewSourceRepo(h.A.DB, h.A.Cache),
+		Licenser:        h.A.Licenser,
 		Project:         project,
 		NewSubscription: &sub,
 	}
@@ -365,6 +366,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 		SubRepo:        postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		SourceRepo:     postgres.NewSourceRepo(h.A.DB, h.A.Cache),
+		Licenser:       h.A.Licenser,
 		ProjectId:      project.UID,
 		SubscriptionId: chi.URLParam(r, "subscriptionID"),
 		Update:         &update,
@@ -400,6 +402,11 @@ func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Reques
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_filter [post]
 func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
+	if !h.A.Licenser.AdvancedSubscriptions() {
+		_ = render.Render(w, r, util.NewErrorResponse("your instance does not have access to subscription filters, upgrade to access this feature", http.StatusBadRequest))
+		return
+	}
+
 	var test models.TestFilter
 	err := util.ReadJSON(r, &test)
 	if err != nil {
@@ -442,6 +449,11 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_function [post]
 func (h *Handler) TestSubscriptionFunction(w http.ResponseWriter, r *http.Request) {
+	if !h.A.Licenser.Transformations() {
+		_ = render.Render(w, r, util.NewErrorResponse("your instance does not have access to transformations, upgrade to access this feature", http.StatusBadRequest))
+		return
+	}
+
 	var test models.FunctionRequest
 	err := util.ReadJSON(r, &test)
 	if err != nil {

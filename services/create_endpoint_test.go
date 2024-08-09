@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/frain-dev/convoy"
+
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -18,6 +20,7 @@ func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoi
 		Cache:        mocks.NewMockCache(ctrl),
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
 		ProjectRepo:  mocks.NewMockProjectRepository(ctrl),
+		Licenser:     mocks.NewMockLicenser(ctrl),
 		E:            e,
 		ProjectID:    projectID,
 	}
@@ -50,6 +53,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					SupportEmail:    "endpoint@test.com",
 					IsDisabled:      false,
 					SlackWebhookURL: "https://google.com",
+					HttpTimeout:     30,
 					Secret:          "1234",
 					URL:             "https://google.com",
 					Description:     "test_endpoint",
@@ -63,7 +67,13 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					Return(project, nil)
 
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
-				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.HttpTimeout == 30
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Name:            "endpoint",
@@ -74,6 +84,56 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					{Value: "1234"},
 				},
 				AdvancedSignatures: true,
+				HttpTimeout:        30,
+				Url:                "https://google.com",
+				Description:        "test_endpoint",
+				RateLimit:          0,
+				Status:             datastore.ActiveEndpointStatus,
+				RateLimitDuration:  0,
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_default_http_timeout_endpoint_for_license_check",
+			args: args{
+				ctx: ctx,
+				e: models.CreateEndpoint{
+					Name:            "endpoint",
+					SupportEmail:    "endpoint@test.com",
+					IsDisabled:      false,
+					SlackWebhookURL: "https://google.com",
+					Secret:          "1234",
+					URL:             "https://google.com",
+					HttpTimeout:     3,
+					Description:     "test_endpoint",
+				},
+				g: project,
+			},
+			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
+				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.HttpTimeout == convoy.HTTP_TIMEOUT
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:            "endpoint",
+				SupportEmail:    "endpoint@test.com",
+				SlackWebhookURL: "https://google.com",
+				ProjectID:       project.UID,
+				Secrets: []datastore.Secret{
+					{Value: "1234"},
+				},
+				AdvancedSignatures: true,
+				HttpTimeout:        convoy.HTTP_TIMEOUT,
 				Url:                "https://google.com",
 				Description:        "test_endpoint",
 				RateLimit:          0,
@@ -111,6 +171,9 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				ProjectID: project.UID,
@@ -156,6 +219,9 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while adding endpoint",

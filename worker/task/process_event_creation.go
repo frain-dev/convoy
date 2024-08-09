@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/guregu/null.v4"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
 
@@ -47,7 +49,7 @@ type CreateEvent struct {
 func ProcessEventCreation(
 	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
-	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository,
+	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent
@@ -82,7 +84,7 @@ func ProcessEventCreation(
 			event = createEvent.Event
 		}
 
-		subscriptions, err := findSubscriptions(ctx, endpointRepo, subRepo, project, event, createEvent.CreateSubscription)
+		subscriptions, err := findSubscriptions(ctx, endpointRepo, subRepo, licenser, project, event, createEvent.CreateSubscription)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -112,12 +114,12 @@ func ProcessEventCreation(
 
 		return writeEventDeliveriesToQueue(
 			ctx, subscriptions, event, project, eventDeliveryRepo,
-			eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo, licenser,
 		)
 	}
 }
 
-func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
+func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser) error {
 	ec := &EventDeliveryConfig{project: project}
 
 	eventDeliveries := make([]*datastore.EventDelivery, 0)
@@ -152,7 +154,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		raw := event.Raw
 		data := event.Data
 
-		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
+		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) && licenser.Transformations() {
 			var payload map[string]interface{}
 			err = json.Unmarshal(event.Data, &payload)
 			if err != nil {
@@ -252,7 +254,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 }
 
 func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository,
-	subRepo datastore.SubscriptionRepository, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool,
+	subRepo datastore.SubscriptionRepository, licenser license.Licenser, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool,
 ) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 	var err error
@@ -284,7 +286,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs = matchSubscriptions(string(event.EventType), subs)
 
-			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs, false)
+			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, licenser, subs, false)
 			if err != nil {
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
 			}
@@ -297,7 +299,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, false)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, licenser, subscriptions, false)
 		if err != nil {
 			log.WithError(err).Error("error find a matching subscription for this source")
 			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: defaultDelay}
@@ -307,7 +309,11 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	return subscriptions, nil
 }
 
-func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription, soft bool) ([]datastore.Subscription, error) {
+func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, licenser license.Licenser, subscriptions []datastore.Subscription, soft bool) ([]datastore.Subscription, error) {
+	if !licenser.AdvancedSubscriptions() {
+		return subscriptions, nil
+	}
+
 	var matched []datastore.Subscription
 
 	// payload is interface{} and not map[string]interface{} because

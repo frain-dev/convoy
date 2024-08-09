@@ -128,12 +128,13 @@ func startConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:  flag,
-			DB:     a.DB,
-			Queue:  a.Queue,
-			Logger: lo,
-			Cache:  a.Cache,
-			Rate:   a.Rate,
+			FFlag:    flag,
+			DB:       a.DB,
+			Queue:    a.Queue,
+			Logger:   lo,
+			Cache:    a.Cache,
+			Rate:     a.Rate,
+			Licenser: a.Licenser,
 		})
 	if err != nil {
 		return err

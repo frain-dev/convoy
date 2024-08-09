@@ -3,6 +3,7 @@ package ingest
 import (
 	"context"
 	"fmt"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -111,7 +112,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, lo, rateLimiter, host)
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, lo, rateLimiter, a.Licenser, host)
 	if err != nil {
 		return err
 	}

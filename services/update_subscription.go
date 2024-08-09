@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -18,9 +20,11 @@ var (
 )
 
 type UpdateSubscriptionService struct {
-	SubRepo        datastore.SubscriptionRepository
-	EndpointRepo   datastore.EndpointRepository
-	SourceRepo     datastore.SourceRepository
+	SubRepo      datastore.SubscriptionRepository
+	EndpointRepo datastore.EndpointRepository
+	SourceRepo   datastore.SourceRepository
+	Licenser     license.Licenser
+
 	ProjectId      string
 	SubscriptionId string
 	Update         *models.UpdateSubscription
@@ -46,7 +50,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		subscription.SourceID = s.Update.SourceID
 	}
 
-	if !util.IsStringEmpty(s.Update.Function) {
+	if !util.IsStringEmpty(s.Update.Function) && s.Licenser.Transformations() {
 		subscription.Function = null.StringFrom(s.Update.Function)
 	}
 
@@ -102,7 +106,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		subscription.RetryConfig.RetryCount = s.Update.RetryConfig.RetryCount
 	}
 
-	if s.Update.FilterConfig != nil {
+	if s.Update.FilterConfig != nil && s.Licenser.AdvancedSubscriptions() {
 		if len(s.Update.FilterConfig.EventTypes) > 0 {
 			subscription.FilterConfig.EventTypes = s.Update.FilterConfig.EventTypes
 		}

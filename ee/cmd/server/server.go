@@ -2,8 +2,9 @@ package server
 
 import (
 	"errors"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/worker"
@@ -157,12 +158,13 @@ func StartConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewEHandler(
 		&types.APIOptions{
-			FFlag:  flag,
-			DB:     a.DB,
-			Queue:  a.Queue,
-			Logger: lo,
-			Cache:  a.Cache,
-			Rate:   a.Rate,
+			FFlag:    flag,
+			DB:       a.DB,
+			Queue:    a.Queue,
+			Logger:   lo,
+			Cache:    a.Cache,
+			Rate:     a.Rate,
+			Licenser: a.Licenser,
 		})
 	if err != nil {
 		return err

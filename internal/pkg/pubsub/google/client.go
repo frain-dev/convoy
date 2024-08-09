@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -24,9 +26,10 @@ type Google struct {
 	handler     datastore.PubSubHandler
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
+	licenser    license.Licenser
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter) *Google {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser) *Google {
 	return &Google{
 		Cfg:         source.PubSub.Google,
 		source:      source,
@@ -34,6 +37,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		handler:     handler,
 		log:         log,
 		rateLimiter: rateLimiter,
+		licenser:    licenser,
 	}
 }
 
@@ -71,7 +75,6 @@ func (g *Google) Verify() error {
 
 func (g *Google) consume() {
 	client, err := pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
-
 	if err != nil {
 		g.log.WithError(err).Error("failed to create new pubsub client")
 	}
@@ -102,7 +105,7 @@ func (g *Google) consume() {
 			attributes = emptyBytes
 		}
 
-		mm := metrics.GetDPInstance()
+		mm := metrics.GetDPInstance(g.licenser)
 		mm.IncrementIngestTotal(g.source)
 
 		if err := g.handler(ctx, g.source, string(m.Data), attributes); err != nil {

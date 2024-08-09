@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/frain-dev/convoy"
+
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -18,6 +20,7 @@ func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoi
 		Cache:        mocks.NewMockCache(ctrl),
 		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
 		ProjectRepo:  mocks.NewMockProjectRepository(ctrl),
+		Licenser:     mocks.NewMockLicenser(ctrl),
 		E:            e,
 		Endpoint:     Endpoint,
 		Project:      Project,
@@ -71,6 +74,9 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -96,9 +102,50 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while updating endpoints",
+		},
+		{
+			name: "should_default_endpoint_http_timeout_for_license_check_failed",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:              stringPtr("Endpoint2"),
+					Description:       "test_endpoint",
+					URL:               "https://www.google.com/webhp",
+					RateLimit:         10000,
+					RateLimitDuration: 60,
+					HttpTimeout:       200,
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint2"},
+				project:  project,
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:              "Endpoint2",
+				Description:       "test_endpoint",
+				Url:               "https://www.google.com/webhp",
+				RateLimit:         10000,
+				RateLimitDuration: 60,
+				HttpTimeout:       convoy.HTTP_TIMEOUT,
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
+					Times(1).Return(&datastore.Endpoint{UID: "endpoint2"}, nil)
+
+				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.HttpTimeout == convoy.HTTP_TIMEOUT
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
+			},
+			wantErr: false,
 		},
 		{
 			name: "should_error_for_endpoint_not_found",

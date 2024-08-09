@@ -391,6 +391,7 @@ type Configuration struct {
 	InstanceIngestRate  int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
 	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
+	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
 }
 
 type PyroscopeConfiguration struct {

@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"gopkg.in/guregu/null.v4"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/oklog/ulid/v2"
 
@@ -27,6 +29,7 @@ type CreateSubscriptionService struct {
 	SourceRepo      datastore.SourceRepository
 	Project         *datastore.Project
 	NewSubscription *models.CreateSubscription
+	Licenser        license.Licenser
 }
 
 func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscription, error) {
@@ -72,22 +75,28 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		Type:       datastore.SubscriptionTypeAPI,
 		SourceID:   s.NewSubscription.SourceID,
 		EndpointID: s.NewSubscription.EndpointID,
-		Function:   null.StringFrom(s.NewSubscription.Function),
 
 		RetryConfig:     retryConfig,
 		AlertConfig:     s.NewSubscription.AlertConfig.Transform(),
-		FilterConfig:    s.NewSubscription.FilterConfig.Transform(),
 		RateLimitConfig: s.NewSubscription.RateLimitConfig.Transform(),
 
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
+	if s.Licenser.AdvancedSubscriptions() {
+		subscription.FilterConfig = s.NewSubscription.FilterConfig.Transform()
+	}
+
+	if s.Licenser.Transformations() {
+		subscription.Function = null.StringFrom(s.NewSubscription.Function)
+	}
+
 	if subscription.FilterConfig == nil {
 		subscription.FilterConfig = &datastore.FilterConfiguration{}
 	}
 
-	if subscription.FilterConfig.EventTypes == nil || len(subscription.FilterConfig.EventTypes) == 0 {
+	if len(subscription.FilterConfig.EventTypes) == 0 {
 		subscription.FilterConfig.EventTypes = []string{"*"}
 	}
 

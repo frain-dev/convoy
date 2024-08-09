@@ -67,6 +67,7 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
 		NewOrg:        &newOrg,
 		User:          user,
+		Licenser:      h.A.Licenser,
 	}
 
 	organisation, err := co.Run(r.Context())

@@ -2,6 +2,11 @@ package api
 
 import (
 	"embed"
+	"io/fs"
+	"net/http"
+	"path"
+	"strings"
+
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
@@ -13,13 +18,8 @@ import (
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/subomi/requestmigrations"
-	"io/fs"
-	"net/http"
-	"path"
-	"strings"
 )
 
 //go:embed ui/build
@@ -119,7 +119,6 @@ func (a *ApplicationHandler) buildRouter() *chi.Mux {
 }
 
 func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
-
 	router := a.buildRouter()
 
 	handler := &handlers.Handler{A: a.A, RM: a.rm}
@@ -458,23 +457,24 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
 			subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
 		})
-
 	})
 
-	router.Route("/metrics", func(metricsRouter chi.Router) {
-		metricsRouter.Use(middleware.RequireAuth())
-		metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
-	})
+	if a.A.Licenser.AsynqMonitoring() {
+		router.Route("/queue", func(metricsRouter chi.Router) {
+			metricsRouter.Use(middleware.RequireAuth())
+			metricsRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+		})
+	}
 
-	router.Route("/queue", func(metricsRouter chi.Router) {
-		metricsRouter.Use(middleware.RequireAuth())
-		metricsRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
-	})
+	if a.A.Licenser.CanExportPrometheusMetrics() {
+		router.Route("/metrics", func(metricsRouter chi.Router) {
+			metricsRouter.Use(middleware.RequireAuth())
+			metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+		})
+	}
 
 	router.HandleFunc("/*", reactRootHandler)
 
-	metrics.RegisterQueueMetrics(a.A.Queue, a.A.DB)
-	prometheus.MustRegister(metrics.RequestDuration())
 	a.Router = router
 
 	return router

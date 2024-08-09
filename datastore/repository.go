@@ -66,6 +66,7 @@ type ProjectRepository interface {
 
 type OrganisationRepository interface {
 	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
+	CountOrganisations(ctx context.Context) (int64, error)
 	CreateOrganisation(context.Context, *Organisation) error
 	UpdateOrganisation(context.Context, *Organisation) error
 	DeleteOrganisation(context.Context, string) error
@@ -84,6 +85,7 @@ type OrganisationInviteRepository interface {
 }
 
 type OrganisationMemberRepository interface {
+	CountOrganisationMembers(ctx context.Context) (int64, error)
 	LoadOrganisationMembersPaged(ctx context.Context, organisationID, userID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
 	FindUserProjects(ctx context.Context, userID string) ([]Project, error)

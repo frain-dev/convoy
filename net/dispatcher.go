@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -21,7 +23,7 @@ type Dispatcher struct {
 	client *http.Client
 }
 
-func NewDispatcher(httpProxy string, enforceSecure bool) (*Dispatcher, error) {
+func NewDispatcher(httpProxy string, licenser license.Licenser, enforceSecure bool) (*Dispatcher, error) {
 	d := &Dispatcher{client: &http.Client{}}
 
 	tr := &http.Transport{
@@ -32,13 +34,15 @@ func NewDispatcher(httpProxy string, enforceSecure bool) (*Dispatcher, error) {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	proxyUrl, isValid, err := d.setProxy(httpProxy)
-	if err != nil {
-		return nil, err
-	}
+	if licenser.CanUseForwardProxy() {
+		proxyUrl, isValid, err := d.setProxy(httpProxy)
+		if err != nil {
+			return nil, err
+		}
 
-	if isValid {
-		tr.Proxy = http.ProxyURL(proxyUrl)
+		if isValid {
+			tr.Proxy = http.ProxyURL(proxyUrl)
+		}
 	}
 
 	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.

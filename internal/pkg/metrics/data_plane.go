@@ -1,14 +1,18 @@
 package metrics
 
 import (
+	"sync"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/prometheus/client_golang/prometheus"
-	"sync"
 )
 
-var m *Metrics
-var once sync.Once
+var (
+	m    *Metrics
+	once sync.Once
+)
 
 const (
 	projectLabel = "project"
@@ -24,15 +28,15 @@ type Metrics struct {
 	EventDeliveryLatency *prometheus.HistogramVec
 }
 
-func GetDPInstance() *Metrics {
+func GetDPInstance(licenser license.Licenser) *Metrics {
 	once.Do(func() {
-		m = newMetrics(Reg())
+		m = newMetrics(Reg(), licenser)
 	})
 	return m
 }
 
-func newMetrics(pr prometheus.Registerer) *Metrics {
-	m := InitMetrics()
+func newMetrics(pr prometheus.Registerer, licenser license.Licenser) *Metrics {
+	m := InitMetrics(licenser)
 
 	if m.IsEnabled && m.IngestTotal != nil && m.IngestConsumedTotal != nil && m.IngestErrorsTotal != nil {
 		pr.MustRegister(
@@ -45,15 +49,14 @@ func newMetrics(pr prometheus.Registerer) *Metrics {
 	return m
 }
 
-func InitMetrics() *Metrics {
-
+func InitMetrics(licenser license.Licenser) *Metrics {
 	cfg, err := config.Get()
 	if err != nil {
 		return &Metrics{
 			IsEnabled: false,
 		}
 	}
-	if !cfg.Metrics.IsEnabled {
+	if !cfg.Metrics.IsEnabled || !licenser.CanExportPrometheusMetrics() {
 		return &Metrics{
 			IsEnabled: false,
 		}

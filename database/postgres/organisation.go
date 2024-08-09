@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
@@ -79,6 +80,11 @@ const (
 	GROUP BY id
 	ORDER BY id DESC
 	LIMIT 1`
+
+	countOrganizations = `
+	SELECT COUNT(*) AS count
+	FROM convoy.organisations
+	WHERE deleted_at IS NULL`
 )
 
 type orgRepo struct {
@@ -254,6 +260,16 @@ func (o *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 	return nil
 }
 
+func (o *orgRepo) CountOrganisations(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetContext(ctx, &count, countOrganizations)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (o *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
 	fromCache, err := o.readFromCache(ctx, id, func() (*datastore.Organisation, error) {
 		org := &datastore.Organisation{}
@@ -267,7 +283,6 @@ func (o *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datast
 
 		return org, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -288,7 +303,6 @@ func (o *orgRepo) FetchOrganisationByAssignedDomain(ctx context.Context, domain 
 
 		return org, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +323,6 @@ func (o *orgRepo) FetchOrganisationByCustomDomain(ctx context.Context, domain st
 
 		return org, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}

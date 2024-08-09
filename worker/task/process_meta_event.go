@@ -28,7 +28,7 @@ type MetaEvent struct {
 	ProjectID   string
 }
 
-func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository) func(context.Context, *asynq.Task) error {
+func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data MetaEvent
 
@@ -73,7 +73,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*metaEvent.Metadata).NextDuration(metaEvent.Metadata.NumTrials)
 
-		resp, err := sendUrlRequest(ctx, project, metaEvent)
+		resp, err := sendUrlRequest(ctx, project, metaEvent, dispatch)
 		metaEvent.Metadata.NumTrials++
 
 		if resp != nil {
@@ -120,16 +120,9 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 	}
 }
 
-func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent) (*net.Response, error) {
+func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent, dispatch *net.Dispatcher) (*net.Response, error) {
 	cfg, err := config.Get()
 	if err != nil {
-		return nil, err
-	}
-
-	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
-	dispatch, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, project.Config.SSL.EnforceSecureEndpoints)
-	if err != nil {
-		log.WithError(err).Error("error occurred while creating http client")
 		return nil, err
 	}
 
@@ -152,6 +145,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 
 	url := project.Config.MetaEvent.URL
 
+	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
 	resp, err := dispatch.SendRequest(ctx, url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID), httpDuration)
 	if err != nil {
 		return nil, err
