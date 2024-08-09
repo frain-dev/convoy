@@ -13,33 +13,42 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestKeygenLicenser_MutualTLS(t *testing.T) {
-	trueLicenser := KeygenLicenser{featureList: map[Feature]Properties{
-		UseForwardProxy:         {},
-		ExportPrometheusMetrics: {},
-		AdvancedEndpointMgmt:    {},
-		AdvancedRetentionPolicy: {},
-		AdvancedMsgBroker:       {},
-		AdvancedSubscriptions:   {},
-		Transformations:         {},
-		HADeployment:            {},
-		WebhookAnalytics:        {},
-		MutualTLS:               {},
-		AsynqMonitoring:         {},
-		SynchronousWebhooks:     {},
-	}}
-	require.True(t, trueLicenser.CanUseForwardProxy())
-	require.True(t, trueLicenser.CanExportPrometheusMetrics())
-	require.True(t, trueLicenser.AdvancedEndpointMgmt())
-	require.True(t, trueLicenser.AdvancedRetentionPolicy())
-	require.True(t, trueLicenser.AdvancedMsgBroker())
-	require.True(t, trueLicenser.AdvancedSubscriptions())
-	require.True(t, trueLicenser.Transformations())
-	require.True(t, trueLicenser.HADeployment())
-	require.True(t, trueLicenser.WebhookAnalytics())
-	require.True(t, trueLicenser.MutualTLS())
-	require.True(t, trueLicenser.AsynqMonitoring())
-	require.True(t, trueLicenser.SynchronousWebhooks())
+func TestKeygenLicenserBoolMethods(t *testing.T) {
+	k := KeygenLicenser{featureList: map[Feature]Properties{UseForwardProxy: {}}}
+	require.True(t, k.CanUseForwardProxy())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{ExportPrometheusMetrics: {}}}
+	require.True(t, k.CanExportPrometheusMetrics())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{AdvancedEndpointMgmt: {}}}
+	require.True(t, k.AdvancedEndpointMgmt())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{AdvancedRetentionPolicy: {}}}
+	require.True(t, k.AdvancedRetentionPolicy())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{AdvancedMsgBroker: {}}}
+	require.True(t, k.AdvancedMsgBroker())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{AdvancedSubscriptions: {}}}
+	require.True(t, k.AdvancedSubscriptions())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{Transformations: {}}}
+	require.True(t, k.Transformations())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{HADeployment: {}}}
+	require.True(t, k.HADeployment())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{WebhookAnalytics: {}}}
+	require.True(t, k.WebhookAnalytics())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{MutualTLS: {}}}
+	require.True(t, k.MutualTLS())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{AsynqMonitoring: {}}}
+	require.True(t, k.AsynqMonitoring())
+
+	k = KeygenLicenser{featureList: map[Feature]Properties{SynchronousWebhooks: {}}}
+	require.True(t, k.SynchronousWebhooks())
 
 	falseLicenser := KeygenLicenser{featureList: map[Feature]Properties{}}
 
