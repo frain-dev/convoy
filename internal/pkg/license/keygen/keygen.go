@@ -42,9 +42,6 @@ func init() {
 
 func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
 	keygen.LicenseKey = c.LicenseKey
-	fmt.Println("=======")
-	fmt.Println("lck", keygen.LicenseKey)
-	fmt.Println("=======")
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
