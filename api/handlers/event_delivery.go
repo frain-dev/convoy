@@ -117,6 +117,28 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("the portal link doesn't contain any endpoints", nil, http.StatusOK))
+			return
+		}
+
+		data.Filter.EndpointIDs = endpointIDs
+	}
+
 	data.Filter.Project = project
 	ep := datastore.Pageable{}
 	if data.Filter.Pageable == ep {
