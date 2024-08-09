@@ -72,18 +72,13 @@ func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
 		return nil, fmt.Errorf("license plan type is not a string")
 	}
 
-	planType := PlanType(pt)
-	if !planType.IsValid() {
-		return nil, fmt.Errorf("license plan type is not valid: %s", planType)
-	}
-
 	return &KeygenLicenser{
 		machineFingerprint: fingerprint,
 		licenseKey:         c.LicenseKey,
 		license:            l,
 		orgRepo:            c.OrgRepo,
 		orgMemberRepo:      c.OrgMemberRepo,
-		planType:           planType,
+		planType:           PlanType(pt),
 		featureList:        featureList,
 	}, nil
 }
