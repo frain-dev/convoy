@@ -230,8 +230,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 					})
 				})
 			})
-
-			r.HandleFunc("/*", handler.RedirectToProjects)
 		})
 	})
 
@@ -460,9 +458,9 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	})
 
 	if a.A.Licenser.AsynqMonitoring() {
-		router.Route("/queue", func(metricsRouter chi.Router) {
-			metricsRouter.Use(middleware.RequireAuth())
-			metricsRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
+		router.Route("/queue", func(asynqRouter chi.Router) {
+			asynqRouter.Use(middleware.RequireAuth())
+			asynqRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
 		})
 	}
 
