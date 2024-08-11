@@ -282,6 +282,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		Cache:        h.A.Cache,
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		ProjectRepo:  postgres.NewProjectRepo(h.A.DB, h.A.Cache),
+		Licenser:     h.A.Licenser,
 		E:            e,
 		Endpoint:     endpoint,
 		Project:      project,

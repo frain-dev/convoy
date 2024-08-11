@@ -163,7 +163,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		var httpDuration time.Duration
-		if endpoint.HttpTimeout == 0 {
+		if endpoint.HttpTimeout == 0 || !licenser.AdvancedEndpointMgmt() {
 			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
 		} else {
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
