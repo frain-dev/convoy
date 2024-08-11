@@ -244,6 +244,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 const (
 	applicationJsonContentType   = "application/json"
 	multipartFormDataContentType = "multipart/form-data"
+	urlEncodedContentType        = "application/x-www-form-urlencoded"
 )
 
 func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]byte, error) {
@@ -265,7 +266,7 @@ func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]
 	}
 
 	switch contentType {
-	case multipartFormDataContentType:
+	case multipartFormDataContentType, urlEncodedContentType:
 		if err := r.ParseMultipartForm(int64(maxIngestSize)); err != nil {
 			return nil, err
 		}
@@ -279,7 +280,6 @@ func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]
 			}
 		}
 		return json.Marshal(data)
-
 	default:
 		// To avoid introducing a breaking change, we are keeping the old behaviour of assuming
 		// the content type is JSON if the content type is not specified/unsupported.
