@@ -23,6 +23,7 @@ const (
 )
 
 const (
+	CommunityPlan  PlanType = "community"
 	BusinessPlan   PlanType = "business"
 	EnterprisePlan PlanType = "enterprise"
 )

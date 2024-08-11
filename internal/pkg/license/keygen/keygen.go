@@ -9,11 +9,11 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/google/uuid"
-
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/keygen-sh/keygen-go/v3"
 )
 
@@ -41,6 +41,11 @@ func init() {
 }
 
 func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
+	if util.IsStringEmpty(c.LicenseKey) {
+		// no license key provided, allow access to only community features
+		return communityLicenser(c.OrgRepo, c.OrgMemberRepo), nil
+	}
+
 	keygen.LicenseKey = c.LicenseKey
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -84,6 +89,10 @@ func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
 }
 
 func (k *KeygenLicenser) Activate() error {
+	if util.IsStringEmpty(k.licenseKey) {
+		return nil
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
