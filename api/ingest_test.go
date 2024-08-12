@@ -56,14 +56,14 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 	})
 
 	t.Run("urlencoded content type", func(t *testing.T) {
-		body := strings.NewReader("value1=key1&value2=key2")
+		body := strings.NewReader("key1=value1&key2=value2")
 
 		req := httptest.NewRequest(http.MethodPost, "/", body)
 		req.Header.Set("Content-Type", urlEncodedContentType)
 
 		payload, err := extractPayloadFromIngestEventReq(req, 1024)
 		require.NoError(t, err)
-		require.Equal(t, body, payload)
+		require.Equal(t, []byte(`{"key1": "value1", "key2": "value2"}`), payload)
 	})
 
 	t.Run("unsupported content type", func(t *testing.T) {
@@ -74,6 +74,6 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 
 		payload, err := extractPayloadFromIngestEventReq(req, 1024)
 		require.NoError(t, err)
-		require.Equal(t, []byte(`{"key": "value"}`), payload)
+		require.Equal(t, jsonBody, payload)
 	})
 }
