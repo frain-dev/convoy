@@ -6,20 +6,20 @@ type (
 )
 
 const (
-	CreateOrg               Feature = "create_org"
-	CreateOrgMember         Feature = "create_org_member"
-	UseForwardProxy         Feature = "use_forward_proxy"
-	ExportPrometheusMetrics Feature = "export_prometheus_metrics"
-	AdvancedEndpointMgmt    Feature = "advanced_endpoint_mgmt"
-	AdvancedRetentionPolicy Feature = "advanced_retention_policy"
-	AdvancedMsgBroker       Feature = "advanced_msg_broker"
-	AdvancedSubscriptions   Feature = "advanced_subscriptions"
-	Transformations         Feature = "transformations"
-	HADeployment            Feature = "ha_deployment"
-	WebhookAnalytics        Feature = "webhook_analytics"
-	MutualTLS               Feature = "mutual_tls"
-	AsynqMonitoring         Feature = "asynq_monitoring"
-	SynchronousWebhooks     Feature = "synchronous_webhooks"
+	CreateOrg               Feature = "CREATE_ORG"
+	CreateOrgMember         Feature = "CREATE_ORG_MEMBER"
+	UseForwardProxy         Feature = "USE_FORWARD_PROXY"
+	ExportPrometheusMetrics Feature = "EXPORT_PROMETHEUS_METRICS"
+	AdvancedEndpointMgmt    Feature = "ADVANCED_ENDPOINT_MANAGEMENT"
+	AdvancedRetentionPolicy Feature = "ADVANCED_RETENTION_POLICY"
+	AdvancedMsgBroker       Feature = "ADVANCED_MESSAGE_BROKER"
+	AdvancedSubscriptions   Feature = "ADVANCED_SUBSCRIPTIONS"
+	Transformations         Feature = "TRANSFORMATIONS"
+	HADeployment            Feature = "HA_DEPLOYMENT"
+	WebhookAnalytics        Feature = "WEBHOOK_ANALYTICS"
+	MutualTLS               Feature = "MUTUAL_TLS"
+	AsynqMonitoring         Feature = "ASYNQ_MONITORING"
+	SynchronousWebhooks     Feature = "SYNCHRONOUS_WEBHOOKS"
 )
 
 const (

@@ -2,12 +2,13 @@ package keygen
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/mitchellh/mapstructure"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -62,7 +63,7 @@ func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
 		return nil, fmt.Errorf("license has no metadata")
 	}
 
-	featureList, err := getFeatureList(l)
+	featureList, err := getFeatureList(ctx, l)
 	if err != nil {
 		return nil, err
 	}
@@ -140,19 +141,30 @@ var (
 	ErrUnexpectedType = errors.New("license feature list has unexpected type")
 )
 
-func getFeatureList(l *keygen.License) (map[Feature]Properties, error) {
-	m := l.Metadata["features"]
-	if m == nil {
-		return nil, ErrNoFeatureList
+func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Properties, error) {
+	entitlements, err := l.Entitlements(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load license entitlements: %v", err)
 	}
 
-	v, ok := m.(string)
-	if !ok {
-		return nil, ErrUnexpectedType
+	if len(entitlements) == 0 {
+		return nil, fmt.Errorf("license has no entitlements")
 	}
 
 	featureList := map[Feature]Properties{}
-	err := json.Unmarshal([]byte(v), &featureList)
+	for _, entitlement := range entitlements {
+		p := Properties{}
+
+		if entitlement.Metadata != nil {
+			err = mapstructure.Decode(entitlement.Metadata, &p)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode license entitlement metadata: %v", err)
+			}
+		}
+
+		featureList[Feature(entitlement.Code)] = p
+	}
+
 	return featureList, err
 }
 
