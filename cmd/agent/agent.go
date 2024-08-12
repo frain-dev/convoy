@@ -44,9 +44,6 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "agent",
 		Short: "Start agent instance",
-		Annotations: map[string]string{
-			"ShouldBootstrap": "false",
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithCancel(cmd.Context())
 			quit := make(chan os.Signal, 1)

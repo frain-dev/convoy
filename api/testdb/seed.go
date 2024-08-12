@@ -6,9 +6,10 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"gopkg.in/guregu/null.v4"
 	"testing"
 	"time"
+
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
@@ -133,6 +134,7 @@ func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastor
 				},
 			},
 			ReplayAttacks: false,
+			MaxIngestSize: 50,
 		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -648,6 +650,7 @@ func PurgeDB(t *testing.T, db database.Database) {
 func truncateTables(db database.Database) error {
 	tables := `
 		convoy.event_deliveries,
+		convoy.delivery_attempts,
 		convoy.events,
 		convoy.api_keys,
 		convoy.subscriptions,

@@ -637,6 +637,12 @@ type EventDeliveryFilter struct {
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
+type DeliveryAttemptsFilter struct {
+	ProjectID      string `json:"project_id" bson:"project_id"`
+	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
+}
+
 func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
@@ -651,7 +657,8 @@ var (
 	ErrEndpointNotFound              = errors.New("endpoint not found")
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
-	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
+	ErrDeliveryAttemptNotFound       = errors.New("event delivery attempt not found")
+	ErrDeliveryAttemptsNotDeleted    = errors.New("event delivery attempts not deleted")
 	ErrPortalLinkNotFound            = errors.New("portal link not found")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
@@ -751,6 +758,15 @@ type (
 	HttpHeader          map[string]string
 )
 
+func (h *HttpHeader) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("HttpHeader: expected []byte, got %T", value)
+	}
+
+	return json.Unmarshal(bytes, h)
+}
+
 func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 	for k, v := range h {
 		r.Header.Set(k, v)
@@ -847,12 +863,13 @@ type EventInterval struct {
 }
 
 type DeliveryAttempt struct {
-	UID        string `json:"uid" db:"id"`
-	MsgID      string `json:"msg_id" db:"msg_id"`
-	URL        string `json:"url" db:"url"`
-	Method     string `json:"method" db:"method"`
-	EndpointID string `json:"endpoint_id" db:"endpoint_id"`
-	APIVersion string `json:"api_version" db:"api_version"`
+	UID             string `json:"uid" db:"id"`
+	URL             string `json:"url" db:"url"`
+	Method          string `json:"method" db:"method"`
+	EndpointID      string `json:"endpoint_id" db:"endpoint_id"`
+	APIVersion      string `json:"api_version" db:"api_version"`
+	ProjectId       string `json:"project_id" db:"project_id"`
+	EventDeliveryId string `json:"msg_id" db:"event_delivery_id"`
 
 	IPAddress        string     `json:"ip_address,omitempty" db:"ip_address"`
 	RequestHeader    HttpHeader `json:"request_http_header,omitempty" db:"request_http_header"`

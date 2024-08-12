@@ -131,8 +131,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		projectRepo := postgres.NewProjectRepo(postgresDB, ca)
 
 		metaEventRepo := postgres.NewMetaEventRepo(postgresDB, ca)
+		attemptsRepo := postgres.NewDeliveryAttemptRepo(postgresDB)
 		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
-		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo)
+		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo, attemptsRepo)
 
 		hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
 		hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)

@@ -193,6 +193,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
 	deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
 	configRepo := postgres.NewConfigRepo(a.DB)
+	attemptRepo := postgres.NewDeliveryAttemptRepo(a.DB)
 
 	rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	if err != nil {
@@ -246,7 +247,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
-		a.Queue, rateLimiter, dispatcher,
+		a.Queue,
+		rateLimiter,
+		dispatcher,
+		attemptRepo,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
@@ -262,7 +266,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		endpointRepo,
 		eventDeliveryRepo,
 		projectRepo,
-		a.Queue, rateLimiter, dispatcher,
+		a.Queue,
+		rateLimiter,
+		dispatcher,
+		attemptRepo,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
@@ -289,6 +296,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		projectRepo,
 		eventRepo,
 		eventDeliveryRepo,
+		attemptRepo,
 		rd,
 	), nil)
 

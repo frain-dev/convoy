@@ -27,6 +27,6 @@ CREATE INDEX IF NOT
         )
     WHERE deleted_at IS NULL;
 
-DROP INDEX IF EXISTS convoy.idx_subscriptions_project_id_key;
+DROP INDEX IF EXISTS convoy.idx_subscriptions_id_deleted_at;
 DROP INDEX IF EXISTS convoy.idx_subscriptions_updated_at;
-DROP INDEX IF EXISTS idx_subscriptions_updated_at_id_project_id;
+DROP INDEX IF EXISTS convoy.idx_subscriptions_updated_at_id_project_id;

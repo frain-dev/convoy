@@ -79,10 +79,7 @@ func Init(authConfig *config.AuthConfiguration,
 
 // Authenticate calls the Authenticate method of all registered realms.
 // If at least one realm can authenticate the given auth.Credential, Authenticate will not return an error
-func (rc *RealmChain) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
-	var err error
-	var authUser *auth.AuthenticatedUser
-
+func (rc *RealmChain) Authenticate(ctx context.Context, cred *auth.Credential) (authUser *auth.AuthenticatedUser, err error) {
 	for _, realm := range rc.chain {
 		authUser, err = realm.Authenticate(ctx, cred)
 		if err == nil {

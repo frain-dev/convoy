@@ -120,14 +120,30 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	})
 	require.NoError(r.T(), err)
 
+	attempt1, err := seedDeliveryAttempt(r.ConvoyApp.database, eventDelivery1, project, endpoint, SeedFilter{
+		CreatedAt: now,
+	})
+	require.NoError(r.T(), err)
+
+	attempt2, err := seedDeliveryAttempt(r.ConvoyApp.database, eventDelivery2, project, endpoint, SeedFilter{
+		CreatedAt: now,
+	})
+	require.NoError(r.T(), err)
+
 	// call handler
 	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.redis)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.deliveryRepo, r.ConvoyApp.redis)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
-	// check that event and eventdelivery repos are empty
+	_, err = r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery1.UID, attempt1.UID)
+	require.ErrorIs(r.T(), err, datastore.ErrDeliveryAttemptNotFound)
+
+	_, err = r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery2.UID, attempt2.UID)
+	require.ErrorIs(r.T(), err, datastore.ErrDeliveryAttemptNotFound)
+
+	// check that attempts, events and event delivery repos are empty
 	_, err = r.ConvoyApp.eventRepo.FindEventByID(context.Background(), project.UID, event1.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventNotFound)
 
@@ -191,12 +207,22 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	})
 	require.NoError(r.T(), err)
 
+	attempt, err := seedDeliveryAttempt(r.ConvoyApp.database, eventDelivery, project, endpoint, SeedFilter{
+		CreatedAt: time.Now().UTC(),
+	})
+	require.NoError(r.T(), err)
+
 	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.redis)
+	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.deliveryRepo, r.ConvoyApp.redis)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
+
+	a, err := r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery.UID, attempt.UID)
+	require.NoError(r.T(), err)
+	require.NotEqual(r.T(), a.CreatedAt, time.Now().UTC())
+	require.NotEqual(r.T(), a.UpdatedAt, time.Now().UTC())
 
 	// check that event and eventdelivery is not empty
 	e, err := r.ConvoyApp.eventRepo.FindEventByID(context.Background(), project.UID, event.UID)
@@ -268,12 +294,14 @@ func buildApplication() *applicationHandler {
 	eventRepo := postgres.NewEventRepo(db, nil)
 	configRepo := postgres.NewConfigRepo(db)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
+	deliveryRepo := postgres.NewDeliveryAttemptRepo(db)
 
 	app := &applicationHandler{
 		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		configRepo:        configRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
+		deliveryRepo:      deliveryRepo,
 		database:          db,
 		redis:             redis,
 	}
@@ -286,6 +314,7 @@ type applicationHandler struct {
 	eventRepo         datastore.EventRepository
 	configRepo        datastore.ConfigurationRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	deliveryRepo      datastore.DeliveryAttemptsRepository
 	database          database.Database
 	redis             *rdb.Redis
 }
@@ -322,7 +351,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 		return nil, err
 	}
 
-	return ev1, nil
+	return ev, nil
 }
 
 func seedEventDelivery(db database.Database, eventID string, endpointID string, projectID string, uid string, status datastore.EventDeliveryStatus, subscriptionID string, filter SeedFilter) (*datastore.EventDelivery, error) {
@@ -362,6 +391,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 	if err != nil {
 		return nil, err
 	}
+
 	eventDelivery.CreatedAt = time.Unix(filter.CreatedAt.Unix(), 0)
 	_, err = db.GetDB().ExecContext(context.Background(), "UPDATE convoy.event_deliveries SET created_at=$1 WHERE id=$2", eventDelivery.CreatedAt, uid)
 	if err != nil {
@@ -369,6 +399,40 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 	}
 
 	return eventDelivery, nil
+}
+
+func seedDeliveryAttempt(db database.Database, delivery *datastore.EventDelivery, project *datastore.Project, endpoint *datastore.Endpoint, filter SeedFilter) (*datastore.DeliveryAttempt, error) {
+	deliveryAttempt := &datastore.DeliveryAttempt{
+		UID:              ulid.Make().String(),
+		EventDeliveryId:  delivery.UID,
+		URL:              "127.0.0.1",
+		Method:           "POST",
+		EndpointID:       endpoint.UID,
+		ProjectId:        project.UID,
+		APIVersion:       "2024-01-01",
+		IPAddress:        "117.0.0.1",
+		RequestHeader:    map[string]string{"Content-Type": "application/json"},
+		ResponseHeader:   map[string]string{"Content-Type": "application/json"},
+		HttpResponseCode: "200",
+		ResponseData:     "200 OK",
+		Status:           true,
+		CreatedAt:        filter.CreatedAt,
+		UpdatedAt:        filter.CreatedAt,
+	}
+
+	daRepo := postgres.NewDeliveryAttemptRepo(db)
+	err := daRepo.CreateDeliveryAttempt(context.TODO(), deliveryAttempt)
+	if err != nil {
+		return nil, err
+	}
+
+	deliveryAttempt.CreatedAt = time.Unix(filter.CreatedAt.Unix(), 0)
+	_, err = db.GetDB().ExecContext(context.Background(), "UPDATE convoy.delivery_attempts SET created_at=$1 WHERE id=$2", deliveryAttempt.CreatedAt, deliveryAttempt.UID)
+	if err != nil {
+		return nil, err
+	}
+
+	return deliveryAttempt, nil
 }
 
 func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
