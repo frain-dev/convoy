@@ -33,7 +33,7 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		require.NoError(t, writer.Close())
 
 		req := httptest.NewRequest(http.MethodPost, "/", body)
-		req.Header.Set("Content-Type", fmt.Sprintf("%s; boundary=$s", multipartFormDataContentType, writer.Boundary()))
+		req.Header.Set("Content-Type", fmt.Sprintf("%s; boundary=%s", multipartFormDataContentType, writer.Boundary()))
 
 		payload, err := extractPayloadFromIngestEventReq(req, 1024)
 		require.NoError(t, err)
