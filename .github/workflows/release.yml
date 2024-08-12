@@ -70,7 +70,7 @@ jobs:
         name: Release, Upload & Publish
         with:
           version: latest
-          args: -f .publisher.yml release --rm-dist
+          args: -f .publisher.yml release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           REPO_NAME: ${{ github.repository }}
