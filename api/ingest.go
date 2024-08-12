@@ -266,25 +266,34 @@ func extractPayloadFromIngestEventReq(r *http.Request, maxIngestSize uint64) ([]
 	}
 
 	switch contentType {
-	case multipartFormDataContentType, urlEncodedContentType:
+	case multipartFormDataContentType:
 		if err := r.ParseMultipartForm(int64(maxIngestSize)); err != nil {
 			return nil, err
 		}
-		data := make(map[string]string)
-		for k, v := range r.Form {
-			// Golang handles the form data and returns it as a map[string][]string.
-			// we only need the first value in the slice, so we take the first element in the slice.
-			// We also skip empty values.
-			if len(v) > 0 {
-				data[k] = v[0]
-			}
+		return convertRequestFormToJSON(r)
+	case urlEncodedContentType:
+		if err := r.ParseForm(); err != nil {
+			return nil, err
 		}
-		return json.Marshal(data)
+		return convertRequestFormToJSON(r)
 	default:
 		// To avoid introducing a breaking change, we are keeping the old behaviour of assuming
 		// the content type is JSON if the content type is not specified/unsupported.
 		return io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
 	}
+}
+
+func convertRequestFormToJSON(r *http.Request) ([]byte, error) {
+	data := make(map[string]string)
+	for k, v := range r.Form {
+		// Golang handles the form data and returns it as a map[string][]string.
+		// we only need the first value in the slice, so we take the first element in the slice.
+		// We also skip empty values.
+		if len(v) > 0 {
+			data[k] = v[0]
+		}
+	}
+	return json.Marshal(data)
 }
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
