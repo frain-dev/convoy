@@ -63,8 +63,7 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 
 		payload, err := extractPayloadFromIngestEventReq(req, 1024)
 		require.NoError(t, err)
-		fmt.Println(string(payload))
-		require.Equal(t, []byte(`{"key1": "value1", "key2": "value2"}`), payload)
+		require.Equal(t, []byte(`{"key1":"value1","key2":"value2"}`), payload)
 	})
 
 	t.Run("unsupported content type", func(t *testing.T) {
