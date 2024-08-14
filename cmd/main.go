@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/frain-dev/convoy/cmd/ff"
 	"os"
 	_ "time/tzdata"
 
@@ -47,7 +48,7 @@ func main() {
 	var dbPassword string
 	var dbDatabase string
 
-	var fflag string
+	var fflag []string
 	var enableProfiling bool
 
 	var redisPort int
@@ -96,8 +97,7 @@ func main() {
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
-	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
-
+	c.Flags().StringSliceVar(&fflag, "enable-feature-flag", []string{}, "List of feature flags to enable e.g. \"full-text-search,prometheus\"")
 	// tracing
 	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
 	c.Flags().StringVar(&sentryDSN, "sentry-dsn", "", "Sentry backend dsn")
@@ -107,7 +107,7 @@ func main() {
 	c.Flags().StringVar(&otelAuthHeaderValue, "otel-auth-header-value", "", "OTel backend auth header value")
 
 	// metrics
-	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('experimental' feature flag level required")
+	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('prometheus' feature flag required")
 	c.Flags().Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
 
 	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "SMTP Port")
@@ -128,6 +128,7 @@ func main() {
 	c.AddCommand(ingest.AddIngestCommand(app))
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
+	c.AddCommand(ff.AddFeatureFlagsCommand())
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)
