@@ -49,12 +49,12 @@ type newEvent struct {
 	AcknowledgedAt time.Time
 }
 
-func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, error) {
+func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Event, err error) {
 	if e.Project == nil {
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
 
-	if err := util.Validate(e.NewMessage); err != nil {
+	if err = util.Validate(e.NewMessage); err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
@@ -74,13 +74,11 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 	}
 
 	if len(endpoints) == 0 {
-		_, err := e.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
+		_, err = e.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 		if err != nil {
-			if errors.Is(err, datastore.ErrPortalLinkNotFound) {
-				return nil, &ServiceError{ErrMsg: ErrNoValidOwnerIDEndpointFound.Error()}
+			if !errors.Is(err, datastore.ErrPortalLinkNotFound) {
+				return nil, &ServiceError{ErrMsg: err.Error()}
 			}
-
-			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 	}
 
@@ -95,7 +93,7 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 		AcknowledgedAt: time.Now(),
 	}
 
-	event, err := createEvent(ctx, endpoints, ev, e.Project, e.Queue)
+	event, err = createEvent(ctx, endpoints, ev, e.Project, e.Queue)
 	if err != nil {
 		return nil, err
 	}

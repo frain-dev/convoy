@@ -38,7 +38,7 @@ var (
 )
 
 func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
+	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
@@ -252,7 +252,13 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			}
 		}
 
-		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
+		err = attemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
+		if err != nil {
+			log.WithError(err).Error("failed to create delivery attempt", eventDelivery.UID)
+			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+		}
+
+		err = eventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
 			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error()), delay: defaultEventDelay}
@@ -263,7 +269,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			if err != nil {
 				errS = err.Error()
 			}
-			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS), delay: defaultEventDelay}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS), delay: delayDuration}
 		}
 
 		return nil
@@ -296,12 +302,13 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
 
 	return datastore.DeliveryAttempt{
-		UID:        ulid.Make().String(),
-		URL:        resp.URL.String(),
-		Method:     resp.Method,
-		MsgID:      m.UID,
-		EndpointID: e.UID,
-		APIVersion: convoy.GetVersion(),
+		UID:             ulid.Make().String(),
+		URL:             resp.URL.String(),
+		Method:          resp.Method,
+		EventDeliveryId: m.UID,
+		EndpointID:      e.UID,
+		APIVersion:      convoy.GetVersion(),
+		ProjectId:       m.ProjectID,
 
 		IPAddress:        resp.IP,
 		ResponseHeader:   *responseHeader,
