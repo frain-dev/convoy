@@ -13,7 +13,7 @@ services:
         environment:
             - CONVOY_LICENSE_KEY
         volumes:
-            - ./convoy-test.json:/convoy.json
+            - ./convoy-docker.json:/convoy.json
         restart: on-failure
         ports:
             - "5015:5005"
@@ -28,7 +28,7 @@ services:
             dockerfile: Dockerfile.dev
         entrypoint: ["./cmd", "migrate", "up"]
         volumes:
-            - ./convoy-test.json:/convoy.json
+            - ./convoy-docker.json:/convoy.json
         restart: on-failure
         depends_on:
             postgres:
@@ -42,7 +42,7 @@ services:
         environment:
             - CONVOY_LICENSE_KEY
         volumes:
-            - ./convoy-test.json:/convoy.json
+            - ./convoy-docker.json:/convoy.json
         restart: on-failure
         ports:
             - "5018:5008"

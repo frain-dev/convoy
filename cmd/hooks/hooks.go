@@ -468,15 +468,11 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	// Feature flags
-	fflag, err := cmd.Flags().GetString("feature-flag")
+	fflag, err := cmd.Flags().GetStringSlice("enable-feature-flag")
 	if err != nil {
 		return nil, err
 	}
-
-	switch fflag {
-	case config.Experimental:
-		c.FeatureFlag = config.ExperimentalFlagLevel
-	}
+	c.EnableFeatureFlag = fflag
 
 	// tracing
 	tracingProvider, err := cmd.Flags().GetString("tracer-type")
@@ -537,14 +533,14 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
-	flag, err := fflag2.NewFFlag()
+	flag, err := fflag2.NewFFlag(c)
 	if err != nil {
 		return nil, err
 	}
 	c.Metrics = config.MetricsConfiguration{
 		IsEnabled: false,
 	}
-	if flag.CanAccessFeature(fflag2.Prometheus, c) {
+	if flag.CanAccessFeature(fflag2.Prometheus) {
 		metricsBackend, err := cmd.Flags().GetString("metrics-backend")
 		if err != nil {
 			return nil, err

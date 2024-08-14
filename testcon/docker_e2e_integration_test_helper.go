@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build docker_testcon
+// +build docker_testcon
 
 package testcon
 
@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -39,22 +38,8 @@ var (
 	pDB  *postgres.Postgres
 )
 
-func setEnv(dbPort int, redisPort int) {
-	_ = os.Setenv("CONVOY_REDIS_HOST", "localhost")
-	_ = os.Setenv("CONVOY_REDIS_SCHEME", "redis")
-	_ = os.Setenv("CONVOY_REDIS_PORT", strconv.Itoa(redisPort))
-
-	_ = os.Setenv("CONVOY_DB_HOST", "localhost")
-	_ = os.Setenv("CONVOY_DB_SCHEME", "postgres")
-	_ = os.Setenv("CONVOY_DB_USERNAME", "convoy")
-	_ = os.Setenv("CONVOY_DB_PASSWORD", "convoy")
-	_ = os.Setenv("CONVOY_DB_DATABASE", "convoy")
-	_ = os.Setenv("CONVOY_DB_PORT", strconv.Itoa(dbPort))
-	_ = os.Setenv("CONVOY_LICENSE_KEY", os.Getenv("TEST_LICENSE_KEY"))
-}
-
 func getConfig() config.Configuration {
-	err := config.LoadConfig("")
+	err := config.LoadConfig("./testdata/convoy-host.json")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,7 +62,6 @@ type TestData struct {
 }
 
 func seedTestData(t *testing.T) *TestData {
-	setEnv(5430, 6370)
 
 	cfg := getConfig()
 
@@ -184,7 +168,6 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/api/convoy", func(w http.ResponseWriter, r *http.Request) {
 			endpoint := "http://" + r.Host + r.URL.Path
-			fmt.Printf("Received %s request on %s\n", r.Method, endpoint)
 			manifest.IncEndpoint(endpoint)
 			if r.URL.Path != "/api/convoy" {
 				http.NotFound(w, r)
@@ -195,6 +178,7 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 				for k, v := range r.URL.Query() {
 					log.Info(fmt.Sprintf("%s: %s\n", k, v))
 				}
+				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("Received a GET request\n"))
 			case "POST":
 				reqBody, err := io.ReadAll(r.Body)
@@ -203,7 +187,8 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 				}
 
 				ev := string(reqBody)
-				log.Printf("Received: %s\n", reqBody)
+				fmt.Printf("Received %s request on %s Payload: %s\n", r.Method, endpoint, reqBody)
+				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("Received a POST request\n"))
 				manifest.IncEvent(ev)
 				defer func() {
@@ -305,14 +290,11 @@ func sendEvent(ctx context.Context, c *convoy.Client, channel string, eUID strin
 func assertEventCameThrough(t *testing.T, done chan bool, endpoints []*convoy.EndpointResponse, traceIds []string, negativeTraceIds []string) {
 	waitForEvents(t, done)
 
-	t.Log("Done waiting. Further wait for 10s")
-	time.Sleep(10 * time.Second)
-
 	manifest.PrintEndpoints()
 	for _, endpoint := range endpoints {
 		hits := manifest.ReadEndpoint(endpoint.TargetUrl)
 		require.NotNil(t, hits)
-		require.True(t, hits >= 1, endpoint.TargetUrl+" must exist and be non-zero") // ??
+		require.Equal(t, hits, len(traceIds), endpoint.TargetUrl+" hits must match events sent")
 	}
 
 	manifest.PrintEvents()
@@ -320,15 +302,13 @@ func assertEventCameThrough(t *testing.T, done chan bool, endpoints []*convoy.En
 		event := fmt.Sprintf(`{"traceId":"%s"}`, traceId)
 		hits := manifest.ReadEvent(event)
 		require.NotNil(t, hits)
-		require.True(t, hits >= 1, event+" must exist and be non-zero") // ??
+		require.Equal(t, hits, len(endpoints), event+" must match number of matched endpoints")
 	}
 
 	for _, traceId := range negativeTraceIds {
 		event := fmt.Sprintf(`{"traceId":"%s"}`, traceId)
 		hits := manifest.ReadEvent(event)
-		if !strings.Contains(traceId, "fan-out") {
-			require.False(t, hits >= 1, event+" must be zero")
-		} // not sure why fan out ignores sub filter
+		require.Equal(t, hits, 0, event+" must not exist")
 	}
 
 	t.Log("Events came through!")
@@ -337,7 +317,7 @@ func assertEventCameThrough(t *testing.T, done chan bool, endpoints []*convoy.En
 func waitForEvents(t *testing.T, done chan bool) {
 	select {
 	case <-done:
-	case <-time.After(25 * time.Second):
+	case <-time.After(30 * time.Second):
 		t.Errorf("Time out while waiting for events")
 	}
 }

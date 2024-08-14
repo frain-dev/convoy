@@ -1,11 +1,12 @@
-//go:build integration
-// +build integration
+//go:build docker_testcon
+// +build docker_testcon
 
 package testcon
 
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,13 +17,13 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-type IntegrationTestSuite struct {
+type DockerE2EIntegrationTestSuite struct {
 	suite.Suite
 	*TestData
 }
 
-func (i *IntegrationTestSuite) SetupSuite() {
-	t := i.T()
+func (d *DockerE2EIntegrationTestSuite) SetupSuite() {
+	t := d.T()
 	identifier := tc.StackIdentifier("convoy_docker_test")
 	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testdata/docker-compose-test.yml"), identifier)
 	require.NoError(t, err)
@@ -43,16 +44,21 @@ func (i *IntegrationTestSuite) SetupSuite() {
 		WaitForService("redis_server", wait.NewLogStrategy("Ready to accept connections").WithStartupTimeout(10*time.Second)).
 		WaitForService("migrate", wait.NewLogStrategy("migration up succeeded").WithStartupTimeout(60*time.Second)).
 		Up(ctx, tc.Wait(true), tc.WithRecreate(api.RecreateNever))
+	if err != nil && !strings.Contains(err.Error(), "Ryuk") {
+		require.NoError(t, err)
+	}
 
-	i.TestData = seedTestData(t)
+	d.TestData = seedTestData(t)
 }
 
-func (i *IntegrationTestSuite) SetupTest() {
+func (d *DockerE2EIntegrationTestSuite) SetupTest() {
+
 }
 
-func (i *IntegrationTestSuite) TearDownTest() {
+func (d *DockerE2EIntegrationTestSuite) TearDownTest() {
+
 }
 
-func TestIntegrationTestSuite(t *testing.T) {
-	suite.Run(t, new(IntegrationTestSuite))
+func TestDockerE2EIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(DockerE2EIntegrationTestSuite))
 }
