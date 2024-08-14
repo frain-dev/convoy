@@ -167,6 +167,20 @@ func (mr *MockLicenserMockRecorder) CanUseForwardProxy() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanUseForwardProxy", reflect.TypeOf((*MockLicenser)(nil).CanUseForwardProxy))
 }
 
+// FeatureListJSON mocks base method.
+func (m *MockLicenser) FeatureListJSON() []byte {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FeatureListJSON")
+	ret0, _ := ret[0].([]byte)
+	return ret0
+}
+
+// FeatureListJSON indicates an expected call of FeatureListJSON.
+func (mr *MockLicenserMockRecorder) FeatureListJSON() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FeatureListJSON", reflect.TypeOf((*MockLicenser)(nil).FeatureListJSON))
+}
+
 // HADeployment mocks base method.
 func (m *MockLicenser) HADeployment() bool {
 	m.ctrl.T.Helper()
