@@ -90,7 +90,7 @@ func tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo 
 	if err != nil {
 		return nil
 	}
-	if !fflag.CanAccessFeature(fflag2.SearchTokenizer) {
+	if !fflag.CanAccessFeature(fflag2.FullTextSearch) {
 		return fflag2.ErrFeatureNotEnabled
 	}
 

@@ -47,7 +47,6 @@ func main() {
 	var dbDatabase string
 
 	var fflag []string
-	var noFflag []string
 
 	var redisPort int
 	var redisHost string
@@ -93,8 +92,7 @@ func main() {
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
-	c.Flags().StringSliceVar(&fflag, "enable-feature-flag", []string{}, "List of feature flags to enable e.g. \"search_tokenizer,prometheus\"")
-	c.Flags().StringSliceVar(&noFflag, "disable-feature-flag", []string{}, "List of feature flags to disable e.g. \"search_tokenizer,prometheus\"")
+	c.Flags().StringSliceVar(&fflag, "enable-feature-flag", []string{}, "List of feature flags to enable e.g. \"full-text-search,prometheus\"")
 
 	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
 

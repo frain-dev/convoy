@@ -439,11 +439,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 	c.EnableFeatureFlag = fflag
-	noFflag, err := cmd.Flags().GetStringSlice("disable-feature-flag")
-	if err != nil {
-		return nil, err
-	}
-	c.DisableFeatureFlag = noFflag
 
 	// tracing
 	tracingProvider, err := cmd.Flags().GetString("tracer-type")

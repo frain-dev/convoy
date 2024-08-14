@@ -286,7 +286,7 @@ type OnPremStorage struct {
 }
 
 type MetricsConfiguration struct {
-	IsEnabled  bool                           `json:"metrics_enabled" envconfig:"CONVOY_METRICS_ENABLED"`
+	IsEnabled  bool                           `json:"enabled" envconfig:"CONVOY_METRICS_ENABLED"`
 	Backend    MetricsBackend                 `json:"metrics_backend" envconfig:"CONVOY_METRICS_BACKEND"`
 	Prometheus PrometheusMetricsConfiguration `json:"prometheus_metrics"`
 }
@@ -356,7 +356,6 @@ type Configuration struct {
 	Pyroscope           PyroscopeConfiguration       `json:"pyroscope"`
 	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	EnableFeatureFlag   []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
-	DisableFeatureFlag  []string                     `json:"disable_feature_flag" envconfig:"CONVOY_DISABLE_FEATURE_FLAG"`
 	RetentionPolicy     RetentionPolicyConfiguration `json:"retention_policy"`
 	Analytics           AnalyticsConfiguration       `json:"analytics"`
 	StoragePolicy       StoragePolicyConfiguration   `json:"storage_policy"`

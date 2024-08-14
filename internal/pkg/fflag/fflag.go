@@ -16,8 +16,8 @@ type (
 )
 
 const (
-	Prometheus      FeatureFlagKey = "prometheus"
-	SearchTokenizer FeatureFlagKey = "search_tokenizer"
+	Prometheus     FeatureFlagKey = "prometheus"
+	FullTextSearch FeatureFlagKey = "full-text-search"
 )
 
 type (
@@ -30,8 +30,8 @@ const (
 )
 
 var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
-	Prometheus:      disabled,
-	SearchTokenizer: enabled,
+	Prometheus:     disabled,
+	FullTextSearch: disabled,
 }
 
 type FFlag struct {
@@ -46,16 +46,8 @@ func NewFFlag(c *config.Configuration) (*FFlag, error) {
 		switch flag {
 		case string(Prometheus):
 			f.Features[Prometheus] = enabled
-		case string(SearchTokenizer):
-			f.Features[SearchTokenizer] = enabled
-		}
-	}
-	for _, flag := range c.DisableFeatureFlag {
-		switch flag {
-		case string(Prometheus):
-			f.Features[Prometheus] = disabled
-		case string(SearchTokenizer):
-			f.Features[SearchTokenizer] = disabled
+		case string(FullTextSearch):
+			f.Features[FullTextSearch] = enabled
 		}
 	}
 	return f, nil
