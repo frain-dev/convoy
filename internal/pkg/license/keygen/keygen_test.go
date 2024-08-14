@@ -14,43 +14,43 @@ import (
 )
 
 func TestKeygenLicenserBoolMethods(t *testing.T) {
-	k := KeygenLicenser{featureList: map[Feature]Properties{UseForwardProxy: {}}}
+	k := Licenser{featureList: map[Feature]Properties{UseForwardProxy: {}}}
 	require.True(t, k.CanUseForwardProxy())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{ExportPrometheusMetrics: {}}}
+	k = Licenser{featureList: map[Feature]Properties{ExportPrometheusMetrics: {}}}
 	require.True(t, k.CanExportPrometheusMetrics())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{AdvancedEndpointMgmt: {}}}
+	k = Licenser{featureList: map[Feature]Properties{AdvancedEndpointMgmt: {}}}
 	require.True(t, k.AdvancedEndpointMgmt())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{AdvancedRetentionPolicy: {}}}
+	k = Licenser{featureList: map[Feature]Properties{AdvancedRetentionPolicy: {}}}
 	require.True(t, k.AdvancedRetentionPolicy())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{AdvancedMsgBroker: {}}}
+	k = Licenser{featureList: map[Feature]Properties{AdvancedMsgBroker: {}}}
 	require.True(t, k.AdvancedMsgBroker())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{AdvancedSubscriptions: {}}}
+	k = Licenser{featureList: map[Feature]Properties{AdvancedSubscriptions: {}}}
 	require.True(t, k.AdvancedSubscriptions())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{Transformations: {}}}
+	k = Licenser{featureList: map[Feature]Properties{Transformations: {}}}
 	require.True(t, k.Transformations())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{HADeployment: {}}}
+	k = Licenser{featureList: map[Feature]Properties{HADeployment: {}}}
 	require.True(t, k.HADeployment())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{WebhookAnalytics: {}}}
+	k = Licenser{featureList: map[Feature]Properties{WebhookAnalytics: {}}}
 	require.True(t, k.WebhookAnalytics())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{MutualTLS: {}}}
+	k = Licenser{featureList: map[Feature]Properties{MutualTLS: {}}}
 	require.True(t, k.MutualTLS())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{AsynqMonitoring: {}}}
+	k = Licenser{featureList: map[Feature]Properties{AsynqMonitoring: {}}}
 	require.True(t, k.AsynqMonitoring())
 
-	k = KeygenLicenser{featureList: map[Feature]Properties{SynchronousWebhooks: {}}}
+	k = Licenser{featureList: map[Feature]Properties{SynchronousWebhooks: {}}}
 	require.True(t, k.SynchronousWebhooks())
 
-	falseLicenser := KeygenLicenser{featureList: map[Feature]Properties{}}
+	falseLicenser := Licenser{featureList: map[Feature]Properties{}}
 
 	require.False(t, falseLicenser.CanUseForwardProxy())
 	require.False(t, falseLicenser.CanExportPrometheusMetrics())
@@ -66,8 +66,8 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	require.False(t, falseLicenser.SynchronousWebhooks())
 }
 
-func provideLicenser(ctrl *gomock.Controller, fl map[Feature]Properties) *KeygenLicenser {
-	return &KeygenLicenser{
+func provideLicenser(ctrl *gomock.Controller, fl map[Feature]Properties) *Licenser {
+	return &Licenser{
 		featureList:   fl,
 		orgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		orgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
@@ -79,7 +79,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 		name        string
 		featureList map[Feature]Properties
 		ctx         context.Context
-		dbFn        func(k *KeygenLicenser)
+		dbFn        func(k *Licenser)
 		want        bool
 		wantErr     bool
 		wantErrMsg  string
@@ -91,7 +91,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 					Limit: 1,
 				},
 			},
-			dbFn: func(k *KeygenLicenser) {
+			dbFn: func(k *Licenser) {
 				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(0), nil)
 			},
@@ -106,7 +106,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 					Limit: 1,
 				},
 			},
-			dbFn: func(k *KeygenLicenser) {
+			dbFn: func(k *Licenser) {
 				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(1), nil)
 			},
@@ -121,7 +121,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 					Limit: -1,
 				},
 			},
-			dbFn: func(k *KeygenLicenser) {
+			dbFn: func(k *Licenser) {
 				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(math.MaxInt64), nil)
 			},
@@ -136,7 +136,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 					Limit: 1,
 				},
 			},
-			dbFn: func(k *KeygenLicenser) {
+			dbFn: func(k *Licenser) {
 				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(0), errors.New("failed"))
 			},
@@ -174,7 +174,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 		name            string
 		featureList     map[Feature]Properties
 		ctx             context.Context
-		dbFn            func(k *KeygenLicenser)
+		dbFn            func(k *Licenser)
 		canCreateMember bool
 		wantErr         bool
 		wantErrMsg      string
@@ -186,7 +186,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 					Limit: 1,
 				},
 			},
-			dbFn: func(k *KeygenLicenser) {
+			dbFn: func(k *Licenser) {
 				orgRepo := k.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				orgRepo.EXPECT().CountOrganisationMembers(gomock.Any()).Return(int64(0), nil)
 			},
@@ -201,7 +201,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 					Limit: 1,
 				},
 			},
-			dbFn: func(k *KeygenLicenser) {
+			dbFn: func(k *Licenser) {
 				orgRepo := k.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				orgRepo.EXPECT().CountOrganisationMembers(gomock.Any()).Return(int64(1), nil)
 			},
@@ -216,7 +216,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 					Limit: -1,
 				},
 			},
-			dbFn: func(k *KeygenLicenser) {
+			dbFn: func(k *Licenser) {
 				orgRepo := k.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				orgRepo.EXPECT().CountOrganisationMembers(gomock.Any()).Return(int64(0), nil)
 			},
@@ -231,7 +231,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 					Limit: 1,
 				},
 			},
-			dbFn: func(k *KeygenLicenser) {
+			dbFn: func(k *Licenser) {
 				orgRepo := k.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				orgRepo.EXPECT().CountOrganisationMembers(gomock.Any()).Return(int64(0), errors.New("failed"))
 			},

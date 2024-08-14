@@ -2,6 +2,7 @@ package keygen
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -18,15 +19,20 @@ import (
 	"github.com/keygen-sh/keygen-go/v3"
 )
 
-type KeygenLicenser struct {
+type Licenser struct {
 	licenseKey         string
 	license            *keygen.License
 	planType           PlanType
 	machineFingerprint string
 	featureList        map[Feature]Properties
+	featureListJSON    []byte
 
 	orgRepo       datastore.OrganisationRepository
 	orgMemberRepo datastore.OrganisationMemberRepository
+}
+
+func (k *Licenser) FeatureListJSON() []byte {
+	return k.featureListJSON
 }
 
 type Config struct {
@@ -41,10 +47,10 @@ func init() {
 	keygen.PublicKey = "a64878b9361988b6943a9a93a0d4dd4056dfbe511da257ed0cf1476be8c0c34e"
 }
 
-func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
+func NewKeygenLicenser(c *Config) (*Licenser, error) {
 	if util.IsStringEmpty(c.LicenseKey) {
 		// no license key provided, allow access to only community features
-		return communityLicenser(c.OrgRepo, c.OrgMemberRepo), nil
+		return communityLicenser(c.OrgRepo, c.OrgMemberRepo)
 	}
 
 	keygen.LicenseKey = c.LicenseKey
@@ -78,7 +84,12 @@ func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
 		return nil, fmt.Errorf("license plan type is not a string")
 	}
 
-	return &KeygenLicenser{
+	featureListJSON, err := json.Marshal(featureList)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Licenser{
 		machineFingerprint: fingerprint,
 		licenseKey:         c.LicenseKey,
 		license:            l,
@@ -86,10 +97,11 @@ func NewKeygenLicenser(c *Config) (*KeygenLicenser, error) {
 		orgMemberRepo:      c.OrgMemberRepo,
 		planType:           PlanType(pt),
 		featureList:        featureList,
+		featureListJSON:    featureListJSON,
 	}, nil
 }
 
-func (k *KeygenLicenser) Activate() error {
+func (k *Licenser) Activate() error {
 	if util.IsStringEmpty(k.licenseKey) {
 		return nil
 	}
@@ -168,7 +180,7 @@ func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Propert
 	return featureList, err
 }
 
-func (k *KeygenLicenser) CanCreateOrg(ctx context.Context) (bool, error) {
+func (k *Licenser) CanCreateOrg(ctx context.Context) (bool, error) {
 	c, err := k.orgRepo.CountOrganisations(ctx)
 	if err != nil {
 		return false, err
@@ -187,7 +199,7 @@ func (k *KeygenLicenser) CanCreateOrg(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (k *KeygenLicenser) CanCreateOrgMember(ctx context.Context) (bool, error) {
+func (k *Licenser) CanCreateOrgMember(ctx context.Context) (bool, error) {
 	c, err := k.orgMemberRepo.CountOrganisationMembers(ctx)
 	if err != nil {
 		return false, err
@@ -206,62 +218,62 @@ func (k *KeygenLicenser) CanCreateOrgMember(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (k *KeygenLicenser) CanUseForwardProxy() bool {
+func (k *Licenser) CanUseForwardProxy() bool {
 	_, ok := k.featureList[UseForwardProxy]
 	return ok
 }
 
-func (k *KeygenLicenser) CanExportPrometheusMetrics() bool {
+func (k *Licenser) CanExportPrometheusMetrics() bool {
 	_, ok := k.featureList[ExportPrometheusMetrics]
 	return ok
 }
 
-func (k *KeygenLicenser) AdvancedEndpointMgmt() bool {
+func (k *Licenser) AdvancedEndpointMgmt() bool {
 	_, ok := k.featureList[AdvancedEndpointMgmt]
 	return ok
 }
 
-func (k *KeygenLicenser) AdvancedRetentionPolicy() bool {
+func (k *Licenser) AdvancedRetentionPolicy() bool {
 	_, ok := k.featureList[AdvancedRetentionPolicy]
 	return ok
 }
 
-func (k *KeygenLicenser) AdvancedMsgBroker() bool {
+func (k *Licenser) AdvancedMsgBroker() bool {
 	_, ok := k.featureList[AdvancedMsgBroker]
 	return ok
 }
 
-func (k *KeygenLicenser) AdvancedSubscriptions() bool {
+func (k *Licenser) AdvancedSubscriptions() bool {
 	_, ok := k.featureList[AdvancedSubscriptions]
 	return ok
 }
 
-func (k *KeygenLicenser) Transformations() bool {
+func (k *Licenser) Transformations() bool {
 	_, ok := k.featureList[Transformations]
 	return ok
 }
 
-func (k *KeygenLicenser) HADeployment() bool {
+func (k *Licenser) HADeployment() bool {
 	_, ok := k.featureList[HADeployment]
 	return ok
 }
 
-func (k *KeygenLicenser) WebhookAnalytics() bool {
+func (k *Licenser) WebhookAnalytics() bool {
 	_, ok := k.featureList[WebhookAnalytics]
 	return ok
 }
 
-func (k *KeygenLicenser) MutualTLS() bool {
+func (k *Licenser) MutualTLS() bool {
 	_, ok := k.featureList[MutualTLS]
 	return ok
 }
 
-func (k *KeygenLicenser) AsynqMonitoring() bool {
+func (k *Licenser) AsynqMonitoring() bool {
 	_, ok := k.featureList[AsynqMonitoring]
 	return ok
 }
 
-func (k *KeygenLicenser) SynchronousWebhooks() bool {
+func (k *Licenser) SynchronousWebhooks() bool {
 	_, ok := k.featureList[SynchronousWebhooks]
 	return ok
 }

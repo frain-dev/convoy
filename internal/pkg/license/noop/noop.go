@@ -2,7 +2,13 @@ package noop
 
 import "context"
 
+// Noop License is for testing only
+
 type Licenser struct{}
+
+func (l Licenser) FeatureListJSON() []byte {
+	return []byte{}
+}
 
 func NewLicenser() *Licenser {
 	return &Licenser{}

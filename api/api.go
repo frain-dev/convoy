@@ -543,6 +543,8 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		uiRouter.Use(middleware.JsonResponse)
 		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
 
+		uiRouter.Get("/license_features", handler.GetLicenseFeatures)
+
 		// TODO(subomi): added these back for the tests to pass.
 		// What should we do in the future?
 		uiRouter.Route("/auth", func(authRouter chi.Router) {

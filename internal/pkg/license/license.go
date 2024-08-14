@@ -26,10 +26,12 @@ type Licenser interface {
 	HADeployment() bool
 	MutualTLS() bool
 	SynchronousWebhooks() bool
+
+	FeatureListJSON() []byte
 }
 
 var (
-	_ Licenser = &keygen.KeygenLicenser{}
+	_ Licenser = &keygen.Licenser{}
 	_ Licenser = &noop.Licenser{}
 )
 
