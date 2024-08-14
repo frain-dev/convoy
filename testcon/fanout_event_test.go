@@ -1,5 +1,5 @@
-//go:build integration
-// +build integration
+//go:build docker_testcon
+// +build docker_testcon
 
 package testcon
 
@@ -11,61 +11,63 @@ import (
 	"sync/atomic"
 )
 
-func (i *IntegrationTestSuite) Test_FanOutEvent_Success_AllSubscriptions() {
+func (d *DockerE2EIntegrationTestSuite) Test_FanOutEvent_Success_AllSubscriptions() {
 	ctx := context.Background()
-	t := i.T()
+	t := d.T()
+	ownerId := d.DefaultOrg.OwnerID + "_2"
 
 	var ports = []int{9911, 9912, 9913}
 
-	c, done := i.initAndStartServers(ports, 3*2*2) // 3 endpoints, 2 events each, 2 fan-out operations
+	c, done := d.initAndStartServers(ports, 3*2)
 
-	endpoints := createEndpoints(t, ctx, c, ports, i.DefaultOrg.OwnerID)
+	endpoints := createEndpoints(t, ctx, c, ports, ownerId)
 
 	traceIds := make([]string, 0)
 	for _, endpoint := range endpoints {
 		createMatchingSubscriptions(t, ctx, c, endpoint.UID, []string{"*"})
-
-		traceId, secondTraceId := "event-fan-out-all-0-"+ulid.Make().String(), "event-fan-out-all-1-"+ulid.Make().String()
-
-		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "any.event", traceId, i.DefaultOrg.OwnerID))
-		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "any.other.event", secondTraceId, i.DefaultOrg.OwnerID))
-
-		traceIds = append(traceIds, traceId, secondTraceId)
 	}
+
+	traceId, secondTraceId := "event-fan-out-all-0-"+ulid.Make().String(), "event-fan-out-all-1-"+ulid.Make().String()
+
+	require.NoError(t, sendEvent(ctx, c, "fan-out", "", "any.event", traceId, ownerId))
+	require.NoError(t, sendEvent(ctx, c, "fan-out", "", "any.other.event", secondTraceId, ownerId))
+
+	traceIds = append(traceIds, traceId, secondTraceId)
 
 	assertEventCameThrough(t, done, endpoints, traceIds, []string{})
 }
 
-func (i *IntegrationTestSuite) Test_FanOutEvent_Success_MustMatchSubscription() {
+func (d *DockerE2EIntegrationTestSuite) Test_FanOutEvent_Success_MustMatchSubscription() {
 	ctx := context.Background()
-	t := i.T()
+	t := d.T()
+	ownerID := d.DefaultOrg.OwnerID + "_3"
 
 	var ports = []int{9914, 9915, 9916}
 
-	c, done := i.initAndStartServers(ports, 3*1) // 3 endpoints, 1 event each
+	c, done := d.initAndStartServers(ports, 3*1) // 3 endpoints, 1 event each
 
-	endpoints := createEndpoints(t, ctx, c, ports, i.DefaultOrg.OwnerID)
+	endpoints := createEndpoints(t, ctx, c, ports, ownerID)
 
 	traceIds := make([]string, 0)
 	negativeTraceIds := make([]string, 0)
 	for _, endpoint := range endpoints {
 		createMatchingSubscriptions(t, ctx, c, endpoint.UID, []string{"invoice.fan-out.created"})
-
-		traceId, secondTraceId := "event-fan-out-some-0-"+ulid.Make().String(), "event-fan-out-some-1-"+ulid.Make().String()
-
-		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "mismatched.event.dont.fan.out", traceId, i.DefaultOrg.OwnerID))
-		require.NoError(t, sendEvent(ctx, c, "fan-out", endpoint.UID, "invoice.fan-out.created", secondTraceId, i.DefaultOrg.OwnerID))
-
-		traceIds = append(traceIds, secondTraceId)
-		negativeTraceIds = append(negativeTraceIds, traceId)
 	}
+
+	traceId, secondTraceId := "event-fan-out-some-0-"+ulid.Make().String(), "event-fan-out-some-1-"+ulid.Make().String()
+
+	require.NoError(t, sendEvent(ctx, c, "fan-out", "", "mismatched.event.dont.fan.out", traceId, ownerID))
+	require.NoError(t, sendEvent(ctx, c, "fan-out", "", "invoice.fan-out.created", secondTraceId, ownerID))
+
+	traceIds = append(traceIds, secondTraceId)
+	negativeTraceIds = append(negativeTraceIds, traceId)
 
 	assertEventCameThrough(t, done, endpoints, traceIds, negativeTraceIds)
 }
 
-func (i *IntegrationTestSuite) initAndStartServers(ports []int, eventCount int64) (*convoy.Client, chan bool) {
+func (d *DockerE2EIntegrationTestSuite) initAndStartServers(ports []int, eventCount int64) (*convoy.Client, chan bool) {
 	baseURL := "http://localhost:5015/api/v1"
-	c := convoy.New(baseURL, i.APIKey, i.DefaultProject.UID)
+	c := convoy.New(baseURL, d.APIKey, d.DefaultProject.UID)
 
 	done := make(chan bool, 1)
 
