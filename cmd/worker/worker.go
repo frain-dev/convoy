@@ -16,6 +16,8 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
@@ -241,6 +243,9 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
 		return err
 	}
+
+	breaker := circuit_breaker.NewCircuitBreakerManager(rd.Client(), a.DB.GetDB(), clock.NewRealClock())
+	go breaker.Run(ctx)
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
