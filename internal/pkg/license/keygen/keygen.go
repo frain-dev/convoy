@@ -42,9 +42,9 @@ type Config struct {
 }
 
 func init() {
-	keygen.Account = "cb3ba418-a9a0-4aa1-8c20-a844a06eeac9"
-	keygen.Product = "c1374f6f-cdca-4a96-8d37-12a0ab8da241"
-	keygen.PublicKey = "a64878b9361988b6943a9a93a0d4dd4056dfbe511da257ed0cf1476be8c0c34e"
+	keygen.Account = "8200bc0f-f64f-4a38-a9be-d2b16c8f0deb"
+	keygen.Product = "08d95b4d-4301-42f9-95af-9713e1b41a3a"
+	keygen.PublicKey = "14549f18dd23e4644aae6b6fd787e4df5f018bce0c7ae2edd29df83309ea76c2"
 }
 
 func NewKeygenLicenser(c *Config) (*Licenser, error) {
