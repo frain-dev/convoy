@@ -238,6 +238,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		uiRouter.Use(middleware.JsonResponse)
 		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
 
+		uiRouter.Get("/license_features", handler.GetLicenseFeatures)
+
 		uiRouter.Post("/users/forgot-password", handler.ForgotPassword)
 		uiRouter.Post("/users/reset-password", handler.ResetPassword)
 		uiRouter.Post("/users/verify_email", handler.VerifyEmail)
@@ -542,8 +544,6 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
 		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
-
-		uiRouter.Get("/license_features", handler.GetLicenseFeatures)
 
 		// TODO(subomi): added these back for the tests to pass.
 		// What should we do in the future?
