@@ -8,5 +8,5 @@ import (
 )
 
 func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {
-	_ = render.Render(w, r, util.NewServerResponse("Login successful", h.A.Licenser.FeatureListJSON(), http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Retrieved license features successfully", h.A.Licenser.FeatureListJSON(), http.StatusOK))
 }
