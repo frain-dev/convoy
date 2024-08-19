@@ -34,7 +34,7 @@ func NewDispatcher(httpProxy string, licenser license.Licenser, enforceSecure bo
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 
-	if licenser.CanUseForwardProxy() {
+	if licenser.UseForwardProxy() {
 		proxyUrl, isValid, err := d.setProxy(httpProxy)
 		if err != nil {
 			return nil, err

@@ -58,7 +58,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 		return nil
 	}
 
-	ok, err := pis.Licenser.CanCreateOrgMember(ctx)
+	ok, err := pis.Licenser.CreateOrgMember(ctx)
 	if err != nil {
 		return &ServiceError{ErrMsg: err.Error()}
 	}

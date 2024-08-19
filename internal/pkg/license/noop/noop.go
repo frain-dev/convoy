@@ -19,15 +19,15 @@ func NewLicenser() *Licenser {
 	return &Licenser{}
 }
 
-func (l Licenser) CanCreateOrg(ctx context.Context) (bool, error) {
+func (l Licenser) CreateOrg(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (l Licenser) CanCreateOrgMember(ctx context.Context) (bool, error) {
+func (l Licenser) CreateOrgMember(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (l Licenser) CanUseForwardProxy() bool {
+func (l Licenser) UseForwardProxy() bool {
 	return true
 }
 

@@ -63,7 +63,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				o.EXPECT().FetchProjectByID(gomock.Any(), "project-id-1").Times(1).Return(project, nil)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 		},
 		{
@@ -102,7 +102,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 		},
 		{
@@ -167,7 +167,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 
 				m.EXPECT().
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -263,7 +263,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -351,7 +351,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -439,7 +439,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -529,7 +529,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -619,7 +619,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(false)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(false)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -706,7 +706,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -798,7 +798,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -891,7 +891,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
-				licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()

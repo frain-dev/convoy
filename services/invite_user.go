@@ -32,7 +32,7 @@ type InviteUserService struct {
 }
 
 func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationInvite, error) {
-	ok, err := iu.Licenser.CanCreateOrgMember(ctx)
+	ok, err := iu.Licenser.CreateOrgMember(ctx)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}

@@ -912,7 +912,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
 			licenser := mocks.NewMockLicenser(ctrl)
 
-			licenser.EXPECT().CanUseForwardProxy().Times(1).Return(true)
+			licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {

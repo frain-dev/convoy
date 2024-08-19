@@ -15,7 +15,7 @@ import (
 
 func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k := Licenser{featureList: map[Feature]Properties{UseForwardProxy: {}}}
-	require.True(t, k.CanUseForwardProxy())
+	require.True(t, k.UseForwardProxy())
 
 	k = Licenser{featureList: map[Feature]Properties{ExportPrometheusMetrics: {}}}
 	require.True(t, k.CanExportPrometheusMetrics())
@@ -52,7 +52,7 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 
 	falseLicenser := Licenser{featureList: map[Feature]Properties{}}
 
-	require.False(t, falseLicenser.CanUseForwardProxy())
+	require.False(t, falseLicenser.UseForwardProxy())
 	require.False(t, falseLicenser.CanExportPrometheusMetrics())
 	require.False(t, falseLicenser.AdvancedEndpointMgmt())
 	require.False(t, falseLicenser.AdvancedRetentionPolicy())
@@ -155,7 +155,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 				tt.dbFn(k)
 			}
 
-			got, err := k.CanCreateOrg(tt.ctx)
+			got, err := k.CreateOrg(tt.ctx)
 			require.Equal(t, tt.want, got)
 
 			if tt.wantErr {
@@ -250,7 +250,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 				tt.dbFn(k)
 			}
 
-			got, err := k.CanCreateOrgMember(tt.ctx)
+			got, err := k.CreateOrgMember(tt.ctx)
 			require.Equal(t, tt.canCreateMember, got)
 
 			if tt.wantErr {

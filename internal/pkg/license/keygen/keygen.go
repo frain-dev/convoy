@@ -182,7 +182,7 @@ func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Propert
 	return featureList, err
 }
 
-func (k *Licenser) CanCreateOrg(ctx context.Context) (bool, error) {
+func (k *Licenser) CreateOrg(ctx context.Context) (bool, error) {
 	c, err := k.orgRepo.CountOrganisations(ctx)
 	if err != nil {
 		return false, err
@@ -201,7 +201,7 @@ func (k *Licenser) CanCreateOrg(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (k *Licenser) CanCreateOrgMember(ctx context.Context) (bool, error) {
+func (k *Licenser) CreateOrgMember(ctx context.Context) (bool, error) {
 	c, err := k.orgMemberRepo.CountOrganisationMembers(ctx)
 	if err != nil {
 		return false, err
@@ -220,7 +220,7 @@ func (k *Licenser) CanCreateOrgMember(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (k *Licenser) CanUseForwardProxy() bool {
+func (k *Licenser) UseForwardProxy() bool {
 	_, ok := k.featureList[UseForwardProxy]
 	return ok
 }

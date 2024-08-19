@@ -89,8 +89,8 @@ func TestRegisterUserService_Run(t *testing.T) {
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 		},
 		{
@@ -126,7 +126,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(false, nil)
 			},
 		},
 
@@ -163,8 +163,8 @@ func TestRegisterUserService_Run(t *testing.T) {
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(false, nil)
 			},
 		},
 		{
@@ -223,8 +223,8 @@ func TestRegisterUserService_Run(t *testing.T) {
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 		},
 		{

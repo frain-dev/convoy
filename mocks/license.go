@@ -11,6 +11,7 @@ package mocks
 
 import (
 	context "context"
+	json "encoding/json"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -109,36 +110,6 @@ func (mr *MockLicenserMockRecorder) AsynqMonitoring() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsynqMonitoring", reflect.TypeOf((*MockLicenser)(nil).AsynqMonitoring))
 }
 
-// CanCreateOrg mocks base method.
-func (m *MockLicenser) CanCreateOrg(ctx context.Context) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanCreateOrg", ctx)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CanCreateOrg indicates an expected call of CanCreateOrg.
-func (mr *MockLicenserMockRecorder) CanCreateOrg(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanCreateOrg", reflect.TypeOf((*MockLicenser)(nil).CanCreateOrg), ctx)
-}
-
-// CanCreateOrgMember mocks base method.
-func (m *MockLicenser) CanCreateOrgMember(ctx context.Context) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanCreateOrgMember", ctx)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CanCreateOrgMember indicates an expected call of CanCreateOrgMember.
-func (mr *MockLicenserMockRecorder) CanCreateOrgMember(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanCreateOrgMember", reflect.TypeOf((*MockLicenser)(nil).CanCreateOrgMember), ctx)
-}
-
 // CanExportPrometheusMetrics mocks base method.
 func (m *MockLicenser) CanExportPrometheusMetrics() bool {
 	m.ctrl.T.Helper()
@@ -153,25 +124,41 @@ func (mr *MockLicenserMockRecorder) CanExportPrometheusMetrics() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanExportPrometheusMetrics", reflect.TypeOf((*MockLicenser)(nil).CanExportPrometheusMetrics))
 }
 
-// CanUseForwardProxy mocks base method.
-func (m *MockLicenser) CanUseForwardProxy() bool {
+// CreateOrg mocks base method.
+func (m *MockLicenser) CreateOrg(ctx context.Context) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanUseForwardProxy")
+	ret := m.ctrl.Call(m, "CreateOrg", ctx)
 	ret0, _ := ret[0].(bool)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// CanUseForwardProxy indicates an expected call of CanUseForwardProxy.
-func (mr *MockLicenserMockRecorder) CanUseForwardProxy() *gomock.Call {
+// CreateOrg indicates an expected call of CreateOrg.
+func (mr *MockLicenserMockRecorder) CreateOrg(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanUseForwardProxy", reflect.TypeOf((*MockLicenser)(nil).CanUseForwardProxy))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrg", reflect.TypeOf((*MockLicenser)(nil).CreateOrg), ctx)
+}
+
+// CreateOrgMember mocks base method.
+func (m *MockLicenser) CreateOrgMember(ctx context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrgMember", ctx)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrgMember indicates an expected call of CreateOrgMember.
+func (mr *MockLicenserMockRecorder) CreateOrgMember(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrgMember", reflect.TypeOf((*MockLicenser)(nil).CreateOrgMember), ctx)
 }
 
 // FeatureListJSON mocks base method.
-func (m *MockLicenser) FeatureListJSON() []byte {
+func (m *MockLicenser) FeatureListJSON() json.RawMessage {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FeatureListJSON")
-	ret0, _ := ret[0].([]byte)
+	ret0, _ := ret[0].(json.RawMessage)
 	return ret0
 }
 
@@ -235,6 +222,20 @@ func (m *MockLicenser) Transformations() bool {
 func (mr *MockLicenserMockRecorder) Transformations() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Transformations", reflect.TypeOf((*MockLicenser)(nil).Transformations))
+}
+
+// UseForwardProxy mocks base method.
+func (m *MockLicenser) UseForwardProxy() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UseForwardProxy")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// UseForwardProxy indicates an expected call of UseForwardProxy.
+func (mr *MockLicenserMockRecorder) UseForwardProxy() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UseForwardProxy", reflect.TypeOf((*MockLicenser)(nil).UseForwardProxy))
 }
 
 // WebhookAnalytics mocks base method.

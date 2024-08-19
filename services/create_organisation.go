@@ -30,7 +30,7 @@ type CreateOrganisationService struct {
 var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
 
 func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organisation, error) {
-	ok, err := co.Licenser.CanCreateOrg(ctx)
+	ok, err := co.Licenser.CreateOrg(ctx)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -39,7 +39,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 		return nil, &ServiceError{ErrMsg: ErrOrgLimit.Error(), Err: ErrOrgLimit}
 	}
 
-	ok, err = co.Licenser.CanCreateOrgMember(ctx)
+	ok, err = co.Licenser.CreateOrgMember(ctx)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}

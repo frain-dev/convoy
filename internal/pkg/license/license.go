@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/frain-dev/convoy/internal/pkg/license/noop"
-
 	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
 )
 
 // Licenser interface provides methods to determine whether the specified license can utilise certain features in convoy.
 type Licenser interface {
-	CanCreateOrg(ctx context.Context) (bool, error)
-	CanCreateOrgMember(ctx context.Context) (bool, error)
-	CanUseForwardProxy() bool
+	CreateOrg(ctx context.Context) (bool, error)
+	CreateOrgMember(ctx context.Context) (bool, error)
+	UseForwardProxy() bool
 	CanExportPrometheusMetrics() bool
 	AdvancedEndpointMgmt() bool
 	AdvancedSubscriptions() bool
@@ -31,10 +29,7 @@ type Licenser interface {
 	FeatureListJSON() json.RawMessage
 }
 
-var (
-	_ Licenser = &keygen.Licenser{}
-	_ Licenser = &noop.Licenser{}
-)
+var _ Licenser = &keygen.Licenser{}
 
 type Config struct {
 	KeyGen keygen.Config

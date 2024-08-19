@@ -56,8 +56,8 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr: false,
 		},
@@ -70,8 +70,8 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "organisation name is required",
@@ -85,8 +85,8 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 
 				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).
@@ -104,7 +104,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(false, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: ErrOrgLimit.Error(),
@@ -118,8 +118,8 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CanCreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CanCreateOrgMember(gomock.Any()).Times(1).Return(false, nil)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(false, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: ErrOrgMemberLimit.Error(),

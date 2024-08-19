@@ -321,7 +321,7 @@ func TestNewDispatcher(t *testing.T) {
 			},
 			mockFn: func(licenser license.Licenser) {
 				l := licenser.(*mocks.MockLicenser)
-				l.EXPECT().CanUseForwardProxy().Return(true)
+				l.EXPECT().UseForwardProxy().Return(true)
 			},
 			wantProxy:  true,
 			wantErr:    false,
@@ -335,7 +335,7 @@ func TestNewDispatcher(t *testing.T) {
 			},
 			mockFn: func(licenser license.Licenser) {
 				l := licenser.(*mocks.MockLicenser)
-				l.EXPECT().CanUseForwardProxy().Return(false)
+				l.EXPECT().UseForwardProxy().Return(false)
 			},
 			wantProxy:  false,
 			wantErr:    false,
