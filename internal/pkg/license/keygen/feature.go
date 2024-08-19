@@ -6,20 +6,20 @@ type (
 )
 
 const (
-	CreateOrg               Feature = "CREATE_ORG"
-	CreateOrgMember         Feature = "CREATE_ORG_MEMBER"
-	UseForwardProxy         Feature = "USE_FORWARD_PROXY"
-	ExportPrometheusMetrics Feature = "EXPORT_PROMETHEUS_METRICS"
-	AdvancedEndpointMgmt    Feature = "ADVANCED_ENDPOINT_MANAGEMENT"
-	AdvancedRetentionPolicy Feature = "ADVANCED_RETENTION_POLICY"
-	AdvancedMsgBroker       Feature = "ADVANCED_MESSAGE_BROKER"
-	AdvancedSubscriptions   Feature = "ADVANCED_SUBSCRIPTIONS"
-	Transformations         Feature = "TRANSFORMATIONS"
-	HADeployment            Feature = "HA_DEPLOYMENT"
-	WebhookAnalytics        Feature = "WEBHOOK_ANALYTICS"
-	MutualTLS               Feature = "MUTUAL_TLS"
-	AsynqMonitoring         Feature = "ASYNQ_MONITORING"
-	SynchronousWebhooks     Feature = "SYNCHRONOUS_WEBHOOKS"
+	CreateOrg                Feature = "CREATE_ORG"
+	CreateOrgMember          Feature = "CREATE_ORG_MEMBER"
+	UseForwardProxy          Feature = "USE_FORWARD_PROXY"
+	ExportPrometheusMetrics  Feature = "EXPORT_PROMETHEUS_METRICS"
+	AdvancedEndpointMgmt     Feature = "ADVANCED_ENDPOINT_MANAGEMENT"
+	AdvancedWebhookArchiving Feature = "ADVANCED_WEBHOOK_ARCHIVING"
+	AdvancedMsgBroker        Feature = "ADVANCED_MESSAGE_BROKER"
+	AdvancedSubscriptions    Feature = "ADVANCED_SUBSCRIPTIONS"
+	WebhookTransformations   Feature = "WEBHOOK_TRANSFORMATIONS"
+	HADeployment             Feature = "HA_DEPLOYMENT"
+	WebhookAnalytics         Feature = "WEBHOOK_ANALYTICS"
+	MutualTLS                Feature = "MUTUAL_TLS"
+	AsynqMonitoring          Feature = "ASYNQ_MONITORING"
+	SynchronousWebhooks      Feature = "SYNCHRONOUS_WEBHOOKS"
 )
 
 const (

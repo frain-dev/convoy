@@ -236,7 +236,7 @@ func (k *Licenser) AdvancedEndpointMgmt() bool {
 }
 
 func (k *Licenser) AdvancedRetentionPolicy() bool {
-	_, ok := k.featureList[AdvancedRetentionPolicy]
+	_, ok := k.featureList[AdvancedWebhookArchiving]
 	return ok
 }
 
@@ -251,7 +251,7 @@ func (k *Licenser) AdvancedSubscriptions() bool {
 }
 
 func (k *Licenser) Transformations() bool {
-	_, ok := k.featureList[Transformations]
+	_, ok := k.featureList[WebhookTransformations]
 	return ok
 }
 

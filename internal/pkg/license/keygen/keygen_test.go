@@ -23,7 +23,7 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k = Licenser{featureList: map[Feature]Properties{AdvancedEndpointMgmt: {}}}
 	require.True(t, k.AdvancedEndpointMgmt())
 
-	k = Licenser{featureList: map[Feature]Properties{AdvancedRetentionPolicy: {}}}
+	k = Licenser{featureList: map[Feature]Properties{AdvancedWebhookArchiving: {}}}
 	require.True(t, k.AdvancedRetentionPolicy())
 
 	k = Licenser{featureList: map[Feature]Properties{AdvancedMsgBroker: {}}}
@@ -32,7 +32,7 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k = Licenser{featureList: map[Feature]Properties{AdvancedSubscriptions: {}}}
 	require.True(t, k.AdvancedSubscriptions())
 
-	k = Licenser{featureList: map[Feature]Properties{Transformations: {}}}
+	k = Licenser{featureList: map[Feature]Properties{WebhookTransformations: {}}}
 	require.True(t, k.Transformations())
 
 	k = Licenser{featureList: map[Feature]Properties{HADeployment: {}}}
