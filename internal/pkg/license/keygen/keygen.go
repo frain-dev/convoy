@@ -122,7 +122,7 @@ func (k *Licenser) Activate() error {
 
 	go func() {
 		// Listen for interrupt and deactivate the machine, if the instance crashes unexpectedly the
-		// heartbeat monitor hrlps to tell keygen that this machin should be deactivated
+		// heartbeat monitor helps to tell keygen that this machine should be deactivated
 		// See the Check-out/check-in licenses section on
 		// https://keygen.sh/docs/choosing-a-licensing-model/floating-licenses/
 		quit := make(chan os.Signal, 1)
@@ -148,11 +148,6 @@ func allowKeygenError(err error) bool {
 	return false
 }
 
-var (
-	ErrNoFeatureList  = errors.New("license has no feature list")
-	ErrUnexpectedType = errors.New("license feature list has unexpected type")
-)
-
 func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Properties, error) {
 	entitlements, err := l.Entitlements(ctx)
 	if err != nil {
@@ -165,16 +160,23 @@ func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Propert
 
 	featureList := map[Feature]Properties{}
 	for _, entitlement := range entitlements {
-		p := Properties{}
+		featureList[Feature(entitlement.Code)] = Properties{}
+	}
 
-		if entitlement.Metadata != nil {
-			err = mapstructure.Decode(entitlement.Metadata, &p)
-			if err != nil {
-				return nil, fmt.Errorf("failed to decode license entitlement metadata: %v", err)
-			}
+	meta := LicenseMetadata{}
+	if l.Metadata != nil {
+		err = mapstructure.Decode(l.Metadata, &meta)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode license metadata: %v", err)
 		}
+	}
 
-		featureList[Feature(entitlement.Code)] = p
+	if meta.OrgLimit != 0 {
+		featureList[CreateOrg] = Properties{Limit: meta.OrgLimit}
+	}
+
+	if meta.UserLimit != 0 {
+		featureList[CreateOrgMember] = Properties{Limit: meta.UserLimit}
 	}
 
 	return featureList, err

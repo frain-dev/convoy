@@ -28,16 +28,13 @@ const (
 	EnterprisePlan PlanType = "enterprise"
 )
 
-func (p PlanType) IsValid() bool {
-	switch p {
-	case BusinessPlan, EnterprisePlan:
-		return true
-	}
-	return false
-}
-
 // Properties will hold characteristics for features like organisation
 // number limit, but it can also be empty, because certain feature don't need them
 type Properties struct {
 	Limit int64 `mapstructure:"limit"`
+}
+
+type LicenseMetadata struct {
+	UserLimit int64
+	OrgLimit  int64
 }
