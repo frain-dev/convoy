@@ -1,12 +1,15 @@
 package noop
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 // Noop License is for testing only
 
 type Licenser struct{}
 
-func (l Licenser) FeatureListJSON() []byte {
+func (l Licenser) FeatureListJSON() json.RawMessage {
 	return []byte{}
 }
 

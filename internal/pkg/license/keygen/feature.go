@@ -31,10 +31,10 @@ const (
 // Properties will hold characteristics for features like organisation
 // number limit, but it can also be empty, because certain feature don't need them
 type Properties struct {
-	Limit int64 `mapstructure:"limit"`
+	Limit int64 `mapstructure:"limit" json:"limit"`
 }
 
 type LicenseMetadata struct {
-	UserLimit int64
-	OrgLimit  int64
+	UserLimit int64 `mapstructure:"userLimit"`
+	OrgLimit  int64 `mapstructure:"orgLimit"`
 }

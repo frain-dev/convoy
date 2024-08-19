@@ -2,6 +2,7 @@ package license
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/frain-dev/convoy/internal/pkg/license/noop"
 
@@ -27,7 +28,7 @@ type Licenser interface {
 	MutualTLS() bool
 	SynchronousWebhooks() bool
 
-	FeatureListJSON() []byte
+	FeatureListJSON() json.RawMessage
 }
 
 var (

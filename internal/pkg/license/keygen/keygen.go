@@ -31,7 +31,7 @@ type Licenser struct {
 	orgMemberRepo datastore.OrganisationMemberRepository
 }
 
-func (k *Licenser) FeatureListJSON() []byte {
+func (k *Licenser) FeatureListJSON() json.RawMessage {
 	return k.featureListJSON
 }
 
