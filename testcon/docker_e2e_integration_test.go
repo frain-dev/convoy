@@ -36,7 +36,7 @@ func (d *DockerE2EIntegrationTestSuite) SetupSuite() {
 	t.Cleanup(cancel)
 
 	// ignore ryuk error
-	_ = compose.
+	err = compose.
 		WithEnv(map[string]string{
 			"CONVOY_LICENSE_KEY": os.Getenv("TEST_LICENSE_KEY"),
 		}).
@@ -44,6 +44,7 @@ func (d *DockerE2EIntegrationTestSuite) SetupSuite() {
 		WaitForService("redis_server", wait.NewLogStrategy("Ready to accept connections").WithStartupTimeout(10*time.Second)).
 		WaitForService("migrate", wait.NewLogStrategy("migration up succeeded").WithStartupTimeout(60*time.Second)).
 		Up(ctx, tc.Wait(true), tc.WithRecreate(api.RecreateNever))
+
 	if err != nil && !strings.Contains(err.Error(), "Ryuk") {
 		require.NoError(t, err)
 	}
@@ -52,11 +53,9 @@ func (d *DockerE2EIntegrationTestSuite) SetupSuite() {
 }
 
 func (d *DockerE2EIntegrationTestSuite) SetupTest() {
-
 }
 
 func (d *DockerE2EIntegrationTestSuite) TearDownTest() {
-
 }
 
 func TestDockerE2EIntegrationTestSuite(t *testing.T) {

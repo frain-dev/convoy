@@ -238,7 +238,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		uiRouter.Use(middleware.JsonResponse)
 		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
 
-		uiRouter.Get("/license_features", handler.GetLicenseFeatures)
+		uiRouter.Get("/license/features", handler.GetLicenseFeatures)
 
 		uiRouter.Post("/users/forgot-password", handler.ForgotPassword)
 		uiRouter.Post("/users/reset-password", handler.ResetPassword)
@@ -677,6 +677,7 @@ var guestRoutes = []string{
 	"/users/verify_email",
 	"/organisations/process_invite",
 	"/ui/configuration/is_signup_enabled",
+	"/ui/license/feature",
 }
 
 func shouldAuthRoute(r *http.Request) bool {
