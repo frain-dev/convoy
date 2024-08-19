@@ -39,7 +39,17 @@ func TestNewCircuitBreaker(t *testing.T) {
 
 	testClock := clock.NewSimulatedClock(time.Now())
 
-	b := NewCircuitBreakerManager(re.Client(), db.GetDB(), testClock)
+	c := CircuitBreakerConfig{
+		SampleTime:                  2,
+		ErrorTimeout:                30,
+		FailureThreshold:            10,
+		FailureCount:                1,
+		SuccessThreshold:            1,
+		ObservabilityWindow:         5,
+		NotificationThresholds:      []int{10},
+		ConsecutiveFailureThreshold: 10,
+	}
+	b := NewCircuitBreakerManager(re.Client(), db.GetDB(), testClock, c)
 
 	endpointId := "endpoint-1"
 	pollResults := [][]DBPollResult{
@@ -61,7 +71,7 @@ func TestNewCircuitBreaker(t *testing.T) {
 			DBPollResult{
 				EndpointID: endpointId,
 				Failures:   0,
-				Successes:  0,
+				Successes:  1,
 			},
 		},
 		{
@@ -77,12 +87,13 @@ func TestNewCircuitBreaker(t *testing.T) {
 		innerErr := b.sampleEventsAndUpdateState(ctx, pollResults[i])
 		require.NoError(t, innerErr)
 
-		breakers, innerErr := b.loadCircuitBreakerStateFromRedis(ctx)
-		require.NoError(t, innerErr)
-
-		require.Equal(t, len(breakers), 1)
-		t.Log(breakers)
-
 		testClock.AdvanceTime(time.Minute)
+	}
+
+	breakers, innerErr := b.loadCircuitBreakerStateFromRedis(ctx)
+	require.NoError(t, innerErr)
+
+	for i := 0; i < len(breakers); i++ {
+		require.Equal(t, breakers[i].State, StateClosed)
 	}
 }

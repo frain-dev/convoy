@@ -21,6 +21,50 @@ var (
 	ErrOpenState = errors.New("circuit breaker is open")
 )
 
+// CircuitBreakerConfig is config which all the circuit breakers that manager manages will use
+//
+//	{
+//		"sample_time": 5,
+//		"duration": 5,
+//		"error_timeout": 50,
+//		"error_threshold": 70,
+//		"failure_count": 10,
+//		"success_threshold": 10,
+//		"consecutive_failure_threshold": 10,
+//		"notification_thresholds": [30, 65]
+//	}
+type CircuitBreakerConfig struct {
+	// SampleTime is the time interval (in seconds) at which the data source
+	// is polled to determine the number successful and failed requests
+	SampleTime int `json:"sample_time"`
+
+	// ErrorTimeout is the time (in seconds) after which a circuit breaker goes
+	// into the half-open state from the open state
+	ErrorTimeout int `json:"error_timeout"`
+
+	// FailureThreshold is the % of failed requests in the observability window
+	// after which the breaker will go into the open state
+	FailureThreshold float64 `json:"failure_threshold"`
+
+	// FailureCount total number of failed requests in the observability window
+	FailureCount int `json:"failure_count"`
+
+	// SuccessThreshold is the % of successful requests in the observability window
+	// after which a circuit breaker in the half-open state will go into the closed state
+	SuccessThreshold int `json:"success_threshold"`
+
+	// ObservabilityWindow is how far back in time (in seconds) the data source is
+	// polled when determining the number successful and failed requests
+	ObservabilityWindow int `json:"observability_window"`
+
+	// NotificationThresholds These are the error counts after which we will send out notifications.
+	NotificationThresholds []int `json:"notification_thresholds"`
+
+	// ConsecutiveFailureThreshold determines when we ultimately disable the endpoint.
+	// E.g., after 10 consecutive transitions from half-open → open we should disable it.
+	ConsecutiveFailureThreshold int `json:"consecutive_failure_threshold"`
+}
+
 // State is a type that represents a state of CircuitBreaker.
 type State int
 
@@ -56,15 +100,18 @@ func (s State) String() string {
 	}
 }
 
+// CircuitBreaker represents a circuit breaker
+// todo(raymond): implement methods to check the state and find out if an action can be performed.
 type CircuitBreaker struct {
 	State                State     `json:"state"`
-	Requests             float64   `json:"requests"`
+	Requests             int       `json:"requests"`
 	EndpointID           string    `json:"endpoint_id"`
-	TotalFailures        float64   `json:"total_failures"`
-	TotalSuccesses       float64   `json:"total_successes"`
 	WillResetAt          time.Time `json:"will_reset_at"`
-	ConsecutiveFailures  float64   `json:"consecutive_failures"`
-	ConsecutiveSuccesses float64   `json:"consecutive_successes"`
+	TotalFailures        int       `json:"total_failures"`
+	TotalSuccesses       int       `json:"total_successes"`
+	ConsecutiveFailures  int       `json:"consecutive_failures"`
+	ConsecutiveSuccesses int       `json:"consecutive_successes"`
+	FailureRate          float64   `json:"failure_rate"`
 }
 
 func (b *CircuitBreaker) String() (s string, err error) {
@@ -89,42 +136,35 @@ func (b *CircuitBreaker) toHalfOpen() {
 func (b *CircuitBreaker) resetCircuitBreaker() {
 	b.State = StateClosed
 	b.ConsecutiveFailures = 0
+	b.ConsecutiveSuccesses++
 }
 
 type DBPollResult struct {
-	EndpointID string  `json:"endpoint_id" db:"endpoint_id"`
-	Failures   float64 `json:"failures" db:"failures"`
-	Successes  float64 `json:"successes" db:"successes"`
-	FailRate   float64 `json:"fail_rate"`
-}
-
-func (pr *DBPollResult) CalculateFailRate() {
-	pr.FailRate = 1 + (pr.Failures / (pr.Successes + pr.Failures))
+	EndpointID string `json:"endpoint_id" db:"endpoint_id"`
+	Failures   int    `json:"failures" db:"failures"`
+	Successes  int    `json:"successes" db:"successes"`
 }
 
 type CircuitBreakerManager struct {
 	breakers []CircuitBreaker
+	config   CircuitBreakerConfig
 	clock    clock.Clock
 	redis    *redis.Client
 	db       *sqlx.DB
 }
 
-func NewCircuitBreakerManager(client redis.UniversalClient, db *sqlx.DB, clock clock.Clock) *CircuitBreakerManager {
-	// todo(raymond): define and load breaker config
+func NewCircuitBreakerManager(client redis.UniversalClient, db *sqlx.DB, clock clock.Clock, config CircuitBreakerConfig) *CircuitBreakerManager {
 	r := &CircuitBreakerManager{
-		db:    db,
-		clock: clock,
-		redis: client.(*redis.Client),
+		db:     db,
+		clock:  clock,
+		config: config,
+		redis:  client.(*redis.Client),
 	}
 
 	return r
 }
 
 func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context, dbPollResults []DBPollResult) error {
-	for i := range dbPollResults {
-		dbPollResults[i].FailRate = dbPollResults[i].Failures / (dbPollResults[i].Successes + dbPollResults[i].Failures)
-	}
-
 	var keys []string
 	for i := range dbPollResults {
 		key := fmt.Sprintf("%s:%s", prefix, dbPollResults[i].EndpointID)
@@ -141,9 +181,8 @@ func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context,
 	for i := range res {
 		if res[i] == nil {
 			c := CircuitBreaker{
-				State:       StateClosed,
-				EndpointID:  dbPollResults[i].EndpointID,
-				WillResetAt: cb.clock.Now().Add(time.Second * 30),
+				State:      StateClosed,
+				EndpointID: dbPollResults[i].EndpointID,
 			}
 			circuitBreakers = append(circuitBreakers, c)
 			continue
@@ -167,27 +206,23 @@ func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context,
 	circuitBreakerMap := make(map[string]CircuitBreaker, len(resultsMap))
 
 	for _, breaker := range circuitBreakers {
-		// todo(raymond): these should be part of the config
-		// 10% of total failed requests in the observability window
-		threshold := 0.1
-		// total number of failed requests in the observability window
-		failureCount := 1.0
-
 		result := resultsMap[breaker.EndpointID]
-		fmt.Printf("result: %+v\n", result)
-
-		// Apply the logic to decide whether to trip the breaker
-		if result.FailRate > threshold || result.Failures >= failureCount {
-			breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Second * 30))
-		} else if breaker.State == StateHalfOpen && result.Successes > 0 {
-			breaker.resetCircuitBreaker()
-		} else if breaker.State == StateOpen && cb.clock.Now().After(breaker.WillResetAt) {
-			breaker.toHalfOpen()
-		}
 
 		breaker.Requests = result.Successes + result.Failures
 		breaker.TotalFailures = result.Failures
 		breaker.TotalSuccesses = result.Successes
+		breaker.FailureRate = float64(breaker.TotalFailures) / float64(breaker.TotalSuccesses+breaker.TotalFailures)
+
+		// todo(raymond): move this to a different place that runs in a goroutine
+		if breaker.State == StateOpen && cb.clock.Now().After(breaker.WillResetAt) {
+			breaker.toHalfOpen()
+		}
+
+		if breaker.State == StateHalfOpen && breaker.TotalSuccesses >= cb.config.SuccessThreshold {
+			breaker.resetCircuitBreaker()
+		} else if breaker.State == StateClosed && (breaker.FailureRate >= cb.config.FailureThreshold || breaker.TotalFailures >= cb.config.FailureCount) {
+			breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.ErrorTimeout) * time.Second))
+		}
 
 		circuitBreakerMap[breaker.EndpointID] = breaker
 	}
@@ -274,10 +309,9 @@ func (cb *CircuitBreakerManager) loadCircuitBreakerStateFromRedis(ctx context.Co
 }
 
 func (cb *CircuitBreakerManager) Run(ctx context.Context) {
-	lookBackDuration := 5
 	for {
 		// Get the failure and success counts from the last X minutes
-		dbPollResults, err := cb.getFailureAndSuccessCounts(ctx, lookBackDuration)
+		dbPollResults, err := cb.getFailureAndSuccessCounts(ctx, cb.config.ObservabilityWindow)
 		if err != nil {
 			log.WithError(err).Error("poll db failed")
 		}
@@ -291,6 +325,6 @@ func (cb *CircuitBreakerManager) Run(ctx context.Context) {
 		if err != nil {
 			log.WithError(err).Error("Failed to sample events and update state")
 		}
-		time.Sleep(30 * time.Second)
+		time.Sleep(time.Duration(cb.config.SampleTime) * time.Second)
 	}
 }
