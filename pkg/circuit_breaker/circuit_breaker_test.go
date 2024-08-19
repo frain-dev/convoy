@@ -52,30 +52,30 @@ func TestNewCircuitBreaker(t *testing.T) {
 	b := NewCircuitBreakerManager(re.Client(), db.GetDB(), testClock, c)
 
 	endpointId := "endpoint-1"
-	pollResults := [][]DBPollResult{
+	pollResults := [][]PollResult{
 		{
-			DBPollResult{
+			PollResult{
 				EndpointID: endpointId,
 				Failures:   1,
 				Successes:  0,
 			},
 		},
 		{
-			DBPollResult{
+			PollResult{
 				EndpointID: endpointId,
 				Failures:   1,
 				Successes:  0,
 			},
 		},
 		{
-			DBPollResult{
+			PollResult{
 				EndpointID: endpointId,
 				Failures:   0,
 				Successes:  1,
 			},
 		},
 		{
-			DBPollResult{
+			PollResult{
 				EndpointID: endpointId,
 				Failures:   0,
 				Successes:  1,

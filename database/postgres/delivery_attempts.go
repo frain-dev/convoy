@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/jmoiron/sqlx"
 	"io"
 	"time"
@@ -128,6 +129,33 @@ func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Contex
 	}
 
 	return nil
+}
+
+func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration int) (results []circuit_breaker.PollResult, err error) {
+	query := `
+		SELECT
+            endpoint_id,
+            COUNT(CASE WHEN status = false THEN 1 END) AS failures,
+            COUNT(CASE WHEN status = true THEN 1 END) AS successes
+        FROM convoy.delivery_attempts
+        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1) group by endpoint_id;
+	`
+
+	rows, err := d.db.QueryxContext(ctx, query, lookBackDuration)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var rowValue circuit_breaker.PollResult
+		if rowScanErr := rows.StructScan(&rowValue); rowScanErr != nil {
+			return nil, rowScanErr
+		}
+		results = append(results, rowValue)
+	}
+
+	return results, nil
 }
 
 func (d *deliveryAttemptRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {

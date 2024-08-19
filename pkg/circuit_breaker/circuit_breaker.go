@@ -21,18 +21,7 @@ var (
 	ErrOpenState = errors.New("circuit breaker is open")
 )
 
-// CircuitBreakerConfig is config which all the circuit breakers that manager manages will use
-//
-//	{
-//		"sample_time": 5,
-//		"duration": 5,
-//		"error_timeout": 50,
-//		"error_threshold": 70,
-//		"failure_count": 10,
-//		"success_threshold": 10,
-//		"consecutive_failure_threshold": 10,
-//		"notification_thresholds": [30, 65]
-//	}
+// CircuitBreakerConfig is the configuration that all the circuit breakers will use
 type CircuitBreakerConfig struct {
 	// SampleTime is the time interval (in seconds) at which the data source
 	// is polled to determine the number successful and failed requests
@@ -53,7 +42,7 @@ type CircuitBreakerConfig struct {
 	// after which a circuit breaker in the half-open state will go into the closed state
 	SuccessThreshold int `json:"success_threshold"`
 
-	// ObservabilityWindow is how far back in time (in seconds) the data source is
+	// ObservabilityWindow is how far back in time (in minutes) the data source is
 	// polled when determining the number successful and failed requests
 	ObservabilityWindow int `json:"observability_window"`
 
@@ -139,7 +128,7 @@ func (b *CircuitBreaker) resetCircuitBreaker() {
 	b.ConsecutiveSuccesses++
 }
 
-type DBPollResult struct {
+type PollResult struct {
 	EndpointID string `json:"endpoint_id" db:"endpoint_id"`
 	Failures   int    `json:"failures" db:"failures"`
 	Successes  int    `json:"successes" db:"successes"`
@@ -164,12 +153,12 @@ func NewCircuitBreakerManager(client redis.UniversalClient, db *sqlx.DB, clock c
 	return r
 }
 
-func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context, dbPollResults []DBPollResult) error {
+func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context, pollResults []PollResult) error {
 	var keys []string
-	for i := range dbPollResults {
-		key := fmt.Sprintf("%s:%s", prefix, dbPollResults[i].EndpointID)
+	for i := range pollResults {
+		key := fmt.Sprintf("%s:%s", prefix, pollResults[i].EndpointID)
 		keys = append(keys, key)
-		dbPollResults[i].EndpointID = key
+		pollResults[i].EndpointID = key
 	}
 
 	res, err := cb.redis.MGet(context.Background(), keys...).Result()
@@ -182,7 +171,7 @@ func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context,
 		if res[i] == nil {
 			c := CircuitBreaker{
 				State:      StateClosed,
-				EndpointID: dbPollResults[i].EndpointID,
+				EndpointID: pollResults[i].EndpointID,
 			}
 			circuitBreakers = append(circuitBreakers, c)
 			continue
@@ -198,8 +187,8 @@ func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context,
 		circuitBreakers = append(circuitBreakers, c)
 	}
 
-	resultsMap := make(map[string]DBPollResult)
-	for _, result := range dbPollResults {
+	resultsMap := make(map[string]PollResult)
+	for _, result := range pollResults {
 		resultsMap[result.EndpointID] = result
 	}
 
@@ -233,34 +222,6 @@ func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context,
 	}
 
 	return nil
-}
-
-// todo(raymond): move this to the delivery attempts repo
-func (cb *CircuitBreakerManager) getFailureAndSuccessCounts(ctx context.Context, lookBackDuration int) (results []DBPollResult, err error) {
-	query := `
-		SELECT
-            endpoint_id,
-            COUNT(CASE WHEN status = false THEN 1 END) AS failures,
-            COUNT(CASE WHEN status = true THEN 1 END) AS successes
-        FROM convoy.delivery_attempts
-        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1) group by endpoint_id;
-	`
-
-	rows, err := cb.db.QueryxContext(ctx, query, lookBackDuration)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var rowValue DBPollResult
-		if rowScanErr := rows.StructScan(&rowValue); rowScanErr != nil {
-			return nil, rowScanErr
-		}
-		results = append(results, rowValue)
-	}
-
-	return results, nil
 }
 
 func (cb *CircuitBreakerManager) updateCircuitBreakersInRedis(ctx context.Context, breakers map[string]CircuitBreaker) error {
@@ -308,20 +269,23 @@ func (cb *CircuitBreakerManager) loadCircuitBreakerStateFromRedis(ctx context.Co
 	return circuitBreakers, nil
 }
 
-func (cb *CircuitBreakerManager) Run(ctx context.Context) {
+func (cb *CircuitBreakerManager) Run(ctx context.Context, poolFunc func(ctx context.Context, lookBackDuration int) (results []PollResult, err error)) {
 	for {
 		// Get the failure and success counts from the last X minutes
-		dbPollResults, err := cb.getFailureAndSuccessCounts(ctx, cb.config.ObservabilityWindow)
+		pollResults, err := poolFunc(ctx, cb.config.ObservabilityWindow)
 		if err != nil {
 			log.WithError(err).Error("poll db failed")
-		}
-
-		if len(dbPollResults) == 0 {
-			// there's nothing to update
+			time.Sleep(time.Duration(cb.config.SampleTime) * time.Second)
 			continue
 		}
 
-		err = cb.sampleEventsAndUpdateState(ctx, dbPollResults)
+		if len(pollResults) == 0 {
+			// there's nothing to update
+			time.Sleep(time.Duration(cb.config.SampleTime) * time.Second)
+			continue
+		}
+
+		err = cb.sampleEventsAndUpdateState(ctx, pollResults)
 		if err != nil {
 			log.WithError(err).Error("Failed to sample events and update state")
 		}

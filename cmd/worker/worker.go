@@ -244,8 +244,19 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	breaker := circuit_breaker.NewCircuitBreakerManager(rd.Client(), a.DB.GetDB(), clock.NewRealClock())
-	go breaker.Run(ctx)
+	// todo(raymond): fetch this config from the instance config
+	circuitBreakerConfig := circuit_breaker.CircuitBreakerConfig{
+		SampleTime:                  30,
+		ErrorTimeout:                30,
+		FailureThreshold:            10,
+		FailureCount:                10,
+		SuccessThreshold:            5,
+		ObservabilityWindow:         5,
+		NotificationThresholds:      []int{5, 10},
+		ConsecutiveFailureThreshold: 10,
+	}
+	breaker := circuit_breaker.NewCircuitBreakerManager(rd.Client(), a.DB.GetDB(), clock.NewRealClock(), circuitBreakerConfig)
+	go breaker.Run(ctx, attemptRepo.GetFailureAndSuccessCounts)
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,

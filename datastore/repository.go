@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"context"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"io"
 	"time"
 
@@ -203,4 +204,5 @@ type DeliveryAttemptsRepository interface {
 	FindDeliveryAttemptById(context.Context, string, string) (*DeliveryAttempt, error)
 	FindDeliveryAttempts(context.Context, string) ([]DeliveryAttempt, error)
 	DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *DeliveryAttemptsFilter, hardDelete bool) error
+	GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration int) (results []circuit_breaker.PollResult, err error)
 }
