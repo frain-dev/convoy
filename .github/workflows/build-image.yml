@@ -7,11 +7,15 @@ on:
         description: "Manual workflow name"
         required: true
   push:
+    tags:
+      # Release binary for every tag.
+      - v*
 
 env:
   DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
   DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
   IMAGE_NAME: getconvoy/convoy
+  RELEASE_VERSION: ${{ github.ref_name }}
 
 jobs:
   build_ui:
@@ -49,6 +53,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
@@ -85,7 +90,7 @@ jobs:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ env.DOCKER_HUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push default image
         uses: docker/build-push-action@v2
         with:
           context: .
@@ -93,6 +98,19 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ matrix.arch }}
+            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}
+            ${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            ARCH=${{ matrix.arch }}
+
+      - name: Build and push arch specific images
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-${{ matrix.arch }}
           build-args: |
             ARCH=${{ matrix.arch }}
