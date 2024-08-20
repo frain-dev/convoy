@@ -19,6 +19,7 @@ import { EndpointsService } from '../../pages/project/endpoints/endpoints.servic
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -88,7 +89,8 @@ export class CreateEndpointComponent implements OnInit {
 		private route: ActivatedRoute,
 		public privateService: PrivateService,
 		private router: Router,
-		private endpointService: EndpointsService
+		private endpointService: EndpointsService,
+		public licenseService: LicensesService
 	) {}
 
 	async ngOnInit() {
@@ -100,6 +102,8 @@ export class CreateEndpointComponent implements OnInit {
 				{ uid: 'auth', name: 'Auth', show: false },
 				{ uid: 'signature', name: 'Signature Format', show: false }
 			);
+
+		if (this.licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')) this.configurations.filter(item => item.uid === 'http_timeout');
 
 		if (!this.endpointUid) this.endpointUid = this.route.snapshot.params.id;
 		if ((this.isUpdateAction || this.editMode) && this.type !== 'subscription') this.getEndpointDetails();

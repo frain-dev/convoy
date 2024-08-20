@@ -9,6 +9,7 @@ import { CreateSourceComponent } from '../create-source/create-source.component'
 import { CreateSubscriptionService } from './create-subscription.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -66,10 +67,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 
-	configurations = [
-		{ uid: 'filter_config', name: 'Event Filter', show: false },
-		{ uid: 'retry_config', name: 'Retry Logic', show: false }
-	];
+	configurations = [{ uid: 'retry_config', name: 'Retry Logic', show: false }];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
 	showFilterDialog = false;
@@ -78,7 +76,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	subscription!: SUBSCRIPTION;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -100,11 +98,13 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		this.isLoadingForm = false;
 
+		if (this.licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')) this.configurations.push({ uid: 'filter_config', name: 'Event Filter', show: false });
+
 		// add required validation on source input for incoming projects
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
-			this.configurations.push({ uid: 'tranform_config', name: 'Transform', show: false });
+			if (this.licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')) this.configurations.push({ uid: 'tranform_config', name: 'Transform', show: false });
 		} else {
 			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
