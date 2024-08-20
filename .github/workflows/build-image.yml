@@ -85,13 +85,13 @@ jobs:
           build-args: |
             ARCH=${{ matrix.arch }}
 
-      - name: Build and push slim image
-        if: matrix.arch == 'slim'
-        uses: docker/build-push-action@v2
-        with:
-          file: ${{ matrix.dockerfile }}
-          platforms: ${{ matrix.platform }}
-          push: true
-          tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.slug.outputs.sha8 }}-slim
-            ${{ env.IMAGE_NAME }}:latest-slim
+#      - name: Build and push slim image
+#        if: matrix.arch == 'slim'
+#        uses: docker/build-push-action@v2
+#        with:
+#          file: ${{ matrix.dockerfile }}
+#          platforms: ${{ matrix.platform }}
+#          push: true
+#          tags: |
+#            ${{ env.IMAGE_NAME }}:${{ steps.slug.outputs.sha8 }}-slim
+#            ${{ env.IMAGE_NAME }}:latest-slim
