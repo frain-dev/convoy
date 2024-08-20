@@ -72,7 +72,7 @@ func TestCountProjects(t *testing.T) {
 	for i := 0; i < count; i++ {
 		project := &datastore.Project{
 			UID:            ulid.Make().String(),
-			Name:           "lolll",
+			Name:           ulid.Make().String(),
 			OrganisationID: org.UID,
 			Type:           datastore.IncomingProject,
 			Config:         &datastore.DefaultProjectConfig,
