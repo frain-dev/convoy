@@ -18,11 +18,12 @@ jobs:
     name: Build UI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Build Artifact
         run: "make ui_install type=ce"
+
       - name: Archive Build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: dist-without-markdown
           path: |
@@ -47,9 +48,9 @@ jobs:
             dockerfile: slim.Dockerfile
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Download Build Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: dist-without-markdown
           path: api/ui/build

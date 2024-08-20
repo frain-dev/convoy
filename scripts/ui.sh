@@ -12,7 +12,7 @@ buildUi() {
     cd ./web/ui/dashboard || exit 1
 
     # Install dependencies
-    npm ci
+    npm i
 
     # Run production build
     if [[ "$build" == "ce" ]]; then
