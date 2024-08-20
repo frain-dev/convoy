@@ -1,13 +1,13 @@
 <div class="flex justify-between items-center mb-28px">
 	<h3 class="font-semibold">Organisation Info</h3>
 
-	<button *ngIf="licenseService.hasLicense('CREATE_ORG')" convoy-button size="sm" [disabled]="isEditingOrganisation || editOrganisationForm.disabled" (click)="updateOrganisation()">Save Changes</button>
+	<button convoy-button size="sm" [disabled]="isEditingOrganisation || editOrganisationForm.disabled" (click)="updateOrganisation()">Save Changes</button>
 </div>
 
 <form [formGroup]="editOrganisationForm">
 	<convoy-input-field>
 		<label for="name" convoy-label required="true">Organisation name</label>
-		<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Organisation name" readonly="licenseService.hasLicense('CREATE_ORG')" />
+		<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Organisation name"/>
 		<convoy-input-error *ngIf="editOrganisationForm.get('name')?.touched && editOrganisationForm.get('name')?.invalid">Please enter a name for your organisation</convoy-input-error>
 	</convoy-input-field>
 
@@ -18,20 +18,18 @@
 	</div>
 </form>
 
-<ng-container *ngIf="licenseService.hasLicense('CREATE_ORG')">
-	<hr class="border-t border-t-neutral-a3 mt-40px mb-40px" />
+<hr class="border-t border-t-neutral-a3 mt-40px mb-40px" />
 
-	<div convoy-card color="error" class="p-26px my-24px">
-		<h2 class="text-error-9 font-semibold mb-20px">Danger zone</h2>
-		<p class="text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
-		<button convoy-button color="error" size="sm" class="mt-32px" [disabled]="editOrganisationForm.disabled" (click)="deleteDialog.showModal()">
-			<svg width="18" height="18" class="mr-2 fill-white-100">
-				<use xlink:href="#delete-icon"></use>
-			</svg>
-			Delete Organisation
-		</button>
-	</div>
-</ng-container>
+<div convoy-card color="error" class="p-26px my-24px">
+	<h2 class="text-error-9 font-semibold mb-20px">Danger zone</h2>
+	<p class="text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
+	<button convoy-button color="error" size="sm" class="mt-32px" [disabled]="editOrganisationForm.disabled" (click)="deleteDialog.showModal()">
+		<svg width="18" height="18" class="mr-2 fill-white-100">
+			<use xlink:href="#delete-icon"></use>
+		</svg>
+		Delete Organisation
+	</button>
+</div>
 
 <dialog #deleteDialog convoy-dialog position="center" size="sm">
 	<app-delete-modal [isLoading]="isDeletingOrganisation" [deleteText]="'deactivate “' + organisationName + '”'" [deleteButtonText]="'Deactivate'" (closeModal)="deleteDialog.close()" (deleteData)="deleteOrganisation()"></app-delete-modal>

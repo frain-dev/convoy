@@ -20,6 +20,7 @@ import { NotificationComponent } from 'src/app/components/notification/notificat
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -40,7 +41,8 @@ import { LicensesService } from 'src/app/services/licenses/licenses.service';
 		PermissionDirective,
 		NotificationComponent,
 		ConfigButtonComponent,
-		CopyButtonComponent
+		CopyButtonComponent,
+		TagComponent
 	],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
@@ -102,8 +104,6 @@ export class CreateEndpointComponent implements OnInit {
 				{ uid: 'auth', name: 'Auth', show: false },
 				{ uid: 'signature', name: 'Signature Format', show: false }
 			);
-
-		if (this.licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')) this.configurations.filter(item => item.uid === 'http_timeout');
 
 		if (!this.endpointUid) this.endpointUid = this.route.snapshot.params.id;
 		if ((this.isUpdateAction || this.editMode) && this.type !== 'subscription') this.getEndpointDetails();

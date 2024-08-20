@@ -67,7 +67,10 @@ export class CreateSubscriptionComponent implements OnInit {
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 
-	configurations = [{ uid: 'retry_config', name: 'Retry Logic', show: false }];
+	configurations = [
+		{ uid: 'filter_config', name: 'Event Filter', show: false },
+		{ uid: 'retry_config', name: 'Retry Logic', show: false }
+	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
 	showFilterDialog = false;
@@ -76,7 +79,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	subscription!: SUBSCRIPTION;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private licenseService: LicensesService) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -98,13 +101,11 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		this.isLoadingForm = false;
 
-		if (this.licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')) this.configurations.push({ uid: 'filter_config', name: 'Event Filter', show: false });
-
 		// add required validation on source input for incoming projects
 		if (this.projectType === 'incoming') {
 			this.subscriptionForm.get('source_id')?.addValidators(Validators.required);
 			this.subscriptionForm.get('source_id')?.updateValueAndValidity();
-			if (this.licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')) this.configurations.push({ uid: 'tranform_config', name: 'Transform', show: false });
+			this.configurations.push({ uid: 'tranform_config', name: 'Transform', show: false });
 		} else {
 			this.configurations.push({ uid: 'events', name: 'Event Types', show: false });
 		}
