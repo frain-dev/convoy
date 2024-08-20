@@ -35,6 +35,15 @@ type RegisterUserService struct {
 }
 
 func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
+	ok, err := u.Licenser.CreateUser(ctx)
+	if err != nil {
+		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !ok {
+		return nil, nil, &ServiceError{ErrMsg: ErrUserLimit.Error()}
+	}
+
 	config, err := u.ConfigRepo.LoadConfiguration(ctx)
 	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
 		return nil, nil, &ServiceError{ErrMsg: "failed to load configuration", Err: err}
@@ -87,7 +96,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 
 	_, err = co.Run(ctx)
 	if err != nil {
-		if !errors.Is(err, ErrOrgLimit) && !errors.Is(err, ErrOrgMemberLimit) {
+		if !errors.Is(err, ErrOrgLimit) && !errors.Is(err, ErrUserLimit) {
 			return nil, nil, err
 		}
 	}

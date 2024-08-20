@@ -10,9 +10,9 @@ func communityLicenser(orgRepo datastore.OrganisationRepository, orgMemberRepo d
 	l := &Licenser{
 		planType: CommunityPlan,
 		featureList: map[Feature]Properties{
-			CreateOrg:       {Limit: 1},
-			CreateOrgMember: {Limit: 1},
-			CreateProject:   {Limit: 2},
+			CreateOrg:     {Limit: 1},
+			CreateUser:    {Limit: 1},
+			CreateProject: {Limit: 2},
 		},
 		orgRepo:       orgRepo,
 		orgMemberRepo: orgMemberRepo,

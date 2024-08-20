@@ -178,7 +178,7 @@ func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Propert
 	}
 
 	if meta.UserLimit != 0 {
-		featureList[CreateOrgMember] = Properties{Limit: meta.UserLimit}
+		featureList[CreateUser] = Properties{Limit: meta.UserLimit}
 	}
 
 	if meta.ProjectLimit != 0 {
@@ -207,13 +207,13 @@ func (k *Licenser) CreateOrg(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (k *Licenser) CreateOrgMember(ctx context.Context) (bool, error) {
+func (k *Licenser) CreateUser(ctx context.Context) (bool, error) {
 	c, err := k.orgMemberRepo.CountOrganisationMembers(ctx)
 	if err != nil {
 		return false, err
 	}
 
-	p := k.featureList[CreateOrgMember]
+	p := k.featureList[CreateUser]
 
 	if p.Limit == -1 { // no limit
 		return true, nil

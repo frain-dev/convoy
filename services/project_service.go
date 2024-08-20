@@ -39,14 +39,16 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 	}, nil
 }
 
+var ErrProjectLimit = errors.New("your instance has reached it's project limit, upgrade to create more projects")
+
 func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
 	ok, err := ps.Licenser.CreateProject(ctx)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
 	if !ok {
-		return nil, nil, errors.New("your instance has reached it's project limit, upgrade to create more projects")
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, ErrProjectLimit)
 	}
 
 	projectName := newProject.Name

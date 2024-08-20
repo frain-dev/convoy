@@ -30,9 +30,18 @@ type ProcessInviteService struct {
 	NewUser  *models.User
 }
 
-var ErrOrgMemberLimit = errors.New("your instance has reached it's organisation member limit, upgrade to add new organisation members")
+var ErrUserLimit = errors.New("your instance has reached it's user limit, upgrade to add new users")
 
 func (pis *ProcessInviteService) Run(ctx context.Context) error {
+	ok, err := pis.Licenser.CreateUser(ctx)
+	if err != nil {
+		return &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !ok {
+		return &ServiceError{ErrMsg: ErrUserLimit.Error()}
+	}
+
 	iv, err := pis.InviteRepo.FetchOrganisationInviteByToken(ctx, pis.Token)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation member invite by token and email")
@@ -56,15 +65,6 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 			return &ServiceError{ErrMsg: errMsg, Err: err}
 		}
 		return nil
-	}
-
-	ok, err := pis.Licenser.CreateOrgMember(ctx)
-	if err != nil {
-		return &ServiceError{ErrMsg: err.Error()}
-	}
-
-	if !ok {
-		return &ServiceError{ErrMsg: ErrOrgMemberLimit.Error()}
 	}
 
 	user, err := pis.UserRepo.FindUserByEmail(ctx, iv.InviteeEmail)

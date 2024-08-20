@@ -12,9 +12,9 @@ import (
 
 func Test_communityLicenser(t *testing.T) {
 	featureList := map[Feature]Properties{
-		CreateOrg:       {Limit: 1},
-		CreateOrgMember: {Limit: 1},
-		CreateProject:   {Limit: 2},
+		CreateOrg:     {Limit: 1},
+		CreateUser:    {Limit: 1},
+		CreateProject: {Limit: 2},
 	}
 
 	ctrl := gomock.NewController(t)

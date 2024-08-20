@@ -278,7 +278,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 		{
 			name: "should_return_true",
 			featureList: map[Feature]Properties{
-				CreateOrgMember: {
+				CreateUser: {
 					Limit: 1,
 				},
 			},
@@ -293,7 +293,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 		{
 			name: "should_return_false_for_limit_reached",
 			featureList: map[Feature]Properties{
-				CreateOrgMember: {
+				CreateUser: {
 					Limit: 1,
 				},
 			},
@@ -308,7 +308,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 		{
 			name: "should_return_true_for_no_limit",
 			featureList: map[Feature]Properties{
-				CreateOrgMember: {
+				CreateUser: {
 					Limit: -1,
 				},
 			},
@@ -323,7 +323,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 		{
 			name: "should_error_for_failed_to_count_org_members",
 			featureList: map[Feature]Properties{
-				CreateOrgMember: {
+				CreateUser: {
 					Limit: 1,
 				},
 			},
@@ -346,7 +346,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 				tt.dbFn(k)
 			}
 
-			got, err := k.CreateOrgMember(tt.ctx)
+			got, err := k.CreateUser(tt.ctx)
 			require.Equal(t, tt.canCreateMember, got)
 
 			if tt.wantErr {

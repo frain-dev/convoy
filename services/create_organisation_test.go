@@ -57,7 +57,6 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr: false,
 		},
@@ -71,7 +70,6 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "organisation name is required",
@@ -86,7 +84,6 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			dbFn: func(os *CreateOrganisationService) {
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(true, nil)
 
 				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).
@@ -108,21 +105,6 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: ErrOrgLimit.Error(),
-		},
-		{
-			name: "should_fail_to_create_organisation_member_for_license_check",
-			args: args{
-				ctx:    ctx,
-				newOrg: &models.Organisation{Name: "new_org"},
-				user:   &datastore.User{UID: "1234"},
-			},
-			dbFn: func(os *CreateOrganisationService) {
-				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().CreateOrgMember(gomock.Any()).Times(1).Return(false, nil)
-			},
-			wantErr:    true,
-			wantErrMsg: ErrOrgMemberLimit.Error(),
 		},
 	}
 	for _, tt := range tests {

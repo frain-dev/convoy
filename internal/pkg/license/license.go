@@ -10,7 +10,7 @@ import (
 // Licenser interface provides methods to determine whether the specified license can utilise certain features in convoy.
 type Licenser interface {
 	CreateOrg(ctx context.Context) (bool, error)
-	CreateOrgMember(ctx context.Context) (bool, error)
+	CreateUser(ctx context.Context) (bool, error)
 	CreateProject(ctx context.Context) (bool, error)
 	UseForwardProxy() bool
 	CanExportPrometheusMetrics() bool

@@ -23,7 +23,7 @@ func (Licenser) CreateOrg(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (Licenser) CreateOrgMember(ctx context.Context) (bool, error) {
+func (Licenser) CreateUser(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
