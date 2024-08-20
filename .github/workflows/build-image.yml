@@ -73,10 +73,6 @@ jobs:
       - name: Build app to make sure there are zero issues
         run: go build -o convoy ./cmd
 
-      - name: Get short SHA
-        id: slug
-        run: echo "::set-output name=sha8::$(echo ${GITHUB_SHA} | cut -c1-8)"
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -97,7 +93,6 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.slug.outputs.sha8 }}-${{ matrix.arch }}
-            ${{ env.IMAGE_NAME }}:latest-${{ matrix.arch }}
+            ${{ env.IMAGE_NAME }}:${{ matrix.arch }}
           build-args: |
             ARCH=${{ matrix.arch }}
