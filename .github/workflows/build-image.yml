@@ -21,13 +21,13 @@ jobs:
         include:
           - arch: amd64
             platform: linux/amd64
-            dockerfile: Dockerfile
+            dockerfile: release.Dockerfile
           - arch: arm64
             platform: linux/arm64
-            dockerfile: Dockerfile
+            dockerfile: release.Dockerfile
           - arch: slim
             platform: linux/amd64
-            dockerfile: Dockerfile.slim
+            dockerfile: slim.Dockerfile
 
     steps:
       - name: Checkout code
