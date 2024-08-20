@@ -57,6 +57,7 @@ type EventRepository interface {
 type ProjectRepository interface {
 	LoadProjects(context.Context, *ProjectFilter) ([]*Project, error)
 	CreateProject(context.Context, *Project) error
+	CountProjects(ctx context.Context) (int64, error)
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)

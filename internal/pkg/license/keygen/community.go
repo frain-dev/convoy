@@ -6,15 +6,17 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func communityLicenser(orgRepo datastore.OrganisationRepository, orgMemberRepo datastore.OrganisationMemberRepository) (*Licenser, error) {
+func communityLicenser(orgRepo datastore.OrganisationRepository, orgMemberRepo datastore.OrganisationMemberRepository, projectRepo datastore.ProjectRepository) (*Licenser, error) {
 	l := &Licenser{
 		planType: CommunityPlan,
 		featureList: map[Feature]Properties{
 			CreateOrg:       {Limit: 1},
 			CreateOrgMember: {Limit: 1},
+			CreateProject:   {Limit: 2},
 		},
 		orgRepo:       orgRepo,
 		orgMemberRepo: orgMemberRepo,
+		projectRepo:   projectRepo,
 	}
 
 	featureListJSON, err := json.Marshal(l.featureList)

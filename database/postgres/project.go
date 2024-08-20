@@ -210,6 +210,11 @@ const (
     GROUP BY p.id
     ORDER BY events_count DESC;
     `
+
+	countProjects = `
+	SELECT COUNT(*) AS count
+	FROM convoy.projects
+	WHERE deleted_at IS NULL`
 )
 
 type projectRepo struct {
@@ -223,6 +228,16 @@ func NewProjectRepo(db database.Database, ca cache.Cache) datastore.ProjectRepos
 		ca = ncache.NewNoopCache()
 	}
 	return &projectRepo{db: db.GetDB(), hook: db.GetHook(), cache: ca}
+}
+
+func (o *projectRepo) CountProjects(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetContext(ctx, &count, countProjects)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {

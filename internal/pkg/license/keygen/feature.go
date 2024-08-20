@@ -8,6 +8,7 @@ type (
 const (
 	CreateOrg                Feature = "CREATE_ORG"
 	CreateOrgMember          Feature = "CREATE_ORG_MEMBER"
+	CreateProject            Feature = "CREATE_PROJECT"
 	UseForwardProxy          Feature = "USE_FORWARD_PROXY"
 	ExportPrometheusMetrics  Feature = "EXPORT_PROMETHEUS_METRICS"
 	AdvancedEndpointMgmt     Feature = "ADVANCED_ENDPOINT_MANAGEMENT"
@@ -35,6 +36,7 @@ type Properties struct {
 }
 
 type LicenseMetadata struct {
-	UserLimit int64 `mapstructure:"userLimit"`
-	OrgLimit  int64 `mapstructure:"orgLimit"`
+	UserLimit    int64 `mapstructure:"userLimit"`
+	OrgLimit     int64 `mapstructure:"orgLimit"`
+	ProjectLimit int64 `mapstructure:"orgLimit"`
 }

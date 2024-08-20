@@ -71,6 +71,102 @@ func provideLicenser(ctrl *gomock.Controller, fl map[Feature]Properties) *Licens
 		featureList:   fl,
 		orgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		orgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+		projectRepo:   mocks.NewMockProjectRepository(ctrl),
+	}
+}
+
+func TestKeygenLicenser_CreateProject(t *testing.T) {
+	tests := []struct {
+		name        string
+		featureList map[Feature]Properties
+		ctx         context.Context
+		dbFn        func(k *Licenser)
+		want        bool
+		wantErr     bool
+		wantErrMsg  string
+	}{
+		{
+			name: "should_return_true",
+			featureList: map[Feature]Properties{
+				CreateProject: {
+					Limit: 1,
+				},
+			},
+			dbFn: func(k *Licenser) {
+				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(0), nil)
+			},
+			ctx:     context.Background(),
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "should_return_false_for_limit_reached",
+			featureList: map[Feature]Properties{
+				CreateProject: {
+					Limit: 1,
+				},
+			},
+			dbFn: func(k *Licenser) {
+				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(1), nil)
+			},
+			ctx:     context.Background(),
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "should_return_true_for_no_limit",
+			featureList: map[Feature]Properties{
+				CreateProject: {
+					Limit: -1,
+				},
+			},
+			dbFn: func(k *Licenser) {
+				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(math.MaxInt64), nil)
+			},
+			ctx:     context.Background(),
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "should_error_for_failed_to_count_org",
+			featureList: map[Feature]Properties{
+				CreateProject: {
+					Limit: 1,
+				},
+			},
+			dbFn: func(k *Licenser) {
+				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(0), errors.New("failed"))
+			},
+			ctx:        context.Background(),
+			want:       false,
+			wantErr:    true,
+			wantErrMsg: "failed",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			k := provideLicenser(ctrl, tt.featureList)
+
+			if tt.dbFn != nil {
+				tt.dbFn(k)
+			}
+
+			got, err := k.CreateProject(tt.ctx)
+			require.Equal(t, tt.want, got)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Equal(t, tt.wantErrMsg, err.Error())
+				return
+			}
+
+			require.NoError(t, err)
+		})
 	}
 }
 

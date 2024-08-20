@@ -11,7 +11,7 @@ import (
 
 type Licenser struct{}
 
-func (l Licenser) FeatureListJSON() json.RawMessage {
+func (Licenser) FeatureListJSON() json.RawMessage {
 	return []byte{}
 }
 
@@ -19,58 +19,62 @@ func NewLicenser() *Licenser {
 	return &Licenser{}
 }
 
-func (l Licenser) CreateOrg(ctx context.Context) (bool, error) {
+func (Licenser) CreateOrg(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (l Licenser) CreateOrgMember(ctx context.Context) (bool, error) {
+func (Licenser) CreateOrgMember(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (l Licenser) UseForwardProxy() bool {
+func (Licenser) CreateProject(ctx context.Context) (bool, error) {
+	return true, nil
+}
+
+func (Licenser) UseForwardProxy() bool {
 	return true
 }
 
-func (l Licenser) CanExportPrometheusMetrics() bool {
+func (Licenser) CanExportPrometheusMetrics() bool {
 	return true
 }
 
-func (l Licenser) AdvancedEndpointMgmt() bool {
+func (Licenser) AdvancedEndpointMgmt() bool {
 	return true
 }
 
-func (l Licenser) AdvancedSubscriptions() bool {
+func (Licenser) AdvancedSubscriptions() bool {
 	return true
 }
 
-func (l Licenser) Transformations() bool {
+func (Licenser) Transformations() bool {
 	return true
 }
 
-func (l Licenser) AsynqMonitoring() bool {
+func (Licenser) AsynqMonitoring() bool {
 	return true
 }
 
-func (l Licenser) AdvancedRetentionPolicy() bool {
+func (Licenser) AdvancedRetentionPolicy() bool {
 	return true
 }
 
-func (l Licenser) AdvancedMsgBroker() bool {
+func (Licenser) AdvancedMsgBroker() bool {
 	return true
 }
 
-func (l Licenser) WebhookAnalytics() bool {
+func (Licenser) WebhookAnalytics() bool {
 	return true
 }
 
-func (l Licenser) HADeployment() bool {
+func (Licenser) HADeployment() bool {
 	return true
 }
 
-func (l Licenser) MutualTLS() bool {
+func (Licenser) MutualTLS() bool {
 	return true
 }
 
-func (l Licenser) SynchronousWebhooks() bool {
+func (Licenser) SynchronousWebhooks() bool {
 	return true
 }

@@ -154,6 +154,21 @@ func (mr *MockLicenserMockRecorder) CreateOrgMember(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrgMember", reflect.TypeOf((*MockLicenser)(nil).CreateOrgMember), ctx)
 }
 
+// CreateProject mocks base method.
+func (m *MockLicenser) CreateProject(ctx context.Context) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateProject", ctx)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateProject indicates an expected call of CreateProject.
+func (mr *MockLicenserMockRecorder) CreateProject(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProject", reflect.TypeOf((*MockLicenser)(nil).CreateProject), ctx)
+}
+
 // FeatureListJSON mocks base method.
 func (m *MockLicenser) FeatureListJSON() json.RawMessage {
 	m.ctrl.T.Helper()

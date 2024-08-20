@@ -29,6 +29,7 @@ type Licenser struct {
 
 	orgRepo       datastore.OrganisationRepository
 	orgMemberRepo datastore.OrganisationMemberRepository
+	projectRepo   datastore.ProjectRepository
 }
 
 func (k *Licenser) FeatureListJSON() json.RawMessage {
@@ -39,6 +40,7 @@ type Config struct {
 	LicenseKey    string
 	OrgRepo       datastore.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
+	ProjectRepo   datastore.ProjectRepository
 }
 
 func init() {
@@ -50,7 +52,7 @@ func init() {
 func NewKeygenLicenser(c *Config) (*Licenser, error) {
 	if util.IsStringEmpty(c.LicenseKey) {
 		// no license key provided, allow access to only community features
-		return communityLicenser(c.OrgRepo, c.OrgMemberRepo)
+		return communityLicenser(c.OrgRepo, c.OrgMemberRepo, c.ProjectRepo)
 	}
 
 	keygen.LicenseKey = c.LicenseKey
@@ -179,6 +181,10 @@ func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Propert
 		featureList[CreateOrgMember] = Properties{Limit: meta.UserLimit}
 	}
 
+	if meta.ProjectLimit != 0 {
+		featureList[CreateProject] = Properties{Limit: meta.ProjectLimit}
+	}
+
 	return featureList, err
 }
 
@@ -208,6 +214,25 @@ func (k *Licenser) CreateOrgMember(ctx context.Context) (bool, error) {
 	}
 
 	p := k.featureList[CreateOrgMember]
+
+	if p.Limit == -1 { // no limit
+		return true, nil
+	}
+
+	if c >= p.Limit {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (k *Licenser) CreateProject(ctx context.Context) (bool, error) {
+	c, err := k.projectRepo.CountProjects(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	p := k.featureList[CreateProject]
 
 	if p.Limit == -1 { // no limit
 		return true, nil

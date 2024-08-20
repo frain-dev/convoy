@@ -11,6 +11,7 @@ import (
 type Licenser interface {
 	CreateOrg(ctx context.Context) (bool, error)
 	CreateOrgMember(ctx context.Context) (bool, error)
+	CreateProject(ctx context.Context) (bool, error)
 	UseForwardProxy() bool
 	CanExportPrometheusMetrics() bool
 	AdvancedEndpointMgmt() bool
