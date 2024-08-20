@@ -14,8 +14,24 @@ env:
   IMAGE_NAME: getconvoy/convoy
 
 jobs:
+  build_ui:
+    name: Build UI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build Artifact
+        run: "make ui_install type=ce"
+      - name: Archive Build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: dist-without-markdown
+          path: |
+            web/ui/dashboard/dist
+            !web/ui/dashboard/dist/**/*.md
+
   build-and-push:
     runs-on: ubuntu-latest
+    needs: [build_ui]
     strategy:
       matrix:
         include:
