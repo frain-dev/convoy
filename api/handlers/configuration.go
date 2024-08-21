@@ -17,24 +17,24 @@ import (
 )
 
 func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
-	config, err := postgres.NewConfigRepo(h.A.DB).LoadConfiguration(r.Context())
+	configuration, err := postgres.NewConfigRepo(h.A.DB).LoadConfiguration(r.Context())
 	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	configResponse := []*models.ConfigurationResponse{}
-	if config != nil {
-		if config.StoragePolicy.Type == datastore.S3 {
+	var configResponse []*models.ConfigurationResponse
+	if configuration != nil {
+		if configuration.StoragePolicy.Type == datastore.S3 {
 			policy := &datastore.S3Storage{}
-			policy.Bucket = config.StoragePolicy.S3.Bucket
-			policy.Endpoint = config.StoragePolicy.S3.Endpoint
-			policy.Region = config.StoragePolicy.S3.Region
-			config.StoragePolicy.S3 = policy
+			policy.Bucket = configuration.StoragePolicy.S3.Bucket
+			policy.Endpoint = configuration.StoragePolicy.S3.Endpoint
+			policy.Region = configuration.StoragePolicy.S3.Region
+			configuration.StoragePolicy.S3 = policy
 		}
 
 		c := &models.ConfigurationResponse{
-			Configuration: config,
+			Configuration: configuration,
 			ApiVersion:    convoy.GetVersion(),
 		}
 
@@ -61,14 +61,14 @@ func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 		NewConfig:  &newConfig,
 	}
 
-	config, err := cc.Run(r.Context())
+	configuration, err := cc.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	c := &models.ConfigurationResponse{
-		Configuration: config,
+		Configuration: configuration,
 		ApiVersion:    convoy.GetVersion(),
 	}
 
@@ -92,14 +92,14 @@ func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 		Config:     &newConfig,
 	}
 
-	config, err := uc.Run(r.Context())
+	configuration, err := uc.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	c := &models.ConfigurationResponse{
-		Configuration: config,
+		Configuration: configuration,
 		ApiVersion:    convoy.GetVersion(),
 	}
 

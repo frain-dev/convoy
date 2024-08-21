@@ -74,6 +74,16 @@ var DefaultConfiguration = Configuration{
 		Policy:                   "720h",
 		IsRetentionPolicyEnabled: false,
 	},
+	CircuitBreaker: CircuitBreakerConfiguration{
+		SampleRate:                  30,
+		ErrorTimeout:                30,
+		FailureThreshold:            0.1,
+		FailureCount:                10,
+		SuccessThreshold:            5,
+		ObservabilityWindow:         5,
+		NotificationThresholds:      []int{5, 10},
+		ConsecutiveFailureThreshold: 10,
+	},
 	Auth: AuthConfiguration{
 		IsSignupEnabled: true,
 		Native: NativeRealmOptions{
@@ -261,6 +271,17 @@ type RetentionPolicyConfiguration struct {
 	IsRetentionPolicyEnabled bool   `json:"enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
 }
 
+type CircuitBreakerConfiguration struct {
+	SampleRate                  int     `json:"sample_rate" envconfig:"CONVOY_CIRCUIT_BREAKER_SAMPLE_RATE"`
+	FailureCount                int     `json:"failure_count" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_COUNT"`
+	ErrorTimeout                int     `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
+	FailureThreshold            float64 `json:"failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD"`
+	SuccessThreshold            int     `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
+	ObservabilityWindow         int     `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
+	NotificationThresholds      []int   `json:"notification_thresholds" envconfig:"CONVOY_CIRCUIT_BREAKER_NOTIFICATION_THRESHOLDS"`
+	ConsecutiveFailureThreshold int     `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
+}
+
 type AnalyticsConfiguration struct {
 	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
@@ -383,6 +404,7 @@ type Configuration struct {
 	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	FeatureFlag         FlagLevel                    `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
 	RetentionPolicy     RetentionPolicyConfiguration `json:"retention_policy"`
+	CircuitBreaker      CircuitBreakerConfiguration  `json:"circuit_breaker"`
 	Analytics           AnalyticsConfiguration       `json:"analytics"`
 	StoragePolicy       StoragePolicyConfiguration   `json:"storage_policy"`
 	ConsumerPoolSize    int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`

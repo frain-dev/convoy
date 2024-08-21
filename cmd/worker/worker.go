@@ -17,7 +17,6 @@ import (
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
@@ -244,19 +243,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	// todo(raymond): fetch this config from the instance config
-	circuitBreakerConfig := circuit_breaker.CircuitBreakerConfig{
-		SampleTime:                  30,
-		ErrorTimeout:                30,
-		FailureThreshold:            10,
-		FailureCount:                10,
-		SuccessThreshold:            5,
-		ObservabilityWindow:         5,
-		NotificationThresholds:      []int{5, 10},
-		ConsecutiveFailureThreshold: 10,
-	}
-	breaker := circuit_breaker.NewCircuitBreakerManager(rd.Client(), clock.NewRealClock(), circuitBreakerConfig)
-	go breaker.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
+	circuitBreakerManager := circuit_breaker.NewCircuitBreakerManager(rd.Client()).WithConfig(configuration.ToCircuitBreakerConfig())
+	go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,

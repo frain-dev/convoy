@@ -19,9 +19,13 @@ const (
 		storage_policy_type, on_prem_path, s3_prefix,
 		s3_bucket, s3_access_key, s3_secret_key,
 		s3_region, s3_session_token, s3_endpoint,
-		retention_policy_policy, retention_policy_enabled
+		retention_policy_policy, retention_policy_enabled, 
+		cb_sample_rate,cb_error_timeout,
+		cb_failure_threshold,cb_failure_count,
+		cb_success_threshold,cb_observability_window,
+		cb_notification_thresholds,cb_consecutive_failure_threshold
 	  )
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22);
 	`
 
 	fetchConfiguration = `
@@ -40,6 +44,14 @@ const (
 		s3_session_token AS "storage_policy.s3.session_token",
 		s3_endpoint AS "storage_policy.s3.endpoint",
 		s3_prefix AS "storage_policy.s3.prefix",
+		cb_sample_rate AS "breaker_config.sample_rate",
+		cb_error_timeout AS "breaker_config.error_timeout",
+		cb_failure_threshold AS "breaker_config.failure_threshold",
+		cb_failure_count AS "breaker_config.failure_count",
+		cb_success_threshold AS "breaker_config.success_threshold",
+		cb_observability_window AS "breaker_config.observability_window",
+		cb_notification_thresholds::INTEGER[] AS "breaker_config.notification_thresholds",
+		cb_consecutive_failure_threshold AS "breaker_config.consecutive_failure_threshold",
 		created_at,
 		updated_at,
 		deleted_at
@@ -64,6 +76,14 @@ const (
 		s3_prefix = $12,
 		retention_policy_policy = $13,
 		retention_policy_enabled = $14,
+		cb_sample_rate = $15,
+		cb_error_timeout = $16,
+		cb_failure_threshold = $17,
+		cb_failure_count = $18,
+		cb_success_threshold = $19,
+		cb_observability_window = $20,
+		cb_notification_thresholds = $21,
+		cb_consecutive_failure_threshold = $22,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -95,6 +115,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 	}
 
 	rc := config.GetRetentionPolicyConfig()
+	cb := config.GetCircuitBreakerConfig()
 
 	r, err := c.db.ExecContext(ctx, createConfiguration,
 		config.UID,
@@ -111,6 +132,14 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		config.StoragePolicy.S3.Endpoint,
 		rc.Policy,
 		rc.IsRetentionPolicyEnabled,
+		cb.SampleRate,
+		cb.ErrorTimeout,
+		cb.FailureThreshold,
+		cb.FailureCount,
+		cb.SuccessThreshold,
+		cb.ObservabilityWindow,
+		cb.NotificationThresholds,
+		cb.ConsecutiveFailureThreshold,
 	)
 	if err != nil {
 		return err
@@ -159,6 +188,7 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 	}
 
 	rc := cfg.GetRetentionPolicyConfig()
+	cb := cfg.GetCircuitBreakerConfig()
 
 	result, err := c.db.ExecContext(ctx, updateConfiguration,
 		cfg.UID,
@@ -175,6 +205,14 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		cfg.StoragePolicy.S3.Prefix,
 		rc.Policy,
 		rc.IsRetentionPolicyEnabled,
+		cb.SampleRate,
+		cb.ErrorTimeout,
+		cb.FailureThreshold,
+		cb.FailureCount,
+		cb.SuccessThreshold,
+		cb.ObservabilityWindow,
+		cb.NotificationThresholds,
+		cb.ConsecutiveFailureThreshold,
 	)
 	if err != nil {
 		return err

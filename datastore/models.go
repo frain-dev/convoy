@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"math"
 	"net/http"
 	"strings"
@@ -316,6 +317,17 @@ var (
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
 		IsRetentionPolicyEnabled: false,
 		Policy:                   "720h",
+	}
+
+	DefaultCircuitBreakerConfiguration = CircuitBreakerConfig{
+		SampleRate:                  30,
+		ErrorTimeout:                30,
+		FailureThreshold:            0.1,
+		FailureCount:                10,
+		SuccessThreshold:            5,
+		ObservabilityWindow:         5,
+		NotificationThresholds:      pq.Int64Array{5, 10},
+		ConsecutiveFailureThreshold: 10,
 	}
 )
 
@@ -1312,15 +1324,42 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	UID                string                        `json:"uid" db:"id"`
-	IsAnalyticsEnabled bool                          `json:"is_analytics_enabled" db:"is_analytics_enabled"`
-	IsSignupEnabled    bool                          `json:"is_signup_enabled" db:"is_signup_enabled"`
-	StoragePolicy      *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
-	RetentionPolicy    *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	UID                string `json:"uid" db:"id"`
+	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
+
+	StoragePolicy        *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
+	RetentionPolicy      *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	CircuitBreakerConfig *CircuitBreakerConfig         `json:"breaker_config" db:"breaker_config"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (c *Configuration) GetCircuitBreakerConfig() CircuitBreakerConfig {
+	if c.CircuitBreakerConfig != nil {
+		return *c.CircuitBreakerConfig
+	}
+	return CircuitBreakerConfig{}
+}
+
+func (c *Configuration) ToCircuitBreakerConfig() *circuit_breaker.CircuitBreakerConfig {
+	notificationThresholds := make([]int, len(c.CircuitBreakerConfig.NotificationThresholds))
+	for i := range c.CircuitBreakerConfig.NotificationThresholds {
+		notificationThresholds[i] = int(c.CircuitBreakerConfig.NotificationThresholds[i])
+	}
+
+	return &circuit_breaker.CircuitBreakerConfig{
+		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
+		ErrorTimeout:                c.CircuitBreakerConfig.ErrorTimeout,
+		FailureThreshold:            c.CircuitBreakerConfig.FailureThreshold,
+		FailureCount:                c.CircuitBreakerConfig.FailureCount,
+		SuccessThreshold:            c.CircuitBreakerConfig.SuccessThreshold,
+		ObservabilityWindow:         c.CircuitBreakerConfig.ObservabilityWindow,
+		NotificationThresholds:      notificationThresholds,
+		ConsecutiveFailureThreshold: c.CircuitBreakerConfig.ConsecutiveFailureThreshold,
+	}
 }
 
 func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
@@ -1348,6 +1387,17 @@ type S3Storage struct {
 
 type OnPremStorage struct {
 	Path null.String `json:"path" db:"path"`
+}
+
+type CircuitBreakerConfig struct {
+	SampleRate                  int           `json:"sample_rate" db:"sample_rate"`
+	ErrorTimeout                int           `json:"error_timeout" db:"error_timeout"`
+	FailureThreshold            float64       `json:"failure_threshold" db:"failure_threshold"`
+	FailureCount                int           `json:"failure_count" db:"failure_count"`
+	SuccessThreshold            int           `json:"success_threshold" db:"success_threshold"`
+	ObservabilityWindow         int           `json:"observability_window" db:"observability_window"`
+	NotificationThresholds      pq.Int64Array `json:"notification_thresholds" db:"notification_thresholds"`
+	ConsecutiveFailureThreshold int           `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
 type OrganisationMember struct {
