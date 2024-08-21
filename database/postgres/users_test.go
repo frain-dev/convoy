@@ -87,6 +87,37 @@ func Test_CreateUser(t *testing.T) {
 	}
 }
 
+func TestCountUsers(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	userRepository := NewUserRepo(db, nil)
+
+	userRepo := NewUserRepo(db, nil)
+	count := 10
+
+	for i := 0; i < count; i++ {
+		user := generateUser(t)
+
+		require.NoError(t, userRepo.CreateUser(context.Background(), user))
+
+		u := &datastore.User{
+			UID:       ulid.Make().String(),
+			FirstName: "test",
+			LastName:  "test",
+			Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
+		}
+
+		err := userRepository.CreateUser(context.Background(), u)
+		require.NoError(t, err)
+	}
+
+	userCount, err := userRepository.CountUsers(context.Background())
+
+	require.NoError(t, err)
+	require.Equal(t, int64(count), userCount)
+}
+
 func Test_FindUserByEmail(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
