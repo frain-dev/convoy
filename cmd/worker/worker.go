@@ -255,8 +255,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		NotificationThresholds:      []int{5, 10},
 		ConsecutiveFailureThreshold: 10,
 	}
-	breaker := circuit_breaker.NewCircuitBreakerManager(rd.Client(), a.DB.GetDB(), clock.NewRealClock(), circuitBreakerConfig)
-	go breaker.Run(ctx, attemptRepo.GetFailureAndSuccessCounts)
+	breaker := circuit_breaker.NewCircuitBreakerManager(rd.Client(), clock.NewRealClock(), circuitBreakerConfig)
+	go breaker.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,

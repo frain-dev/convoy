@@ -7,7 +7,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/jmoiron/sqlx"
 	"github.com/redis/go-redis/v9"
 	"time"
 )
@@ -17,8 +16,12 @@ const prefix = "breaker"
 var (
 	// ErrTooManyRequests is returned when the CB state is half open and the requests count is over the cb maxRequests
 	ErrTooManyRequests = errors.New("too many requests")
+
 	// ErrOpenState is returned when the CB state is open
 	ErrOpenState = errors.New("circuit breaker is open")
+
+	// ErrCircuitBreakerNotFound is returned when the circuit breaker is not found
+	ErrCircuitBreakerNotFound = errors.New("circuit breaker not found")
 )
 
 // CircuitBreakerConfig is the configuration that all the circuit breakers will use
@@ -92,9 +95,9 @@ func (s State) String() string {
 // CircuitBreaker represents a circuit breaker
 // todo(raymond): implement methods to check the state and find out if an action can be performed.
 type CircuitBreaker struct {
+	Key                  string    `json:"key"`
 	State                State     `json:"state"`
 	Requests             int       `json:"requests"`
-	EndpointID           string    `json:"endpoint_id"`
 	WillResetAt          time.Time `json:"will_reset_at"`
 	TotalFailures        int       `json:"total_failures"`
 	TotalSuccesses       int       `json:"total_successes"`
@@ -129,9 +132,9 @@ func (b *CircuitBreaker) resetCircuitBreaker() {
 }
 
 type PollResult struct {
-	EndpointID string `json:"endpoint_id" db:"endpoint_id"`
-	Failures   int    `json:"failures" db:"failures"`
-	Successes  int    `json:"successes" db:"successes"`
+	Key       string `json:"key" db:"key"`
+	Failures  int    `json:"failures" db:"failures"`
+	Successes int    `json:"successes" db:"successes"`
 }
 
 type CircuitBreakerManager struct {
@@ -139,12 +142,10 @@ type CircuitBreakerManager struct {
 	config   CircuitBreakerConfig
 	clock    clock.Clock
 	redis    *redis.Client
-	db       *sqlx.DB
 }
 
-func NewCircuitBreakerManager(client redis.UniversalClient, db *sqlx.DB, clock clock.Clock, config CircuitBreakerConfig) *CircuitBreakerManager {
+func NewCircuitBreakerManager(client redis.UniversalClient, clock clock.Clock, config CircuitBreakerConfig) *CircuitBreakerManager {
 	r := &CircuitBreakerManager{
-		db:     db,
 		clock:  clock,
 		config: config,
 		redis:  client.(*redis.Client),
@@ -153,12 +154,12 @@ func NewCircuitBreakerManager(client redis.UniversalClient, db *sqlx.DB, clock c
 	return r
 }
 
-func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context, pollResults []PollResult) error {
+func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []PollResult) error {
 	var keys []string
 	for i := range pollResults {
-		key := fmt.Sprintf("%s:%s", prefix, pollResults[i].EndpointID)
+		key := fmt.Sprintf("%s:%s", prefix, pollResults[i].Key)
 		keys = append(keys, key)
-		pollResults[i].EndpointID = key
+		pollResults[i].Key = key
 	}
 
 	res, err := cb.redis.MGet(context.Background(), keys...).Result()
@@ -170,8 +171,8 @@ func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context,
 	for i := range res {
 		if res[i] == nil {
 			c := CircuitBreaker{
-				State:      StateClosed,
-				EndpointID: pollResults[i].EndpointID,
+				State: StateClosed,
+				Key:   pollResults[i].Key,
 			}
 			circuitBreakers = append(circuitBreakers, c)
 			continue
@@ -189,13 +190,13 @@ func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context,
 
 	resultsMap := make(map[string]PollResult)
 	for _, result := range pollResults {
-		resultsMap[result.EndpointID] = result
+		resultsMap[result.Key] = result
 	}
 
 	circuitBreakerMap := make(map[string]CircuitBreaker, len(resultsMap))
 
 	for _, breaker := range circuitBreakers {
-		result := resultsMap[breaker.EndpointID]
+		result := resultsMap[breaker.Key]
 
 		breaker.Requests = result.Successes + result.Failures
 		breaker.TotalFailures = result.Failures
@@ -213,18 +214,18 @@ func (cb *CircuitBreakerManager) sampleEventsAndUpdateState(ctx context.Context,
 			breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.ErrorTimeout) * time.Second))
 		}
 
-		circuitBreakerMap[breaker.EndpointID] = breaker
+		circuitBreakerMap[breaker.Key] = breaker
 	}
 
-	// Update the circuit breaker state in Redis
-	if err = cb.updateCircuitBreakersInRedis(ctx, circuitBreakerMap); err != nil {
-		log.WithError(err).Error("Failed to update state in Redis")
+	if err = cb.updateCircuitBreakers(ctx, circuitBreakerMap); err != nil {
+		log.WithError(err).Error("failed to update state")
+		return err
 	}
 
 	return nil
 }
 
-func (cb *CircuitBreakerManager) updateCircuitBreakersInRedis(ctx context.Context, breakers map[string]CircuitBreaker) error {
+func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, breakers map[string]CircuitBreaker) error {
 	breakerStringsMap := make(map[string]string, len(breakers))
 	for key, breaker := range breakers {
 		val, err := breaker.String()
@@ -243,7 +244,7 @@ func (cb *CircuitBreakerManager) updateCircuitBreakersInRedis(ctx context.Contex
 	return nil
 }
 
-func (cb *CircuitBreakerManager) loadCircuitBreakerStateFromRedis(ctx context.Context) ([]CircuitBreaker, error) {
+func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]CircuitBreaker, error) {
 	keys, err := cb.redis.Keys(ctx, "breaker*").Result()
 	if err != nil {
 		return nil, err
@@ -269,7 +270,28 @@ func (cb *CircuitBreakerManager) loadCircuitBreakerStateFromRedis(ctx context.Co
 	return circuitBreakers, nil
 }
 
-func (cb *CircuitBreakerManager) Run(ctx context.Context, poolFunc func(ctx context.Context, lookBackDuration int) (results []PollResult, err error)) {
+// GetCircuitBreaker is used to get fetch the circuit breaker state before executing a function
+func (cb *CircuitBreakerManager) GetCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
+	breakerKey := fmt.Sprintf("%s:%s", prefix, key)
+
+	res, err := cb.redis.Get(ctx, breakerKey).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, err
+	}
+
+	if err != nil && errors.Is(err, redis.Nil) {
+		return nil, ErrCircuitBreakerNotFound
+	}
+
+	err = msgpack.DecodeMsgPack([]byte(res), &c)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+func (cb *CircuitBreakerManager) Start(ctx context.Context, poolFunc func(ctx context.Context, lookBackDuration int) (results []PollResult, err error)) {
 	for {
 		// Get the failure and success counts from the last X minutes
 		pollResults, err := poolFunc(ctx, cb.config.ObservabilityWindow)
@@ -285,7 +307,7 @@ func (cb *CircuitBreakerManager) Run(ctx context.Context, poolFunc func(ctx cont
 			continue
 		}
 
-		err = cb.sampleEventsAndUpdateState(ctx, pollResults)
+		err = cb.sampleStore(ctx, pollResults)
 		if err != nil {
 			log.WithError(err).Error("Failed to sample events and update state")
 		}

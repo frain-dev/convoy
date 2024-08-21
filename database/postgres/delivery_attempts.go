@@ -134,7 +134,7 @@ func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Contex
 func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration int) (results []circuit_breaker.PollResult, err error) {
 	query := `
 		SELECT
-            endpoint_id,
+            endpoint_id AS key,
             COUNT(CASE WHEN status = false THEN 1 END) AS failures,
             COUNT(CASE WHEN status = true THEN 1 END) AS successes
         FROM convoy.delivery_attempts
