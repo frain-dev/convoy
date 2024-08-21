@@ -21,6 +21,7 @@ const (
 	MutualTLS                Feature = "MUTUAL_TLS"
 	AsynqMonitoring          Feature = "ASYNQ_MONITORING"
 	SynchronousWebhooks      Feature = "SYNCHRONOUS_WEBHOOKS"
+	PortalLinks              Feature = "PORTAL_LINKS"
 )
 
 const (

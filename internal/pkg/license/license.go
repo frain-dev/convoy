@@ -18,6 +18,7 @@ type Licenser interface {
 	AdvancedSubscriptions() bool
 	Transformations() bool
 	AsynqMonitoring() bool
+	PortalLinks() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool

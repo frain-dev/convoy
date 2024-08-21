@@ -50,9 +50,13 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k = Licenser{featureList: map[Feature]Properties{SynchronousWebhooks: {}}}
 	require.True(t, k.SynchronousWebhooks())
 
+	k = Licenser{featureList: map[Feature]Properties{PortalLinks: {}}}
+	require.True(t, k.PortalLinks())
+
 	falseLicenser := Licenser{featureList: map[Feature]Properties{}}
 
 	require.False(t, falseLicenser.UseForwardProxy())
+	require.False(t, falseLicenser.PortalLinks())
 	require.False(t, falseLicenser.CanExportPrometheusMetrics())
 	require.False(t, falseLicenser.AdvancedEndpointMgmt())
 	require.False(t, falseLicenser.AdvancedRetentionPolicy())

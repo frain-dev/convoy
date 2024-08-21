@@ -211,6 +211,20 @@ func (mr *MockLicenserMockRecorder) MutualTLS() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MutualTLS", reflect.TypeOf((*MockLicenser)(nil).MutualTLS))
 }
 
+// PortalLinks mocks base method.
+func (m *MockLicenser) PortalLinks() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PortalLinks")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// PortalLinks indicates an expected call of PortalLinks.
+func (mr *MockLicenserMockRecorder) PortalLinks() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PortalLinks", reflect.TypeOf((*MockLicenser)(nil).PortalLinks))
+}
+
 // SynchronousWebhooks mocks base method.
 func (m *MockLicenser) SynchronousWebhooks() bool {
 	m.ctrl.T.Helper()

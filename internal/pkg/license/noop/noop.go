@@ -78,3 +78,7 @@ func (Licenser) MutualTLS() bool {
 func (Licenser) SynchronousWebhooks() bool {
 	return true
 }
+
+func (Licenser) PortalLinks() bool {
+	return true
+}

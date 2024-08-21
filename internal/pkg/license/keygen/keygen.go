@@ -304,3 +304,8 @@ func (k *Licenser) SynchronousWebhooks() bool {
 	_, ok := k.featureList[SynchronousWebhooks]
 	return ok
 }
+
+func (k *Licenser) PortalLinks() bool {
+	_, ok := k.featureList[PortalLinks]
+	return ok
+}
