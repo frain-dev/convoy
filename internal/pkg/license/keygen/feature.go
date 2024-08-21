@@ -39,5 +39,5 @@ type Properties struct {
 type LicenseMetadata struct {
 	UserLimit    int64 `mapstructure:"userLimit"`
 	OrgLimit     int64 `mapstructure:"orgLimit"`
-	ProjectLimit int64 `mapstructure:"orgLimit"`
+	ProjectLimit int64 `mapstructure:"projectLimit"`
 }

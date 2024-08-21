@@ -97,6 +97,7 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		license:            l,
 		orgRepo:            c.OrgRepo,
 		orgMemberRepo:      c.OrgMemberRepo,
+		projectRepo:        c.ProjectRepo,
 		planType:           PlanType(pt),
 		featureList:        featureList,
 		featureListJSON:    featureListJSON,

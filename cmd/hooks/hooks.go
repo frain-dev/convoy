@@ -193,6 +193,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				LicenseKey:    cfg.LicenseKey,
 				OrgRepo:       postgres.NewOrgRepo(app.DB, app.Cache),
 				OrgMemberRepo: postgres.NewOrgMemberRepo(app.DB, app.Cache),
+				ProjectRepo:   projectRepo,
 			},
 		})
 		if err != nil {
