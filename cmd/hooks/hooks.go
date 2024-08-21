@@ -667,14 +667,13 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 }
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {
-	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
 	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
-	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
+	count, err := userRepo.CountUsers(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to load users - %w", err)
+		return fmt.Errorf("failed to count users: %v", err)
 	}
 
-	if len(users) > 0 {
+	if count > 0 {
 		return nil
 	}
 
