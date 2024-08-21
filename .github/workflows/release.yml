@@ -32,7 +32,7 @@ jobs:
     needs: [build_ui]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Download Build Artifact
         uses: actions/download-artifact@v2
         with:
@@ -43,7 +43,7 @@ jobs:
       - uses: docker/setup-qemu-action@v3
         name: Set up QEMU
 
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v5
         name: Setup Python
         with:
           python-version: '3.9'
