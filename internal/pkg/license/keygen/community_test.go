@@ -29,7 +29,11 @@ func Test_communityLicenser(t *testing.T) {
 	require.Equal(t, userRepository, l.userRepo)
 	require.Equal(t, projectRepo, l.projectRepo)
 
-	v, err := json.Marshal(featureList)
+	fl := map[Feature]Properties{
+		CreateProject: {Limit: 2},
+	}
+
+	v, err := json.Marshal(fl)
 	require.NoError(t, err)
 
 	require.Equal(t, v, l.featureListJSON)
