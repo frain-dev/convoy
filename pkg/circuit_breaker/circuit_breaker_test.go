@@ -20,6 +20,16 @@ func getRedis(t *testing.T) (client redis.UniversalClient, err error) {
 	return redis.NewClient(opts), nil
 }
 
+func pollResult(t *testing.T, key string, failureCount, successCount int) PollResult {
+	t.Helper()
+
+	return PollResult{
+		Key:       key,
+		Failures:  failureCount,
+		Successes: successCount,
+	}
+}
+
 func TestNewCircuitBreaker(t *testing.T) {
 	ctx := context.Background()
 
@@ -34,53 +44,50 @@ func TestNewCircuitBreaker(t *testing.T) {
 
 	testClock := clock.NewSimulatedClock(time.Now())
 
-	c := CircuitBreakerConfig{
-		SampleTime:                  2,
+	c := &CircuitBreakerConfig{
+		SampleRate:                  2,
 		ErrorTimeout:                30,
-		FailureThreshold:            10,
-		FailureCount:                1,
+		FailureThreshold:            0.1,
+		FailureCount:                3,
 		SuccessThreshold:            1,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      []int{10},
 		ConsecutiveFailureThreshold: 10,
 	}
-	b := NewCircuitBreakerManager(re, testClock, c)
+	b := NewCircuitBreakerManager(re).WithClock(testClock).WithConfig(c)
 
 	endpointId := "endpoint-1"
 	pollResults := [][]PollResult{
 		{
-			PollResult{
-				Key:       endpointId,
-				Failures:  1,
-				Successes: 0,
-			},
+			pollResult(t, endpointId, 1, 0),
 		},
 		{
-			PollResult{
-				Key:       endpointId,
-				Failures:  1,
-				Successes: 0,
-			},
+			pollResult(t, endpointId, 2, 0),
 		},
 		{
-			PollResult{
-				Key:       endpointId,
-				Failures:  0,
-				Successes: 1,
-			},
+			pollResult(t, endpointId, 2, 1),
 		},
 		{
-			PollResult{
-				Key:       endpointId,
-				Failures:  0,
-				Successes: 1,
-			},
+			pollResult(t, endpointId, 2, 2),
+		},
+		{
+			pollResult(t, endpointId, 2, 3),
+		},
+		{
+			pollResult(t, endpointId, 1, 4),
+		},
+		{
+			pollResult(t, endpointId, 0, 5),
 		},
 	}
 
 	for i := 0; i < len(pollResults); i++ {
 		innerErr := b.sampleStore(ctx, pollResults[i])
 		require.NoError(t, innerErr)
+
+		breaker, innerErr := b.GetCircuitBreaker(ctx, endpointId)
+		require.NoError(t, innerErr)
+		t.Logf("%+v\n", breaker)
 
 		testClock.AdvanceTime(time.Minute)
 	}

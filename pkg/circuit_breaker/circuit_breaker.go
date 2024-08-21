@@ -26,9 +26,9 @@ var (
 
 // CircuitBreakerConfig is the configuration that all the circuit breakers will use
 type CircuitBreakerConfig struct {
-	// SampleTime is the time interval (in seconds) at which the data source
+	// SampleRate is the time interval (in seconds) at which the data source
 	// is polled to determine the number successful and failed requests
-	SampleTime int `json:"sample_time"`
+	SampleRate int `json:"sample_rate"`
 
 	// ErrorTimeout is the time (in seconds) after which a circuit breaker goes
 	// into the half-open state from the open state
@@ -93,7 +93,6 @@ func (s State) String() string {
 }
 
 // CircuitBreaker represents a circuit breaker
-// todo(raymond): implement methods to check the state and find out if an action can be performed.
 type CircuitBreaker struct {
 	Key                  string    `json:"key"`
 	State                State     `json:"state"`
@@ -138,20 +137,41 @@ type PollResult struct {
 }
 
 type CircuitBreakerManager struct {
+	config   *CircuitBreakerConfig
 	breakers []CircuitBreaker
-	config   CircuitBreakerConfig
 	clock    clock.Clock
 	redis    *redis.Client
 }
 
-func NewCircuitBreakerManager(client redis.UniversalClient, clock clock.Clock, config CircuitBreakerConfig) *CircuitBreakerManager {
+func NewCircuitBreakerManager(client redis.UniversalClient) *CircuitBreakerManager {
+	defaultConfig := &CircuitBreakerConfig{
+		SampleRate:                  30,
+		ErrorTimeout:                30,
+		FailureThreshold:            0.1,
+		FailureCount:                10,
+		SuccessThreshold:            5,
+		ObservabilityWindow:         5,
+		NotificationThresholds:      []int{5, 10},
+		ConsecutiveFailureThreshold: 10,
+	}
+
 	r := &CircuitBreakerManager{
-		clock:  clock,
-		config: config,
+		config: defaultConfig,
+		clock:  clock.NewRealClock(),
 		redis:  client.(*redis.Client),
 	}
 
 	return r
+}
+
+func (cb *CircuitBreakerManager) WithClock(c clock.Clock) *CircuitBreakerManager {
+	cb.clock = c
+	return cb
+}
+
+func (cb *CircuitBreakerManager) WithConfig(config *CircuitBreakerConfig) *CircuitBreakerManager {
+	cb.config = config
+	return cb
 }
 
 func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []PollResult) error {
@@ -297,13 +317,13 @@ func (cb *CircuitBreakerManager) Start(ctx context.Context, poolFunc func(ctx co
 		pollResults, err := poolFunc(ctx, cb.config.ObservabilityWindow)
 		if err != nil {
 			log.WithError(err).Error("poll db failed")
-			time.Sleep(time.Duration(cb.config.SampleTime) * time.Second)
+			time.Sleep(time.Duration(cb.config.SampleRate) * time.Second)
 			continue
 		}
 
 		if len(pollResults) == 0 {
 			// there's nothing to update
-			time.Sleep(time.Duration(cb.config.SampleTime) * time.Second)
+			time.Sleep(time.Duration(cb.config.SampleRate) * time.Second)
 			continue
 		}
 
@@ -311,6 +331,6 @@ func (cb *CircuitBreakerManager) Start(ctx context.Context, poolFunc func(ctx co
 		if err != nil {
 			log.WithError(err).Error("Failed to sample events and update state")
 		}
-		time.Sleep(time.Duration(cb.config.SampleTime) * time.Second)
+		time.Sleep(time.Duration(cb.config.SampleRate) * time.Second)
 	}
 }
