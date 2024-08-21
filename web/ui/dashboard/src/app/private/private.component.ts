@@ -7,6 +7,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
 import { Observable, Subscription } from 'rxjs';
+import { LicensesService } from '../services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-private',
@@ -47,17 +48,26 @@ export class PrivateComponent implements OnInit {
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
 
-	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
+	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		this.shouldShowOrgModal();
 
 		this.checkIfTokenIsExpired();
-		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
+		await Promise.all([this.getConfiguration(), this.getLicenses(), this.getUserDetails(), this.getOrganizations()]);
 	}
 
 	ngOnDestroy() {
 		if (this.shouldShowOrgSubscription) this.shouldShowOrgSubscription.unsubscribe();
+	}
+
+	async getLicenses() {
+		try {
+			const response = await this.licenseService.getLicenses();
+
+			const licenses = Object.keys(response.data);
+			localStorage.setItem('licenses', JSON.stringify(licenses));
+		} catch {}
 	}
 
 	async logout() {
@@ -71,9 +81,9 @@ export class PrivateComponent implements OnInit {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
-    shouldMountAppRouter(): boolean {
-        return !this.isLoadingOrganisations && (Boolean(this.organisations?.length) || this.router.url.startsWith('/user-settings'))
-    }
+	shouldMountAppRouter(): boolean {
+		return !this.isLoadingOrganisations && (Boolean(this.organisations?.length) || this.router.url.startsWith('/user-settings'));
+	}
 
 	async getConfiguration() {
 		try {

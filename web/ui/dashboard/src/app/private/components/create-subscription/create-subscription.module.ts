@@ -22,6 +22,7 @@ import { NotificationComponent } from 'src/app/components/notification/notificat
 import { CreateTransformFunctionComponent } from '../create-transform-function/create-transform-function.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { SourceURLComponent } from '../create-source/source-url/source-url.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -51,7 +52,8 @@ import { SourceURLComponent } from '../create-source/source-url/source-url.compo
 		NotificationComponent,
 		CreateTransformFunctionComponent,
 		ConfigButtonComponent,
-		SourceURLComponent
+		SourceURLComponent,
+        TagComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })
