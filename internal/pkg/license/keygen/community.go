@@ -18,7 +18,16 @@ func communityLicenser(orgRepo datastore.OrganisationRepository, userRepo datast
 		projectRepo: projectRepo,
 	}
 
-	featureListJSON, err := json.Marshal(l.featureList)
+	// we don't want CreateUser to show up on UI, so UI doesn't display the ability to
+	// invite or register users, which will be blocked on backend anyway
+	fl := make(map[Feature]Properties, len(l.featureList))
+	for f, p := range l.featureList {
+		if f != CreateUser {
+			fl[f] = p
+		}
+	}
+
+	featureListJSON, err := json.Marshal(fl)
 	if err != nil {
 		return nil, err
 	}

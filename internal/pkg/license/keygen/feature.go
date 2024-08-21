@@ -7,7 +7,7 @@ type (
 
 const (
 	CreateOrg                Feature = "CREATE_ORG"
-	CreateUser               Feature = "CREATE_ORG_MEMBER"
+	CreateUser               Feature = "CREATE_USER"
 	CreateProject            Feature = "CREATE_PROJECT"
 	UseForwardProxy          Feature = "USE_FORWARD_PROXY"
 	ExportPrometheusMetrics  Feature = "EXPORT_PROMETHEUS_METRICS"
