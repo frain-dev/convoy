@@ -27,9 +27,9 @@ type Licenser struct {
 	featureList        map[Feature]Properties
 	featureListJSON    []byte
 
-	orgRepo       datastore.OrganisationRepository
-	orgMemberRepo datastore.OrganisationMemberRepository
-	projectRepo   datastore.ProjectRepository
+	orgRepo     datastore.OrganisationRepository
+	userRepo    datastore.UserRepository
+	projectRepo datastore.ProjectRepository
 }
 
 func (k *Licenser) FeatureListJSON() json.RawMessage {
@@ -37,10 +37,10 @@ func (k *Licenser) FeatureListJSON() json.RawMessage {
 }
 
 type Config struct {
-	LicenseKey    string
-	OrgRepo       datastore.OrganisationRepository
-	OrgMemberRepo datastore.OrganisationMemberRepository
-	ProjectRepo   datastore.ProjectRepository
+	LicenseKey  string
+	OrgRepo     datastore.OrganisationRepository
+	ProjectRepo datastore.ProjectRepository
+	UserRepo    datastore.UserRepository
 }
 
 func init() {
@@ -52,7 +52,7 @@ func init() {
 func NewKeygenLicenser(c *Config) (*Licenser, error) {
 	if util.IsStringEmpty(c.LicenseKey) {
 		// no license key provided, allow access to only community features
-		return communityLicenser(c.OrgRepo, c.OrgMemberRepo, c.ProjectRepo)
+		return communityLicenser(c.OrgRepo, c.UserRepo, c.ProjectRepo)
 	}
 
 	keygen.LicenseKey = c.LicenseKey
@@ -96,7 +96,7 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		licenseKey:         c.LicenseKey,
 		license:            l,
 		orgRepo:            c.OrgRepo,
-		orgMemberRepo:      c.OrgMemberRepo,
+		userRepo:           c.UserRepo,
 		projectRepo:        c.ProjectRepo,
 		planType:           PlanType(pt),
 		featureList:        featureList,
@@ -209,7 +209,7 @@ func (k *Licenser) CreateOrg(ctx context.Context) (bool, error) {
 }
 
 func (k *Licenser) CreateUser(ctx context.Context) (bool, error) {
-	c, err := k.orgMemberRepo.CountOrganisationMembers(ctx)
+	c, err := k.userRepo.CountUsers(ctx)
 	if err != nil {
 		return false, err
 	}

@@ -176,11 +176,6 @@ const (
 	RIGHT JOIN convoy.projects p ON p.organisation_id = m.organisation_id
 	WHERE m.user_id = $1 AND m.deleted_at IS NULL AND p.deleted_at IS NULL
 	`
-
-	countOrgMembers = `
-	SELECT COUNT(*) AS count
-	FROM convoy.organisation_members
-	WHERE deleted_at IS NULL`
 )
 
 type orgMemberRepo struct {
@@ -478,16 +473,6 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID
 	}
 
 	return nil
-}
-
-func (o *orgMemberRepo) CountOrganisationMembers(ctx context.Context) (int64, error) {
-	var count int64
-	err := o.db.GetContext(ctx, &count, countOrgMembers)
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
 }
 
 func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, orgID string) (*datastore.OrganisationMember, error) {

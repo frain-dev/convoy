@@ -86,7 +86,6 @@ type OrganisationInviteRepository interface {
 }
 
 type OrganisationMemberRepository interface {
-	CountOrganisationMembers(ctx context.Context) (int64, error)
 	LoadOrganisationMembersPaged(ctx context.Context, organisationID, userID string, pageable Pageable) ([]*OrganisationMember, PaginationData, error)
 	LoadUserOrganisationsPaged(ctx context.Context, userID string, pageable Pageable) ([]Organisation, PaginationData, error)
 	FindUserProjects(ctx context.Context, userID string) ([]Project, error)
@@ -166,6 +165,7 @@ type JobRepository interface {
 type UserRepository interface {
 	CreateUser(context.Context, *User) error
 	UpdateUser(ctx context.Context, user *User) error
+	CountUsers(ctx context.Context) (int64, error)
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindUserByID(context.Context, string) (*User, error)
 	FindUserByToken(context.Context, string) (*User, error)

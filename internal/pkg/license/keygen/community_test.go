@@ -19,15 +19,15 @@ func Test_communityLicenser(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	orgRepo := mocks.NewMockOrganisationRepository(ctrl)
-	orgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
+	userRepository := mocks.NewMockUserRepository(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
 
-	l, err := communityLicenser(orgRepo, orgMemberRepo, projectRepo)
+	l, err := communityLicenser(orgRepo, userRepository, projectRepo)
 	require.NoError(t, err)
 
 	require.Equal(t, featureList, l.featureList)
 	require.Equal(t, orgRepo, l.orgRepo)
-	require.Equal(t, orgMemberRepo, l.orgMemberRepo)
+	require.Equal(t, userRepository, l.userRepo)
 	require.Equal(t, projectRepo, l.projectRepo)
 
 	v, err := json.Marshal(featureList)

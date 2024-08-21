@@ -72,10 +72,10 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 
 func provideLicenser(ctrl *gomock.Controller, fl map[Feature]Properties) *Licenser {
 	return &Licenser{
-		featureList:   fl,
-		orgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-		orgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-		projectRepo:   mocks.NewMockProjectRepository(ctrl),
+		featureList: fl,
+		orgRepo:     mocks.NewMockOrganisationRepository(ctrl),
+		userRepo:    mocks.NewMockUserRepository(ctrl),
+		projectRepo: mocks.NewMockProjectRepository(ctrl),
 	}
 }
 
@@ -287,8 +287,8 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 				},
 			},
 			dbFn: func(k *Licenser) {
-				orgRepo := k.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				orgRepo.EXPECT().CountOrganisationMembers(gomock.Any()).Return(int64(0), nil)
+				userRepository := k.userRepo.(*mocks.MockUserRepository)
+				userRepository.EXPECT().CountUsers(gomock.Any()).Return(int64(0), nil)
 			},
 			ctx:             context.Background(),
 			canCreateMember: true,
@@ -302,8 +302,8 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 				},
 			},
 			dbFn: func(k *Licenser) {
-				orgRepo := k.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				orgRepo.EXPECT().CountOrganisationMembers(gomock.Any()).Return(int64(1), nil)
+				userRepository := k.userRepo.(*mocks.MockUserRepository)
+				userRepository.EXPECT().CountUsers(gomock.Any()).Return(int64(1), nil)
 			},
 			ctx:             context.Background(),
 			canCreateMember: false,
@@ -317,8 +317,8 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 				},
 			},
 			dbFn: func(k *Licenser) {
-				orgRepo := k.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				orgRepo.EXPECT().CountOrganisationMembers(gomock.Any()).Return(int64(0), nil)
+				userRepository := k.userRepo.(*mocks.MockUserRepository)
+				userRepository.EXPECT().CountUsers(gomock.Any()).Return(int64(0), nil)
 			},
 			ctx:             context.Background(),
 			canCreateMember: true,
@@ -332,8 +332,8 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 				},
 			},
 			dbFn: func(k *Licenser) {
-				orgRepo := k.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				orgRepo.EXPECT().CountOrganisationMembers(gomock.Any()).Return(int64(0), errors.New("failed"))
+				userRepository := k.userRepo.(*mocks.MockUserRepository)
+				userRepository.EXPECT().CountUsers(gomock.Any()).Return(int64(0), errors.New("failed"))
 			},
 			ctx:             context.Background(),
 			canCreateMember: false,

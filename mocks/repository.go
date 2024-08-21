@@ -1048,21 +1048,6 @@ func (m *MockOrganisationMemberRepository) EXPECT() *MockOrganisationMemberRepos
 	return m.recorder
 }
 
-// CountOrganisationMembers mocks base method.
-func (m *MockOrganisationMemberRepository) CountOrganisationMembers(ctx context.Context) (int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountOrganisationMembers", ctx)
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CountOrganisationMembers indicates an expected call of CountOrganisationMembers.
-func (mr *MockOrganisationMemberRepositoryMockRecorder) CountOrganisationMembers(ctx any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountOrganisationMembers", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CountOrganisationMembers), ctx)
-}
-
 // CreateOrganisationMember mocks base method.
 func (m *MockOrganisationMemberRepository) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	m.ctrl.T.Helper()
@@ -2083,6 +2068,21 @@ func NewMockUserRepository(ctrl *gomock.Controller) *MockUserRepository {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockUserRepository) EXPECT() *MockUserRepositoryMockRecorder {
 	return m.recorder
+}
+
+// CountUsers mocks base method.
+func (m *MockUserRepository) CountUsers(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountUsers", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountUsers indicates an expected call of CountUsers.
+func (mr *MockUserRepositoryMockRecorder) CountUsers(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountUsers", reflect.TypeOf((*MockUserRepository)(nil).CountUsers), ctx)
 }
 
 // CreateUser mocks base method.

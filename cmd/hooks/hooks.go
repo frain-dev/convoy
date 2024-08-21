@@ -190,10 +190,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			KeyGen: keygen.Config{
-				LicenseKey:    cfg.LicenseKey,
-				OrgRepo:       postgres.NewOrgRepo(app.DB, app.Cache),
-				OrgMemberRepo: postgres.NewOrgMemberRepo(app.DB, app.Cache),
-				ProjectRepo:   projectRepo,
+				LicenseKey:  cfg.LicenseKey,
+				OrgRepo:     postgres.NewOrgRepo(app.DB, app.Cache),
+				UserRepo:    postgres.NewUserRepo(app.DB, app.Cache),
+				ProjectRepo: projectRepo,
 			},
 		})
 		if err != nil {

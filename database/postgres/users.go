@@ -70,6 +70,11 @@ const (
 	GROUP BY id
 	ORDER BY id DESC
 	LIMIT 1`
+
+	countUsers = `
+	SELECT COUNT(*) AS count
+	FROM convoy.users
+	WHERE deleted_at IS NULL`
 )
 
 var (
@@ -278,4 +283,14 @@ func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageab
 	pagination = pagination.Build(pageable, ids)
 
 	return users, *pagination, nil
+}
+
+func (o *userRepo) CountUsers(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetContext(ctx, &count, countUsers)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
