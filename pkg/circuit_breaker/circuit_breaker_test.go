@@ -42,7 +42,7 @@ func TestNewCircuitBreaker(t *testing.T) {
 	err = re.Del(ctx, keys...).Err()
 	require.NoError(t, err)
 
-	testClock := clock.NewSimulatedClock(time.Now())
+	testClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
@@ -75,9 +75,6 @@ func TestNewCircuitBreaker(t *testing.T) {
 		},
 		{
 			pollResult(t, endpointId, 1, 4),
-		},
-		{
-			pollResult(t, endpointId, 0, 5),
 		},
 	}
 

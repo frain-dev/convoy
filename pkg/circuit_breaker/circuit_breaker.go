@@ -223,15 +223,14 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 		breaker.TotalSuccesses = result.Successes
 		breaker.FailureRate = float64(breaker.TotalFailures) / float64(breaker.TotalSuccesses+breaker.TotalFailures)
 
-		// todo(raymond): move this to a different place that runs in a goroutine
-		if breaker.State == StateOpen && cb.clock.Now().After(breaker.WillResetAt) {
-			breaker.toHalfOpen()
-		}
-
 		if breaker.State == StateHalfOpen && breaker.TotalSuccesses >= cb.config.SuccessThreshold {
 			breaker.resetCircuitBreaker()
 		} else if breaker.State == StateClosed && (breaker.FailureRate >= cb.config.FailureThreshold || breaker.TotalFailures >= cb.config.FailureCount) {
 			breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.ErrorTimeout) * time.Second))
+		}
+
+		if breaker.State == StateOpen && cb.clock.Now().After(breaker.WillResetAt) {
+			breaker.toHalfOpen()
 		}
 
 		circuitBreakerMap[breaker.Key] = breaker
@@ -256,12 +255,7 @@ func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, brea
 	}
 
 	// Update the state
-	err := cb.redis.MSet(ctx, breakerStringsMap).Err()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return cb.redis.MSet(ctx, breakerStringsMap).Err()
 }
 
 func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]CircuitBreaker, error) {
@@ -275,7 +269,7 @@ func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]Cir
 		return nil, err
 	}
 
-	var circuitBreakers []CircuitBreaker
+	circuitBreakers := make([]CircuitBreaker, len(res))
 	for i := range res {
 		c := CircuitBreaker{}
 		asBytes := []byte(res[i].(string))
@@ -284,7 +278,7 @@ func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]Cir
 			return nil, innerErr
 		}
 
-		circuitBreakers = append(circuitBreakers, c)
+		circuitBreakers[i] = c
 	}
 
 	return circuitBreakers, nil
