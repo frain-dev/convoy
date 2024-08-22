@@ -7,6 +7,7 @@ alter table convoy.configurations add column if not exists cb_success_threshold 
 alter table convoy.configurations add column if not exists cb_observability_window int not null default 5;
 alter table convoy.configurations add column if not exists cb_notification_thresholds int[] not null default ARRAY[5, 10];
 alter table convoy.configurations add column if not exists cb_consecutive_failure_threshold int not null default 5;
+create index if not exists idx_delivery_attempts_created_at ON convoy.delivery_attempts (created_at);
 
 -- +migrate Down
 alter table convoy.configurations drop column if exists cb_sample_rate;
