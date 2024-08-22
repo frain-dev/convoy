@@ -8,7 +8,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 
 	"go.uber.org/mock/gomock"
@@ -371,13 +370,6 @@ func TestKeygenLicenser_CanCreateUser(t *testing.T) {
 }
 
 func TestLicenser_FeatureListJSON(t *testing.T) {
-	type fields struct {
-		featureList map[Feature]*Properties
-		orgRepo     datastore.OrganisationRepository
-		userRepo    datastore.UserRepository
-		projectRepo datastore.ProjectRepository
-	}
-
 	tests := []struct {
 		name        string
 		featureList map[Feature]*Properties

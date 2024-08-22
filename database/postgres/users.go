@@ -41,36 +41,6 @@ const (
 	WHERE deleted_at IS NULL
 	`
 
-	fetchUsersPaginated = `
-	SELECT * FROM convoy.users WHERE deleted_at IS NULL`
-
-	fetchUsersPagedForward = `
-	%s
-	AND id <= :cursor
-	GROUP BY id
-	ORDER BY id DESC
-	LIMIT :limit`
-
-	fetchUsersPagedBackward = `
-	WITH users AS (
-		%s
-		AND id >= :cursor
-		GROUP BY id
-		ORDER BY id ASC
-		LIMIT :limit
-	)
-
-	SELECT * FROM users ORDER BY id DESC`
-
-	countPrevUsers = `
-	SELECT COUNT(DISTINCT(id)) AS count
-	FROM convoy.users
-	WHERE deleted_at IS NULL
-	AND id > :cursor
-	GROUP BY id
-	ORDER BY id DESC
-	LIMIT 1`
-
 	countUsers = `
 	SELECT COUNT(*) AS count
 	FROM convoy.users
