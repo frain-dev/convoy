@@ -24,6 +24,7 @@ import { PermissionDirective } from 'src/app/private/components/permission/permi
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { EndpointFilterComponent } from 'src/app/private/components/endpoints-filter/endpoints-filter.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-portal-links',
@@ -70,7 +71,7 @@ export class PortalLinksComponent implements OnInit {
 	@ViewChild('linksEndpointFilter', { static: true }) linksEndpointFilter!: ElementRef;
 	linksEndpointFilter$!: Observable<ENDPOINT[]>;
 
-	constructor(public privateService: PrivateService, public router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService) {}
+	constructor(public privateService: PrivateService, public router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService, public licenseService: LicensesService) {}
 
 	ngOnInit() {
 		this.getPortalLinks();
