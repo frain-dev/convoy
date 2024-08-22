@@ -33,8 +33,6 @@ export class LicensesService {
 				if (entry.allowed) allowedLicenses.push(key);
 			});
 
-			console.log(allowedLicenses);
-
 			localStorage.setItem('licenses', JSON.stringify(allowedLicenses));
 		} catch {}
 	}
