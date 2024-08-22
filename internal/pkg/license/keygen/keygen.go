@@ -24,16 +24,11 @@ type Licenser struct {
 	license            *keygen.License
 	planType           PlanType
 	machineFingerprint string
-	featureList        map[Feature]Properties
-	featureListJSON    []byte
+	featureList        map[Feature]*Properties
 
 	orgRepo     datastore.OrganisationRepository
 	userRepo    datastore.UserRepository
 	projectRepo datastore.ProjectRepository
-}
-
-func (k *Licenser) FeatureListJSON() json.RawMessage {
-	return k.featureListJSON
 }
 
 type Config struct {
@@ -52,12 +47,12 @@ func init() {
 func NewKeygenLicenser(c *Config) (*Licenser, error) {
 	if util.IsStringEmpty(c.LicenseKey) {
 		// no license key provided, allow access to only community features
-		return communityLicenser(c.OrgRepo, c.UserRepo, c.ProjectRepo)
+		return communityLicenser(c.OrgRepo, c.UserRepo, c.ProjectRepo), nil
 	}
 
 	keygen.LicenseKey = c.LicenseKey
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
 	fingerprint := uuid.New().String()
@@ -86,11 +81,6 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		return nil, fmt.Errorf("license plan type is not a string")
 	}
 
-	featureListJSON, err := json.Marshal(featureList)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Licenser{
 		machineFingerprint: fingerprint,
 		licenseKey:         c.LicenseKey,
@@ -100,7 +90,6 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		projectRepo:        c.ProjectRepo,
 		planType:           PlanType(pt),
 		featureList:        featureList,
-		featureListJSON:    featureListJSON,
 	}, nil
 }
 
@@ -151,7 +140,7 @@ func allowKeygenError(err error) bool {
 	return false
 }
 
-func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Properties, error) {
+func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]*Properties, error) {
 	entitlements, err := l.Entitlements(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load license entitlements: %v", err)
@@ -161,9 +150,9 @@ func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Propert
 		return nil, fmt.Errorf("license has no entitlements")
 	}
 
-	featureList := map[Feature]Properties{}
+	featureList := map[Feature]*Properties{}
 	for _, entitlement := range entitlements {
-		featureList[Feature(entitlement.Code)] = Properties{}
+		featureList[Feature(entitlement.Code)] = &Properties{Allowed: true}
 	}
 
 	meta := LicenseMetadata{}
@@ -175,15 +164,15 @@ func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]Propert
 	}
 
 	if meta.OrgLimit != 0 {
-		featureList[CreateOrg] = Properties{Limit: meta.OrgLimit}
+		featureList[CreateOrg] = &Properties{Limit: meta.OrgLimit}
 	}
 
 	if meta.UserLimit != 0 {
-		featureList[CreateUser] = Properties{Limit: meta.UserLimit}
+		featureList[CreateUser] = &Properties{Limit: meta.UserLimit}
 	}
 
 	if meta.ProjectLimit != 0 {
-		featureList[CreateProject] = Properties{Limit: meta.ProjectLimit}
+		featureList[CreateProject] = &Properties{Limit: meta.ProjectLimit}
 	}
 
 	return featureList, err
@@ -309,4 +298,32 @@ func (k *Licenser) SynchronousWebhooks() bool {
 func (k *Licenser) PortalLinks() bool {
 	_, ok := k.featureList[PortalLinks]
 	return ok
+}
+
+func (k *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
+	// only these guys have dynamic limits for now
+	for f := range k.featureList {
+		switch f {
+		case CreateOrg:
+			ok, err := k.CreateOrg(ctx)
+			if err != nil {
+				return nil, err
+			}
+			k.featureList[f].Allowed = ok
+		case CreateUser:
+			ok, err := k.CreateUser(ctx)
+			if err != nil {
+				return nil, err
+			}
+			k.featureList[f].Allowed = ok
+		case CreateProject:
+			ok, err := k.CreateProject(ctx)
+			if err != nil {
+				return nil, err
+			}
+			k.featureList[f].Allowed = ok
+		}
+	}
+
+	return json.Marshal(k.featureList)
 }

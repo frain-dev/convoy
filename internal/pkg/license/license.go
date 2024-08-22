@@ -28,7 +28,7 @@ type Licenser interface {
 	MutualTLS() bool
 	SynchronousWebhooks() bool
 
-	FeatureListJSON() json.RawMessage
+	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 }
 
 var _ Licenser = &keygen.Licenser{}

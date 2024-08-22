@@ -2,10 +2,13 @@ package keygen
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"testing"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 
 	"go.uber.org/mock/gomock"
@@ -14,46 +17,46 @@ import (
 )
 
 func TestKeygenLicenserBoolMethods(t *testing.T) {
-	k := Licenser{featureList: map[Feature]Properties{UseForwardProxy: {}}}
+	k := Licenser{featureList: map[Feature]*Properties{UseForwardProxy: {}}}
 	require.True(t, k.UseForwardProxy())
 
-	k = Licenser{featureList: map[Feature]Properties{ExportPrometheusMetrics: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{ExportPrometheusMetrics: {}}}
 	require.True(t, k.CanExportPrometheusMetrics())
 
-	k = Licenser{featureList: map[Feature]Properties{AdvancedEndpointMgmt: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedEndpointMgmt: {}}}
 	require.True(t, k.AdvancedEndpointMgmt())
 
-	k = Licenser{featureList: map[Feature]Properties{AdvancedWebhookArchiving: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedWebhookArchiving: {}}}
 	require.True(t, k.AdvancedRetentionPolicy())
 
-	k = Licenser{featureList: map[Feature]Properties{AdvancedMsgBroker: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedMsgBroker: {}}}
 	require.True(t, k.AdvancedMsgBroker())
 
-	k = Licenser{featureList: map[Feature]Properties{AdvancedSubscriptions: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedSubscriptions: {}}}
 	require.True(t, k.AdvancedSubscriptions())
 
-	k = Licenser{featureList: map[Feature]Properties{WebhookTransformations: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{WebhookTransformations: {}}}
 	require.True(t, k.Transformations())
 
-	k = Licenser{featureList: map[Feature]Properties{HADeployment: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{HADeployment: {}}}
 	require.True(t, k.HADeployment())
 
-	k = Licenser{featureList: map[Feature]Properties{WebhookAnalytics: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{WebhookAnalytics: {}}}
 	require.True(t, k.WebhookAnalytics())
 
-	k = Licenser{featureList: map[Feature]Properties{MutualTLS: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{MutualTLS: {}}}
 	require.True(t, k.MutualTLS())
 
-	k = Licenser{featureList: map[Feature]Properties{AsynqMonitoring: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AsynqMonitoring: {}}}
 	require.True(t, k.AsynqMonitoring())
 
-	k = Licenser{featureList: map[Feature]Properties{SynchronousWebhooks: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{SynchronousWebhooks: {}}}
 	require.True(t, k.SynchronousWebhooks())
 
-	k = Licenser{featureList: map[Feature]Properties{PortalLinks: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{PortalLinks: {}}}
 	require.True(t, k.PortalLinks())
 
-	falseLicenser := Licenser{featureList: map[Feature]Properties{}}
+	falseLicenser := Licenser{featureList: map[Feature]*Properties{}}
 
 	require.False(t, falseLicenser.UseForwardProxy())
 	require.False(t, falseLicenser.PortalLinks())
@@ -70,7 +73,7 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	require.False(t, falseLicenser.SynchronousWebhooks())
 }
 
-func provideLicenser(ctrl *gomock.Controller, fl map[Feature]Properties) *Licenser {
+func provideLicenser(ctrl *gomock.Controller, fl map[Feature]*Properties) *Licenser {
 	return &Licenser{
 		featureList: fl,
 		orgRepo:     mocks.NewMockOrganisationRepository(ctrl),
@@ -82,7 +85,7 @@ func provideLicenser(ctrl *gomock.Controller, fl map[Feature]Properties) *Licens
 func TestKeygenLicenser_CreateProject(t *testing.T) {
 	tests := []struct {
 		name        string
-		featureList map[Feature]Properties
+		featureList map[Feature]*Properties
 		ctx         context.Context
 		dbFn        func(k *Licenser)
 		want        bool
@@ -91,7 +94,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 	}{
 		{
 			name: "should_return_true",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateProject: {
 					Limit: 1,
 				},
@@ -106,7 +109,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 		},
 		{
 			name: "should_return_false_for_limit_reached",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateProject: {
 					Limit: 1,
 				},
@@ -121,7 +124,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 		},
 		{
 			name: "should_return_true_for_no_limit",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateProject: {
 					Limit: -1,
 				},
@@ -136,7 +139,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 		},
 		{
 			name: "should_error_for_failed_to_count_org",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateProject: {
 					Limit: 1,
 				},
@@ -154,6 +157,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			k := provideLicenser(ctrl, tt.featureList)
 
 			if tt.dbFn != nil {
@@ -177,7 +181,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 	tests := []struct {
 		name        string
-		featureList map[Feature]Properties
+		featureList map[Feature]*Properties
 		ctx         context.Context
 		dbFn        func(k *Licenser)
 		want        bool
@@ -186,7 +190,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 	}{
 		{
 			name: "should_return_true",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateOrg: {
 					Limit: 1,
 				},
@@ -201,7 +205,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 		},
 		{
 			name: "should_return_false_for_limit_reached",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateOrg: {
 					Limit: 1,
 				},
@@ -216,7 +220,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 		},
 		{
 			name: "should_return_true_for_no_limit",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateOrg: {
 					Limit: -1,
 				},
@@ -231,7 +235,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 		},
 		{
 			name: "should_error_for_failed_to_count_org",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateOrg: {
 					Limit: 1,
 				},
@@ -249,6 +253,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			k := provideLicenser(ctrl, tt.featureList)
 
 			if tt.dbFn != nil {
@@ -269,10 +274,10 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 	}
 }
 
-func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
+func TestKeygenLicenser_CanCreateUser(t *testing.T) {
 	tests := []struct {
 		name            string
-		featureList     map[Feature]Properties
+		featureList     map[Feature]*Properties
 		ctx             context.Context
 		dbFn            func(k *Licenser)
 		canCreateMember bool
@@ -281,7 +286,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 	}{
 		{
 			name: "should_return_true",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateUser: {
 					Limit: 1,
 				},
@@ -296,7 +301,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 		},
 		{
 			name: "should_return_false_for_limit_reached",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateUser: {
 					Limit: 1,
 				},
@@ -311,7 +316,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 		},
 		{
 			name: "should_return_true_for_no_limit",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateUser: {
 					Limit: -1,
 				},
@@ -326,7 +331,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 		},
 		{
 			name: "should_error_for_failed_to_count_org_members",
-			featureList: map[Feature]Properties{
+			featureList: map[Feature]*Properties{
 				CreateUser: {
 					Limit: 1,
 				},
@@ -344,6 +349,7 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 			k := provideLicenser(ctrl, tt.featureList)
 
 			if tt.dbFn != nil {
@@ -360,6 +366,143 @@ func TestKeygenLicenser_CanCreateOrgMember(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestLicenser_FeatureListJSON(t *testing.T) {
+	type fields struct {
+		featureList map[Feature]*Properties
+		orgRepo     datastore.OrganisationRepository
+		userRepo    datastore.UserRepository
+		projectRepo datastore.ProjectRepository
+	}
+
+	tests := []struct {
+		name        string
+		featureList map[Feature]*Properties
+		dbFn        func(k *Licenser)
+		want        json.RawMessage
+		wantErr     bool
+		wantErrMsg  string
+	}{
+		{
+			name: "should_get_feature_list",
+			featureList: map[Feature]*Properties{
+				CreateOrg:             {Limit: 1},
+				CreateProject:         {Limit: 1},
+				CreateUser:            {Limit: 1},
+				AdvancedSubscriptions: {Limit: 1, Allowed: true},
+				AdvancedEndpointMgmt:  {Limit: 1, Allowed: true},
+			},
+			dbFn: func(k *Licenser) {
+				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
+				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(0), nil)
+
+				userRepo := k.userRepo.(*mocks.MockUserRepository)
+				userRepo.EXPECT().CountUsers(gomock.Any()).Return(int64(0), nil)
+
+				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(0), nil)
+			},
+			want:       []byte(`{"ADVANCED_ENDPOINT_MANAGEMENT":{"allowed":true},"ADVANCED_SUBSCRIPTIONS":{"allowed":true},"CREATE_ORG":{"allowed":true},"CREATE_PROJECT":{"allowed":true},"CREATE_USER":{"allowed":true}}`),
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+
+		{
+			name: "should_be_false_create_org",
+			featureList: map[Feature]*Properties{
+				CreateOrg:             {Limit: 1},
+				CreateProject:         {Limit: 1},
+				CreateUser:            {Limit: 1},
+				AdvancedSubscriptions: {Limit: 1, Allowed: true},
+				AdvancedEndpointMgmt:  {Limit: 1, Allowed: true},
+			},
+			dbFn: func(k *Licenser) {
+				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
+				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(1), nil)
+
+				userRepo := k.userRepo.(*mocks.MockUserRepository)
+				userRepo.EXPECT().CountUsers(gomock.Any()).Return(int64(0), nil)
+
+				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(0), nil)
+			},
+			want:       []byte(`{"ADVANCED_ENDPOINT_MANAGEMENT":{"allowed":true},"ADVANCED_SUBSCRIPTIONS":{"allowed":true},"CREATE_ORG":{"allowed":false},"CREATE_PROJECT":{"allowed":true},"CREATE_USER":{"allowed":true}}`),
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+
+		{
+			name: "should_be_false_create_user",
+			featureList: map[Feature]*Properties{
+				CreateOrg:             {Limit: 1},
+				CreateProject:         {Limit: 1},
+				CreateUser:            {Limit: 1},
+				AdvancedSubscriptions: {Limit: 1, Allowed: true},
+				AdvancedEndpointMgmt:  {Limit: 1, Allowed: true},
+			},
+			dbFn: func(k *Licenser) {
+				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
+				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(0), nil)
+
+				userRepo := k.userRepo.(*mocks.MockUserRepository)
+				userRepo.EXPECT().CountUsers(gomock.Any()).Return(int64(1), nil)
+
+				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(0), nil)
+			},
+			want:       []byte(`{"ADVANCED_ENDPOINT_MANAGEMENT":{"allowed":true},"ADVANCED_SUBSCRIPTIONS":{"allowed":true},"CREATE_ORG":{"allowed":true},"CREATE_PROJECT":{"allowed":true},"CREATE_USER":{"allowed":false}}`),
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+
+		{
+			name: "should_be_false_create_project",
+			featureList: map[Feature]*Properties{
+				CreateOrg:             {Limit: 1},
+				CreateProject:         {Limit: 1},
+				CreateUser:            {Limit: 1},
+				AdvancedSubscriptions: {Limit: 1, Allowed: true},
+				AdvancedEndpointMgmt:  {Limit: 1, Allowed: true},
+			},
+			dbFn: func(k *Licenser) {
+				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
+				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(0), nil)
+
+				userRepo := k.userRepo.(*mocks.MockUserRepository)
+				userRepo.EXPECT().CountUsers(gomock.Any()).Return(int64(0), nil)
+
+				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
+				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(2), nil)
+			},
+			want:       []byte(`{"ADVANCED_ENDPOINT_MANAGEMENT":{"allowed":true},"ADVANCED_SUBSCRIPTIONS":{"allowed":true},"CREATE_ORG":{"allowed":true},"CREATE_PROJECT":{"allowed":false},"CREATE_USER":{"allowed":true}}`),
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			k := provideLicenser(ctrl, tt.featureList)
+
+			if tt.dbFn != nil {
+				tt.dbFn(k)
+			}
+
+			got, err := k.FeatureListJSON(context.Background())
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Equal(t, tt.wantErrMsg, err.Error())
+				return
+			}
+
+			require.NoError(t, err)
+			fmt.Println("tt.want", string(tt.want))
+			fmt.Println("got", string(got))
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

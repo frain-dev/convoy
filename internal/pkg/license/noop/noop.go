@@ -11,8 +11,8 @@ import (
 
 type Licenser struct{}
 
-func (Licenser) FeatureListJSON() json.RawMessage {
-	return []byte{}
+func (Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
+	return []byte{}, nil
 }
 
 func NewLicenser() *Licenser {
