@@ -54,20 +54,11 @@ export class PrivateComponent implements OnInit {
 		this.shouldShowOrgModal();
 
 		this.checkIfTokenIsExpired();
-		await Promise.all([this.getConfiguration(), this.getLicenses(), this.getUserDetails(), this.getOrganizations()]);
+		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations()]);
 	}
 
 	ngOnDestroy() {
 		if (this.shouldShowOrgSubscription) this.shouldShowOrgSubscription.unsubscribe();
-	}
-
-	async getLicenses() {
-		try {
-			const response = await this.licenseService.getLicenses();
-
-			const licenses = Object.keys(response.data);
-			localStorage.setItem('licenses', JSON.stringify(licenses));
-		} catch {}
 	}
 
 	async logout() {

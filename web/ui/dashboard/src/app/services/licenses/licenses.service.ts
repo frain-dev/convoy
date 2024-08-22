@@ -23,6 +23,22 @@ export class LicensesService {
 		});
 	}
 
+
+	async setLicenses() {
+		try {
+			const response = await this.getLicenses();
+
+			let allowedLicenses: any[] = [];
+			Object.entries(response.data).forEach(([key, entry]: any) => {
+				if (entry.allowed) allowedLicenses.push(key);
+			});
+
+			console.log(allowedLicenses);
+
+			localStorage.setItem('licenses', JSON.stringify(allowedLicenses));
+		} catch {}
+	}
+
 	hasLicense(license: string) {
 		const savedLicenses = localStorage.getItem('licenses');
 		if (savedLicenses) {
