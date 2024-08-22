@@ -681,7 +681,7 @@ var guestRoutes = []string{
 	"/users/verify_email",
 	"/organisations/process_invite",
 	"/ui/configuration/is_signup_enabled",
-	"/ui/license/feature",
+	"/ui/license/features",
 }
 
 func shouldAuthRoute(r *http.Request) bool {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math"
 	"testing"
 
@@ -492,8 +491,6 @@ func TestLicenser_FeatureListJSON(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			fmt.Println("tt.want", string(tt.want))
-			fmt.Println("got", string(got))
 			require.Equal(t, tt.want, got)
 		})
 	}
