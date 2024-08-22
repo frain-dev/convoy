@@ -170,17 +170,18 @@ func (mr *MockLicenserMockRecorder) CreateUser(ctx any) *gomock.Call {
 }
 
 // FeatureListJSON mocks base method.
-func (m *MockLicenser) FeatureListJSON() json.RawMessage {
+func (m *MockLicenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FeatureListJSON")
+	ret := m.ctrl.Call(m, "FeatureListJSON", ctx)
 	ret0, _ := ret[0].(json.RawMessage)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // FeatureListJSON indicates an expected call of FeatureListJSON.
-func (mr *MockLicenserMockRecorder) FeatureListJSON() *gomock.Call {
+func (mr *MockLicenserMockRecorder) FeatureListJSON(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FeatureListJSON", reflect.TypeOf((*MockLicenser)(nil).FeatureListJSON))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FeatureListJSON", reflect.TypeOf((*MockLicenser)(nil).FeatureListJSON), ctx)
 }
 
 // HADeployment mocks base method.
