@@ -131,7 +131,7 @@ func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Contex
 	return nil
 }
 
-func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration int) (results []circuit_breaker.PollResult, err error) {
+func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64) (results []circuit_breaker.PollResult, err error) {
 	query := `
 		SELECT
             endpoint_id AS key,

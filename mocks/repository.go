@@ -2554,7 +2554,7 @@ func (mr *MockDeliveryAttemptsRepositoryMockRecorder) FindDeliveryAttempts(arg0,
 }
 
 // GetFailureAndSuccessCounts mocks base method.
-func (m *MockDeliveryAttemptsRepository) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration int) ([]circuit_breaker.PollResult, error) {
+func (m *MockDeliveryAttemptsRepository) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64) ([]circuit_breaker.PollResult, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFailureAndSuccessCounts", ctx, lookBackDuration)
 	ret0, _ := ret[0].([]circuit_breaker.PollResult)

@@ -243,8 +243,18 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	circuitBreakerManager := circuit_breaker.NewCircuitBreakerManager(rd.Client()).WithConfig(configuration.ToCircuitBreakerConfig())
-	go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
+	circuitBreakerManager, err := circuit_breaker.NewCircuitBreakerManager(rd.Client()).WithConfig(configuration.ToCircuitBreakerConfig())
+	if err != nil {
+		a.Logger.WithError(err).Fatal("Failed to create circuit breaker manager")
+	}
+
+	go func() {
+		innerErr := circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
+		if innerErr != nil {
+			// todo(raymond): should this be Fatal?
+			a.Logger.WithError(innerErr).Fatal("circuit breaker manager failed")
+		}
+	}()
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,

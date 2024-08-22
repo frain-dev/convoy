@@ -1345,9 +1345,9 @@ func (c *Configuration) GetCircuitBreakerConfig() CircuitBreakerConfig {
 }
 
 func (c *Configuration) ToCircuitBreakerConfig() *circuit_breaker.CircuitBreakerConfig {
-	notificationThresholds := make([]int, len(c.CircuitBreakerConfig.NotificationThresholds))
+	notificationThresholds := make([]uint64, len(c.CircuitBreakerConfig.NotificationThresholds))
 	for i := range c.CircuitBreakerConfig.NotificationThresholds {
-		notificationThresholds[i] = int(c.CircuitBreakerConfig.NotificationThresholds[i])
+		notificationThresholds[i] = uint64(c.CircuitBreakerConfig.NotificationThresholds[i])
 	}
 
 	return &circuit_breaker.CircuitBreakerConfig{
@@ -1390,14 +1390,14 @@ type OnPremStorage struct {
 }
 
 type CircuitBreakerConfig struct {
-	SampleRate                  int           `json:"sample_rate" db:"sample_rate"`
-	ErrorTimeout                int           `json:"error_timeout" db:"error_timeout"`
+	SampleRate                  uint64        `json:"sample_rate" db:"sample_rate"`
+	ErrorTimeout                uint64        `json:"error_timeout" db:"error_timeout"`
 	FailureThreshold            float64       `json:"failure_threshold" db:"failure_threshold"`
-	FailureCount                int           `json:"failure_count" db:"failure_count"`
-	SuccessThreshold            int           `json:"success_threshold" db:"success_threshold"`
-	ObservabilityWindow         int           `json:"observability_window" db:"observability_window"`
+	FailureCount                uint64        `json:"failure_count" db:"failure_count"`
+	SuccessThreshold            uint64        `json:"success_threshold" db:"success_threshold"`
+	ObservabilityWindow         uint64        `json:"observability_window" db:"observability_window"`
 	NotificationThresholds      pq.Int64Array `json:"notification_thresholds" db:"notification_thresholds"`
-	ConsecutiveFailureThreshold int           `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
+	ConsecutiveFailureThreshold uint64        `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
 type OrganisationMember struct {

@@ -204,5 +204,5 @@ type DeliveryAttemptsRepository interface {
 	FindDeliveryAttemptById(context.Context, string, string) (*DeliveryAttempt, error)
 	FindDeliveryAttempts(context.Context, string) ([]DeliveryAttempt, error)
 	DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *DeliveryAttemptsFilter, hardDelete bool) error
-	GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration int) (results []circuit_breaker.PollResult, err error)
+	GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64) (results []circuit_breaker.PollResult, err error)
 }
