@@ -11,22 +11,25 @@ import (
 	"time"
 )
 
-const (
-	prefix = "breaker:"
-	keyTTL = time.Hour
-)
+const prefix = "breaker:"
 
 type PollFunc func(ctx context.Context, lookBackDuration uint64) ([]PollResult, error)
 
 var (
-	// ErrTooManyRequests is returned when the CB state is half open and the request count is over the failureThreshold
+	// ErrTooManyRequests is returned when the circuit breaker state is half open and the request count is over the failureThreshold
 	ErrTooManyRequests = errors.New("[circuit breaker] too many requests")
 
-	// ErrOpenState is returned when the CB state is open
+	// ErrOpenState is returned when the circuit breaker state is open
 	ErrOpenState = errors.New("[circuit breaker] circuit breaker is open")
 
-	// ErrCircuitBreakerNotFound is returned when the CB is not found
+	// ErrCircuitBreakerNotFound is returned when the circuit breaker is not found
 	ErrCircuitBreakerNotFound = errors.New("[circuit breaker] circuit breaker not found")
+
+	// ErrClockMustNotBeNil is returned when a nil clock is passed to NewCircuitBreakerManager
+	ErrClockMustNotBeNil = errors.New("[circuit breaker] clock must not be nil")
+
+	// ErrConfigMustNotBeNil is returned when a nil config is passed to NewCircuitBreakerManager
+	ErrConfigMustNotBeNil = errors.New("[circuit breaker] config must not be nil")
 )
 
 // CircuitBreakerConfig is the configuration that all the circuit breakers will use
@@ -104,7 +107,7 @@ func (c *CircuitBreakerConfig) Validate() error {
 	}
 
 	if len(errs) > 0 {
-		return errors.New("CircuitBreakerConfig validation failed: " + joinErrors(errs))
+		return fmt.Errorf("config validation failed with errors: %s", joinErrors(errs))
 	}
 
 	return nil
@@ -217,7 +220,7 @@ func NewCircuitBreakerManager(client redis.UniversalClient) *CircuitBreakerManag
 
 func (cb *CircuitBreakerManager) WithClock(c clock.Clock) (*CircuitBreakerManager, error) {
 	if cb.clock == nil {
-		return nil, errors.New("clock must not be nil")
+		return nil, ErrClockMustNotBeNil
 	}
 
 	cb.clock = c
@@ -226,7 +229,7 @@ func (cb *CircuitBreakerManager) WithClock(c clock.Clock) (*CircuitBreakerManage
 
 func (cb *CircuitBreakerManager) WithConfig(config *CircuitBreakerConfig) (*CircuitBreakerManager, error) {
 	if config == nil {
-		return nil, errors.New("config must not be nil")
+		return nil, ErrConfigMustNotBeNil
 	}
 
 	cb.config = config
@@ -240,7 +243,7 @@ func (cb *CircuitBreakerManager) WithConfig(config *CircuitBreakerConfig) (*Circ
 func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []PollResult) error {
 	var keys []string
 	for i := range pollResults {
-		key := fmt.Sprintf("%s:%s", prefix, pollResults[i].Key)
+		key := fmt.Sprintf("%s%s", prefix, pollResults[i].Key)
 		keys = append(keys, key)
 		pollResults[i].Key = key
 	}
@@ -267,7 +270,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 		c := CircuitBreaker{}
 		str, ok := res[i].(string)
 		if !ok {
-			log.Errorf("[circuit breaker] breaker with key (%s) is corrupted", keys[i])
+			log.Errorf("[circuit breaker] breaker with key (%s) is corrupted, reseting it", keys[i])
 
 			// the circuit breaker is corrupted, create a new one in its place
 			circuitBreakers[i] = CircuitBreaker{
@@ -345,7 +348,7 @@ func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, brea
 
 	pipe := cb.redis.TxPipeline()
 	for key := range breakers {
-		err = pipe.Expire(ctx, key, keyTTL).Err()
+		err = pipe.Expire(ctx, key, time.Duration(cb.config.ObservabilityWindow)*time.Minute).Err()
 		if err != nil {
 			return err
 		}
@@ -388,12 +391,7 @@ func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]Cir
 	return circuitBreakers, nil
 }
 
-func (cb *CircuitBreakerManager) GetCircuitBreakerError(ctx context.Context, key string) error {
-	b, err := cb.GetCircuitBreaker(ctx, key)
-	if err != nil {
-		return err
-	}
-
+func (cb *CircuitBreakerManager) getCircuitBreakerError(b CircuitBreaker) error {
 	switch b.State {
 	case StateOpen:
 		return ErrOpenState
@@ -407,7 +405,53 @@ func (cb *CircuitBreakerManager) GetCircuitBreakerError(ctx context.Context, key
 	}
 }
 
-// GetCircuitBreaker is used to get fetch the circuit breaker state before executing a function
+// CanExecute checks if the circuit breaker for a key will return an error for the current state.
+// It will not return an error if it is in the closed state or half-open state when the failure
+// threshold has not been reached, it will fail-open if the circuit breaker is not found
+func (cb *CircuitBreakerManager) CanExecute(ctx context.Context, key string) error {
+	breaker, err := cb.getCircuitBreaker(ctx, key)
+	if err != nil {
+		return err
+	}
+
+	if breaker != nil {
+		switch breaker.State {
+		case StateOpen, StateHalfOpen:
+			return cb.getCircuitBreakerError(*breaker)
+		default:
+			return nil
+		}
+	}
+
+	return nil
+}
+
+// getCircuitBreaker is used to get fetch the circuit breaker state,
+// it fails open if the circuit breaker for that key is not found
+func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
+	breakerKey := fmt.Sprintf("%s%s", prefix, key)
+
+	res, err := cb.redis.Get(ctx, breakerKey).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			// a circuit breaker was not found for this key;
+			// it probably hasn't been created;
+			// we should fail open
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	err = msgpack.DecodeMsgPack([]byte(res), &c)
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+// GetCircuitBreaker is used to get fetch the circuit breaker state,
+// it returns ErrCircuitBreakerNotFound when a circuit breaker for the key is not found
 func (cb *CircuitBreakerManager) GetCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
 	breakerKey := fmt.Sprintf("%s%s", prefix, key)
 
@@ -464,7 +508,7 @@ func (cb *CircuitBreakerManager) cleanup(ctx context.Context) error {
 	return nil
 }
 
-func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) error {
+func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 	ticker := time.NewTicker(time.Duration(cb.config.SampleRate) * time.Second)
 	defer ticker.Stop()
 
@@ -476,7 +520,7 @@ func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) e
 	for {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return
 		case <-ticker.C:
 			if err := cb.sampleAndUpdate(ctx, pollFunc); err != nil {
 				log.WithError(err).Error("[circuit breaker] failed to sample and update circuit breakers")

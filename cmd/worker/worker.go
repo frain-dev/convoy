@@ -248,13 +248,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		a.Logger.WithError(err).Fatal("Failed to create circuit breaker manager")
 	}
 
-	go func() {
-		innerErr := circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
-		if innerErr != nil {
-			// todo(raymond): should this be Fatal?
-			a.Logger.WithError(innerErr).Fatal("circuit breaker manager failed")
-		}
-	}()
+	go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
@@ -264,6 +258,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		rateLimiter,
 		dispatcher,
 		attemptRepo,
+		circuitBreakerManager,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
@@ -283,6 +278,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		rateLimiter,
 		dispatcher,
 		attemptRepo,
+		circuitBreakerManager,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(

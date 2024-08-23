@@ -39,8 +39,10 @@ func TestNewCircuitBreaker(t *testing.T) {
 	keys, err := re.Keys(ctx, "breaker*").Result()
 	require.NoError(t, err)
 
-	err = re.Del(ctx, keys...).Err()
-	require.NoError(t, err)
+	for i := range keys {
+		err = re.Del(ctx, keys[i]).Err()
+		require.NoError(t, err)
+	}
 
 	testClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 
@@ -86,10 +88,6 @@ func TestNewCircuitBreaker(t *testing.T) {
 	for i := 0; i < len(pollResults); i++ {
 		innerErr := b.sampleStore(ctx, pollResults[i])
 		require.NoError(t, innerErr)
-
-		breaker, innerErr := b.GetCircuitBreaker(ctx, endpointId)
-		require.NoError(t, innerErr)
-		t.Logf("%+v\n", breaker)
 
 		testClock.AdvanceTime(time.Minute)
 	}

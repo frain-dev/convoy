@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -38,7 +39,8 @@ var (
 )
 
 func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository,
+	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
+	attemptsRepo datastore.DeliveryAttemptsRepository, manager *circuit_breaker.CircuitBreakerManager,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
@@ -96,6 +98,11 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 				Debugf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second)
 
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
+		}
+
+		err = manager.CanExecute(ctx, endpoint.UID)
+		if err != nil {
+			return &DeliveryError{Err: err}
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)

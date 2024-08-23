@@ -44,6 +44,11 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 				if _, ok := err.(*task.RateLimitError); ok {
 					return false
 				}
+
+				if _, ok := err.(*task.CircuitBreakerError); ok {
+					return false
+				}
+
 				return true
 			},
 			RetryDelayFunc: task.GetRetryDelay,
