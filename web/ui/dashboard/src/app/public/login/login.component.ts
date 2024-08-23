@@ -30,7 +30,7 @@ export class LoginComponent implements OnInit {
 	isSignupEnabled = false;
 	organisations?: ORGANIZATION_DATA[];
 
-	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private signupService: SignupService, private privateService: PrivateService, private licenseService: LicensesService) {}
+	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private signupService: SignupService, private privateService: PrivateService, public licenseService: LicensesService) {}
 
 	ngOnInit() {
 		this.getSignUpConfig();

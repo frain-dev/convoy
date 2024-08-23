@@ -74,7 +74,7 @@ export class PortalLinksComponent implements OnInit {
 	constructor(public privateService: PrivateService, public router: Router, private portalLinksService: PortalLinksService, private route: ActivatedRoute, private generalService: GeneralService, public licenseService: LicensesService) {}
 
 	ngOnInit() {
-		this.getPortalLinks();
+		if(this.licenseService.hasLicense('PORTAL_LINKS')) this.getPortalLinks();
 
 		const urlParam = this.route.snapshot.params.id;
 		if (urlParam) {
