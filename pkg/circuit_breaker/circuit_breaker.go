@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/redis/go-redis/v9"
+	"strings"
 	"time"
 )
 
@@ -66,62 +67,72 @@ type CircuitBreakerConfig struct {
 }
 
 func (c *CircuitBreakerConfig) Validate() error {
-	var errs []string
+	var errs strings.Builder
 
 	if c.SampleRate == 0 {
-		errs = append(errs, "SampleRate must be greater than 0")
+		errs.WriteString("SampleRate must be greater than 0")
+		errs.WriteString("; ")
 	}
 
 	if c.ErrorTimeout == 0 {
-		errs = append(errs, "ErrorTimeout must be greater than 0")
+		errs.WriteString("ErrorTimeout must be greater than 0")
+		errs.WriteString("; ")
 	}
 
 	if c.FailureThreshold < 0 || c.FailureThreshold > 1 {
-		errs = append(errs, "FailureThreshold must be between 0 and 1")
+		errs.WriteString("FailureThreshold must be between 0 and 1")
+		errs.WriteString("; ")
 	}
 
 	if c.FailureCount == 0 {
-		errs = append(errs, "FailureCount must be greater than 0")
+		errs.WriteString("FailureCount must be greater than 0")
+		errs.WriteString("; ")
 	}
 
 	if c.SuccessThreshold == 0 {
-		errs = append(errs, "SuccessThreshold must be greater than 0")
+		errs.WriteString("SuccessThreshold must be greater than 0")
+		errs.WriteString("; ")
 	}
 
 	if c.ObservabilityWindow == 0 {
-		errs = append(errs, "ObservabilityWindow must be greater than 0")
+		errs.WriteString("ObservabilityWindow must be greater than 0")
+		errs.WriteString("; ")
+	}
+
+	if c.ObservabilityWindow <= c.SampleRate {
+		errs.WriteString("ObservabilityWindow must be greater than the SampleRate")
+		errs.WriteString("; ")
 	}
 
 	if len(c.NotificationThresholds) == 0 {
-		errs = append(errs, "NotificationThresholds must contain at least one threshold")
+		errs.WriteString("NotificationThresholds must contain at least one threshold")
+		errs.WriteString("; ")
 	} else {
-		for i, threshold := range c.NotificationThresholds {
-			if threshold == 0 {
-				errs = append(errs, fmt.Sprintf("Notification thresholds at index [%d] = %d must be greater than 0", i, threshold))
+		for i := 0; i < len(c.NotificationThresholds); i++ {
+			if c.NotificationThresholds[i] == 0 {
+				errs.WriteString(fmt.Sprintf("Notification thresholds at index [%d] = %d must be greater than 0", i, c.NotificationThresholds[i]))
+				errs.WriteString("; ")
+			}
+		}
+
+		for i := 0; i < len(c.NotificationThresholds)-1; i++ {
+			if c.NotificationThresholds[i] >= c.NotificationThresholds[i+1] {
+				errs.WriteString("NotificationThresholds should be in ascending order")
+				errs.WriteString("; ")
 			}
 		}
 	}
 
 	if c.ConsecutiveFailureThreshold == 0 {
-		errs = append(errs, "ConsecutiveFailureThreshold must be greater than 0")
+		errs.WriteString("ConsecutiveFailureThreshold must be greater than 0")
+		errs.WriteString("; ")
 	}
 
-	if len(errs) > 0 {
-		return fmt.Errorf("config validation failed with errors: %s", joinErrors(errs))
+	if errs.Len() > 0 {
+		return fmt.Errorf("config validation failed with errors: %s", errs.String())
 	}
 
 	return nil
-}
-
-func joinErrors(errs []string) string {
-	result := ""
-	for i, err := range errs {
-		if i > 0 {
-			result += "; "
-		}
-		result += err
-	}
-	return result
 }
 
 // State represents a state of a CircuitBreaker.
@@ -330,27 +341,16 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 	return nil
 }
 
-func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, breakers map[string]CircuitBreaker) error {
-	breakerStringsMap := make(map[string]string, len(breakers))
-	for key, breaker := range breakers {
-		val, err := breaker.String()
-		if err != nil {
-			return err
-		}
-		breakerStringsMap[key] = val
-	}
-
-	// Update the state
-	err := cb.redis.MSet(ctx, breakerStringsMap).Err()
-	if err != nil {
-		return err
-	}
-
+func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, breakers map[string]CircuitBreaker) (err error) {
 	pipe := cb.redis.TxPipeline()
-	for key := range breakers {
-		err = pipe.Expire(ctx, key, time.Duration(cb.config.ObservabilityWindow)*time.Minute).Err()
-		if err != nil {
-			return err
+	for key, breaker := range breakers {
+		val, innerErr := breaker.String()
+		if innerErr != nil {
+			return innerErr
+		}
+
+		if innerErr = pipe.Set(ctx, key, val, time.Duration(cb.config.ObservabilityWindow)*time.Minute).Err(); innerErr != nil {
+			return innerErr
 		}
 	}
 
@@ -409,15 +409,15 @@ func (cb *CircuitBreakerManager) getCircuitBreakerError(b CircuitBreaker) error 
 // It will not return an error if it is in the closed state or half-open state when the failure
 // threshold has not been reached, it will fail-open if the circuit breaker is not found
 func (cb *CircuitBreakerManager) CanExecute(ctx context.Context, key string) error {
-	breaker, err := cb.getCircuitBreaker(ctx, key)
+	b, err := cb.getCircuitBreaker(ctx, key)
 	if err != nil {
 		return err
 	}
 
-	if breaker != nil {
-		switch breaker.State {
+	if b != nil {
+		switch b.State {
 		case StateOpen, StateHalfOpen:
-			return cb.getCircuitBreakerError(*breaker)
+			return cb.getCircuitBreakerError(*b)
 		default:
 			return nil
 		}
@@ -429,9 +429,9 @@ func (cb *CircuitBreakerManager) CanExecute(ctx context.Context, key string) err
 // getCircuitBreaker is used to get fetch the circuit breaker state,
 // it fails open if the circuit breaker for that key is not found
 func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
-	breakerKey := fmt.Sprintf("%s%s", prefix, key)
+	bKey := fmt.Sprintf("%s%s", prefix, key)
 
-	res, err := cb.redis.Get(ctx, breakerKey).Result()
+	res, err := cb.redis.Get(ctx, bKey).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			// a circuit breaker was not found for this key;
@@ -453,9 +453,9 @@ func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key stri
 // GetCircuitBreaker is used to get fetch the circuit breaker state,
 // it returns ErrCircuitBreakerNotFound when a circuit breaker for the key is not found
 func (cb *CircuitBreakerManager) GetCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
-	breakerKey := fmt.Sprintf("%s%s", prefix, key)
+	bKey := fmt.Sprintf("%s%s", prefix, key)
 
-	res, err := cb.redis.Get(ctx, breakerKey).Result()
+	res, err := cb.redis.Get(ctx, bKey).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, ErrCircuitBreakerNotFound
@@ -489,33 +489,9 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 	return nil
 }
 
-func (cb *CircuitBreakerManager) cleanup(ctx context.Context) error {
-	keys, err := cb.redis.Keys(ctx, fmt.Sprintf("%s%s", prefix, "*")).Result()
-	if err != nil {
-		return fmt.Errorf("failed to get keys for cleanup: %w", err)
-	}
-
-	pipe := cb.redis.TxPipeline()
-	for _, key := range keys {
-		pipe.Del(ctx, key)
-	}
-
-	_, err = pipe.Exec(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to execute cleanup pipeline: %w", err)
-	}
-
-	return nil
-}
-
 func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 	ticker := time.NewTicker(time.Duration(cb.config.SampleRate) * time.Second)
 	defer ticker.Stop()
-
-	// Run cleanup daily
-	// todo(raymond): should this be run by asynq?
-	cleanupTicker := time.NewTicker(24 * time.Hour)
-	defer cleanupTicker.Stop()
 
 	for {
 		select {
@@ -524,10 +500,6 @@ func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 		case <-ticker.C:
 			if err := cb.sampleAndUpdate(ctx, pollFunc); err != nil {
 				log.WithError(err).Error("[circuit breaker] failed to sample and update circuit breakers")
-			}
-		case <-cleanupTicker.C:
-			if err := cb.cleanup(ctx); err != nil {
-				log.WithError(err).Error("[circuit breaker] failed to cleanup circuit breakers")
 			}
 		}
 	}
