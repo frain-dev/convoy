@@ -37,4 +37,4 @@ Convoy provides several key features:
 Thank you for your interest in contributing! Please refer to [CONTRIBUTING.md](https://github.com/frain-dev/convoy/blob/main/CONTRIBUTING.md) for guidance. For contributions to the Convoy dashboard, please refer to the [web/ui](https://github.com/frain-dev/convoy/tree/main/web/ui) directory.
 
 ## License
-[Mozilla Public License v2.0](https://github.com/frain-dev/convoy/blob/main/LICENSE)
+[Elastic License v2.0](https://github.com/frain-dev/convoy/blob/main/LICENSE)
