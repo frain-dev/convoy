@@ -163,6 +163,7 @@ export class PrivateComponent implements OnInit {
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.creatingOrganisation = false;
 			this.dialog.nativeElement.close();
+			this.licenseService.setLicenses();
 
 			await this.getOrganizations(true);
 			this.selectOrganisation(response.data);
