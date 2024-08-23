@@ -42,7 +42,7 @@ func Test_FilterBy(t *testing.T) {
 	for _, tt := range args {
 		t.Run(tt.name, func(t *testing.T) {
 			s := tt.filter.String()
-			require.Equal(t, tt.expected, *s)
+			require.Equal(t, tt.expected, s)
 		})
 	}
 }
