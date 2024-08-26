@@ -1,6 +1,8 @@
 package models
 
 import (
+	emailverifier "github.com/AfterShip/email-verifier"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -25,6 +27,17 @@ type RegisterUser struct {
 
 func (ru *RegisterUser) Validate() error {
 	return util.Validate(ru)
+}
+
+func (ru *RegisterUser) EmailIsDisposable() bool {
+	ret, err := emailverifier.NewVerifier().
+		EnableAutoUpdateDisposable().
+		Verify(ru.Email)
+	if err != nil {
+		return false
+	}
+
+	return ret.Disposable
 }
 
 type UpdateUser struct {

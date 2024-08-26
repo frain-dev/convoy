@@ -48,13 +48,13 @@ func TestLoginUserService_Run(t *testing.T) {
 			name: "should_login_user_with_valid_credentials",
 			args: args{
 				ctx:  ctx,
-				user: &models.LoginUser{Username: "test@test.com", Password: "123456"},
+				user: &models.LoginUser{Username: "test@convoy.com", Password: "123456"},
 			},
 			wantUser: &datastore.User{
 				UID:       "12345",
 				FirstName: "test",
 				LastName:  "test",
-				Email:     "test@test.com",
+				Email:     "test@convoy.com",
 			},
 			dbFn: func(u *LoginUserService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
@@ -68,7 +68,7 @@ func TestLoginUserService_Run(t *testing.T) {
 					UID:       "12345",
 					FirstName: "test",
 					LastName:  "test",
-					Email:     "test@test.com",
+					Email:     "test@convoy.com",
 					Password:  string(p.Hash),
 				}, nil)
 			},
@@ -93,7 +93,7 @@ func TestLoginUserService_Run(t *testing.T) {
 			name: "should_not_login_with_invalid_password",
 			args: args{
 				ctx:  ctx,
-				user: &models.LoginUser{Username: "test@test.com", Password: "12345"},
+				user: &models.LoginUser{Username: "test@convoy.com", Password: "12345"},
 			},
 			dbFn: func(u *LoginUserService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
@@ -107,7 +107,7 @@ func TestLoginUserService_Run(t *testing.T) {
 					UID:       "12345",
 					FirstName: "test",
 					LastName:  "test",
-					Email:     "test@test.com",
+					Email:     "test@convoy.com",
 					Password:  string(p.Hash),
 				}, nil)
 			},

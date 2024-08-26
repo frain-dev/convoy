@@ -17,10 +17,19 @@ import (
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
+const (
+	ErrDisposableEmailNotAllowed = "disposable email not allowed."
+)
+
 func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.RegisterUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if newUser.EmailIsDisposable() {
+		_ = render.Render(w, r, util.NewErrorResponse(ErrDisposableEmailNotAllowed, http.StatusBadRequest))
 		return
 	}
 

@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	cloud.google.com/go/pubsub v1.33.0
+	github.com/AfterShip/email-verifier v1.4.0
 	github.com/Subomi/go-authz v0.2.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/aws/aws-sdk-go v1.44.327
@@ -147,6 +148,7 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hbollon/go-edlib v1.6.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/in-toto/in-toto-golang v0.5.0 // indirect
 	github.com/invopop/yaml v0.2.0 // indirect

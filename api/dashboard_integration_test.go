@@ -4024,7 +4024,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser() {
 	r := &models.RegisterUser{
 		FirstName:        "test",
 		LastName:         "test",
-		Email:            "test@test.com",
+		Email:            "test@convoy.com",
 		Password:         "123456",
 		OrganisationName: "test",
 	}
@@ -4077,7 +4077,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 	r := &models.RegisterUser{
 		FirstName:        "test",
 		LastName:         "test",
-		Email:            "test@test.com",
+		Email:            "test@convoy.com",
 		Password:         "123456",
 		OrganisationName: "test",
 	}
@@ -4108,7 +4108,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 	r := &models.RegisterUser{
 		FirstName:        "test",
 		LastName:         "test",
-		Email:            "test@test.com",
+		Email:            "test@convoy.com",
 		Password:         "123456",
 		OrganisationName: "test",
 	}
@@ -4138,7 +4138,7 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
 	r := &models.RegisterUser{
 		FirstName:        "test",
 		LastName:         "test",
-		Email:            "test@test.com",
+		Email:            "test@convoy.com",
 		Password:         "123456",
 		OrganisationName: "test",
 	}

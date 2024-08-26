@@ -535,7 +535,7 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 	}
 
 	if email == "" {
-		email = "test@test.com"
+		email = "test@convoy.com"
 	}
 
 	user := &datastore.User{

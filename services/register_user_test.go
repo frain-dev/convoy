@@ -57,7 +57,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				user: &models.RegisterUser{
 					FirstName:        "test",
 					LastName:         "test",
-					Email:            "test@test.com",
+					Email:            "test@convoy.com",
 					Password:         "123456",
 					OrganisationName: "test",
 				},
@@ -66,7 +66,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				UID:       "12345",
 				FirstName: "test",
 				LastName:  "test",
-				Email:     "test@test.com",
+				Email:     "test@convoy.com",
 			},
 			dbFn: func(u *RegisterUserService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
@@ -96,7 +96,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				user: &models.RegisterUser{
 					FirstName:        "test",
 					LastName:         "test",
-					Email:            "test@test.com",
+					Email:            "test@convoy.com",
 					Password:         "123456",
 					OrganisationName: "test",
 				},
@@ -116,7 +116,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				user: &models.RegisterUser{
 					FirstName:        "test",
 					LastName:         "test",
-					Email:            "test@test.com",
+					Email:            "test@convoy.com",
 					Password:         "123456",
 					OrganisationName: "test",
 				},
@@ -125,7 +125,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				UID:       "12345",
 				FirstName: "test",
 				LastName:  "test",
-				Email:     "test@test.com",
+				Email:     "test@convoy.com",
 			},
 			dbFn: func(u *RegisterUserService) {
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
@@ -152,7 +152,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				user: &models.RegisterUser{
 					FirstName:        "test",
 					LastName:         "test",
-					Email:            "test@test.com",
+					Email:            "test@convoy.com",
 					Password:         "123456",
 					OrganisationName: "test",
 				},
