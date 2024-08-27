@@ -6,55 +6,87 @@ import (
 	"errors"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/mocks"
-
+	"github.com/keygen-sh/keygen-go/v3"
 	"go.uber.org/mock/gomock"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestKeygenLicenserBoolMethods(t *testing.T) {
-	k := Licenser{featureList: map[Feature]*Properties{UseForwardProxy: {}}}
+	k := Licenser{featureList: map[Feature]*Properties{UseForwardProxy: {}}, license: &keygen.License{}}
 	require.True(t, k.UseForwardProxy())
 
-	k = Licenser{featureList: map[Feature]*Properties{ExportPrometheusMetrics: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{UseForwardProxy: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.UseForwardProxy())
+
+	k = Licenser{featureList: map[Feature]*Properties{ExportPrometheusMetrics: {}}, license: &keygen.License{}}
 	require.True(t, k.CanExportPrometheusMetrics())
 
-	k = Licenser{featureList: map[Feature]*Properties{AdvancedEndpointMgmt: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{ExportPrometheusMetrics: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.CanExportPrometheusMetrics())
+
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedEndpointMgmt: {}}, license: &keygen.License{}}
 	require.True(t, k.AdvancedEndpointMgmt())
 
-	k = Licenser{featureList: map[Feature]*Properties{AdvancedWebhookArchiving: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedEndpointMgmt: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.AdvancedEndpointMgmt())
+
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedWebhookArchiving: {}}, license: &keygen.License{}}
 	require.True(t, k.AdvancedRetentionPolicy())
 
-	k = Licenser{featureList: map[Feature]*Properties{AdvancedMsgBroker: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedWebhookArchiving: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.AdvancedRetentionPolicy())
+
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedMsgBroker: {}}, license: &keygen.License{}}
 	require.True(t, k.AdvancedMsgBroker())
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedMsgBroker: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.AdvancedMsgBroker())
 
-	k = Licenser{featureList: map[Feature]*Properties{AdvancedSubscriptions: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedSubscriptions: {}}, license: &keygen.License{}}
 	require.True(t, k.AdvancedSubscriptions())
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedSubscriptions: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.AdvancedSubscriptions())
 
-	k = Licenser{featureList: map[Feature]*Properties{WebhookTransformations: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{WebhookTransformations: {}}, license: &keygen.License{}}
 	require.True(t, k.Transformations())
+	k = Licenser{featureList: map[Feature]*Properties{WebhookTransformations: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.Transformations())
 
-	k = Licenser{featureList: map[Feature]*Properties{HADeployment: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{HADeployment: {}}, license: &keygen.License{}}
 	require.True(t, k.HADeployment())
+	k = Licenser{featureList: map[Feature]*Properties{HADeployment: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.HADeployment())
 
-	k = Licenser{featureList: map[Feature]*Properties{WebhookAnalytics: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{WebhookAnalytics: {}}, license: &keygen.License{}}
 	require.True(t, k.WebhookAnalytics())
+	k = Licenser{featureList: map[Feature]*Properties{WebhookAnalytics: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.WebhookAnalytics())
 
-	k = Licenser{featureList: map[Feature]*Properties{MutualTLS: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{MutualTLS: {}}, license: &keygen.License{}}
 	require.True(t, k.MutualTLS())
+	k = Licenser{featureList: map[Feature]*Properties{MutualTLS: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.MutualTLS())
 
-	k = Licenser{featureList: map[Feature]*Properties{AsynqMonitoring: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AsynqMonitoring: {}}, license: &keygen.License{}}
 	require.True(t, k.AsynqMonitoring())
 
-	k = Licenser{featureList: map[Feature]*Properties{SynchronousWebhooks: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{AsynqMonitoring: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.AsynqMonitoring())
+
+	k = Licenser{featureList: map[Feature]*Properties{SynchronousWebhooks: {}}, license: &keygen.License{}}
 	require.True(t, k.SynchronousWebhooks())
+	k = Licenser{featureList: map[Feature]*Properties{SynchronousWebhooks: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.SynchronousWebhooks())
 
-	k = Licenser{featureList: map[Feature]*Properties{PortalLinks: {}}}
+	k = Licenser{featureList: map[Feature]*Properties{PortalLinks: {}}, license: &keygen.License{}}
 	require.True(t, k.PortalLinks())
+	k = Licenser{featureList: map[Feature]*Properties{PortalLinks: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.PortalLinks())
 
-	falseLicenser := Licenser{featureList: map[Feature]*Properties{}}
+	falseLicenser := Licenser{featureList: map[Feature]*Properties{}, license: &keygen.License{Expiry: timePtr(time.Now().Add(400000 * time.Hour))}}
 
 	require.False(t, falseLicenser.UseForwardProxy())
 	require.False(t, falseLicenser.PortalLinks())
@@ -71,9 +103,10 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	require.False(t, falseLicenser.SynchronousWebhooks())
 }
 
-func provideLicenser(ctrl *gomock.Controller, fl map[Feature]*Properties) *Licenser {
+func provideLicenser(ctrl *gomock.Controller, license *keygen.License, fl map[Feature]*Properties) *Licenser {
 	return &Licenser{
 		featureList: fl,
+		license:     license,
 		orgRepo:     mocks.NewMockOrganisationRepository(ctrl),
 		userRepo:    mocks.NewMockUserRepository(ctrl),
 		projectRepo: mocks.NewMockProjectRepository(ctrl),
@@ -86,6 +119,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 		featureList map[Feature]*Properties
 		ctx         context.Context
 		dbFn        func(k *Licenser)
+		license     *keygen.License
 		want        bool
 		wantErr     bool
 		wantErrMsg  string
@@ -97,6 +131,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
 				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(0), nil)
@@ -106,12 +141,26 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_return_false_for_license_expired",
+			featureList: map[Feature]*Properties{
+				CreateProject: {
+					Limit: 1,
+				},
+			},
+			license:    &keygen.License{Expiry: timePtr(time.Now().Add(-time.Hour * 40000))},
+			ctx:        context.Background(),
+			want:       false,
+			wantErr:    true,
+			wantErrMsg: ErrLicenseExpired.Error(),
+		},
+		{
 			name: "should_return_false_for_limit_reached",
 			featureList: map[Feature]*Properties{
 				CreateProject: {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
 				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(1), nil)
@@ -127,6 +176,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 					Limit: -1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
 				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(math.MaxInt64), nil)
@@ -142,6 +192,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				projectRepo := k.projectRepo.(*mocks.MockProjectRepository)
 				projectRepo.EXPECT().CountProjects(gomock.Any()).Return(int64(0), errors.New("failed"))
@@ -156,7 +207,7 @@ func TestKeygenLicenser_CreateProject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			k := provideLicenser(ctrl, tt.featureList)
+			k := provideLicenser(ctrl, tt.license, tt.featureList)
 
 			if tt.dbFn != nil {
 				tt.dbFn(k)
@@ -182,6 +233,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 		featureList map[Feature]*Properties
 		ctx         context.Context
 		dbFn        func(k *Licenser)
+		license     *keygen.License
 		want        bool
 		wantErr     bool
 		wantErrMsg  string
@@ -193,6 +245,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(0), nil)
@@ -202,12 +255,26 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_return_false_for_license_expired",
+			featureList: map[Feature]*Properties{
+				CreateOrg: {
+					Limit: 1,
+				},
+			},
+			license:    &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * -40000))},
+			ctx:        context.Background(),
+			want:       false,
+			wantErr:    true,
+			wantErrMsg: ErrLicenseExpired.Error(),
+		},
+		{
 			name: "should_return_false_for_limit_reached",
 			featureList: map[Feature]*Properties{
 				CreateOrg: {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(1), nil)
@@ -223,6 +290,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 					Limit: -1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(math.MaxInt64), nil)
@@ -238,6 +306,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				orgRepo := k.orgRepo.(*mocks.MockOrganisationRepository)
 				orgRepo.EXPECT().CountOrganisations(gomock.Any()).Return(int64(0), errors.New("failed"))
@@ -252,7 +321,7 @@ func TestKeygenLicenser_CanCreateOrg(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			k := provideLicenser(ctrl, tt.featureList)
+			k := provideLicenser(ctrl, tt.license, tt.featureList)
 
 			if tt.dbFn != nil {
 				tt.dbFn(k)
@@ -277,6 +346,7 @@ func TestKeygenLicenser_CanCreateUser(t *testing.T) {
 		name            string
 		featureList     map[Feature]*Properties
 		ctx             context.Context
+		license         *keygen.License
 		dbFn            func(k *Licenser)
 		canCreateMember bool
 		wantErr         bool
@@ -289,6 +359,7 @@ func TestKeygenLicenser_CanCreateUser(t *testing.T) {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				userRepository := k.userRepo.(*mocks.MockUserRepository)
 				userRepository.EXPECT().CountUsers(gomock.Any()).Return(int64(0), nil)
@@ -304,6 +375,7 @@ func TestKeygenLicenser_CanCreateUser(t *testing.T) {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				userRepository := k.userRepo.(*mocks.MockUserRepository)
 				userRepository.EXPECT().CountUsers(gomock.Any()).Return(int64(1), nil)
@@ -319,6 +391,7 @@ func TestKeygenLicenser_CanCreateUser(t *testing.T) {
 					Limit: -1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				userRepository := k.userRepo.(*mocks.MockUserRepository)
 				userRepository.EXPECT().CountUsers(gomock.Any()).Return(int64(0), nil)
@@ -334,6 +407,7 @@ func TestKeygenLicenser_CanCreateUser(t *testing.T) {
 					Limit: 1,
 				},
 			},
+			license: &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * 40000))},
 			dbFn: func(k *Licenser) {
 				userRepository := k.userRepo.(*mocks.MockUserRepository)
 				userRepository.EXPECT().CountUsers(gomock.Any()).Return(int64(0), errors.New("failed"))
@@ -343,12 +417,25 @@ func TestKeygenLicenser_CanCreateUser(t *testing.T) {
 			wantErr:         true,
 			wantErrMsg:      "failed",
 		},
+		{
+			name: "should_error_for_license_expired",
+			featureList: map[Feature]*Properties{
+				CreateUser: {
+					Limit: 1,
+				},
+			},
+			license:         &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour * -40000))},
+			ctx:             context.Background(),
+			canCreateMember: false,
+			wantErr:         true,
+			wantErrMsg:      ErrLicenseExpired.Error(),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			k := provideLicenser(ctrl, tt.featureList)
+			k := provideLicenser(ctrl, tt.license, tt.featureList)
 
 			if tt.dbFn != nil {
 				tt.dbFn(k)
@@ -477,7 +564,7 @@ func TestLicenser_FeatureListJSON(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			k := provideLicenser(ctrl, tt.featureList)
+			k := provideLicenser(ctrl, &keygen.License{Expiry: timePtr(time.Now().Add(time.Hour))}, tt.featureList)
 
 			if tt.dbFn != nil {
 				tt.dbFn(k)
@@ -494,4 +581,58 @@ func TestLicenser_FeatureListJSON(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestCheckExpiry(t *testing.T) {
+	tests := []struct {
+		name       string
+		expiry     *time.Time
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name:       "No Expiry Date",
+			expiry:     nil,
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name:    "License Expired within 21 Days",
+			expiry:  timePtr(time.Now().Add(-10 * 24 * time.Hour)), // 10 days ago
+			wantErr: false,
+		},
+		{
+			name:       "License Expired beyond 21 Days",
+			expiry:     timePtr(time.Now().Add(-22 * 24 * time.Hour)), // 22 days ago
+			wantErr:    true,
+			wantErrMsg: ErrLicenseExpired.Error(),
+		},
+		{
+			name:    "License Not Yet Expired",
+			expiry:  timePtr(time.Now().Add(5 * 24 * time.Hour)), // 5 days in the future
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			license := &keygen.License{
+				Expiry: tt.expiry,
+			}
+
+			err := checkExpiry(license)
+
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Equal(t, tt.wantErrMsg, err.Error())
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
+// timePtr is a helper function to get a pointer to a time.Time value
+func timePtr(t time.Time) *time.Time {
+	return &t
 }

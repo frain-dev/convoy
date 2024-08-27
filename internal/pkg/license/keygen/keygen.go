@@ -62,6 +62,11 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		return nil, fmt.Errorf("failed to validate error: %v", err)
 	}
 
+	err = checkExpiry(l)
+	if err != nil {
+		return nil, err
+	}
+
 	if l.Metadata == nil {
 		return nil, fmt.Errorf("license has no metadata")
 	}
@@ -133,11 +138,39 @@ func allowKeygenError(err error) bool {
 	switch {
 	case errors.Is(err, keygen.ErrLicenseNotActivated):
 		return true
+	case errors.Is(err, keygen.ErrLicenseExpired):
+		return true
 	case errors.Is(err, keygen.ErrHeartbeatRequired):
 		return true
 	}
 
 	return false
+}
+
+var ErrLicenseExpired = errors.New("license expired")
+
+func checkExpiry(l *keygen.License) error {
+	if l.Expiry == nil {
+		return nil
+	}
+
+	now := time.Now()
+
+	if now.After(*l.Expiry) {
+		v := now.Sub(*l.Expiry)
+
+		const days = 21 * 24 * time.Hour // 21 days
+
+		if v < days { // expired in less than 21 days, allow instance to boot
+			daysAgo := int64(v.Hours() / 24)
+			log.Warnf("license expired %d days ago, access to features will be revoked in %d days", daysAgo, 21-daysAgo)
+			return nil
+		}
+
+		return ErrLicenseExpired
+	}
+
+	return nil
 }
 
 func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]*Properties, error) {
@@ -179,6 +212,11 @@ func getFeatureList(ctx context.Context, l *keygen.License) (map[Feature]*Proper
 }
 
 func (k *Licenser) CreateOrg(ctx context.Context) (bool, error) {
+	err := checkExpiry(k.license)
+	if err != nil {
+		return false, err
+	}
+
 	c, err := k.orgRepo.CountOrganisations(ctx)
 	if err != nil {
 		return false, err
@@ -198,6 +236,11 @@ func (k *Licenser) CreateOrg(ctx context.Context) (bool, error) {
 }
 
 func (k *Licenser) CreateUser(ctx context.Context) (bool, error) {
+	err := checkExpiry(k.license)
+	if err != nil {
+		return false, err
+	}
+
 	c, err := k.userRepo.CountUsers(ctx)
 	if err != nil {
 		return false, err
@@ -217,6 +260,11 @@ func (k *Licenser) CreateUser(ctx context.Context) (bool, error) {
 }
 
 func (k *Licenser) CreateProject(ctx context.Context) (bool, error) {
+	err := checkExpiry(k.license)
+	if err != nil {
+		return false, err
+	}
+
 	c, err := k.projectRepo.CountProjects(ctx)
 	if err != nil {
 		return false, err
@@ -236,66 +284,107 @@ func (k *Licenser) CreateProject(ctx context.Context) (bool, error) {
 }
 
 func (k *Licenser) UseForwardProxy() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+
 	_, ok := k.featureList[UseForwardProxy]
 	return ok
 }
 
 func (k *Licenser) CanExportPrometheusMetrics() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+
 	_, ok := k.featureList[ExportPrometheusMetrics]
 	return ok
 }
 
 func (k *Licenser) AdvancedEndpointMgmt() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[AdvancedEndpointMgmt]
 	return ok
 }
 
 func (k *Licenser) AdvancedRetentionPolicy() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[AdvancedWebhookArchiving]
 	return ok
 }
 
 func (k *Licenser) AdvancedMsgBroker() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[AdvancedMsgBroker]
 	return ok
 }
 
 func (k *Licenser) AdvancedSubscriptions() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[AdvancedSubscriptions]
 	return ok
 }
 
 func (k *Licenser) Transformations() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[WebhookTransformations]
 	return ok
 }
 
 func (k *Licenser) HADeployment() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[HADeployment]
 	return ok
 }
 
 func (k *Licenser) WebhookAnalytics() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[WebhookAnalytics]
 	return ok
 }
 
 func (k *Licenser) MutualTLS() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[MutualTLS]
 	return ok
 }
 
 func (k *Licenser) AsynqMonitoring() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[AsynqMonitoring]
 	return ok
 }
 
 func (k *Licenser) SynchronousWebhooks() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[SynchronousWebhooks]
 	return ok
 }
 
 func (k *Licenser) PortalLinks() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
 	_, ok := k.featureList[PortalLinks]
 	return ok
 }
