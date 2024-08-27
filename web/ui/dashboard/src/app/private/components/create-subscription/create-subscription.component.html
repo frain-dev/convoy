@@ -160,7 +160,7 @@
 
 					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
 
-					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="soft-outline" color="neutral" (click)="toggleConfigForm('filter_config')" [disabled]="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="soft-outline" color="neutral" (click)="toggleConfigForm('filter_config')">
 						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>

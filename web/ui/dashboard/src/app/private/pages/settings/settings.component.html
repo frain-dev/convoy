@@ -17,14 +17,14 @@
 						[class]="activePage === menu.name ? 'border-l-new.primary-400' : ''"
 						type="button"
 						(click)="toggleActivePage(menu.name)"
-						[disabled]="menu.name === 'team' && licenseService.hasLicense('CREATE_USER')"
+						[disabled]="menu.name === 'team' && !licenseService.hasLicense('CREATE_USER')"
 					>
 						<svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-neutral-10'">
 							<use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
 						</svg>
 						<span class="text-12 text-left capitalize tracking-[0.02em] mobile:min-w-[80px] !font-medium" [class]="activePage === menu.name ? 'text-new.primary-400 !font-semibold' : 'text-neutral-10'">{{ menu.name }}</span>
 					</button>
-					<div convoy-tag size="sm" color="primary" *ngIf="menu.name === 'team' && licenseService.hasLicense('CREATE_USER')">
+					<div convoy-tag size="sm" color="primary" *ngIf="menu.name === 'team' && !licenseService.hasLicense('CREATE_USER')">
 						<svg width="10" height="10" class="fill-new.primary-400 scale-150">
 							<use xlink:href="#lock-icon"></use>
 						</svg>
