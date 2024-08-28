@@ -160,15 +160,14 @@ func (s State) String() string {
 
 // CircuitBreaker represents a circuit breaker
 type CircuitBreaker struct {
-	Key                  string    `json:"key"`
-	State                State     `json:"state"`
-	Requests             uint64    `json:"requests"`
-	FailureRate          float64   `json:"failure_rate"`
-	WillResetAt          time.Time `json:"will_reset_at"`
-	TotalFailures        uint64    `json:"total_failures"`
-	TotalSuccesses       uint64    `json:"total_successes"`
-	ConsecutiveFailures  uint64    `json:"consecutive_failures"`
-	ConsecutiveSuccesses uint64    `json:"consecutive_successes"`
+	Key                 string    `json:"key"`
+	State               State     `json:"state"`
+	Requests            uint64    `json:"requests"`
+	FailureRate         float64   `json:"failure_rate"`
+	WillResetAt         time.Time `json:"will_reset_at"`
+	TotalFailures       uint64    `json:"total_failures"`
+	TotalSuccesses      uint64    `json:"total_successes"`
+	ConsecutiveFailures uint64    `json:"consecutive_failures"`
 }
 
 func (b *CircuitBreaker) String() (s string, err error) {
@@ -193,7 +192,6 @@ func (b *CircuitBreaker) toHalfOpen() {
 func (b *CircuitBreaker) resetCircuitBreaker() {
 	b.State = StateClosed
 	b.ConsecutiveFailures = 0
-	b.ConsecutiveSuccesses++
 }
 
 type PollResult struct {
@@ -205,10 +203,19 @@ type PollResult struct {
 type CircuitBreakerManager struct {
 	config *CircuitBreakerConfig
 	clock  clock.Clock
-	redis  *redis.Client
+	redis  RedisClient
 }
 
-func NewCircuitBreakerManager(client redis.UniversalClient) *CircuitBreakerManager {
+type RedisClient interface {
+	Keys(ctx context.Context, pattern string) *redis.StringSliceCmd
+	Get(ctx context.Context, key string) *redis.StringCmd
+	MGet(ctx context.Context, keys ...string) *redis.SliceCmd
+	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *redis.StatusCmd
+	Scan(ctx context.Context, cursor uint64, match string, count int64) *redis.ScanCmd
+	TxPipeline() redis.Pipeliner
+}
+
+func NewCircuitBreakerManager(client RedisClient) *CircuitBreakerManager {
 	defaultConfig := &CircuitBreakerConfig{
 		SampleRate:                  30,
 		ErrorTimeout:                30,
@@ -223,7 +230,7 @@ func NewCircuitBreakerManager(client redis.UniversalClient) *CircuitBreakerManag
 	r := &CircuitBreakerManager{
 		config: defaultConfig,
 		clock:  clock.NewRealClock(),
-		redis:  client.(*redis.Client),
+		redis:  client,
 	}
 
 	return r
@@ -259,7 +266,10 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 		pollResults[i].Key = key
 	}
 
-	res, err := cb.redis.MGet(context.Background(), keys...).Result()
+	deadlineCtx, cancel := context.WithDeadline(ctx, cb.clock.Now().Add(5*time.Second))
+	defer cancel()
+
+	res, err := cb.redis.MGet(deadlineCtx, keys...).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil
@@ -342,6 +352,9 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 }
 
 func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, breakers map[string]CircuitBreaker) (err error) {
+	deadlineCtx, cancel := context.WithDeadline(ctx, cb.clock.Now().Add(5*time.Second))
+	defer cancel()
+
 	pipe := cb.redis.TxPipeline()
 	for key, breaker := range breakers {
 		val, innerErr := breaker.String()
@@ -349,12 +362,12 @@ func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, brea
 			return innerErr
 		}
 
-		if innerErr = pipe.Set(ctx, key, val, time.Duration(cb.config.ObservabilityWindow)*time.Minute).Err(); innerErr != nil {
+		if innerErr = pipe.Set(deadlineCtx, key, val, time.Duration(cb.config.ObservabilityWindow)*time.Minute).Err(); innerErr != nil {
 			return innerErr
 		}
 	}
 
-	_, err = pipe.Exec(ctx)
+	_, err = pipe.Exec(deadlineCtx)
 	if err != nil {
 		return err
 	}
@@ -363,12 +376,15 @@ func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, brea
 }
 
 func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]CircuitBreaker, error) {
-	keys, err := cb.redis.Keys(ctx, "breaker*").Result()
+	deadlineCtx, cancel := context.WithDeadline(ctx, cb.clock.Now().Add(5*time.Second))
+	defer cancel()
+
+	keys, err := cb.redis.Keys(deadlineCtx, "breaker*").Result()
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := cb.redis.MGet(ctx, keys...).Result()
+	res, err := cb.redis.MGet(deadlineCtx, keys...).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, nil
@@ -429,9 +445,11 @@ func (cb *CircuitBreakerManager) CanExecute(ctx context.Context, key string) err
 // getCircuitBreaker is used to get fetch the circuit breaker state,
 // it fails open if the circuit breaker for that key is not found
 func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
-	bKey := fmt.Sprintf("%s%s", prefix, key)
+	deadlineCtx, cancel := context.WithDeadline(ctx, cb.clock.Now().Add(5*time.Second))
+	defer cancel()
 
-	res, err := cb.redis.Get(ctx, bKey).Result()
+	bKey := fmt.Sprintf("%s%s", prefix, key)
+	res, err := cb.redis.Get(deadlineCtx, bKey).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			// a circuit breaker was not found for this key;
@@ -453,9 +471,11 @@ func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key stri
 // GetCircuitBreaker is used to get fetch the circuit breaker state,
 // it returns ErrCircuitBreakerNotFound when a circuit breaker for the key is not found
 func (cb *CircuitBreakerManager) GetCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
-	bKey := fmt.Sprintf("%s%s", prefix, key)
+	deadlineCtx, cancel := context.WithDeadline(ctx, cb.clock.Now().Add(5*time.Second))
+	defer cancel()
 
-	res, err := cb.redis.Get(ctx, bKey).Result()
+	bKey := fmt.Sprintf("%s%s", prefix, key)
+	res, err := cb.redis.Get(deadlineCtx, bKey).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return nil, ErrCircuitBreakerNotFound
