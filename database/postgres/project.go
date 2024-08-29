@@ -85,6 +85,7 @@ const (
 		p.logo_url,
 		p.organisation_id,
 		p.project_configuration_id,
+		p.disabled_by_license,
 		c.search_policy AS "config.search_policy",
 		c.max_payload_read_size AS "config.max_payload_read_size",
 		c.multiple_endpoint_subscriptions AS "config.multiple_endpoint_subscriptions",
@@ -111,7 +112,11 @@ const (
 	LEFT JOIN convoy.project_configurations c
 	ON p.project_configuration_id = c.id
 	WHERE p.id = $1 AND p.deleted_at IS NULL;
-	`
+`
+
+	fetchEnabledProjectIDs = `SELECT id from convoy.projects WHERE  disabled_by_license = false AND deleted_at IS NULL`
+	disableProjects        = `UPDATE convoy.projects SET disabled_by_license = true WHERE ID IN (:ids)`
+	enableProjects         = `UPDATE convoy.projects SET disabled_by_license = false`
 
 	fetchProjects = `
   SELECT
@@ -121,6 +126,7 @@ const (
 	p.retained_events,
 	p.logo_url,
 	p.organisation_id,
+    p.disabled_by_license,
 	p.project_configuration_id,
     c.search_policy AS "config.search_policy",
 	c.max_payload_read_size AS "config.max_payload_read_size",
@@ -335,6 +341,81 @@ func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilt
 	}
 
 	return projects, nil
+}
+
+func (p *projectRepo) FetchEnabledProjectIDs(ctx context.Context) ([]string, error) {
+	rows, err := p.db.QueryxContext(ctx, fetchEnabledProjectIDs)
+	if err != nil {
+		return nil, err
+	}
+	defer closeWithError(rows)
+
+	projectIDs := make([]string, 0)
+	var nextID struct {
+		ID string `db:"id"`
+	}
+	for rows.Next() {
+		err = rows.StructScan(&nextID)
+		if err != nil {
+			return nil, err
+		}
+
+		projectIDs = append(projectIDs, nextID.ID)
+	}
+
+	return projectIDs, nil
+}
+
+func (p *projectRepo) EnableAllProjects(ctx context.Context) error {
+	result, err := p.db.ExecContext(ctx, enableProjects)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return errors.New("projects not enabled")
+	}
+
+	return nil
+}
+
+func (p *projectRepo) DisableProjects(ctx context.Context, ids []string) error {
+	arg := map[string]interface{}{
+		"ids": ids,
+	}
+
+	query, args, err := sqlx.Named(disableProjects, arg)
+	if err != nil {
+		return err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return err
+	}
+
+	query = p.db.Rebind(query)
+
+	result, err := p.db.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return errors.New("projects not disabled")
+	}
+
+	return nil
 }
 
 func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Project) error {

@@ -45,16 +45,15 @@ func init() {
 }
 
 func NewKeygenLicenser(c *Config) (*Licenser, error) {
-	if util.IsStringEmpty(c.LicenseKey) {
-		// no license key provided, allow access to only community features
-		return communityLicenser(c.OrgRepo, c.UserRepo, c.ProjectRepo), nil
-	}
-
-	keygen.LicenseKey = c.LicenseKey
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
+	if util.IsStringEmpty(c.LicenseKey) {
+		// no license key provided, allow access to only community features
+		return communityLicenser(ctx, c.OrgRepo, c.UserRepo, c.ProjectRepo)
+	}
+
+	keygen.LicenseKey = c.LicenseKey
 	fingerprint := uuid.New().String()
 
 	l, err := keygen.Validate(ctx, fingerprint)
@@ -86,6 +85,8 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		return nil, fmt.Errorf("license plan type is not a string")
 	}
 
+	err = c.ProjectRepo.EnableAllProjects(ctx)
+
 	return &Licenser{
 		machineFingerprint: fingerprint,
 		licenseKey:         c.LicenseKey,
@@ -95,7 +96,7 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		projectRepo:        c.ProjectRepo,
 		planType:           PlanType(pt),
 		featureList:        featureList,
-	}, nil
+	}, err
 }
 
 func (k *Licenser) Activate() error {
