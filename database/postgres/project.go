@@ -114,7 +114,7 @@ const (
 	WHERE p.id = $1 AND p.deleted_at IS NULL;
 `
 
-	fetchEnabledProjectIDs = `SELECT id from convoy.projects WHERE  disabled_by_license = false AND deleted_at IS NULL`
+	fetchEnabledProjectIDs = `SELECT id from convoy.projects WHERE  disabled_by_license = false`
 	disableProjects        = `UPDATE convoy.projects SET disabled_by_license = true WHERE ID IN (:ids)`
 	enableProjects         = `UPDATE convoy.projects SET disabled_by_license = false`
 

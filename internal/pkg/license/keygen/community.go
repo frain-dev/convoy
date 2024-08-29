@@ -3,6 +3,8 @@ package keygen
 import (
 	"context"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/keygen-sh/keygen-go/v3"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -47,6 +49,8 @@ func enforceProjectLimit(ctx context.Context, projectRepo datastore.ProjectRepos
 	if len(projectIDs) == 0 {
 		return nil
 	}
+
+	log.Warnf("your project count is more than allowed on the community plan, convoy will disable the following projects to bring your count back under limit: %v", projectIDs)
 
 	err = projectRepo.DisableProjects(ctx, projectIDs) // disable the remaining projects
 	return err

@@ -484,7 +484,7 @@ type Project struct {
 
 	RetainedEvents int `json:"retained_events" db:"retained_events"`
 
-	DisabledByLicense bool `json:"-" db:"disabled_by_license"`
+	DisabledByLicense bool `json:"disabled_by_license" db:"disabled_by_license"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
