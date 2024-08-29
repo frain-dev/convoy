@@ -2,12 +2,8 @@ package server
 
 import (
 	"errors"
-	"fmt"
-	"net/http"
 	_ "net/http/pprof"
 	"time"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 
@@ -149,12 +145,7 @@ func startConvoyServer(a *cli.App) error {
 		return err
 	}
 
-	mux := handler.BuildControlPlaneRoutes()
-	chi.Walk(mux, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
-		fmt.Printf("[%s]: '%s' has %d middlewares\n", method, route, len(middlewares))
-		return nil
-	})
-	srv.SetHandler(mux)
+	srv.SetHandler(handler.BuildControlPlaneRoutes())
 
 	// initialize scheduler
 	s := worker.NewScheduler(a.Queue, lo)
