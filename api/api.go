@@ -154,39 +154,33 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 							e.Get("/", handler.GetEndpoint)
 
-							e.Route("/", func(eSubRouter chi.Router) {
-								eSubRouter.Use(handler.RequireEnabledProject())
+							e.With(handler.RequireEnabledProject()).Use(handler.RequireEnabledProject())
 
-								eSubRouter.Put("/", handler.UpdateEndpoint)
-								eSubRouter.Delete("/", handler.DeleteEndpoint)
-								eSubRouter.Put("/expire_secret", handler.ExpireSecret)
-								eSubRouter.Put("/pause", handler.PauseEndpoint)
-							})
+							e.With(handler.RequireEnabledProject()).Put("/", handler.UpdateEndpoint)
+							e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
+							e.With(handler.RequireEnabledProject()).Put("/expire_secret", handler.ExpireSecret)
+							e.With(handler.RequireEnabledProject()).Put("/pause", handler.PauseEndpoint)
 						})
 					})
 
 					// TODO(subomi): left this here temporarily till the data plane is stable.
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
 						eventRouter.Route("/", func(writeEventRouter chi.Router) {
-							writeEventRouter.Use(handler.RequireEnabledProject())
+							eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
 							// TODO(all): should the InstrumentPath change?
-							writeEventRouter.With(middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
-							writeEventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
-							writeEventRouter.Post("/broadcast", handler.CreateBroadcastEvent)
-							writeEventRouter.Post("/dynamic", handler.CreateDynamicEvent)
-							writeEventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-							writeEventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/fanout", handler.CreateEndpointFanoutEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/broadcast", handler.CreateBroadcastEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/dynamic", handler.CreateDynamicEvent)
+							eventRouter.With(handler.RequireEnabledProject()).With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
 
-							writeEventRouter.Route("/{eventID}", func(writeEventSubRouter chi.Router) {
-								writeEventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+								eventSubRouter.With(handler.RequireEnabledProject()).Put("/replay", handler.ReplayEndpointEvent)
+								eventSubRouter.Get("/", handler.GetEndpointEvent)
 							})
-						})
-
-						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-
-						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-							eventSubRouter.Get("/", handler.GetEndpointEvent)
 						})
 					})
 
@@ -328,39 +322,30 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 								e.Get("/", handler.GetEndpoint)
 
-								e.Route("/", func(eSubRouter chi.Router) {
-									eSubRouter.Use(handler.RequireEnabledProject())
+								e.With(handler.RequireEnabledProject()).Use(handler.RequireEnabledProject())
 
-									eSubRouter.Put("/", handler.UpdateEndpoint)
-									eSubRouter.Delete("/", handler.DeleteEndpoint)
-									eSubRouter.Put("/expire_secret", handler.ExpireSecret)
-									eSubRouter.Put("/pause", handler.PauseEndpoint)
-								})
+								e.With(handler.RequireEnabledProject()).Put("/", handler.UpdateEndpoint)
+								e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
+								e.With(handler.RequireEnabledProject()).Put("/expire_secret", handler.ExpireSecret)
+								e.With(handler.RequireEnabledProject()).Put("/pause", handler.PauseEndpoint)
 							})
 						})
 
 						// TODO(subomi): left this here temporarily till the data plane is stable.
 						projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-							eventRouter.Route("/", func(writeEventRouter chi.Router) {
-								writeEventRouter.Use(handler.RequireEnabledProject())
-
-								// TODO(all): should the InstrumentPath change?
-								writeEventRouter.With(middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
-								writeEventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
-								writeEventRouter.Post("/broadcast", handler.CreateBroadcastEvent)
-								writeEventRouter.Post("/dynamic", handler.CreateDynamicEvent)
-								writeEventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-								writeEventRouter.Post("/batchreplay", handler.BatchReplayEvents)
-
-								writeEventRouter.Route("/{eventID}", func(writeEventSubRouter chi.Router) {
-									writeEventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
-								})
-							})
-
 							eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
+							// TODO(all): should the InstrumentPath change?
+							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/fanout", handler.CreateEndpointFanoutEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/broadcast", handler.CreateBroadcastEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/dynamic", handler.CreateDynamicEvent)
+							eventRouter.With(handler.RequireEnabledProject()).With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
+
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+								eventSubRouter.With(handler.RequireEnabledProject()).Put("/replay", handler.ReplayEndpointEvent)
 								eventSubRouter.Get("/", handler.GetEndpointEvent)
 							})
 						})

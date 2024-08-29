@@ -367,21 +367,8 @@ func (p *projectRepo) FetchEnabledProjectIDs(ctx context.Context) ([]string, err
 }
 
 func (p *projectRepo) EnableAllProjects(ctx context.Context) error {
-	result, err := p.db.ExecContext(ctx, enableProjects)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected < 1 {
-		return errors.New("projects not enabled")
-	}
-
-	return nil
+	_, err := p.db.ExecContext(ctx, enableProjects)
+	return err
 }
 
 func (p *projectRepo) DisableProjects(ctx context.Context, ids []string) error {
