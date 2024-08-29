@@ -12,8 +12,8 @@ import (
 
 const (
 	projectLimit = 2
-	orgLimit     = 2
-	userLimit    = 2
+	orgLimit     = 1
+	userLimit    = 1
 )
 
 func communityLicenser(ctx context.Context, orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, projectRepo datastore.ProjectRepository) (*Licenser, error) {

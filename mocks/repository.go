@@ -700,6 +700,49 @@ func (mr *MockProjectRepositoryMockRecorder) DeleteProject(ctx, uid any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProject", reflect.TypeOf((*MockProjectRepository)(nil).DeleteProject), ctx, uid)
 }
 
+// DisableProjects mocks base method.
+func (m *MockProjectRepository) DisableProjects(ctx context.Context, ids []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DisableProjects", ctx, ids)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DisableProjects indicates an expected call of DisableProjects.
+func (mr *MockProjectRepositoryMockRecorder) DisableProjects(ctx, ids any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DisableProjects", reflect.TypeOf((*MockProjectRepository)(nil).DisableProjects), ctx, ids)
+}
+
+// EnableAllProjects mocks base method.
+func (m *MockProjectRepository) EnableAllProjects(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnableAllProjects", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// EnableAllProjects indicates an expected call of EnableAllProjects.
+func (mr *MockProjectRepositoryMockRecorder) EnableAllProjects(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnableAllProjects", reflect.TypeOf((*MockProjectRepository)(nil).EnableAllProjects), ctx)
+}
+
+// FetchEnabledProjectIDs mocks base method.
+func (m *MockProjectRepository) FetchEnabledProjectIDs(ctx context.Context) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchEnabledProjectIDs", ctx)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchEnabledProjectIDs indicates an expected call of FetchEnabledProjectIDs.
+func (mr *MockProjectRepositoryMockRecorder) FetchEnabledProjectIDs(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchEnabledProjectIDs", reflect.TypeOf((*MockProjectRepository)(nil).FetchEnabledProjectIDs), ctx)
+}
+
 // FetchProjectByID mocks base method.
 func (m *MockProjectRepository) FetchProjectByID(arg0 context.Context, arg1 string) (*datastore.Project, error) {
 	m.ctrl.T.Helper()
