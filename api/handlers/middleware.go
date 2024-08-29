@@ -16,6 +16,7 @@ func (h *Handler) RequireEnabledProject() func(next http.Handler) http.Handler {
 			p, err := h.retrieveProject(r)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse("failed to retrieve project", http.StatusBadRequest))
+				return
 			}
 
 			if p.DisabledByLicense {
