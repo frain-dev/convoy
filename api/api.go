@@ -154,7 +154,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 							e.Get("/", handler.GetEndpoint)
 
-							endpointSubRouter.Route("/", func(eSubRouter chi.Router) {
+							e.Route("/", func(eSubRouter chi.Router) {
 								eSubRouter.Use(handler.RequireEnabledProject())
 
 								eSubRouter.Put("/", handler.UpdateEndpoint)
@@ -328,7 +328,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 								e.Get("/", handler.GetEndpoint)
 
-								endpointSubRouter.Route("/", func(eSubRouter chi.Router) {
+								e.Route("/", func(eSubRouter chi.Router) {
 									eSubRouter.Use(handler.RequireEnabledProject())
 
 									eSubRouter.Put("/", handler.UpdateEndpoint)
