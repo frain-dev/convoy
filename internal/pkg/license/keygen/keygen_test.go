@@ -86,6 +86,21 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k = Licenser{featureList: map[Feature]*Properties{PortalLinks: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
 	require.False(t, k.PortalLinks())
 
+	k = Licenser{enabledProjects: map[string]bool{
+		"12345": true,
+	}}
+	require.True(t, k.ProjectEnabled("12345"))
+	require.False(t, k.ProjectEnabled("5555"))
+
+	// when k.enabledProjects is nil, should not add anything
+	k = Licenser{}
+	k.AddEnabledProject("11111")
+	require.False(t, k.enabledProjects["11111"])
+
+	k = Licenser{enabledProjects: map[string]bool{}}
+	k.AddEnabledProject("11111")
+	require.True(t, k.enabledProjects["11111"])
+
 	falseLicenser := Licenser{featureList: map[Feature]*Properties{}, license: &keygen.License{Expiry: timePtr(time.Now().Add(400000 * time.Hour))}}
 
 	require.False(t, falseLicenser.UseForwardProxy())
