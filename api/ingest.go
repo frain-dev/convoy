@@ -66,7 +66,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if project.DisabledByLicense {
+	if a.A.Licenser.ProjectEnabled(project.UID) {
 		_ = render.Render(w, r, util.NewErrorResponse(handlers.ErrProjectDisabled.Error(), http.StatusBadRequest))
 		return
 	}

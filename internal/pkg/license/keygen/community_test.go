@@ -14,10 +14,11 @@ import (
 
 func Test_communityLicenser(t *testing.T) {
 	testCases := []struct {
-		name                string
-		featureList         map[Feature]*Properties
-		expectedFeatureList map[Feature]*Properties
-		dbFn                func(projectRepo datastore.ProjectRepository)
+		name                    string
+		featureList             map[Feature]*Properties
+		expectedFeatureList     map[Feature]*Properties
+		expectedEnabledProjects map[string]bool
+		dbFn                    func(projectRepo datastore.ProjectRepository)
 	}{
 		{
 			name: "should_disable_projects",
@@ -28,13 +29,16 @@ func Test_communityLicenser(t *testing.T) {
 			},
 			dbFn: func(projectRepo datastore.ProjectRepository) {
 				pr, _ := projectRepo.(*mocks.MockProjectRepository)
-				pr.EXPECT().FetchEnabledProjectIDs(gomock.Any()).Times(1).Return([]string{"01111111", "02222", "033333", "044444"}, nil)
-				pr.EXPECT().DisableProjects(gomock.Any(), []string{"01111111", "02222"}).Times(1).Return(nil)
+				pr.EXPECT().LoadProjects(gomock.Any(), gomock.Any()).Times(1).Return([]*datastore.Project{{UID: "01111111"}, {UID: "02222"}, {UID: "033333"}, {UID: "044444"}}, nil)
 			},
 			expectedFeatureList: map[Feature]*Properties{
 				CreateOrg:     {Limit: 1},
 				CreateUser:    {Limit: 1},
 				CreateProject: {Limit: 2},
+			},
+			expectedEnabledProjects: map[string]bool{
+				"033333": true,
+				"044444": true,
 			},
 		},
 		{
@@ -46,7 +50,11 @@ func Test_communityLicenser(t *testing.T) {
 			},
 			dbFn: func(projectRepo datastore.ProjectRepository) {
 				pr, _ := projectRepo.(*mocks.MockProjectRepository)
-				pr.EXPECT().FetchEnabledProjectIDs(gomock.Any()).Times(1).Return([]string{"01111111", "02222"}, nil)
+				pr.EXPECT().LoadProjects(gomock.Any(), gomock.Any()).Times(1).Return([]*datastore.Project{{UID: "033333"}, {UID: "044444"}}, nil)
+			},
+			expectedEnabledProjects: map[string]bool{
+				"033333": true,
+				"044444": true,
 			},
 			expectedFeatureList: map[Feature]*Properties{
 				CreateOrg:     {Limit: 1},
@@ -72,6 +80,7 @@ func Test_communityLicenser(t *testing.T) {
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedFeatureList, l.featureList)
+			require.Equal(t, tc.expectedEnabledProjects, l.enabledProjects)
 			require.Equal(t, orgRepo, l.orgRepo)
 			require.Equal(t, userRepository, l.userRepo)
 			require.Equal(t, projectRepo, l.projectRepo)
