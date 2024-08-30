@@ -1,175 +1,79 @@
 package circuit_breaker
 
 import (
-	"context"
-	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/redis/go-redis/v9"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
 )
 
-func getRedis(t *testing.T) (client redis.UniversalClient, err error) {
-	t.Helper()
-
-	opts, err := redis.ParseURL("redis://localhost:6379")
-	if err != nil {
-		return nil, err
+func TestCircuitBreaker_String(t *testing.T) {
+	cb := &CircuitBreaker{
+		Key:                 "test",
+		State:               StateClosed,
+		Requests:            100,
+		FailureRate:         0.1,
+		WillResetAt:         time.Now(),
+		TotalFailures:       10,
+		TotalSuccesses:      90,
+		ConsecutiveFailures: 2,
 	}
 
-	return redis.NewClient(opts), nil
-}
+	t.Run("Success", func(t *testing.T) {
+		result, err := cb.String()
 
-func pollResult(t *testing.T, key string, failureCount, successCount uint64) PollResult {
-	t.Helper()
-
-	return PollResult{
-		Key:       key,
-		Failures:  failureCount,
-		Successes: successCount,
-	}
-}
-
-func TestNewCircuitBreaker(t *testing.T) {
-	ctx := context.Background()
-
-	re, err := getRedis(t)
-	require.NoError(t, err)
-
-	keys, err := re.Keys(ctx, "breaker*").Result()
-	require.NoError(t, err)
-
-	for i := range keys {
-		err = re.Del(ctx, keys[i]).Err()
 		require.NoError(t, err)
-	}
+		require.NotEmpty(t, result)
 
-	testClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
-
-	c := &CircuitBreakerConfig{
-		SampleRate:                  2,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.1,
-		FailureCount:                3,
-		SuccessThreshold:            1,
-		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10},
-		ConsecutiveFailureThreshold: 10,
-	}
-
-	b, err := NewCircuitBreakerManager(re).WithClock(testClock)
-	require.NoError(t, err)
-
-	b, err = b.WithConfig(c)
-	require.NoError(t, err)
-
-	endpointId := "endpoint-1"
-	pollResults := [][]PollResult{
-		{
-			pollResult(t, endpointId, 1, 0),
-		},
-		{
-			pollResult(t, endpointId, 2, 0),
-		},
-		{
-			pollResult(t, endpointId, 2, 1),
-		},
-		{
-			pollResult(t, endpointId, 2, 2),
-		},
-		{
-			pollResult(t, endpointId, 2, 3),
-		},
-		{
-			pollResult(t, endpointId, 1, 4),
-		},
-	}
-
-	for i := 0; i < len(pollResults); i++ {
-		innerErr := b.sampleStore(ctx, pollResults[i])
-		require.NoError(t, innerErr)
-
-		testClock.AdvanceTime(time.Minute)
-	}
-
-	breaker, innerErr := b.GetCircuitBreaker(ctx, endpointId)
-	require.NoError(t, innerErr)
-
-	require.Equal(t, breaker.State, StateClosed)
-}
-
-func TestNewCircuitBreaker_AddNewBreakerMidway(t *testing.T) {
-	ctx := context.Background()
-
-	re, err := getRedis(t)
-	require.NoError(t, err)
-
-	keys, err := re.Keys(ctx, "breaker*").Result()
-	require.NoError(t, err)
-
-	err = re.Del(ctx, keys...).Err()
-	require.NoError(t, err)
-
-	testClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
-
-	c := &CircuitBreakerConfig{
-		SampleRate:                  2,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.1,
-		FailureCount:                3,
-		SuccessThreshold:            1,
-		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10},
-		ConsecutiveFailureThreshold: 10,
-	}
-	b, err := NewCircuitBreakerManager(re).WithClock(testClock)
-	require.NoError(t, err)
-
-	b, err = b.WithConfig(c)
-	require.NoError(t, err)
-
-	endpoint1 := "endpoint-1"
-	endpoint2 := "endpoint-2"
-	pollResults := [][]PollResult{
-		{
-			pollResult(t, endpoint1, 1, 0),
-		},
-		{
-			pollResult(t, endpoint1, 2, 0),
-		},
-		{
-			pollResult(t, endpoint1, 2, 1),
-			pollResult(t, endpoint2, 1, 0),
-		},
-		{
-			pollResult(t, endpoint1, 2, 2),
-			pollResult(t, endpoint2, 1, 1),
-		},
-		{
-			pollResult(t, endpoint1, 2, 3),
-			pollResult(t, endpoint2, 0, 2),
-		},
-		{
-			pollResult(t, endpoint1, 1, 4),
-			pollResult(t, endpoint2, 1, 1),
-		},
-	}
-
-	for i := 0; i < len(pollResults); i++ {
-		err = b.sampleStore(ctx, pollResults[i])
+		// Decode the result back to a CircuitBreaker
+		var decodedCB CircuitBreaker
+		err = msgpack.DecodeMsgPack([]byte(result), &decodedCB)
 		require.NoError(t, err)
 
-		if i > 1 {
-			breaker, innerErr := b.GetCircuitBreaker(ctx, endpoint2)
-			require.NoError(t, innerErr)
-			t.Logf("%+v\n", breaker)
-		}
+		// Compare the decoded CircuitBreaker with the original
+		require.Equal(t, cb.Key, decodedCB.Key)
+		require.Equal(t, cb.State, decodedCB.State)
+		require.Equal(t, cb.Requests, decodedCB.Requests)
+		require.Equal(t, cb.FailureRate, decodedCB.FailureRate)
+		require.Equal(t, cb.WillResetAt.Unix(), decodedCB.WillResetAt.Unix())
+		require.Equal(t, cb.TotalFailures, decodedCB.TotalFailures)
+		require.Equal(t, cb.TotalSuccesses, decodedCB.TotalSuccesses)
+		require.Equal(t, cb.ConsecutiveFailures, decodedCB.ConsecutiveFailures)
+	})
+}
 
-		testClock.AdvanceTime(time.Minute)
+func TestCircuitBreaker_tripCircuitBreaker(t *testing.T) {
+	cb := &CircuitBreaker{
+		State:               StateClosed,
+		ConsecutiveFailures: 0,
 	}
 
-	breakers, innerErr := b.loadCircuitBreakers(ctx)
-	require.NoError(t, innerErr)
+	resetTime := time.Now().Add(30 * time.Second)
+	cb.tripCircuitBreaker(resetTime)
 
-	require.Len(t, breakers, 2)
+	require.Equal(t, StateOpen, cb.State)
+	require.Equal(t, resetTime, cb.WillResetAt)
+	require.Equal(t, uint64(1), cb.ConsecutiveFailures)
+}
+
+func TestCircuitBreaker_toHalfOpen(t *testing.T) {
+	cb := &CircuitBreaker{
+		State: StateOpen,
+	}
+
+	cb.toHalfOpen()
+
+	require.Equal(t, StateHalfOpen, cb.State)
+}
+
+func TestCircuitBreaker_resetCircuitBreaker(t *testing.T) {
+	cb := &CircuitBreaker{
+		State:               StateOpen,
+		ConsecutiveFailures: 5,
+	}
+
+	cb.resetCircuitBreaker()
+
+	require.Equal(t, StateClosed, cb.State)
+	require.Equal(t, uint64(0), cb.ConsecutiveFailures)
 }

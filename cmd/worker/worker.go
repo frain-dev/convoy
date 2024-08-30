@@ -16,7 +16,8 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
@@ -243,7 +244,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	circuitBreakerManager, err := circuit_breaker.NewCircuitBreakerManager(rd.Client()).WithConfig(configuration.ToCircuitBreakerConfig())
+	circuitBreakerManager, err := cb.NewCircuitBreakerManager(
+		cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
+		cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
+		cb.ClockOption(clock.NewRealClock()))
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to create circuit breaker manager")
 	}
