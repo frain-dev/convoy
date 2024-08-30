@@ -6,6 +6,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"github.com/lib/pq"
 	"testing"
 	"time"
 
@@ -93,10 +94,6 @@ func generateConfig() *datastore.Configuration {
 		UID:                ulid.Make().String(),
 		IsAnalyticsEnabled: true,
 		IsSignupEnabled:    false,
-		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
-			Policy:                   "720h",
-			IsRetentionPolicyEnabled: true,
-		},
 		StoragePolicy: &datastore.StoragePolicyConfiguration{
 			Type: datastore.OnPrem,
 			S3: &datastore.S3Storage{
@@ -111,6 +108,20 @@ func generateConfig() *datastore.Configuration {
 			OnPrem: &datastore.OnPremStorage{
 				Path: null.NewString("path", true),
 			},
+		},
+		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
+			Policy:                   "720h",
+			IsRetentionPolicyEnabled: true,
+		},
+		CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
+			SampleRate:                  30,
+			ErrorTimeout:                30,
+			FailureThreshold:            0.1,
+			FailureCount:                10,
+			SuccessThreshold:            5,
+			ObservabilityWindow:         5,
+			NotificationThresholds:      pq.Int64Array{5, 10},
+			ConsecutiveFailureThreshold: 10,
 		},
 	}
 }
