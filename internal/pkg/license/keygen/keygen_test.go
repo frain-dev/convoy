@@ -101,6 +101,11 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k.AddEnabledProject("11111")
 	require.True(t, k.enabledProjects["11111"])
 
+	k = Licenser{enabledProjects: map[string]bool{"11111": true, "2222": true}}
+	k.RemoveEnabledProject("11111")
+	require.NotContains(t, k.enabledProjects, "11111")
+	require.Contains(t, k.enabledProjects, "2222")
+
 	falseLicenser := Licenser{featureList: map[Feature]*Properties{}, license: &keygen.License{Expiry: timePtr(time.Now().Add(400000 * time.Hour))}}
 
 	require.False(t, falseLicenser.UseForwardProxy())
