@@ -144,6 +144,11 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		Key:       keyString,
 	}
 
+	// if this is a community license, add this project to list of enabled projects
+	// because if the initial license check above passed, then the project count limit had
+	// not been reached
+	ps.Licenser.AddEnabledProject(project.UID)
+
 	return project, resp, nil
 }
 

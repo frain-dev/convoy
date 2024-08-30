@@ -111,8 +111,7 @@ const (
 	LEFT JOIN convoy.project_configurations c
 	ON p.project_configuration_id = c.id
 	WHERE p.id = $1 AND p.deleted_at IS NULL;
-	`
-
+`
 	fetchProjects = `
   SELECT
 	p.id,

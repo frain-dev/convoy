@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -29,6 +30,10 @@ type Licenser struct {
 	orgRepo     datastore.OrganisationRepository
 	userRepo    datastore.UserRepository
 	projectRepo datastore.ProjectRepository
+
+	// only for community licenser
+	mu              sync.RWMutex
+	enabledProjects map[string]bool
 }
 
 type Config struct {
@@ -45,16 +50,15 @@ func init() {
 }
 
 func NewKeygenLicenser(c *Config) (*Licenser, error) {
-	if util.IsStringEmpty(c.LicenseKey) {
-		// no license key provided, allow access to only community features
-		return communityLicenser(c.OrgRepo, c.UserRepo, c.ProjectRepo), nil
-	}
-
-	keygen.LicenseKey = c.LicenseKey
-
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
+	if util.IsStringEmpty(c.LicenseKey) {
+		// no license key provided, allow access to only community features
+		return communityLicenser(ctx, c.OrgRepo, c.UserRepo, c.ProjectRepo)
+	}
+
+	keygen.LicenseKey = c.LicenseKey
 	fingerprint := uuid.New().String()
 
 	l, err := keygen.Validate(ctx, fingerprint)
@@ -95,7 +99,27 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		projectRepo:        c.ProjectRepo,
 		planType:           PlanType(pt),
 		featureList:        featureList,
-	}, nil
+	}, err
+}
+
+func (k *Licenser) ProjectEnabled(projectID string) bool {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+	if k.enabledProjects == nil { // not community licenser
+		return true
+	}
+
+	return k.enabledProjects[projectID]
+}
+
+func (k *Licenser) AddEnabledProject(projectID string) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.enabledProjects == nil { // not community licenser
+		return
+	}
+
+	k.enabledProjects[projectID] = true
 }
 
 func (k *Licenser) Activate() error {

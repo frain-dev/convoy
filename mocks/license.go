@@ -40,6 +40,18 @@ func (m *MockLicenser) EXPECT() *MockLicenserMockRecorder {
 	return m.recorder
 }
 
+// AddEnabledProject mocks base method.
+func (m *MockLicenser) AddEnabledProject(projectID string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "AddEnabledProject", projectID)
+}
+
+// AddEnabledProject indicates an expected call of AddEnabledProject.
+func (mr *MockLicenserMockRecorder) AddEnabledProject(projectID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEnabledProject", reflect.TypeOf((*MockLicenser)(nil).AddEnabledProject), projectID)
+}
+
 // AdvancedEndpointMgmt mocks base method.
 func (m *MockLicenser) AdvancedEndpointMgmt() bool {
 	m.ctrl.T.Helper()
@@ -224,6 +236,20 @@ func (m *MockLicenser) PortalLinks() bool {
 func (mr *MockLicenserMockRecorder) PortalLinks() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PortalLinks", reflect.TypeOf((*MockLicenser)(nil).PortalLinks))
+}
+
+// ProjectEnabled mocks base method.
+func (m *MockLicenser) ProjectEnabled(projectID string) bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProjectEnabled", projectID)
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// ProjectEnabled indicates an expected call of ProjectEnabled.
+func (mr *MockLicenserMockRecorder) ProjectEnabled(projectID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProjectEnabled", reflect.TypeOf((*MockLicenser)(nil).ProjectEnabled), projectID)
 }
 
 // SynchronousWebhooks mocks base method.

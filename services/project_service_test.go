@@ -87,6 +87,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -157,6 +158,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -212,6 +214,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project_1",
@@ -268,6 +271,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",

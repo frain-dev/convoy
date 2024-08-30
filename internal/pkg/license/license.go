@@ -27,7 +27,8 @@ type Licenser interface {
 	HADeployment() bool
 	MutualTLS() bool
 	SynchronousWebhooks() bool
-
+	AddEnabledProject(projectID string)
+	ProjectEnabled(projectID string) bool
 	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 }
 

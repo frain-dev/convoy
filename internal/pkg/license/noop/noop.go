@@ -79,6 +79,11 @@ func (Licenser) SynchronousWebhooks() bool {
 	return true
 }
 
+func (Licenser) ProjectEnabled(_ string) bool {
+	return true
+}
+func (Licenser) AddEnabledProject(_ string) {}
+
 func (Licenser) PortalLinks() bool {
 	return true
 }
