@@ -21,9 +21,10 @@ func provideProjectService(ctrl *gomock.Controller) (*ProjectService, error) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	l := mocks.NewMockLicenser(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 
-	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, cache)
+	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, l, cache)
 }
 
 func TestProjectService_CreateProject(t *testing.T) {
@@ -83,6 +84,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -150,6 +155,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -202,6 +211,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project_1",
@@ -255,6 +268,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -309,6 +326,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -380,10 +400,44 @@ func TestProjectService_CreateProject(t *testing.T) {
 				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(datastore.ErrDuplicateProjectName)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "a project with this name already exists",
+		},
+		{
+			name: "should_error_for_cant_create_project",
+			args: args{
+				ctx: ctx,
+				newProject: &models.CreateProject{
+					Name:    "test_project",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
+							Header: "X-Convoy-Signature",
+						},
+						Strategy: &models.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
+						},
+						ReplayAttacks: true,
+					},
+				},
+				org:    &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{},
+			},
+			dbFn: func(gs *ProjectService) {
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(false, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  ErrProjectLimit.Error(),
 		},
 	}
 	for _, tc := range tests {

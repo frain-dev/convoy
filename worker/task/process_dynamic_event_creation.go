@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/guregu/null.v4"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
@@ -23,7 +25,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var dynamicEvent models.DynamicEvent
 
@@ -85,7 +87,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		return writeEventDeliveriesToQueue(
 			ctx, []datastore.Subscription{*s}, event, project, eventDeliveryRepo,
-			eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo, licenser,
 		)
 	}
 }

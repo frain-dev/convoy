@@ -2,6 +2,7 @@ import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-project',
@@ -49,7 +50,7 @@ export class ProjectComponent implements OnInit {
 	projects: PROJECT[] = [];
 	activeNavTab: any;
 
-	constructor(private privateService: PrivateService, private router: Router) {}
+	constructor(private privateService: PrivateService, private router: Router, public licenseService:LicensesService) {}
 
 	ngOnInit() {
 		Promise.all([this.getProjectDetails(), this.getProjects()]);

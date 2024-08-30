@@ -209,6 +209,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodAPIKey() {
 	// Act.
 	i.Router.ServeHTTP(w, req)
 
+	fmt.Println("eee", w.Body.String())
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
 }

@@ -3,11 +3,12 @@ package agent
 import (
 	"context"
 	"fmt"
-	workerSrv "github.com/frain-dev/convoy/cmd/worker"
-	"github.com/frain-dev/convoy/util"
 	"os"
 	"os/signal"
 	"time"
+
+	workerSrv "github.com/frain-dev/convoy/cmd/worker"
+	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/api"
 	"github.com/frain-dev/convoy/api/types"
@@ -157,12 +158,13 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 
 	evHandler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:  flag,
-			DB:     a.DB,
-			Queue:  a.Queue,
-			Logger: lo,
-			Cache:  a.Cache,
-			Rate:   a.Rate,
+			FFlag:    flag,
+			DB:       a.DB,
+			Queue:    a.Queue,
+			Logger:   lo,
+			Cache:    a.Cache,
+			Rate:     a.Rate,
+			Licenser: a.Licenser,
 		})
 	if err != nil {
 		return err

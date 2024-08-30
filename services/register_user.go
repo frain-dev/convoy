@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/email"
@@ -26,12 +28,22 @@ type RegisterUserService struct {
 	Queue         queue.Queuer
 	JWT           *jwt.Jwt
 	ConfigRepo    datastore.ConfigurationRepository
+	Licenser      license.Licenser
 
 	BaseURL string
 	Data    *models.RegisterUser
 }
 
 func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
+	ok, err := u.Licenser.CreateUser(ctx)
+	if err != nil {
+		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !ok {
+		return nil, nil, &ServiceError{ErrMsg: ErrUserLimit.Error()}
+	}
+
 	config, err := u.ConfigRepo.LoadConfiguration(ctx)
 	if err != nil && !errors.Is(err, datastore.ErrConfigNotFound) {
 		return nil, nil, &ServiceError{ErrMsg: "failed to load configuration", Err: err}
@@ -77,13 +89,16 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 	co := CreateOrganisationService{
 		OrgRepo:       u.OrgRepo,
 		OrgMemberRepo: u.OrgMemberRepo,
+		Licenser:      u.Licenser,
 		NewOrg:        &models.Organisation{Name: u.Data.OrganisationName},
 		User:          user,
 	}
 
 	_, err = co.Run(ctx)
 	if err != nil {
-		return nil, nil, err
+		if !errors.Is(err, ErrOrgLimit) && !errors.Is(err, ErrUserLimit) {
+			return nil, nil, err
+		}
 	}
 
 	token, err := u.JWT.GenerateToken(user)

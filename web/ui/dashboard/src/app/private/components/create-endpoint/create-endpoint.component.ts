@@ -19,6 +19,8 @@ import { EndpointsService } from '../../pages/project/endpoints/endpoints.servic
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -39,7 +41,8 @@ import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.
 		PermissionDirective,
 		NotificationComponent,
 		ConfigButtonComponent,
-		CopyButtonComponent
+		CopyButtonComponent,
+		TagComponent
 	],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
@@ -88,7 +91,8 @@ export class CreateEndpointComponent implements OnInit {
 		private route: ActivatedRoute,
 		public privateService: PrivateService,
 		private router: Router,
-		private endpointService: EndpointsService
+		private endpointService: EndpointsService,
+		public licenseService: LicensesService
 	) {}
 
 	async ngOnInit() {

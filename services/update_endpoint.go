@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -16,6 +19,7 @@ type UpdateEndpointService struct {
 	Cache        cache.Cache
 	EndpointRepo datastore.EndpointRepository
 	ProjectRepo  datastore.ProjectRepository
+	Licenser     license.Licenser
 
 	E        models.UpdateEndpoint
 	Endpoint *datastore.Endpoint
@@ -37,7 +41,7 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
-	endpoint, err = updateEndpoint(endpoint, a.E, a.Project)
+	endpoint, err = a.updateEndpoint(endpoint, a.E, a.Project)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -52,7 +56,7 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	return endpoint, nil
 }
 
-func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
+func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
 	endpoint.Url = e.URL
 	endpoint.Description = e.Description
 
@@ -80,6 +84,11 @@ func updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, proje
 
 	if e.HttpTimeout != 0 {
 		endpoint.HttpTimeout = e.HttpTimeout
+
+		if !a.Licenser.AdvancedEndpointMgmt() {
+			// switch to default timeout
+			endpoint.HttpTimeout = convoy.HTTP_TIMEOUT
+		}
 	}
 
 	if !util.IsStringEmpty(e.OwnerID) {

@@ -6,6 +6,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { PrivateService } from '../../private.service';
 import { CreateSourceService } from './create-source.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-create-source',
@@ -175,7 +176,7 @@ export class CreateSourceComponent implements OnInit {
 	sourceURL!: string;
 	showTransformDialog = false;
 
-	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService) {}
+	constructor(private formBuilder: FormBuilder, private createSourceService: CreateSourceService, public privateService: PrivateService, private route: ActivatedRoute, private router: Router, private generalService: GeneralService, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		if (this.privateService.getProjectDetails.type === 'incoming')
