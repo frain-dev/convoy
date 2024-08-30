@@ -33,6 +33,15 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ok, err := a.Licenser.CreateUser(context.Background())
+			if err != nil {
+				return err
+			}
+
+			if !ok {
+				return services.ErrUserLimit
+			}
+
 			if format != "json" && format != "human" {
 				return errors.New("unsupported output format")
 			}

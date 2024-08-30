@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gopkg.in/guregu/null.v4"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/queue/redis"
 
@@ -28,7 +30,7 @@ var (
 	defaultBroadcastDelay   = 30 * time.Second
 )
 
-func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, subscriptionsTable memorystore.ITable) func(context.Context, *asynq.Task) error {
+func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser, subscriptionsTable memorystore.ITable) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var broadcastEvent models.BroadcastEvent
 
@@ -77,7 +79,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			AcknowledgedAt:   null.TimeFrom(time.Now()),
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, licenser, subscriptions, true)
 		if err != nil {
 			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
@@ -103,7 +105,7 @@ func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, ev
 			return nil
 		}
 
-		err = writeEventDeliveriesToQueue(ctx, ss, event, project, eventDeliveryRepo, eventQueue, deviceRepo, endpointRepo)
+		err = writeEventDeliveriesToQueue(ctx, ss, event, project, eventDeliveryRepo, eventQueue, deviceRepo, endpointRepo, licenser)
 		if err != nil {
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
 			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error()), delay: defaultBroadcastDelay}

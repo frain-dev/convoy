@@ -146,7 +146,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 			fn := ProcessBroadcastEventCreation(args.endpointRepo,
 				args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo,
-				args.deviceRepo, args.subTable)
+				args.deviceRepo, args.licenser, args.subTable)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

@@ -41,35 +41,10 @@ const (
 	WHERE deleted_at IS NULL
 	`
 
-	fetchUsersPaginated = `
-	SELECT * FROM convoy.users WHERE deleted_at IS NULL`
-
-	fetchUsersPagedForward = `
-	%s
-	AND id <= :cursor
-	GROUP BY id
-	ORDER BY id DESC
-	LIMIT :limit`
-
-	fetchUsersPagedBackward = `
-	WITH users AS (
-		%s
-		AND id >= :cursor
-		GROUP BY id
-		ORDER BY id ASC
-		LIMIT :limit
-	)
-
-	SELECT * FROM users ORDER BY id DESC`
-
-	countPrevUsers = `
-	SELECT COUNT(DISTINCT(id)) AS count
+	countUsers = `
+	SELECT COUNT(*) AS count
 	FROM convoy.users
-	WHERE deleted_at IS NULL
-	AND id > :cursor
-	GROUP BY id
-	ORDER BY id DESC
-	LIMIT 1`
+	WHERE deleted_at IS NULL`
 )
 
 var (
@@ -191,91 +166,12 @@ func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token s
 	return user, nil
 }
 
-func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
-	arg := map[string]interface{}{
-		"limit":  pageable.Limit(),
-		"cursor": pageable.Cursor(),
-	}
-
-	var query string
-	if pageable.Direction == datastore.Next {
-		query = fetchUsersPagedForward
-	} else {
-		query = fetchUsersPagedBackward
-	}
-
-	query = fmt.Sprintf(query, fetchUsersPaginated)
-
-	query, args, err := sqlx.Named(query, arg)
+func (o *userRepo) CountUsers(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetContext(ctx, &count, countUsers)
 	if err != nil {
-		return nil, datastore.PaginationData{}, err
+		return 0, err
 	}
 
-	query, args, err = sqlx.In(query, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
-	query = u.db.Rebind(query)
-
-	rows, err := u.db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-	defer closeWithError(rows)
-
-	var users []datastore.User
-	for rows.Next() {
-		var user datastore.User
-		err = rows.StructScan(&user)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		users = append(users, user)
-	}
-
-	var count datastore.PrevRowCount
-	if len(users) > 0 {
-		var countQuery string
-		var qargs []interface{}
-		first := users[0]
-		qarg := arg
-		qarg["cursor"] = first.UID
-
-		countQuery, qargs, err = sqlx.Named(countPrevUsers, qarg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		countQuery = u.db.Rebind(countQuery)
-
-		// count the row number before the first row
-		rows, err := u.db.QueryxContext(ctx, countQuery, qargs...)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-		defer closeWithError(rows)
-
-		if rows.Next() {
-			err = rows.StructScan(&count)
-			if err != nil {
-				return nil, datastore.PaginationData{}, err
-			}
-		}
-	}
-
-	ids := make([]string, len(users))
-	for i := range users {
-		ids[i] = users[i].UID
-	}
-
-	if len(users) > pageable.PerPage {
-		users = users[:len(users)-1]
-	}
-
-	pagination := &datastore.PaginationData{PrevRowCount: count}
-	pagination = pagination.Build(pageable, ids)
-
-	return users, *pagination, nil
+	return count, nil
 }

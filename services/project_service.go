@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/oklog/ulid/v2"
 
@@ -22,20 +24,33 @@ type ProjectService struct {
 	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	Licenser          license.Licenser
 	cache             cache.Cache
 }
 
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) (*ProjectService, error) {
+func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, cache cache.Cache) (*ProjectService, error) {
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
+		Licenser:          licenser,
 		cache:             cache,
 	}, nil
 }
 
+var ErrProjectLimit = errors.New("your instance has reached it's project limit, upgrade to create more projects")
+
 func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
+	ok, err := ps.Licenser.CreateProject(ctx)
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	if !ok {
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, ErrProjectLimit)
+	}
+
 	projectName := newProject.Name
 
 	projectConfig := newProject.Config.Transform()
@@ -84,7 +99,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		UpdatedAt:      time.Now(),
 	}
 
-	err := ps.projectRepo.CreateProject(ctx, project)
+	err = ps.projectRepo.CreateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create project")
 		if errors.Is(err, datastore.ErrDuplicateProjectName) {
@@ -128,6 +143,11 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		CreatedAt: apiKey.CreatedAt,
 		Key:       keyString,
 	}
+
+	// if this is a community license, add this project to list of enabled projects
+	// because if the initial license check above passed, then the project count limit had
+	// not been reached
+	ps.Licenser.AddEnabledProject(project.UID)
 
 	return project, resp, nil
 }

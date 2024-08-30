@@ -7,6 +7,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os"
+	"strconv"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
 	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
@@ -21,19 +31,12 @@ import (
 	"github.com/frain-dev/convoy/testcon/manifest"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
-	"io"
-	"net"
-	"net/http"
-	"os"
-	"strconv"
-	"sync"
-	"sync/atomic"
-	"testing"
-	"time"
 )
 
-var once sync.Once
-var pDB *postgres.Postgres
+var (
+	once sync.Once
+	pDB  *postgres.Postgres
+)
 
 func getConfig() config.Configuration {
 	err := config.LoadConfig("./testdata/convoy-host.json")

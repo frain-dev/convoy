@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/pkg/transform"
@@ -39,9 +41,10 @@ type Ingest struct {
 	table       *memorystore.Table
 	log         log.StdLogger
 	instanceId  string
+	licenser    license.Licenser
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) (*Ingest, error) {
+func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*Ingest, error) {
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
 		ctx:         ctx,
@@ -50,6 +53,7 @@ func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer
 		queue:       queue,
 		rateLimiter: rateLimiter,
 		instanceId:  instanceId,
+		licenser:    licenser,
 		sources:     make(map[memorystore.Key]*PubSubSource),
 		ticker:      time.NewTicker(time.Duration(1) * time.Second),
 	}
@@ -118,12 +122,12 @@ func (i *Ingest) run() error {
 			return errors.New("invalid source in memory store")
 		}
 
-		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.instanceId)
+		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.licenser, i.instanceId)
 		if err != nil {
 			return err
 		}
 
-		//ps.hash = key
+		// ps.hash = key
 		ps.Start()
 		i.sources[key] = ps
 	}

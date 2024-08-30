@@ -25,6 +25,7 @@ func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl s
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 		Queue:         mocks.NewMockQueuer(ctrl),
+		Licenser:      mocks.NewMockLicenser(ctrl),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, c),
 		ConfigRepo:    mocks.NewMockConfigurationRepository(ctrl),
 		BaseURL:       baseUrl,
@@ -86,8 +87,39 @@ func TestRegisterUserService_Run(t *testing.T) {
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
 			},
 		},
+		{
+			name:       "should_not_register_user_when_cannot_create_user",
+			wantConfig: true,
+			args: args{
+				ctx: ctx,
+				user: &models.RegisterUser{
+					FirstName:        "test",
+					LastName:         "test",
+					Email:            "test@test.com",
+					Password:         "123456",
+					OrganisationName: "test",
+				},
+			},
+			wantUser: &datastore.User{
+				UID:       "12345",
+				FirstName: "test",
+				LastName:  "test",
+				Email:     "test@test.com",
+			},
+			dbFn: func(u *RegisterUserService) {
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(false, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: ErrUserLimit.Error(),
+		},
+
 		{
 			name:       "should_fail_to_load_config",
 			wantConfig: true,
@@ -102,6 +134,9 @@ func TestRegisterUserService_Run(t *testing.T) {
 				},
 			},
 			dbFn: func(u *RegisterUserService) {
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
+
 				configRepo, _ := u.ConfigRepo.(*mocks.MockConfigurationRepository)
 				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(nil, errors.New("failed"))
 			},
@@ -142,6 +177,10 @@ func TestRegisterUserService_Run(t *testing.T) {
 				orgMemberRepo.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				queue.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
 			},
 		},
 		{
@@ -158,6 +197,9 @@ func TestRegisterUserService_Run(t *testing.T) {
 				},
 			},
 			dbFn: func(u *RegisterUserService) {
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
+
 				configRepo, _ := u.ConfigRepo.(*mocks.MockConfigurationRepository)
 				configRepo.EXPECT().LoadConfiguration(gomock.Any()).Times(1).Return(&datastore.Configuration{
 					UID:             "12345",

@@ -9,6 +9,7 @@ import { CreateSourceComponent } from '../create-source/create-source.component'
 import { CreateSubscriptionService } from './create-subscription.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { CreateProjectComponentService } from '../create-project-component/create-project-component.service';
 
 @Component({
@@ -80,7 +81,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 	eventTypes!: string[];
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, private createProjectService: CreateProjectComponentService) { }
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService, private createProjectService: CreateProjectComponentService) { }
 
 	async ngOnInit() {
 		this.isLoadingForm = true;

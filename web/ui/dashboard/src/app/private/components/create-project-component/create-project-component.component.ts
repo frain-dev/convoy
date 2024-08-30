@@ -1,11 +1,12 @@
-import {Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild} from '@angular/core';
-import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
-import {ActivatedRoute, Router} from '@angular/router';
-import {PROJECT, VERSIONS} from 'src/app/models/project.model';
-import {GeneralService} from 'src/app/services/general/general.service';
-import {PrivateService} from '../../private.service';
-import {CreateProjectComponentService} from './create-project-component.service';
-import {RbacService} from 'src/app/services/rbac/rbac.service';
+import { Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PROJECT, VERSIONS } from 'src/app/models/project.model';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { PrivateService } from '../../private.service';
+import { CreateProjectComponentService } from './create-project-component.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 interface TAB {
     label: string;
@@ -152,7 +153,15 @@ export class CreateProjectComponent implements OnInit {
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
 
-    constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) { }
+    constructor(
+		private formBuilder: FormBuilder,
+		private createProjectService: CreateProjectComponentService,
+		private generalService: GeneralService,
+		private privateService: PrivateService,
+		public router: Router,
+		private route: ActivatedRoute,
+		private licenseService: LicensesService
+	) { }
 
     async ngOnInit() {
         if (this.privateService.getProjectDetails?.type === 'outgoing') this.tabs.push({ label: 'events catalogue', svg: 'stroke', icon: 'meta-events' });
@@ -237,12 +246,12 @@ export class CreateProjectComponent implements OnInit {
     async createProject() {
         const projectFormModal = document.getElementById('projectForm');
 
-        if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
-            projectFormModal?.scroll({ top: 0 });
-            this.projectForm.markAllAsTouched();
-            return;
-        }
-        const projectData = this.getProjectData();
+		if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
+			projectFormModal?.scroll({ top: 0 });
+			this.projectForm.markAllAsTouched();
+			return;
+		}
+		const projectData = this.getProjectData();
 
         this.isCreatingProject = true;
 
@@ -253,17 +262,18 @@ export class CreateProjectComponent implements OnInit {
 
             this.privateService.getProjects({ refresh: true });
 
-            projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
-            this.isCreatingProject = false;
-            this.projectForm.reset();
-            this.apiKey = response.data.api_key.key;
-            this.projectDetails = response.data.project;
-            if (projectFormModal) projectFormModal.style.overflowY = 'hidden';
-            this.tokenDialog.nativeElement.showModal();
-        } catch (error) {
-            this.isCreatingProject = false;
-        }
-    }
+			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
+			this.isCreatingProject = false;
+			this.projectForm.reset();
+			this.apiKey = response.data.api_key.key;
+			this.projectDetails = response.data.project;
+			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';
+			this.tokenDialog.nativeElement.showModal();
+			this.licenseService.setLicenses();
+		} catch (error) {
+			this.isCreatingProject = false;
+		}
+	}
 
 	async updateProject() {
 		this.checkMetaEventsConfig();

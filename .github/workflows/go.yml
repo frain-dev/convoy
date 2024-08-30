@@ -94,6 +94,7 @@ jobs:
             - name: Run integration tests (with test containers)
               run: make docker_e2e_tests
               env:
+                  TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   TEST_DB_SCHEME: postgres
                   TEST_DB_HOST: localhost
                   TEST_DB_USERNAME: postgres

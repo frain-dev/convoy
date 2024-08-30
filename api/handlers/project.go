@@ -21,9 +21,8 @@ func createProjectService(h *Handler) (*services.ProjectService, error) {
 
 	projectService, err := services.NewProjectService(
 		apiKeyRepo, projectRepo, eventRepo,
-		eventDeliveryRepo, h.A.Cache,
+		eventDeliveryRepo, h.A.Licenser, h.A.Cache,
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +76,8 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete project", http.StatusBadRequest))
 		return
 	}
+
+	h.A.Licenser.RemoveEnabledProject(project.UID)
 
 	_ = render.Render(w, r, util.NewServerResponse("Project deleted successfully",
 		nil, http.StatusOK))

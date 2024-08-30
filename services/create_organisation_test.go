@@ -17,6 +17,7 @@ func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *models.Or
 	return &CreateOrganisationService{
 		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
 		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
+		Licenser:      mocks.NewMockLicenser(ctrl),
 		NewOrg:        newOrg,
 		User:          user,
 	}
@@ -53,6 +54,9 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 
 				om, _ := os.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := os.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr: false,
 		},
@@ -62,6 +66,10 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 				ctx:    ctx,
 				newOrg: &models.Organisation{Name: ""},
 				user:   &datastore.User{UID: "1234"},
+			},
+			dbFn: func(os *CreateOrganisationService) {
+				licenser, _ := os.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "organisation name is required",
@@ -74,12 +82,29 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 				user:   &datastore.User{UID: "1234"},
 			},
 			dbFn: func(os *CreateOrganisationService) {
+				licenser, _ := os.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+
 				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
 				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to create organisation",
+		},
+		{
+			name: "should_fail_to_create_organisation_for_license_check",
+			args: args{
+				ctx:    ctx,
+				newOrg: &models.Organisation{Name: "new_org"},
+				user:   &datastore.User{UID: "1234"},
+			},
+			dbFn: func(os *CreateOrganisationService) {
+				licenser, _ := os.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(false, nil)
+			},
+			wantErr:    true,
+			wantErrMsg: ErrOrgLimit.Error(),
 		},
 	}
 	for _, tt := range tests {
