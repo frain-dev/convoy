@@ -144,6 +144,8 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		Key:       keyString,
 	}
 
+	ps.Licenser.AddEnabledProject(project.UID)
+
 	return project, resp, nil
 }
 

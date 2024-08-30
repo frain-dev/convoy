@@ -19,7 +19,7 @@ func (h *Handler) RequireEnabledProject() func(next http.Handler) http.Handler {
 				return
 			}
 
-			if p.DisabledByLicense {
+			if !h.A.Licenser.ProjectEnabled(p.UID) {
 				_ = render.Render(w, r, util.NewErrorResponse(ErrProjectDisabled.Error(), http.StatusBadRequest))
 				return
 			}

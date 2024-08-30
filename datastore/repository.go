@@ -63,11 +63,6 @@ type ProjectRepository interface {
 	FetchProjectByID(context.Context, string) (*Project, error)
 	GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]ProjectEvents, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
-
-	// For license operations
-	FetchEnabledProjectIDs(ctx context.Context) ([]string, error)
-	DisableProjects(ctx context.Context, ids []string) error
-	EnableAllProjects(ctx context.Context) error
 }
 
 type OrganisationRepository interface {

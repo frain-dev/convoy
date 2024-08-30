@@ -29,6 +29,9 @@ type Licenser struct {
 	orgRepo     datastore.OrganisationRepository
 	userRepo    datastore.UserRepository
 	projectRepo datastore.ProjectRepository
+
+	// only for community licenser
+	enabledProjects map[string]bool
 }
 
 type Config struct {
@@ -85,8 +88,6 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		return nil, fmt.Errorf("license plan type is not a string")
 	}
 
-	err = c.ProjectRepo.EnableAllProjects(ctx)
-
 	return &Licenser{
 		machineFingerprint: fingerprint,
 		licenseKey:         c.LicenseKey,
@@ -97,6 +98,22 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 		planType:           PlanType(pt),
 		featureList:        featureList,
 	}, err
+}
+
+func (k *Licenser) ProjectEnabled(projectID string) bool {
+	if k.enabledProjects == nil { // not community licenser
+		return true
+	}
+
+	return k.enabledProjects[projectID]
+}
+
+func (k *Licenser) AddEnabledProject(projectID string) {
+	if k.enabledProjects == nil { // not community licenser
+		return
+	}
+
+	k.enabledProjects[projectID] = true
 }
 
 func (k *Licenser) Activate() error {

@@ -3,8 +3,6 @@ package keygen
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/keygen-sh/keygen-go/v3"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -17,41 +15,41 @@ const (
 )
 
 func communityLicenser(ctx context.Context, orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, projectRepo datastore.ProjectRepository) (*Licenser, error) {
-	l := &Licenser{
+	m, err := enforceProjectLimit(ctx, projectRepo)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Licenser{
 		planType: CommunityPlan,
 		featureList: map[Feature]*Properties{
 			CreateOrg:     {Limit: orgLimit},
 			CreateUser:    {Limit: userLimit},
 			CreateProject: {Limit: projectLimit},
 		},
-		license:     &keygen.License{},
-		orgRepo:     orgRepo,
-		userRepo:    userRepo,
-		projectRepo: projectRepo,
-	}
-
-	return l, enforceProjectLimit(ctx, projectRepo)
+		license:         &keygen.License{},
+		enabledProjects: m,
+		orgRepo:         orgRepo,
+		userRepo:        userRepo,
+		projectRepo:     projectRepo,
+	}, nil
 }
 
-func enforceProjectLimit(ctx context.Context, projectRepo datastore.ProjectRepository) error {
-	projectIDs, err := projectRepo.FetchEnabledProjectIDs(ctx)
+func enforceProjectLimit(ctx context.Context, projectRepo datastore.ProjectRepository) (map[string]bool, error) {
+	projects, err := projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if len(projectIDs) < projectLimit {
-		// enabled projects are within accepted count, do nothing
-		return nil
+	if len(projects) > projectLimit {
+		// enabled projects are not within accepted count, do nothing
+		projects = projects[len(projects)-projectLimit:] // pick last 2 ids
 	}
 
-	projectIDs = projectIDs[:len(projectIDs)-projectLimit] // remove last 2 ids
-
-	if len(projectIDs) == 0 {
-		return nil
+	m := map[string]bool{}
+	for _, p := range projects {
+		m[p.UID] = true
 	}
 
-	log.Warnf("your project count is more than allowed on the community plan, convoy will disable the following projects to bring your count back under limit: %v", projectIDs)
-
-	err = projectRepo.DisableProjects(ctx, projectIDs) // disable the remaining projects
-	return err
+	return m, nil
 }
