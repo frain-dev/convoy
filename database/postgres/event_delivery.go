@@ -57,6 +57,7 @@ const (
         COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
         COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
         COALESCE(ep.target_url, '') AS "endpoint_metadata.target_url",
+        COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
         ev.id AS "event_metadata.id",
         ev.event_type AS "event_metadata.event_type",
 		COALESCE(ed.latency,'') AS latency,
@@ -584,6 +585,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				TargetURL:    ev.Endpoint.TargetURL.ValueOrZero(),
 				Title:        ev.Endpoint.Title.ValueOrZero(),
 				SupportEmail: ev.Endpoint.SupportEmail.ValueOrZero(),
+				OwnerID:      ev.Endpoint.OwnerID.ValueOrZero(),
 			},
 			Source: &datastore.Source{
 				UID:             ev.Source.UID.ValueOrZero(),
@@ -791,6 +793,7 @@ type EndpointMetadata struct {
 	TargetURL    null.String `db:"target_url"`
 	ProjectID    null.String `db:"project_id"`
 	SupportEmail null.String `db:"support_email"`
+	OwnerID      null.String `db:"owner_id"`
 }
 
 type EventMetadata struct {
