@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -31,6 +32,7 @@ type Licenser struct {
 	projectRepo datastore.ProjectRepository
 
 	// only for community licenser
+	mu              sync.RWMutex
 	enabledProjects map[string]bool
 }
 
@@ -101,6 +103,8 @@ func NewKeygenLicenser(c *Config) (*Licenser, error) {
 }
 
 func (k *Licenser) ProjectEnabled(projectID string) bool {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
 	if k.enabledProjects == nil { // not community licenser
 		return true
 	}
@@ -109,6 +113,8 @@ func (k *Licenser) ProjectEnabled(projectID string) bool {
 }
 
 func (k *Licenser) AddEnabledProject(projectID string) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
 	if k.enabledProjects == nil { // not community licenser
 		return
 	}
