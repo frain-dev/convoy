@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-var ErrProjectDisabled = errors.New("this project has been disabled for write operations until you re-upgrade your convoy instance")
+var ErrProjectDisabled = errors.New("this project has been disabled for write operations until you re-subscribe your convoy instance")
 
 func (h *Handler) RequireEnabledProject() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
