@@ -77,6 +77,8 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.A.Licenser.RemoveEnabledProject(project.UID)
+
 	_ = render.Render(w, r, util.NewServerResponse("Project deleted successfully",
 		nil, http.StatusOK))
 }

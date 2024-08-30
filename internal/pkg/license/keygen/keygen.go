@@ -119,7 +119,21 @@ func (k *Licenser) AddEnabledProject(projectID string) {
 		return
 	}
 
+	if len(k.enabledProjects) == projectLimit {
+		return
+	}
+
 	k.enabledProjects[projectID] = true
+}
+
+func (k *Licenser) RemoveEnabledProject(projectID string) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+	if k.enabledProjects == nil { // not community licenser
+		return
+	}
+
+	delete(k.enabledProjects, projectID)
 }
 
 func (k *Licenser) Activate() error {

@@ -78,7 +78,7 @@ func (Licenser) MutualTLS() bool {
 func (Licenser) SynchronousWebhooks() bool {
 	return true
 }
-
+func (Licenser) RemoveEnabledProject(_ string) {}
 func (Licenser) ProjectEnabled(_ string) bool {
 	return true
 }

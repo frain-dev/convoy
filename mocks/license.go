@@ -252,6 +252,18 @@ func (mr *MockLicenserMockRecorder) ProjectEnabled(projectID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProjectEnabled", reflect.TypeOf((*MockLicenser)(nil).ProjectEnabled), projectID)
 }
 
+// RemoveEnabledProject mocks base method.
+func (m *MockLicenser) RemoveEnabledProject(projectID string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RemoveEnabledProject", projectID)
+}
+
+// RemoveEnabledProject indicates an expected call of RemoveEnabledProject.
+func (mr *MockLicenserMockRecorder) RemoveEnabledProject(projectID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveEnabledProject", reflect.TypeOf((*MockLicenser)(nil).RemoveEnabledProject), projectID)
+}
+
 // SynchronousWebhooks mocks base method.
 func (m *MockLicenser) SynchronousWebhooks() bool {
 	m.ctrl.T.Helper()

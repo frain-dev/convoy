@@ -42,8 +42,8 @@ func enforceProjectLimit(ctx context.Context, projectRepo datastore.ProjectRepos
 	}
 
 	if len(projects) > projectLimit {
-		// enabled projects are not within accepted count, do nothing
-		projects = projects[len(projects)-projectLimit:] // pick last 2 ids
+		// enabled projects are not within accepted count, allow only the last projects to be active
+		projects = projects[len(projects)-projectLimit:]
 	}
 
 	m := map[string]bool{}

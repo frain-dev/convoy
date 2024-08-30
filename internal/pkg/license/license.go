@@ -27,9 +27,11 @@ type Licenser interface {
 	HADeployment() bool
 	MutualTLS() bool
 	SynchronousWebhooks() bool
+	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
+
+	RemoveEnabledProject(projectID string)
 	AddEnabledProject(projectID string)
 	ProjectEnabled(projectID string) bool
-	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 }
 
 var _ Licenser = &keygen.Licenser{}
