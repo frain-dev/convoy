@@ -46,7 +46,7 @@ const (
 	COALESCE(source_id, '') AS source_id,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
-	created_at,updated_at,acknowledged_at,metadata
+	created_at,updated_at,acknowledged_at,metadata,status
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -243,6 +243,25 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	)
 	if err != nil {
 		return err
+	}
+
+	endpoints := event.Endpoints
+	var j int
+	for i := 0; i < len(endpoints); i += PartitionSize {
+		j += PartitionSize
+		if j > len(endpoints) {
+			j = len(endpoints)
+		}
+
+		var ids []interface{}
+		for _, endpointID := range endpoints[i:j] {
+			ids = append(ids, &EventEndpoint{EventID: event.UID, EndpointID: endpointID})
+		}
+
+		_, err = tx.NamedExecContext(ctx, createEventEndpoints, ids)
+		if err != nil {
+			return err
+		}
 	}
 
 	if isWrapped {
