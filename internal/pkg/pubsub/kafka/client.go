@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"time"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -27,10 +29,11 @@ type Kafka struct {
 	handler     datastore.PubSubHandler
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
+	licenser    license.Licenser
 	instanceId  string
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) *Kafka {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Kafka {
 	return &Kafka{
 		Cfg:         source.PubSub.Kafka,
 		source:      source,
@@ -38,6 +41,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		handler:     handler,
 		log:         log,
 		rateLimiter: rateLimiter,
+		licenser:    licenser,
 		instanceId:  instanceId,
 	}
 }
@@ -107,7 +111,6 @@ func (k *Kafka) Verify() error {
 	}
 
 	return nil
-
 }
 
 func (k *Kafka) consume() {
@@ -160,7 +163,7 @@ func (k *Kafka) consume() {
 				continue
 			}
 
-			mm := metrics.GetDPInstance()
+			mm := metrics.GetDPInstance(k.licenser)
 			mm.IncrementIngestTotal(k.source)
 
 			var d D = m.Headers

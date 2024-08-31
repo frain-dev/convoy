@@ -1,10 +1,11 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import { PROJECT } from 'src/app/models/project.model';
-import { SUBSCRIPTION } from 'src/app/models/subscription';
-import { PrivateService } from 'src/app/private/private.service';
-import { GeneralService } from 'src/app/services/general/general.service';
+import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
+import {CURSOR, PAGINATION} from 'src/app/models/global.model';
+import {PROJECT} from 'src/app/models/project.model';
+import {SUBSCRIPTION} from 'src/app/models/subscription';
+import {PrivateService} from 'src/app/private/private.service';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-subscriptions',
@@ -33,7 +34,7 @@ export class SubscriptionsComponent implements OnInit {
 	subscriptionSearchString!: string;
 	userSearch = false;
 
-	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService) {}
+	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		const urlParam = this.route.snapshot.params.id;

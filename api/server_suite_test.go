@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"io"
 	"math/rand"
 	"net/http"
@@ -17,6 +16,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 
 	ncache "github.com/frain-dev/convoy/cache/noop"
 
@@ -64,8 +66,10 @@ func getConfig() config.Configuration {
 	return cfg
 }
 
-var once sync.Once
-var pDB *postgres.Postgres
+var (
+	once sync.Once
+	pDB  *postgres.Postgres
+)
 
 func getDB() database.Database {
 	once.Do(func() {
@@ -126,11 +130,12 @@ func buildServer() *ApplicationHandler {
 
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
-			DB:     db,
-			Queue:  newQueue,
-			Logger: logger,
-			Cache:  noopCache,
-			Rate:   r,
+			DB:       db,
+			Queue:    newQueue,
+			Logger:   logger,
+			Cache:    noopCache,
+			Rate:     r,
+			Licenser: noopLicenser.NewLicenser(),
 		})
 
 	_ = ah.RegisterPolicy()

@@ -87,6 +87,31 @@ func Test_CreateUser(t *testing.T) {
 	}
 }
 
+func TestCountUsers(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	userRepo := NewUserRepo(db, nil)
+	count := 10
+
+	for i := 0; i < count; i++ {
+		u := &datastore.User{
+			UID:       ulid.Make().String(),
+			FirstName: "test",
+			LastName:  "test",
+			Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
+		}
+
+		err := userRepo.CreateUser(context.Background(), u)
+		require.NoError(t, err)
+	}
+
+	userCount, err := userRepo.CountUsers(context.Background())
+
+	require.NoError(t, err)
+	require.Equal(t, int64(count), userCount)
+}
+
 func Test_FindUserByEmail(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
@@ -208,76 +233,6 @@ func Test_FindUserByEmailVerificationToken(t *testing.T) {
 	newUser.EmailVerificationExpiresAt, newUser.ResetPasswordExpiresAt = time.Time{}, time.Time{}
 
 	require.Equal(t, user, newUser)
-}
-
-func Test_LoadUsersPaged(t *testing.T) {
-	type Expected struct {
-		paginationData datastore.PaginationData
-	}
-
-	tests := []struct {
-		name     string
-		pageData datastore.Pageable
-		count    int
-		expected Expected
-	}{
-		{
-			name:     "Load Users Paged - 10 records",
-			pageData: datastore.Pageable{PerPage: 3},
-			count:    10,
-			expected: Expected{
-				paginationData: datastore.PaginationData{
-					PerPage: 3,
-				},
-			},
-		},
-
-		{
-			name:     "Load Users Paged - 12 records",
-			pageData: datastore.Pageable{PerPage: 4},
-			count:    12,
-			expected: Expected{
-				paginationData: datastore.PaginationData{
-					PerPage: 4,
-				},
-			},
-		},
-
-		{
-			name:     "Load Users Paged - 5 records",
-			pageData: datastore.Pageable{PerPage: 3},
-			count:    5,
-			expected: Expected{
-				paginationData: datastore.PaginationData{
-					PerPage: 3,
-				},
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			db, closeFn := getDB(t)
-			defer closeFn()
-
-			userRepo := NewUserRepo(db, nil)
-
-			for i := 0; i < tc.count; i++ {
-				user := &datastore.User{
-					UID:       ulid.Make().String(),
-					FirstName: "test",
-					LastName:  "test",
-					Email:     fmt.Sprintf("%s@test.com", ulid.Make().String()),
-				}
-				require.NoError(t, userRepo.CreateUser(context.Background(), user))
-			}
-
-			_, pageable, err := userRepo.LoadUsersPaged(context.Background(), tc.pageData)
-
-			require.NoError(t, err)
-			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
-		})
-	}
 }
 
 func Test_UpdateUser(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"gopkg.in/guregu/null.v4"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/util"
 
@@ -39,7 +40,7 @@ func (b *BroadcastEventChannel) GetConfig() *EventChannelConfig {
 	}
 }
 
-func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, _ datastore.SubscriptionRepository) (*datastore.Event, error) {
+func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, _ datastore.SubscriptionRepository, licenser license.Licenser) (*datastore.Event, error) {
 	var broadcastEvent models.BroadcastEvent
 	err := msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
 	if err != nil {
@@ -87,7 +88,7 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 	return event, nil
 }
 
-func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, subRepo datastore.SubscriptionRepository) (*EventChannelSubResponse, error) {
+func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, subRepo datastore.SubscriptionRepository, licenser license.Licenser) (*EventChannelSubResponse, error) {
 	response := EventChannelSubResponse{}
 
 	project, err := projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
@@ -112,7 +113,7 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 
 	// subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
 
-	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, subRepo, subscriptions, true)
+	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, subRepo, licenser, subscriptions, true)
 	if err != nil {
 		return nil, &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
@@ -132,9 +133,9 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	return &response, nil
 }
 
-func ProcessBroadcastEventCreation(ch *BroadcastEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessBroadcastEventCreation(ch *BroadcastEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
 
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo)
+	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, licenser)
 }
 
 func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscription) {

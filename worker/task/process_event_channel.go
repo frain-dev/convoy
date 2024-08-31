@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -35,11 +36,11 @@ type EventChannelSubResponse struct {
 
 type EventChannel interface {
 	GetConfig() *EventChannelConfig
-	CreateEvent(context.Context, *asynq.Task, EventChannel, datastore.EventRepository, datastore.ProjectRepository, datastore.EndpointRepository, datastore.SubscriptionRepository) (*datastore.Event, error)
-	MatchSubscriptions(context.Context, EventChannelMetadata, datastore.EventRepository, datastore.ProjectRepository, datastore.EndpointRepository, datastore.SubscriptionRepository) (*EventChannelSubResponse, error)
+	CreateEvent(context.Context, *asynq.Task, EventChannel, datastore.EventRepository, datastore.ProjectRepository, datastore.EndpointRepository, datastore.SubscriptionRepository, license.Licenser) (*datastore.Event, error)
+	MatchSubscriptions(context.Context, EventChannelMetadata, datastore.EventRepository, datastore.ProjectRepository, datastore.EndpointRepository, datastore.SubscriptionRepository, license.Licenser) (*EventChannelSubResponse, error)
 }
 
-func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
+func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
@@ -56,7 +57,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			event = lastEvent
 		} else {
 			log.Errorln("[asyq] creating new event")
-			event, err = channel.CreateEvent(ctx, t, channel, eventRepo, projectRepo, endpointRepo, subRepo)
+			event, err = channel.CreateEvent(ctx, t, channel, eventRepo, projectRepo, endpointRepo, subRepo, licenser)
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {
 					lastEvent, err = eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
@@ -103,7 +104,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 	}
 }
 
-func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
 	return func(ctx0 context.Context, t *asynq.Task) error {
 
 		ctx := context.WithoutCancel(ctx0)
@@ -123,7 +124,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 		cfg := metadata.Config
 		log.Errorf("about to match subs for channel: %s\n", cfg.Channel)
 
-		subResponse, err := channel.MatchSubscriptions(ctx, metadata, eventRepo, projectRepo, endpointRepo, subRepo)
+		subResponse, err := channel.MatchSubscriptions(ctx, metadata, eventRepo, projectRepo, endpointRepo, subRepo, licenser)
 		if err != nil {
 			return err
 		}
@@ -160,7 +161,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 		}
 
 		// no need for a separate queue
-		err = writeEventDeliveriesToQueue(ctx, subResponse.Subscriptions, subResponse.Event, subResponse.Project, eventDeliveryRepo, eventQueue, deviceRepo, endpointRepo)
+		err = writeEventDeliveriesToQueue(ctx, subResponse.Subscriptions, subResponse.Event, subResponse.Project, eventDeliveryRepo, eventQueue, deviceRepo, endpointRepo, licenser)
 		if err != nil {
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
 			writeErr := fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error())

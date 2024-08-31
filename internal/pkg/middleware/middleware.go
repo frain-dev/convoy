@@ -6,13 +6,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/riandyrn/otelchi"

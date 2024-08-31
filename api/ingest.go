@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
+	"time"
+
+	"github.com/frain-dev/convoy/api/handlers"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"gopkg.in/guregu/null.v4"
-
-	"io"
-	"net/http"
-	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"github.com/go-chi/chi/v5"
@@ -63,6 +64,11 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	project, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if !a.A.Licenser.ProjectEnabled(project.UID) {
+		_ = render.Render(w, r, util.NewErrorResponse(handlers.ErrProjectDisabled.Error(), http.StatusBadRequest))
 		return
 	}
 

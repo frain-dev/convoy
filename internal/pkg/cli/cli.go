@@ -2,6 +2,8 @@ package cli
 
 import (
 	"context"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/cache"
@@ -14,12 +16,13 @@ import (
 
 // App is the core dependency of the entire binary.
 type App struct {
-	Version string
-	DB      database.Database
-	Queue   queue.Queuer
-	Logger  log.StdLogger
-	Cache   cache.Cache
-	Rate    limiter.RateLimiter
+	Version  string
+	DB       database.Database
+	Queue    queue.Queuer
+	Logger   log.StdLogger
+	Cache    cache.Cache
+	Rate     limiter.RateLimiter
+	Licenser license.Licenser
 
 	// TODO(subomi): Let's make this cleaner.
 	TracerShutdown func(context.Context) error

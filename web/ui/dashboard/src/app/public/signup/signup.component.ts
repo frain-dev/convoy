@@ -1,12 +1,18 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
-import { LoaderModule } from 'src/app/private/components/loader/loader.module';
-import { HubspotService } from 'src/app/services/hubspot/hubspot.service';
-import { SignupService } from './signup.service';
+import {CommonModule} from '@angular/common';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {Router} from '@angular/router';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {
+    InputDirective,
+    InputErrorComponent,
+    InputFieldDirective,
+    LabelComponent
+} from 'src/app/components/input/input.component';
+import {LoaderModule} from 'src/app/private/components/loader/loader.module';
+import {HubspotService} from 'src/app/services/hubspot/hubspot.service';
+import {SignupService} from './signup.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-signup',
@@ -27,9 +33,13 @@ export class SignupComponent implements OnInit {
 		org_name: ['', Validators.required]
 	});
 
-	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router, private hubspotService: HubspotService) {}
+	constructor(private formBuilder: FormBuilder, private signupService: SignupService, public router: Router, private hubspotService: HubspotService, private licenseService: LicensesService) {}
 
-	ngOnInit(): void {}
+	ngOnInit(): void {
+		this.licenseService.setLicenses();
+
+		if (!this.licenseService.hasLicense('CREATE_USER')) this.router.navigateByUrl('/login');
+	}
 
 	async signup() {
 		if (this.signupForm.invalid) return this.signupForm.markAllAsTouched();

@@ -2,6 +2,11 @@ package api
 
 import (
 	"embed"
+	"io/fs"
+	"net/http"
+	"path"
+	"strings"
+
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
@@ -13,13 +18,8 @@ import (
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/subomi/requestmigrations"
-	"io/fs"
-	"net/http"
-	"path"
-	"strings"
 )
 
 //go:embed ui/build
@@ -119,7 +119,6 @@ func (a *ApplicationHandler) buildRouter() *chi.Mux {
 }
 
 func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
-
 	router := a.buildRouter()
 
 	handler := &handlers.Handler{A: a.A, RM: a.rm}
@@ -145,46 +144,54 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Get("/", handler.GetProject)
-					projectSubRouter.Put("/", handler.UpdateProject)
+					projectSubRouter.With(handler.RequireEnabledProject()).Put("/", handler.UpdateProject)
 					projectSubRouter.Delete("/", handler.DeleteProject)
 
 					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
-						endpointSubRouter.Post("/", handler.CreateEndpoint)
+						endpointSubRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEndpoint)
 						endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
 
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 							e.Get("/", handler.GetEndpoint)
-							e.Put("/", handler.UpdateEndpoint)
-							e.Delete("/", handler.DeleteEndpoint)
-							e.Put("/expire_secret", handler.ExpireSecret)
-							e.Put("/pause", handler.PauseEndpoint)
+
+							e.With(handler.RequireEnabledProject()).Use(handler.RequireEnabledProject())
+
+							e.With(handler.RequireEnabledProject()).Put("/", handler.UpdateEndpoint)
+							e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
+							e.With(handler.RequireEnabledProject()).Put("/expire_secret", handler.ExpireSecret)
+							e.With(handler.RequireEnabledProject()).Put("/pause", handler.PauseEndpoint)
 						})
 					})
 
 					// TODO(subomi): left this here temporarily till the data plane is stable.
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-						// TODO(all): should the InstrumentPath change?
-						eventRouter.With(middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
-						eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
-						eventRouter.Post("/broadcast", handler.CreateBroadcastEvent)
-						eventRouter.Post("/dynamic", handler.CreateDynamicEvent)
-						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-						eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+						eventRouter.Route("/", func(writeEventRouter chi.Router) {
+							eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
-						eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-							eventSubRouter.Get("/", handler.GetEndpointEvent)
-							eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+							// TODO(all): should the InstrumentPath change?
+							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/fanout", handler.CreateEndpointFanoutEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/broadcast", handler.CreateBroadcastEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/dynamic", handler.CreateDynamicEvent)
+							eventRouter.With(handler.RequireEnabledProject()).With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
+
+							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+								eventSubRouter.With(handler.RequireEnabledProject()).Put("/replay", handler.ReplayEndpointEvent)
+								eventSubRouter.Get("/", handler.GetEndpointEvent)
+							})
 						})
 					})
 
 					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 						eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-						eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-						eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+						eventDeliveryRouter.With(handler.RequireEnabledProject()).Post("/forceresend", handler.ForceResendEventDeliveries)
+						eventDeliveryRouter.With(handler.RequireEnabledProject()).Post("/batchretry", handler.BatchRetryEventDelivery)
 
 						eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 							eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-							eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+							eventDeliverySubRouter.With(handler.RequireEnabledProject()).Put("/resend", handler.ResendEventDelivery)
 
 							eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 								deliveryRouter.Get("/", handler.GetDeliveryAttempts)
@@ -194,45 +201,45 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 					})
 
 					projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-						subscriptionRouter.Post("/", handler.CreateSubscription)
+						subscriptionRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateSubscription)
 						subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
 						subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
 						subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
-						subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
+						subscriptionRouter.With(handler.RequireEnabledProject()).Delete("/{subscriptionID}", handler.DeleteSubscription)
 						subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
-						subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
+						subscriptionRouter.With(handler.RequireEnabledProject()).Put("/{subscriptionID}", handler.UpdateSubscription)
 						subscriptionRouter.Put("/{subscriptionID}/toggle_status", handler.ToggleSubscriptionStatus)
 					})
 
 					projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
-						sourceRouter.Post("/", handler.CreateSource)
+						sourceRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateSource)
 						sourceRouter.Get("/{sourceID}", handler.GetSource)
 						sourceRouter.With(middleware.Pagination).Get("/", handler.LoadSourcesPaged)
 						sourceRouter.Post("/test_function", handler.TestSourceFunction)
-						sourceRouter.Put("/{sourceID}", handler.UpdateSource)
-						sourceRouter.Delete("/{sourceID}", handler.DeleteSource)
+						sourceRouter.With(handler.RequireEnabledProject()).Put("/{sourceID}", handler.UpdateSource)
+						sourceRouter.With(handler.RequireEnabledProject()).Delete("/{sourceID}", handler.DeleteSource)
 					})
 
-					projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
-						portalLinkRouter.Post("/", handler.CreatePortalLink)
-						portalLinkRouter.Get("/{portalLinkID}", handler.GetPortalLink)
-						portalLinkRouter.With(middleware.Pagination).Get("/", handler.LoadPortalLinksPaged)
-						portalLinkRouter.Put("/{portalLinkID}", handler.UpdatePortalLink)
-						portalLinkRouter.Put("/{portalLinkID}/revoke", handler.RevokePortalLink)
-					})
+					if handler.A.Licenser.PortalLinks() {
+						projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
+							portalLinkRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreatePortalLink)
+							portalLinkRouter.Get("/{portalLinkID}", handler.GetPortalLink)
+							portalLinkRouter.With(middleware.Pagination).Get("/", handler.LoadPortalLinksPaged)
+							portalLinkRouter.With(handler.RequireEnabledProject()).Put("/{portalLinkID}", handler.UpdatePortalLink)
+							portalLinkRouter.With(handler.RequireEnabledProject()).Put("/{portalLinkID}/revoke", handler.RevokePortalLink)
+						})
+					}
 
 					projectSubRouter.Route("/meta-events", func(metaEventRouter chi.Router) {
 						metaEventRouter.With(middleware.Pagination).Get("/", handler.GetMetaEventsPaged)
 
 						metaEventRouter.Route("/{metaEventID}", func(metaEventSubRouter chi.Router) {
 							metaEventSubRouter.Get("/", handler.GetMetaEvent)
-							metaEventSubRouter.Put("/resend", handler.ResendMetaEvent)
+							metaEventSubRouter.With(handler.RequireEnabledProject()).Put("/resend", handler.ResendMetaEvent)
 						})
 					})
 				})
 			})
-
-			r.HandleFunc("/*", handler.RedirectToProjects)
 		})
 	})
 
@@ -240,6 +247,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
 		uiRouter.Use(chiMiddleware.Maybe(middleware.RequireAuth(), shouldAuthRoute))
+
+		uiRouter.Get("/license/features", handler.GetLicenseFeatures)
 
 		uiRouter.Post("/users/forgot-password", handler.ForgotPassword)
 		uiRouter.Post("/users/reset-password", handler.ResetPassword)
@@ -300,50 +309,58 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 					projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 						projectSubRouter.Get("/", handler.GetProject)
-						projectSubRouter.Put("/", handler.UpdateProject)
-						projectSubRouter.Delete("/", handler.DeleteProject)
+						projectSubRouter.With(handler.RequireEnabledProject()).Put("/", handler.UpdateProject)
+						projectSubRouter.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteProject)
 						projectSubRouter.Get("/stats", handler.GetProjectStatistics)
 
 						projectSubRouter.Route("/security/keys", func(projectKeySubRouter chi.Router) {
-							projectKeySubRouter.Put("/regenerate", handler.RegenerateProjectAPIKey)
+							projectKeySubRouter.With(handler.RequireEnabledProject()).Put("/regenerate", handler.RegenerateProjectAPIKey)
 						})
 
 						projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
-							endpointSubRouter.Post("/", handler.CreateEndpoint)
+							endpointSubRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEndpoint)
 							endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
 
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 								e.Get("/", handler.GetEndpoint)
-								e.Put("/", handler.UpdateEndpoint)
-								e.Delete("/", handler.DeleteEndpoint)
-								e.Put("/expire_secret", handler.ExpireSecret)
-								e.Put("/pause", handler.PauseEndpoint)
+
+								e.With(handler.RequireEnabledProject()).Use(handler.RequireEnabledProject())
+
+								e.With(handler.RequireEnabledProject()).Put("/", handler.UpdateEndpoint)
+								e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
+								e.With(handler.RequireEnabledProject()).Put("/expire_secret", handler.ExpireSecret)
+								e.With(handler.RequireEnabledProject()).Put("/pause", handler.PauseEndpoint)
 							})
 						})
 
 						// TODO(subomi): left this here temporarily till the data plane is stable.
 						projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-							eventRouter.Post("/", handler.CreateEndpointEvent)
-							eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
 							eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-							eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
 							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
+							// TODO(all): should the InstrumentPath change?
+							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/fanout", handler.CreateEndpointFanoutEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/broadcast", handler.CreateBroadcastEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/dynamic", handler.CreateDynamicEvent)
+							eventRouter.With(handler.RequireEnabledProject()).With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
+
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+								eventSubRouter.With(handler.RequireEnabledProject()).Put("/replay", handler.ReplayEndpointEvent)
 								eventSubRouter.Get("/", handler.GetEndpointEvent)
-								eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
 							})
 						})
 
 						projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 							eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-							eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-							eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+							eventDeliveryRouter.With(handler.RequireEnabledProject()).Post("/forceresend", handler.ForceResendEventDeliveries)
+							eventDeliveryRouter.With(handler.RequireEnabledProject()).Post("/batchretry", handler.BatchRetryEventDelivery)
 							eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 
 							eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
 								eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-								eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+								eventDeliverySubRouter.With(handler.RequireEnabledProject()).Put("/resend", handler.ResendEventDelivery)
 
 								eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
 									deliveryRouter.Get("/", handler.GetDeliveryAttempts)
@@ -353,22 +370,22 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						})
 
 						projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-							subscriptionRouter.Post("/", handler.CreateSubscription)
+							subscriptionRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateSubscription)
 							subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
 							subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
 							subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
-							subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
+							subscriptionRouter.With(handler.RequireEnabledProject()).Delete("/{subscriptionID}", handler.DeleteSubscription)
 							subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
-							subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
+							subscriptionRouter.With(handler.RequireEnabledProject()).Put("/{subscriptionID}", handler.UpdateSubscription)
 						})
 
 						projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
-							sourceRouter.Post("/", handler.CreateSource)
+							sourceRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateSource)
 							sourceRouter.Get("/{sourceID}", handler.GetSource)
 							sourceRouter.With(middleware.Pagination).Get("/", handler.LoadSourcesPaged)
 							sourceRouter.Post("/test_function", handler.TestSourceFunction)
-							sourceRouter.Put("/{sourceID}", handler.UpdateSource)
-							sourceRouter.Delete("/{sourceID}", handler.DeleteSource)
+							sourceRouter.With(handler.RequireEnabledProject()).Put("/{sourceID}", handler.UpdateSource)
+							sourceRouter.With(handler.RequireEnabledProject()).Delete("/{sourceID}", handler.DeleteSource)
 						})
 
 						projectSubRouter.Route("/meta-events", func(metaEventRouter chi.Router) {
@@ -376,17 +393,19 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 							metaEventRouter.Route("/{metaEventID}", func(metaEventSubRouter chi.Router) {
 								metaEventSubRouter.Get("/", handler.GetMetaEvent)
-								metaEventSubRouter.Put("/resend", handler.ResendMetaEvent)
+								metaEventSubRouter.With(handler.RequireEnabledProject()).Put("/resend", handler.ResendMetaEvent)
 							})
 						})
 
-						projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
-							portalLinkRouter.Post("/", handler.CreatePortalLink)
-							portalLinkRouter.Get("/{portalLinkID}", handler.GetPortalLink)
-							portalLinkRouter.With(middleware.Pagination).Get("/", handler.LoadPortalLinksPaged)
-							portalLinkRouter.Put("/{portalLinkID}", handler.UpdatePortalLink)
-							portalLinkRouter.Put("/{portalLinkID}/revoke", handler.RevokePortalLink)
-						})
+						if handler.A.Licenser.PortalLinks() {
+							projectSubRouter.Route("/portal-links", func(portalLinkRouter chi.Router) {
+								portalLinkRouter.Post("/", handler.CreatePortalLink)
+								portalLinkRouter.Get("/{portalLinkID}", handler.GetPortalLink)
+								portalLinkRouter.With(middleware.Pagination).Get("/", handler.LoadPortalLinksPaged)
+								portalLinkRouter.Put("/{portalLinkID}", handler.UpdatePortalLink)
+								portalLinkRouter.Put("/{portalLinkID}/revoke", handler.RevokePortalLink)
+							})
+						}
 
 						projectSubRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
 							dashboardRouter.Get("/summary", handler.GetDashboardSummary)
@@ -403,78 +422,81 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	})
 
 	// Portal Link API.
-	router.Route("/portal-api", func(portalLinkRouter chi.Router) {
-		portalLinkRouter.Use(middleware.JsonResponse)
-		portalLinkRouter.Use(middleware.SetupCORS)
-		portalLinkRouter.Use(middleware.RequireAuth())
+	if handler.A.Licenser.PortalLinks() {
+		router.Route("/portal-api", func(portalLinkRouter chi.Router) {
+			portalLinkRouter.Use(middleware.JsonResponse)
+			portalLinkRouter.Use(middleware.SetupCORS)
+			portalLinkRouter.Use(middleware.RequireAuth())
 
-		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
+			portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
 
-		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
-			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
-			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
-			endpointRouter.With(handler.CanManageEndpoint()).Post("/", handler.CreateEndpoint)
-			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}", handler.UpdateEndpoint)
-			endpointRouter.With(handler.CanManageEndpoint()).Delete("/{endpointID}", handler.DeleteEndpoint)
-			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}/pause", handler.PauseEndpoint)
-			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}/expire_secret", handler.ExpireSecret)
-		})
-
-		// TODO(subomi): left this here temporarily till the data plane is stable.
-		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Post("/", handler.CreateEndpointEvent)
-			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-			eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
-			eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
-
-			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-				eventSubRouter.Get("/", handler.GetEndpointEvent)
-				eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+			portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
+				endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+				endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
+				endpointRouter.With(handler.CanManageEndpoint()).Post("/", handler.CreateEndpoint)
+				endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}", handler.UpdateEndpoint)
+				endpointRouter.With(handler.CanManageEndpoint()).Delete("/{endpointID}", handler.DeleteEndpoint)
+				endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}/pause", handler.PauseEndpoint)
+				endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}/expire_secret", handler.ExpireSecret)
 			})
-		})
 
-		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-			eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
-			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+			// TODO(subomi): left this here temporarily till the data plane is stable.
+			portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
+				eventRouter.Post("/", handler.CreateEndpointEvent)
+				eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+				eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+				eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
-			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-				eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
-
-				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-					deliveryRouter.Get("/", handler.GetDeliveryAttempts)
-					deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
+				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+					eventSubRouter.Get("/", handler.GetEndpointEvent)
+					eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
 				})
 			})
+
+			portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+				eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
+				eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
+				eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+				eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+
+				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+					eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
+					eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+
+					eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+						deliveryRouter.Get("/", handler.GetDeliveryAttempts)
+						deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
+					})
+				})
+			})
+
+			portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
+				subscriptionRouter.Post("/", handler.CreateSubscription)
+				subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
+				subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
+				subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
+				subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
+				subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
+			})
 		})
+	}
 
-		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-			subscriptionRouter.Post("/", handler.CreateSubscription)
-			subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
-			subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
-			subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
-			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
-			subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
+	if a.A.Licenser.AsynqMonitoring() {
+		router.Route("/queue", func(asynqRouter chi.Router) {
+			asynqRouter.Use(middleware.RequireAuth())
+			asynqRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
 		})
+	}
 
-	})
-
-	router.Route("/metrics", func(metricsRouter chi.Router) {
-		metricsRouter.Use(middleware.RequireAuth())
-		metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
-	})
-
-	router.Route("/queue", func(metricsRouter chi.Router) {
-		metricsRouter.Use(middleware.RequireAuth())
-		metricsRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
-	})
+	if a.A.Licenser.CanExportPrometheusMetrics() {
+		router.Route("/metrics", func(metricsRouter chi.Router) {
+			metricsRouter.Use(middleware.RequireAuth())
+			metricsRouter.Get("/", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+		})
+	}
 
 	router.HandleFunc("/*", reactRootHandler)
 
-	metrics.RegisterQueueMetrics(a.A.Queue, a.A.DB)
-	prometheus.MustRegister(metrics.RequestDuration())
 	a.Router = router
 
 	return router
@@ -594,40 +616,42 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	})
 
 	// Portal Link API.
-	router.Route("/portal-api", func(portalLinkRouter chi.Router) {
-		portalLinkRouter.Use(middleware.JsonResponse)
-		portalLinkRouter.Use(middleware.SetupCORS)
-		portalLinkRouter.Use(middleware.RequireAuth())
+	if handler.A.Licenser.PortalLinks() {
+		router.Route("/portal-api", func(portalLinkRouter chi.Router) {
+			portalLinkRouter.Use(middleware.JsonResponse)
+			portalLinkRouter.Use(middleware.SetupCORS)
+			portalLinkRouter.Use(middleware.RequireAuth())
 
-		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
-			eventRouter.Post("/", handler.CreateEndpointEvent)
-			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
-			eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
-			eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
+			portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
+				eventRouter.Post("/", handler.CreateEndpointEvent)
+				eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
+				eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
+				eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
-			eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
-				eventSubRouter.Get("/", handler.GetEndpointEvent)
-				eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+				eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
+					eventSubRouter.Get("/", handler.GetEndpointEvent)
+					eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
+				})
 			})
-		})
 
-		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-			eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
-			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+			portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+				eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
+				eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
+				eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+				eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 
-			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-				eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+				eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+					eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
+					eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
 
-				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-					deliveryRouter.Get("/", handler.GetDeliveryAttempts)
-					deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
+					eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+						deliveryRouter.Get("/", handler.GetDeliveryAttempts)
+						deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
+					})
 				})
 			})
 		})
-	})
+	}
 
 	a.Router = router
 
@@ -677,6 +701,7 @@ var guestRoutes = []string{
 	"/users/verify_email",
 	"/organisations/process_invite",
 	"/ui/configuration/is_signup_enabled",
+	"/ui/license/features",
 }
 
 func shouldAuthRoute(r *http.Request) bool {

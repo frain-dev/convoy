@@ -26,13 +26,6 @@
         "password": "<api-key-from-sendgrid>",
         "from": "support@frain.dev"
     },
-    "search": {
-        "type": "typesense",
-        "typesense": {
-            "host": "http://typesense:8108",
-            "api_key": "convoy"
-        }
-    },
     "server": {
         "http": {
             "ssl": false,
