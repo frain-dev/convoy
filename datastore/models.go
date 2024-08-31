@@ -729,6 +729,9 @@ type Event struct {
 	Data json.RawMessage `json:"data,omitempty" db:"data"`
 	Raw  string          `json:"raw,omitempty" db:"raw"`
 
+	Status   EventStatus `json:"status" db:"status"`
+	Metadata string      `json:"metadata,omitempty" db:"metadata"`
+
 	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
 	CreatedAt      time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -754,6 +757,7 @@ func (e *Event) GetRawHeadersJSON() ([]byte, error) {
 
 type (
 	SubscriptionType    string
+	EventStatus         string
 	EventDeliveryStatus string
 	HttpHeader          map[string]string
 )
@@ -772,6 +776,14 @@ func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 		r.Header.Set(k, v)
 	}
 }
+
+const (
+	ProcessingStatus EventStatus = "Processing"
+	FailureStatus    EventStatus = "Failure"
+	SuccessStatus    EventStatus = "Success"
+	RetryStatus      EventStatus = "Retry"
+	PendingStatus    EventStatus = "Pending"
+)
 
 const (
 	// ScheduledEventStatus when an Event has been scheduled for delivery

@@ -2,11 +2,13 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
 	"gopkg.in/guregu/null.v4"
 	"time"
@@ -30,8 +32,13 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: err.Error()}
 	}
 
+	if util.IsStringEmpty(e.Event.UID) || util.IsStringEmpty(e.Event.ProjectID) {
+		return &ServiceError{ErrMsg: "missing event or project id"}
+	}
+	jobId := fmt.Sprintf("replay:%s:%s", e.Event.ProjectID, e.Event.UID)
+
 	job := &queue.Job{
-		ID:      e.Event.UID,
+		ID:      jobId,
 		Payload: eventByte,
 		Delay:   0,
 	}

@@ -38,7 +38,7 @@ func (d *DockerE2EIntegrationTestSuite) SetupSuite() {
 		WaitForService("redis_server", wait.NewLogStrategy("Ready to accept connections").WithStartupTimeout(10*time.Second)).
 		WaitForService("migrate", wait.NewLogStrategy("migration up succeeded").WithStartupTimeout(60*time.Second)).
 		Up(ctx, tc.Wait(true), tc.WithRecreate(api.RecreateNever))
-	if err != nil && !strings.Contains(err.Error(), "Ryuk") {
+	if err != nil && !strings.Contains(err.Error(), "Ryuk") && !strings.Contains(err.Error(), "container exited with code 0") {
 		require.NoError(t, err)
 	}
 

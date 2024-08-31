@@ -140,24 +140,27 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	}
 
 	events := map[string]int{
-		string(convoy.EventQueue):       5,
-		string(convoy.CreateEventQueue): 5,
+		string(convoy.EventQueue):         5,
+		string(convoy.CreateEventQueue):   5,
+		string(convoy.EventWorkflowQueue): 5,
 	}
 
 	retry := map[string]int{
-		string(convoy.RetryEventQueue): 7,
-		string(convoy.ScheduleQueue):   1,
-		string(convoy.DefaultQueue):    1,
-		string(convoy.MetaEventQueue):  1,
+		string(convoy.RetryEventQueue):    7,
+		string(convoy.ScheduleQueue):      1,
+		string(convoy.DefaultQueue):       1,
+		string(convoy.MetaEventQueue):     1,
+		string(convoy.EventWorkflowQueue): 4,
 	}
 
 	both := map[string]int{
-		string(convoy.EventQueue):       4,
-		string(convoy.CreateEventQueue): 3,
-		string(convoy.RetryEventQueue):  2,
-		string(convoy.ScheduleQueue):    1,
-		string(convoy.DefaultQueue):     1,
-		string(convoy.MetaEventQueue):   1,
+		string(convoy.EventQueue):         4,
+		string(convoy.CreateEventQueue):   3,
+		string(convoy.RetryEventQueue):    2,
+		string(convoy.ScheduleQueue):      1,
+		string(convoy.DefaultQueue):       1,
+		string(convoy.MetaEventQueue):     1,
+		string(convoy.EventWorkflowQueue): 3,
 	}
 
 	var queueNames map[string]int
@@ -243,6 +246,12 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
+	channels := make(map[string]task.EventChannel)
+	defaultCh, broadcastCh, dynamicCh := task.NewDefaultEventChannel(), task.NewBroadcastEventChannel(subscriptionsTable), task.NewDynamicEventChannel()
+	channels["default"] = defaultCh
+	channels["broadcast"] = broadcastCh
+	channels["dynamic"] = dynamicCh
+
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
@@ -254,6 +263,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
+		defaultCh,
 		endpointRepo,
 		eventRepo,
 		projectRepo,
@@ -273,16 +283,17 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
+		broadcastCh,
 		endpointRepo,
 		eventRepo,
 		projectRepo,
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo,
-		subscriptionsTable), newTelemetry)
+		deviceRepo), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
+		dynamicCh,
 		endpointRepo,
 		eventRepo,
 		projectRepo,
@@ -299,6 +310,16 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		rd,
 	), nil)
+
+	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(
+		channels,
+		endpointRepo,
+		eventRepo,
+		projectRepo,
+		eventDeliveryRepo,
+		a.Queue,
+		subRepo,
+		deviceRepo), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue, rd), nil)
 

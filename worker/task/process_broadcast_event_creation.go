@@ -4,23 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"gopkg.in/guregu/null.v4"
 	"time"
 
-	"github.com/frain-dev/convoy/queue/redis"
-
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/util"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
-	"github.com/oklog/ulid/v2"
 )
 
 var (
@@ -28,89 +22,119 @@ var (
 	defaultBroadcastDelay   = 30 * time.Second
 )
 
-func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, subscriptionsTable memorystore.ITable) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) (err error) {
-		var broadcastEvent models.BroadcastEvent
+type BroadcastEventChannel struct {
+	SubscriptionsTable *memorystore.ITable
+}
 
-		err = msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultBroadcastDelay}
-		}
-
-		project, err := projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: defaultBroadcastDelay}
-		}
-
-		var isDuplicate bool
-		if len(broadcastEvent.IdempotencyKey) > 0 {
-			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
-			if err != nil {
-				return &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: defaultBroadcastDelay}
-			}
-
-			isDuplicate = len(events) > 0
-		}
-
-		mKeys := memorystore.NewKey(project.UID, "*")
-		matchAllSubs := getSubscriptionsFromRow(subscriptionsTable.Get(mKeys))
-
-		key := memorystore.NewKey(project.UID, broadcastEvent.EventType)
-		eventTypeSubs := getSubscriptionsFromRow(subscriptionsTable.Get(key))
-
-		subscriptions := make([]datastore.Subscription, 0, len(matchAllSubs)+len(eventTypeSubs))
-		subscriptions = append(subscriptions, eventTypeSubs...)
-		subscriptions = append(subscriptions, matchAllSubs...)
-
-		// subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
-
-		event := &datastore.Event{
-			UID:              ulid.Make().String(),
-			EventType:        datastore.EventType(broadcastEvent.EventType),
-			ProjectID:        project.UID,
-			SourceID:         broadcastEvent.SourceID,
-			Data:             broadcastEvent.Data,
-			IdempotencyKey:   broadcastEvent.IdempotencyKey,
-			Headers:          getCustomHeaders(broadcastEvent.CustomHeaders),
-			IsDuplicateEvent: isDuplicate,
-			Raw:              string(broadcastEvent.Data),
-			AcknowledgedAt:   null.TimeFrom(time.Now()),
-		}
-
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions, true)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
-		}
-
-		es, ss := getEndpointIDs(subscriptions)
-		event.Endpoints = es
-
-		err = eventRepo.CreateEvent(ctx, event)
-		if err != nil {
-			return &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: defaultBroadcastDelay}
-		}
-
-		q := eventQueue.(*redis.RedisQueue)
-		ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), broadcastEvent.JobID)
-		if err != nil {
-			log.WithError(err).Error("failed to get task from queue")
-			return &EndpointError{Err: fmt.Errorf("failed to get task from queue, err: %s", err.Error()), delay: defaultBroadcastDelay}
-		}
-
-		lastRunErrored := ti.LastErr == ErrFailedToWriteToQueue.Error()
-		if event.IsDuplicateEvent && !lastRunErrored {
-			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
-			return nil
-		}
-
-		err = writeEventDeliveriesToQueue(ctx, ss, event, project, eventDeliveryRepo, eventQueue, deviceRepo, endpointRepo)
-		if err != nil {
-			log.WithError(err).Error(ErrFailedToWriteToQueue)
-			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error()), delay: defaultBroadcastDelay}
-		}
-
-		return nil
+func NewBroadcastEventChannel(subTable memorystore.ITable) *BroadcastEventChannel {
+	return &BroadcastEventChannel{
+		SubscriptionsTable: &subTable,
 	}
+}
+
+func (b *BroadcastEventChannel) GetConfig() *EventChannelConfig {
+	return &EventChannelConfig{
+		Channel:      "broadcast",
+		DefaultDelay: defaultBroadcastDelay,
+	}
+}
+
+func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, _ datastore.SubscriptionRepository) (*datastore.Event, error) {
+	var broadcastEvent models.BroadcastEvent
+	err := msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
+	if err != nil {
+		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultBroadcastDelay}
+	}
+
+	project, err := projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
+	if err != nil {
+		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: defaultBroadcastDelay}
+	}
+
+	var isDuplicate bool
+	if len(broadcastEvent.IdempotencyKey) > 0 {
+		events, err := eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
+		if err != nil {
+			return nil, &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: defaultBroadcastDelay}
+		}
+
+		isDuplicate = len(events) > 0
+	}
+
+	event := &datastore.Event{
+		UID:              broadcastEvent.EventID,
+		EventType:        datastore.EventType(broadcastEvent.EventType),
+		ProjectID:        project.UID,
+		SourceID:         broadcastEvent.SourceID,
+		Data:             broadcastEvent.Data,
+		IdempotencyKey:   broadcastEvent.IdempotencyKey,
+		Headers:          getCustomHeaders(broadcastEvent.CustomHeaders),
+		IsDuplicateEvent: isDuplicate,
+		Raw:              string(broadcastEvent.Data),
+		Status:           datastore.PendingStatus,
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
+	}
+	err = updateEventMetadata(channel, event, false)
+	if err != nil {
+		return nil, err
+	}
+
+	err = eventRepo.CreateEvent(ctx, event)
+	if err != nil {
+		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: defaultBroadcastDelay}
+	}
+
+	return event, nil
+}
+
+func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, subRepo datastore.SubscriptionRepository) (*EventChannelSubResponse, error) {
+	response := EventChannelSubResponse{}
+
+	project, err := projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
+	if err != nil {
+		return nil, &EndpointError{Err: err, delay: defaultDelay}
+	}
+	broadcastEvent, err := eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
+	if err != nil {
+		return nil, &EndpointError{Err: err, delay: defaultDelay}
+	}
+
+	subscriptionsTable := *b.SubscriptionsTable
+	mKeys := memorystore.NewKey(project.UID, "*")
+	matchAllSubs := getSubscriptionsFromRow(subscriptionsTable.Get(mKeys))
+
+	key := memorystore.NewKey(project.UID, string(broadcastEvent.EventType))
+	eventTypeSubs := getSubscriptionsFromRow(subscriptionsTable.Get(key))
+
+	subscriptions := make([]datastore.Subscription, 0, len(matchAllSubs)+len(eventTypeSubs))
+	subscriptions = append(subscriptions, eventTypeSubs...)
+	subscriptions = append(subscriptions, matchAllSubs...)
+
+	// subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
+
+	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, subRepo, subscriptions, true)
+	if err != nil {
+		return nil, &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
+	}
+
+	es, ss := getEndpointIDs(subscriptions)
+	broadcastEvent.Endpoints = es
+
+	err = eventRepo.UpdateEventEndpoints(ctx, broadcastEvent, es)
+	if err != nil {
+		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1011, err: %s", err.Error()), delay: defaultBroadcastDelay}
+	}
+	response.Event = broadcastEvent
+	response.Project = project
+	response.Subscriptions = ss
+	response.IsDuplicateEvent = broadcastEvent.IsDuplicateEvent
+
+	return &response, nil
+}
+
+func ProcessBroadcastEventCreation(ch *BroadcastEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+
+	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo)
 }
 
 func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscription) {
@@ -148,27 +172,3 @@ func getSubscriptionsFromRow(row *memorystore.Row) []datastore.Subscription {
 
 	return subs
 }
-
-//func joinSubscriptions(sub1, sub2 []datastore.Subscription) []datastore.Subscription {
-//	seen := make(map[string]bool)
-//	result := []datastore.Subscription{}
-//
-//	// Iterate through the first slice and add unique subscriptions to the result
-//	for _, sub := range sub1 {
-//		if !seen[sub.UID] {
-//			seen[sub.UID] = true
-//			result = append(result, sub)
-//		}
-//	}
-//
-//	// Iterate through the second slice and add unique subscriptions to the result
-//	for _, sub := range sub2 {
-//		if !seen[sub.UID] {
-//			seen[sub.UID] = true
-//			result = append(result, sub)
-//		}
-//	}
-//
-//	return result
-//}
-//
