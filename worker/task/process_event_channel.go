@@ -53,10 +53,10 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 
 		var event *datastore.Event
 		if lastEvent != nil {
-			log.Errorln("[asynq] processing last event")
+			log.Info("[asynq] processing last event")
 			event = lastEvent
 		} else {
-			log.Errorln("[asyq] creating new event")
+			log.Info("[asyq] creating new event")
 			event, err = channel.CreateEvent(ctx, t, channel, eventRepo, projectRepo, endpointRepo, subRepo, licenser)
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {

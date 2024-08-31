@@ -33,7 +33,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 
 	e.BroadcastEvent.EventID = ulid.Make().String()
 	e.BroadcastEvent.ProjectID = e.Project.UID
-	jobId := fmt.Sprintf("broadcast:%s:%s", e.BroadcastEvent.EventID, e.BroadcastEvent.ProjectID)
+	jobId := fmt.Sprintf("broadcast:%s:%s", e.BroadcastEvent.ProjectID, e.BroadcastEvent.EventID)
 	e.BroadcastEvent.AcknowledgedAt = time.Now()
 
 	taskName := convoy.CreateBroadcastEventProcessor

@@ -31,7 +31,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 
 	e.DynamicEvent.EventID = uuid.NewString()
 	e.DynamicEvent.ProjectID = e.Project.UID
-	jobId := fmt.Sprintf("dynamic:%s:%s", e.DynamicEvent.EventID, e.DynamicEvent.ProjectID)
+	jobId := fmt.Sprintf("dynamic:%s:%s", e.DynamicEvent.ProjectID, e.DynamicEvent.EventID)
 	e.DynamicEvent.AcknowledgedAt = time.Now()
 
 	if len(e.DynamicEvent.EventTypes) == 0 {
