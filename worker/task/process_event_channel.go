@@ -105,11 +105,9 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 }
 
 func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
-	return func(ctx0 context.Context, t *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) error {
 
-		ctx := context.WithoutCancel(ctx0)
-
-		log.Errorln("matching subscriptions")
+		log.Info("matching subscriptions")
 		var metadata EventChannelMetadata
 		err := getTaskPayload(t, &metadata)
 		if err != nil {
@@ -122,7 +120,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 			return nil
 		}
 		cfg := metadata.Config
-		log.Errorf("about to match subs for channel: %s\n", cfg.Channel)
+		log.Infof("about to match subs for channel: %s\n", cfg.Channel)
 
 		subResponse, err := channel.MatchSubscriptions(ctx, metadata, eventRepo, projectRepo, endpointRepo, subRepo, licenser)
 		if err != nil {
@@ -138,8 +136,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 			log.WithError(err).Errorf("failed to send %s", event.UID)
 			return eventRepo.UpdateEventStatus(ctx, event, datastore.FailureStatus)
 		}
-		//if event.Endpoints == nil {
-		//	if len(event.Endpoints) < 1 {
+
 		var endpointIDs []string
 		for _, s := range subscriptions {
 			if s.Type != datastore.SubscriptionTypeCLI {
@@ -147,13 +144,11 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 			}
 		}
 		event.Endpoints = endpointIDs
-		//}
 
 		err = eventRepo.UpdateEventEndpoints(ctx, event, event.Endpoints)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
-		//}
 
 		if subResponse.IsDuplicateEvent {
 			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
@@ -166,6 +161,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
 			writeErr := fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error())
 			err = &EndpointError{Err: writeErr, delay: cfg.DefaultDelay}
+			_ = eventRepo.UpdateEventStatus(ctx, event, datastore.RetryStatus)
 			return err
 		}
 

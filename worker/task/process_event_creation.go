@@ -152,6 +152,11 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
+	err = eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
+	if err != nil {
+		return nil, err
+	}
+
 	var createSubscription bool
 	if !util.IsStringEmpty(event.Metadata) {
 		var m map[string]string

@@ -100,6 +100,11 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
+	err = eventRepo.UpdateEventStatus(ctx, broadcastEvent, datastore.ProcessingStatus)
+	if err != nil {
+		return nil, err
+	}
+
 	subscriptionsTable := *b.SubscriptionsTable
 	mKeys := memorystore.NewKey(project.UID, "*")
 	matchAllSubs := getSubscriptionsFromRow(subscriptionsTable.Get(mKeys))
