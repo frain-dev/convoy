@@ -11,6 +11,7 @@ import (
 )
 
 const prefix = "breaker:"
+const mutexKey = "convoy:circuit_breaker:mutex"
 
 type PollFunc func(ctx context.Context, lookBackDuration uint64) ([]PollResult, error)
 type CircuitBreakerOption func(cb *CircuitBreakerManager) error
@@ -344,6 +345,19 @@ func (cb *CircuitBreakerManager) GetCircuitBreaker(ctx context.Context, key stri
 }
 
 func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc PollFunc) error {
+	mu, err := cb.store.Lock(ctx, mutexKey)
+	if err != nil {
+		log.WithError(err).Error("[circuit breaker] failed to acquire lock")
+		return err
+	}
+
+	defer func() {
+		innerErr := cb.store.Unlock(ctx, mu)
+		if innerErr != nil {
+			log.WithError(innerErr).Error("[circuit breaker] failed to unlock mutex")
+		}
+	}()
+
 	// Get the failure and success counts from the last X minutes
 	pollResults, err := pollFunc(ctx, cb.config.ObservabilityWindow)
 	if err != nil {

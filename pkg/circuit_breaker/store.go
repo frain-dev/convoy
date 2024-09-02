@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/go-redsync/redsync/v4"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/redis/go-redis/v9"
 	"strings"
 	"sync"
@@ -12,6 +14,8 @@ import (
 )
 
 type CircuitBreakerStore interface {
+	Lock(ctx context.Context, lockKey string) (*redsync.Mutex, error)
+	Unlock(ctx context.Context, mutex *redsync.Mutex) error
 	Keys(context.Context, string) ([]string, error)
 	GetOne(context.Context, string) (string, error)
 	GetMany(context.Context, ...string) ([]interface{}, error)
@@ -29,6 +33,38 @@ func NewRedisStore(redis redis.UniversalClient, clock clock.Clock) *RedisStore {
 		redis: redis,
 		clock: clock,
 	}
+}
+
+func (s *RedisStore) Lock(ctx context.Context, mutexKey string) (*redsync.Mutex, error) {
+	pool := goredis.NewPool(s.redis)
+	rs := redsync.New(pool)
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	mutex := rs.NewMutex(mutexKey, redsync.WithExpiry(time.Second), redsync.WithTries(1))
+	err := mutex.LockContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to obtain lock: %v", err)
+	}
+
+	return mutex, nil
+}
+
+func (s *RedisStore) Unlock(ctx context.Context, mutex *redsync.Mutex) error {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	ok, err := mutex.UnlockContext(ctx)
+	if !ok {
+		return errors.New("failed to release lock")
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to release lock: %v", err)
+	}
+
+	return nil
 }
 
 // Keys returns all the keys used by the circuit breaker store
@@ -98,7 +134,15 @@ func NewTestStore() *TestStore {
 	}
 }
 
-func (t TestStore) Keys(_ context.Context, s string) (keys []string, err error) {
+func (t *TestStore) Lock(_ context.Context, _ string) (*redsync.Mutex, error) {
+	return nil, nil
+}
+
+func (t *TestStore) Unlock(_ context.Context, _ *redsync.Mutex) error {
+	return nil
+}
+
+func (t *TestStore) Keys(_ context.Context, s string) (keys []string, err error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
@@ -111,7 +155,7 @@ func (t TestStore) Keys(_ context.Context, s string) (keys []string, err error) 
 	return keys, nil
 }
 
-func (t TestStore) GetOne(_ context.Context, s string) (string, error) {
+func (t *TestStore) GetOne(_ context.Context, s string) (string, error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	res, ok := t.store[s]
@@ -127,7 +171,7 @@ func (t TestStore) GetOne(_ context.Context, s string) (string, error) {
 	return vv, nil
 }
 
-func (t TestStore) GetMany(_ context.Context, keys ...string) (vals []interface{}, err error) {
+func (t *TestStore) GetMany(_ context.Context, keys ...string) (vals []interface{}, err error) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	for _, key := range keys {
@@ -141,14 +185,14 @@ func (t TestStore) GetMany(_ context.Context, keys ...string) (vals []interface{
 	return vals, nil
 }
 
-func (t TestStore) SetOne(_ context.Context, key string, i interface{}, _ time.Duration) error {
+func (t *TestStore) SetOne(_ context.Context, key string, i interface{}, _ time.Duration) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.store[key] = i.(CircuitBreaker)
 	return nil
 }
 
-func (t TestStore) SetMany(ctx context.Context, m map[string]CircuitBreaker, duration time.Duration) error {
+func (t *TestStore) SetMany(ctx context.Context, m map[string]CircuitBreaker, duration time.Duration) error {
 	for k, v := range m {
 		if err := t.SetOne(ctx, k, v, duration); err != nil {
 			return err
