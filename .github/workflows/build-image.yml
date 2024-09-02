@@ -8,7 +8,6 @@ on:
         required: true
   push:
     tags:
-      # Release binary for every tag.
       - v*
 
 env:
@@ -49,26 +48,28 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
         with:
           name: dist-without-markdown
           path: api/ui/build
-          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: 1.21
 
-      - name: Check out code
-        uses: actions/checkout@v4
-
       - name: Get and verify dependencies
         run: go mod tidy && go mod download && go mod verify
 
       - name: Go vet
         run: go vet ./...
+
+      - name: List contents of api/ui/build
+        run: ls -R api/ui/build
 
       - name: Build app to make sure there are zero issues
         run: |
