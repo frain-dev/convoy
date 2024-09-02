@@ -81,7 +81,15 @@
 			<ng-container *ngIf="showConfig('alert_config')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
-						<p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
+						<div class="flex items-center gap-12px">
+							<p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
+							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+									<use xlink:href="#lock-icon"></use>
+								</svg>
+								Business
+							</div>
+						</div>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('alert_config')">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
@@ -89,7 +97,7 @@
 						</button>
 					</div>
 
-					<div class="grid grid-cols-2 gap-24px">
+					<div class="grid grid-cols-2 gap-24px" *ngIf="licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
 						<convoy-input-field className="mb-0">
 							<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
 							<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
