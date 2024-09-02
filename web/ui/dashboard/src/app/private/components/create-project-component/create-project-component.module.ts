@@ -16,6 +16,7 @@ import { TokenModalComponent } from '../token-modal/token-modal.component';
 import { PermissionDirective } from '../permission/permission.directive';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
@@ -46,7 +47,8 @@ import { ConfigButtonComponent } from '../config-button/config-button.component'
 		PermissionDirective,
 		DialogDirective,
 		NotificationComponent,
-		ConfigButtonComponent
+		ConfigButtonComponent,
+        TagComponent
 	],
 	exports: [CreateProjectComponent]
 })
