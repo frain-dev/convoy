@@ -68,9 +68,6 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
-      - name: List contents of api/ui/build
-        run: ls -R api/ui/build
-
       - name: Build app to make sure there are zero issues
         run: |
           export CGO_ENABLED=0 
