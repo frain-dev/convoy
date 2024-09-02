@@ -174,7 +174,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							eventRouter.With(handler.RequireEnabledProject()).Post("/fanout", handler.CreateEndpointFanoutEvent)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/broadcast", handler.CreateBroadcastEvent)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/dynamic", handler.CreateDynamicEvent)
-							eventRouter.With(handler.RequireEnabledProject()).With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -343,7 +342,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							eventRouter.With(handler.RequireEnabledProject()).Post("/fanout", handler.CreateEndpointFanoutEvent)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/broadcast", handler.CreateBroadcastEvent)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/dynamic", handler.CreateDynamicEvent)
-							eventRouter.With(handler.RequireEnabledProject()).With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {

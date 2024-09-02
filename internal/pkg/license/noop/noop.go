@@ -78,11 +78,22 @@ func (Licenser) MutualTLS() bool {
 func (Licenser) SynchronousWebhooks() bool {
 	return true
 }
+
 func (Licenser) RemoveEnabledProject(_ string) {}
+
 func (Licenser) ProjectEnabled(_ string) bool {
 	return true
 }
+
 func (Licenser) AddEnabledProject(_ string) {}
+
+func (Licenser) ConsumerPoolTuning() bool {
+	return true
+}
+
+func (Licenser) AdvancedWebhookFiltering() bool {
+	return true
+}
 
 func (Licenser) PortalLinks() bool {
 	return true
