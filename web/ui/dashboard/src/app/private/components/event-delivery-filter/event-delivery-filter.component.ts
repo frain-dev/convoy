@@ -13,6 +13,7 @@ import { PrivateService } from '../../private.service';
 import { ENDPOINT } from 'src/app/models/endpoint.model';
 import { FormsModule } from '@angular/forms';
 import { GeneralService } from 'src/app/services/general/general.service';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-event-delivery-filter',
@@ -60,7 +61,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 		{ name: 'Endpoint', id: 'endpoint', show: false },
 		{ name: 'Event type', id: 'eventType', show: false }
 	];
-	constructor(private route: ActivatedRoute, private _location: Location, public projectService: ProjectService, private privateService: PrivateService, private generalService: GeneralService) {}
+	constructor(private route: ActivatedRoute, private _location: Location, public projectService: ProjectService, private privateService: PrivateService, private generalService: GeneralService, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		const data = this.getFiltersFromURL();

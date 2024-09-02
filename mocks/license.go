@@ -108,6 +108,20 @@ func (mr *MockLicenserMockRecorder) AdvancedSubscriptions() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdvancedSubscriptions", reflect.TypeOf((*MockLicenser)(nil).AdvancedSubscriptions))
 }
 
+// AdvancedWebhookFiltering mocks base method.
+func (m *MockLicenser) AdvancedWebhookFiltering() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AdvancedWebhookFiltering")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AdvancedWebhookFiltering indicates an expected call of AdvancedWebhookFiltering.
+func (mr *MockLicenserMockRecorder) AdvancedWebhookFiltering() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdvancedWebhookFiltering", reflect.TypeOf((*MockLicenser)(nil).AdvancedWebhookFiltering))
+}
+
 // AsynqMonitoring mocks base method.
 func (m *MockLicenser) AsynqMonitoring() bool {
 	m.ctrl.T.Helper()
@@ -134,6 +148,20 @@ func (m *MockLicenser) CanExportPrometheusMetrics() bool {
 func (mr *MockLicenserMockRecorder) CanExportPrometheusMetrics() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanExportPrometheusMetrics", reflect.TypeOf((*MockLicenser)(nil).CanExportPrometheusMetrics))
+}
+
+// ConsumerPoolTuning mocks base method.
+func (m *MockLicenser) ConsumerPoolTuning() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConsumerPoolTuning")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// ConsumerPoolTuning indicates an expected call of ConsumerPoolTuning.
+func (mr *MockLicenserMockRecorder) ConsumerPoolTuning() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConsumerPoolTuning", reflect.TypeOf((*MockLicenser)(nil).ConsumerPoolTuning))
 }
 
 // CreateOrg mocks base method.

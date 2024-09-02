@@ -19,6 +19,8 @@ type Licenser interface {
 	Transformations() bool
 	AsynqMonitoring() bool
 	PortalLinks() bool
+	ConsumerPoolTuning() bool
+	AdvancedWebhookFiltering() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool

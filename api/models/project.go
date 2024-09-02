@@ -88,6 +88,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		AddEventIDTraceHeaders:        pc.AddEventIDTraceHeaders,
 		MultipleEndpointSubscriptions: pc.MultipleEndpointSubscriptions,
 		SSL:                           pc.SSL.transform(),
+		SearchPolicy:                  pc.SearchPolicy,
 		RateLimit:                     pc.RateLimit.Transform(),
 		Strategy:                      pc.Strategy.transform(),
 		Signature:                     pc.Signature.transform(),
