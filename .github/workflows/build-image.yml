@@ -98,19 +98,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-${{ matrix.arch }}
+            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}
+            ${{ env.IMAGE_NAME }}:latest
           build-args: |
             ARCH=${{ matrix.arch }}
-
-      - name: Create and push manifest for latest
-        run: |
-          docker manifest create  ${{ env.IMAGE_NAME }}:latest \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-amd64 \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-arm64
-          docker manifest push user/repo:latest
-
-      - name: Create and push manifest for tag
-        run: |
-          docker manifest create  ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }} \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-amd64 \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-arm64
-          docker manifest push ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}
