@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/frain-dev/convoy/net"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -827,7 +830,26 @@ func TestProcessEventDelivery(t *testing.T) {
 			dispatcher, err := net.NewDispatcher("", false)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher, attemptsRepo)
+			mockStore := cb.NewTestStore()
+			mockClock := clock.NewSimulatedClock(time.Now())
+			breakerConfig := &cb.CircuitBreakerConfig{
+				SampleRate:                  1,
+				ErrorTimeout:                30,
+				FailureThreshold:            0.5,
+				FailureCount:                5,
+				SuccessThreshold:            2,
+				ObservabilityWindow:         5,
+				NotificationThresholds:      []uint64{10, 20, 30},
+				ConsecutiveFailureThreshold: 3,
+			}
+
+			manager, err := cb.NewCircuitBreakerManager(
+				cb.StoreOption(mockStore),
+				cb.ClockOption(mockClock),
+				cb.ConfigOption(breakerConfig),
+			)
+
+			processFn := ProcessEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,
