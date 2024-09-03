@@ -84,4 +84,4 @@ version: "3"
 
   volumes:
       postgresql_master_data:
-      redis_data
+      redis_data:
