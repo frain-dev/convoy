@@ -3,10 +3,13 @@ package worker
 import (
 	"context"
 	"fmt"
+	"net/http"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
@@ -28,7 +31,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
-	"net/http"
 )
 
 func AddWorkerCommand(a *cli.App) *cobra.Command {
@@ -238,7 +240,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
-	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, false)
+	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, a.Licenser, false)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
 		return err
@@ -257,6 +259,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
+		a.Licenser,
 		projectRepo,
 		a.Queue,
 		rateLimiter,
@@ -272,7 +275,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo), newTelemetry)
+		deviceRepo, a.Licenser), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,
@@ -293,6 +296,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		a.Queue,
 		subRepo,
 		deviceRepo,
+		a.Licenser,
 		subscriptionsTable), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
@@ -302,7 +306,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo), newTelemetry)
+		deviceRepo, a.Licenser), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
 		configRepo,
@@ -320,11 +324,17 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, rd), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-	consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
-	consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
+	fflag, err := fflag2.NewFFlag(&cfg)
+	if err != nil {
+		return nil
+	}
+	if fflag.CanAccessFeature(fflag2.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
+		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
+		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
+	}
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo), nil)
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB)

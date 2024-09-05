@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -19,6 +23,7 @@ type CreateEndpointService struct {
 	PortalLinkRepo datastore.PortalLinkRepository
 	EndpointRepo   datastore.EndpointRepository
 	ProjectRepo    datastore.ProjectRepository
+	Licenser       license.Licenser
 
 	E         models.CreateEndpoint
 	ProjectID string
@@ -66,6 +71,14 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		Status:             datastore.ActiveEndpointStatus,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
+	}
+
+	if !a.Licenser.AdvancedEndpointMgmt() {
+		// switch to default timeout
+		endpoint.HttpTimeout = convoy.HTTP_TIMEOUT
+
+		endpoint.SupportEmail = ""
+		endpoint.SlackWebhookURL = ""
 	}
 
 	if util.IsStringEmpty(endpoint.AppID) {

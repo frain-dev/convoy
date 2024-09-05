@@ -5,6 +5,7 @@ import { GeneralService } from 'src/app/services/general/general.service';
 import { Router } from '@angular/router';
 import { PrivateService } from 'src/app/private/private.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'organisation-settings',
@@ -22,7 +23,7 @@ export class OrganisationSettingsComponent implements OnInit {
 	});
 	private rbacService = inject(RbacService);
 
-	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private privateService: PrivateService) {}
+	constructor(private formBuilder: FormBuilder, private settingService: SettingsService, private generalService: GeneralService, private router: Router, private privateService: PrivateService, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		this.getOrganisationDetails();

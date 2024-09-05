@@ -48,8 +48,10 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Queue:         h.A.Queue,
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
-		BaseURL:       baseUrl,
-		Data:          &newUser,
+		Licenser:      h.A.Licenser,
+
+		BaseURL: baseUrl,
+		Data:    &newUser,
 	}
 
 	user, token, err := rs.Run(r.Context())

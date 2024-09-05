@@ -58,6 +58,7 @@ type EventRepository interface {
 type ProjectRepository interface {
 	LoadProjects(context.Context, *ProjectFilter) ([]*Project, error)
 	CreateProject(context.Context, *Project) error
+	CountProjects(ctx context.Context) (int64, error)
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
@@ -67,6 +68,7 @@ type ProjectRepository interface {
 
 type OrganisationRepository interface {
 	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
+	CountOrganisations(ctx context.Context) (int64, error)
 	CreateOrganisation(context.Context, *Organisation) error
 	UpdateOrganisation(context.Context, *Organisation) error
 	DeleteOrganisation(context.Context, string) error
@@ -164,11 +166,11 @@ type JobRepository interface {
 type UserRepository interface {
 	CreateUser(context.Context, *User) error
 	UpdateUser(ctx context.Context, user *User) error
+	CountUsers(ctx context.Context) (int64, error)
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindUserByID(context.Context, string) (*User, error)
 	FindUserByToken(context.Context, string) (*User, error)
 	FindUserByEmailVerificationToken(ctx context.Context, token string) (*User, error)
-	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
 }
 
 type ConfigurationRepository interface {

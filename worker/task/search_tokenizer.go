@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/go-redsync/redsync/v4"
@@ -81,6 +82,18 @@ func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.Job
 }
 
 func tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, projectId string, interval int) error {
+	cfg, err := config.Get()
+	if err != nil {
+		return err
+	}
+	fflag, err := fflag2.NewFFlag(&cfg)
+	if err != nil {
+		return nil
+	}
+	if !fflag.CanAccessFeature(fflag2.FullTextSearch) {
+		return fflag2.ErrFeatureNotEnabled
+	}
+
 	// check if a job for a given project is currently running
 	jobs, err := jobRepo.FetchRunningJobsByProjectId(ctx, projectId)
 	if err != nil {

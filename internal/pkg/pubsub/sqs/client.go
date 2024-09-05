@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+	"time"
+
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"sync"
-	"time"
 
 	"github.com/frain-dev/convoy/util"
 
@@ -31,10 +33,11 @@ type Sqs struct {
 	handler     datastore.PubSubHandler
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
+	licenser    license.Licenser
 	instanceId  string
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, instanceId string) *Sqs {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Sqs {
 	return &Sqs{
 		Cfg:         source.PubSub.Sqs,
 		source:      source,
@@ -42,6 +45,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		handler:     handler,
 		log:         log,
 		rateLimiter: rateLimiter,
+		licenser:    licenser,
 		instanceId:  instanceId,
 	}
 }
@@ -60,7 +64,6 @@ func (s *Sqs) Verify() error {
 		Region:      aws.String(s.Cfg.DefaultRegion),
 		Credentials: credentials.NewStaticCredentials(s.Cfg.AccessKeyID, s.Cfg.SecretKey, ""),
 	})
-
 	if err != nil {
 		log.WithError(err).Error("failed to create new session - sqs")
 		return ErrInvalidCredentials
@@ -95,7 +98,6 @@ func (s *Sqs) consume() {
 	url, err := svc.GetQueueUrl(&sqs.GetQueueUrlInput{
 		QueueName: &s.Cfg.QueueName,
 	})
-
 	if err != nil {
 		s.log.WithError(err).Error("failed to fetch queue url - sqs")
 	}
@@ -146,13 +148,12 @@ func (s *Sqs) consume() {
 				WaitTimeSeconds:       aws.Int64(1),
 				MessageAttributeNames: []*string{&allAttr},
 			})
-
 			if err != nil {
 				s.log.WithError(err).Error("failed to fetch message - sqs")
 				continue
 			}
 
-			mm := metrics.GetDPInstance()
+			mm := metrics.GetDPInstance(s.licenser)
 			mm.IncrementIngestTotal(s.source)
 
 			var wg sync.WaitGroup
@@ -197,7 +198,6 @@ func (s *Sqs) consume() {
 							s.log.WithError(err).Error("failed to delete message")
 						}
 					}
-
 				}(message)
 
 				wg.Wait()

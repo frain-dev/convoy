@@ -9,6 +9,7 @@ import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { PrivateService } from 'src/app/private/private.service';
 import { ORGANIZATION_DATA } from 'src/app/models/organisation.model';
 import { SignupService } from '../signup/signup.service';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-login',
@@ -29,10 +30,11 @@ export class LoginComponent implements OnInit {
 	isSignupEnabled = false;
 	organisations?: ORGANIZATION_DATA[];
 
-	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private signupService: SignupService, private privateService: PrivateService) {}
+	constructor(private formBuilder: FormBuilder, public router: Router, private loginService: LoginService, private signupService: SignupService, private privateService: PrivateService, public licenseService: LicensesService) {}
 
 	ngOnInit() {
 		this.getSignUpConfig();
+		this.licenseService.setLicenses();
 	}
 
 	async getSignUpConfig() {

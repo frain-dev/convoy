@@ -9,6 +9,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
+
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/util"
@@ -64,6 +67,17 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		postgresDB, err := postgres.NewDB(cfg)
+		if err != nil {
+			return err
+		}
+
+		*db = *postgresDB
+
+		if _, ok := skipHook[cmd.Use]; ok {
+			return nil
+		}
+
 		cfg, err = config.Get() // updated
 		if err != nil {
 			return err
@@ -116,13 +130,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err != nil {
 			return err
 		}
-
-		postgresDB, err := postgres.NewDB(cfg)
-		if err != nil {
-			return err
-		}
-
-		*db = *postgresDB
 
 		hooks := dbhook.Init()
 
@@ -182,6 +189,26 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		app.Rate = rateLimiter
 
+		app.Licenser, err = license.NewLicenser(&license.Config{
+			KeyGen: keygen.Config{
+				LicenseKey:  cfg.LicenseKey,
+				OrgRepo:     postgres.NewOrgRepo(app.DB, app.Cache),
+				UserRepo:    postgres.NewUserRepo(app.DB, app.Cache),
+				ProjectRepo: projectRepo,
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		if !app.Licenser.ConsumerPoolTuning() {
+			cfg.ConsumerPoolSize = config.DefaultConfiguration.ConsumerPoolSize
+		}
+
+		if err = config.Override(&cfg); err != nil {
+			return err
+		}
+
 		// update config singleton with the instance id
 		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
 			configRepo := postgres.NewConfigRepo(app.DB)
@@ -203,8 +230,16 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 // these commands don't need to load instance config
 var skipConfigLoadCmd = map[string]struct{}{
 	"bootstrap": {},
-	"version":   {},
-	"migrate":   {},
+}
+
+// commands dont need the hooks
+var skipHook = map[string]struct{}{
+	// migrate commands
+	"up":     {},
+	"down":   {},
+	"create": {},
+
+	"version": {},
 }
 
 func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -333,6 +368,14 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
 
+	// CONVOY_LICENSE_KEY
+	licenseKey, err := cmd.Flags().GetString("license-key")
+	if err != nil {
+		return nil, err
+	}
+
+	c.LicenseKey = licenseKey
+
 	// CONVOY_DB_TYPE
 	dbType, err := cmd.Flags().GetString("db-type")
 	if err != nil {
@@ -452,15 +495,11 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	// Feature flags
-	fflag, err := cmd.Flags().GetString("feature-flag")
+	fflag, err := cmd.Flags().GetStringSlice("enable-feature-flag")
 	if err != nil {
 		return nil, err
 	}
-
-	switch fflag {
-	case config.Experimental:
-		c.FeatureFlag = config.ExperimentalFlagLevel
-	}
+	c.EnableFeatureFlag = fflag
 
 	// tracing
 	tracingProvider, err := cmd.Flags().GetString("tracer-type")
@@ -521,14 +560,14 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
-	flag, err := fflag2.NewFFlag()
+	flag, err := fflag2.NewFFlag(c)
 	if err != nil {
 		return nil, err
 	}
 	c.Metrics = config.MetricsConfiguration{
 		IsEnabled: false,
 	}
-	if flag.CanAccessFeature(fflag2.Prometheus, c) {
+	if flag.CanAccessFeature(fflag2.Prometheus) {
 		metricsBackend, err := cmd.Flags().GetString("metrics-backend")
 		if err != nil {
 			return nil, err
@@ -654,14 +693,13 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 }
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {
-	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
 	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
-	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
+	count, err := userRepo.CountUsers(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to load users - %w", err)
+		return fmt.Errorf("failed to count users: %v", err)
 	}
 
-	if len(users) > 0 {
+	if count > 0 {
 		return nil
 	}
 

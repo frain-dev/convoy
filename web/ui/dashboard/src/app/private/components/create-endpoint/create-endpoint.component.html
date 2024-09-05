@@ -81,7 +81,15 @@
 			<ng-container *ngIf="showConfig('alert_config')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
-						<p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
+						<div class="flex items-center gap-12px">
+							<p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
+							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+									<use xlink:href="#lock-icon"></use>
+								</svg>
+								Business
+							</div>
+						</div>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('alert_config')">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
@@ -89,7 +97,7 @@
 						</button>
 					</div>
 
-					<div class="grid grid-cols-2 gap-24px">
+					<div class="grid grid-cols-2 gap-24px" *ngIf="licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
 						<convoy-input-field className="mb-0">
 							<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
 							<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
@@ -160,10 +168,18 @@
 			<ng-container *ngIf="showConfig('http_timeout')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
-						<p class="flex items-center text-12 font-medium text-neutral-11">
-							Endpoint Timeout
-							<convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
-						</p>
+						<div class="flex items-center gap-8px">
+							<p class="flex items-center text-12 font-medium text-neutral-11">
+								Endpoint Timeout
+								<convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
+							</p>
+							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+									<use xlink:href="#lock-icon"></use>
+								</svg>
+								Business
+							</div>
+						</div>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('http_timeout')">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
@@ -173,7 +189,7 @@
 					<convoy-input-field>
 						<label for="http_timeout" convoy-label>Timeout Value</label>
 						<div class="relative">
-							<input id="http_timeout" type="number" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" />
+							<input id="http_timeout" type="number" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" [readonly]="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')" />
 							<div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
 						</div>
 						<convoy-input-error *ngIf="addNewEndpointForm.get('http_timeout')?.touched && addNewEndpointForm.get('http_timeout')?.invalid">Timeout value must be a whole number</convoy-input-error>

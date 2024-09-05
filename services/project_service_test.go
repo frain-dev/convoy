@@ -21,9 +21,10 @@ func provideProjectService(ctrl *gomock.Controller) (*ProjectService, error) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	l := mocks.NewMockLicenser(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 
-	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, cache)
+	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, l, cache)
 }
 
 func TestProjectService_CreateProject(t *testing.T) {
@@ -55,6 +56,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
+						SearchPolicy: "300h",
 						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
@@ -83,6 +85,11 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -98,7 +105,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Duration:   20,
 						RetryCount: 4,
 					},
-					SSL: &datastore.SSLConfiguration{EnforceSecureEndpoints: true},
+					SearchPolicy: "300h",
+					SSL:          &datastore.SSLConfiguration{EnforceSecureEndpoints: true},
 					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
 						Duration: 60,
@@ -121,6 +129,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 						Signature: &models.SignatureConfiguration{
 							Header: "X-Convoy-Signature",
 						},
+						SearchPolicy: "300h",
 						Strategy: &models.StrategyConfiguration{
 							Type:       "linear",
 							Duration:   20,
@@ -150,6 +159,11 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -160,7 +174,8 @@ func TestProjectService_CreateProject(t *testing.T) {
 					Signature: &datastore.SignatureConfiguration{
 						Header: "X-Convoy-Signature",
 					},
-					SSL: &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
+					SearchPolicy: "300h",
+					SSL:          &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
 					Strategy: &datastore.StrategyConfiguration{
 						Type:       "linear",
 						Duration:   20,
@@ -202,6 +217,11 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project_1",
@@ -255,6 +275,11 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -278,6 +303,79 @@ func TestProjectService_CreateProject(t *testing.T) {
 					RateLimit:     &datastore.DefaultRateLimitConfig,
 					ReplayAttacks: false,
 					MetaEvent:     &datastore.MetaEventConfiguration{IsEnabled: false},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_remove_search_policy_for_license_check",
+			args: args{
+				ctx: ctx,
+				newProject: &models.CreateProject{
+					Name:    "test_project",
+					Type:    "outgoing",
+					LogoURL: "https://google.com",
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
+							Header: "X-Convoy-Signature",
+						},
+						SearchPolicy: "300h",
+						Strategy: &models.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
+						},
+						RateLimit: &models.RateLimitConfiguration{
+							Count:    1000,
+							Duration: 60,
+						},
+						ReplayAttacks: true,
+					},
+				},
+				org: &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{
+					UID:            "abc",
+					OrganisationID: "1234",
+					Role:           auth.Role{Type: auth.RoleSuperUser},
+				},
+			},
+			dbFn: func(gs *ProjectService) {
+				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
+				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
+
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AddEnabledProject(gomock.Any())
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(false)
+			},
+			wantProject: &datastore.Project{
+				Name:           "test_project",
+				Type:           "outgoing",
+				LogoURL:        "https://google.com",
+				OrganisationID: "1234",
+				Config: &datastore.ProjectConfig{
+					Signature: &datastore.SignatureConfiguration{
+						Header: "X-Convoy-Signature",
+					},
+					Strategy: &datastore.StrategyConfiguration{
+						Type:       "linear",
+						Duration:   20,
+						RetryCount: 4,
+					},
+					SearchPolicy: "",
+					SSL:          &datastore.SSLConfiguration{EnforceSecureEndpoints: true},
+					RateLimit: &datastore.RateLimitConfiguration{
+						Count:    1000,
+						Duration: 60,
+					},
+					// RetentionPolicy: &datastore.DefaultRetentionPolicy,
+					ReplayAttacks: true,
 				},
 			},
 			wantErr: false,
@@ -309,6 +407,10 @@ func TestProjectService_CreateProject(t *testing.T) {
 				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
@@ -380,10 +482,45 @@ func TestProjectService_CreateProject(t *testing.T) {
 				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().CreateProject(gomock.Any(), gomock.Any()).
 					Times(1).Return(datastore.ErrDuplicateProjectName)
+
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
 			},
 			wantErr:     true,
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "a project with this name already exists",
+		},
+		{
+			name: "should_error_for_cant_create_project",
+			args: args{
+				ctx: ctx,
+				newProject: &models.CreateProject{
+					Name:    "test_project",
+					Type:    "incoming",
+					LogoURL: "https://google.com",
+					Config: &models.ProjectConfig{
+						Signature: &models.SignatureConfiguration{
+							Header: "X-Convoy-Signature",
+						},
+						Strategy: &models.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   20,
+							RetryCount: 4,
+						},
+						ReplayAttacks: true,
+					},
+				},
+				org:    &datastore.Organisation{UID: "1234"},
+				member: &datastore.OrganisationMember{},
+			},
+			dbFn: func(gs *ProjectService) {
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(false, nil)
+			},
+			wantErr:     true,
+			wantErrCode: http.StatusBadRequest,
+			wantErrMsg:  ErrProjectLimit.Error(),
 		},
 	}
 	for _, tc := range tests {
@@ -509,6 +646,9 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				},
 			},
 			dbFn: func(gs *ProjectService) {
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+
 				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
@@ -536,6 +676,9 @@ func TestProjectService_UpdateProject(t *testing.T) {
 				},
 			},
 			dbFn: func(gs *ProjectService) {
+				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+
 				a, _ := gs.projectRepo.(*mocks.MockProjectRepository)
 				a.EXPECT().UpdateProject(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 			},

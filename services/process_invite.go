@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/oklog/ulid/v2"
 
@@ -21,13 +23,25 @@ type ProcessInviteService struct {
 	UserRepo      datastore.UserRepository
 	OrgRepo       datastore.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
+	Licenser      license.Licenser
 
 	Token    string
 	Accepted bool
 	NewUser  *models.User
 }
 
+var ErrUserLimit = errors.New("your instance has reached it's user limit, upgrade to add new users")
+
 func (pis *ProcessInviteService) Run(ctx context.Context) error {
+	ok, err := pis.Licenser.CreateUser(ctx)
+	if err != nil {
+		return &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !ok {
+		return &ServiceError{ErrMsg: ErrUserLimit.Error()}
+	}
+
 	iv, err := pis.InviteRepo.FetchOrganisationInviteByToken(ctx, pis.Token)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch organisation member invite by token and email")

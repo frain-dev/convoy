@@ -307,7 +307,7 @@ type OnPremStorage struct {
 }
 
 type MetricsConfiguration struct {
-	IsEnabled  bool                           `json:"metrics_enabled" envconfig:"CONVOY_METRICS_ENABLED"`
+	IsEnabled  bool                           `json:"enabled" envconfig:"CONVOY_METRICS_ENABLED"`
 	Backend    MetricsBackend                 `json:"metrics_backend" envconfig:"CONVOY_METRICS_BACKEND"`
 	Prometheus PrometheusMetricsConfiguration `json:"prometheus_metrics"`
 }
@@ -345,37 +345,11 @@ type (
 	LimiterProvider         string
 	DatabaseProvider        string
 	SearchProvider          string
-	FeatureFlagProvider     string
 	MetricsBackend          string
 )
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
-}
-
-type FlagLevel int
-
-const (
-	ExperimentalFlagLevel FlagLevel = iota + 1
-)
-
-const Experimental = "experimental"
-
-func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
-	switch string(v) {
-	case Experimental:
-		*ft = ExperimentalFlagLevel
-	}
-	return nil
-}
-
-func (ft FlagLevel) MarshalJSON() ([]byte, error) {
-	switch ft {
-	case ExperimentalFlagLevel:
-		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
-	default:
-		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
-	}
 }
 
 type ExecutionMode string
@@ -402,7 +376,7 @@ type Configuration struct {
 	Host                string                       `json:"host" envconfig:"CONVOY_HOST"`
 	Pyroscope           PyroscopeConfiguration       `json:"pyroscope"`
 	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	FeatureFlag         FlagLevel                    `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
+	EnableFeatureFlag   []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
 	RetentionPolicy     RetentionPolicyConfiguration `json:"retention_policy"`
 	CircuitBreaker      CircuitBreakerConfiguration  `json:"circuit_breaker"`
 	Analytics           AnalyticsConfiguration       `json:"analytics"`
@@ -413,6 +387,7 @@ type Configuration struct {
 	InstanceIngestRate  int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
 	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
+	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
 }
 
 type PyroscopeConfiguration struct {

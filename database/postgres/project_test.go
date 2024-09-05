@@ -61,6 +61,32 @@ func Test_FetchProjectByID(t *testing.T) {
 	require.Equal(t, newProject, dbProject)
 }
 
+func TestCountProjects(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	projectRepository := NewProjectRepo(db, nil)
+	org := seedOrg(t, db)
+
+	count := 10
+	for i := 0; i < count; i++ {
+		project := &datastore.Project{
+			UID:            ulid.Make().String(),
+			Name:           ulid.Make().String(),
+			OrganisationID: org.UID,
+			Type:           datastore.IncomingProject,
+			Config:         &datastore.DefaultProjectConfig,
+		}
+
+		err := projectRepository.CreateProject(context.Background(), project)
+		require.NoError(t, err)
+	}
+
+	projectCount, err := projectRepository.CountProjects(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, int64(count), projectCount)
+}
+
 func Test_CreateProject(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()

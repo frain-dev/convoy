@@ -7,7 +7,7 @@
 <form [formGroup]="editOrganisationForm">
 	<convoy-input-field>
 		<label for="name" convoy-label required="true">Organisation name</label>
-		<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Organisation name" />
+		<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Organisation name"/>
 		<convoy-input-error *ngIf="editOrganisationForm.get('name')?.touched && editOrganisationForm.get('name')?.invalid">Please enter a name for your organisation</convoy-input-error>
 	</convoy-input-field>
 

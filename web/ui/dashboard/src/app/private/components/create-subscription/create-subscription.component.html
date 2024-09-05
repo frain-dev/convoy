@@ -144,11 +144,19 @@
 		<ng-container *ngIf="showConfig('filter_config')">
 			<div class="border-l-2 border-neutral-3 pl-16px mb-40px flex justify-between items-center">
 				<div>
-					<h4 class="text-neutral-10 font-medium text-12">Events Filter</h4>
+					<div class="flex items-center gap-8px">
+						<h4 class="text-neutral-10 font-medium text-12">Events Filter</h4>
+						<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+							<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+								<use xlink:href="#lock-icon"></use>
+							</svg>
+							Business
+						</div>
+					</div>
 					<p class="text-10 text-neutral-10 mt-4px">Filter events received by request body and header.</p>
 				</div>
 				<div class="flex items-center">
-					<button convoy-button fill="soft-outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupFilter()">Open Editor</button>
+					<button convoy-button fill="soft-outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupFilter()" [disabled]="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">Open Editor</button>
 
 					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
 
@@ -164,11 +172,21 @@
 		<ng-container *ngIf="showConfig('tranform_config')">
 			<div class="border-l-2 border-neutral-3 pl-16px mb-40px flex justify-between items-center">
 				<div>
-					<h4 class="text-neutral-10 font-medium text-12">Transform</h4>
+					<div class="flex items-center gap-8px">
+						<div class="flex items-center gap-8px">
+							<h4 class="text-neutral-10 font-medium text-12">Transform</h4>
+						</div>
+						<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('WEBHOOK_TRANSFORMATIONS')">
+							<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+								<use xlink:href="#lock-icon"></use>
+							</svg>
+							Business
+						</div>
+					</div>
 					<p class="text-10 text-neutral-10 mt-4px">Transform request body of events with a javascript function.</p>
 				</div>
 				<div class="flex items-center">
-					<button convoy-button fill="soft-outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()">Open Editor</button>
+					<button convoy-button fill="soft-outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupTransformDialog()" [disabled]="!licenseService.hasLicense('WEBHOOK_TRANSFORMATIONS')">Open Editor</button>
 
 					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
 

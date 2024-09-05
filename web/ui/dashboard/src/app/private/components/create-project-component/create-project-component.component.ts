@@ -1,11 +1,12 @@
-import {Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild} from '@angular/core';
-import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
-import {ActivatedRoute, Router} from '@angular/router';
-import {PROJECT, VERSIONS} from 'src/app/models/project.model';
-import {GeneralService} from 'src/app/services/general/general.service';
-import {PrivateService} from '../../private.service';
-import {CreateProjectComponentService} from './create-project-component.service';
-import {RbacService} from 'src/app/services/rbac/rbac.service';
+import { Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PROJECT, VERSIONS } from 'src/app/models/project.model';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { PrivateService } from '../../private.service';
+import { CreateProjectComponentService } from './create-project-component.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 interface TAB {
 	label: string;
@@ -95,7 +96,15 @@ export class CreateProjectComponent implements OnInit {
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
 
-	constructor(private formBuilder: FormBuilder, private createProjectService: CreateProjectComponentService, private generalService: GeneralService, private privateService: PrivateService, public router: Router, private route: ActivatedRoute) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private createProjectService: CreateProjectComponentService,
+		private generalService: GeneralService,
+		private privateService: PrivateService,
+		public router: Router,
+		private route: ActivatedRoute,
+		public licenseService: LicensesService
+	) {}
 
 	async ngOnInit() {
 		if (this.action === 'update') this.getProjectDetails();
@@ -183,8 +192,6 @@ export class CreateProjectComponent implements OnInit {
 		}
 		const projectData = this.getProjectData();
 
-		console.log(projectData);
-
 		this.isCreatingProject = true;
 
 		try {
@@ -201,6 +208,7 @@ export class CreateProjectComponent implements OnInit {
 			this.projectDetails = response.data.project;
 			if (projectFormModal) projectFormModal.style.overflowY = 'hidden';
 			this.tokenDialog.nativeElement.showModal();
+			this.licenseService.setLicenses();
 		} catch (error) {
 			this.isCreatingProject = false;
 		}

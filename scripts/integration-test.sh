@@ -13,3 +13,5 @@ export TEST_REDIS_HOST=localhost
 export TEST_REDIS_PORT=6379
 
 make integration_tests
+
+make docker_e2e_tests

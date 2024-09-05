@@ -1,26 +1,29 @@
-//go:build integration
-// +build integration
+//go:build docker_testcon
+// +build docker_testcon
 
 package testcon
 
 import (
 	"context"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"testing"
-	"time"
 )
 
-type IntegrationTestSuite struct {
+type DockerE2EIntegrationTestSuite struct {
 	suite.Suite
 	*TestData
 }
 
-func (i *IntegrationTestSuite) SetupSuite() {
-	t := i.T()
+func (d *DockerE2EIntegrationTestSuite) SetupSuite() {
+	t := d.T()
 	identifier := tc.StackIdentifier("convoy_docker_test")
 	compose, err := tc.NewDockerComposeWith(tc.WithStackFiles("./testdata/docker-compose-test.yml"), identifier)
 	require.NoError(t, err)
@@ -33,22 +36,28 @@ func (i *IntegrationTestSuite) SetupSuite() {
 	t.Cleanup(cancel)
 
 	// ignore ryuk error
-	_ = compose.WaitForService("postgres", wait.NewLogStrategy("ready").WithStartupTimeout(60*time.Second)).
+	err = compose.
+		WithEnv(map[string]string{
+			"CONVOY_LICENSE_KEY": os.Getenv("TEST_LICENSE_KEY"),
+		}).
+		WaitForService("postgres", wait.NewLogStrategy("ready").WithStartupTimeout(60*time.Second)).
 		WaitForService("redis_server", wait.NewLogStrategy("Ready to accept connections").WithStartupTimeout(10*time.Second)).
 		WaitForService("migrate", wait.NewLogStrategy("migration up succeeded").WithStartupTimeout(60*time.Second)).
 		Up(ctx, tc.Wait(true), tc.WithRecreate(api.RecreateNever))
 
-	i.TestData = seedTestData(t)
+	if err != nil && !strings.Contains(err.Error(), "Ryuk") && !strings.Contains(err.Error(), "container exited with code 0") {
+		require.NoError(t, err)
+	}
+
+	d.TestData = seedTestData(t)
 }
 
-func (i *IntegrationTestSuite) SetupTest() {
-
+func (d *DockerE2EIntegrationTestSuite) SetupTest() {
 }
 
-func (i *IntegrationTestSuite) TearDownTest() {
-
+func (d *DockerE2EIntegrationTestSuite) TearDownTest() {
 }
 
-func TestIntegrationTestSuite(t *testing.T) {
-	suite.Run(t, new(IntegrationTestSuite))
+func TestDockerE2EIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(DockerE2EIntegrationTestSuite))
 }

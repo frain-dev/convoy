@@ -9,6 +9,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -29,9 +31,9 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser,
 	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
-	attemptsRepo datastore.DeliveryAttemptsRepository, manager *circuit_breaker.CircuitBreakerManager,
+	attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var data EventDelivery
@@ -113,7 +115,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		err = manager.CanExecute(ctx, endpoint.UID)
+		err = circuitBreakerManager.CanExecute(ctx, endpoint.UID)
 		if err != nil {
 			return &CircuitBreakerError{Err: err}
 		}
@@ -167,7 +169,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 
 		var httpDuration time.Duration
-		if endpoint.HttpTimeout == 0 {
+		if endpoint.HttpTimeout == 0 || !licenser.AdvancedEndpointMgmt() {
 			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
 		} else {
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
@@ -200,7 +202,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.LatencySeconds = time.Since(eventDelivery.GetLatencyStartTime()).Seconds()
 
 			// register latency
-			mm := metrics.GetDPInstance()
+			mm := metrics.GetDPInstance(licenser)
 			mm.RecordLatency(eventDelivery)
 
 		} else {
@@ -229,10 +231,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, false, resp.Error, string(resp.Body), resp.StatusCode)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to send notification")
+			if licenser.AdvancedEndpointMgmt() {
+				// send endpoint reactivation notification
+				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, false, resp.Error, string(resp.Body), resp.StatusCode)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("failed to send notification")
+				}
 			}
 		}
 
@@ -268,10 +272,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
-				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.WithError(err).Error("failed to send notification")
+				if licenser.AdvancedEndpointMgmt() {
+					// send endpoint deactivation notification
+					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
+					if err != nil {
+						log.WithError(err).Error("failed to send notification")
+					}
 				}
 			}
 		}

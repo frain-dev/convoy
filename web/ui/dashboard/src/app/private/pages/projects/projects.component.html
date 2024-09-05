@@ -4,12 +4,20 @@
 		<p class="text-neutral-11 text-12 font-medium mb-24px">All your project's summary at a glance</p>
 
 		<div class="grid grid-cols-3 desktop:grid-cols-2 gap-6">
-			<a convoy-permission="Project Settings|MANAGE" routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
-				<svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
-					<use xlink:href="#plus-icon"></use>
-				</svg>
-				<span class="text-primary-100 font-medium text-12">Create new project</span>
-			</a>
+			<div class="relative">
+				<a convoy-permission="Project Settings|MANAGE" routerLink="./new" class="rounded-8px bg-white-100 border border-dashed border-primary-100 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]">
+					<svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
+						<use xlink:href="#plus-icon"></use>
+					</svg>
+					<span class="text-primary-100 font-medium text-12">Create new project</span>
+				</a>
+				<div class="bg-white-40 backdrop-blur-[2px] flex items-center justify-center text-new.primary-400 text-14 font-medium gap-10px absolute top-0 h-full w-full" *ngIf="!licenseService.hasLicense('CREATE_PROJECT')">
+					<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+						<use xlink:href="#lock-icon"></use>
+					</svg>
+					Available on Business
+				</div>
+			</div>
 
 			<ng-container *ngFor="let project of projects">
 				<button (click)="getProject(project.uid)" class="flex items-center rounded-8px bg-white-100 border border-neutral-a3 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)] text-left min-h-[88px]">

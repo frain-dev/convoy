@@ -1,3 +1,46 @@
+# 24.8.1
+
+### Features
+- Added end to end latency metrics #2079
+- Add support for inbound webhooks that use form data #1998
+- Added e2e test suite using test containers #2083
+- Add license feature gating #2114 #2132 #2134
+- Change License to Elastic License v2.0 #2124
+
+### Enhancements
+- Move retention policy to instance config #2011
+- Update event data openapi types #2088
+- Refactor agent, worker and ingest entry points #2082
+- Refactored Exponential Backoff Implementation #2073
+- Remove instance configuration page #2085
+- Set default signature value to advanced from UI #2090
+- Add fanout for pubsub ingest #2099
+- Events ingested in incoming projects would now respond with a 413 for oversized payloads #2095
+- The agent component can now bootstrap a fresh instance #2111
+- Don't return an error when an owner id has no registered endpoints #2112
+- Split delivery attempts from event deliveries #2092
+- Add auth to metrics and queue monitoring routes #2115
+- Updated integration test suite #2100
+- Refactored feature flags implementation #2105
+- Push docker images to DockerHub #2122
+- Add owner id to event delivery response #2129
+
+
+### Bug Fixes
+- Fixed a bug in positional array filter #2086
+- Fix count & batch retry queries #2089
+- Fixed a bug where api responses from v2024-04-01 to v2024-01-01 were not properly migrated #2087
+- Update UI Dependencies #2097
+- Fixed a migration bug where default column values were not set #2103
+- Fixed a bug where the wrong delay duration was used when scheduling an event delivery for retry #2110
+- Fixed a bug where other events were retried from a portal link because the endpoint filter wasn't applied #2116
+-
+
+
+# 24.6.4
+
+- fixed a bug where the pubsub ingester won't start when there aren't any projects 
+
 # 24.6.3
 
 ### Bug Fixes
