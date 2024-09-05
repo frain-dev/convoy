@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"time"
 
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/datastore"
@@ -457,6 +458,96 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 		},
 		{
 			name:          "Manual retry - disable endpoint - success",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
+			expectedError: nil,
+			msg: &datastore.EventDelivery{
+				UID: "",
+			},
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l license.Licenser) {
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Endpoint{
+						ProjectID: "123",
+						Url:       "https://google.com?source=giphy",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
+						RateLimit:         10,
+						RateLimitDuration: 60,
+						Status:            datastore.ActiveEndpointStatus,
+					}, nil)
+
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+				m.EXPECT().
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.EventDelivery{
+						Status:         datastore.ScheduledEventStatus,
+						URLQueryParams: "name=ref&category=food",
+						Metadata: &datastore.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
+							NumTrials:       4,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+					}, nil).Times(1)
+
+				a.EXPECT().
+					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
+					Return(nil).Times(1)
+
+				o.EXPECT().
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
+						LogoURL: "",
+						Config: &datastore.ProjectConfig{
+							Signature: &datastore.SignatureConfiguration{
+								Header: "X-Convoy-Signature",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
+									},
+								},
+							},
+							SSL: &datastore.DefaultSSLConfig,
+							Strategy: &datastore.StrategyConfiguration{
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
+							},
+							RateLimit:       &datastore.DefaultRateLimitConfig,
+							DisableEndpoint: true,
+						},
+					}, nil).Times(1)
+
+				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
+				m.EXPECT().
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
+				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder("POST", "https://google.com?category=food&name=ref&source=giphy",
+					httpmock.NewStringResponder(200, ``))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+		},
+		{
+			name:          "Manual retry - disable endpoint - success - skip proxy",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg: &datastore.EventDelivery{

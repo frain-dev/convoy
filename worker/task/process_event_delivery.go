@@ -7,9 +7,13 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
+
+
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
