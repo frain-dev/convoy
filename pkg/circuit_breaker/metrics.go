@@ -23,8 +23,8 @@ var (
 	)
 )
 
-// Call updateMetrics in the sampleStore method after updating each circuit breaker
-func (cb *CircuitBreakerManager) updateMetrics(breaker CircuitBreaker) {
+func (cb *CircuitBreakerManager) UpdateMetrics(breaker CircuitBreaker) {
+	// todo(raymond) call UpdateMetrics in the sampleStore method after updating each circuit breaker
 	circuitBreakerState.WithLabelValues(breaker.Key).Set(float64(breaker.State))
 	circuitBreakerRequests.WithLabelValues(breaker.Key, "success").Add(float64(breaker.TotalSuccesses))
 	circuitBreakerRequests.WithLabelValues(breaker.Key, "failure").Add(float64(breaker.TotalFailures))

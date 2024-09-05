@@ -14,7 +14,6 @@ import (
 
 	"time"
 
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/datastore"
@@ -964,6 +963,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				cb.ClockOption(mockClock),
 				cb.ConfigOption(breakerConfig),
 			)
+			require.NoError(t, err)
 
 			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager)
 

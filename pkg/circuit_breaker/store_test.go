@@ -277,13 +277,15 @@ func TestTestStore_Concurrency(t *testing.T) {
 	// Test concurrent reads and writes
 	go func() {
 		for i := 0; i < 100; i++ {
-			store.SetOne(ctx, "key", CircuitBreaker{Key: "key", State: StateClosed}, time.Minute)
+			err := store.SetOne(ctx, "key", CircuitBreaker{Key: "key", State: StateClosed}, time.Minute)
+			require.NoError(t, err)
 		}
 	}()
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			store.GetOne(ctx, "key")
+			_, err := store.GetOne(ctx, "key")
+			require.NoError(t, err)
 		}
 	}()
 

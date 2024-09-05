@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"time"
 
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/datastore"
@@ -1062,6 +1061,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				cb.ClockOption(mockClock),
 				cb.ConfigOption(breakerConfig),
 			)
+			require.NoError(t, err)
 
 			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager)
 

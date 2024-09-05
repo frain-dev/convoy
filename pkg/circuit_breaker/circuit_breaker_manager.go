@@ -134,7 +134,7 @@ func ConfigOption(config *CircuitBreakerConfig) CircuitBreakerOption {
 }
 
 func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []PollResult) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	redisCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	keys := make([]string, len(pollResults))
@@ -144,7 +144,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 		pollResults[i].Key = key
 	}
 
-	res, err := cb.store.GetMany(ctx, keys...)
+	res, err := cb.store.GetMany(redisCtx, keys...)
 	if err != nil {
 		return err
 	}
@@ -224,21 +224,24 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 }
 
 func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, breakers map[string]CircuitBreaker) (err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	return cb.store.SetMany(ctx, breakers, time.Duration(cb.config.ObservabilityWindow)*time.Minute)
 }
 
 func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]CircuitBreaker, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	redisCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	keys, err := cb.store.Keys(ctx, prefix)
+	keys, err := cb.store.Keys(redisCtx, prefix)
 	if err != nil {
 		return nil, err
 	}
 
-	res, err := cb.store.GetMany(ctx, keys...)
+	redisCtx2, cancel2 := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel2()
+
+	res, err := cb.store.GetMany(redisCtx2, keys...)
 	if err != nil {
 		return nil, err
 	}
@@ -301,7 +304,7 @@ func (cb *CircuitBreakerManager) CanExecute(ctx context.Context, key string) err
 // getCircuitBreaker is used to get fetch the circuit breaker state,
 // it fails open if the circuit breaker for that key is not found
 func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	bKey := fmt.Sprintf("%s%s", prefix, key)
@@ -327,7 +330,7 @@ func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key stri
 // GetCircuitBreaker is used to get fetch the circuit breaker state,
 // it returns ErrCircuitBreakerNotFound when a circuit breaker for the key is not found
 func (cb *CircuitBreakerManager) GetCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	bKey := fmt.Sprintf("%s%s", prefix, key)
