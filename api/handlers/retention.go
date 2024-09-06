@@ -29,5 +29,4 @@ func (h *Handler) TriggerRetentionPolicyJob(w http.ResponseWriter, r *http.Reque
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("retention policy job triggered successfully", 200, http.StatusCreated))
-	return
 }
