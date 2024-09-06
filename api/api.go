@@ -256,6 +256,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		uiRouter.Post("/organisations/process_invite", handler.ProcessOrganisationMemberInvite)
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
+		uiRouter.Post("/retention_policy/trigger", handler.TriggerRetentionPolicyJob)
+
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
