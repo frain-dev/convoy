@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/lib/pq"
 	"os"
 	"testing"
 	"time"
@@ -446,6 +447,16 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		RetentionPolicy: &datastore.RetentionPolicyConfiguration{
 			Policy:                   "72h",
 			IsRetentionPolicyEnabled: true,
+		},
+		CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
+			SampleRate:                  2,
+			ErrorTimeout:                30,
+			FailureThreshold:            0.1,
+			FailureCount:                3,
+			SuccessThreshold:            1,
+			ObservabilityWindow:         5,
+			NotificationThresholds:      pq.Int64Array{10},
+			ConsecutiveFailureThreshold: 10,
 		},
 	}
 
