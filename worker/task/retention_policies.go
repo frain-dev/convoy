@@ -82,7 +82,7 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 
 			for _, r := range result {
-				if r.NumDocs == 0 { // skip if no record was exported
+				if r.NumDocs > 0 { // skip if no record was exported
 					err = objectStoreClient.Save(r.ExportFile)
 					if err != nil {
 						return err
