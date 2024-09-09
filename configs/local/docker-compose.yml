@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.6.4
+        image: getconvoy/convoy:latest
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -19,9 +19,8 @@ services:
             - postgres
             - redis_server
             - pgbouncer
-
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.6.4
+        image: getconvoy/convoy:latest
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -29,9 +28,8 @@ services:
         depends_on:
             web:
                 condition: service_healthy
-
     ingest:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.6.4
+        image: getconvoy/convoy:latest
         command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -39,13 +37,13 @@ services:
         depends_on:
             web:
                 condition: service_healthy
-
     pgbouncer:
         image: bitnami/pgbouncer:latest
         hostname: pgbouncer
         restart: unless-stopped
         depends_on:
-            - postgres
+          postgres:
+            condition: service_healthy
         env_file:
             - ./conf/.env
         volumes:
@@ -53,10 +51,9 @@ services:
             - ./conf/userlists.txt:/bitnami/userlists.txt
         ports:
             - "6432:6432"
-
     postgres:
         image: bitnami/postgresql:latest
-        restart: unless-stopped
+        restart: on-failure
         ports:
             - "5432:5432"
         environment:
@@ -68,13 +65,17 @@ services:
             POSTGRESQL_SHARED_PRELOAD_LIBRARIES: pg_stat_statements
         volumes:
           - postgresql_master_data:/bitnami/postgresql
-
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U convoy"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
     redis_server:
         image: redis:alpine
         restart: unless-stopped
         volumes:
           - redis_data:/data
-
 volumes:
     postgresql_master_data:
     redis_data:

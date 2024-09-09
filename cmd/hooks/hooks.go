@@ -201,6 +201,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		if !app.Licenser.ConsumerPoolTuning() {
+			cfg.ConsumerPoolSize = config.DefaultConfiguration.ConsumerPoolSize
+		}
+
+		if err = config.Override(&cfg); err != nil {
+			return err
+		}
+
 		// update config singleton with the instance id
 		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
 			configRepo := postgres.NewConfigRepo(app.DB)

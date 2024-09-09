@@ -86,6 +86,16 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k = Licenser{featureList: map[Feature]*Properties{PortalLinks: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
 	require.False(t, k.PortalLinks())
 
+	k = Licenser{featureList: map[Feature]*Properties{ConsumerPoolTuning: {}}, license: &keygen.License{}}
+	require.True(t, k.ConsumerPoolTuning())
+	k = Licenser{featureList: map[Feature]*Properties{ConsumerPoolTuning: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.ConsumerPoolTuning())
+
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedWebhookFiltering: {}}, license: &keygen.License{}}
+	require.True(t, k.AdvancedWebhookFiltering())
+	k = Licenser{featureList: map[Feature]*Properties{AdvancedWebhookFiltering: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.AdvancedWebhookFiltering())
+
 	k = Licenser{enabledProjects: map[string]bool{
 		"12345": true,
 	}}

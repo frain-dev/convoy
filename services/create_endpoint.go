@@ -76,6 +76,9 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	if !a.Licenser.AdvancedEndpointMgmt() {
 		// switch to default timeout
 		endpoint.HttpTimeout = convoy.HTTP_TIMEOUT
+
+		endpoint.SupportEmail = ""
+		endpoint.SlackWebhookURL = ""
 	}
 
 	if util.IsStringEmpty(endpoint.AppID) {

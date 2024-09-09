@@ -88,6 +88,10 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		}
 	}
 
+	if !ps.Licenser.AdvancedWebhookFiltering() {
+		projectConfig.SearchPolicy = ""
+	}
+
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
 		Name:           projectName,
@@ -175,6 +179,10 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 
 	if !util.IsStringEmpty(update.LogoURL) {
 		project.LogoURL = update.LogoURL
+	}
+
+	if !ps.Licenser.AdvancedWebhookFiltering() {
+		project.Config.SearchPolicy = ""
 	}
 
 	err := ps.projectRepo.UpdateProject(ctx, project)

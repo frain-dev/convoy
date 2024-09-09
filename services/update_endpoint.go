@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -62,11 +63,11 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 
 	endpoint.Name = *e.Name
 
-	if e.SupportEmail != nil {
+	if e.SupportEmail != nil && a.Licenser.AdvancedEndpointMgmt() {
 		endpoint.SupportEmail = *e.SupportEmail
 	}
 
-	if e.SlackWebhookURL != nil {
+	if e.SlackWebhookURL != nil && a.Licenser.AdvancedEndpointMgmt() {
 		endpoint.SlackWebhookURL = *e.SlackWebhookURL
 	}
 

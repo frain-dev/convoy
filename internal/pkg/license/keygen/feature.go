@@ -22,6 +22,8 @@ const (
 	AsynqMonitoring          Feature = "ASYNQ_MONITORING"
 	SynchronousWebhooks      Feature = "SYNCHRONOUS_WEBHOOKS"
 	PortalLinks              Feature = "PORTAL_LINKS"
+	ConsumerPoolTuning       Feature = "CONSUMER_POOL_TUNING"
+	AdvancedWebhookFiltering Feature = "ADVANCED_WEBHOOK_FILTERING"
 )
 
 const (

@@ -335,7 +335,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	if err != nil {
 		return nil
 	}
-	if fflag.CanAccessFeature(fflag2.FullTextSearch) {
+	if fflag.CanAccessFeature(fflag2.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
 		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
 		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
 	}

@@ -94,7 +94,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should_default_http_timeout_endpoint_for_license_check",
+			name: "should_default_http_timeout_endpoint_for_license_check_and_remove_slack_url_support_email",
 			args: args{
 				ctx: ctx,
 				e: models.CreateEndpoint{
@@ -126,8 +126,8 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Name:            "endpoint",
-				SupportEmail:    "endpoint@test.com",
-				SlackWebhookURL: "https://google.com",
+				SupportEmail:    "",
+				SlackWebhookURL: "",
 				ProjectID:       project.UID,
 				Secrets: []datastore.Secret{
 					{Value: "1234"},

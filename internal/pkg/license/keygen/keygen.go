@@ -427,6 +427,22 @@ func (k *Licenser) PortalLinks() bool {
 	return ok
 }
 
+func (k *Licenser) ConsumerPoolTuning() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[ConsumerPoolTuning]
+	return ok
+}
+
+func (k *Licenser) AdvancedWebhookFiltering() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[AdvancedWebhookFiltering]
+	return ok
+}
+
 func (k *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	// only these guys have dynamic limits for now
 	for f := range k.featureList {

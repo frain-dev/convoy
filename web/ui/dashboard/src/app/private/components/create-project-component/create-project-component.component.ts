@@ -103,7 +103,7 @@ export class CreateProjectComponent implements OnInit {
 		private privateService: PrivateService,
 		public router: Router,
 		private route: ActivatedRoute,
-		private licenseService: LicensesService
+		public licenseService: LicensesService
 	) {}
 
 	async ngOnInit() {
