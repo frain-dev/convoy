@@ -1,3 +1,8 @@
+# 24.8.2
+
+### Bug Fixes
+- fixed a retention policy bug where only empty files were uploading to s3
+
 # 24.8.1
 
 ### Features
