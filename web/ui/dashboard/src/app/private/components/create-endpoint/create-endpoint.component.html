@@ -197,10 +197,10 @@
 				</div>
 			</ng-container>
 
-			<div class="flex items-center gap-24px overflow-x-auto no-scrollbar" *ngIf="shouldShowBorder < configurations.length">
+			<div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">
-						<convoy-config-button convoy-permission="Endpoints|MANAGE" *ngIf="i < 3 || privateService.getProjectDetails?.type === 'outgoing'" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
+						<convoy-config-button convoy-permission="Endpoints|MANAGE" *ngIf="i < 5 || privateService.getProjectDetails?.type === 'outgoing'" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
 					</ng-container>
 				</ng-container>
 			</div>
