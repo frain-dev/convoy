@@ -109,12 +109,6 @@ jobs:
           username: ${{ env.DOCKER_HUB_USERNAME }}
           password: ${{ env.DOCKER_HUB_TOKEN }}
 
-      - name: Create and push manifest for latest
-        run: |
-          docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:latest \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-amd64 \
-            ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }}-arm64
-
       - name: Create and push manifest for version
         run: |
           docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:${{ env.RELEASE_VERSION }} \
