@@ -473,7 +473,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
-		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
+		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusBadRequest))
 		return
 	}
 

@@ -163,7 +163,7 @@ const (
 	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
 	WHERE ev.deleted_at IS NULL
 	`
-	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id %s LIMIT 1`
+	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id %s LIMIT 100`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = NOW()
