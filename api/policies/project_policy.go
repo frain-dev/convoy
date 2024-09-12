@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
@@ -13,6 +15,7 @@ type ProjectPolicy struct {
 	*authz.BasePolicy
 	OrganisationRepo       datastore.OrganisationRepository
 	OrganisationMemberRepo datastore.OrganisationMemberRepository
+	Licenser               license.Licenser
 }
 
 func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
@@ -52,7 +55,10 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		return ErrNotAllowed
 	}
 
-	if isSuperAdmin(member) || isAdmin(member) {
+	// to allow admin roles, RBAC must be enabled
+	adminAllowed := isAdmin(member) && pp.Licenser.RBAC()
+
+	if isSuperAdmin(member) || adminAllowed {
 		return nil
 	}
 
