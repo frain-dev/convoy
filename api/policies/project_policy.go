@@ -28,18 +28,10 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		return ErrNotAllowed
 	}
 
+	// API Access.
+
 	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
 	if ok {
-		// Personal Access Tokens
-		if apiKey.Type == datastore.PersonalKey {
-			_, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
-			if err != nil {
-				return ErrNotAllowed
-			}
-
-			return nil
-		}
-
 		// API Key
 		if apiKey.Role.Project != project.UID {
 			return ErrNotAllowed
@@ -48,13 +40,33 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		return nil
 	}
 
-	// JWT Access.
-	orgPolicy := OrganisationPolicy{
-		OrganisationMemberRepo: pp.OrganisationMemberRepo,
+	// Dashboard Access or Personal Access Token
+
+	user, ok := authCtx.User.(*datastore.User)
+	if !ok {
+		return ErrNotAllowed
 	}
-	return orgPolicy.Manage(ctx, org)
+
+	member, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+	if err != nil {
+		return ErrNotAllowed
+	}
+
+	if isSuperAdmin(member) || isAdmin(member) {
+		return nil
+	}
+
+	return ErrNotAllowed
 }
 
 func (pp *ProjectPolicy) GetName() string {
 	return "project"
+}
+
+func isAdmin(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleAdmin
+}
+
+func isSuperAdmin(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleSuperUser
 }
