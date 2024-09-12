@@ -26,7 +26,7 @@ export class PrivateComponent implements OnInit {
 	isEmailVerified = true;
 	apiURL = this.generalService.apiURL();
 	organisations?: ORGANIZATION_DATA[];
-	userOrganization?: ORGANIZATION_DATA;
+	userOrganisation?: ORGANIZATION_DATA;
 	convoyVersion: string = '';
 	isLoadingOrganisations = false;
 	addOrganisationForm: FormGroup = this.formBuilder.group({
@@ -35,7 +35,7 @@ export class PrivateComponent implements OnInit {
 	creatingOrganisation = false;
 	checkTokenInterval: any;
 	onboardingSteps = [
-		{ step: 'Create an Organization', id: 'organisation', description: 'Add your organization details and get set up.', stepColor: 'bg-[#416FF4] shadow-[0_22px_24px_0px_rgba(65,111,244,0.2)]', class: 'border-[rgba(65,111,244,0.2)]', currentStage: 'current' },
+		{ step: 'Create an Organisation', id: 'organisation', description: 'Add your organisation details and get set up.', stepColor: 'bg-[#416FF4] shadow-[0_22px_24px_0px_rgba(65,111,244,0.2)]', class: 'border-[rgba(65,111,244,0.2)]', currentStage: 'current' },
 		{
 			step: 'Create your first project',
 			id: 'project',
@@ -54,7 +54,7 @@ export class PrivateComponent implements OnInit {
 		this.shouldShowOrgModal();
 
 		this.checkIfTokenIsExpired();
-		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations()]);
+		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganisations()]);
 	}
 
 	ngOnDestroy() {
@@ -83,10 +83,10 @@ export class PrivateComponent implements OnInit {
 		} catch {}
 	}
 
-	async getOrganizations(refresh: boolean = false) {
+	async getOrganisations(refresh: boolean = false) {
 		this.isLoadingOrganisations = true;
 		try {
-			const response = await this.privateService.getOrganizations({ refresh });
+			const response = await this.privateService.getOrganisations({ refresh });
 			this.organisations = response.data.content;
 			this.isLoadingOrganisations = false;
 			if (this.organisations?.length) this.checkForSelectedOrganisation();
@@ -108,7 +108,7 @@ export class PrivateComponent implements OnInit {
 	async selectOrganisation(organisation: ORGANIZATION_DATA) {
 		this.isLoadingOrganisations = true;
 		this.privateService.organisationDetails = organisation;
-		this.userOrganization = organisation;
+		this.userOrganisation = organisation;
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		await this.privateService.getProjects({ refresh: true });
 		this.showOrgDropdown = false;
@@ -128,7 +128,7 @@ export class PrivateComponent implements OnInit {
 		const organisationDetails = JSON.parse(selectedOrganisation);
 		if (this.organisations.find(org => org.uid === organisationDetails.uid)) {
 			this.privateService.organisationDetails = organisationDetails;
-			this.userOrganization = organisationDetails;
+			this.userOrganisation = organisationDetails;
 		} else {
 			this.updateOrganisationDetails();
 		}
@@ -138,7 +138,7 @@ export class PrivateComponent implements OnInit {
 		if (!this.organisations?.length) return;
 
 		this.privateService.organisationDetails = this.organisations[0];
-		this.userOrganization = this.organisations[0];
+		this.userOrganisation = this.organisations[0];
 		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
 	}
 
@@ -165,7 +165,7 @@ export class PrivateComponent implements OnInit {
 			this.dialog.nativeElement.close();
 			this.licenseService.setLicenses();
 
-			await this.getOrganizations(true);
+			await this.getOrganisations(true);
 			this.selectOrganisation(response.data);
 		} catch {
 			this.creatingOrganisation = false;

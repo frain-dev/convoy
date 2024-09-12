@@ -1,117 +1,126 @@
 # 24.8.2
 
 ### Bug Fixes
-- fixed a retention policy bug where only empty files were uploading to s3
+
+-   fixed a retention policy bug where only empty files were uploading to s3
 
 # 24.8.1
 
 ### Features
-- Added end to end latency metrics #2079
-- Add support for inbound webhooks that use form data #1998
-- Added e2e test suite using test containers #2083
-- Add license feature gating #2114 #2132 #2134
-- Change License to Elastic License v2.0 #2124
+
+-   Added end to end latency metrics #2079
+-   Add support for inbound webhooks that use form data #1998
+-   Added e2e test suite using test containers #2083
+-   Add license feature gating #2114 #2132 #2134
+-   Change License to Elastic License v2.0 #2124
 
 ### Enhancements
-- Move retention policy to instance config #2011
-- Update event data openapi types #2088
-- Refactor agent, worker and ingest entry points #2082
-- Refactored Exponential Backoff Implementation #2073
-- Remove instance configuration page #2085
-- Set default signature value to advanced from UI #2090
-- Add fanout for pubsub ingest #2099
-- Events ingested in incoming projects would now respond with a 413 for oversized payloads #2095
-- The agent component can now bootstrap a fresh instance #2111
-- Don't return an error when an owner id has no registered endpoints #2112
-- Split delivery attempts from event deliveries #2092
-- Add auth to metrics and queue monitoring routes #2115
-- Updated integration test suite #2100
-- Refactored feature flags implementation #2105
-- Push docker images to DockerHub #2122
-- Add owner id to event delivery response #2129
 
+-   Move retention policy to instance config #2011
+-   Update event data openapi types #2088
+-   Refactor agent, worker and ingest entry points #2082
+-   Refactored Exponential Backoff Implementation #2073
+-   Remove instance configuration page #2085
+-   Set default signature value to advanced from UI #2090
+-   Add fanout for pubsub ingest #2099
+-   Events ingested in incoming projects would now respond with a 413 for oversized payloads #2095
+-   The agent component can now bootstrap a fresh instance #2111
+-   Don't return an error when an owner id has no registered endpoints #2112
+-   Split delivery attempts from event deliveries #2092
+-   Add auth to metrics and queue monitoring routes #2115
+-   Updated integration test suite #2100
+-   Refactored feature flags implementation #2105
+-   Push docker images to DockerHub #2122
+-   Add owner id to event delivery response #2129
 
 ### Bug Fixes
-- Fixed a bug in positional array filter #2086
-- Fix count & batch retry queries #2089
-- Fixed a bug where api responses from v2024-04-01 to v2024-01-01 were not properly migrated #2087
-- Update UI Dependencies #2097
-- Fixed a migration bug where default column values were not set #2103
-- Fixed a bug where the wrong delay duration was used when scheduling an event delivery for retry #2110
-- Fixed a bug where other events were retried from a portal link because the endpoint filter wasn't applied #2116
--
 
+-   Fixed a bug in positional array filter #2086
+-   Fix count & batch retry queries #2089
+-   Fixed a bug where api responses from v2024-04-01 to v2024-01-01 were not properly migrated #2087
+-   Update UI Dependencies #2097
+-   Fixed a migration bug where default column values were not set #2103
+-   Fixed a bug where the wrong delay duration was used when scheduling an event delivery for retry #2110
+-   Fixed a bug where other events were retried from a portal link because the endpoint filter wasn't applied #2116
+-
 
 # 24.6.4
 
-- fixed a bug where the pubsub ingester won't start when there aren't any projects 
+-   fixed a bug where the pubsub ingester won't start when there aren't any projects
 
 # 24.6.3
 
 ### Bug Fixes
-- Fixed api migration bug #2087
+
+-   Fixed api migration bug #2087
 
 # 24.6.2
 
 ### Bug Fixes
 
-- Remove default config value for advanced signatures #2090
+-   Remove default config value for advanced signatures #2090
 
 # 24.6.1
 
 ### Features
-- Add rate limiter to event entry points, HTTP APIs, and message brokers #2072 #2035
-- Add retry queue #2058
-- Add search bar for subscriptions #2062
-- Use asynq's exponential backoff for event delivery retries #2052
-- Add PyroScope profiling #1737
-- Added Prometheus metrics #2005
-- Endpoint subscriptions can now be created and viewed on portal links #2015
-- Subscriptions can now be filtered by name #2014
+
+-   Add rate limiter to event entry points, HTTP APIs, and message brokers #2072 #2035
+-   Add retry queue #2058
+-   Add search bar for subscriptions #2062
+-   Use asynq's exponential backoff for event delivery retries #2052
+-   Add PyroScope profiling #1737
+-   Added Prometheus metrics #2005
+-   Endpoint subscriptions can now be created and viewed on portal links #2015
+-   Subscriptions can now be filtered by name #2014
 
 ### Enhancements
-- Optimise flatten and compare packages #2066 #2077
-- Changed the Postgres driver to pgx #2064
-- Optimized dashboard query and run time #2070
-- Fixed order of endpoints and subscriptions #2060
-- Optimise Subscription loader queries #2056
-- Make dispatcher proxy less strict, allowing requests to be sent if the proxy URL is invalid #2059
-- Load subscriptions synchronously on worker startup #2053
-- Remove cache from userRepo since it's not a hot path #2050
-- Added cache to retrieving subscriptions for broadcast #2044
-- Refactored net.Dispatcher
-    - Create dispatcher once #2043
-    - Fixed a bug where we were closing the response body late #2029
-- Refactor ProcessBroadcastEventCreation and ProcessEventCreation handlers
-    - Deduplicate endpoint IDs #2024
-- Refactor Repository
-    - Add FindEventDeliveryByIDSlim #2054
-    - Refactored event creation to insert in bulk #2038
-    - Add indexes for FetchSubscriptionsForBroadcast #2033
+
+-   Optimise flatten and compare packages #2066 #2077
+-   Changed the Postgres driver to pgx #2064
+-   Optimized dashboard query and run time #2070
+-   Fixed order of endpoints and subscriptions #2060
+-   Optimise Subscription loader queries #2056
+-   Make dispatcher proxy less strict, allowing requests to be sent if the proxy URL is invalid #2059
+-   Load subscriptions synchronously on worker startup #2053
+-   Remove cache from userRepo since it's not a hot path #2050
+-   Added cache to retrieving subscriptions for broadcast #2044
+-   Refactored net.Dispatcher
+    -   Create dispatcher once #2043
+    -   Fixed a bug where we were closing the response body late #2029
+-   Refactor ProcessBroadcastEventCreation and ProcessEventCreation handlers
+    -   Deduplicate endpoint IDs #2024
+-   Refactor Repository
+    -   Add FindEventDeliveryByIDSlim #2054
+    -   Refactored event creation to insert in bulk #2038
+    -   Add indexes for FetchSubscriptionsForBroadcast #2033
 
 ### Bug Fixes
-- Fix dashboard summary filters #2071
-- Fix events summary date filter #2069
-- Fixed panic that occurred when updating project when setting the SSL config #2055
-- Fixed a bug where we were creating events for the number of matched subscriptions instead of the number of matched endpoints #2025
-- Fixed a bug where we would try to filter even when none is set on the subscription #2027
-- Fixed a bug where the default log level was set to debug #2013
-- Fixed a bug where portal links won't load in iframes because of a missing project reference #2008
+
+-   Fix dashboard summary filters #2071
+-   Fix events summary date filter #2069
+-   Fixed panic that occurred when updating project when setting the SSL config #2055
+-   Fixed a bug where we were creating events for the number of matched subscriptions instead of the number of matched endpoints #2025
+-   Fixed a bug where we would try to filter even when none is set on the subscription #2027
+-   Fixed a bug where the default log level was set to debug #2013
+-   Fixed a bug where portal links won't load in iframes because of a missing project reference #2008
 
 # 24.5.1
 
 ### Features
-- Create default org when bootstrapping Convoy for the first time. #1991
-- Display user-settings page when there are no organizations. #1999
+
+-   Create default org when bootstrapping Convoy for the first time. #1991
+-   Display user-settings page when there are no organisations. #1999
 
 ### Enhancements
-- Use transactions in ProcessBroadcastEventCreation to prevent a race condition. #1994
-- Update copy for the kafka source form giving more information and linking to docs. #2000
-- Update Endpoint table with its ID on the dashboard. #1988
+
+-   Use transactions in ProcessBroadcastEventCreation to prevent a race condition. #1994
+-   Update copy for the kafka source form giving more information and linking to docs. #2000
+-   Update Endpoint table with its ID on the dashboard. #1988
 
 ### Bug fixes
-- Fixed a panic that would occur when request body is a string during subscription filtering. #1992
-- Fixed a bug where the response from the pause endpoint api wasn't versioned correctly. #2001
+
+-   Fixed a panic that would occur when request body is a string during subscription filtering. #1992
+-   Fixed a bug where the response from the pause endpoint api wasn't versioned correctly. #2001
 
 # 24.4.1
 
@@ -120,136 +129,143 @@
 > [!NOTE]
 > All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need to specify the version (2024-04-01) in your convoy.json.
 
-- changed endpoint `title` to `name`
-- changes endpoint `target_url` to `url`
+-   changed endpoint `title` to `name`
+-   changes endpoint `target_url` to `url`
 
 ### Features
-- Implemented an in-memory store for data plane #1932
-- Re-implement rate limiter using postgres #1937 #1950
-- Add the ability to mutate payloads from message broker sources using javascript functions #1954 #1956 #1958
-- Add project config for enforcing https endpoints #1955 #1957
-- Add documentation to request models #1959
-- 
+
+-   Implemented an in-memory store for data plane #1932
+-   Re-implement rate limiter using postgres #1937 #1950
+-   Add the ability to mutate payloads from message broker sources using javascript functions #1954 #1956 #1958
+-   Add project config for enforcing https endpoints #1955 #1957
+-   Add documentation to request models #1959
+-
 
 ### Enhancements
-- Encode Postgres connection string credentials #1936
-- Update endpoint `title` to `name` and `target_url` to `url` #1945
-- Enqueue Stuck Event Deliveries #1977
+
+-   Encode Postgres connection string credentials #1936
+-   Update endpoint `title` to `name` and `target_url` to `url` #1945
+-   Enqueue Stuck Event Deliveries #1977
 
 ### Bug Fixes
-- Fixed a bug where telemetry wasn't being sent to PostHog #1944
-- Fixed a bug where the signature modal in the project settings doesn't dismiss after saving. #1939
-- Fixed a bug where project settings were not displayed properly on the dashboard #1953
-- Fixed a bug where a failed subscription filter will stop all subscribers from a broadcast event from receiving the event #1962
-- Fixed open telemetry tls configuration #1966
-- Fixed a bug where a created or updated subscription didn't show the nested values #1970
-- Fixed endpoints count query for portal links #1973
-- Added data plane capabilities back to the worker which was unintentionally removed #1974
+
+-   Fixed a bug where telemetry wasn't being sent to PostHog #1944
+-   Fixed a bug where the signature modal in the project settings doesn't dismiss after saving. #1939
+-   Fixed a bug where project settings were not displayed properly on the dashboard #1953
+-   Fixed a bug where a failed subscription filter will stop all subscribers from a broadcast event from receiving the event #1962
+-   Fixed open telemetry tls configuration #1966
+-   Fixed a bug where a created or updated subscription didn't show the nested values #1970
+-   Fixed endpoints count query for portal links #1973
+-   Added data plane capabilities back to the worker which was unintentionally removed #1974
 
 # 24.1.4
 
-- [Enhancement] Add custom headers to dynamic event #1923
-- [Feature] Add broadcast event api #1913
+-   [Enhancement] Add custom headers to dynamic event #1923
+-   [Feature] Add broadcast event api #1913
 
 # 24.1.3
 
 ### Bug Fixes
-- fixed api versioning bug to correctly retrieve the instance api version #1918
+
+-   fixed api versioning bug to correctly retrieve the instance api version #1918
 
 # 24.1.2
 
-### Bug Fixes 
-- fixed sync bug in the oss telemetry library #1906
+### Bug Fixes
 
-# 24.1.1 
+-   fixed sync bug in the oss telemetry library #1906
+
+# 24.1.1
 
 ### API Changes
 
 > [!NOTE]
 > All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need to specify which version you're running in your convoy.json.
 
-- changed `http_timeout` and `rate_limit_duration` in endpoints from duration string to `int`.
-- changed the default signature format from `simple` to `advanced`. 
-- stripped out unnecessary fields from dynamic api endpoint. 
+-   changed `http_timeout` and `rate_limit_duration` in endpoints from duration string to `int`.
+-   changed the default signature format from `simple` to `advanced`.
+-   stripped out unnecessary fields from dynamic api endpoint.
 
 ### Features
-- added support for OpenTelemetry #1865
-- added support for sentry as a tracing backend #1865
-- added support for api versioning using rolling versioning strategy backwards compatible #1871
+
+-   added support for OpenTelemetry #1865
+-   added support for sentry as a tracing backend #1865
+-   added support for api versioning using rolling versioning strategy backwards compatible #1871
 
 ### Bug Fixes
-- added `eventType` to `QueryListEventDelivery` #1843
-- fixed source and subscription forms #1876
-- fixed source and endpoint dropdown with search box #1850
-- fixed retrieving portal links by `endpoints` or `owner_id` #1894
-- update endpoints in cache when all the endpoints are re-enabled #1847
-- update subscription endpoint metadata when a subscription is updated #1891
-- fixed event deliveries pagination #1846
-- delete invite after cancellation #1860
-- enabled multi-user invite without refresh #1861
-- set `event_id` in events filter #1866
+
+-   added `eventType` to `QueryListEventDelivery` #1843
+-   fixed source and subscription forms #1876
+-   fixed source and endpoint dropdown with search box #1850
+-   fixed retrieving portal links by `endpoints` or `owner_id` #1894
+-   update endpoints in cache when all the endpoints are re-enabled #1847
+-   update subscription endpoint metadata when a subscription is updated #1891
+-   fixed event deliveries pagination #1846
+-   delete invite after cancellation #1860
+-   enabled multi-user invite without refresh #1861
+-   set `event_id` in events filter #1866
 
 ### Enhancements
 
-- improved dynamic api support #1884
-- improved endpoints api #1870
-- QoL improvements to the api layer #1851
-- QoL improvements to retention policies export worker #1882
+-   improved dynamic api support #1884
+-   improved endpoints api #1870
+-   QoL improvements to the api layer #1851
+-   QoL improvements to retention policies export worker #1882
 
 # 23.11.1
 
-- [Feature] add cache to the organisations and api key repositories, add profiling route #1822
-- [Feature] Record event delivery latency #1830
-- [Enhancement] Improve event deliveries filtering #1824 #1840
-- [Enhancement] UI layout redesign #1815
-- [Enhancement] Move scheduler functionality into server #1835
-- [Bugfix] Fixed endpoint enabling and disabling #1837
+-   [Feature] add cache to the organisations and api key repositories, add profiling route #1822
+-   [Feature] Record event delivery latency #1830
+-   [Enhancement] Improve event deliveries filtering #1824 #1840
+-   [Enhancement] UI layout redesign #1815
+-   [Enhancement] Move scheduler functionality into server #1835
+-   [Bugfix] Fixed endpoint enabling and disabling #1837
 
 # 23.10.1
 
-- [Feature] Added bootstrap cli for user account creation #1773
-- [Feature] Add prefix configuration to S3 Config #1812
-- [Enhancement] Added TLS option for SMTP config #1784
-- [Enhancement] Added support for multi-architecture docker images #1790
-- [Enhancement] Improved docker compose to use named volumes #1804
-- [Enhancement] Replaced Flipt for a custom feature flag implementation #1797
-- [Enhancement] Added several performance improvements with caches and reduced db calls #1765 #1783
-- [Enhancement] Optimise source loader query #1806
-- [Bugfix] Added separate port for `ingest` cli #1795
-- [Bugfix] Add support for Idempotency keys in message broker integration #1800
-- [Bugfix] Fixed concurrency bug where wrong source name is show in the event log #1800
-- [Bugfix] Fixed role check for updating organization name #1805
-- [Bugfix] Fixed a bug with the portal link delete button #1807
-- [Bugfix] Fixed a bug with the endpoint config button #1810 
-- [Bugfix] Removed onclickout function for dialogs #1808
-- [Bugfix] Generate exponential back-off rate limits from intervalSeconds and Limt #1813
+-   [Feature] Added bootstrap cli for user account creation #1773
+-   [Feature] Add prefix configuration to S3 Config #1812
+-   [Enhancement] Added TLS option for SMTP config #1784
+-   [Enhancement] Added support for multi-architecture docker images #1790
+-   [Enhancement] Improved docker compose to use named volumes #1804
+-   [Enhancement] Replaced Flipt for a custom feature flag implementation #1797
+-   [Enhancement] Added several performance improvements with caches and reduced db calls #1765 #1783
+-   [Enhancement] Optimise source loader query #1806
+-   [Bugfix] Added separate port for `ingest` cli #1795
+-   [Bugfix] Add support for Idempotency keys in message broker integration #1800
+-   [Bugfix] Fixed concurrency bug where wrong source name is show in the event log #1800
+-   [Bugfix] Fixed role check for updating organisation name #1805
+-   [Bugfix] Fixed a bug with the portal link delete button #1807
+-   [Bugfix] Fixed a bug with the endpoint config button #1810
+-   [Bugfix] Removed onclickout function for dialogs #1808
+-   [Bugfix] Generate exponential back-off rate limits from intervalSeconds and Limt #1813
 
 # 23.9.2
 
-- [Enhancement] Show invite url on teams invite page
-- [Bugfix] Handle nullable 'Function' field in worker handler
+-   [Enhancement] Show invite url on teams invite page
+-   [Bugfix] Handle nullable 'Function' field in worker handler
 
 # 23.09.1
 
-- [Feature] Add event payload transform functionality #1755 #1761
-- [Enhancement] Add tail mode for events and event deliveries #1753
-- [Enhancement] Expose rate limiting for endpoints #1754
-- [Bugfix] Use the different queue instance when starting stream server #1769
-- [Bugfix] Return an appropriate error instead of nil the process event delivery #1756
-- [Bugfix] Add permissions when creating and revoking API keys #1762
-- [Bugfix] Add QueueUrl nil check in SQS handler #1763
-- [Bugfix] Update endpoints migration query #1768
+-   [Feature] Add event payload transform functionality #1755 #1761
+-   [Enhancement] Add tail mode for events and event deliveries #1753
+-   [Enhancement] Expose rate limiting for endpoints #1754
+-   [Bugfix] Use the different queue instance when starting stream server #1769
+-   [Bugfix] Return an appropriate error instead of nil the process event delivery #1756
+-   [Bugfix] Add permissions when creating and revoking API keys #1762
+-   [Bugfix] Add QueueUrl nil check in SQS handler #1763
+-   [Bugfix] Update endpoints migration query #1768
 
 # 23.08.2
 
-- [Feature] Postgres Full Text Search Reimplementation #1734 #1751 #1750 
-- [Feature] Add tail mode for events and event deliveries #1753
-- [Enhancement] Paused events polling when searching and filtering on the Event Log #1744
-- [Enhancement] Added an edit endpoint button in event delivery page #1738
-- [Enhancement] Added a tooltip for Retry and Force Retry buttons #1741
-- [Bugfix] Fixed a bug where the subscription filter editor UI was unresponsive #1747
-- [Bugfix] Fixed a bug where the Batch Replay button on the events log would not replay events #1740
-- [Bugfix] Fixed a bug in the process event delivery handler that caused events to stay in the `Scheduled` state #1756
+-   [Feature] Postgres Full Text Search Reimplementation #1734 #1751 #1750
+-   [Feature] Add tail mode for events and event deliveries #1753
+-   [Enhancement] Paused events polling when searching and filtering on the Event Log #1744
+-   [Enhancement] Added an edit endpoint button in event delivery page #1738
+-   [Enhancement] Added a tooltip for Retry and Force Retry buttons #1741
+-   [Bugfix] Fixed a bug where the subscription filter editor UI was unresponsive #1747
+-   [Bugfix] Fixed a bug where the Batch Replay button on the events log would not replay events #1740
+-   [Bugfix] Fixed a bug in the process event delivery handler that caused events to stay in the `Scheduled` state #1756
 
 # 23.08.1
 
@@ -274,7 +290,7 @@
 -   [Bugfix] Fixed issues encountered during onboarding related to subscriptions #1713
 -   [Bugfix] The copy button on the project details page has been fixed #1722
 -   [Bugfix] Events with active deliveries are now ignored in retention policies #1723
--   [Bugfix] Fixed an issue where the organization modal fails to open and the project page keeps loading after creating the first organization #1727
+-   [Bugfix] Fixed an issue where the organisation modal fails to open and the project page keeps loading after creating the first organisation #1727
 
 # 23.06.3
 
@@ -288,7 +304,6 @@
 -   [Bugfix] Fixed issue with closing google pub/sub client #1673
 -   [Bugfix] Fixed issue with overriding config with cli flags #1668
 -   [Bugfix] Fixed issue with HTTP timeout validation #1680
-
 
 # 23.06.2
 
@@ -313,7 +328,6 @@
 -   [Bugfix] Fixed event delivery filtering by status #1626
 -   [Bugfix] Fixed index on organisations invite index #1603 #1607
 -   [Bugfix] Link ownerID to portal links without endpoints #1638
- 
 
 # 23.05.5
 
@@ -595,7 +609,7 @@
 -   [Bugfix] Use redis client in scheduler #807
 -   [Bugfix] Fixed an issue where the source type would not be updated when updating a Github source
 -   [Bugfix] Fixed an issue where the application details would not be loaded when creating a subscription
--   [Bugfix] Fixed an issue where an organization created by a user would not show on the top bar to be selected
+-   [Bugfix] Fixed an issue where an organisation created by a user would not show on the top bar to be selected
 
 # v0.6.0-rc.1
 

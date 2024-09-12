@@ -17,13 +17,13 @@ import (
 )
 
 var (
-	ErrOrganizationNotCreated = errors.New("organization could not be created")
-	ErrOrganizationNotUpdated = errors.New("organization could not be updated")
-	ErrOrganizationNotDeleted = errors.New("organization could not be deleted")
+	ErrOrganisationNotCreated = errors.New("organisation could not be created")
+	ErrOrganisationNotUpdated = errors.New("organisation could not be updated")
+	ErrOrganisationNotDeleted = errors.New("organisation could not be deleted")
 )
 
 const (
-	createOrganization = `
+	createOrganisation = `
 	INSERT INTO convoy.organisations (id, name, owner_id, custom_domain, assigned_domain)
 	VALUES ($1, $2, $3, $4, $5);
 	`
@@ -37,7 +37,7 @@ const (
 	SELECT * FROM convoy.organisations WHERE deleted_at IS NULL
 	`
 
-	updateOrganizationById = `
+	updateOrganisationById = `
 	UPDATE convoy.organisations SET
 	name = $2,
  	custom_domain = $3,
@@ -52,7 +52,7 @@ const (
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
 
-	baseFetchOrganizationsPagedForward = `
+	baseFetchOrganisationsPagedForward = `
 	%s
 	AND id <= :cursor
 	GROUP BY id
@@ -60,8 +60,8 @@ const (
 	LIMIT :limit
 	`
 
-	baseFetchOrganizationsPagedBackward = `
-	WITH organizations AS (
+	baseFetchOrganisationsPagedBackward = `
+	WITH organisations AS (
 		%s
 		AND id >= :cursor
 		GROUP BY id
@@ -69,10 +69,10 @@ const (
 		LIMIT :limit
 	)
 
-	SELECT * FROM organizations ORDER BY id DESC
+	SELECT * FROM organisations ORDER BY id DESC
 	`
 
-	countPrevOrganizations = `
+	countPrevOrganisations = `
 	SELECT COUNT(DISTINCT(id)) AS count
 	FROM convoy.organisations
 	WHERE deleted_at IS NULL
@@ -81,7 +81,7 @@ const (
 	ORDER BY id DESC
 	LIMIT 1`
 
-	countOrganizations = `
+	countOrganisations = `
 	SELECT COUNT(*) AS count
 	FROM convoy.organisations
 	WHERE deleted_at IS NULL`
@@ -100,7 +100,7 @@ func NewOrgRepo(db database.Database, ca cache.Cache) datastore.OrganisationRepo
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	result, err := o.db.ExecContext(ctx, createOrganization, org.UID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain)
+	result, err := o.db.ExecContext(ctx, createOrganisation, org.UID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain)
 	if err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organis
 	}
 
 	if rowsAffected < 1 {
-		return ErrOrganizationNotCreated
+		return ErrOrganisationNotCreated
 	}
 
 	orCacheKey := convoy.OrganisationCacheKey.Get(org.UID).String()
@@ -126,9 +126,9 @@ func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organis
 func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
 	var query string
 	if pageable.Direction == datastore.Next {
-		query = baseFetchOrganizationsPagedForward
+		query = baseFetchOrganisationsPagedForward
 	} else {
-		query = baseFetchOrganizationsPagedBackward
+		query = baseFetchOrganisationsPagedBackward
 	}
 
 	query = fmt.Sprintf(query, fetchOrganisationsPaged)
@@ -156,7 +156,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 	}
 	defer closeWithError(rows)
 
-	organizations := make([]datastore.Organisation, 0)
+	organisations := make([]datastore.Organisation, 0)
 	for rows.Next() {
 		var org datastore.Organisation
 
@@ -165,17 +165,17 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 			return nil, datastore.PaginationData{}, err
 		}
 
-		organizations = append(organizations, org)
+		organisations = append(organisations, org)
 	}
 
 	var count datastore.PrevRowCount
-	if len(organizations) > 0 {
+	if len(organisations) > 0 {
 		var countQuery string
 		var qargs []interface{}
 
-		arg["cursor"] = organizations[0].UID
+		arg["cursor"] = organisations[0].UID
 
-		countQuery, qargs, err = sqlx.Named(countPrevOrganizations, arg)
+		countQuery, qargs, err = sqlx.Named(countPrevOrganisations, arg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -197,23 +197,23 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		}
 	}
 
-	ids := make([]string, len(organizations))
-	for i := range organizations {
-		ids[i] = organizations[i].UID
+	ids := make([]string, len(organisations))
+	for i := range organisations {
+		ids[i] = organisations[i].UID
 	}
 
-	if len(organizations) > pageable.PerPage {
-		organizations = organizations[:len(organizations)-1]
+	if len(organisations) > pageable.PerPage {
+		organisations = organisations[:len(organisations)-1]
 	}
 
 	pagination := &datastore.PaginationData{PrevRowCount: count}
 	pagination = pagination.Build(pageable, ids)
 
-	return organizations, *pagination, nil
+	return organisations, *pagination, nil
 }
 
 func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	result, err := o.db.ExecContext(ctx, updateOrganizationById, org.UID, org.Name, org.CustomDomain, org.AssignedDomain)
+	result, err := o.db.ExecContext(ctx, updateOrganisationById, org.UID, org.Name, org.CustomDomain, org.AssignedDomain)
 	if err != nil {
 		return err
 	}
@@ -224,7 +224,7 @@ func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 	}
 
 	if rowsAffected < 1 {
-		return ErrOrganizationNotUpdated
+		return ErrOrganisationNotUpdated
 	}
 
 	orCacheKey := convoy.OrganisationCacheKey.Get(org.UID).String()
@@ -248,7 +248,7 @@ func (o *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 	}
 
 	if rowsAffected < 1 {
-		return ErrOrganizationNotDeleted
+		return ErrOrganisationNotDeleted
 	}
 
 	orgCacheKey := convoy.OrganisationCacheKey.Get(uid).String()
@@ -262,7 +262,7 @@ func (o *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 
 func (o *orgRepo) CountOrganisations(ctx context.Context) (int64, error) {
 	var count int64
-	err := o.db.GetContext(ctx, &count, countOrganizations)
+	err := o.db.GetContext(ctx, &count, countOrganisations)
 	if err != nil {
 		return 0, err
 	}

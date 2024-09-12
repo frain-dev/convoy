@@ -320,7 +320,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	// map[string]interface{} won't work for array based json e.g:
 	// [
 	//	{
-	//		"organization": "frain-dev"
+	//		"organisation": "frain-dev"
 	//	},
 	//	{
 	//		".members_url": "danvixent"

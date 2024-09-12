@@ -21,7 +21,7 @@ export type STAGES = 'organisation' | 'project';
 export class OnboardingComponent implements OnInit {
 	@ViewChild('orgDialog', { static: true }) dialog!: ElementRef<HTMLDialogElement>;
 	onboardingSteps = [
-		{ step: 'Create an Organization', id: 'organisation', description: 'Add your organization details and get set up.', stepColor: 'bg-[#416FF4] shadow-[0_22px_24px_0px_rgba(65,111,244,0.2)]', class: 'border-[rgba(65,111,244,0.2)]', currentStage: 'current' },
+		{ step: 'Create an Organisation', id: 'organisation', description: 'Add your organisation details and get set up.', stepColor: 'bg-[#416FF4] shadow-[0_22px_24px_0px_rgba(65,111,244,0.2)]', class: 'border-[rgba(65,111,244,0.2)]', currentStage: 'current' },
 		{
 			step: 'Create your first project',
 			id: 'project',
@@ -41,14 +41,14 @@ export class OnboardingComponent implements OnInit {
 	constructor(public privateService: PrivateService, public router: Router, private generalService: GeneralService, private formBuilder: FormBuilder) {}
 
 	ngOnInit() {
-		this.getOrganizations();
+		this.getOrganisations();
 	}
 
-	async getOrganizations(refresh: boolean = false) {
+	async getOrganisations(refresh: boolean = false) {
 		this.isloading = true;
 
 		try {
-			const response = await this.privateService.getOrganizations({ refresh });
+			const response = await this.privateService.getOrganisations({ refresh });
 			const organisations = response.data.content;
 
 			if (organisations?.length) {
@@ -107,7 +107,7 @@ export class OnboardingComponent implements OnInit {
 			this.creatingOrganisation = false;
 			this.dialog.nativeElement.close();
 
-			await this.getOrganizations(true);
+			await this.getOrganisations(true);
 		} catch {
 			this.creatingOrganisation = false;
 		}

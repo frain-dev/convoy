@@ -55,7 +55,7 @@ services:
         image: bitnami/postgresql:latest
         restart: on-failure
         ports:
-            - "5432:5432"
+            - "5433:5432"
         environment:
             POSTGRESQL_DATABASE: convoy
             POSTGRESQL_USERNAME: convoy

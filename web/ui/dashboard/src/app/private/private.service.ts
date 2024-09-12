@@ -145,7 +145,7 @@ export class PrivateService {
 		return;
 	}
 
-	getOrganizations(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+	getOrganisations(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			if (this.organisations && !requestDetails?.refresh) return resolve(this.organisations);
 
@@ -180,7 +180,7 @@ export class PrivateService {
 		});
 	}
 
-	getOrganizationMembership(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
+	getOrganisationMembership(requestDetails?: { refresh: boolean }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			if (!this.organisations?.data?.content.length) return resolve(this.membership);
 			if (this.membership && !requestDetails?.refresh) return resolve(this.membership);

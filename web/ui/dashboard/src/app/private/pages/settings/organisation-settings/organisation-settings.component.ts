@@ -35,7 +35,7 @@ export class OrganisationSettingsComponent implements OnInit {
 		this.isEditingOrganisation = true;
 		try {
 			const response = await this.settingService.updateOrganisation({ org_id: this.organisationId, body: this.editOrganisationForm.value });
-			this.privateService.getOrganizations({ refresh: true });
+			this.privateService.getOrganisations({ refresh: true });
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.isEditingOrganisation = false;
 		} catch {

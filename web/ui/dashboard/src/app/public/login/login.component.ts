@@ -67,7 +67,7 @@ export class LoginComponent implements OnInit {
 
 	async getOrganisations() {
 		try {
-			await this.privateService.getOrganizations({ refresh: true });
+			await this.privateService.getOrganisations({ refresh: true });
 			return;
 		} catch (error) {
 			return error;

@@ -288,8 +288,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 				orgSubRouter.Route("/invites", func(orgInvitesRouter chi.Router) {
 					orgInvitesRouter.Post("/", handler.InviteUserToOrganisation)
-					orgInvitesRouter.Post("/{inviteID}/resend", handler.ResendOrganizationInvite)
-					orgInvitesRouter.Post("/{inviteID}/cancel", handler.CancelOrganizationInvite)
+					orgInvitesRouter.Post("/{inviteID}/resend", handler.ResendOrganisationInvite)
+					orgInvitesRouter.Post("/{inviteID}/cancel", handler.CancelOrganisationInvite)
 					orgInvitesRouter.With(middleware.Pagination).Get("/pending", handler.GetPendingOrganisationInvites)
 				})
 

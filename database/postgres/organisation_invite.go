@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	ErrOrganizationInviteNotCreated = errors.New("organization invite could not be created")
-	ErrOrganizationInviteNotUpdated = errors.New("organization invite could not be updated")
-	ErrOrganizationInviteNotDeleted = errors.New("organization invite could not be deleted")
+	ErrOrganisationInviteNotCreated = errors.New("organisation invite could not be created")
+	ErrOrganisationInviteNotUpdated = errors.New("organisation invite could not be updated")
+	ErrOrganisationInviteNotDeleted = errors.New("organisation invite could not be deleted")
 )
 
 const (
@@ -165,7 +165,7 @@ func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datast
 	}
 
 	if rowsAffected < 1 {
-		return ErrOrganizationInviteNotCreated
+		return ErrOrganisationInviteNotCreated
 	}
 
 	return nil
@@ -294,7 +294,7 @@ func (i *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datast
 	}
 
 	if rowsAffected < 1 {
-		return ErrOrganizationInviteNotUpdated
+		return ErrOrganisationInviteNotUpdated
 	}
 
 	return nil
@@ -312,7 +312,7 @@ func (i *orgInviteRepo) DeleteOrganisationInvite(ctx context.Context, id string)
 	}
 
 	if rowsAffected < 1 {
-		return ErrOrganizationInviteNotDeleted
+		return ErrOrganisationInviteNotDeleted
 	}
 
 	return nil

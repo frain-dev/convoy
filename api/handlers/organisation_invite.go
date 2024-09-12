@@ -144,7 +144,7 @@ func (h *Handler) FindUserByInviteToken(w http.ResponseWriter, r *http.Request) 
 	_ = render.Render(w, r, util.NewServerResponse("retrieved user", res, http.StatusOK))
 }
 
-func (h *Handler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ResendOrganisationInvite(w http.ResponseWriter, r *http.Request) {
 	user, err := h.retrieveUser(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -180,7 +180,7 @@ func (h *Handler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Reques
 	_ = render.Render(w, r, util.NewServerResponse("invite resent successfully", nil, http.StatusOK))
 }
 
-func (h *Handler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CancelOrganisationInvite(w http.ResponseWriter, r *http.Request) {
 	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
