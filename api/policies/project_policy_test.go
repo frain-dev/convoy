@@ -16,8 +16,8 @@ import (
 func Test_ProjectPolicy_Manage(t *testing.T) {
 	type test struct {
 		basetest
-		organisation *datastore.Project
-		storeFn      func(*ProjectPolicy)
+		project *datastore.Project
+		storeFn func(*ProjectPolicy)
 	}
 
 	testmatrix := map[string][]test{
@@ -33,7 +33,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
-				organisation: &datastore.Project{
+				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
@@ -50,58 +50,124 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 				basetest: basetest{
 					name: "should_reject_when_user_does_not_belong_to_organisation",
 					authCtx: &auth.AuthenticatedUser{
-						APIKey: &datastore.APIKey{
-							UID:  "randomstring",
-							Type: datastore.PersonalKey,
-						},
+						User: &datastore.User{UID: "user-1"},
 					},
 					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
-				organisation: &datastore.Project{
-					UID: "randomstring",
+				project: &datastore.Project{
+					UID:            "project-1",
+					OrganisationID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
 					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
-						FetchOrganisationByID(gomock.Any(), gomock.Any()).
-						Return(&datastore.Organisation{UID: "123"}, nil)
+						FetchOrganisationByID(gomock.Any(), "randomstring").
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
 					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
-						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
+						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
 						Return(nil, errors.New("rejected"))
 				},
 			},
 			{
 				basetest: basetest{
-					name: "should_allow_when_user_does_not_belong_to_organisation",
+					name: "should_allow_admin_org_member",
 					authCtx: &auth.AuthenticatedUser{
-						APIKey: &datastore.APIKey{
-							UID:  "randomstring",
-							Type: datastore.PersonalKey,
-						},
+						User: &datastore.User{UID: "user-1"},
 					},
 					assertion:     require.NoError,
 					expectedError: nil,
 				},
-				organisation: &datastore.Project{
-					UID: "randomstring",
+				project: &datastore.Project{
+					UID:            "project-1",
+					OrganisationID: "randomstring",
+				},
+				storeFn: func(pp *ProjectPolicy) {
+					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
+					licenser.EXPECT().RBAC().Times(1).Return(true)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
+
+					orgRepo.EXPECT().
+						FetchOrganisationByID(gomock.Any(), "randomstring").
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
+
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
+						Return(&datastore.OrganisationMember{UID: "randomstring", Role: auth.Role{
+							Type:     auth.RoleAdmin,
+							Project:  "",
+							Endpoint: "",
+						}}, nil)
+				},
+			},
+			{
+				basetest: basetest{
+					name: "should_not_allow_admin_org_member",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{UID: "user-1"},
+					},
+					assertion:     require.Error,
+					expectedError: ErrNotAllowed,
+				},
+				project: &datastore.Project{
+					UID:            "project-1",
+					OrganisationID: "randomstring",
+				},
+				storeFn: func(pp *ProjectPolicy) {
+					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
+					licenser.EXPECT().RBAC().Times(1).Return(false)
+					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
+
+					orgRepo.EXPECT().
+						FetchOrganisationByID(gomock.Any(), "randomstring").
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
+
+					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
+
+					orgMemberRepo.EXPECT().
+						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
+						Return(&datastore.OrganisationMember{UID: "randomstring", Role: auth.Role{
+							Type:     auth.RoleAdmin,
+							Project:  "",
+							Endpoint: "",
+						}}, nil)
+				},
+			},
+			{
+				basetest: basetest{
+					name: "should_allow_superuser_org_member",
+					authCtx: &auth.AuthenticatedUser{
+						User: &datastore.User{UID: "user-1"},
+					},
+					assertion:     require.NoError,
+					expectedError: nil,
+				},
+				project: &datastore.Project{
+					UID:            "project-1",
+					OrganisationID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
 					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
-						FetchOrganisationByID(gomock.Any(), gomock.Any()).
-						Return(&datastore.Organisation{UID: "123"}, nil)
+						FetchOrganisationByID(gomock.Any(), "randomstring").
+						Return(&datastore.Organisation{UID: "randomstring"}, nil)
 
 					orgMemberRepo := pp.OrganisationMemberRepo.(*mocks.MockOrganisationMemberRepository)
 
 					orgMemberRepo.EXPECT().
-						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
-						Return(&datastore.OrganisationMember{UID: "randomstring"}, nil)
+						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
+						Return(&datastore.OrganisationMember{UID: "randomstring", Role: auth.Role{
+							Type:     auth.RoleSuperUser,
+							Project:  "",
+							Endpoint: "",
+						}}, nil)
 				},
 			},
 		},
@@ -117,7 +183,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					assertion:     require.Error,
 					expectedError: ErrNotAllowed,
 				},
-				organisation: &datastore.Project{
+				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
@@ -145,7 +211,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					assertion:     require.NoError,
 					expectedError: nil,
 				},
-				organisation: &datastore.Project{
+				project: &datastore.Project{
 					UID: "randomstring",
 				},
 				storeFn: func(pp *ProjectPolicy) {
@@ -180,6 +246,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					policy := &ProjectPolicy{
 						BasePolicy:             authz.NewBasePolicy(),
 						OrganisationRepo:       mocks.NewMockOrganisationRepository(ctrl),
+						Licenser:               mocks.NewMockLicenser(ctrl),
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
 
@@ -195,7 +262,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					_ = az.RegisterPolicy(policy)
 
 					// Act.
-					err := az.Authorize(ctx, "project.manage", tc.organisation)
+					err := az.Authorize(ctx, "project.manage", tc.project)
 
 					// Assert.
 					tc.assertion(t, err)
