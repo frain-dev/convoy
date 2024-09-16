@@ -28,7 +28,7 @@ func AddRetryCommand(a *cli.App) *cobra.Command {
 			}
 
 			if len(cfg.Redis.BuildDsn()) == 0 {
-				log.WithError(err).Fatalf("Queue type error: Command is available for redis queue only.")
+				log.WithError(err).Fatal("Queue type error: Command is available for redis queue only.")
 			}
 
 			statuses := []datastore.EventDeliveryStatus{datastore.EventDeliveryStatus(status)}

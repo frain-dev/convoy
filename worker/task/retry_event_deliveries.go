@@ -74,7 +74,7 @@ func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue qu
 		for {
 			deliveries, pagination, err := eventDeliveryRepo.LoadEventDeliveriesPaged(ctx, "", []string{}, eventId, "", []datastore.EventDeliveryStatus{status}, searchParams, pageable, "", "")
 			if err != nil {
-				log.WithError(err).Errorf("successfully fetched %d event deliveries", count)
+				log.WithError(err).Errorf("successfully fetched %d event deliveries but with error", count)
 				close(deliveryChan)
 				log.Info("closed delivery channel")
 				break
@@ -82,7 +82,7 @@ func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue qu
 
 			// stop when len(deliveries) is 0
 			if len(deliveries) == 0 {
-				log.Info("no deliveries received from db, exiting")
+				log.Warn("no deliveries received from db, exiting")
 				close(deliveryChan)
 				log.Info("closed delivery channel")
 				break
@@ -108,7 +108,7 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 		batch, ok := <-deliveryChan
 		if !ok {
 			// the channel has been closed and there are no more deliveries coming in
-			log.Infof("batch processor exiting")
+			log.Warn("batch processor exiting")
 			return
 		}
 

@@ -367,12 +367,10 @@ func statusLevel(status int) log.Level {
 		return log.WarnLevel
 	case status < 400:
 		return log.InfoLevel
-	case status >= 400 && status < 500:
+	case status < 500:
 		return log.WarnLevel
-	case status >= 500:
-		return log.ErrorLevel
 	default:
-		return log.InfoLevel
+		return log.ErrorLevel
 	}
 }
 
