@@ -55,13 +55,13 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 	// API Key Access.
 	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
 	if !ok {
+		return ErrNotAllowed
 	}
 
-	if apiKey.Role.Project == project.UID {
-		return nil
+	if apiKey.Role.Project != project.UID {
+		return ErrNotAllowed
 	}
-
-	return ErrNotAllowed
+	return nil
 }
 
 func (pp *ProjectPolicy) GetName() string {
