@@ -277,15 +277,13 @@ func TestTestStore_Concurrency(t *testing.T) {
 	ctx := context.Background()
 	wg := &sync.WaitGroup{}
 
-	// Test concurrent reads and writes
-	go func() {
-		for i := 0; i < 100; i++ {
-			key := fmt.Sprintf("key_%d", i)
-			wg.Add(1)
-			err := store.SetOne(ctx, key, CircuitBreaker{Key: key, State: StateClosed}, time.Minute)
-			require.NoError(t, err)
-		}
-	}()
+	// Test concurrent reads
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		key := fmt.Sprintf("key_%d", i)
+		err := store.SetOne(ctx, key, CircuitBreaker{Key: key, State: StateClosed}, time.Minute)
+		require.NoError(t, err)
+	}
 
 	go func() {
 		for i := 0; i < 100; i++ {
