@@ -60,7 +60,7 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 		}
 
 		if len(projects) == 0 {
-			log.Infof("no existing projects, retention policy job exiting")
+			log.Warn("no existing projects, retention policy job exiting")
 			return nil
 		}
 
