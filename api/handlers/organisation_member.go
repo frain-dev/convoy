@@ -18,7 +18,7 @@ import (
 func createOrganisationMemberService(h *Handler) *services.OrganisationMemberService {
 	orgMemberRepo := postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache)
 
-	return services.NewOrganisationMemberService(orgMemberRepo)
+	return services.NewOrganisationMemberService(orgMemberRepo, h.A.Licenser)
 }
 
 func (h *Handler) GetOrganisationMembers(w http.ResponseWriter, r *http.Request) {
