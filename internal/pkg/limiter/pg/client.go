@@ -51,7 +51,7 @@ func (p *SlidingWindowRateLimiter) takeToken(ctx context.Context, key string, ra
 	err = tx.Commit()
 	if err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			log.Infof("failed: %v, unable to rollback: %v", err, rollbackErr)
+			log.Errorf("failed: %v, unable to rollback: %v", err, rollbackErr)
 		}
 		return nil
 	}
@@ -65,7 +65,7 @@ func (p *SlidingWindowRateLimiter) takeToken(ctx context.Context, key string, ra
 
 func postgresErrorTransform(tx *sqlx.Tx, err error) error {
 	if rollbackErr := tx.Rollback(); rollbackErr != nil {
-		log.Infof("failed: %v, unable to rollback: %v", err, rollbackErr)
+		log.Errorf("failed: %v, unable to rollback: %v", err, rollbackErr)
 	}
 
 	var pgErr *pq.Error
