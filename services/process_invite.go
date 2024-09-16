@@ -88,7 +88,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: errMsg, Err: err}
 	}
 
-	_, err = NewOrganisationMemberService(pis.OrgMemberRepo).CreateOrganisationMember(ctx, org, user, &iv.Role)
+	_, err = NewOrganisationMemberService(pis.OrgMemberRepo, pis.Licenser).CreateOrganisationMember(ctx, org, user, &iv.Role)
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -15,13 +17,18 @@ import (
 
 type OrganisationMemberService struct {
 	orgMemberRepo datastore.OrganisationMemberRepository
+	licenser      license.Licenser
 }
 
-func NewOrganisationMemberService(orgMemberRepo datastore.OrganisationMemberRepository) *OrganisationMemberService {
-	return &OrganisationMemberService{orgMemberRepo: orgMemberRepo}
+func NewOrganisationMemberService(orgMemberRepo datastore.OrganisationMemberRepository, licenser license.Licenser) *OrganisationMemberService {
+	return &OrganisationMemberService{orgMemberRepo: orgMemberRepo, licenser: licenser}
 }
 
 func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Context, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
+	if !om.licenser.RBAC() {
+		role.Type = auth.RoleSuperUser
+	}
+
 	err := role.Validate("organisation member")
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member role update")
@@ -47,14 +54,19 @@ func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Contex
 }
 
 func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Context, organisationMember *datastore.OrganisationMember, role *auth.Role) (*datastore.OrganisationMember, error) {
-	err := role.Validate("organisation member")
+	organisationMember.UpdatedAt = time.Now()
+	organisationMember.Role = *role
+
+	if !om.licenser.RBAC() {
+		organisationMember.Role.Type = auth.RoleSuperUser
+	}
+
+	err := organisationMember.Role.Validate("organisation member")
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to validate organisation member role update")
 		return nil, util.NewServiceError(http.StatusBadRequest, err)
 	}
 
-	organisationMember.UpdatedAt = time.Now()
-	organisationMember.Role = *role
 	err = om.orgMemberRepo.UpdateOrganisationMember(ctx, organisationMember)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to to update organisation member")

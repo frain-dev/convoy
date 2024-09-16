@@ -8,6 +8,7 @@ import { TeamsService } from './teams.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { PrivateService } from '../../../private.service';
 import { TEAM } from 'src/app/models/organisation.model';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-teams',
@@ -55,8 +56,8 @@ export class TeamsComponent implements OnInit {
 	});
 	roles = [
 		{ name: 'Super User', uid: 'super_user' },
-		{ name: 'Admin', uid: 'admin' },
-		{ name: 'Member', uid: 'member' }
+		{ name: 'Admin', uid: 'admin' }
+		// { name: 'Member', uid: 'member' }
 	];
 	showUpdateMember = false;
 	userDetails = this.privateService.getUserProfile;
@@ -64,7 +65,7 @@ export class TeamsComponent implements OnInit {
 	private rbacService = inject(RbacService);
 	inviteLink!: string;
 
-	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService) {}
+	constructor(private generalService: GeneralService, private router: Router, private route: ActivatedRoute, private teamService: TeamsService, private formBuilder: FormBuilder, private privateService: PrivateService, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
