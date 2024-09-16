@@ -31,34 +31,33 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		return ErrNotAllowed
 	}
 
-	// API Access.
-
-	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
-	if ok {
-		// API Key
-		if apiKey.Role.Project != project.UID {
+	// Dashboard Access or Personal Access Token
+	if authCtx.User != nil {
+		user, ok := authCtx.User.(*datastore.User)
+		if !ok {
+			return ErrNotAllowed
+		}
+		member, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+		if err != nil {
 			return ErrNotAllowed
 		}
 
-		return nil
+		// to allow admin roles, RBAC must be enabled
+		adminAllowed := isAdmin(member) && pp.Licenser.RBAC()
+
+		if isSuperAdmin(member) || adminAllowed {
+			return nil
+		}
+
+		return ErrNotAllowed
 	}
 
-	// Dashboard Access or Personal Access Token
-
-	user, ok := authCtx.User.(*datastore.User)
+	// API Key Access.
+	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
 	if !ok {
-		return ErrNotAllowed
 	}
 
-	member, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
-	if err != nil {
-		return ErrNotAllowed
-	}
-
-	// to allow admin roles, RBAC must be enabled
-	adminAllowed := isAdmin(member) && pp.Licenser.RBAC()
-
-	if isSuperAdmin(member) || adminAllowed {
+	if apiKey.Role.Project == project.UID {
 		return nil
 	}
 
