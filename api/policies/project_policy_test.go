@@ -88,7 +88,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 				},
 				storeFn: func(pp *ProjectPolicy) {
 					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
-					licenser.EXPECT().RBAC().Times(1).Return(true)
+					licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().
@@ -121,7 +121,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 				},
 				storeFn: func(pp *ProjectPolicy) {
 					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
-					licenser.EXPECT().RBAC().Times(1).Return(false)
+					licenser.EXPECT().MultiPlayerMode().Times(1).Return(false)
 					orgRepo := pp.OrganisationRepo.(*mocks.MockOrganisationRepository)
 
 					orgRepo.EXPECT().

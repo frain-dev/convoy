@@ -58,7 +58,7 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 					Times(1).Return(nil)
 
 				l, _ := os.licenser.(*mocks.MockLicenser)
-				l.EXPECT().RBAC().Times(1).Return(true)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			want: &datastore.OrganisationMember{
 				OrganisationID: "1234",
@@ -89,7 +89,7 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 					Times(1).Return(nil)
 
 				l, _ := os.licenser.(*mocks.MockLicenser)
-				l.EXPECT().RBAC().Times(1).Return(false)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(false)
 			},
 			want: &datastore.OrganisationMember{
 				OrganisationID: "1234",
@@ -116,7 +116,7 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				l, _ := os.licenser.(*mocks.MockLicenser)
-				l.EXPECT().RBAC().Times(1).Return(true)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(true)
 
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				a.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).
@@ -206,7 +206,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					Times(1).Return(nil)
 
 				l, _ := os.licenser.(*mocks.MockLicenser)
-				l.EXPECT().RBAC().Times(1).Return(true)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -246,7 +246,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					Times(1).Return(nil)
 
 				l, _ := os.licenser.(*mocks.MockLicenser)
-				l.EXPECT().RBAC().Times(1).Return(false)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(false)
 			},
 			wantErr: false,
 		},
@@ -272,7 +272,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 			},
 			dbFn: func(os *OrganisationMemberService) {
 				l, _ := os.licenser.(*mocks.MockLicenser)
-				l.EXPECT().RBAC().Times(1).Return(true)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(true)
 
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				a.EXPECT().UpdateOrganisationMember(gomock.Any(), gomock.Any()).
