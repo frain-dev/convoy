@@ -105,8 +105,8 @@ export class CreateEndpointComponent implements OnInit {
 			this.configurations.push(
 				{ uid: 'owner_id', name: 'Owner ID ', show: false },
 				{ uid: 'rate_limit', name: 'Rate Limit ', show: false },
-				{ uid: 'alert_config', name: 'Notifications', show: false },
 				{ uid: 'auth', name: 'Auth', show: false },
+				{ uid: 'alert_config', name: 'Notifications', show: false },
 				{ uid: 'signature', name: 'Signature Format', show: false }
 			);
 

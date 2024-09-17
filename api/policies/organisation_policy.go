@@ -32,7 +32,7 @@ func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error
 		return ErrNotAllowed
 	}
 
-	if member.Role.Type != auth.RoleSuperUser {
+	if !isSuperAdmin(member) {
 		return ErrNotAllowed
 	}
 

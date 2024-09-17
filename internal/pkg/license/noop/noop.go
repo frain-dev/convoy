@@ -98,3 +98,7 @@ func (Licenser) AdvancedWebhookFiltering() bool {
 func (Licenser) PortalLinks() bool {
 	return true
 }
+
+func (Licenser) RBAC() bool {
+	return true
+}

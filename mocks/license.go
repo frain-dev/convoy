@@ -280,6 +280,20 @@ func (mr *MockLicenserMockRecorder) ProjectEnabled(projectID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProjectEnabled", reflect.TypeOf((*MockLicenser)(nil).ProjectEnabled), projectID)
 }
 
+// RBAC mocks base method.
+func (m *MockLicenser) RBAC() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RBAC")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// RBAC indicates an expected call of RBAC.
+func (mr *MockLicenserMockRecorder) RBAC() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RBAC", reflect.TypeOf((*MockLicenser)(nil).RBAC))
+}
+
 // RemoveEnabledProject mocks base method.
 func (m *MockLicenser) RemoveEnabledProject(projectID string) {
 	m.ctrl.T.Helper()

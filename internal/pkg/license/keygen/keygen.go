@@ -443,6 +443,14 @@ func (k *Licenser) AdvancedWebhookFiltering() bool {
 	return ok
 }
 
+func (k *Licenser) RBAC() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[RBAC]
+	return ok
+}
+
 func (k *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	// only these guys have dynamic limits for now
 	for f := range k.featureList {
