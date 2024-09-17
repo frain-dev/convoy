@@ -116,9 +116,28 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		err = circuitBreakerManager.CanExecute(ctx, endpoint.UID)
-		if err != nil {
-			return &CircuitBreakerError{Err: err}
+		if licenser.CircuitBreaking() {
+			breakerErr := circuitBreakerManager.CanExecute(ctx, endpoint.UID)
+			if breakerErr != nil {
+				return &CircuitBreakerError{Err: breakerErr}
+			}
+
+			// check the circuit breaker state so we can disable the endpoint
+			cb, breakerErr := circuitBreakerManager.GetCircuitBreaker(ctx, endpoint.UID)
+			if breakerErr != nil {
+				return &CircuitBreakerError{Err: breakerErr}
+			}
+
+			if cb != nil {
+				if cb.ConsecutiveFailures > circuitBreakerManager.GetConfig().ConsecutiveFailureThreshold {
+					endpointStatus := datastore.InactiveEndpointStatus
+
+					breakerErr = endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
+					if breakerErr != nil {
+						log.WithError(breakerErr).Error("failed to deactivate endpoint after failed retry")
+					}
+				}
+			}
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
@@ -225,7 +244,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
 		}
 
-		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 			endpointStatus := datastore.ActiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
@@ -241,7 +260,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 		}
 
-		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 			endpointStatus := datastore.InactiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
@@ -265,7 +284,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
 
-			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 				endpointStatus := datastore.InactiveEndpointStatus
 
 				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)

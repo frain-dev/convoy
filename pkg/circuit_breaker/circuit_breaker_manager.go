@@ -378,6 +378,10 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 	return nil
 }
 
+func (cb *CircuitBreakerManager) GetConfig() CircuitBreakerConfig {
+	return *cb.config
+}
+
 func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 	ticker := time.NewTicker(time.Duration(cb.config.SampleRate) * time.Second)
 	defer ticker.Stop()
