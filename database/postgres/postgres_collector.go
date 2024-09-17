@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -72,31 +73,31 @@ var (
 	eventQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_queue_total"),
 		"Total number of tasks in the event queue",
-		[]string{"project_id", "source", "status"}, nil,
+		[]string{"project", "source", "status"}, nil,
 	)
 
 	eventQueueBacklogDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_queue_backlog_seconds"),
 		"Number of seconds the oldest pending task is waiting in pending state to be processed.",
-		[]string{"project_id", "source"}, nil,
+		[]string{"project", "source"}, nil,
 	)
 
 	eventDeliveryQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_total"),
 		"Total number of tasks in the delivery queue per endpoint",
-		[]string{"project_id", "endpoint", "status"}, nil,
+		[]string{"project", "endpoint", "status"}, nil,
 	)
 
 	eventDeliveryQueueBacklogDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_backlog_seconds"),
 		"Number of seconds the oldest pending task is waiting in pending state to be processed per endpoint",
-		[]string{"project_id", "endpoint"}, nil,
+		[]string{"project", "endpoint"}, nil,
 	)
 
 	eventDeliveryAttemptsTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_attempts_total"),
 		"Total number of attempts per endpoint",
-		[]string{"project_id", "endpoint", "status", "http_status_code"}, nil,
+		[]string{"project", "endpoint", "status", "http_status_code"}, nil,
 	)
 )
 
@@ -124,7 +125,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	} else {
 		metrics, err = p.collectMetrics()
 		if err != nil {
-			log.Printf("Failed to collect metrics data: %v", err)
+			log.Errorf("Failed to collect metrics data: %v", err)
 			return
 		}
 		cachedMetrics = metrics
@@ -135,7 +136,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventQueueTotalDesc,
 			prometheus.GaugeValue,
 			float64(metric.Total),
-			metric.ProjectID,
+			fmt.Sprintf("project_%s", metric.ProjectID),
 			metric.SourceId,
 			"success", // already in db
 		)
@@ -146,7 +147,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventQueueBacklogDesc,
 			prometheus.GaugeValue,
 			metric.AgeSeconds,
-			metric.ProjectID,
+			fmt.Sprintf("project_%s", metric.ProjectID),
 			metric.SourceId,
 		)
 	}
@@ -156,8 +157,8 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventDeliveryQueueTotalDesc,
 			prometheus.GaugeValue,
 			float64(metric.Total),
-			metric.ProjectID,
-			metric.EndpointId,
+			fmt.Sprintf("project_%s", metric.ProjectID),
+			fmt.Sprintf("endpoint_%s", metric.EndpointId),
 			strings.ToLower(metric.Status),
 		)
 	}
@@ -167,8 +168,8 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventDeliveryQueueBacklogDesc,
 			prometheus.GaugeValue,
 			metric.AgeSeconds,
-			metric.ProjectID,
-			metric.EndpointId,
+			fmt.Sprintf("project_%s", metric.ProjectID),
+			fmt.Sprintf("endpoint_%s", metric.EndpointId),
 		)
 	}
 
@@ -177,8 +178,8 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventDeliveryAttemptsTotalDesc,
 			prometheus.GaugeValue,
 			float64(metric.Total),
-			metric.ProjectID,
-			metric.EndpointId,
+			fmt.Sprintf("project_%s", metric.ProjectID),
+			fmt.Sprintf("endpoint_%s", metric.EndpointId),
 			strings.ToLower(metric.Status),
 			metric.StatusCode,
 		)
@@ -212,14 +213,14 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
     select ed.project_id, coalesce(source_id, 'http') as source_id,
            EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
     from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
-    where status = 'Processing'
+    where ed.status = 'Processing'
     group by ed.project_id, source_id limit 1000 --samples
     )
     select * from a1
     union all
     select ed.project_id, coalesce(source_id, 'http'), 0 as age_seconds
     from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
-    where status = 'Success' and source_id not in (select source_id from a1)
+    where ed.status = 'Success' and source_id not in (select source_id from a1)
     group by ed.project_id, source_id
     limit 1000 -- samples`
 	rows1, err := p.GetDB().Queryx(backlogQM)
@@ -259,14 +260,14 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
     select ed.project_id, coalesce(source_id, 'http') as source_id, endpoint_id,
            EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
     from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
-    where status = 'Processing'
+    where ed.status = 'Processing'
     group by ed.project_id, source_id, endpoint_id limit 1000 --samples
     )
     select * from a1
     union all
     select ed.project_id, coalesce(source_id, 'http'), endpoint_id, 0 as age_seconds
     from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
-    where status = 'Success' and endpoint_id not in (select endpoint_id from a1)
+    where ed.status = 'Success' and endpoint_id not in (select endpoint_id from a1)
     group by ed.project_id, source_id, endpoint_id
     limit 1000 -- samples`
 	rows3, err := p.GetDB().Queryx(backlogEQM)
