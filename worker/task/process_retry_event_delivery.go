@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"time"
 
@@ -38,9 +40,9 @@ var (
 	defaultEventDelay        = 120 * time.Second
 )
 
-func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
+func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser,
 	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
-	attemptsRepo datastore.DeliveryAttemptsRepository, manager *circuit_breaker.CircuitBreakerManager,
+	attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data EventDelivery
@@ -100,9 +102,28 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
-		err = manager.CanExecute(ctx, endpoint.UID)
-		if err != nil {
-			return &DeliveryError{Err: err}
+		if featureFlag.CanAccessFeature(fflag.CircuitBreaker) && licenser.CircuitBreaking() {
+			breakerErr := circuitBreakerManager.CanExecute(ctx, endpoint.UID)
+			if breakerErr != nil {
+				return &CircuitBreakerError{Err: breakerErr}
+			}
+
+			// check the circuit breaker state so we can disable the endpoint
+			cb, breakerErr := circuitBreakerManager.GetCircuitBreaker(ctx, endpoint.UID)
+			if breakerErr != nil {
+				return &CircuitBreakerError{Err: breakerErr}
+			}
+
+			if cb != nil {
+				if cb.ConsecutiveFailures > circuitBreakerManager.GetConfig().ConsecutiveFailureThreshold {
+					endpointStatus := datastore.InactiveEndpointStatus
+
+					breakerErr = endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
+					if breakerErr != nil {
+						log.WithError(breakerErr).Error("failed to deactivate endpoint after failed retry")
+					}
+				}
+			}
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)

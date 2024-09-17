@@ -121,7 +121,7 @@ func AddDomainCommand(a *cli.App) *cobra.Command {
 	}
 
 	cmd.Flags().Uint32Var(&domainPort, "domain-port", 5009, "Domain server port")
-	cmd.Flags().StringVar(&logLevel, "log-level", "error", "Domain server log level")
+	cmd.Flags().StringVar(&logLevel, "log-level", "", "Domain server log level")
 	return cmd
 }
 

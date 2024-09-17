@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"time"
@@ -114,7 +113,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
 	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 0, "Ingest port")
 
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
+	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
 	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")
@@ -122,7 +121,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func startServerComponent(ctx context.Context, a *cli.App) error {
+func startServerComponent(_ context.Context, a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
@@ -139,10 +138,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	flag, err := fflag.NewFFlag(&cfg)
-	if err != nil {
-		a.Logger.WithError(err).Fatal("failed to create fflag controller")
-	}
+	flag := fflag.NewFFlag(&cfg)
 
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("api server")
@@ -172,7 +168,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 
 	srv.SetHandler(evHandler.BuildDataPlaneRoutes())
 
-	fmt.Printf("Started convoy server in %s\n", time.Since(start))
+	log.Info("Started convoy server in %s\n", time.Since(start))
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
@@ -181,7 +177,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 		return nil
 	}
 
-	fmt.Printf("Starting Convoy Agent on port %v\n", cfg.Server.HTTP.AgentPort)
+	log.Println("Starting Convoy Agent on port %v\n", cfg.Server.HTTP.AgentPort)
 
 	go func() {
 		srv.Listen()

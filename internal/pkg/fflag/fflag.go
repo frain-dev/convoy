@@ -9,7 +9,9 @@ import (
 	"text/tabwriter"
 )
 
-var ErrFeatureNotEnabled = errors.New("this feature is not enabled")
+var ErrCircuitBreakerNotEnabled = errors.New("[feature flag] circuit breaker is not enabled")
+var ErrFullTextSearchNotEnabled = errors.New("[feature flag] full text search is not enabled")
+var ErrPrometheusMetricsNotEnabled = errors.New("[feature flag] prometheus metrics is not enabled")
 
 type (
 	FeatureFlagKey string
@@ -18,6 +20,7 @@ type (
 const (
 	Prometheus     FeatureFlagKey = "prometheus"
 	FullTextSearch FeatureFlagKey = "full-text-search"
+	CircuitBreaker FeatureFlagKey = "circuit-breaker"
 )
 
 type (
@@ -32,25 +35,30 @@ const (
 var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
 	Prometheus:     disabled,
 	FullTextSearch: disabled,
+	CircuitBreaker: disabled,
 }
 
 type FFlag struct {
 	Features map[FeatureFlagKey]FeatureFlagState
 }
 
-func NewFFlag(c *config.Configuration) (*FFlag, error) {
+func NewFFlag(c *config.Configuration) *FFlag {
 	f := &FFlag{
 		Features: clone(DefaultFeaturesState),
 	}
+
 	for _, flag := range c.EnableFeatureFlag {
 		switch flag {
 		case string(Prometheus):
 			f.Features[Prometheus] = enabled
 		case string(FullTextSearch):
 			f.Features[FullTextSearch] = enabled
+		case string(CircuitBreaker):
+			f.Features[CircuitBreaker] = enabled
 		}
 	}
-	return f, nil
+
+	return f
 }
 
 func clone(src map[FeatureFlagKey]FeatureFlagState) map[FeatureFlagKey]FeatureFlagState {

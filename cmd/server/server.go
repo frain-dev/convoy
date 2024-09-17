@@ -106,10 +106,7 @@ func startConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	flag, err := fflag.NewFFlag(&cfg)
-	if err != nil {
-		a.Logger.WithError(err).Fatal("failed to create fflag controller")
-	}
+	flag := fflag.NewFFlag(&cfg)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")

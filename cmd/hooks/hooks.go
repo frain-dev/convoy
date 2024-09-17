@@ -560,32 +560,34 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
-	flag, err := fflag2.NewFFlag(c)
-	if err != nil {
-		return nil, err
-	}
+	flag := fflag2.NewFFlag(c)
 	c.Metrics = config.MetricsConfiguration{
 		IsEnabled: false,
 	}
+
 	if flag.CanAccessFeature(fflag2.Prometheus) {
 		metricsBackend, err := cmd.Flags().GetString("metrics-backend")
 		if err != nil {
 			return nil, err
 		}
+
 		if !config.IsStringEmpty(metricsBackend) {
 			c.Metrics = config.MetricsConfiguration{
 				IsEnabled: false,
 				Backend:   config.MetricsBackend(metricsBackend),
 			}
+
 			switch c.Metrics.Backend {
 			case config.PrometheusMetricsProvider:
 				sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
 				if err != nil {
 					return nil, err
 				}
+
 				if sampleTime < 1 {
 					return nil, errors.New("metrics-prometheus-sample-time must be non-zero")
 				}
+
 				c.Metrics = config.MetricsConfiguration{
 					IsEnabled: true,
 					Backend:   config.MetricsBackend(metricsBackend),
@@ -595,14 +597,17 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 				}
 			}
 		} else {
-			log.Warn("No metrics-backend specified")
+			log.Warn("metrics backend not specified")
 		}
+	} else {
+		log.Info(fflag2.ErrPrometheusMetricsNotEnabled)
 	}
 
 	maxRetrySeconds, err := cmd.Flags().GetUint64("max-retry-seconds")
 	if err != nil {
 		return nil, err
 	}
+
 	c.MaxRetrySeconds = maxRetrySeconds
 
 	return c, nil

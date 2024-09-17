@@ -3,13 +3,13 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"net/http"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
@@ -246,15 +246,22 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	circuitBreakerManager, err := cb.NewCircuitBreakerManager(
-		cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
-		cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
-		cb.ClockOption(clock.NewRealClock()))
-	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to create circuit breaker manager")
-	}
+	featureFlag := fflag.NewFFlag(&cfg)
+	var circuitBreakerManager *cb.CircuitBreakerManager
 
-	go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
+	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) {
+		circuitBreakerManager, err = cb.NewCircuitBreakerManager(
+			cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
+			cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
+			cb.ClockOption(clock.NewRealClock()))
+		if err != nil {
+			a.Logger.WithError(err).Fatal("Failed to create circuit breaker manager")
+		}
+
+		go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
+	} else {
+		a.Logger.Warn(fflag.ErrCircuitBreakerNotEnabled)
+	}
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
@@ -266,6 +273,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		dispatcher,
 		attemptRepo,
 		circuitBreakerManager,
+		featureFlag,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
@@ -280,12 +288,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
+		a.Licenser,
 		projectRepo,
 		a.Queue,
 		rateLimiter,
 		dispatcher,
 		attemptRepo,
 		circuitBreakerManager,
+		featureFlag,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
@@ -324,11 +334,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, rd), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-	fflag, err := fflag2.NewFFlag(&cfg)
-	if err != nil {
-		return nil
-	}
-	if fflag.CanAccessFeature(fflag2.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
+	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
 		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
 		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
 	}
@@ -341,7 +347,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	// start worker
 	consumer.Start()
-	fmt.Println("Starting Convoy Consumer Pool")
+	lo.Println("Starting Convoy Consumer Pool")
 
 	return ctx.Err()
 }

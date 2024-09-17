@@ -198,11 +198,8 @@ func TestNewFFlag(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewFFlag(tt.args.c)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewFFlag() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := NewFFlag(tt.args.c)
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewFFlag() got = %v, want %v", got, tt.want)
 			}
