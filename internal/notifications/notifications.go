@@ -37,7 +37,8 @@ type SlackNotification struct {
 
 // NOTIFICATIONS
 
-func SendEndpointNotification(ctx context.Context,
+func SendEndpointNotification(
+	_ context.Context,
 	endpoint *datastore.Endpoint,
 	project *datastore.Project,
 	status datastore.EndpointStatus,

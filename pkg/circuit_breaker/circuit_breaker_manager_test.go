@@ -52,12 +52,12 @@ func TestCircuitBreakerManager(t *testing.T) {
 
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.1,
+		BreakerTimeout:              30,
+		FailureThreshold:            10,
 		FailureCount:                3,
 		SuccessThreshold:            1,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10},
+		NotificationThresholds:      [3]uint64{10},
 		ConsecutiveFailureThreshold: 10,
 	}
 
@@ -81,7 +81,7 @@ func TestCircuitBreakerManager(t *testing.T) {
 		testClock.AdvanceTime(time.Minute)
 	}
 
-	breaker, innerErr := b.GetCircuitBreaker(ctx, endpointId)
+	breaker, innerErr := b.GetCircuitBreakerWithError(ctx, endpointId)
 	require.NoError(t, innerErr)
 
 	require.Equal(t, breaker.State, StateClosed)
@@ -105,12 +105,12 @@ func TestCircuitBreakerManager_AddNewBreakerMidway(t *testing.T) {
 
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.1,
+		BreakerTimeout:              30,
+		FailureThreshold:            10,
 		FailureCount:                3,
 		SuccessThreshold:            1,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10},
+		NotificationThresholds:      [3]uint64{10},
 		ConsecutiveFailureThreshold: 10,
 	}
 	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))
@@ -160,12 +160,12 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                3,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10},
+		NotificationThresholds:      [3]uint64{10},
 		ConsecutiveFailureThreshold: 10,
 	}
 	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))
@@ -196,14 +196,14 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 		err = b.sampleStore(ctx, result)
 		require.NoError(t, err)
 
-		breaker, innerErr := b.GetCircuitBreaker(ctx, endpointId)
+		breaker, innerErr := b.GetCircuitBreakerWithError(ctx, endpointId)
 		require.NoError(t, innerErr)
 
 		require.Equal(t, expectedStates[i], breaker.State, "Iteration %d: expected state %v, got %v", i, expectedStates[i], breaker.State)
 
 		if i == 2 {
 			// Advance time to trigger the transition to half-open
-			testClock.AdvanceTime(time.Duration(c.ErrorTimeout+1) * time.Second)
+			testClock.AdvanceTime(time.Duration(c.BreakerTimeout+1) * time.Second)
 		} else {
 			testClock.AdvanceTime(time.Second * 5) // Advance time by 5 seconds for other iterations
 		}
@@ -230,12 +230,12 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                3,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10},
+		NotificationThresholds:      [3]uint64{10},
 		ConsecutiveFailureThreshold: 3,
 	}
 	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))
@@ -254,10 +254,10 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 		err = b.sampleStore(ctx, result)
 		require.NoError(t, err)
 
-		testClock.AdvanceTime(time.Duration(c.ErrorTimeout+1) * time.Second)
+		testClock.AdvanceTime(time.Duration(c.BreakerTimeout+1) * time.Second)
 	}
 
-	breaker, err := b.GetCircuitBreaker(ctx, endpointId)
+	breaker, err := b.GetCircuitBreakerWithError(ctx, endpointId)
 	require.NoError(t, err)
 	require.Equal(t, StateOpen, breaker.State)
 	require.Equal(t, uint64(3), breaker.ConsecutiveFailures)
@@ -283,12 +283,12 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                3,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10},
+		NotificationThresholds:      [3]uint64{10},
 		ConsecutiveFailureThreshold: 10,
 	}
 	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))
@@ -308,18 +308,18 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 		err = b.sampleStore(ctx, results)
 		require.NoError(t, err)
 
-		testClock.AdvanceTime(time.Duration(c.ErrorTimeout+1) * time.Second)
+		testClock.AdvanceTime(time.Duration(c.BreakerTimeout+1) * time.Second)
 	}
 
-	breaker1, err := b.GetCircuitBreaker(ctx, endpoint1)
+	breaker1, err := b.GetCircuitBreakerWithError(ctx, endpoint1)
 	require.NoError(t, err)
 	require.Equal(t, StateOpen, breaker1.State)
 
-	breaker2, err := b.GetCircuitBreaker(ctx, endpoint2)
+	breaker2, err := b.GetCircuitBreakerWithError(ctx, endpoint2)
 	require.NoError(t, err)
 	require.Equal(t, StateClosed, breaker2.State)
 
-	breaker3, err := b.GetCircuitBreaker(ctx, endpoint3)
+	breaker3, err := b.GetCircuitBreakerWithError(ctx, endpoint3)
 	require.NoError(t, err)
 	require.Equal(t, StateClosed, breaker3.State)
 }
@@ -329,12 +329,12 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -386,12 +386,12 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 func TestCircuitBreakerManager_GetCircuitBreakerError(t *testing.T) {
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -427,12 +427,12 @@ func TestCircuitBreakerManager_SampleStore(t *testing.T) {
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -453,14 +453,14 @@ func TestCircuitBreakerManager_SampleStore(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check if circuit breakers were created and updated correctly
-	cb1, err := manager.GetCircuitBreaker(ctx, "test1")
+	cb1, err := manager.GetCircuitBreakerWithError(ctx, "test1")
 	require.NoError(t, err)
 	require.Equal(t, StateClosed, cb1.State)
 	require.Equal(t, uint64(10), cb1.Requests)
 	require.Equal(t, uint64(3), cb1.TotalFailures)
 	require.Equal(t, uint64(7), cb1.TotalSuccesses)
 
-	cb2, err := manager.GetCircuitBreaker(ctx, "test2")
+	cb2, err := manager.GetCircuitBreakerWithError(ctx, "test2")
 	require.NoError(t, err)
 	require.Equal(t, StateOpen, cb2.State)
 	require.Equal(t, uint64(10), cb2.Requests)
@@ -473,12 +473,12 @@ func TestCircuitBreakerManager_UpdateCircuitBreakers(t *testing.T) {
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -511,14 +511,14 @@ func TestCircuitBreakerManager_UpdateCircuitBreakers(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check if circuit breakers were updated in the store
-	cb1, err := manager.GetCircuitBreaker(ctx, "test1")
+	cb1, err := manager.GetCircuitBreakerWithError(ctx, "test1")
 	require.NoError(t, err)
 	require.Equal(t, StateClosed, cb1.State)
 	require.Equal(t, uint64(10), cb1.Requests)
 	require.Equal(t, uint64(3), cb1.TotalFailures)
 	require.Equal(t, uint64(7), cb1.TotalSuccesses)
 
-	cb2, err := manager.GetCircuitBreaker(ctx, "test2")
+	cb2, err := manager.GetCircuitBreakerWithError(ctx, "test2")
 	require.NoError(t, err)
 	require.Equal(t, StateOpen, cb2.State)
 	require.Equal(t, uint64(10), cb2.Requests)
@@ -531,12 +531,12 @@ func TestCircuitBreakerManager_LoadCircuitBreakers(t *testing.T) {
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -588,12 +588,12 @@ func TestCircuitBreakerManager_CanExecute(t *testing.T) {
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -667,12 +667,12 @@ func TestCircuitBreakerManager_GetCircuitBreaker(t *testing.T) {
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -686,7 +686,7 @@ func TestCircuitBreakerManager_GetCircuitBreaker(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Circuit Breaker Not Found", func(t *testing.T) {
-		_, err := manager.GetCircuitBreaker(ctx, "non_existent")
+		_, err := manager.GetCircuitBreakerWithError(ctx, "non_existent")
 		require.Equal(t, ErrCircuitBreakerNotFound, err)
 	})
 
@@ -701,7 +701,7 @@ func TestCircuitBreakerManager_GetCircuitBreaker(t *testing.T) {
 		err := manager.store.SetOne(ctx, "breaker:test_cb", cb, time.Minute)
 		require.NoError(t, err)
 
-		retrievedCB, err := manager.GetCircuitBreaker(ctx, "test_cb")
+		retrievedCB, err := manager.GetCircuitBreakerWithError(ctx, "test_cb")
 		require.NoError(t, err)
 		require.Equal(t, cb.Key, retrievedCB.Key)
 		require.Equal(t, cb.State, retrievedCB.State)
@@ -716,12 +716,12 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -746,14 +746,14 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 		require.NoError(t, err)
 
 		// Check if circuit breakers were created and updated correctly
-		cb1, err := manager.GetCircuitBreaker(ctx, "test1")
+		cb1, err := manager.GetCircuitBreakerWithError(ctx, "test1")
 		require.NoError(t, err)
 		require.Equal(t, StateClosed, cb1.State)
 		require.Equal(t, uint64(10), cb1.Requests)
 		require.Equal(t, uint64(3), cb1.TotalFailures)
 		require.Equal(t, uint64(7), cb1.TotalSuccesses)
 
-		cb2, err := manager.GetCircuitBreaker(ctx, "test2")
+		cb2, err := manager.GetCircuitBreakerWithError(ctx, "test2")
 		require.NoError(t, err)
 		require.Equal(t, StateOpen, cb2.State)
 		require.Equal(t, uint64(10), cb2.Requests)
@@ -787,12 +787,12 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
-		ErrorTimeout:                30,
-		FailureThreshold:            0.5,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
 		FailureCount:                5,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{10, 20, 30},
+		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
 	}
 
@@ -820,7 +820,7 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 	time.Sleep(2500 * time.Millisecond)
 
 	// Check if the circuit breaker was updated
-	cb, err := manager.GetCircuitBreaker(ctx, "test")
+	cb, err := manager.GetCircuitBreakerWithError(ctx, "test")
 	require.NoError(t, err)
 	require.NotNil(t, cb)
 	require.Equal(t, uint64(10), cb.Requests)

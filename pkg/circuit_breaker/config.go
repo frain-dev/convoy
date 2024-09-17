@@ -11,13 +11,13 @@ type CircuitBreakerConfig struct {
 	// is polled to determine the number successful and failed requests
 	SampleRate uint64 `json:"sample_rate"`
 
-	// ErrorTimeout is the time (in seconds) after which a circuit breaker goes
+	// BreakerTimeout is the time (in seconds) after which a circuit breaker goes
 	// into the half-open state from the open state
-	ErrorTimeout uint64 `json:"error_timeout"`
+	BreakerTimeout uint64 `json:"breaker_timeout"`
 
 	// FailureThreshold is the % of failed requests in the observability window
 	// after which the breaker will go into the open state
-	FailureThreshold float64 `json:"failure_threshold"`
+	FailureThreshold uint64 `json:"failure_threshold"`
 
 	// FailureCount total number of failed requests in the observability window
 	FailureCount uint64 `json:"failure_count"`
@@ -31,7 +31,7 @@ type CircuitBreakerConfig struct {
 	ObservabilityWindow uint64 `json:"observability_window"`
 
 	// NotificationThresholds These are the error counts after which we will send out notifications.
-	NotificationThresholds []uint64 `json:"notification_thresholds"`
+	NotificationThresholds [3]uint64 `json:"notification_thresholds"`
 
 	// ConsecutiveFailureThreshold determines when we ultimately disable the endpoint.
 	// E.g., after 10 consecutive transitions from half-open → open we should disable it.
@@ -46,13 +46,13 @@ func (c *CircuitBreakerConfig) Validate() error {
 		errs.WriteString("; ")
 	}
 
-	if c.ErrorTimeout == 0 {
-		errs.WriteString("ErrorTimeout must be greater than 0")
+	if c.BreakerTimeout == 0 {
+		errs.WriteString("BreakerTimeout must be greater than 0")
 		errs.WriteString("; ")
 	}
 
-	if c.FailureThreshold < 0 || c.FailureThreshold > 1 {
-		errs.WriteString("FailureThreshold must be between 0 and 1")
+	if c.FailureThreshold < 0 || c.FailureThreshold > 100 {
+		errs.WriteString("FailureThreshold must be between 0 and 100")
 		errs.WriteString("; ")
 	}
 
@@ -77,22 +77,22 @@ func (c *CircuitBreakerConfig) Validate() error {
 		errs.WriteString("; ")
 	}
 
-	if len(c.NotificationThresholds) == 0 {
-		errs.WriteString("NotificationThresholds must contain at least one threshold")
-		errs.WriteString("; ")
-	} else {
-		for i := 0; i < len(c.NotificationThresholds); i++ {
-			if c.NotificationThresholds[i] == 0 {
-				errs.WriteString(fmt.Sprintf("Notification thresholds at index [%d] = %d must be greater than 0", i, c.NotificationThresholds[i]))
-				errs.WriteString("; ")
-			}
+	for i := 0; i < len(c.NotificationThresholds); i++ {
+		if c.NotificationThresholds[i] == 0 {
+			errs.WriteString(fmt.Sprintf("Notification threshold at index [%d] = %d must be greater than 0", i, c.NotificationThresholds[i]))
+			errs.WriteString("; ")
 		}
 
-		for i := 0; i < len(c.NotificationThresholds)-1; i++ {
-			if c.NotificationThresholds[i] >= c.NotificationThresholds[i+1] {
-				errs.WriteString("NotificationThresholds should be in ascending order")
-				errs.WriteString("; ")
-			}
+		if c.NotificationThresholds[i] > c.FailureThreshold {
+			errs.WriteString(fmt.Sprintf("Notification threshold at index [%d] = %d must be less than the failure threshold: %d", i, c.NotificationThresholds[i], c.FailureThreshold))
+			errs.WriteString("; ")
+		}
+	}
+
+	for i := 0; i < len(c.NotificationThresholds)-1; i++ {
+		if c.NotificationThresholds[i] >= c.NotificationThresholds[i+1] {
+			errs.WriteString("NotificationThresholds should be in ascending order")
+			errs.WriteString("; ")
 		}
 	}
 

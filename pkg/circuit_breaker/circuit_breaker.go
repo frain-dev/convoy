@@ -7,14 +7,22 @@ import (
 
 // CircuitBreaker represents a circuit breaker
 type CircuitBreaker struct {
-	Key                 string    `json:"key"`
-	State               State     `json:"state"`
-	Requests            uint64    `json:"requests"`
-	FailureRate         float64   `json:"failure_rate"`
-	WillResetAt         time.Time `json:"will_reset_at"`
-	TotalFailures       uint64    `json:"total_failures"`
-	TotalSuccesses      uint64    `json:"total_successes"`
-	ConsecutiveFailures uint64    `json:"consecutive_failures"`
+	// Circuit breaker key
+	Key string `json:"key"`
+	// Circuit breaker state
+	State State `json:"state"`
+	// Number of requests in the observability window
+	Requests uint64 `json:"requests"`
+	// Percentage of failures in the observability window
+	FailureRate float64 `json:"failure_rate"`
+	// Time after which the circuit breaker will reset
+	WillResetAt time.Time `json:"will_reset_at"`
+	// Number of failed requests in the observability window
+	TotalFailures uint64 `json:"total_failures"`
+	// Number of successful requests in the observability window
+	TotalSuccesses uint64 `json:"total_successes"`
+	// Number of consecutive circuit breaker trips
+	ConsecutiveFailures uint64 `json:"consecutive_failures"`
 }
 
 func (b *CircuitBreaker) String() (s string, err error) {

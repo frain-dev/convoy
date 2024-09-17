@@ -451,7 +451,7 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 		CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
 			SampleRate:                  2,
 			ErrorTimeout:                30,
-			FailureThreshold:            0.1,
+			FailureThreshold:            10,
 			FailureCount:                3,
 			SuccessThreshold:            1,
 			ObservabilityWindow:         5,

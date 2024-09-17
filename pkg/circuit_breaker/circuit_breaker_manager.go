@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+// todo(raymond): add to feature flags
+// todo(raymond): notification thresholds are percentages
+// todo(raymond): metrics should contain error rate
+// todo(raymond): use a guage for failure rate metrics
+
 const prefix = "breaker:"
 const mutexKey = "convoy:circuit_breaker:mutex"
 
@@ -199,13 +204,14 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 		if breaker.Requests == 0 {
 			breaker.FailureRate = 0
 		} else {
-			breaker.FailureRate = float64(breaker.TotalFailures) / float64(breaker.Requests)
+			breaker.FailureRate = float64(breaker.TotalFailures) / float64(breaker.Requests) * 100
 		}
 
 		if breaker.State == StateHalfOpen && breaker.TotalSuccesses >= cb.config.SuccessThreshold {
 			breaker.resetCircuitBreaker()
-		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && (breaker.FailureRate >= cb.config.FailureThreshold || breaker.TotalFailures >= cb.config.FailureCount) {
-			breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.ErrorTimeout) * time.Second))
+		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) &&
+			(breaker.FailureRate >= float64(cb.config.FailureThreshold) || breaker.TotalFailures >= cb.config.FailureCount) {
+			breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
 		}
 
 		if breaker.State == StateOpen && cb.clock.Now().After(breaker.WillResetAt) {
@@ -282,9 +288,9 @@ func (cb *CircuitBreakerManager) getCircuitBreakerError(b CircuitBreaker) error 
 
 // CanExecute checks if the circuit breaker for a key will return an error for the current state.
 // It will not return an error if it is in the closed state or half-open state when the failure
-// threshold has not been reached, it will fail-open if the circuit breaker is not found
+// threshold has not been reached, it will also fail-open if the circuit breaker is not found.
 func (cb *CircuitBreakerManager) CanExecute(ctx context.Context, key string) error {
-	b, err := cb.getCircuitBreaker(ctx, key)
+	b, err := cb.GetCircuitBreaker(ctx, key)
 	if err != nil {
 		return err
 	}
@@ -301,9 +307,9 @@ func (cb *CircuitBreakerManager) CanExecute(ctx context.Context, key string) err
 	return nil
 }
 
-// getCircuitBreaker is used to get fetch the circuit breaker state,
+// GetCircuitBreaker is used to get fetch the circuit breaker state,
 // it fails open if the circuit breaker for that key is not found
-func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
+func (cb *CircuitBreakerManager) GetCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -327,9 +333,9 @@ func (cb *CircuitBreakerManager) getCircuitBreaker(ctx context.Context, key stri
 	return c, nil
 }
 
-// GetCircuitBreaker is used to get fetch the circuit breaker state,
+// GetCircuitBreakerWithError is used to get fetch the circuit breaker state,
 // it returns ErrCircuitBreakerNotFound when a circuit breaker for the key is not found
-func (cb *CircuitBreakerManager) GetCircuitBreaker(ctx context.Context, key string) (c *CircuitBreaker, err error) {
+func (cb *CircuitBreakerManager) GetCircuitBreakerWithError(ctx context.Context, key string) (c *CircuitBreaker, err error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

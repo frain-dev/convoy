@@ -77,11 +77,11 @@ var DefaultConfiguration = Configuration{
 	CircuitBreaker: CircuitBreakerConfiguration{
 		SampleRate:                  30,
 		ErrorTimeout:                30,
-		FailureThreshold:            0.1,
+		FailureThreshold:            70,
 		FailureCount:                10,
 		SuccessThreshold:            5,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      []uint64{5, 10},
+		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	},
 	Auth: AuthConfiguration{
@@ -272,14 +272,14 @@ type RetentionPolicyConfiguration struct {
 }
 
 type CircuitBreakerConfiguration struct {
-	SampleRate                  uint64   `json:"sample_rate" envconfig:"CONVOY_CIRCUIT_BREAKER_SAMPLE_RATE"`
-	FailureCount                uint64   `json:"failure_count" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_COUNT"`
-	ErrorTimeout                uint64   `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
-	FailureThreshold            float64  `json:"failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD"`
-	SuccessThreshold            uint64   `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
-	ObservabilityWindow         uint64   `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
-	NotificationThresholds      []uint64 `json:"notification_thresholds" envconfig:"CONVOY_CIRCUIT_BREAKER_NOTIFICATION_THRESHOLDS"`
-	ConsecutiveFailureThreshold uint64   `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
+	SampleRate                  uint64    `json:"sample_rate" envconfig:"CONVOY_CIRCUIT_BREAKER_SAMPLE_RATE"`
+	FailureCount                uint64    `json:"failure_count" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_COUNT"`
+	ErrorTimeout                uint64    `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
+	FailureThreshold            uint64    `json:"failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD"`
+	SuccessThreshold            uint64    `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
+	ObservabilityWindow         uint64    `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
+	NotificationThresholds      [3]uint64 `json:"notification_thresholds" envconfig:"CONVOY_CIRCUIT_BREAKER_NOTIFICATION_THRESHOLDS"`
+	ConsecutiveFailureThreshold uint64    `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
 }
 
 type AnalyticsConfiguration struct {

@@ -322,11 +322,11 @@ var (
 	DefaultCircuitBreakerConfiguration = CircuitBreakerConfig{
 		SampleRate:                  30,
 		ErrorTimeout:                30,
-		FailureThreshold:            0.1,
+		FailureThreshold:            70,
 		FailureCount:                10,
 		SuccessThreshold:            5,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      pq.Int64Array{5, 10},
+		NotificationThresholds:      pq.Int64Array{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
 )
@@ -1345,14 +1345,14 @@ func (c *Configuration) GetCircuitBreakerConfig() CircuitBreakerConfig {
 }
 
 func (c *Configuration) ToCircuitBreakerConfig() *circuit_breaker.CircuitBreakerConfig {
-	notificationThresholds := make([]uint64, len(c.CircuitBreakerConfig.NotificationThresholds))
+	notificationThresholds := [3]uint64{}
 	for i := range c.CircuitBreakerConfig.NotificationThresholds {
 		notificationThresholds[i] = uint64(c.CircuitBreakerConfig.NotificationThresholds[i])
 	}
 
 	return &circuit_breaker.CircuitBreakerConfig{
 		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
-		ErrorTimeout:                c.CircuitBreakerConfig.ErrorTimeout,
+		BreakerTimeout:              c.CircuitBreakerConfig.ErrorTimeout,
 		FailureThreshold:            c.CircuitBreakerConfig.FailureThreshold,
 		FailureCount:                c.CircuitBreakerConfig.FailureCount,
 		SuccessThreshold:            c.CircuitBreakerConfig.SuccessThreshold,
@@ -1392,7 +1392,7 @@ type OnPremStorage struct {
 type CircuitBreakerConfig struct {
 	SampleRate                  uint64        `json:"sample_rate" db:"sample_rate"`
 	ErrorTimeout                uint64        `json:"error_timeout" db:"error_timeout"`
-	FailureThreshold            float64       `json:"failure_threshold" db:"failure_threshold"`
+	FailureThreshold            uint64        `json:"failure_threshold" db:"failure_threshold"`
 	FailureCount                uint64        `json:"failure_count" db:"failure_count"`
 	SuccessThreshold            uint64        `json:"success_threshold" db:"success_threshold"`
 	ObservabilityWindow         uint64        `json:"observability_window" db:"observability_window"`

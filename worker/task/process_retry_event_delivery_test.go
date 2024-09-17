@@ -1047,12 +1047,12 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 			mockClock := clock.NewSimulatedClock(time.Now())
 			breakerConfig := &cb.CircuitBreakerConfig{
 				SampleRate:                  1,
-				ErrorTimeout:                30,
-				FailureThreshold:            0.5,
+				BreakerTimeout:              30,
+				FailureThreshold:            50,
 				FailureCount:                5,
 				SuccessThreshold:            2,
 				ObservabilityWindow:         5,
-				NotificationThresholds:      []uint64{10, 20, 30},
+				NotificationThresholds:      [3]uint64{10, 20, 30},
 				ConsecutiveFailureThreshold: 3,
 			}
 

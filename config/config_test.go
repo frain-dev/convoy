@@ -128,11 +128,11 @@ func TestLoadConfig(t *testing.T) {
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,
 					ErrorTimeout:                30,
-					FailureThreshold:            0.1,
+					FailureThreshold:            10,
 					FailureCount:                10,
 					SuccessThreshold:            5,
 					ObservabilityWindow:         5,
-					NotificationThresholds:      []uint64{5, 10},
+					NotificationThresholds:      [3]uint64{5, 10, 15},
 					ConsecutiveFailureThreshold: 10,
 				},
 				Server: ServerConfiguration{
@@ -209,11 +209,11 @@ func TestLoadConfig(t *testing.T) {
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,
 					ErrorTimeout:                30,
-					FailureThreshold:            0.1,
+					FailureThreshold:            10,
 					FailureCount:                10,
 					SuccessThreshold:            5,
 					ObservabilityWindow:         5,
-					NotificationThresholds:      []uint64{5, 10},
+					NotificationThresholds:      [3]uint64{5, 10, 15},
 					ConsecutiveFailureThreshold: 10,
 				},
 				Redis: RedisConfiguration{
@@ -285,11 +285,11 @@ func TestLoadConfig(t *testing.T) {
 				CircuitBreaker: CircuitBreakerConfiguration{
 					SampleRate:                  30,
 					ErrorTimeout:                30,
-					FailureThreshold:            0.1,
+					FailureThreshold:            10,
 					FailureCount:                10,
 					SuccessThreshold:            5,
 					ObservabilityWindow:         5,
-					NotificationThresholds:      []uint64{5, 10},
+					NotificationThresholds:      [3]uint64{5, 10, 15},
 					ConsecutiveFailureThreshold: 10,
 				},
 				Database: DatabaseConfiguration{
