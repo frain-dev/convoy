@@ -1,18 +1,13 @@
-import {CommonModule} from '@angular/common';
-import {Component, OnInit} from '@angular/core';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {Router} from '@angular/router';
-import {ButtonComponent} from 'src/app/components/button/button.component';
-import {
-    InputDirective,
-    InputErrorComponent,
-    InputFieldDirective,
-    LabelComponent
-} from 'src/app/components/input/input.component';
-import {LoaderModule} from 'src/app/private/components/loader/loader.module';
-import {HubspotService} from 'src/app/services/hubspot/hubspot.service';
-import {SignupService} from './signup.service';
-import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import { CommonModule } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ButtonComponent } from 'src/app/components/button/button.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { LoaderModule } from 'src/app/private/components/loader/loader.module';
+import { HubspotService } from 'src/app/services/hubspot/hubspot.service';
+import { SignupService } from './signup.service';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-signup',

@@ -1,6 +1,7 @@
-import {Component, OnInit} from '@angular/core';
-import {ActivatedRoute, Router} from '@angular/router';
-import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import { Location } from '@angular/common';
+import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team';
 

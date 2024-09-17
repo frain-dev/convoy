@@ -1,12 +1,12 @@
-import {Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild} from '@angular/core';
-import {FormArray, FormBuilder, FormGroup, Validators} from '@angular/forms';
-import {ActivatedRoute, Router} from '@angular/router';
-import {PROJECT, VERSIONS} from 'src/app/models/project.model';
-import {GeneralService} from 'src/app/services/general/general.service';
-import {PrivateService} from '../../private.service';
-import {CreateProjectComponentService} from './create-project-component.service';
-import {RbacService} from 'src/app/services/rbac/rbac.service';
-import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import { Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { PROJECT, VERSIONS } from 'src/app/models/project.model';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { PrivateService } from '../../private.service';
+import { CreateProjectComponentService } from './create-project-component.service';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 interface TAB {
 	label: string;

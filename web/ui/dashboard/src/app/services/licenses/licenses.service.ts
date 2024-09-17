@@ -1,6 +1,6 @@
-import {Injectable} from '@angular/core';
-import {HttpService} from '../http/http.service';
-import {HTTP_RESPONSE} from 'src/app/models/global.model';
+import { Injectable } from '@angular/core';
+import { HttpService } from '../http/http.service';
+import { HTTP_RESPONSE } from 'src/app/models/global.model';
 
 @Injectable({
 	providedIn: 'root'

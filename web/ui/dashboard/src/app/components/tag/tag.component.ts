@@ -1,5 +1,6 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {CommonModule} from '@angular/common';
+import { Component, Input, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { STATUS_COLOR } from 'src/app/models/global.model';
 
 @Component({
 	selector: 'convoy-tag, [convoy-tag]',

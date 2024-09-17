@@ -1,31 +1,26 @@
-import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
-import {
-    InputDirective,
-    InputErrorComponent,
-    InputFieldDirective,
-    LabelComponent
-} from 'src/app/components/input/input.component';
-import {ButtonComponent} from 'src/app/components/button/button.component';
-import {RadioComponent} from 'src/app/components/radio/radio.component';
-import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
-import {GeneralService} from 'src/app/services/general/general.service';
-import {ActivatedRoute, Router} from '@angular/router';
-import {CardComponent} from 'src/app/components/card/card.component';
-import {CreateEndpointService} from './create-endpoint.service';
-import {PrivateService} from '../../private.service';
-import {ToggleComponent} from 'src/app/components/toggle/toggle.component';
-import {FormLoaderComponent} from 'src/app/components/form-loader/form-loader.component';
-import {PermissionDirective} from '../permission/permission.directive';
-import {RbacService} from 'src/app/services/rbac/rbac.service';
-import {ENDPOINT, SECRET} from 'src/app/models/endpoint.model';
-import {EndpointsService} from '../../pages/project/endpoints/endpoints.service';
-import {NotificationComponent} from 'src/app/components/notification/notification.component';
-import {ConfigButtonComponent} from '../config-button/config-button.component';
-import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
-import {LicensesService} from 'src/app/services/licenses/licenses.service';
-import {TagComponent} from 'src/app/components/tag/tag.component';
+import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
+import { ButtonComponent } from 'src/app/components/button/button.component';
+import { RadioComponent } from 'src/app/components/radio/radio.component';
+import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
+import { GeneralService } from 'src/app/services/general/general.service';
+import { ActivatedRoute, Router } from '@angular/router';
+import { CardComponent } from 'src/app/components/card/card.component';
+import { CreateEndpointService } from './create-endpoint.service';
+import { PrivateService } from '../../private.service';
+import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
+import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
+import { PermissionDirective } from '../permission/permission.directive';
+import { RbacService } from 'src/app/services/rbac/rbac.service';
+import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
+import { EndpointsService } from '../../pages/project/endpoints/endpoints.service';
+import { NotificationComponent } from 'src/app/components/notification/notification.component';
+import { ConfigButtonComponent } from '../config-button/config-button.component';
+import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @Component({
 	selector: 'convoy-create-endpoint',

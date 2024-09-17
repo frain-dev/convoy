@@ -1,13 +1,13 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import {Router} from '@angular/router';
-import {ORGANIZATION_DATA} from '../models/organisation.model';
-import {GeneralService} from '../services/general/general.service';
-import {PrivateService} from './private.service';
-import {FormBuilder, FormControl, FormGroup, Validators} from '@angular/forms';
-import {JwtHelperService} from '@auth0/angular-jwt';
-import {differenceInSeconds} from 'date-fns';
-import {Subscription} from 'rxjs';
-import {LicensesService} from '../services/licenses/licenses.service';
+import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Router } from '@angular/router';
+import { ORGANIZATION_DATA } from '../models/organisation.model';
+import { GeneralService } from '../services/general/general.service';
+import { PrivateService } from './private.service';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { JwtHelperService } from '@auth0/angular-jwt';
+import { differenceInSeconds } from 'date-fns';
+import { Observable, Subscription } from 'rxjs';
+import { LicensesService } from '../services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-private',

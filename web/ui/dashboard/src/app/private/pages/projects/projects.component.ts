@@ -1,8 +1,8 @@
-import {Component, OnInit} from '@angular/core';
-import {PROJECT} from 'src/app/models/project.model';
-import {PrivateService} from '../../private.service';
-import {Router} from '@angular/router';
-import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import { Component, OnInit } from '@angular/core';
+import { PROJECT } from 'src/app/models/project.model';
+import { PrivateService } from '../../private.service';
+import { Router } from '@angular/router';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-projects',
