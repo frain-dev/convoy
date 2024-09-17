@@ -15,8 +15,9 @@ var (
 )
 
 const (
-	projectLabel = "project"
-	sourceLabel  = "source"
+	projectLabel  = "project"
+	sourceLabel   = "source"
+	endpointLabel = "endpoint"
 )
 
 // Metrics for the data plane
@@ -92,7 +93,7 @@ func InitMetrics(licenser license.Licenser) *Metrics {
 				Help:    "Total time (in seconds) an event spends in Convoy.",
 				Buckets: prometheus.DefBuckets,
 			},
-			[]string{projectLabel},
+			[]string{projectLabel, endpointLabel},
 		),
 	}
 	return m
@@ -102,7 +103,7 @@ func (m *Metrics) RecordLatency(ev *datastore.EventDelivery) {
 	if !m.IsEnabled {
 		return
 	}
-	m.EventDeliveryLatency.With(prometheus.Labels{projectLabel: ev.ProjectID}).Observe(ev.LatencySeconds)
+	m.EventDeliveryLatency.With(prometheus.Labels{projectLabel: ev.ProjectID, endpointLabel: ev.EndpointID}).Observe(ev.LatencySeconds)
 }
 
 func (m *Metrics) IncrementIngestTotal(source *datastore.Source) {
