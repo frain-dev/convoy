@@ -443,11 +443,11 @@ func (k *Licenser) AdvancedWebhookFiltering() bool {
 	return ok
 }
 
-func (k *Licenser) RBAC() bool {
+func (k *Licenser) MultiPlayerMode() bool {
 	if checkExpiry(k.license) != nil {
 		return false
 	}
-	_, ok := k.featureList[RBAC]
+	_, ok := k.featureList[MultiPlayerMode]
 	return ok
 }
 

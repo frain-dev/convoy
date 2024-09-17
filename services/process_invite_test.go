@@ -104,7 +104,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().RBAC().Times(1).Return(true)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -373,7 +373,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().RBAC().Times(1).Return(true)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -644,7 +644,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().RBAC().Times(1).Return(true)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update accepted organisation invite",

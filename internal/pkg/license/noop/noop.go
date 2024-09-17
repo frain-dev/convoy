@@ -99,6 +99,6 @@ func (Licenser) PortalLinks() bool {
 	return true
 }
 
-func (Licenser) RBAC() bool {
+func (Licenser) MultiPlayerMode() bool {
 	return true
 }
