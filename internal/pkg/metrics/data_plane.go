@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/frain-dev/convoy/config"
@@ -104,38 +103,26 @@ func (m *Metrics) RecordLatency(ev *datastore.EventDelivery) {
 	if !m.IsEnabled {
 		return
 	}
-	m.EventDeliveryLatency.With(prometheus.Labels{
-		projectLabel:  fmt.Sprintf("project_%s", ev.ProjectID),
-		endpointLabel: fmt.Sprintf("endpoint_%s", ev.EndpointID),
-	}).Observe(ev.LatencySeconds)
+	m.EventDeliveryLatency.With(prometheus.Labels{projectLabel: ev.ProjectID, endpointLabel: ev.EndpointID}).Observe(ev.LatencySeconds)
 }
 
 func (m *Metrics) IncrementIngestTotal(source *datastore.Source) {
 	if !m.IsEnabled {
 		return
 	}
-	m.IngestTotal.With(prometheus.Labels{
-		projectLabel: fmt.Sprintf("project_%s", source.ProjectID),
-		sourceLabel:  source.UID,
-	}).Inc()
+	m.IngestTotal.With(prometheus.Labels{projectLabel: source.ProjectID, sourceLabel: source.UID}).Inc()
 }
 
 func (m *Metrics) IncrementIngestConsumedTotal(source *datastore.Source) {
 	if !m.IsEnabled {
 		return
 	}
-	m.IngestConsumedTotal.With(prometheus.Labels{
-		projectLabel: fmt.Sprintf("project_%s", source.ProjectID),
-		sourceLabel:  source.UID,
-	}).Inc()
+	m.IngestConsumedTotal.With(prometheus.Labels{projectLabel: source.ProjectID, sourceLabel: source.UID}).Inc()
 }
 
 func (m *Metrics) IncrementIngestErrorsTotal(source *datastore.Source) {
 	if !m.IsEnabled {
 		return
 	}
-	m.IngestErrorsTotal.With(prometheus.Labels{
-		projectLabel: fmt.Sprintf("project_%s", source.ProjectID),
-		sourceLabel:  source.UID,
-	}).Inc()
+	m.IngestErrorsTotal.With(prometheus.Labels{projectLabel: source.ProjectID, sourceLabel: source.UID}).Inc()
 }

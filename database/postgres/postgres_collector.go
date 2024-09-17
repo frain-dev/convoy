@@ -1,7 +1,6 @@
 package postgres
 
 import (
-	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -136,7 +135,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventQueueTotalDesc,
 			prometheus.GaugeValue,
 			float64(metric.Total),
-			fmt.Sprintf("project_%s", metric.ProjectID),
+			metric.ProjectID,
 			metric.SourceId,
 			"success", // already in db
 		)
@@ -147,7 +146,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventQueueBacklogDesc,
 			prometheus.GaugeValue,
 			metric.AgeSeconds,
-			fmt.Sprintf("project_%s", metric.ProjectID),
+			metric.ProjectID,
 			metric.SourceId,
 		)
 	}
@@ -157,8 +156,8 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventDeliveryQueueTotalDesc,
 			prometheus.GaugeValue,
 			float64(metric.Total),
-			fmt.Sprintf("project_%s", metric.ProjectID),
-			fmt.Sprintf("endpoint_%s", metric.EndpointId),
+			metric.ProjectID,
+			metric.EndpointId,
 			strings.ToLower(metric.Status),
 		)
 	}
@@ -168,8 +167,8 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventDeliveryQueueBacklogDesc,
 			prometheus.GaugeValue,
 			metric.AgeSeconds,
-			fmt.Sprintf("project_%s", metric.ProjectID),
-			fmt.Sprintf("endpoint_%s", metric.EndpointId),
+			metric.ProjectID,
+			metric.EndpointId,
 		)
 	}
 
@@ -178,8 +177,8 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			eventDeliveryAttemptsTotalDesc,
 			prometheus.GaugeValue,
 			float64(metric.Total),
-			fmt.Sprintf("project_%s", metric.ProjectID),
-			fmt.Sprintf("endpoint_%s", metric.EndpointId),
+			metric.ProjectID,
+			metric.EndpointId,
 			strings.ToLower(metric.Status),
 			metric.StatusCode,
 		)
