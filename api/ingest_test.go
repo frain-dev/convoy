@@ -3,9 +3,11 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -16,7 +18,7 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		jsonBody := []byte(`{"key": "value"}`)
 
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(jsonBody))
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", applicationJsonContentType)
 
 		payload, err := extractPayloadFromIngestEventReq(req, 1024)
 		require.NoError(t, err)
@@ -31,7 +33,7 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		require.NoError(t, writer.Close())
 
 		req := httptest.NewRequest(http.MethodPost, "/", body)
-		req.Header.Set("Content-Type", "multipart/form-data; boundary="+writer.Boundary())
+		req.Header.Set("Content-Type", fmt.Sprintf("%s; boundary=%s", multipartFormDataContentType, writer.Boundary()))
 
 		payload, err := extractPayloadFromIngestEventReq(req, 1024)
 		require.NoError(t, err)
@@ -51,6 +53,17 @@ func Test_extractPayloadFromIngestEventReq(t *testing.T) {
 		payload, err := extractPayloadFromIngestEventReq(req, 1024)
 		require.NoError(t, err)
 		require.Equal(t, jsonBody, payload)
+	})
+
+	t.Run("urlencoded content type", func(t *testing.T) {
+		body := strings.NewReader("key1=value1&key2=value2")
+
+		req := httptest.NewRequest(http.MethodPost, "/", body)
+		req.Header.Set("Content-Type", urlEncodedContentType)
+
+		payload, err := extractPayloadFromIngestEventReq(req, 1024)
+		require.NoError(t, err)
+		require.Equal(t, []byte(`{"key1":"value1","key2":"value2"}`), payload)
 	})
 
 	t.Run("unsupported content type", func(t *testing.T) {

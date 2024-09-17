@@ -18,7 +18,7 @@ func AddFeatureFlagsCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Fatalf("Error fetching the config.")
+				log.WithError(err).Fatal("Error fetching the config.")
 			}
 
 			f := fflag2.NewFFlag(&cfg)

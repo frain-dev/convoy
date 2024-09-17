@@ -18,10 +18,11 @@ import (
 
 func provideOrganisationMemberService(ctrl *gomock.Controller) *OrganisationMemberService {
 	orgMemberRepo := mocks.NewMockOrganisationMemberRepository(ctrl)
-	return NewOrganisationMemberService(orgMemberRepo)
+	l := mocks.NewMockLicenser(ctrl)
+	return NewOrganisationMemberService(orgMemberRepo, l)
 }
 
-func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
+func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 	ctx := context.Background()
 
 	type args struct {
@@ -40,7 +41,7 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name: "should_create_organisation_member",
+			name: "should_create_organisation_member_admin_role",
 			args: args{
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
@@ -55,12 +56,46 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				a.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				l, _ := os.licenser.(*mocks.MockLicenser)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			want: &datastore.OrganisationMember{
 				OrganisationID: "1234",
 				UserID:         "1234",
 				Role: auth.Role{
 					Type:     auth.RoleAdmin,
+					Project:  "123",
+					Endpoint: "abc",
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_create_organisation_member_super_user_role",
+			args: args{
+				ctx: ctx,
+				org: &datastore.Organisation{UID: "1234"},
+				role: &auth.Role{
+					Type:     auth.RoleAdmin,
+					Project:  "123",
+					Endpoint: "abc",
+				},
+				user: &datastore.User{UID: "1234"},
+			},
+			dbFn: func(os *OrganisationMemberService) {
+				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				a.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				l, _ := os.licenser.(*mocks.MockLicenser)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(false)
+			},
+			want: &datastore.OrganisationMember{
+				OrganisationID: "1234",
+				UserID:         "1234",
+				Role: auth.Role{
+					Type:     auth.RoleSuperUser,
 					Project:  "123",
 					Endpoint: "abc",
 				},
@@ -80,6 +115,9 @@ func TestOrganisationMemberService_CreateOrganisationMember(t *testing.T) {
 				user: &datastore.User{UID: "1234"},
 			},
 			dbFn: func(os *OrganisationMemberService) {
+				l, _ := os.licenser.(*mocks.MockLicenser)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(true)
+
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				a.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
@@ -133,7 +171,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 		wantErrMsg  string
 	}{
 		{
-			name: "should_update_organisation_member",
+			name: "should_update_organisation_member_api_role",
 			args: args{
 				ctx: ctx,
 				organisationMember: &datastore.OrganisationMember{
@@ -166,11 +204,54 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				a.EXPECT().UpdateOrganisationMember(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
+
+				l, _ := os.licenser.(*mocks.MockLicenser)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
 		{
-			name: "should_update_organisation_member",
+			name: "should_update_organisation_member_superuser_role",
+			args: args{
+				ctx: ctx,
+				organisationMember: &datastore.OrganisationMember{
+					UID:            "123",
+					OrganisationID: "abc",
+					UserID:         "def",
+					Role: auth.Role{
+						Type:     auth.RoleAdmin,
+						Project:  "111",
+						Endpoint: "",
+					},
+				},
+				role: &auth.Role{
+					Type:     auth.RoleAPI,
+					Project:  "333",
+					Endpoint: "",
+				},
+			},
+			want: &datastore.OrganisationMember{
+				UID:            "123",
+				OrganisationID: "abc",
+				UserID:         "def",
+				Role: auth.Role{
+					Type:     auth.RoleSuperUser,
+					Project:  "333",
+					Endpoint: "",
+				},
+			},
+			dbFn: func(os *OrganisationMemberService) {
+				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
+				a.EXPECT().UpdateOrganisationMember(gomock.Any(), gomock.Any()).
+					Times(1).Return(nil)
+
+				l, _ := os.licenser.(*mocks.MockLicenser)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(false)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_update_organisation_member",
 			args: args{
 				ctx: ctx,
 				organisationMember: &datastore.OrganisationMember{
@@ -190,6 +271,9 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				},
 			},
 			dbFn: func(os *OrganisationMemberService) {
+				l, _ := os.licenser.(*mocks.MockLicenser)
+				l.EXPECT().MultiPlayerMode().Times(1).Return(true)
+
 				a, _ := os.orgMemberRepo.(*mocks.MockOrganisationMemberRepository)
 				a.EXPECT().UpdateOrganisationMember(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))

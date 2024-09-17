@@ -56,7 +56,7 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 			}
 			log.Debugf("done tokenizing events for %+v with %v events", p.Id, p.EventsCount)
 		}
-		log.Debugf("done tokenizing events in the interval")
+		log.Debug("done tokenizing events in the interval")
 
 		return nil
 	}

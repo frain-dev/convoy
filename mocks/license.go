@@ -252,6 +252,20 @@ func (mr *MockLicenserMockRecorder) HADeployment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HADeployment", reflect.TypeOf((*MockLicenser)(nil).HADeployment))
 }
 
+// MultiPlayerMode mocks base method.
+func (m *MockLicenser) MultiPlayerMode() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MultiPlayerMode")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// MultiPlayerMode indicates an expected call of MultiPlayerMode.
+func (mr *MockLicenserMockRecorder) MultiPlayerMode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MultiPlayerMode", reflect.TypeOf((*MockLicenser)(nil).MultiPlayerMode))
+}
+
 // MutualTLS mocks base method.
 func (m *MockLicenser) MutualTLS() bool {
 	m.ctrl.T.Helper()

@@ -57,6 +57,7 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			wantErr: false,
 		},

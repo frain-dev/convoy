@@ -53,6 +53,10 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 		UpdatedAt:      time.Now(),
 	}
 
+	if !iu.Licenser.MultiPlayerMode() {
+		iu.Role.Type = auth.RoleSuperUser
+	}
+
 	err = iu.InviteRepo.CreateOrganisationInvite(ctx, iv)
 	if err != nil {
 		errMsg := "failed to invite member"

@@ -42,6 +42,7 @@ func TestInviteUserService(t *testing.T) {
 			mockDep: func(a args) {
 				licenser, _ := a.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 
 				ivRepo, _ := a.inviteRepo.(*mocks.MockOrganisationInviteRepository)
 				ivRepo.EXPECT().CreateOrganisationInvite(
@@ -62,6 +63,7 @@ func TestInviteUserService(t *testing.T) {
 			mockDep: func(a args) {
 				licenser, _ := a.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 
 				ivRepo, _ := a.inviteRepo.(*mocks.MockOrganisationInviteRepository)
 				ivRepo.EXPECT().CreateOrganisationInvite(
