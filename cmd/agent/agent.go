@@ -168,7 +168,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 
 	srv.SetHandler(evHandler.BuildDataPlaneRoutes())
 
-	log.Info("Started convoy server in %s\n", time.Since(start))
+	log.Infof("Started convoy server in %s\n", time.Since(start))
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {

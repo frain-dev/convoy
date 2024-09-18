@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"testing"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -260,6 +261,8 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				licenser, _ := l.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -348,6 +351,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				licenser, _ := l.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -435,6 +439,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -525,6 +530,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -612,6 +618,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -699,6 +706,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
 			},
 			nFn: func() func() {
@@ -791,6 +799,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -884,6 +893,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -965,7 +975,8 @@ func TestProcessEventDelivery(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager)
+			featureFlag := fflag.NewFFlag(&cfg)
+			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

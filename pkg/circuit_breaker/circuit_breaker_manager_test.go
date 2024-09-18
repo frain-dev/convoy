@@ -53,11 +53,11 @@ func TestCircuitBreakerManager(t *testing.T) {
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
 		BreakerTimeout:              30,
-		FailureThreshold:            10,
+		FailureThreshold:            70,
 		FailureCount:                3,
 		SuccessThreshold:            1,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      [3]uint64{10},
+		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
 
@@ -100,17 +100,19 @@ func TestCircuitBreakerManager_AddNewBreakerMidway(t *testing.T) {
 	keys, err := re.Keys(ctx, "breaker*").Result()
 	require.NoError(t, err)
 
-	err = re.Del(ctx, keys...).Err()
-	require.NoError(t, err)
+	for i := range keys {
+		err = re.Del(ctx, keys[i]).Err()
+		require.NoError(t, err)
+	}
 
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
 		BreakerTimeout:              30,
-		FailureThreshold:            10,
+		FailureThreshold:            70,
 		FailureCount:                3,
 		SuccessThreshold:            1,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      [3]uint64{10},
+		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
 	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))
@@ -165,7 +167,7 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 		FailureCount:                3,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      [3]uint64{10},
+		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
 	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))
@@ -231,11 +233,11 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
 		BreakerTimeout:              30,
-		FailureThreshold:            50,
+		FailureThreshold:            70,
 		FailureCount:                3,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      [3]uint64{10},
+		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 3,
 	}
 	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))
@@ -284,11 +286,11 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
 		BreakerTimeout:              30,
-		FailureThreshold:            50,
+		FailureThreshold:            70,
 		FailureCount:                3,
 		SuccessThreshold:            2,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      [3]uint64{10},
+		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
 	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))

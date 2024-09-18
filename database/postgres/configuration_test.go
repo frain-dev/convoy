@@ -116,7 +116,7 @@ func generateConfig() *datastore.Configuration {
 		CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
 			SampleRate:                  30,
 			ErrorTimeout:                30,
-			FailureThreshold:            0.1,
+			FailureThreshold:            10,
 			FailureCount:                10,
 			SuccessThreshold:            5,
 			ObservabilityWindow:         5,

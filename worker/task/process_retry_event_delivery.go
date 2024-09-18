@@ -176,7 +176,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 		}
 
 		var httpDuration time.Duration
-		if endpoint.HttpTimeout == 0 {
+		if endpoint.HttpTimeout == 0 || !licenser.AdvancedEndpointMgmt() {
 			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
 		} else {
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
@@ -226,21 +226,23 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			log.Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
 		}
 
-		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 			endpointStatus := datastore.ActiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, false, resp.Error, string(resp.Body), resp.StatusCode)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to send notification")
+			if licenser.AdvancedEndpointMgmt() {
+				// send endpoint reactivation notification
+				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, false, resp.Error, string(resp.Body), resp.StatusCode)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("failed to send notification")
+				}
 			}
 		}
 
-		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 			endpointStatus := datastore.InactiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
@@ -264,7 +266,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
 
-			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 				endpointStatus := datastore.InactiveEndpointStatus
 
 				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
@@ -272,10 +274,12 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
-				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.WithError(err).Error("failed to send notification")
+				if licenser.AdvancedEndpointMgmt() {
+					// send endpoint deactivation notification
+					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
+					if err != nil {
+						log.WithError(err).Error("failed to send notification")
+					}
 				}
 			}
 		}

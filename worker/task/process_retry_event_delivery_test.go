@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"testing"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -266,6 +267,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -354,6 +357,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -442,6 +447,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -532,6 +539,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -622,6 +631,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -712,6 +723,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(false)
 			},
 			nFn: func() func() {
@@ -799,6 +812,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -891,6 +906,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -984,6 +1001,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -1063,7 +1082,9 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager)
+			featureFlag := fflag.NewFFlag(&cfg)
+
+			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,
