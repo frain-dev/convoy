@@ -51,7 +51,7 @@ func TestCircuitBreakerConfig_Validate(t *testing.T) {
 				FailureThreshold: 150,
 			},
 			wantErr: true,
-			err:     "FailureThreshold must be between 0 and 100",
+			err:     "FailureThreshold must be between 1 and 100",
 		},
 		{
 			name: "Invalid FailureCount",

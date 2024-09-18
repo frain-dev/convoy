@@ -51,8 +51,8 @@ func (c *CircuitBreakerConfig) Validate() error {
 		errs.WriteString("; ")
 	}
 
-	if c.FailureThreshold < 0 || c.FailureThreshold > 100 {
-		errs.WriteString("FailureThreshold must be between 0 and 100")
+	if c.FailureThreshold == 0 || c.FailureThreshold > 100 {
+		errs.WriteString("FailureThreshold must be between 1 and 100")
 		errs.WriteString("; ")
 	}
 
