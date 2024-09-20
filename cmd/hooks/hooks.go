@@ -330,6 +330,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		FailureThreshold:            cfg.CircuitBreaker.FailureThreshold,
 		SuccessThreshold:            cfg.CircuitBreaker.SuccessThreshold,
 		ObservabilityWindow:         cfg.CircuitBreaker.ObservabilityWindow,
+		MinimumRequestCount:         cfg.CircuitBreaker.MinimumRequestCount,
 		NotificationThresholds:      notificationThresholds,
 		ConsecutiveFailureThreshold: cfg.CircuitBreaker.ConsecutiveFailureThreshold,
 	}

@@ -17,12 +17,13 @@ func TestCircuitBreakerConfig_Validate(t *testing.T) {
 			config: CircuitBreakerConfig{
 				SampleRate:                  1,
 				BreakerTimeout:              30,
-				FailureThreshold:            5,
+				FailureThreshold:            50,
 				FailureCount:                5,
 				SuccessThreshold:            2,
 				ObservabilityWindow:         5,
 				NotificationThresholds:      [3]uint64{10, 20, 30},
 				ConsecutiveFailureThreshold: 3,
+				MinimumRequestCount:         10,
 			},
 			wantErr: false,
 		},
@@ -148,6 +149,22 @@ func TestCircuitBreakerConfig_Validate(t *testing.T) {
 			wantErr: true,
 			err:     "Notification threshold at index [2] = 60 must be less than the failure threshold",
 		},
+		{
+			name: "Invalid MinimumRequestCount",
+			config: CircuitBreakerConfig{
+				SampleRate:                  1,
+				FailureCount:                5,
+				BreakerTimeout:              30,
+				FailureThreshold:            30,
+				SuccessThreshold:            2,
+				ObservabilityWindow:         5,
+				MinimumRequestCount:         5,
+				NotificationThresholds:      [3]uint64{30, 50, 60},
+				ConsecutiveFailureThreshold: 1,
+			},
+			wantErr: true,
+			err:     "MinimumRequestCount must be greater than 10",
+		},
 	}
 
 	for _, tt := range tests {
@@ -157,6 +174,8 @@ func TestCircuitBreakerConfig_Validate(t *testing.T) {
 				require.Error(t, err)
 				require.NotEmpty(t, tt.err)
 				require.Contains(t, err.Error(), tt.err)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

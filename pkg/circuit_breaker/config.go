@@ -16,10 +16,15 @@ type CircuitBreakerConfig struct {
 	BreakerTimeout uint64 `json:"breaker_timeout"`
 
 	// FailureThreshold is the % of failed requests in the observability window
-	// after which the breaker will go into the open state
+	// after which a circuit breaker will go into the open state
 	FailureThreshold uint64 `json:"failure_threshold"`
 
+	// MinimumRequestCount minimum number of requests in the observability window
+	// that will trip a circuit breaker
+	MinimumRequestCount uint64 `json:"request_count"`
+
 	// FailureCount total number of failed requests in the observability window
+	// that will trip a circuit breaker
 	FailureCount uint64 `json:"failure_count"`
 
 	// SuccessThreshold is the % of successful requests in the observability window
@@ -30,7 +35,7 @@ type CircuitBreakerConfig struct {
 	// polled when determining the number successful and failed requests
 	ObservabilityWindow uint64 `json:"observability_window"`
 
-	// NotificationThresholds These are the error counts after which we will send out notifications.
+	// NotificationThresholds These are the error thresholds after which we will send out notifications.
 	NotificationThresholds [3]uint64 `json:"notification_thresholds"`
 
 	// ConsecutiveFailureThreshold determines when we ultimately disable the endpoint.
@@ -53,6 +58,13 @@ func (c *CircuitBreakerConfig) Validate() error {
 
 	if c.FailureThreshold == 0 || c.FailureThreshold > 100 {
 		errs.WriteString("FailureThreshold must be between 1 and 100")
+		errs.WriteString("; ")
+	}
+
+	fmt.Printf("%+v\n", c.MinimumRequestCount)
+
+	if c.MinimumRequestCount < 10 {
+		errs.WriteString("MinimumRequestCount must be greater than 10")
 		errs.WriteString("; ")
 	}
 

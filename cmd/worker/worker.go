@@ -253,7 +253,12 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		circuitBreakerManager, err = cb.NewCircuitBreakerManager(
 			cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
 			cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
-			cb.ClockOption(clock.NewRealClock()))
+			cb.ClockOption(clock.NewRealClock()),
+			cb.NotificationFunctionOption(func(c cb.CircuitBreaker) error {
+				fmt.Printf("notification: %+v\n", c)
+				return nil
+			}),
+		)
 		if err != nil {
 			a.Logger.WithError(err).Fatal("Failed to create circuit breaker manager")
 		}

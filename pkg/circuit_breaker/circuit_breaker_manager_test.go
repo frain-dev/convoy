@@ -22,13 +22,15 @@ func getRedis(t *testing.T) (client redis.UniversalClient, err error) {
 	return redis.NewClient(opts), nil
 }
 
-func pollResult(t *testing.T, key string, failureCount, successCount uint64) PollResult {
+func pollResult(t *testing.T, key string, failureCount, successCount uint64) map[string]PollResult {
 	t.Helper()
 
-	return PollResult{
-		Key:       key,
-		Failures:  failureCount,
-		Successes: successCount,
+	return map[string]PollResult{
+		key: {
+			Key:       key,
+			Failures:  failureCount,
+			Successes: successCount,
+		},
 	}
 }
 
@@ -56,22 +58,31 @@ func TestCircuitBreakerManager(t *testing.T) {
 		FailureThreshold:            70,
 		FailureCount:                3,
 		SuccessThreshold:            1,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
 
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c))
+	b, err := NewCircuitBreakerManager(
+		ClockOption(testClock),
+		StoreOption(store),
+		ConfigOption(c),
+		NotificationFunctionOption(func(c CircuitBreaker) error {
+			t.Logf("c: %+v, s: %+v f: %+v\n", int64(c.FailureRate), c.State, c.NotificationsSent)
+			return nil
+		}),
+	)
 	require.NoError(t, err)
 
 	endpointId := "endpoint-1"
-	pollResults := [][]PollResult{
-		{pollResult(t, endpointId, 1, 0)},
-		{pollResult(t, endpointId, 2, 0)},
-		{pollResult(t, endpointId, 2, 1)},
-		{pollResult(t, endpointId, 2, 2)},
-		{pollResult(t, endpointId, 2, 3)},
-		{pollResult(t, endpointId, 1, 4)},
+	pollResults := []map[string]PollResult{
+		pollResult(t, endpointId, 1, 0),
+		pollResult(t, endpointId, 2, 0),
+		pollResult(t, endpointId, 2, 1),
+		pollResult(t, endpointId, 2, 2),
+		pollResult(t, endpointId, 2, 3),
+		pollResult(t, endpointId, 1, 4),
 	}
 
 	for i := 0; i < len(pollResults); i++ {
@@ -120,13 +131,13 @@ func TestCircuitBreakerManager_AddNewBreakerMidway(t *testing.T) {
 
 	endpoint1 := "endpoint-1"
 	endpoint2 := "endpoint-2"
-	pollResults := [][]PollResult{
-		{pollResult(t, endpoint1, 1, 0)},
-		{pollResult(t, endpoint1, 2, 0)},
-		{pollResult(t, endpoint1, 2, 1), pollResult(t, endpoint2, 1, 0)},
-		{pollResult(t, endpoint1, 2, 2), pollResult(t, endpoint2, 1, 1)},
-		{pollResult(t, endpoint1, 2, 3), pollResult(t, endpoint2, 0, 2)},
-		{pollResult(t, endpoint1, 1, 4), pollResult(t, endpoint2, 1, 1)},
+	pollResults := []map[string]PollResult{
+		pollResult(t, endpoint1, 1, 0),
+		pollResult(t, endpoint1, 2, 0),
+		pollResult(t, endpoint1, 2, 1), pollResult(t, endpoint2, 1, 0),
+		pollResult(t, endpoint1, 2, 2), pollResult(t, endpoint2, 1, 1),
+		pollResult(t, endpoint1, 2, 3), pollResult(t, endpoint2, 0, 2),
+		pollResult(t, endpoint1, 1, 4), pollResult(t, endpoint2, 1, 1),
 	}
 
 	for i := 0; i < len(pollResults); i++ {
@@ -174,14 +185,14 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 	require.NoError(t, err)
 
 	endpointId := "endpoint-1"
-	pollResults := [][]PollResult{
-		{pollResult(t, endpointId, 1, 2)}, // Closed
-		{pollResult(t, endpointId, 3, 1)}, // Open (FailureCount reached)
-		{pollResult(t, endpointId, 0, 0)}, // Still Open
-		{pollResult(t, endpointId, 1, 1)}, // Half-Open (after ErrorTimeout)
-		{pollResult(t, endpointId, 0, 1)}, // Still Half-Open
-		{pollResult(t, endpointId, 0, 2)}, // Closed (SuccessThreshold reached)
-		{pollResult(t, endpointId, 4, 0)}, // Open (FailureThreshold reached)
+	pollResults := []map[string]PollResult{
+		pollResult(t, endpointId, 1, 2), // Closed
+		pollResult(t, endpointId, 3, 1), // Open (FailureCount reached)
+		pollResult(t, endpointId, 0, 0), // Still Open
+		pollResult(t, endpointId, 1, 1), // Half-Open (after ErrorTimeout)
+		pollResult(t, endpointId, 0, 1), // Still Half-Open
+		pollResult(t, endpointId, 0, 2), // Closed (SuccessThreshold reached)
+		pollResult(t, endpointId, 4, 0), // Open (FailureThreshold reached)
 	}
 
 	expectedStates := []State{
@@ -244,12 +255,12 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 	require.NoError(t, err)
 
 	endpointId := "endpoint-1"
-	pollResults := [][]PollResult{
-		{pollResult(t, endpointId, 3, 1)}, // Open
-		{pollResult(t, endpointId, 1, 1)}, // Half-Open
-		{pollResult(t, endpointId, 3, 0)}, // Open
-		{pollResult(t, endpointId, 1, 1)}, // Half-Open
-		{pollResult(t, endpointId, 3, 0)}, // Open
+	pollResults := []map[string]PollResult{
+		pollResult(t, endpointId, 3, 1), // Open
+		pollResult(t, endpointId, 1, 1), // Half-Open
+		pollResult(t, endpointId, 3, 0), // Open
+		pollResult(t, endpointId, 1, 1), // Half-Open
+		pollResult(t, endpointId, 3, 0), // Open
 	}
 
 	for _, result := range pollResults {
@@ -300,10 +311,10 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 	endpoint2 := "endpoint-2"
 	endpoint3 := "endpoint-3"
 
-	pollResults := [][]PollResult{
-		{pollResult(t, endpoint1, 1, 1), pollResult(t, endpoint2, 3, 1), pollResult(t, endpoint3, 0, 4)},
-		{pollResult(t, endpoint1, 1, 1), pollResult(t, endpoint2, 3, 1), pollResult(t, endpoint3, 0, 4)},
-		{pollResult(t, endpoint1, 3, 1), pollResult(t, endpoint2, 1, 3), pollResult(t, endpoint3, 1, 5)},
+	pollResults := []map[string]PollResult{
+		pollResult(t, endpoint1, 1, 1), pollResult(t, endpoint2, 3, 1), pollResult(t, endpoint3, 0, 4),
+		pollResult(t, endpoint1, 1, 1), pollResult(t, endpoint2, 3, 1), pollResult(t, endpoint3, 0, 4),
+		pollResult(t, endpoint1, 3, 1), pollResult(t, endpoint2, 1, 3), pollResult(t, endpoint3, 1, 5),
 	}
 
 	for _, results := range pollResults {
@@ -446,9 +457,9 @@ func TestCircuitBreakerManager_SampleStore(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
-	pollResults := []PollResult{
-		{Key: "test1", Failures: 3, Successes: 7},
-		{Key: "test2", Failures: 6, Successes: 4},
+	pollResults := map[string]PollResult{
+		"test1": {Key: "test1", Failures: 3, Successes: 7},
+		"test2": {Key: "test2", Failures: 6, Successes: 4},
 	}
 
 	err = manager.sampleStore(ctx, pollResults)
@@ -737,10 +748,10 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("Sample and Update Success", func(t *testing.T) {
-		pollFunc := func(ctx context.Context, lookBackDuration uint64) ([]PollResult, error) {
-			return []PollResult{
-				{Key: "test1", Failures: 3, Successes: 7},
-				{Key: "test2", Failures: 6, Successes: 4},
+		pollFunc := func(ctx context.Context, lookBackDuration uint64, _ map[string]time.Time) (map[string]PollResult, error) {
+			return map[string]PollResult{
+				"test1": {Key: "test1", Failures: 3, Successes: 7},
+				"test2": {Key: "test2", Failures: 6, Successes: 4},
 			}, nil
 		}
 
@@ -765,8 +776,8 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 
 	t.Run("Sample and Update with Empty Results",
 		func(t *testing.T) {
-			pollFunc := func(ctx context.Context, lookBackDuration uint64) ([]PollResult, error) {
-				return []PollResult{}, nil
+			pollFunc := func(ctx context.Context, lookBackDuration uint64, _ map[string]time.Time) (map[string]PollResult, error) {
+				return map[string]PollResult{}, nil
 			}
 
 			err := manager.sampleAndUpdate(ctx, pollFunc)
@@ -774,7 +785,7 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 		})
 
 	t.Run("Sample and Update with Poll Function Error", func(t *testing.T) {
-		pollFunc := func(ctx context.Context, lookBackDuration uint64) ([]PollResult, error) {
+		pollFunc := func(ctx context.Context, lookBackDuration uint64, _ map[string]time.Time) (map[string]PollResult, error) {
 			return nil, errors.New("poll function error")
 		}
 
@@ -809,10 +820,10 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 	defer cancel()
 
 	pollCount := 0
-	pollFunc := func(ctx context.Context, lookBackDuration uint64) ([]PollResult, error) {
+	pollFunc := func(ctx context.Context, lookBackDuration uint64, _ map[string]time.Time) (map[string]PollResult, error) {
 		pollCount++
-		return []PollResult{
-			{Key: "test", Failures: uint64(pollCount), Successes: 10 - uint64(pollCount)},
+		return map[string]PollResult{
+			"test": {Key: "test", Failures: uint64(pollCount), Successes: 10 - uint64(pollCount)},
 		}, nil
 	}
 

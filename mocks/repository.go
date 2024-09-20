@@ -2583,16 +2583,16 @@ func (mr *MockDeliveryAttemptsRepositoryMockRecorder) FindDeliveryAttempts(arg0,
 }
 
 // GetFailureAndSuccessCounts mocks base method.
-func (m *MockDeliveryAttemptsRepository) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64) ([]circuit_breaker.PollResult, error) {
+func (m *MockDeliveryAttemptsRepository) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]circuit_breaker.PollResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFailureAndSuccessCounts", ctx, lookBackDuration)
-	ret0, _ := ret[0].([]circuit_breaker.PollResult)
+	ret := m.ctrl.Call(m, "GetFailureAndSuccessCounts", ctx, lookBackDuration, resetTimes)
+	ret0, _ := ret[0].(map[string]circuit_breaker.PollResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFailureAndSuccessCounts indicates an expected call of GetFailureAndSuccessCounts.
-func (mr *MockDeliveryAttemptsRepositoryMockRecorder) GetFailureAndSuccessCounts(ctx, lookBackDuration any) *gomock.Call {
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) GetFailureAndSuccessCounts(ctx, lookBackDuration, resetTimes any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFailureAndSuccessCounts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).GetFailureAndSuccessCounts), ctx, lookBackDuration)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFailureAndSuccessCounts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).GetFailureAndSuccessCounts), ctx, lookBackDuration, resetTimes)
 }

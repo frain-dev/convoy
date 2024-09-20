@@ -102,12 +102,8 @@ func (s *RedisStore) SetOne(ctx context.Context, key string, value interface{}, 
 func (s *RedisStore) SetMany(ctx context.Context, breakers map[string]CircuitBreaker, ttl time.Duration) error {
 	pipe := s.redis.TxPipeline()
 	for key, breaker := range breakers {
-		val, innerErr := breaker.String()
-		if innerErr != nil {
-			return innerErr
-		}
-
-		if innerErr = pipe.Set(ctx, key, val, ttl).Err(); innerErr != nil {
+		val := breaker.String()
+		if innerErr := pipe.Set(ctx, key, val, ttl).Err(); innerErr != nil {
 			return innerErr
 		}
 	}
@@ -163,9 +159,9 @@ func (t *TestStore) GetOne(_ context.Context, s string) (string, error) {
 		return "", ErrCircuitBreakerNotFound
 	}
 
-	vv, err := res.String()
-	if err != nil {
-		return "", err
+	vv := res.String()
+	if vv != "" {
+		return "", errors.New("an error occurred decoding the circuit breaker")
 	}
 
 	return vv, nil

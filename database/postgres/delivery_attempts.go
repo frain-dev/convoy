@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -131,7 +132,10 @@ func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Contex
 	return nil
 }
 
-func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64) (results []circuit_breaker.PollResult, err error) {
+func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]circuit_breaker.PollResult, error) {
+	resultsMap := map[string]circuit_breaker.PollResult{}
+	fmt.Printf("rowValue: %+v\n", resetTimes)
+
 	query := `
 		SELECT
             endpoint_id AS key,
@@ -152,10 +156,34 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
 		if rowScanErr := rows.StructScan(&rowValue); rowScanErr != nil {
 			return nil, rowScanErr
 		}
-		results = append(results, rowValue)
+		resultsMap[rowValue.Key] = rowValue
 	}
 
-	return results, nil
+	// this is an n+1 query? yikes
+	query2 := `
+		SELECT
+	        endpoint_id AS key,
+	        COUNT(CASE WHEN status = false THEN 1 END) AS failures,
+	        COUNT(CASE WHEN status = true THEN 1 END) AS successes
+	    FROM convoy.delivery_attempts
+	    WHERE endpoint_id = $1 AND created_at >= $2 group by endpoint_id;
+	`
+
+	for k, t := range resetTimes {
+		var rowValue circuit_breaker.PollResult
+		err = d.db.QueryRowxContext(ctx, query2, k, t).StructScan(&rowValue)
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return nil, err
+			}
+		}
+
+		if &rowValue != nil {
+			resultsMap[k] = rowValue
+		}
+	}
+
+	return resultsMap, nil
 }
 
 func (d *deliveryAttemptRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {

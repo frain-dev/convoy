@@ -168,8 +168,7 @@ func TestRedisStore_SetMany(t *testing.T) {
 		result, err := redisClient.Get(ctx, key).Result()
 		require.NoError(t, err)
 
-		expectedValue, err := breaker.String()
-		require.NoError(t, err)
+		expectedValue := breaker.String()
 		require.Equal(t, expectedValue, result)
 
 		// Verify the expiration was set
@@ -212,7 +211,7 @@ func TestTestStore_GetOne(t *testing.T) {
 		result, err := store.GetOne(ctx, "test")
 		require.NoError(t, err)
 
-		expectedValue, _ := cb.String()
+		expectedValue := cb.String()
 		require.Equal(t, expectedValue, result)
 	})
 

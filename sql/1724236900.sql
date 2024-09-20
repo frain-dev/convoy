@@ -1,10 +1,11 @@
 -- +migrate Up
-alter table convoy.configurations add column if not exists cb_sample_rate int not null default 30;
-alter table convoy.configurations add column if not exists cb_error_timeout int not null default 30;
-alter table convoy.configurations add column if not exists cb_failure_threshold int not null default 70;
+alter table convoy.configurations add column if not exists cb_sample_rate int not null default 30; -- seconds
+alter table convoy.configurations add column if not exists cb_error_timeout int not null default 30; -- seconds
+alter table convoy.configurations add column if not exists cb_failure_threshold int not null default 70; -- percentage
 alter table convoy.configurations add column if not exists cb_failure_count int not null default 1;
-alter table convoy.configurations add column if not exists cb_success_threshold int not null default 5;
-alter table convoy.configurations add column if not exists cb_observability_window int not null default 5;
+alter table convoy.configurations add column if not exists cb_success_threshold int not null default 1; -- percentage
+alter table convoy.configurations add column if not exists cb_observability_window int not null default 30; -- minutes
+alter table convoy.configurations add column if not exists cb_minimum_request_count int not null default 10;
 alter table convoy.configurations add column if not exists cb_notification_thresholds int[] not null default ARRAY[10, 30, 50];
 alter table convoy.configurations add column if not exists cb_consecutive_failure_threshold int not null default 10;
 create index if not exists idx_delivery_attempts_created_at on convoy.delivery_attempts (created_at);

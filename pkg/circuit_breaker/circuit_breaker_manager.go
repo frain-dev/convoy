@@ -7,18 +7,19 @@ import (
 	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
+	"strings"
 	"time"
 )
 
-// todo(raymond): add to feature flags
-// todo(raymond): notification thresholds are percentages
+// todo(raymond): send notifications when notification thresholds are hit, then update breaker state
+// todo(raymond): save the previous failure rate along side the current so we can compare to see if it's reducing
 // todo(raymond): metrics should contain error rate
 // todo(raymond): use a guage for failure rate metrics
 
 const prefix = "breaker:"
 const mutexKey = "convoy:circuit_breaker:mutex"
 
-type PollFunc func(ctx context.Context, lookBackDuration uint64) ([]PollResult, error)
+type PollFunc func(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]PollResult, error)
 type CircuitBreakerOption func(cb *CircuitBreakerManager) error
 
 var (
@@ -39,6 +40,9 @@ var (
 
 	// ErrConfigMustNotBeNil is returned when a nil config is passed to NewCircuitBreakerManager
 	ErrConfigMustNotBeNil = errors.New("[circuit breaker] config must not be nil")
+
+	// ErrNotificationFunctionMustNotBeNil is returned when a nil function is passed to NewCircuitBreakerManager
+	ErrNotificationFunctionMustNotBeNil = errors.New("[circuit breaker] notification function must not be nil")
 )
 
 // State represents a state of a CircuitBreaker.
@@ -71,9 +75,10 @@ type PollResult struct {
 }
 
 type CircuitBreakerManager struct {
-	config *CircuitBreakerConfig
-	clock  clock.Clock
-	store  CircuitBreakerStore
+	config         *CircuitBreakerConfig
+	clock          clock.Clock
+	store          CircuitBreakerStore
+	notificationFn func(CircuitBreaker) error
 }
 
 func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerManager, error) {
@@ -96,6 +101,10 @@ func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerM
 
 	if r.config == nil {
 		return nil, ErrConfigMustNotBeNil
+	}
+
+	if r.notificationFn == nil {
+		return nil, ErrNotificationFunctionMustNotBeNil
 	}
 
 	return r, nil
@@ -138,15 +147,28 @@ func ConfigOption(config *CircuitBreakerConfig) CircuitBreakerOption {
 	}
 }
 
-func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []PollResult) error {
+func NotificationFunctionOption(fn func(c CircuitBreaker) error) CircuitBreakerOption {
+	return func(cb *CircuitBreakerManager) error {
+		if fn == nil {
+			return ErrNotificationFunctionMustNotBeNil
+		}
+
+		cb.notificationFn = fn
+		return nil
+	}
+}
+
+func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults map[string]PollResult) error {
 	redisCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	keys := make([]string, len(pollResults))
-	for i := range pollResults {
-		key := fmt.Sprintf("%s%s", prefix, pollResults[i].Key)
-		keys[i] = key
-		pollResults[i].Key = key
+	circuitBreakerMap := make(map[string]CircuitBreaker, len(pollResults))
+
+	keys, j := make([]string, len(pollResults)), 0
+	for k := range pollResults {
+		key := fmt.Sprintf("%s%s", prefix, k)
+		keys[j] = key
+		j++
 	}
 
 	res, err := cb.store.GetMany(redisCtx, keys...)
@@ -154,48 +176,34 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 		return err
 	}
 
-	circuitBreakers := make([]CircuitBreaker, len(pollResults))
 	for i := range res {
 		if res[i] == nil {
-			c := CircuitBreaker{
-				State: StateClosed,
-				Key:   pollResults[i].Key,
-			}
-			circuitBreakers[i] = c
+			circuitBreakerMap[keys[i]] = *NewCircuitBreaker(keys[i])
 			continue
 		}
 
-		c := CircuitBreaker{}
 		str, ok := res[i].(string)
 		if !ok {
 			log.Errorf("[circuit breaker] breaker with key (%s) is corrupted, reseting it", keys[i])
 
 			// the circuit breaker is corrupted, create a new one in its place
-			circuitBreakers[i] = CircuitBreaker{
-				State: StateClosed,
-				Key:   keys[i],
-			}
+			circuitBreakerMap[keys[i]] = *NewCircuitBreaker(keys[i])
 			continue
 		}
 
+		var c CircuitBreaker
 		asBytes := []byte(str)
 		innerErr := msgpack.DecodeMsgPack(asBytes, &c)
 		if innerErr != nil {
 			return innerErr
 		}
 
-		circuitBreakers[i] = c
+		circuitBreakerMap[keys[i]] = c
 	}
 
-	resultsMap := make(map[string]PollResult)
-	for _, result := range pollResults {
-		resultsMap[result.Key] = result
-	}
-
-	circuitBreakerMap := make(map[string]CircuitBreaker, len(resultsMap))
-
-	for _, breaker := range circuitBreakers {
-		result := resultsMap[breaker.Key]
+	for key, breaker := range circuitBreakerMap {
+		k := strings.Split(key, ":")
+		result := pollResults[k[1]]
 
 		breaker.TotalFailures = result.Failures
 		breaker.TotalSuccesses = result.Successes
@@ -209,16 +217,29 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults []
 
 		if breaker.State == StateHalfOpen && breaker.TotalSuccesses >= cb.config.SuccessThreshold {
 			breaker.resetCircuitBreaker()
-		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) &&
-			(breaker.FailureRate >= float64(cb.config.FailureThreshold) || breaker.TotalFailures >= cb.config.FailureCount) {
-			breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
+		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= cb.config.MinimumRequestCount {
+			if breaker.FailureRate >= float64(cb.config.FailureThreshold) || breaker.TotalFailures >= cb.config.FailureCount {
+				breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
+			}
 		}
 
 		if breaker.State == StateOpen && cb.clock.Now().After(breaker.WillResetAt) {
 			breaker.toHalfOpen()
 		}
 
-		circuitBreakerMap[breaker.Key] = breaker
+		// send notifications for each circuit breaker
+		for i := range cb.config.NotificationThresholds {
+			if breaker.NotificationsSent < 3 && breaker.FailureRate >= float64(cb.config.NotificationThresholds[i]) {
+				innerErr := cb.notificationFn(breaker)
+				if innerErr != nil {
+					log.WithError(innerErr).Errorf("[circuit breaker] failed to execute notification function")
+				}
+				breaker.NotificationsSent++
+				break
+			}
+		}
+
+		circuitBreakerMap[key] = breaker
 	}
 
 	if err = cb.updateCircuitBreakers(ctx, circuitBreakerMap); err != nil {
@@ -242,6 +263,10 @@ func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]Cir
 	keys, err := cb.store.Keys(redisCtx, prefix)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(keys) == 0 {
+		return []CircuitBreaker{}, nil
 	}
 
 	redisCtx2, cancel2 := context.WithTimeout(ctx, 5*time.Second)
@@ -367,8 +392,21 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 		}
 	}()
 
+	bs, err := cb.loadCircuitBreakers(ctx)
+	if err != nil {
+		log.WithError(err).Error("[circuit breaker] failed to load circuitBreakers")
+		return err
+	}
+
+	resetMap := make(map[string]time.Time, len(bs))
+	for i := range bs {
+		if bs[i].State == StateClosed && bs[i].WillResetAt.After(time.Time{}) {
+			resetMap[bs[i].Key] = bs[i].WillResetAt
+		}
+	}
+
 	// Get the failure and success counts from the last X minutes
-	pollResults, err := pollFunc(ctx, cb.config.ObservabilityWindow)
+	pollResults, err := pollFunc(ctx, cb.config.ObservabilityWindow, resetMap)
 	if err != nil {
 		return fmt.Errorf("poll function failed: %w", err)
 	}

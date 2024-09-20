@@ -1352,11 +1352,12 @@ func (c *Configuration) ToCircuitBreakerConfig() *circuit_breaker.CircuitBreaker
 
 	return &circuit_breaker.CircuitBreakerConfig{
 		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
+		FailureCount:                c.CircuitBreakerConfig.FailureCount,
 		BreakerTimeout:              c.CircuitBreakerConfig.ErrorTimeout,
 		FailureThreshold:            c.CircuitBreakerConfig.FailureThreshold,
-		FailureCount:                c.CircuitBreakerConfig.FailureCount,
 		SuccessThreshold:            c.CircuitBreakerConfig.SuccessThreshold,
 		ObservabilityWindow:         c.CircuitBreakerConfig.ObservabilityWindow,
+		MinimumRequestCount:         c.CircuitBreakerConfig.MinimumRequestCount,
 		NotificationThresholds:      notificationThresholds,
 		ConsecutiveFailureThreshold: c.CircuitBreakerConfig.ConsecutiveFailureThreshold,
 	}
@@ -1392,10 +1393,11 @@ type OnPremStorage struct {
 type CircuitBreakerConfig struct {
 	SampleRate                  uint64        `json:"sample_rate" db:"sample_rate"`
 	ErrorTimeout                uint64        `json:"error_timeout" db:"error_timeout"`
-	FailureThreshold            uint64        `json:"failure_threshold" db:"failure_threshold"`
 	FailureCount                uint64        `json:"failure_count" db:"failure_count"`
+	FailureThreshold            uint64        `json:"failure_threshold" db:"failure_threshold"`
 	SuccessThreshold            uint64        `json:"success_threshold" db:"success_threshold"`
 	ObservabilityWindow         uint64        `json:"observability_window" db:"observability_window"`
+	MinimumRequestCount         uint64        `json:"minimum_request_count" db:"minimum_request_count"`
 	NotificationThresholds      pq.Int64Array `json:"notification_thresholds" db:"notification_thresholds"`
 	ConsecutiveFailureThreshold uint64        `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }

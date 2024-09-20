@@ -23,9 +23,10 @@ const (
 		cb_sample_rate,cb_error_timeout,
 		cb_failure_threshold,cb_failure_count,
 		cb_success_threshold,cb_observability_window,
-		cb_notification_thresholds,cb_consecutive_failure_threshold
+		cb_notification_thresholds,cb_consecutive_failure_threshold,
+		cb_minimum_request_count
 	  )
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22);
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23);
 	`
 
 	fetchConfiguration = `
@@ -50,6 +51,7 @@ const (
 		cb_failure_count AS "breaker_config.failure_count",
 		cb_success_threshold AS "breaker_config.success_threshold",
 		cb_observability_window AS "breaker_config.observability_window",
+		cb_minimum_request_count as "breaker_config.minimum_request_count",
 		cb_notification_thresholds::INTEGER[] AS "breaker_config.notification_thresholds",
 		cb_consecutive_failure_threshold AS "breaker_config.consecutive_failure_threshold",
 		created_at,
@@ -84,6 +86,7 @@ const (
 		cb_observability_window = $20,
 		cb_notification_thresholds = $21,
 		cb_consecutive_failure_threshold = $22,
+		cb_minimum_request_count = $23,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -140,6 +143,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		cb.ObservabilityWindow,
 		cb.NotificationThresholds,
 		cb.ConsecutiveFailureThreshold,
+		cb.MinimumRequestCount,
 	)
 	if err != nil {
 		return err
@@ -213,6 +217,7 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		cb.ObservabilityWindow,
 		cb.NotificationThresholds,
 		cb.ConsecutiveFailureThreshold,
+		cb.MinimumRequestCount,
 	)
 	if err != nil {
 		return err

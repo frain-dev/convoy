@@ -20,14 +20,13 @@ func TestCircuitBreaker_String(t *testing.T) {
 	}
 
 	t.Run("Success", func(t *testing.T) {
-		result, err := cb.String()
+		result := cb.String()
 
-		require.NoError(t, err)
 		require.NotEmpty(t, result)
 
 		// Decode the result back to a CircuitBreaker
 		var decodedCB CircuitBreaker
-		err = msgpack.DecodeMsgPack([]byte(result), &decodedCB)
+		err := msgpack.DecodeMsgPack([]byte(result), &decodedCB)
 		require.NoError(t, err)
 
 		// Compare the decoded CircuitBreaker with the original
