@@ -56,10 +56,10 @@ const (
 )
 
 type ApplicationHandler struct {
-	Router   http.Handler
-	rm       *requestmigrations.RequestMigration
-	A        *types.APIOptions
-	Instance string
+	Router http.Handler
+	rm     *requestmigrations.RequestMigration
+	A      *types.APIOptions
+	cfg    *config.Configuration
 }
 
 func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
@@ -69,7 +69,10 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 	if err != nil {
 		return nil, err
 	}
-	appHandler.Instance = cfg.Host
+
+	if &cfg != nil {
+		appHandler.cfg = &cfg
+	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
@@ -102,7 +105,9 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, err
 	}
 
-	return &ApplicationHandler{A: a, rm: rm}, nil
+	appHandler.rm = rm
+
+	return appHandler, nil
 }
 
 func (a *ApplicationHandler) buildRouter() *chi.Mux {
@@ -138,7 +143,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			r.Use(middleware.RequireAuth())
 
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate))
+				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceId, a.cfg.InstanceIngestRate))
 				projectRouter.Get("/", handler.GetProjects)
 				projectRouter.Post("/", handler.CreateProject)
 
@@ -170,10 +175,10 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
 							// TODO(all): should the InstrumentPath change?
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
-							eventRouter.With(handler.RequireEnabledProject()).Post("/fanout", handler.CreateEndpointFanoutEvent)
-							eventRouter.With(handler.RequireEnabledProject()).Post("/broadcast", handler.CreateBroadcastEvent)
-							eventRouter.With(handler.RequireEnabledProject()).Post("/dynamic", handler.CreateDynamicEvent)
+							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/", handler.CreateEndpointEvent)
+							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/fanout", handler.CreateEndpointFanoutEvent)
+							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/broadcast", handler.CreateBroadcastEvent)
+							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/dynamic", handler.CreateDynamicEvent)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -338,7 +343,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
 							// TODO(all): should the InstrumentPath change?
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
+							eventRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEndpointEvent)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/fanout", handler.CreateEndpointFanoutEvent)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/broadcast", handler.CreateBroadcastEvent)
 							eventRouter.With(handler.RequireEnabledProject()).Post("/dynamic", handler.CreateDynamicEvent)
@@ -520,13 +525,13 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 			r.Use(middleware.RequireAuth())
 
 			r.Route("/projects", func(projectRouter chi.Router) {
+				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceId, a.cfg.InstanceIngestRate))
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-						// TODO(all): should the InstrumentPath change?
-						eventRouter.With(middleware.InstrumentPath("/events")).Post("/", handler.CreateEndpointEvent)
-						eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
-						eventRouter.Post("/broadcast", handler.CreateBroadcastEvent)
-						eventRouter.Post("/dynamic", handler.CreateDynamicEvent)
+						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/", handler.CreateEndpointEvent)
+						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/fanout", handler.CreateEndpointFanoutEvent)
+						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/broadcast", handler.CreateBroadcastEvent)
+						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/dynamic", handler.CreateDynamicEvent)
 						eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 						eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
 
