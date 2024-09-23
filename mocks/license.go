@@ -122,6 +122,20 @@ func (mr *MockLicenserMockRecorder) AdvancedWebhookFiltering() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdvancedWebhookFiltering", reflect.TypeOf((*MockLicenser)(nil).AdvancedWebhookFiltering))
 }
 
+// AgentExecutionMode mocks base method.
+func (m *MockLicenser) AgentExecutionMode() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AgentExecutionMode")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AgentExecutionMode indicates an expected call of AgentExecutionMode.
+func (mr *MockLicenserMockRecorder) AgentExecutionMode() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AgentExecutionMode", reflect.TypeOf((*MockLicenser)(nil).AgentExecutionMode))
+}
+
 // AsynqMonitoring mocks base method.
 func (m *MockLicenser) AsynqMonitoring() bool {
 	m.ctrl.T.Helper()
