@@ -72,10 +72,10 @@ func TestCircuitBreakerConfig_Validate(t *testing.T) {
 				BreakerTimeout:   30,
 				FailureThreshold: 5,
 				FailureCount:     5,
-				SuccessThreshold: 0,
+				SuccessThreshold: 150,
 			},
 			wantErr: true,
-			err:     "SuccessThreshold must be greater than 0",
+			err:     "SuccessThreshold must be between 1 and 100",
 		},
 		{
 			name: "Invalid ObservabilityWindow",

@@ -103,10 +103,6 @@ func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerM
 		return nil, ErrConfigMustNotBeNil
 	}
 
-	if r.notificationFn == nil {
-		return nil, ErrNotificationFunctionMustNotBeNil
-	}
-
 	return r, nil
 }
 
@@ -162,7 +158,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 	redisCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	circuitBreakerMap := make(map[string]CircuitBreaker, len(pollResults))
+	circuitBreakers := make(map[string]CircuitBreaker, len(pollResults))
 
 	keys, j := make([]string, len(pollResults)), 0
 	for k := range pollResults {
@@ -178,7 +174,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 	for i := range res {
 		if res[i] == nil {
-			circuitBreakerMap[keys[i]] = *NewCircuitBreaker(keys[i])
+			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i])
 			continue
 		}
 
@@ -187,7 +183,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 			log.Errorf("[circuit breaker] breaker with key (%s) is corrupted, reseting it", keys[i])
 
 			// the circuit breaker is corrupted, create a new one in its place
-			circuitBreakerMap[keys[i]] = *NewCircuitBreaker(keys[i])
+			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i])
 			continue
 		}
 
@@ -198,10 +194,10 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 			return innerErr
 		}
 
-		circuitBreakerMap[keys[i]] = c
+		circuitBreakers[keys[i]] = c
 	}
 
-	for key, breaker := range circuitBreakerMap {
+	for key, breaker := range circuitBreakers {
 		k := strings.Split(key, ":")
 		result := pollResults[k[1]]
 
@@ -209,13 +205,16 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		breaker.TotalSuccesses = result.Successes
 		breaker.Requests = breaker.TotalSuccesses + breaker.TotalFailures
 
+		prevFailureRate := breaker.FailureRate
 		if breaker.Requests == 0 {
 			breaker.FailureRate = 0
+			breaker.SuccessRate = 0
 		} else {
 			breaker.FailureRate = float64(breaker.TotalFailures) / float64(breaker.Requests) * 100
+			breaker.SuccessRate = float64(breaker.TotalSuccesses) / float64(breaker.Requests) * 100
 		}
 
-		if breaker.State == StateHalfOpen && breaker.TotalSuccesses >= cb.config.SuccessThreshold {
+		if breaker.State == StateHalfOpen && breaker.SuccessRate >= float64(cb.config.SuccessThreshold) {
 			breaker.resetCircuitBreaker()
 		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= cb.config.MinimumRequestCount {
 			if breaker.FailureRate >= float64(cb.config.FailureThreshold) || breaker.TotalFailures >= cb.config.FailureCount {
@@ -228,21 +227,22 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		}
 
 		// send notifications for each circuit breaker
-		for i := range cb.config.NotificationThresholds {
-			if breaker.NotificationsSent < 3 && breaker.FailureRate >= float64(cb.config.NotificationThresholds[i]) {
-				innerErr := cb.notificationFn(breaker)
-				if innerErr != nil {
-					log.WithError(innerErr).Errorf("[circuit breaker] failed to execute notification function")
+		if cb.notificationFn != nil {
+			if prevFailureRate < breaker.FailureRate && breaker.NotificationsSent < 3 {
+				if breaker.FailureRate >= float64(cb.config.NotificationThresholds[breaker.NotificationsSent]) {
+					innerErr := cb.notificationFn(breaker)
+					if innerErr != nil {
+						log.WithError(innerErr).Errorf("[circuit breaker] failed to execute notification function")
+					}
+					breaker.NotificationsSent++
 				}
-				breaker.NotificationsSent++
-				break
 			}
 		}
 
-		circuitBreakerMap[key] = breaker
+		circuitBreakers[key] = breaker
 	}
 
-	if err = cb.updateCircuitBreakers(ctx, circuitBreakerMap); err != nil {
+	if err = cb.updateCircuitBreakers(ctx, circuitBreakers); err != nil {
 		log.WithError(err).Error("[circuit breaker] failed to update state")
 		return err
 	}

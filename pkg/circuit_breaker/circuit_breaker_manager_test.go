@@ -34,6 +34,12 @@ func pollResult(t *testing.T, key string, failureCount, successCount uint64) map
 	}
 }
 
+type notificationTriggered struct {
+	Rate  float64
+	Sent  uint64
+	State State
+}
+
 func TestCircuitBreakerManager(t *testing.T) {
 	ctx := context.Background()
 
@@ -57,19 +63,24 @@ func TestCircuitBreakerManager(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            70,
 		FailureCount:                3,
-		SuccessThreshold:            1,
+		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
 
+	var triggered []notificationTriggered
 	b, err := NewCircuitBreakerManager(
 		ClockOption(testClock),
 		StoreOption(store),
 		ConfigOption(c),
 		NotificationFunctionOption(func(c CircuitBreaker) error {
-			t.Logf("c: %+v, s: %+v f: %+v\n", int64(c.FailureRate), c.State, c.NotificationsSent)
+			triggered = append(triggered, notificationTriggered{
+				State: c.State,
+				Rate:  c.FailureRate,
+				Sent:  c.NotificationsSent,
+			})
 			return nil
 		}),
 	)
@@ -77,10 +88,10 @@ func TestCircuitBreakerManager(t *testing.T) {
 
 	endpointId := "endpoint-1"
 	pollResults := []map[string]PollResult{
-		pollResult(t, endpointId, 1, 0),
-		pollResult(t, endpointId, 2, 0),
-		pollResult(t, endpointId, 2, 1),
-		pollResult(t, endpointId, 2, 2),
+		pollResult(t, endpointId, 3, 9),
+		pollResult(t, endpointId, 5, 10),
+		pollResult(t, endpointId, 10, 1),
+		pollResult(t, endpointId, 20, 0),
 		pollResult(t, endpointId, 2, 3),
 		pollResult(t, endpointId, 1, 4),
 	}
@@ -91,6 +102,11 @@ func TestCircuitBreakerManager(t *testing.T) {
 
 		testClock.AdvanceTime(time.Minute)
 	}
+
+	require.Len(t, triggered, 3)
+	require.Equal(t, triggered[2].Sent, uint64(2))
+	require.Equal(t, triggered[2].State, StateOpen)
+	require.Equal(t, int64(triggered[2].Rate), int64(90))
 
 	breaker, innerErr := b.GetCircuitBreakerWithError(ctx, endpointId)
 	require.NoError(t, innerErr)
@@ -121,7 +137,8 @@ func TestCircuitBreakerManager_AddNewBreakerMidway(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            70,
 		FailureCount:                3,
-		SuccessThreshold:            1,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
@@ -176,7 +193,8 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                3,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
@@ -186,20 +204,18 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 
 	endpointId := "endpoint-1"
 	pollResults := []map[string]PollResult{
-		pollResult(t, endpointId, 1, 2), // Closed
-		pollResult(t, endpointId, 3, 1), // Open (FailureCount reached)
-		pollResult(t, endpointId, 0, 0), // Still Open
-		pollResult(t, endpointId, 1, 1), // Half-Open (after ErrorTimeout)
-		pollResult(t, endpointId, 0, 1), // Still Half-Open
-		pollResult(t, endpointId, 0, 2), // Closed (SuccessThreshold reached)
-		pollResult(t, endpointId, 4, 0), // Open (FailureThreshold reached)
+		pollResult(t, endpointId, 1, 2),  // Closed
+		pollResult(t, endpointId, 13, 1), // Open (FailureCount reached)
+		pollResult(t, endpointId, 13, 1), // Still Open
+		pollResult(t, endpointId, 10, 1), // Half-Open (after ErrorTimeout)
+		pollResult(t, endpointId, 0, 2),  // Closed (SuccessThreshold reached)
+		pollResult(t, endpointId, 14, 0), // Open (FailureThreshold reached)
 	}
 
 	expectedStates := []State{
 		StateClosed,
 		StateOpen,
 		StateOpen,
-		StateHalfOpen,
 		StateHalfOpen,
 		StateClosed,
 		StateOpen,
@@ -246,7 +262,8 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            70,
 		FailureCount:                3,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 3,
@@ -256,11 +273,11 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 
 	endpointId := "endpoint-1"
 	pollResults := []map[string]PollResult{
-		pollResult(t, endpointId, 3, 1), // Open
-		pollResult(t, endpointId, 1, 1), // Half-Open
-		pollResult(t, endpointId, 3, 0), // Open
-		pollResult(t, endpointId, 1, 1), // Half-Open
-		pollResult(t, endpointId, 3, 0), // Open
+		pollResult(t, endpointId, 13, 1), // Open
+		pollResult(t, endpointId, 13, 1), // Half-Open
+		pollResult(t, endpointId, 15, 0), // Open
+		pollResult(t, endpointId, 17, 1), // Half-Open
+		pollResult(t, endpointId, 13, 0), // Open
 	}
 
 	for _, result := range pollResults {
@@ -297,10 +314,11 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 	c := &CircuitBreakerConfig{
 		SampleRate:                  2,
 		BreakerTimeout:              30,
-		FailureThreshold:            70,
+		FailureThreshold:            60,
 		FailureCount:                3,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
 		ObservabilityWindow:         5,
+		MinimumRequestCount:         10,
 		NotificationThresholds:      [3]uint64{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
@@ -312,9 +330,9 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 	endpoint3 := "endpoint-3"
 
 	pollResults := []map[string]PollResult{
-		pollResult(t, endpoint1, 1, 1), pollResult(t, endpoint2, 3, 1), pollResult(t, endpoint3, 0, 4),
-		pollResult(t, endpoint1, 1, 1), pollResult(t, endpoint2, 3, 1), pollResult(t, endpoint3, 0, 4),
-		pollResult(t, endpoint1, 3, 1), pollResult(t, endpoint2, 1, 3), pollResult(t, endpoint3, 1, 5),
+		pollResult(t, endpoint1, 10, 0), pollResult(t, endpoint2, 3, 1), pollResult(t, endpoint3, 0, 4),
+		pollResult(t, endpoint1, 13, 0), pollResult(t, endpoint2, 3, 1), pollResult(t, endpoint3, 0, 4),
+		pollResult(t, endpoint1, 15, 0), pollResult(t, endpoint2, 1, 3), pollResult(t, endpoint3, 1, 5),
 	}
 
 	for _, results := range pollResults {
@@ -345,7 +363,8 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
@@ -402,7 +421,8 @@ func TestCircuitBreakerManager_GetCircuitBreakerError(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
@@ -443,7 +463,8 @@ func TestCircuitBreakerManager_SampleStore(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
@@ -489,7 +510,8 @@ func TestCircuitBreakerManager_UpdateCircuitBreakers(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
@@ -547,7 +569,8 @@ func TestCircuitBreakerManager_LoadCircuitBreakers(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
@@ -604,7 +627,8 @@ func TestCircuitBreakerManager_CanExecute(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
@@ -683,7 +707,8 @@ func TestCircuitBreakerManager_GetCircuitBreaker(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
@@ -732,7 +757,8 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,
@@ -803,7 +829,8 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
 		FailureCount:                5,
-		SuccessThreshold:            2,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      [3]uint64{10, 20, 30},
 		ConsecutiveFailureThreshold: 3,

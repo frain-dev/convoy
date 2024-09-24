@@ -16,6 +16,8 @@ type CircuitBreaker struct {
 	Requests uint64 `json:"requests"`
 	// Percentage of failures in the observability window
 	FailureRate float64 `json:"failure_rate"`
+	// Percentage of failures in the observability window
+	SuccessRate float64 `json:"success_rate"`
 	// Time after which the circuit breaker will reset when in half-open state
 	WillResetAt time.Time `json:"will_reset_at"`
 	// Number of failed requests in the observability window

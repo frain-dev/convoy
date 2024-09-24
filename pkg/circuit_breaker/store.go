@@ -160,7 +160,7 @@ func (t *TestStore) GetOne(_ context.Context, s string) (string, error) {
 	}
 
 	vv := res.String()
-	if vv != "" {
+	if vv == "" {
 		return "", errors.New("an error occurred decoding the circuit breaker")
 	}
 

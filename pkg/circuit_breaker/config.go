@@ -61,8 +61,6 @@ func (c *CircuitBreakerConfig) Validate() error {
 		errs.WriteString("; ")
 	}
 
-	fmt.Printf("%+v\n", c.MinimumRequestCount)
-
 	if c.MinimumRequestCount < 10 {
 		errs.WriteString("MinimumRequestCount must be greater than 10")
 		errs.WriteString("; ")
@@ -73,8 +71,8 @@ func (c *CircuitBreakerConfig) Validate() error {
 		errs.WriteString("; ")
 	}
 
-	if c.SuccessThreshold == 0 {
-		errs.WriteString("SuccessThreshold must be greater than 0")
+	if c.SuccessThreshold == 0 || c.SuccessThreshold > 100 {
+		errs.WriteString("SuccessThreshold must be between 1 and 100")
 		errs.WriteString("; ")
 	}
 

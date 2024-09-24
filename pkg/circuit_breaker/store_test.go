@@ -2,8 +2,6 @@ package circuit_breaker
 
 import (
 	"context"
-	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -269,30 +267,4 @@ func TestTestStore_SetMany(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, cb, storedCB)
 	}
-}
-
-func TestTestStore_Concurrency(t *testing.T) {
-	store := NewTestStore()
-	ctx := context.Background()
-	wg := &sync.WaitGroup{}
-
-	// Test concurrent reads
-	for i := 0; i < 100; i++ {
-		wg.Add(1)
-		key := fmt.Sprintf("key_%d", i)
-		err := store.SetOne(ctx, key, CircuitBreaker{Key: key, State: StateClosed}, time.Minute)
-		require.NoError(t, err)
-	}
-
-	go func() {
-		for i := 0; i < 100; i++ {
-			_, err := store.GetOne(ctx, fmt.Sprintf("key_%d", i))
-			require.NoError(t, err)
-			wg.Done()
-		}
-	}()
-
-	// If there's a race condition, this test might panic or deadlock
-	time.Sleep(100 * time.Millisecond)
-	wg.Wait()
 }

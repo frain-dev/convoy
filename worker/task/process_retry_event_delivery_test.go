@@ -1071,6 +1071,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				FailureCount:                5,
 				SuccessThreshold:            2,
 				ObservabilityWindow:         5,
+				MinimumRequestCount:         10,
 				NotificationThresholds:      [3]uint64{10, 20, 30},
 				ConsecutiveFailureThreshold: 3,
 			}
