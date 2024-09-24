@@ -1,3 +1,151 @@
+# 24.8.2
+
+### Bug Fixes
+- fixed a retention policy bug where only empty files were uploading to s3
+
+# 24.8.1
+
+### Features
+- Added end to end latency metrics #2079
+- Add support for inbound webhooks that use form data #1998
+- Added e2e test suite using test containers #2083
+- Add license feature gating #2114 #2132 #2134
+- Change License to Elastic License v2.0 #2124
+
+### Enhancements
+- Move retention policy to instance config #2011
+- Update event data openapi types #2088
+- Refactor agent, worker and ingest entry points #2082
+- Refactored Exponential Backoff Implementation #2073
+- Remove instance configuration page #2085
+- Set default signature value to advanced from UI #2090
+- Add fanout for pubsub ingest #2099
+- Events ingested in incoming projects would now respond with a 413 for oversized payloads #2095
+- The agent component can now bootstrap a fresh instance #2111
+- Don't return an error when an owner id has no registered endpoints #2112
+- Split delivery attempts from event deliveries #2092
+- Add auth to metrics and queue monitoring routes #2115
+- Updated integration test suite #2100
+- Refactored feature flags implementation #2105
+- Push docker images to DockerHub #2122
+- Add owner id to event delivery response #2129
+
+
+### Bug Fixes
+- Fixed a bug in positional array filter #2086
+- Fix count & batch retry queries #2089
+- Fixed a bug where api responses from v2024-04-01 to v2024-01-01 were not properly migrated #2087
+- Update UI Dependencies #2097
+- Fixed a migration bug where default column values were not set #2103
+- Fixed a bug where the wrong delay duration was used when scheduling an event delivery for retry #2110
+- Fixed a bug where other events were retried from a portal link because the endpoint filter wasn't applied #2116
+-
+
+
+# 24.6.4
+
+- fixed a bug where the pubsub ingester won't start when there aren't any projects 
+
+# 24.6.3
+
+### Bug Fixes
+- Fixed api migration bug #2087
+
+# 24.6.2
+
+### Bug Fixes
+
+- Remove default config value for advanced signatures #2090
+
+# 24.6.1
+
+### Features
+- Add rate limiter to event entry points, HTTP APIs, and message brokers #2072 #2035
+- Add retry queue #2058
+- Add search bar for subscriptions #2062
+- Use asynq's exponential backoff for event delivery retries #2052
+- Add PyroScope profiling #1737
+- Added Prometheus metrics #2005
+- Endpoint subscriptions can now be created and viewed on portal links #2015
+- Subscriptions can now be filtered by name #2014
+
+### Enhancements
+- Optimise flatten and compare packages #2066 #2077
+- Changed the Postgres driver to pgx #2064
+- Optimized dashboard query and run time #2070
+- Fixed order of endpoints and subscriptions #2060
+- Optimise Subscription loader queries #2056
+- Make dispatcher proxy less strict, allowing requests to be sent if the proxy URL is invalid #2059
+- Load subscriptions synchronously on worker startup #2053
+- Remove cache from userRepo since it's not a hot path #2050
+- Added cache to retrieving subscriptions for broadcast #2044
+- Refactored net.Dispatcher
+    - Create dispatcher once #2043
+    - Fixed a bug where we were closing the response body late #2029
+- Refactor ProcessBroadcastEventCreation and ProcessEventCreation handlers
+    - Deduplicate endpoint IDs #2024
+- Refactor Repository
+    - Add FindEventDeliveryByIDSlim #2054
+    - Refactored event creation to insert in bulk #2038
+    - Add indexes for FetchSubscriptionsForBroadcast #2033
+
+### Bug Fixes
+- Fix dashboard summary filters #2071
+- Fix events summary date filter #2069
+- Fixed panic that occurred when updating project when setting the SSL config #2055
+- Fixed a bug where we were creating events for the number of matched subscriptions instead of the number of matched endpoints #2025
+- Fixed a bug where we would try to filter even when none is set on the subscription #2027
+- Fixed a bug where the default log level was set to debug #2013
+- Fixed a bug where portal links won't load in iframes because of a missing project reference #2008
+
+# 24.5.1
+
+### Features
+- Create default org when bootstrapping Convoy for the first time. #1991
+- Display user-settings page when there are no organizations. #1999
+
+### Enhancements
+- Use transactions in ProcessBroadcastEventCreation to prevent a race condition. #1994
+- Update copy for the kafka source form giving more information and linking to docs. #2000
+- Update Endpoint table with its ID on the dashboard. #1988
+
+### Bug fixes
+- Fixed a panic that would occur when request body is a string during subscription filtering. #1992
+- Fixed a bug where the response from the pause endpoint api wasn't versioned correctly. #2001
+
+# 24.4.1
+
+### API Changes
+
+> [!NOTE]
+> All API Changes are backward-compatible, so you shouldn't need to change any code to get them to work, however, you need to specify the version (2024-04-01) in your convoy.json.
+
+- changed endpoint `title` to `name`
+- changes endpoint `target_url` to `url`
+
+### Features
+- Implemented an in-memory store for data plane #1932
+- Re-implement rate limiter using postgres #1937 #1950
+- Add the ability to mutate payloads from message broker sources using javascript functions #1954 #1956 #1958
+- Add project config for enforcing https endpoints #1955 #1957
+- Add documentation to request models #1959
+- 
+
+### Enhancements
+- Encode Postgres connection string credentials #1936
+- Update endpoint `title` to `name` and `target_url` to `url` #1945
+- Enqueue Stuck Event Deliveries #1977
+
+### Bug Fixes
+- Fixed a bug where telemetry wasn't being sent to PostHog #1944
+- Fixed a bug where the signature modal in the project settings doesn't dismiss after saving. #1939
+- Fixed a bug where project settings were not displayed properly on the dashboard #1953
+- Fixed a bug where a failed subscription filter will stop all subscribers from a broadcast event from receiving the event #1962
+- Fixed open telemetry tls configuration #1966
+- Fixed a bug where a created or updated subscription didn't show the nested values #1970
+- Fixed endpoints count query for portal links #1973
+- Added data plane capabilities back to the worker which was unintentionally removed #1974
+
 # 24.1.4
 
 - [Enhancement] Add custom headers to dynamic event #1923

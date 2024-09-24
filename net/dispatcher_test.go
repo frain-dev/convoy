@@ -2,10 +2,17 @@ package net
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"net/http"
 	"testing"
+	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
+	"github.com/frain-dev/convoy/mocks"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -276,7 +283,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendRequest(tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "")
+			got, err := d.SendRequest(context.Background(), tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)
@@ -289,6 +296,73 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			require.Equal(t, tt.want.IP, got.IP)
 			require.Equal(t, tt.want.Body, got.Body)
 			require.Equal(t, tt.want.RequestHeader, got.RequestHeader)
+		})
+	}
+}
+
+func TestNewDispatcher(t *testing.T) {
+	type args struct {
+		httpProxy     string
+		enforceSecure bool
+	}
+	tests := []struct {
+		name       string
+		args       args
+		mockFn     func(licenser license.Licenser)
+		wantProxy  bool
+		wantErr    bool
+		wantErrMsg string
+	}{
+		{
+			name: "should_set_proxy",
+			args: args{
+				httpProxy:     "https://21.3.32.33:443",
+				enforceSecure: false,
+			},
+			mockFn: func(licenser license.Licenser) {
+				l := licenser.(*mocks.MockLicenser)
+				l.EXPECT().UseForwardProxy().Return(true)
+			},
+			wantProxy:  true,
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+		{
+			name: "should_not_set_proxy",
+			args: args{
+				httpProxy:     "https://21.3.32.33:443",
+				enforceSecure: false,
+			},
+			mockFn: func(licenser license.Licenser) {
+				l := licenser.(*mocks.MockLicenser)
+				l.EXPECT().UseForwardProxy().Return(false)
+			},
+			wantProxy:  false,
+			wantErr:    false,
+			wantErrMsg: "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			licenser := mocks.NewMockLicenser(ctrl)
+			if tt.mockFn != nil {
+				tt.mockFn(licenser)
+			}
+			d, err := NewDispatcher(tt.args.httpProxy, licenser, tt.args.enforceSecure)
+			if tt.wantErr {
+				require.Error(t, err)
+				require.Equal(t, tt.wantErrMsg, err.Error())
+				return
+			}
+
+			require.NoError(t, err)
+
+			if tt.wantProxy {
+				require.NotNil(t, d.client.Transport.(*http.Transport).Proxy)
+			}
 		})
 	}
 }

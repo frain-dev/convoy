@@ -3,6 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -27,17 +30,30 @@ import (
 //	@Summary		Create an event
 //	@Description	This endpoint creates an endpoint event
 //	@Tags			Events
+//	@Id				CreateEndpointEvent
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.CreateEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
 func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	var newMessage models.CreateEvent
-	err := util.ReadJSON(r, &newMessage)
+	err = util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -77,6 +93,7 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 			Data:           newMessage.Data,
 			CustomHeaders:  newMessage.CustomHeaders,
 			IdempotencyKey: newMessage.IdempotencyKey,
+			AcknowledgedAt: time.Now(),
 		},
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
@@ -104,19 +121,32 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 // CreateBroadcastEvent
 //
 //	@Summary		Create a broadcast event
-//	@Description	This endpoint broadcasts an endpoint event to all matching subscriptions
+//	@Id				CreateBroadcastEvent
+//	@Description	This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			event		body		models.BroadcastEvent	true	"Broadcast Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=models.EventResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/broadcast [post]
 func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	var newMessage models.BroadcastEvent
-	err := util.ReadJSON(r, &newMessage)
+	err = util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -134,10 +164,14 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	jid := ulid.Make().String()
+	newMessage.JobID = jid
+
 	cbe := services.CreateBroadcastEventService{
 		Queue:          h.A.Queue,
 		BroadcastEvent: &newMessage,
 		Project:        project,
+		JobID:          jid,
 	}
 
 	err = cbe.Run(r.Context())
@@ -153,18 +187,31 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Fan out an event
 //	@Description	This endpoint uses the owner_id to fan out an event to multiple endpoints.
+//	@Id				CreateEndpointFanoutEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.FanoutEvent	true	"Event Details"
-//	@Success		200			{object}	util.ServerResponse{data=Stub}
+//	@Success		201			{object}	util.ServerResponse{data=Stub}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
 func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	var newMessage models.FanoutEvent
-	err := util.ReadJSON(r, &newMessage)
+	err = util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -208,18 +255,31 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //
 //	@Summary		Dynamic Events
 //	@Description	This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events
+//	@Id				CreateDynamicEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			event		body		models.DynamicEvent	true	"Event Details"
-//	@Success		200			{object}	Stub
+//	@Success		201			{object}	Stub
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]
 func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
+	cfg, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+		return
+	}
+
+	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
+		return
+	}
+
 	var newMessage models.DynamicEvent
-	err := util.ReadJSON(r, &newMessage)
+	err = util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -256,6 +316,7 @@ func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Replay event
 //	@Description	This endpoint replays an event afresh assuming it is a new event.
+//	@Id				ReplayEndpointEvent
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -292,6 +353,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Batch replay events
 //	@Description	This endpoint replays multiple events at once.
+//	@Id				BatchReplayEvents
 //	@Tags			Events
 //	@Accept			json
 //	@Produce		json
@@ -316,6 +378,10 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Filter.Project = p
+	ep := datastore.Pageable{}
+	if data.Filter.Pageable == ep {
+		data.Filter.Pageable.PerPage = 2000000000
+	}
 
 	bs := services.BatchReplayEventService{
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
@@ -338,6 +404,7 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Retrieve an event
 //	@Description	This endpoint retrieves an event
 //	@Tags			Events
+//	@Id				GetEndpointEvent
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
@@ -363,6 +430,7 @@ func (h *Handler) GetEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Summary		List all events
 //	@Description	This endpoint fetches app events with pagination
 //	@Tags			Events
+//	@Id				GetEventsPaged
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
@@ -409,6 +477,11 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data.Filter.Project = project
+
+	if !h.A.Licenser.AdvancedWebhookFiltering() {
+		data.Filter.Query = "" // event payload search not allowed
+	}
+
 	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
@@ -437,6 +510,28 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("events count successful", map[string]interface{}{"num": 0}, http.StatusOK))
+			return
+		}
+
+		data.Filter.EndpointIDs = endpointIDs
+	}
+
 	count, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).CountEvents(r.Context(), p.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
@@ -456,16 +551,4 @@ func (h *Handler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
 	eventID := chi.URLParam(r, "eventID")
 	eventRepo := postgres.NewEventRepo(h.A.DB, h.A.Cache)
 	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
-}
-
-func getEndpointIDs(r *http.Request) []string {
-	var endpoints []string
-
-	for _, id := range r.URL.Query()["endpointId"] {
-		if !util.IsStringEmpty(id) {
-			endpoints = append(endpoints, id)
-		}
-	}
-
-	return endpoints
 }

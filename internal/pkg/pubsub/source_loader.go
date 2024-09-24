@@ -7,7 +7,6 @@ import (
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 )
 
 const (
@@ -42,17 +41,19 @@ func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table
 		return err
 	}
 
-	var dSourceKeys []string
+	var dSourceKeys []memorystore.Key
 	for _, source := range sources {
 		dSourceKeys = append(dSourceKeys, generateSourceKey(&source))
 	}
 
 	// find new and updated rows
-	newRows := util.Difference(dSourceKeys, mSourceKeys)
+	var key memorystore.Key
+	newRows := memorystore.Difference(dSourceKeys, mSourceKeys)
 	if len(newRows) != 0 {
 		for _, idx := range newRows {
 			for _, source := range sources {
-				if generateSourceKey(&source) == idx {
+				key = generateSourceKey(&source)
+				if key == idx {
 					_ = table.Add(idx, source)
 				}
 			}
@@ -60,7 +61,7 @@ func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table
 	}
 
 	// find deleted rows
-	deletedRows := util.Difference(mSourceKeys, dSourceKeys)
+	deletedRows := memorystore.Difference(mSourceKeys, dSourceKeys)
 	if len(deletedRows) != 0 {
 		for _, idx := range deletedRows {
 			table.Delete(idx)
@@ -75,6 +76,10 @@ func (s *SourceLoader) fetchSources(ctx context.Context, sources []datastore.Sou
 		NextCursor: cursor,
 		Direction:  datastore.Next,
 		PerPage:    perPage,
+	}
+
+	if len(projectIDs) == 0 {
+		return []datastore.Source{}, nil
 	}
 
 	newSources, pagination, err := s.sourceRepo.LoadPubSubSourcesByProjectIDs(ctx, projectIDs, pageable)
@@ -100,6 +105,10 @@ func (s *SourceLoader) fetchProjectSources(ctx context.Context) ([]datastore.Sou
 	projects, err := s.projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{})
 	if err != nil {
 		return nil, err
+	}
+
+	if len(projects) == 0 {
+		return []datastore.Source{}, nil
 	}
 
 	ids := make([]string, len(projects))

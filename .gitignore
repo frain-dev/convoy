@@ -14,6 +14,7 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 .idea
+.vscode
 
 /api/ui/build/*
 !/api/ui/build/go_test_stub.txt
@@ -34,6 +35,9 @@ convoy.json
 docker-compose.yml
 compose.yml
 typesense_data
-postgres_data
+postgres_data**
 redis_data
 /.run/go test github.com_frain-dev_convoy_server.run.xml
+
+convoy-ee
+convoy-ce

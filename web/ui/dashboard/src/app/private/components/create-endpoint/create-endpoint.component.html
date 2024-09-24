@@ -36,7 +36,7 @@
 								position="top-right"
 							></convoy-tooltip>
 						</label>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('owner_id')">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('owner_id')">
 							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
@@ -52,9 +52,9 @@
 			<ng-container *ngIf="showConfig('rate_limit')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
-						<p class="text-12 text-new.gray-500 font-medium flex items-center">Rate Limit</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('rate_limit')">
-							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+						<p class="text-12 text-neutral-11 font-medium flex items-center">Rate Limit</p>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('rate_limit')">
+							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
 						</button>
@@ -65,7 +65,7 @@
 							<label for="rate-limit-duration" convoy-label>Duration</label>
 							<div class="relative">
 								<input type="number" id="rate-limit-duration" convoy-input autocomplete="rate-limit-duration" formControlName="rate_limit_duration" placeholder="e.g 50" />
-								<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+								<div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
 							</div>
 							<convoy-input-error *ngIf="addNewEndpointForm.get('rate_limit_duration')?.touched && addNewEndpointForm.get('rate_limit_duration')?.invalid">Please enter a rate limit duration</convoy-input-error>
 						</convoy-input-field>
@@ -81,15 +81,23 @@
 			<ng-container *ngIf="showConfig('alert_config')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
-						<p class="text-12 text-new.gray-500 font-medium flex items-center">Alert Configuration</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('alert_config')">
-							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+						<div class="flex items-center gap-12px">
+							<p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
+							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+									<use xlink:href="#lock-icon"></use>
+								</svg>
+								Business
+							</div>
+						</div>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('alert_config')">
+							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
 						</button>
 					</div>
 
-					<div class="grid grid-cols-2 gap-24px">
+					<div class="grid grid-cols-2 gap-24px" *ngIf="licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
 						<convoy-input-field className="mb-0">
 							<label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
 							<input id="support-email" convoy-input autocomplete="suport-email" formControlName="support_email" placeholder="Enter support email" />
@@ -108,12 +116,12 @@
 			<ng-container *ngIf="showConfig('auth')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
-						<p class="flex items-center text-12 font-medium text-new.gray-500">
+						<p class="flex items-center text-12 font-medium text-neutral-11">
 							Endpoint Authentication
 							<convoy-tooltip size="sm" position="top-right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
 						</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('auth')">
-							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('auth')">
+							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
 						</button>
@@ -140,12 +148,12 @@
 			<ng-container *ngIf="showConfig('signature')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
-						<p class="text-12 font-medium text-new.gray-500 flex items-center">
+						<p class="text-12 font-medium text-neutral-11 flex items-center">
 							Signature Format
 							<convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
 						</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('signature')">
-							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('signature')">
+							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
 						</button>
@@ -160,12 +168,20 @@
 			<ng-container *ngIf="showConfig('http_timeout')">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
-						<p class="flex items-center text-12 font-medium text-new.gray-500">
-							Endpoint Timeout
-							<convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
-						</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('http_timeout')">
-							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+						<div class="flex items-center gap-8px">
+							<p class="flex items-center text-12 font-medium text-neutral-11">
+								Endpoint Timeout
+								<convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
+							</p>
+							<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+								<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+									<use xlink:href="#lock-icon"></use>
+								</svg>
+								Business
+							</div>
+						</div>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('http_timeout')">
+							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
 						</button>
@@ -173,18 +189,18 @@
 					<convoy-input-field>
 						<label for="http_timeout" convoy-label>Timeout Value</label>
 						<div class="relative">
-							<input id="http_timeout" type="number" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" />
-							<div class="absolute top-[50%] right-14px text-16 text-grey-100 opacity-40 translate-y-[-50%]">sec</div>
+							<input id="http_timeout" type="number" convoy-input autocomplete="http_timeout" formControlName="http_timeout" placeholder="e.g 60" [readonly]="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')" />
+							<div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
 						</div>
 						<convoy-input-error *ngIf="addNewEndpointForm.get('http_timeout')?.touched && addNewEndpointForm.get('http_timeout')?.invalid">Timeout value must be a whole number</convoy-input-error>
 					</convoy-input-field>
 				</div>
 			</ng-container>
 
-			<div class="flex items-center gap-24px overflow-x-auto no-scrollbar" *ngIf="shouldShowBorder < configurations.length">
+			<div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">
-						<convoy-config-button convoy-permission="Endpoints|MANAGE" *ngIf="i < 3 || privateService.getProjectDetails?.type === 'outgoing'" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
+						<convoy-config-button convoy-permission="Endpoints|MANAGE" *ngIf="i < 5 || privateService.getProjectDetails?.type === 'outgoing'" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
 					</ng-container>
 				</ng-container>
 			</div>
@@ -198,12 +214,7 @@
 	</div>
 
 	<div class="flex justify-end mt-40px mb-60px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button *ngIf="!editMode" [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">
-			{{ savingEndpoint ? 'Creating Endpoint..' : 'Create Endpoint' }}
-		</button>
-		<button convoy-button *ngIf="editMode" [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">
-			{{ savingEndpoint ? 'Updating Endpoint..' : 'Update Endpoint' }}
-		</button>
+		<button convoy-button [disabled]="savingEndpoint || addNewEndpointForm.disabled" (click)="saveEndpoint()">{{ editMode || isUpdateAction ? 'Updat' : 'Creat' }}{{ savingEndpoint ? 'ing' : 'e' }} Endpoint{{ savingEndpoint ? '...' : '' }}</button>
 	</div>
 </div>
 

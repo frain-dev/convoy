@@ -8,6 +8,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
+	"gopkg.in/guregu/null.v4"
+	"time"
 )
 
 type ReplayEventService struct {
@@ -21,6 +23,7 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 	createEvent := task.CreateEvent{
 		Event: e.Event,
 	}
+	createEvent.Event.AcknowledgedAt = null.TimeFrom(time.Now())
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {

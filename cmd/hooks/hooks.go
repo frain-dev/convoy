@@ -8,6 +8,16 @@ import (
 	"os"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
+
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+
+	"github.com/frain-dev/convoy/util"
+	"github.com/grafana/pyroscope-go"
+
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
+
 	dbhook "github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/queue"
@@ -56,6 +66,22 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		postgresDB, err := postgres.NewDB(cfg)
+		if err != nil {
+			return err
+		}
+
+		*db = *postgresDB
+
+		if _, ok := skipHook[cmd.Use]; ok {
+			return nil
+		}
+
+		cfg, err = config.Get() // updated
+		if err != nil {
+			return err
+		}
+
 		app.TracerShutdown, err = tracer.Init(cfg.Tracer, cmd.Name())
 		if err != nil {
 			return err
@@ -69,8 +95,8 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 		queueNames := map[string]int{
-			string(convoy.EventQueue):       3,
-			string(convoy.CreateEventQueue): 3,
+			string(convoy.EventQueue):       5,
+			string(convoy.CreateEventQueue): 2,
 			string(convoy.ScheduleQueue):    1,
 			string(convoy.DefaultQueue):     1,
 			string(convoy.MetaEventQueue):   1,
@@ -83,6 +109,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			Type:              string(config.RedisQueueProvider),
 			PrometheusAddress: cfg.Prometheus.Dsn,
 		}
+
+		if cfg.Pyroscope.EnableProfiling {
+			err = enableProfiling(cfg, cmd)
+			if err != nil {
+				return err
+			}
+		}
+
 		q = redisQueue.NewQueue(opts)
 
 		lo := log.NewLogger(os.Stdout)
@@ -91,13 +125,10 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err != nil {
 			return err
 		}
-
-		postgresDB, err := postgres.NewDB(cfg)
+		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
 		if err != nil {
 			return err
 		}
-
-		*db = *postgresDB
 
 		hooks := dbhook.Init()
 
@@ -107,8 +138,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		projectRepo := postgres.NewProjectRepo(postgresDB, ca)
 
 		metaEventRepo := postgres.NewMetaEventRepo(postgresDB, ca)
+		attemptsRepo := postgres.NewDeliveryAttemptRepo(postgresDB)
 		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
-		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo)
+		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo, attemptsRepo)
 
 		hooks.RegisterHook(datastore.EndpointCreated, endpointListener.AfterCreate)
 		hooks.RegisterHook(datastore.EndpointUpdated, endpointListener.AfterUpdate)
@@ -149,8 +181,64 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
+		rateLimiter, err := limiter.NewLimiter(cfg)
+		if err != nil {
+			return err
+		}
+
+		app.Rate = rateLimiter
+
+		app.Licenser, err = license.NewLicenser(&license.Config{
+			KeyGen: keygen.Config{
+				LicenseKey:  cfg.LicenseKey,
+				OrgRepo:     postgres.NewOrgRepo(app.DB, app.Cache),
+				UserRepo:    postgres.NewUserRepo(app.DB, app.Cache),
+				ProjectRepo: projectRepo,
+			},
+		})
+		if err != nil {
+			return err
+		}
+
+		if !app.Licenser.ConsumerPoolTuning() {
+			cfg.ConsumerPoolSize = config.DefaultConfiguration.ConsumerPoolSize
+		}
+
+		if err = config.Override(&cfg); err != nil {
+			return err
+		}
+
+		// update config singleton with the instance id
+		if _, ok := skipConfigLoadCmd[cmd.Use]; !ok {
+			configRepo := postgres.NewConfigRepo(app.DB)
+			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
+			if err != nil {
+				log.WithError(err).Error("Failed to load configuration")
+			} else {
+				cfg.InstanceId = instCfg.UID
+				if err = config.Override(&cfg); err != nil {
+					return err
+				}
+			}
+		}
+
 		return nil
 	}
+}
+
+// these commands don't need to load instance config
+var skipConfigLoadCmd = map[string]struct{}{
+	"bootstrap": {},
+}
+
+// commands dont need the hooks
+var skipHook = map[string]struct{}{
+	// migrate commands
+	"up":     {},
+	"down":   {},
+	"create": {},
+
+	"version": {},
 }
 
 func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -166,6 +254,40 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 		}
 		return err
 	}
+}
+
+func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
+	_, err := pyroscope.Start(pyroscope.Config{
+		ApplicationName: cfg.Pyroscope.ProfileID,
+		Tags: map[string]string{
+			"cmd": cmd.Use,
+		},
+		// replace this with the address of pyroscope server
+		ServerAddress: cfg.Pyroscope.URL,
+
+		// you can disable logging by setting this to nil
+		// Logger: pyroscope.StandardLogger,
+		UploadRate: time.Second * 5,
+
+		// optionally, if authentication is enabled, specify the API key:
+		BasicAuthUser:     cfg.Pyroscope.Username,
+		BasicAuthPassword: cfg.Pyroscope.Password,
+
+		// but you can select the ones you want to use:
+		ProfileTypes: []pyroscope.ProfileType{
+			pyroscope.ProfileCPU,
+			pyroscope.ProfileInuseObjects,
+			pyroscope.ProfileAllocObjects,
+			pyroscope.ProfileInuseSpace,
+			pyroscope.ProfileAllocSpace,
+			pyroscope.ProfileGoroutines,
+			pyroscope.ProfileMutexCount,
+			pyroscope.ProfileMutexDuration,
+			pyroscope.ProfileBlockCount,
+			pyroscope.ProfileBlockDuration,
+		},
+	})
+	return err
 }
 
 func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configuration) (*datastore.Configuration, error) {
@@ -191,6 +313,11 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		OnPrem: &onPrem,
 	}
 
+	retentionPolicy := &datastore.RetentionPolicyConfiguration{
+		Policy:                   cfg.RetentionPolicy.Policy,
+		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
+	}
+
 	configuration, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
@@ -200,6 +327,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 				StoragePolicy:      storagePolicy,
 				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
 				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				RetentionPolicy:    retentionPolicy,
 				CreatedAt:          time.Now(),
 				UpdatedAt:          time.Now(),
 			}
@@ -213,6 +341,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	configuration.RetentionPolicy = retentionPolicy
 	configuration.UpdatedAt = time.Now()
 
 	return configuration, configRepo.UpdateConfiguration(ctx, configuration)
@@ -220,6 +349,14 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
+
+	// CONVOY_LICENSE_KEY
+	licenseKey, err := cmd.Flags().GetString("license-key")
+	if err != nil {
+		return nil, err
+	}
+
+	c.LicenseKey = licenseKey
 
 	// CONVOY_DB_TYPE
 	dbType, err := cmd.Flags().GetString("db-type")
@@ -318,16 +455,33 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Port:     redisPort,
 	}
 
-	// Feature flags
-	fflag, err := cmd.Flags().GetString("feature-flag")
+	// CONVOY_RETENTION_POLICY
+	retentionPolicy, err := cmd.Flags().GetString("retention-policy")
 	if err != nil {
 		return nil, err
 	}
 
-	switch fflag {
-	case config.Experimental:
-		c.FeatureFlag = config.ExperimentalFlagLevel
+	if !util.IsStringEmpty(retentionPolicy) {
+		c.RetentionPolicy.Policy = retentionPolicy
 	}
+
+	// CONVOY_RETENTION_POLICY_ENABLED
+	isretentionPolicyEnabledSet := cmd.Flags().Changed("retention-policy-enabled")
+	if isretentionPolicyEnabledSet {
+		retentionPolicyEnabled, err := cmd.Flags().GetBool("retention-policy-enabled")
+		if err != nil {
+			return nil, err
+		}
+
+		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
+	}
+
+	// Feature flags
+	fflag, err := cmd.Flags().GetStringSlice("enable-feature-flag")
+	if err != nil {
+		return nil, err
+	}
+	c.EnableFeatureFlag = fflag
 
 	// tracing
 	tracingProvider, err := cmd.Flags().GetString("tracer-type")
@@ -387,6 +541,51 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		}
 
 	}
+
+	flag, err := fflag2.NewFFlag(c)
+	if err != nil {
+		return nil, err
+	}
+	c.Metrics = config.MetricsConfiguration{
+		IsEnabled: false,
+	}
+	if flag.CanAccessFeature(fflag2.Prometheus) {
+		metricsBackend, err := cmd.Flags().GetString("metrics-backend")
+		if err != nil {
+			return nil, err
+		}
+		if !config.IsStringEmpty(metricsBackend) {
+			c.Metrics = config.MetricsConfiguration{
+				IsEnabled: false,
+				Backend:   config.MetricsBackend(metricsBackend),
+			}
+			switch c.Metrics.Backend {
+			case config.PrometheusMetricsProvider:
+				sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
+				if err != nil {
+					return nil, err
+				}
+				if sampleTime < 1 {
+					return nil, errors.New("metrics-prometheus-sample-time must be non-zero")
+				}
+				c.Metrics = config.MetricsConfiguration{
+					IsEnabled: true,
+					Backend:   config.MetricsBackend(metricsBackend),
+					Prometheus: config.PrometheusMetricsConfiguration{
+						SampleTime: sampleTime,
+					},
+				}
+			}
+		} else {
+			log.Warn("No metrics-backend specified")
+		}
+	}
+
+	maxRetrySeconds, err := cmd.Flags().GetUint64("max-retry-seconds")
+	if err != nil {
+		return nil, err
+	}
+	c.MaxRetrySeconds = maxRetrySeconds
 
 	return c, nil
 }
@@ -476,14 +675,13 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 }
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {
-	pageable := datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: datastore.DefaultCursor}
 	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
-	users, _, err := userRepo.LoadUsersPaged(ctx, pageable)
+	count, err := userRepo.CountUsers(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to load users - %w", err)
+		return fmt.Errorf("failed to count users: %v", err)
 	}
 
-	if len(users) > 0 {
+	if count > 0 {
 		return nil
 	}
 

@@ -7,10 +7,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"gopkg.in/guregu/null.v4"
+
+	"github.com/frain-dev/convoy/pkg/flatten"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/pkg/transform"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -22,6 +29,7 @@ import (
 type CreateEventTaskParams struct {
 	UID            string
 	ProjectID      string
+	OwnerID        string            `json:"owner_id"`
 	AppID          string            `json:"app_id"`
 	EndpointID     string            `json:"endpoint_id"`
 	SourceID       string            `json:"source_id"`
@@ -29,6 +37,7 @@ type CreateEventTaskParams struct {
 	EventType      string            `json:"event_type"`
 	CustomHeaders  map[string]string `json:"custom_headers"`
 	IdempotencyKey string            `json:"idempotency_key"`
+	AcknowledgedAt time.Time         `json:"acknowledged_at,omitempty"`
 }
 
 type CreateEvent struct {
@@ -40,7 +49,7 @@ type CreateEvent struct {
 func ProcessEventCreation(
 	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
-	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository,
+	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var createEvent CreateEvent
@@ -75,7 +84,7 @@ func ProcessEventCreation(
 			event = createEvent.Event
 		}
 
-		subscriptions, err := findSubscriptions(ctx, endpointRepo, subRepo, project, event, createEvent.CreateSubscription)
+		subscriptions, err := findSubscriptions(ctx, endpointRepo, subRepo, licenser, project, event, createEvent.CreateSubscription)
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -105,13 +114,15 @@ func ProcessEventCreation(
 
 		return writeEventDeliveriesToQueue(
 			ctx, subscriptions, event, project, eventDeliveryRepo,
-			subRepo, eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo, licenser,
 		)
 	}
 }
 
-func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, subRepo datastore.SubscriptionRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository) error {
+func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser) error {
 	ec := &EventDeliveryConfig{project: project}
+
+	eventDeliveries := make([]*datastore.EventDelivery, 0)
 	for _, s := range subscriptions {
 		ec.subscription = &s
 		headers := event.Headers
@@ -119,7 +130,11 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		if s.Type == datastore.SubscriptionTypeAPI {
 			endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
 			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
+				if errors.Is(err, datastore.ErrEndpointNotFound) {
+					continue
+				}
+
+				return &EndpointError{Err: fmt.Errorf("CODE: 1006, err: %s", err.Error()), delay: defaultDelay}
 			}
 
 			if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
@@ -131,7 +146,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			s.Endpoint = endpoint
 		}
 
-		rc, err := ec.retryConfig()
+		rc, err := ec.RetryConfig()
 		if err != nil {
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -139,14 +154,15 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		raw := event.Raw
 		data := event.Data
 
-		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) {
+		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) && licenser.Transformations() {
 			var payload map[string]interface{}
 			err = json.Unmarshal(event.Data, &payload)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
 
-			mutated, _, err := subRepo.TransformPayload(ctx, s.Function.String, payload)
+			transformer := transform.NewTransformer()
+			mutated, _, err := transformer.Transform(s.Function.String, payload)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
@@ -170,21 +186,19 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		}
 
 		eventDelivery := &datastore.EventDelivery{
-			UID:              ulid.Make().String(),
-			SubscriptionID:   s.UID,
-			EventType:        event.EventType,
-			Metadata:         metadata,
-			ProjectID:        project.UID,
-			EventID:          event.UID,
-			EndpointID:       s.EndpointID,
-			DeviceID:         s.DeviceID,
-			Headers:          headers,
-			IdempotencyKey:   event.IdempotencyKey,
-			URLQueryParams:   event.URLQueryParams,
-			Status:           getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
-			DeliveryAttempts: []datastore.DeliveryAttempt{},
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
+			UID:            ulid.Make().String(),
+			SubscriptionID: s.UID,
+			EventType:      event.EventType,
+			Metadata:       metadata,
+			ProjectID:      project.UID,
+			EventID:        event.UID,
+			EndpointID:     s.EndpointID,
+			DeviceID:       s.DeviceID,
+			Headers:        headers,
+			IdempotencyKey: event.IdempotencyKey,
+			URLQueryParams: event.URLQueryParams,
+			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
+			AcknowledgedAt: null.TimeFrom(time.Now()),
 		}
 
 		if s.Type == datastore.SubscriptionTypeCLI {
@@ -195,11 +209,16 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			}
 		}
 
-		err = eventDeliveryRepo.CreateEventDelivery(ctx, eventDelivery)
-		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
-		}
+		eventDeliveries = append(eventDeliveries, eventDelivery)
+	}
 
+	err := eventDeliveryRepo.CreateEventDeliveries(ctx, eventDeliveries)
+	if err != nil {
+		return &EndpointError{Err: fmt.Errorf("CODE: 1008, err: %s", err.Error()), delay: defaultDelay}
+	}
+
+	for i, eventDelivery := range eventDeliveries {
+		s := subscriptions[i]
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			payload := EventDelivery{
 				EventDeliveryID: eventDelivery.UID,
@@ -235,7 +254,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 }
 
 func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepository,
-	subRepo datastore.SubscriptionRepository, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool,
+	subRepo datastore.SubscriptionRepository, licenser license.Licenser, project *datastore.Project, event *datastore.Event, shouldCreateSubscription bool,
 ) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 	var err error
@@ -267,7 +286,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subs = matchSubscriptions(string(event.EventType), subs)
 
-			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subs)
+			subs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, licenser, subs, false)
 			if err != nil {
 				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
 			}
@@ -280,7 +299,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, licenser, subscriptions, false)
 		if err != nil {
 			log.WithError(err).Error("error find a matching subscription for this source")
 			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: defaultDelay}
@@ -290,29 +309,64 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	return subscriptions, nil
 }
 
-func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, subscriptions []datastore.Subscription) ([]datastore.Subscription, error) {
+func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subRepo datastore.SubscriptionRepository, licenser license.Licenser, subscriptions []datastore.Subscription, soft bool) ([]datastore.Subscription, error) {
+	if !licenser.AdvancedSubscriptions() {
+		return subscriptions, nil
+	}
+
 	var matched []datastore.Subscription
+
+	// payload is interface{} and not map[string]interface{} because
+	// map[string]interface{} won't work for array based json e.g:
+	// [
+	//	{
+	//		"organization": "frain-dev"
+	//	},
+	//	{
+	//		".members_url": "danvixent"
+	//	}
+	//]
 	var payload interface{}
-	err := json.Unmarshal(e.Data, &payload)
+	err := json.Unmarshal(e.Data, &payload) // TODO(all): find a way to stop doing this repeatedly, json.Unmarshal is slow and costly
 	if err != nil {
 		return nil, err
 	}
 
-	for _, s := range subscriptions {
-		isBodyMatched, err := subRepo.TestSubscriptionFilter(ctx, payload, s.FilterConfig.Filter.Body.Map())
-		if err != nil {
+	flatPayload, err := flatten.Flatten(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	headers := e.GetRawHeaders()
+	var s *datastore.Subscription
+
+	for i := range subscriptions {
+		s = &subscriptions[i]
+		if len(s.FilterConfig.Filter.Body) == 0 && len(s.FilterConfig.Filter.Headers) == 0 {
+			matched = append(matched, *s)
+			continue
+		}
+
+		isBodyMatched, err := subRepo.CompareFlattenedPayload(ctx, flatPayload, s.FilterConfig.Filter.Body, s.FilterConfig.Filter.IsFlattened)
+		if err != nil && soft {
+			log.WithError(err).Errorf("subcription (%s) failed to match body", s.UID)
+			continue
+		} else if err != nil {
 			return nil, err
 		}
 
-		isHeaderMatched, err := subRepo.TestSubscriptionFilter(ctx, e.GetRawHeaders(), s.FilterConfig.Filter.Headers.Map())
-		if err != nil {
+		isHeaderMatched, err := subRepo.CompareFlattenedPayload(ctx, headers, s.FilterConfig.Filter.Headers, s.FilterConfig.Filter.IsFlattened)
+		if err != nil && soft {
+			log.WithError(err).Errorf("subscription (%s) failed to match header", s.UID)
+			continue
+		} else if err != nil {
 			return nil, err
 		}
 
 		isMatched := isHeaderMatched && isBodyMatched
 
 		if isMatched {
-			matched = append(matched, s)
+			matched = append(matched, *s)
 		}
 	}
 
@@ -360,7 +414,7 @@ func generateSubscription(project *datastore.Project, endpoint *datastore.Endpoi
 	return &datastore.Subscription{
 		ProjectID:  project.UID,
 		UID:        ulid.Make().String(),
-		Name:       fmt.Sprintf("%s-subscription", endpoint.Title),
+		Name:       fmt.Sprintf("%s-subscription", endpoint.Name),
 		Type:       datastore.SubscriptionTypeAPI,
 		EndpointID: endpoint.UID,
 		FilterConfig: &datastore.FilterConfiguration{
@@ -392,7 +446,8 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		return nil, errors.New("an error occurred while creating event - invalid project")
 	}
 
-	if util.IsStringEmpty(eventParams.AppID) && util.IsStringEmpty(eventParams.EndpointID) {
+	if util.IsStringEmpty(eventParams.AppID) && util.IsStringEmpty(eventParams.EndpointID) && util.IsStringEmpty(eventParams.OwnerID) {
+		// TODO(all): we should discard events without endpoint id here.
 		return nil, errors.New("please provide an endpoint ID")
 	}
 
@@ -419,8 +474,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		IdempotencyKey:   eventParams.IdempotencyKey,
 		IsDuplicateEvent: isDuplicate,
 		Headers:          getCustomHeaders(eventParams.CustomHeaders),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 		Endpoints:        endpointIDs,
 		SourceID:         eventParams.SourceID,
 		ProjectID:        project.UID,
@@ -447,6 +501,15 @@ func findEndpoints(ctx context.Context, endpointRepo datastore.EndpointRepositor
 		}
 
 		endpoints = append(endpoints, *endpoint)
+		return endpoints, nil
+	}
+
+	if !util.IsStringEmpty(newMessage.OwnerID) {
+		endpoints, err := endpointRepo.FindEndpointsByOwnerID(ctx, project.UID, newMessage.OwnerID)
+		if err != nil {
+			return endpoints, err
+		}
+
 		return endpoints, nil
 	}
 

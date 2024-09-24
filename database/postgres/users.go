@@ -5,12 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
-	ncache "github.com/frain-dev/convoy/cache/noop"
-	"github.com/frain-dev/convoy/config"
 	"strings"
 
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -44,35 +41,10 @@ const (
 	WHERE deleted_at IS NULL
 	`
 
-	fetchUsersPaginated = `
-	SELECT * FROM convoy.users WHERE deleted_at IS NULL`
-
-	fetchUsersPagedForward = `
-	%s
-	AND id <= :cursor
-	GROUP BY id
-	ORDER BY id DESC
-	LIMIT :limit`
-
-	fetchUsersPagedBackward = `
-	WITH users AS (
-		%s
-		AND id >= :cursor
-		GROUP BY id
-		ORDER BY id ASC
-		LIMIT :limit
-	)
-
-	SELECT * FROM users ORDER BY id DESC`
-
-	countPrevUsers = `
-	SELECT COUNT(DISTINCT(id)) AS count
+	countUsers = `
+	SELECT COUNT(*) AS count
 	FROM convoy.users
-	WHERE deleted_at IS NULL
-	AND id > :cursor
-	GROUP BY id
-	ORDER BY id DESC
-	LIMIT 1`
+	WHERE deleted_at IS NULL`
 )
 
 var (
@@ -81,15 +53,11 @@ var (
 )
 
 type userRepo struct {
-	db    *sqlx.DB
-	cache cache.Cache
+	db *sqlx.DB
 }
 
 func NewUserRepo(db database.Database, ca cache.Cache) datastore.UserRepository {
-	if ca == nil {
-		ca = ncache.NewNoopCache()
-	}
-	return &userRepo{db: db.GetDB(), cache: ca}
+	return &userRepo{db: db.GetDB()}
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
@@ -122,12 +90,6 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 		return ErrUserNotCreated
 	}
 
-	userCacheKey := convoy.UserCacheKey.Get(user.UID).String()
-	err = u.cache.Set(ctx, userCacheKey, user, config.DefaultCacheTTL)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -149,209 +111,67 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 		return ErrUserNotUpdated
 	}
 
-	userCacheKey := convoy.UserCacheKey.Get(user.UID).String()
-	err = u.cache.Set(ctx, userCacheKey, user, config.DefaultCacheTTL)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
-	fromCache, err := u.readFromCache(ctx, email, func() (*datastore.User, error) {
-		user := &datastore.User{}
-		err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email = $1;", fetchUsers), email).StructScan(user)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrUserNotFound
-			}
-			return nil, err
-		}
-
-		return user, nil
-	})
-
+	user := &datastore.User{}
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email = $1;", fetchUsers), email).StructScan(user)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return user, nil
 }
 
 func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
-	fromCache, err := u.readFromCache(ctx, id, func() (*datastore.User, error) {
-		user := &datastore.User{}
-		err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchUsers), id).StructScan(user)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrUserNotFound
-			}
-			return nil, err
-		}
-
-		return user, nil
-	})
-
+	user := &datastore.User{}
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchUsers), id).StructScan(user)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return user, nil
 }
 
 func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
-	fromCache, err := u.readFromCache(ctx, token, func() (*datastore.User, error) {
-		user := &datastore.User{}
-		err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND reset_password_token = $1;", fetchUsers), token).StructScan(user)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrUserNotFound
-			}
-			return nil, err
-		}
-
-		return user, nil
-	})
-
+	user := &datastore.User{}
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND reset_password_token = $1;", fetchUsers), token).StructScan(user)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return user, nil
 }
 
 func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
-	fromCache, err := u.readFromCache(ctx, token, func() (*datastore.User, error) {
-		user := &datastore.User{}
-		err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email_verification_token = $1;", fetchUsers), token).StructScan(user)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrUserNotFound
-			}
-			return nil, err
-		}
-
-		return user, nil
-	})
-
+	user := &datastore.User{}
+	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email_verification_token = $1;", fetchUsers), token).StructScan(user)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrUserNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return user, nil
 }
 
-func (u *userRepo) LoadUsersPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.User, datastore.PaginationData, error) {
-	arg := map[string]interface{}{
-		"limit":  pageable.Limit(),
-		"cursor": pageable.Cursor(),
-	}
-
-	var query string
-	if pageable.Direction == datastore.Next {
-		query = fetchUsersPagedForward
-	} else {
-		query = fetchUsersPagedBackward
-	}
-
-	query = fmt.Sprintf(query, fetchUsersPaginated)
-
-	query, args, err := sqlx.Named(query, arg)
+func (o *userRepo) CountUsers(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetContext(ctx, &count, countUsers)
 	if err != nil {
-		return nil, datastore.PaginationData{}, err
+		return 0, err
 	}
 
-	query, args, err = sqlx.In(query, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-
-	query = u.db.Rebind(query)
-
-	rows, err := u.db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-	defer closeWithError(rows)
-
-	var users []datastore.User
-	for rows.Next() {
-		var user datastore.User
-		err = rows.StructScan(&user)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		users = append(users, user)
-	}
-
-	var count datastore.PrevRowCount
-	if len(users) > 0 {
-		var countQuery string
-		var qargs []interface{}
-		first := users[0]
-		qarg := arg
-		qarg["cursor"] = first.UID
-
-		countQuery, qargs, err = sqlx.Named(countPrevUsers, qarg)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-
-		countQuery = u.db.Rebind(countQuery)
-
-		// count the row number before the first row
-		rows, err := u.db.QueryxContext(ctx, countQuery, qargs...)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
-		defer closeWithError(rows)
-
-		if rows.Next() {
-			err = rows.StructScan(&count)
-			if err != nil {
-				return nil, datastore.PaginationData{}, err
-			}
-		}
-	}
-
-	ids := make([]string, len(users))
-	for i := range users {
-		ids[i] = users[i].UID
-	}
-
-	if len(users) > pageable.PerPage {
-		users = users[:len(users)-1]
-	}
-
-	pagination := &datastore.PaginationData{PrevRowCount: count}
-	pagination = pagination.Build(pageable, ids)
-
-	return users, *pagination, nil
-}
-
-func (u *userRepo) readFromCache(ctx context.Context, key string, readFromDB func() (*datastore.User, error)) (*datastore.User, error) {
-	var user *datastore.User
-	userCacheKey := convoy.UserCacheKey.Get(key).String()
-	err := u.cache.Get(ctx, userCacheKey, &user)
-	if err != nil {
-		return nil, err
-	}
-
-	if user != nil {
-		return user, err
-	}
-
-	fromDB, err := readFromDB()
-	if err != nil {
-		return nil, err
-	}
-
-	err = u.cache.Set(ctx, userCacheKey, fromDB, config.DefaultCacheTTL)
-	if err != nil {
-		return nil, err
-	}
-
-	return fromDB, err
+	return count, nil
 }

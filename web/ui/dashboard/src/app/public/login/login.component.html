@@ -25,12 +25,12 @@
 			</div>
 
 			<button convoy-button [disabled]="disableLoginBtn" size="lg">
-				<span class="text-14" *ngIf="!disableLoginBtn">Login</span>
+				<span class="text-14 text-white-100" *ngIf="!disableLoginBtn">Login</span>
 				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
 			</button>
 		</form>
 
-		<button *ngIf="isSignupEnabled" convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
+		<button *ngIf="isSignupEnabled && licenseService.hasLicense('CREATE_USER')" convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>
 	</section>
 </div>
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/frain-dev/convoy/cmd/ff"
 	"os"
 	_ "time/tzdata"
 
@@ -47,7 +48,7 @@ func main() {
 	var dbPassword string
 	var dbDatabase string
 
-	var fflag string
+	var fflag []string
 	var enableProfiling bool
 
 	var redisPort int
@@ -60,16 +61,24 @@ func main() {
 
 	var tracerType string
 	var sentryDSN string
-	var datadogAgentURL string
-	var datadogLicenseKey string
 	var otelSampleRate float64
 	var otelCollectorURL string
 	var otelAuthHeaderName string
 	var otelAuthHeaderValue string
+	var metricsBackend string
+	var prometheusMetricsSampleTime uint64
+
+	var retentionPolicy string
+	var retentionPolicyEnabled bool
+
+	var maxRetrySeconds uint64
+
+	var licenseKey string
 
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
+	c.Flags().StringVar(&licenseKey, "license-key", "", "Convoy license key")
 
 	// db config
 	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")
@@ -80,6 +89,7 @@ func main() {
 	c.Flags().StringVar(&dbDatabase, "db-database", "", "Database Database")
 	c.Flags().StringVar(&dbDatabase, "db-options", "", "Database Options")
 	c.Flags().IntVar(&dbPort, "db-port", 0, "Database Port")
+	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling and exporting profile data to pyroscope")
 
 	// redis config
 	c.Flags().StringVar(&redisHost, "redis-host", "", "Redis Host")
@@ -90,18 +100,23 @@ func main() {
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
-	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
-	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
-
+	c.Flags().StringSliceVar(&fflag, "enable-feature-flag", []string{}, "List of feature flags to enable e.g. \"full-text-search,prometheus\"")
 	// tracing
 	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
 	c.Flags().StringVar(&sentryDSN, "sentry-dsn", "", "Sentry backend dsn")
-	c.Flags().StringVar(&datadogAgentURL, "datadog-agent-url", "", "Datadog agent URL")
-	c.Flags().StringVar(&datadogLicenseKey, "datadog-license-key", "", "Datadog license key")
 	c.Flags().Float64Var(&otelSampleRate, "otel-sample-rate", 1.0, "OTel tracing sample rate")
 	c.Flags().StringVar(&otelCollectorURL, "otel-collector-url", "", "OTel collector URL")
 	c.Flags().StringVar(&otelAuthHeaderName, "otel-auth-header-name", "", "OTel backend auth header name")
 	c.Flags().StringVar(&otelAuthHeaderValue, "otel-auth-header-value", "", "OTel backend auth header value")
+
+	// metrics
+	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('prometheus' feature flag required")
+	c.Flags().Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
+
+	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "SMTP Port")
+	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "SMTP Port")
+
+	c.Flags().Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))
@@ -116,6 +131,7 @@ func main() {
 	c.AddCommand(ingest.AddIngestCommand(app))
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
+	c.AddCommand(ff.AddFeatureFlagsCommand())
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)

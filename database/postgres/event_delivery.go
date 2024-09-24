@@ -38,8 +38,12 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,attempts,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,created_at,updated_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
+    `
+	createEventDeliveries = `
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
+    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at);
     `
 
 	baseFetchEventDelivery = `
@@ -48,18 +52,20 @@ const (
         ed.headers,ed.attempts,ed.status,ed.metadata,ed.cli_metadata,
         COALESCE(ed.url_query_params, '') AS url_query_params,
         COALESCE(ed.idempotency_key, '') AS idempotency_key,
-        ed.description,ed.created_at,ed.updated_at,
+        ed.description,ed.created_at,ed.updated_at,ed.acknowledged_at,
         COALESCE(ed.event_type,'') AS "event_type",
         COALESCE(ed.device_id,'') AS "device_id",
         COALESCE(ed.endpoint_id,'') AS "endpoint_id",
         COALESCE(ep.id, '') AS "endpoint_metadata.id",
-        COALESCE(ep.title, '') AS "endpoint_metadata.title",
+        COALESCE(ep.name, '') AS "endpoint_metadata.name",
         COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
         COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
-        COALESCE(ep.target_url, '') AS "endpoint_metadata.target_url",
+        COALESCE(ep.url, '') AS "endpoint_metadata.url",
+        COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
+        
         ev.id AS "event_metadata.id",
         ev.event_type AS "event_metadata.event_type",
-		COALESCE(ed.latency,'') AS latency,
+		COALESCE(ed.latency_seconds, 0) AS latency_seconds,
 
 		COALESCE(d.id,'') AS "device_metadata.id",
 		COALESCE(d.status,'') AS "device_metadata.status",
@@ -104,6 +110,21 @@ const (
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`
 
+	fetchEventDeliverySlim = `
+    SELECT
+        id,project_id,event_id,subscription_id,
+        headers,attempts,status,metadata,cli_metadata,
+        COALESCE(url_query_params, '') AS url_query_params,
+        COALESCE(idempotency_key, '') AS idempotency_key,created_at,updated_at,
+        COALESCE(event_type,'') AS "event_type",
+        COALESCE(device_id,'') AS "device_id",
+        COALESCE(endpoint_id,'') AS "endpoint_id",
+        acknowledged_at
+    FROM convoy.event_deliveries
+	WHERE deleted_at IS NULL
+    AND project_id = $1 AND id = $2
+    `
+
 	baseEventDeliveryFilter = ` AND (ed.project_id = :project_id OR :project_id = '')
 	AND (ed.event_id = :event_id OR :event_id = '')
     AND (ed.event_type = :event_type OR :event_type = '')
@@ -136,9 +157,7 @@ const (
         created_at >= $2 AND
         created_at <= $3
     GROUP BY
-        "data.group_only", "data.index"
-    ORDER BY
-        "data.total_time";
+        "data.group_only", "data.index";
     `
 
 	fetchEventDeliveries = `
@@ -150,7 +169,8 @@ const (
         description,created_at,updated_at,
         COALESCE(event_type,'') AS "event_type",
         COALESCE(device_id,'') AS "device_id",
-        COALESCE(endpoint_id,'') AS "endpoint_id"
+        COALESCE(endpoint_id,'') AS "endpoint_id",
+        acknowledged_at
     FROM convoy.event_deliveries ed
     `
 
@@ -162,11 +182,22 @@ const (
         COALESCE(url_query_params, '') AS url_query_params,
         description,created_at,updated_at,
         COALESCE(event_type,'') AS "event_type",
-        COALESCE(device_id,'') AS "device_id"
+        COALESCE(device_id,'') AS "device_id",
+        acknowledged_at
     FROM convoy.event_deliveries
 	WHERE status=$1 AND project_id = $2 AND device_id = $3
 	AND created_at >= $4 AND created_at <= $5
 	AND deleted_at IS NULL;
+    `
+
+	fetchStuckEventDeliveries = `
+    SELECT id, project_id
+    FROM convoy.event_deliveries
+	WHERE status = $1
+	  AND created_at <= now() - make_interval(secs := 30)
+      AND deleted_at IS NULL
+    FOR UPDATE SKIP LOCKED
+    LIMIT 1000;
     `
 
 	countEventDeliveriesByStatus = `
@@ -178,11 +209,11 @@ const (
     `
 
 	updateEventDeliveriesStatus = `
-    UPDATE convoy.event_deliveries SET status = ?, updated_at = NOW() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
+    UPDATE convoy.event_deliveries SET status = ?, description = ?, updated_at = NOW() WHERE (project_id = ? OR ? = '')AND id IN (?) AND deleted_at IS NULL;
     `
 
-	updateEventDeliveryAttempts = `
-    UPDATE convoy.event_deliveries SET attempts = $1, status = $2, metadata = $3, latency = $4,  updated_at = NOW() WHERE id = $5 AND project_id = $6 AND deleted_at IS NULL;
+	updateEventDeliveryMetadata = `
+    UPDATE convoy.event_deliveries SET status = $1, metadata = $2, latency_seconds = $3,  updated_at = NOW() WHERE id = $4 AND project_id = $5 AND deleted_at IS NULL;
     `
 
 	softDeleteProjectEventDeliveries = `
@@ -190,7 +221,7 @@ const (
     `
 
 	hardDeleteProjectEventDeliveries = `
-    DELETE FROM convoy.event_deliveries WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3 AND deleted_at IS NULL;
+    DELETE FROM convoy.event_deliveries WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3;
     `
 )
 
@@ -210,12 +241,21 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		deviceID = &delivery.DeviceID
 	}
 
-	result, err := e.db.ExecContext(
+	tx, isWrapped, err := GetTx(ctx, e.db)
+	if err != nil {
+		return err
+	}
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
+
+	result, err := tx.ExecContext(
 		ctx, createEventDelivery, delivery.UID, delivery.ProjectID,
 		delivery.EventID, endpointID, deviceID,
-		delivery.SubscriptionID, delivery.Headers, delivery.DeliveryAttempts, delivery.Status,
+		delivery.SubscriptionID, delivery.Headers, delivery.Status,
 		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey, delivery.EventType,
-		delivery.CreatedAt, delivery.UpdatedAt,
+		delivery.AcknowledgedAt,
 	)
 	if err != nil {
 		return err
@@ -230,12 +270,107 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		return ErrEventDeliveryNotCreated
 	}
 
-	return nil
+	if isWrapped {
+		return nil
+	}
+
+	return tx.Commit()
+}
+
+// CreateEventDeliveries creates event deliveries in bulk
+func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliveries []*datastore.EventDelivery) error {
+	values := make([]map[string]interface{}, 0, len(deliveries))
+
+	for _, delivery := range deliveries {
+		var endpointID *string
+		var deviceID *string
+
+		if !util.IsStringEmpty(delivery.EndpointID) {
+			endpointID = &delivery.EndpointID
+		}
+
+		if !util.IsStringEmpty(delivery.DeviceID) {
+			deviceID = &delivery.DeviceID
+		}
+
+		values = append(values, map[string]interface{}{
+			"id":               delivery.UID,
+			"project_id":       delivery.ProjectID,
+			"event_id":         delivery.EventID,
+			"endpoint_id":      endpointID,
+			"device_id":        deviceID,
+			"subscription_id":  delivery.SubscriptionID,
+			"headers":          delivery.Headers,
+			"status":           delivery.Status,
+			"metadata":         delivery.Metadata,
+			"cli_metadata":     delivery.CLIMetadata,
+			"description":      delivery.Description,
+			"url_query_params": delivery.URLQueryParams,
+			"idempotency_key":  delivery.IdempotencyKey,
+			"event_type":       delivery.EventType,
+			"acknowledged_at":  delivery.AcknowledgedAt,
+		})
+	}
+
+	tx, isWrapped, err := GetTx(ctx, e.db)
+	if err != nil {
+		return err
+	}
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
+
+	var j int
+	for i := 0; i < len(values); i += PartitionSize {
+		j += PartitionSize
+		if j > len(values) {
+			j = len(values)
+		}
+
+		var vs []interface{}
+		for _, v := range values[i:j] {
+			vs = append(vs, v)
+		}
+
+		result, err := tx.NamedExecContext(ctx, createEventDeliveries, vs)
+		if err != nil {
+			return err
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+
+		if len(vs) > 0 && rowsAffected < 1 {
+			return ErrEventDeliveryNotCreated
+		}
+	}
+
+	if isWrapped {
+		return nil
+	}
+
+	return tx.Commit()
 }
 
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
 	err := e.db.QueryRowxContext(ctx, fetchEventDeliveryByID, id, projectID).StructScan(eventDelivery)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrEventDeliveryNotFound
+		}
+		return nil, err
+	}
+
+	return eventDelivery, nil
+}
+
+func (e *eventDeliveryRepo) FindEventDeliveryByIDSlim(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
+	eventDelivery := &datastore.EventDelivery{}
+	err := e.db.QueryRowxContext(ctx, fetchEventDeliverySlim, projectID, id).StructScan(eventDelivery)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventDeliveryNotFound
@@ -314,8 +449,30 @@ func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, project
 	return count.Count, nil
 }
 
+func (e *eventDeliveryRepo) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
+	eventDeliveries := make([]datastore.EventDelivery, 0)
+
+	rows, err := e.db.QueryxContext(ctx, fetchStuckEventDeliveries, status)
+	if err != nil {
+		return nil, err
+	}
+	defer closeWithError(rows)
+
+	for rows.Next() {
+		var ed datastore.EventDelivery
+		err = rows.StructScan(&ed)
+		if err != nil {
+			return nil, err
+		}
+
+		eventDeliveries = append(eventDeliveries, ed)
+	}
+
+	return eventDeliveries, nil
+}
+
 func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, projectID string, delivery datastore.EventDelivery, status datastore.EventDeliveryStatus) error {
-	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, projectID, []string{delivery.UID})
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, delivery.Description, projectID, projectID, []string{delivery.UID})
 	if err != nil {
 		return err
 	}
@@ -340,7 +497,7 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, pro
 }
 
 func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status datastore.EventDeliveryStatus) error {
-	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, projectID, projectID, ids)
+	query, args, err := sqlx.In(updateEventDeliveriesStatus, status, "", projectID, projectID, ids)
 	if err != nil {
 		return err
 	}
@@ -389,10 +546,8 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 	return eventDeliveries, nil
 }
 
-func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, delivery datastore.EventDelivery, attempt datastore.DeliveryAttempt) error {
-	delivery.DeliveryAttempts = append(delivery.DeliveryAttempts, attempt)
-
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryAttempts, delivery.DeliveryAttempts, delivery.Status, delivery.Metadata, delivery.Latency, delivery.UID, projectID)
+func (e *eventDeliveryRepo) UpdateEventDeliveryMetadata(ctx context.Context, projectID string, delivery *datastore.EventDelivery) error {
+	result, err := e.db.ExecContext(ctx, updateEventDeliveryMetadata, delivery.Status, delivery.Metadata, delivery.LatencySeconds, delivery.UID, projectID)
 	if err != nil {
 		return err
 	}
@@ -406,7 +561,7 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryWithAttempt(ctx context.Context, 
 		return ErrEventDeliveryAttemptsNotUpdated
 	}
 
-	go e.hook.Fire(datastore.EventDeliveryUpdated, &delivery, nil)
+	go e.hook.Fire(datastore.EventDeliveryUpdated, delivery, nil)
 	return nil
 }
 
@@ -577,13 +732,15 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			Headers:        ev.Headers,
 			URLQueryParams: ev.URLQueryParams,
 			Latency:        ev.Latency,
+			LatencySeconds: ev.LatencySeconds,
 			EventType:      ev.EventType,
 			Endpoint: &datastore.Endpoint{
 				UID:          ev.Endpoint.UID.ValueOrZero(),
 				ProjectID:    ev.Endpoint.ProjectID.ValueOrZero(),
-				TargetURL:    ev.Endpoint.TargetURL.ValueOrZero(),
-				Title:        ev.Endpoint.Title.ValueOrZero(),
+				Url:          ev.Endpoint.URL.ValueOrZero(),
+				Name:         ev.Endpoint.Name.ValueOrZero(),
 				SupportEmail: ev.Endpoint.SupportEmail.ValueOrZero(),
+				OwnerID:      ev.Endpoint.OwnerID.ValueOrZero(),
 			},
 			Source: &datastore.Source{
 				UID:             ev.Source.UID.ValueOrZero(),
@@ -595,15 +752,15 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 				HostName: ev.Device.HostName.ValueOrZero(),
 				Status:   datastore.DeviceStatus(ev.Device.Status.ValueOrZero()),
 			},
-			Event:            &datastore.Event{EventType: datastore.EventType(ev.Event.EventType.ValueOrZero())},
-			DeliveryAttempts: ev.DeliveryAttempts,
-			Status:           ev.Status,
-			Metadata:         ev.Metadata,
-			CLIMetadata:      cli,
-			Description:      ev.Description,
-			CreatedAt:        ev.CreatedAt,
-			UpdatedAt:        ev.UpdatedAt,
-			DeletedAt:        ev.DeletedAt,
+			Event:          &datastore.Event{EventType: datastore.EventType(ev.Event.EventType.ValueOrZero())},
+			Status:         ev.Status,
+			Metadata:       ev.Metadata,
+			CLIMetadata:    cli,
+			Description:    ev.Description,
+			AcknowledgedAt: ev.AcknowledgedAt,
+			CreatedAt:      ev.CreatedAt,
+			UpdatedAt:      ev.UpdatedAt,
+			DeletedAt:      ev.DeletedAt,
 		})
 	}
 
@@ -787,10 +944,11 @@ func padIntervals(intervals []datastore.EventInterval, duration time.Duration, p
 
 type EndpointMetadata struct {
 	UID          null.String `db:"id"`
-	Title        null.String `db:"title"`
-	TargetURL    null.String `db:"target_url"`
+	Name         null.String `db:"name"`
+	URL          null.String `db:"url"`
 	ProjectID    null.String `db:"project_id"`
 	SupportEmail null.String `db:"support_email"`
+	OwnerID      null.String `db:"owner_id"`
 }
 
 type EventMetadata struct {
@@ -825,8 +983,10 @@ type EventDeliveryPaginated struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
-	Latency        string                `json:"latency" db:"latency"`
-	EventType      datastore.EventType   `json:"event_type,omitempty" db:"event_type"`
+	// Deprecated: Latency is deprecated.
+	Latency        string              `json:"latency" db:"latency"`
+	LatencySeconds float64             `json:"latency_seconds" db:"latency_seconds"`
+	EventType      datastore.EventType `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *EndpointMetadata `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *EventMetadata    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -838,6 +998,7 @@ type EventDeliveryPaginated struct {
 	Metadata         *datastore.Metadata           `json:"metadata" db:"metadata"`
 	CLIMetadata      *CLIMetadata                  `json:"cli_metadata" db:"cli_metadata"`
 	Description      string                        `json:"description,omitempty" db:"description"`
+	AcknowledgedAt   null.Time                     `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
 	CreatedAt        time.Time                     `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time                     `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time                     `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`

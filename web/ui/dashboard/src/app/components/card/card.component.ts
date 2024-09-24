@@ -12,7 +12,7 @@ import { CommonModule } from '@angular/common';
 })
 export class CardComponent implements OnInit {
 	@Input('hover') hover: 'true' | 'false' = 'false';
-	@Input('color') color: 'default' | 'danger' = 'default';
+	@Input('color') color: 'default' | 'error' = 'default';
 
 	constructor() {}
 
@@ -20,9 +20,9 @@ export class CardComponent implements OnInit {
 
 	get classes(): string {
 		const colors = {
-			default: 'bg-white-100 border border-new.gray-100 shadow-xs',
-			danger: 'bg-danger-500 border border-danger-200'
+			default: 'bg-white-100 border border-neutral-4',
+			error: 'bg-error-a3 border border-error-6'
 		};
-		return `${colors[this.color]} ${this.hover === 'true' ? 'focus:shadow-sm hover:shadow-sm focus-visible:shadow-sm hover:border-grey-20 focus:border-grey-20 focus-visible:border-grey-20 outline-none transition-all duration-300' : ''} block`;
+		return `${colors[this.color]} ${this.hover === 'true' ? 'focus:shadow-default hover:shadow-default focus-visible:shadow-default hover:border-neutral-4 focus:border-neutral-4 focus-visible:border-neutral-4 outline-none transition-all duration-300' : ''} block`;
 	}
 }

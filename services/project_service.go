@@ -7,14 +7,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/config"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -24,32 +24,33 @@ type ProjectService struct {
 	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
-	limiter           limiter.RateLimiter
+	Licenser          license.Licenser
 	cache             cache.Cache
 }
 
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, cache cache.Cache) (*ProjectService, error) {
-	cfg, err := config.Get()
-	if err != nil {
-		return nil, err
-	}
-
-	rlimiter, err := limiter.NewLimiter(cfg.Redis)
-	if err != nil {
-		return nil, err
-	}
-
+func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, cache cache.Cache) (*ProjectService, error) {
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
-		limiter:           rlimiter,
+		Licenser:          licenser,
 		cache:             cache,
 	}, nil
 }
 
+var ErrProjectLimit = errors.New("your instance has reached it's project limit, upgrade to create more projects")
+
 func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
+	ok, err := ps.Licenser.CreateProject(ctx)
+	if err != nil {
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
+	}
+
+	if !ok {
+		return nil, nil, util.NewServiceError(http.StatusBadRequest, ErrProjectLimit)
+	}
+
 	projectName := newProject.Name
 
 	projectConfig := newProject.Config.Transform()
@@ -70,26 +71,25 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			projectConfig.Strategy = datastore.DefaultProjectConfig.Strategy
 		}
 
-		err := validateMetaEvent(projectConfig.MetaEvent)
+		if projectConfig.SSL == nil {
+			projectConfig.SSL = &datastore.DefaultSSLConfig
+		}
+
+		err := validateMetaEvent(projectConfig)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
 
-		if projectConfig.RetentionPolicy != nil {
-			if !util.IsStringEmpty(projectConfig.RetentionPolicy.SearchPolicy) {
-				_, err = time.ParseDuration(projectConfig.RetentionPolicy.SearchPolicy)
-				if err != nil {
-					return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
-				}
-			}
-
-			if !util.IsStringEmpty(projectConfig.RetentionPolicy.Policy) {
-				_, err = time.ParseDuration(projectConfig.RetentionPolicy.Policy)
-				if err != nil {
-					return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
-				}
+		if !util.IsStringEmpty(projectConfig.SearchPolicy) {
+			_, err = time.ParseDuration(projectConfig.SearchPolicy)
+			if err != nil {
+				return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 			}
 		}
+	}
+
+	if !ps.Licenser.AdvancedWebhookFiltering() {
+		projectConfig.SearchPolicy = ""
 	}
 
 	project := &datastore.Project{
@@ -103,7 +103,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		UpdatedAt:      time.Now(),
 	}
 
-	err := ps.projectRepo.CreateProject(ctx, project)
+	err = ps.projectRepo.CreateProject(ctx, project)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create project")
 		if errors.Is(err, datastore.ErrDuplicateProjectName) {
@@ -148,6 +148,11 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		Key:       keyString,
 	}
 
+	// if this is a community license, add this project to list of enabled projects
+	// because if the initial license check above passed, then the project count limit had
+	// not been reached
+	ps.Licenser.AddEnabledProject(project.UID)
+
 	return project, resp, nil
 }
 
@@ -157,25 +162,16 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 	}
 
 	if update.Config != nil {
-		if update.Config.RetentionPolicy != nil {
-			if !util.IsStringEmpty(update.Config.RetentionPolicy.SearchPolicy) {
-				_, err := time.ParseDuration(update.Config.RetentionPolicy.SearchPolicy)
-				if err != nil {
-					return nil, util.NewServiceError(http.StatusBadRequest, err)
-				}
-			}
-
-			if !util.IsStringEmpty(update.Config.RetentionPolicy.Policy) {
-				_, err := time.ParseDuration(update.Config.RetentionPolicy.Policy)
-				if err != nil {
-					return nil, util.NewServiceError(http.StatusBadRequest, err)
-				}
+		if !util.IsStringEmpty(update.Config.SearchPolicy) {
+			_, err := time.ParseDuration(update.Config.SearchPolicy)
+			if err != nil {
+				return nil, util.NewServiceError(http.StatusBadRequest, err)
 			}
 		}
 
 		project.Config = update.Config.Transform()
 		checkSignatureVersions(project.Config.Signature.Versions)
-		err := validateMetaEvent(project.Config.MetaEvent)
+		err := validateMetaEvent(project.Config)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -183,6 +179,10 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 
 	if !util.IsStringEmpty(update.LogoURL) {
 		project.LogoURL = update.LogoURL
+	}
+
+	if !ps.Licenser.AdvancedWebhookFiltering() {
+		project.Config.SearchPolicy = ""
 	}
 
 	err := ps.projectRepo.UpdateProject(ctx, project)
@@ -207,7 +207,8 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	}
 }
 
-func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
+func validateMetaEvent(c *datastore.ProjectConfig) error {
+	metaEvent := c.MetaEvent
 	if metaEvent == nil {
 		return nil
 	}
@@ -217,7 +218,7 @@ func validateMetaEvent(metaEvent *datastore.MetaEventConfiguration) error {
 	}
 
 	if metaEvent.Type == datastore.HTTPMetaEvent {
-		url, err := util.CleanEndpoint(metaEvent.URL)
+		url, err := util.ValidateEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints)
 		if err != nil {
 			return err
 		}

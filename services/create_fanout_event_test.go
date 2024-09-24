@@ -3,16 +3,16 @@ package services
 import (
 	"bytes"
 	"context"
-	"testing"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/guregu/null.v4"
+	"testing"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 )
 
 func provideCreateFanoutEventService(ctrl *gomock.Controller, event *models.FanoutEvent, project *datastore.Project) *CreateFanoutEventService {
@@ -50,14 +50,14 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return([]datastore.Endpoint{
 					{
-						Title:        "test_app",
+						Name:         "test_app",
 						UID:          "123",
 						ProjectID:    "abc",
 						SupportEmail: "test_app@gmail.com",
 					},
 
 					{
-						Title:        "test_app",
+						Name:         "test_app",
 						UID:          "12345",
 						ProjectID:    "abc",
 						SupportEmail: "test_app@gmail.com",
@@ -142,16 +142,17 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 		},
 
 		{
-			name: "should_error_for_empty_endpoints",
+			name: "should_not_error_for_empty_endpoints",
 			dbFn: func(es *CreateFanoutEventService) {
 				a, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointsByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).Return([]datastore.Endpoint{}, nil)
-
 				p, _ := es.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
 				p.EXPECT().FindPortalLinkByOwnerID(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil, datastore.ErrPortalLinkNotFound)
-
+					Times(1).Return(&datastore.PortalLink{UID: "12345"}, nil)
+				eq, _ := es.Queue.(*mocks.MockQueuer)
+				eq.EXPECT().Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, gomock.Any()).
+					Times(1).Return(nil)
 			},
 			args: args{
 				ctx: ctx,
@@ -160,10 +161,26 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 					EventType: "payment.created",
 					Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
 				},
-				g: &datastore.Project{},
+				g: &datastore.Project{
+					UID:  "abc",
+					Name: "test_project",
+					Config: &datastore.ProjectConfig{
+						Strategy: &datastore.StrategyConfiguration{
+							Type:       "linear",
+							Duration:   1000,
+							RetryCount: 10,
+						},
+						Signature:     &datastore.SignatureConfiguration{},
+						ReplayAttacks: false,
+					},
+				},
 			},
-			wantErr:    true,
-			wantErrMsg: ErrNoValidOwnerIDEndpointFound.Error(),
+			wantEvent: &datastore.Event{
+				EventType: datastore.EventType("payment.created"),
+				Raw:       `{"name":"convoy"}`,
+				Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				ProjectID: "abc",
+			},
 		},
 	}
 
@@ -192,8 +209,8 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 
 			require.Nil(t, err)
 			require.NotEmpty(t, event.UID)
-			require.NotEmpty(t, event.CreatedAt)
-			require.NotEmpty(t, event.UpdatedAt)
+			require.Empty(t, event.CreatedAt)
+			require.Empty(t, event.UpdatedAt)
 			require.Empty(t, event.DeletedAt)
 
 			stripVariableFields(t, "event", event)
@@ -206,6 +223,7 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				require.Equal(t, m1, m2)
 			}
 
+			event.AcknowledgedAt = null.Time{}
 			require.Equal(t, tc.wantEvent, event)
 		})
 	}

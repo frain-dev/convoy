@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -22,11 +23,12 @@ import (
 //	@Summary		Create a portal link
 //	@Description	This endpoint creates a portal link
 //	@Tags			Portal Links
+//	@Id				CreatePortalLink
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
 //	@Param			portallink	body		models.PortalLink	true	"Portal Link Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.PortalLinkResponse}
+//	@Success		201			{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
@@ -71,6 +73,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Retrieve a portal link
 //	@Description	This endpoint retrieves a portal link by its id.
 //	@Tags			Portal Links
+//	@Id				GetPortalLink
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID		path		string	true	"Project ID"
@@ -122,13 +125,14 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update a portal link
 //	@Description	This endpoint updates a portal link
+//	@Id				UpdatePortalLink
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID		path		string				true	"Project ID"
 //	@Param			portalLinkID	path		string				true	"portal link id"
 //	@Param			portallink		body		models.PortalLink	true	"Portal Link Details"
-//	@Success		200				{object}	util.ServerResponse{data=models.PortalLinkResponse}
+//	@Success		202				{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
@@ -185,6 +189,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Revoke a portal link
 //	@Description	This endpoint revokes a portal link
+//	@Id				RevokePortalLink
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
@@ -204,7 +209,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
 	portalLink, err := portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -228,14 +233,11 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Summary		List all portal links
 //	@Description	This endpoint fetches multiple portal links
 //	@Tags			Portal Links
+//	@Id				LoadPortalLinksPaged
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string				true	"Project ID"
-//	@Param			endpointID	query		[]string			false	"list of endpoint ids"
-//	@Param			request		query		datastore.Pageable	false	"Pagination Params"
-//	@Param			perPage		query		string				false	"results per page"
-//	@Param			page		query		string				false	"page number"
-//	@Param			sort		query		string				false	"sort order"
+//	@Param			projectID	path		string						true	"Project ID"
+//	@Param			request		query		models.QueryListEndpoint	false	"Query Params"
 //	@Success		200			{object}	util.ServerResponse{data=models.PagedResponse{content=[]models.PortalLinkResponse}}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
@@ -248,11 +250,10 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	endpointIDs := getEndpointIDs(r)
-	ownerId := r.URL.Query().Get("ownerId")
-	filter := &datastore.FilterBy{EndpointIDs: endpointIDs, OwnerID: ownerId}
+	var q *models.QueryListPortalLink
+	data := q.Transform(r)
 
-	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, filter, pageable)
+	portalLinks, paginationData, err := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache).LoadPortalLinksPaged(r.Context(), project.UID, data.FilterBy, pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Println("an error occurred while fetching portal links")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching portal links", http.StatusBadRequest))
@@ -283,7 +284,7 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 		Token:             pl.Token,
 		OwnerID:           pl.OwnerID,
 		Endpoints:         pl.Endpoints,
-		EndpointCount:     len(pl.EndpointsMetadata),
+		EndpointCount:     pl.EndpointCount,
 		EndpointsMetadata: pl.EndpointsMetadata,
 		CanManageEndpoint: pl.CanManageEndpoint,
 		CreatedAt:         pl.CreatedAt,

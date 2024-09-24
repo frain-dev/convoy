@@ -22,7 +22,7 @@ const (
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
-	DefaultAPIVersion                 = "2024-01-01"
+	DefaultAPIVersion                 = "2024-04-01"
 )
 
 var cfgSingleton atomic.Value
@@ -39,6 +39,7 @@ var DefaultConfiguration = Configuration{
 			Port:       5005,
 			WorkerPort: 5006,
 			AgentPort:  5008,
+			IngestPort: 5009,
 		},
 	},
 	Database: DatabaseConfiguration{
@@ -69,6 +70,10 @@ var DefaultConfiguration = Configuration{
 			Path: convoy.DefaultOnPremDir,
 		},
 	},
+	RetentionPolicy: RetentionPolicyConfiguration{
+		Policy:                   "720h",
+		IsRetentionPolicyEnabled: false,
+	},
 	Auth: AuthConfiguration{
 		IsSignupEnabled: true,
 		Native: NativeRealmOptions{
@@ -86,6 +91,15 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	EnableProfiling: false,
+	Metrics: MetricsConfiguration{
+		IsEnabled: false,
+		Backend:   PrometheusMetricsProvider,
+		Prometheus: PrometheusMetricsConfiguration{
+			SampleTime: 5,
+		},
+	},
+	InstanceIngestRate:  50,
+	WorkerExecutionMode: DefaultExecutionMode,
 }
 
 type DatabaseConfiguration struct {
@@ -242,6 +256,11 @@ type SentryConfiguration struct {
 	DSN string `json:"dsn" envconfig:"CONVOY_SENTRY_DSN"`
 }
 
+type RetentionPolicyConfiguration struct {
+	Policy                   string `json:"policy" envconfig:"CONVOY_RETENTION_POLICY"`
+	IsRetentionPolicyEnabled bool   `json:"enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
+}
+
 type AnalyticsConfiguration struct {
 	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
@@ -266,22 +285,34 @@ type OnPremStorage struct {
 	Path string `json:"path" envconfig:"CONVOY_STORAGE_PREM_PATH"`
 }
 
+type MetricsConfiguration struct {
+	IsEnabled  bool                           `json:"enabled" envconfig:"CONVOY_METRICS_ENABLED"`
+	Backend    MetricsBackend                 `json:"metrics_backend" envconfig:"CONVOY_METRICS_BACKEND"`
+	Prometheus PrometheusMetricsConfiguration `json:"prometheus_metrics"`
+}
+
+type PrometheusMetricsConfiguration struct {
+	SampleTime uint64 `json:"sample_time" envconfig:"CONVOY_METRICS_SAMPLE_TIME"`
+}
+
 const (
 	envPrefix      string = "convoy"
 	OSSEnvironment string = "oss"
 )
 
 const (
-	OTelTracerProvider    TracerProvider = "otel"
-	SentryTracerProvider  TracerProvider = "sentry"
-	DatadogTracerProvider TracerProvider = "datadog"
+	OTelTracerProvider   TracerProvider = "otel"
+	SentryTracerProvider TracerProvider = "sentry"
 )
 
 const (
 	RedisQueueProvider       QueueProvider           = "redis"
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
-	TypesenseSearchProvider  SearchProvider          = "typesense"
+)
+
+const (
+	PrometheusMetricsProvider MetricsBackend = "prometheus"
 )
 
 type (
@@ -293,57 +324,56 @@ type (
 	LimiterProvider         string
 	DatabaseProvider        string
 	SearchProvider          string
-	FeatureFlagProvider     string
+	MetricsBackend          string
 )
 
 func (s SignatureHeaderProvider) String() string {
 	return string(s)
 }
 
-type FlagLevel int
+type ExecutionMode string
 
 const (
-	ExperimentalFlagLevel FlagLevel = iota + 1
+	EventsExecutionMode  ExecutionMode = "events"
+	RetryExecutionMode   ExecutionMode = "retry"
+	DefaultExecutionMode ExecutionMode = "default"
 )
 
-const Experimental = "experimental"
-
-func (ft *FlagLevel) UnmarshalJSON(v []byte) error {
-	switch string(v) {
-	case Experimental:
-		*ft = ExperimentalFlagLevel
-	}
-	return nil
-}
-
-func (ft FlagLevel) MarshalJSON() ([]byte, error) {
-	switch ft {
-	case ExperimentalFlagLevel:
-		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
-	default:
-		return []byte(fmt.Sprintf(`"%s"`, []byte(Experimental))), nil
-	}
-}
-
 type Configuration struct {
-	APIVersion         string                     `json:"api_version" envconfig:"CONVOY_API_VERSION"`
-	Auth               AuthConfiguration          `json:"auth,omitempty"`
-	Database           DatabaseConfiguration      `json:"database"`
-	Redis              RedisConfiguration         `json:"redis"`
-	Prometheus         PrometheusConfiguration    `json:"prometheus"`
-	Server             ServerConfiguration        `json:"server"`
-	MaxResponseSize    uint64                     `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
-	SMTP               SMTPConfiguration          `json:"smtp"`
-	Environment        string                     `json:"env" envconfig:"CONVOY_ENV"`
-	Logger             LoggerConfiguration        `json:"logger"`
-	Tracer             TracerConfiguration        `json:"tracer"`
-	Host               string                     `json:"host" envconfig:"CONVOY_HOST"`
-	CustomDomainSuffix string                     `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
-	FeatureFlag        FlagLevel                  `json:"feature_flag" envconfig:"CONVOY_FEATURE_FLAG"`
-	Analytics          AnalyticsConfiguration     `json:"analytics"`
-	StoragePolicy      StoragePolicyConfiguration `json:"storage_policy"`
-	ConsumerPoolSize   int                        `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
-	EnableProfiling    bool                       `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	InstanceId          string                       `json:"instance_id"`
+	APIVersion          string                       `json:"api_version" envconfig:"CONVOY_API_VERSION"`
+	Auth                AuthConfiguration            `json:"auth,omitempty"`
+	Database            DatabaseConfiguration        `json:"database"`
+	Redis               RedisConfiguration           `json:"redis"`
+	Prometheus          PrometheusConfiguration      `json:"prometheus"`
+	Server              ServerConfiguration          `json:"server"`
+	MaxResponseSize     uint64                       `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
+	SMTP                SMTPConfiguration            `json:"smtp"`
+	Environment         string                       `json:"env" envconfig:"CONVOY_ENV"`
+	Logger              LoggerConfiguration          `json:"logger"`
+	Tracer              TracerConfiguration          `json:"tracer"`
+	Host                string                       `json:"host" envconfig:"CONVOY_HOST"`
+	Pyroscope           PyroscopeConfiguration       `json:"pyroscope"`
+	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
+	EnableFeatureFlag   []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
+	RetentionPolicy     RetentionPolicyConfiguration `json:"retention_policy"`
+	Analytics           AnalyticsConfiguration       `json:"analytics"`
+	StoragePolicy       StoragePolicyConfiguration   `json:"storage_policy"`
+	ConsumerPoolSize    int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`
+	EnableProfiling     bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
+	Metrics             MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
+	InstanceIngestRate  int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
+	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
+	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
+	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
+}
+
+type PyroscopeConfiguration struct {
+	EnableProfiling bool   `json:"enabled" envconfig:"CONVOY_ENABLE_PYROSCOPE_PROFILING"`
+	URL             string `json:"url" envconfig:"CONVOY_PYROSCOPE_URL"`
+	Username        string `json:"username" envconfig:"CONVOY_PYROSCOPE_USERNAME"`
+	Password        string `json:"password" envconfig:"CONVOY_PYROSCOPE_PASSWORD"`
+	ProfileID       string `json:"profile_id" envconfig:"CONVOY_PYROSCOPE_PROFILE_ID"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called
@@ -417,8 +447,8 @@ func LoadConfig(p string) error {
 		if err := json.NewDecoder(f).Decode(&c); err != nil {
 			return err
 		}
-	} else if errors.Is(err, os.ErrNotExist) {
-		log.Info("convoy.json not detected, will look for env vars or cli args")
+	} else if !errors.Is(err, os.ErrNotExist) {
+		log.WithError(err).Fatal("failed to check if config file exists")
 	}
 
 	// override config from environment variables
@@ -471,6 +501,16 @@ func validate(c *Configuration) error {
 
 	if err := ensureSSL(c.Server); err != nil {
 		return err
+	}
+
+	if c.Metrics.IsEnabled {
+		backend := c.Metrics.Backend
+		switch backend {
+		case PrometheusMetricsProvider:
+			break
+		default:
+			c.Metrics.IsEnabled = false
+		}
 	}
 
 	return nil

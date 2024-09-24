@@ -68,7 +68,7 @@ export class EndpointsComponent implements OnInit {
 
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['Name', 'Status', 'ID', '', '', ''];
+	endpointsTableHead = ['Name', 'Status', 'Url', 'ID', '', '', ''];
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
@@ -100,7 +100,7 @@ export class EndpointsComponent implements OnInit {
 		try {
 			const response = await this.privateService.getEndpoints({ ...requestDetails, q: requestDetails?.search || this.endpointSearchString });
 			this.endpoints = response.data;
-			this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content);
+			if (response.data.content) this.displayedEndpoints = this.generalService.setContentDisplayed(response.data.content, 'desc');
 			this.isLoadingEndpoints = false;
 		} catch {
 			this.isLoadingEndpoints = false;

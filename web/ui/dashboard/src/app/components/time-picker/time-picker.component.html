@@ -2,7 +2,7 @@
 <div class="relative">
 	<button convoy-button class="px-10px !border-primary-400 justify-between h-36px min-w-[117px]" fill="outline" size="sm" [ngClass]="{ 'text-primary-100 !bg-primary-500': filterIsActive() }" (click)="showPicker = !showPicker">
 		<img src="assets/img/clock.svg" class="mr-10px w-14px" alt="time filter icon" />
-		<span class="text-grey-40 mr-4px">Time</span>
+		<span class="text-neutral-11 mr-4px">Time</span>
 		<img class="ml-16px mr-0px w-14px" src="/assets/img/angle-arrow-down.svg" *ngIf="!filterIsActive()" alt="arrow down icon" />
 
 		<button type="button" *ngIf="filterIsActive()" (click)="clearFilter($event)" class="ml-16px">
@@ -14,7 +14,7 @@
 
 	<div convoy-dropdown-container position="left" [show]="showPicker" class="p-10px !w-fit">
 		<div class="px-10px">
-			<label class="text-12 text-grey-40">Start</label>
+			<label class="text-12 text-neutral-11">Start</label>
 			<div class="flex items-center mb-20px">
 				<input
 					type="number"
@@ -35,7 +35,7 @@
 					(input)="validateTime('startTimeMinute')"
 					class="border border-[#EEEEEE] bg-[#EEEEEE] rounded-4px text-16 text-[#424242] text-center focus:border-[#EEEEEE] outline-none w-80px"
 				/>
-				<div class="flex border border-grey-10 rounded-4px ml-10px">
+				<div class="flex border border-neutral-a3 rounded-4px ml-10px">
 					<button
 						class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px"
 						(click)="filterStartHour = filterStartHour - 12 < 0 ? filterStartHour : filterStartHour - 12"
@@ -53,7 +53,7 @@
 				</div>
 			</div>
 
-			<label class="text-12 text-grey-40">End</label>
+			<label class="text-12 text-neutral-11">End</label>
 			<div class="flex items-center mb-20px">
 				<input
 					type="number"
@@ -74,7 +74,7 @@
 					(input)="validateTime('endTimeMinute')"
 					class="border border-[#EEEEEE] bg-[#EEEEEE] rounded-4px text-16 text-[#424242] text-center focus:border-[#EEEEEE] outline-none w-80px"
 				/>
-				<div class="flex border border-grey-10 rounded-4px ml-10px">
+				<div class="flex border border-neutral-a3 rounded-4px ml-10px">
 					<button class="py-4px px-10px text-10 rounded-bl-4px rounded-tl-4px" (click)="filterEndHour = filterEndHour - 12 < 0 ? filterEndHour : filterEndHour - 12" [ngClass]="{ 'bg-primary-100 text-white-100 transition-all duration-300': filterEndHour < 12 }">
 						AM
 					</button>
@@ -84,7 +84,7 @@
 				</div>
 			</div>
 			<div class="mb-20px flex items-center justify-end">
-				<button convoy-button size="sm" fill="outline" color="danger" class="mr-10px" *ngIf="filterIsActive()" (click)="clearFilter()">Clear</button>
+				<button convoy-button size="sm" fill="outline" color="error" class="mr-10px" *ngIf="filterIsActive()" (click)="clearFilter()">Clear</button>
 				<button convoy-button size="sm" (click)="onApplyFilter()">Apply</button>
 			</div>
 		</div>

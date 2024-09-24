@@ -9,8 +9,8 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/util"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func provideDeviceService(ctrl *gomock.Controller) *DeviceService {
@@ -55,7 +55,6 @@ func TestDeviceService_LoadDevicesPaged(t *testing.T) {
 				{UID: "123456"},
 			},
 			wantPaginationData: datastore.PaginationData{
-
 				PerPage: 10,
 			},
 			dbFn: func(d *DeviceService) {

@@ -3,14 +3,13 @@ package services
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/google/uuid"
-
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
@@ -20,6 +19,7 @@ type CreateBroadcastEventService struct {
 	EventRepo      datastore.EventRepository
 	PortalLinkRepo datastore.PortalLinkRepository
 	Queue          queue.Queuer
+	JobID          string
 
 	BroadcastEvent *models.BroadcastEvent
 	Project        *datastore.Project
@@ -31,6 +31,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 	}
 
 	e.BroadcastEvent.ProjectID = e.Project.UID
+	e.BroadcastEvent.AcknowledgedAt = time.Now()
 
 	taskName := convoy.CreateBroadcastEventProcessor
 
@@ -40,7 +41,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 	}
 
 	job := &queue.Job{
-		ID:      uuid.NewString(),
+		ID:      e.JobID,
 		Payload: eventByte,
 		Delay:   0,
 	}

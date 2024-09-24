@@ -5,6 +5,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -58,6 +59,32 @@ func Test_FetchProjectByID(t *testing.T) {
 	}
 
 	require.Equal(t, newProject, dbProject)
+}
+
+func TestCountProjects(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	projectRepository := NewProjectRepo(db, nil)
+	org := seedOrg(t, db)
+
+	count := 10
+	for i := 0; i < count; i++ {
+		project := &datastore.Project{
+			UID:            ulid.Make().String(),
+			Name:           ulid.Make().String(),
+			OrganisationID: org.UID,
+			Type:           datastore.IncomingProject,
+			Config:         &datastore.DefaultProjectConfig,
+		}
+
+		err := projectRepository.CreateProject(context.Background(), project)
+		require.NoError(t, err)
+	}
+
+	projectCount, err := projectRepository.CountProjects(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, int64(count), projectCount)
 }
 
 func Test_CreateProject(t *testing.T) {
@@ -140,14 +167,13 @@ func Test_UpdateProject(t *testing.T) {
 		OrganisationID:  project.OrganisationID,
 		ProjectConfigID: project.ProjectConfigID, // TODO(all): if i comment this line this test never exits, weird problem
 		Config: &datastore.ProjectConfig{
-			MaxIngestSize:            8483,
-			ReplayAttacks:            true,
-			IsRetentionPolicyEnabled: true,
-			RetentionPolicy:          &datastore.RetentionPolicyConfiguration{Policy: "99d"},
+			MaxIngestSize: 8483,
+			ReplayAttacks: true,
 			RateLimit: &datastore.RateLimitConfiguration{
 				Count:    8773,
 				Duration: 7766,
 			},
+			SSL: &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
 			Strategy: &datastore.StrategyConfiguration{
 				Type:       datastore.ExponentialStrategyProvider,
 				Duration:   2434,
@@ -264,8 +290,8 @@ func Test_FillProjectStatistics(t *testing.T) {
 
 	endpoint1 := &datastore.Endpoint{
 		ProjectID: project1.UID,
-		TargetURL: "http://google.com",
-		Title:     "test_endpoint",
+		Url:       "http://google.com",
+		Name:      "test_endpoint",
 		Secrets: []datastore.Secret{
 			{
 				Value:     "12345",
@@ -370,8 +396,8 @@ func Test_DeleteProject(t *testing.T) {
 
 	endpoint := &datastore.Endpoint{
 		ProjectID: project.UID,
-		TargetURL: "http://google.com",
-		Title:     "test_endpoint",
+		Url:       "http://google.com",
+		Name:      "test_endpoint",
 		Secrets: []datastore.Secret{
 			{
 				Value:     "12345",
@@ -390,6 +416,12 @@ func Test_DeleteProject(t *testing.T) {
 		ProjectID: endpoint.ProjectID,
 		Endpoints: []string{endpoint.UID},
 		Headers:   httpheader.HTTPHeader{},
+		Data: json.RawMessage(`{
+                              "userId": 1,
+                              "id": 1,
+                              "title": "delectus aut autem",
+                              "completed": false
+                            }`),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}

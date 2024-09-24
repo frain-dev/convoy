@@ -1,23 +1,102 @@
 package fflag
 
 import (
+	"errors"
+	"fmt"
 	"github.com/frain-dev/convoy/config"
+	"os"
+	"sort"
+	"text/tabwriter"
 )
 
-var features = map[string]config.FlagLevel{}
+var ErrFeatureNotEnabled = errors.New("this feature is not enabled")
 
-type FFlag struct{}
+type (
+	FeatureFlagKey string
+)
 
-func NewFFlag() *FFlag {
-	return &FFlag{}
+const (
+	Prometheus     FeatureFlagKey = "prometheus"
+	FullTextSearch FeatureFlagKey = "full-text-search"
+)
+
+type (
+	FeatureFlagState bool
+)
+
+const (
+	enabled  FeatureFlagState = true
+	disabled FeatureFlagState = false
+)
+
+var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
+	Prometheus:     disabled,
+	FullTextSearch: disabled,
 }
 
-func (c *FFlag) CanAccessFeature(key string, cfg *config.Configuration) bool {
+type FFlag struct {
+	Features map[FeatureFlagKey]FeatureFlagState
+}
+
+func NewFFlag(c *config.Configuration) (*FFlag, error) {
+	f := &FFlag{
+		Features: clone(DefaultFeaturesState),
+	}
+	for _, flag := range c.EnableFeatureFlag {
+		switch flag {
+		case string(Prometheus):
+			f.Features[Prometheus] = enabled
+		case string(FullTextSearch):
+			f.Features[FullTextSearch] = enabled
+		}
+	}
+	return f, nil
+}
+
+func clone(src map[FeatureFlagKey]FeatureFlagState) map[FeatureFlagKey]FeatureFlagState {
+	dst := make(map[FeatureFlagKey]FeatureFlagState)
+	for k, v := range src {
+		dst[k] = v
+	}
+	return dst
+}
+
+func (c *FFlag) CanAccessFeature(key FeatureFlagKey) bool {
 	// check for this feature in our feature map
-	flagLevel, ok := features[key]
+	state, ok := c.Features[key]
 	if !ok {
 		return false
 	}
 
-	return flagLevel <= cfg.FeatureFlag // if the feature level is less than or equal to the cfg level, we can access the feature
+	return bool(state)
+}
+
+func (c *FFlag) ListFeatures() error {
+	keys := make([]string, 0, len(c.Features))
+
+	for k := range c.Features {
+		keys = append(keys, string(k))
+	}
+	sort.Strings(keys)
+
+	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
+	_, err := fmt.Fprintln(w, "Features\tState")
+	if err != nil {
+		return err
+	}
+
+	for _, k := range keys {
+		stateBool := c.Features[FeatureFlagKey(k)]
+		state := "disabled"
+		if stateBool {
+			state = "enabled"
+		}
+
+		_, err := fmt.Fprintf(w, "%s\t%s\n", k, state)
+		if err != nil {
+			return err
+		}
+	}
+
+	return w.Flush()
 }

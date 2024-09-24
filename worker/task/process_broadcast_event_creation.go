@@ -3,8 +3,16 @@ package task
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"gopkg.in/guregu/null.v4"
+
+	"github.com/frain-dev/convoy/queue/redis"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -17,109 +25,152 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+var (
+	ErrFailedToWriteToQueue = errors.New("failed to write to event delivery queue")
+	defaultBroadcastDelay   = 30 * time.Second
+)
+
+func ProcessBroadcastEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser, subscriptionsTable memorystore.ITable) func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var broadcastEvent models.BroadcastEvent
 
-		err := msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
+		err = msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		project, err := projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
 		var isDuplicate bool
 		if len(broadcastEvent.IdempotencyKey) > 0 {
 			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
 			if err != nil {
-				return &EndpointError{Err: err, delay: 10 * time.Second}
+				return &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: defaultBroadcastDelay}
 			}
 
 			isDuplicate = len(events) > 0
 		}
 
-		pageable := datastore.Pageable{
-			PerPage:    3500,
-			Direction:  datastore.Next,
-			NextCursor: "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF",
-		}
+		mKeys := memorystore.NewKey(project.UID, "*")
+		matchAllSubs := getSubscriptionsFromRow(subscriptionsTable.Get(mKeys))
 
-		subscriptions, err := getAllSubscriptions(ctx, subRepo, project.UID, pageable)
-		if err != nil {
-			log.WithError(err).Error("failed to fetch all subscriptions")
-			return &EndpointError{Err: err, delay: 10 * time.Second}
-		}
+		key := memorystore.NewKey(project.UID, broadcastEvent.EventType)
+		eventTypeSubs := getSubscriptionsFromRow(subscriptionsTable.Get(key))
+
+		subscriptions := make([]datastore.Subscription, 0, len(matchAllSubs)+len(eventTypeSubs))
+		subscriptions = append(subscriptions, eventTypeSubs...)
+		subscriptions = append(subscriptions, matchAllSubs...)
+
+		// subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
 
 		event := &datastore.Event{
 			UID:              ulid.Make().String(),
 			EventType:        datastore.EventType(broadcastEvent.EventType),
 			ProjectID:        project.UID,
+			SourceID:         broadcastEvent.SourceID,
 			Data:             broadcastEvent.Data,
 			IdempotencyKey:   broadcastEvent.IdempotencyKey,
+			Headers:          getCustomHeaders(broadcastEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
 			Raw:              string(broadcastEvent.Data),
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
+			AcknowledgedAt:   null.TimeFrom(time.Now()),
 		}
 
-		subscriptions = matchSubscriptions(string(event.EventType), subscriptions)
-
-		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, subscriptions)
+		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, licenser, subscriptions, true)
 		if err != nil {
-			return &EndpointError{Err: errors.New("failed to match subscriptions using filter"), delay: defaultDelay}
+			return &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
-		event.Endpoints = getEndpointIDs(subscriptions)
+		es, ss := getEndpointIDs(subscriptions)
+		event.Endpoints = es
 
 		err = eventRepo.CreateEvent(ctx, event)
 		if err != nil {
-			return &EndpointError{Err: err, delay: 10 * time.Second}
+			return &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
-		if event.IsDuplicateEvent {
+		q := eventQueue.(*redis.RedisQueue)
+		ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), broadcastEvent.JobID)
+		if err != nil {
+			log.WithError(err).Error("failed to get task from queue")
+			return &EndpointError{Err: fmt.Errorf("failed to get task from queue, err: %s", err.Error()), delay: defaultBroadcastDelay}
+		}
+
+		lastRunErrored := ti.LastErr == ErrFailedToWriteToQueue.Error()
+		if event.IsDuplicateEvent && !lastRunErrored {
 			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
 			return nil
 		}
 
-		return writeEventDeliveriesToQueue(
-			ctx, subscriptions, event, project, eventDeliveryRepo,
-			subRepo, eventQueue, deviceRepo, endpointRepo,
-		)
+		err = writeEventDeliveriesToQueue(ctx, ss, event, project, eventDeliveryRepo, eventQueue, deviceRepo, endpointRepo, licenser)
+		if err != nil {
+			log.WithError(err).Error(ErrFailedToWriteToQueue)
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error()), delay: defaultBroadcastDelay}
+		}
+
+		return nil
 	}
 }
 
-func getEndpointIDs(subs []datastore.Subscription) []string {
-	ids := make([]string, 0, len(subs))
+func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscription) {
+	subMap := make(map[string]*datastore.Subscription)
+	endpointIds := make([]string, 0, len(subs))
+
 	var sub *datastore.Subscription
 	for i := range subs {
 		sub = &subs[i]
 		if sub.Type == datastore.SubscriptionTypeAPI && !util.IsStringEmpty(sub.EndpointID) {
-			ids = append(ids, sub.EndpointID)
+			if _, ok := subMap[sub.EndpointID]; !ok {
+				subMap[sub.EndpointID] = sub
+				endpointIds = append(endpointIds, sub.EndpointID)
+			}
 		}
 	}
 
-	return ids
-}
-
-func getAllSubscriptions(ctx context.Context, subRepo datastore.SubscriptionRepository, projectID string, pageable datastore.Pageable) ([]datastore.Subscription, error) {
-	subscriptions, paginationData, err := subRepo.LoadSubscriptionsPaged(ctx, projectID, &datastore.FilterBy{}, pageable)
-	if err != nil {
-		return nil, err
+	subscriptionsIds := make([]datastore.Subscription, 0, len(subMap))
+	for _, s := range subMap {
+		subscriptionsIds = append(subscriptionsIds, *s)
 	}
 
-	if paginationData.HasNextPage {
-		pageable.NextCursor = subscriptions[len(subscriptions)-1].UID
-		subs, err := getAllSubscriptions(ctx, subRepo, projectID, pageable)
-		if err != nil {
-			return nil, err
-		}
+	return endpointIds, subscriptionsIds
+}
 
-		subscriptions = append(subscriptions, subs...)
-
+func getSubscriptionsFromRow(row *memorystore.Row) []datastore.Subscription {
+	if row == nil {
+		return []datastore.Subscription{}
 	}
 
-	return subscriptions, nil
+	subs, ok := row.Value().([]datastore.Subscription)
+	if !ok {
+		return []datastore.Subscription{}
+	}
+
+	return subs
 }
+
+//func joinSubscriptions(sub1, sub2 []datastore.Subscription) []datastore.Subscription {
+//	seen := make(map[string]bool)
+//	result := []datastore.Subscription{}
+//
+//	// Iterate through the first slice and add unique subscriptions to the result
+//	for _, sub := range sub1 {
+//		if !seen[sub.UID] {
+//			seen[sub.UID] = true
+//			result = append(result, sub)
+//		}
+//	}
+//
+//	// Iterate through the second slice and add unique subscriptions to the result
+//	for _, sub := range sub2 {
+//		if !seen[sub.UID] {
+//			seen[sub.UID] = true
+//			result = append(result, sub)
+//		}
+//	}
+//
+//	return result
+//}
+//

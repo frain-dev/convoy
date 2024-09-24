@@ -95,5 +95,11 @@
       "path": "<insert-on-prem-path>"
     }
   },
-  "consumer_pool_size": 200
+  "consumer_pool_size": 200,
+  "metrics": {
+        "metrics_backend": "prometheus",
+        "prometheus_metrics": {
+            "sample_time": 10
+        }
+  }
 }

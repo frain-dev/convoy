@@ -7,15 +7,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/pkg/httpheader"
 
 	"github.com/frain-dev/convoy/pkg/url"
-
-	"github.com/frain-dev/convoy/limiter"
-	"github.com/frain-dev/convoy/pkg/signature"
-	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -29,60 +31,72 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-var (
-	ErrDeliveryAttemptFailed               = errors.New("error sending event")
-	ErrRateLimit                           = errors.New("rate limit error")
-	defaultDelay             time.Duration = 10
-)
-
-type SignatureValues struct {
-	HMAC      string
-	Timestamp string
-}
-type EventDelivery struct {
-	EventDeliveryID string
-	ProjectID       string
-}
-
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository,
-	projectRepo datastore.ProjectRepository, subRepo datastore.SubscriptionRepository, notificationQueue queue.Queuer, rateLimiter limiter.RateLimiter,
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser,
+	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository,
 ) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var data EventDelivery
+		defer func() {
+			// retrieve the value of err
+			if err == nil {
+				return
+			}
 
-		err := msgpack.DecodeMsgPack(t.Payload(), &data)
+			// set the error to nil, so it's removed from the event queue
+			err = nil
+
+			job := &queue.Job{
+				Payload: t.Payload(),
+				Delay:   defaultEventDelay,
+				ID:      data.EventDeliveryID,
+			}
+
+			// write it to the retry queue.
+			deferErr := q.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
+			if deferErr != nil {
+				log.FromContext(ctx).WithError(deferErr).Error("[asynq]: an error occurred sending event delivery to the retry queue")
+			}
+		}()
+
+		err = msgpack.DecodeMsgPack(t.Payload(), &data)
 		if err != nil {
-			err := json.Unmarshal(t.Payload(), &data)
+			err = json.Unmarshal(t.Payload(), &data)
 			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
+				return &DeliveryError{Err: err}
 			}
 		}
 
 		cfg, err := config.Get()
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			return &DeliveryError{Err: err}
 		}
 
-		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByID(ctx, data.ProjectID, data.EventDeliveryID)
+		eventDelivery, err := eventDeliveryRepo.FindEventDeliveryByIDSlim(ctx, data.ProjectID, data.EventDeliveryID)
 		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
+			return &DeliveryError{Err: err}
 		}
+		eventDelivery.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
-		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
-
-		subscription, err := subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
-
 		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &DeliveryError{Err: err}
+		}
+
+		endpoint, err := endpointRepo.FindEndpointByID(ctx, eventDelivery.EndpointID, eventDelivery.ProjectID)
+		if err != nil {
+			if errors.Is(err, datastore.ErrEndpointNotFound) {
+				eventDelivery.Description = datastore.ErrEndpointNotFound.Error()
+				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
+				if err != nil {
+					log.WithError(err).Error("failed to update event delivery status to discarded")
+				}
+
+				return nil
+			}
+
+			return &DeliveryError{Err: err}
 		}
 
 		switch eventDelivery.Status {
@@ -91,64 +105,49 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return nil
 		}
 
-		ec := &EventDeliveryConfig{subscription: subscription, project: project}
-		rlc := ec.rateLimitConfig()
-
-		res, err := rateLimiter.Allow(ctx, endpoint.TargetURL, rlc.Count, int(rlc.Duration))
+		err = rateLimiter.AllowWithDuration(ctx, endpoint.UID, endpoint.RateLimit, int(endpoint.RateLimitDuration))
 		if err != nil {
-			err := fmt.Errorf("too many events to %s, limit of %v would be reached", endpoint.TargetURL, res.Limit)
-			log.FromContext(ctx).WithError(ErrRateLimit).Error(err.Error())
+			log.FromContext(ctx).WithFields(map[string]interface{}{"event_delivery_id": data.EventDeliveryID}).
+				WithError(err).
+				Debugf("too many events to %s, limit of %v reqs/%v has been reached", endpoint.Url, endpoint.RateLimit, time.Duration(endpoint.RateLimitDuration)*time.Second)
 
-			return &RateLimitError{Err: ErrRateLimit, delay: delayDuration}
+			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
-
-		var attempt datastore.DeliveryAttempt
-
-		var httpDuration time.Duration
-		if endpoint.HttpTimeout == 0 {
-			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
-		} else {
-			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
+			return &DeliveryError{Err: err}
 		}
 
 		done := true
-		dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
-		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
-		}
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
-			log.Debugf("endpoint %s already merged with message %s\n", endpoint.TargetURL, eventDelivery.UID)
+			log.Debugf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID)
 			return nil
 		}
 
 		if endpoint.Status == datastore.InactiveEndpointStatus {
 			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 			if err != nil {
-				return &EndpointError{Err: err, delay: delayDuration}
+				return &DeliveryError{Err: err}
 			}
 
-			log.Debugf("endpoint %s is inactive, failing to send.", endpoint.TargetURL)
+			log.Debugf("endpoint %s is inactive, failing to send.", endpoint.Url)
 			return nil
 		}
 
 		sig := newSignature(endpoint, project, json.RawMessage(eventDelivery.Metadata.Raw))
 		header, err := sig.ComputeHeaderValue()
 		if err != nil {
-			return &EndpointError{Err: err, delay: delayDuration}
+			return &DeliveryError{Err: err}
 		}
 
-		targetURL := endpoint.TargetURL
+		targetURL := endpoint.Url
 		if !util.IsStringEmpty(eventDelivery.URLQueryParams) {
-			targetURL, err = url.ConcatQueryParams(endpoint.TargetURL, eventDelivery.URLQueryParams)
+			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
 			if err != nil {
 				log.WithError(err).Error("failed to concat url query params")
-				return &EndpointError{Err: err, delay: delayDuration}
+				return &DeliveryError{Err: err}
 			}
 		}
 
@@ -163,7 +162,14 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
-		resp, err := dispatch.SendRequest(targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey)
+		var httpDuration time.Duration
+		if endpoint.HttpTimeout == 0 || !licenser.AdvancedEndpointMgmt() {
+			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
+		} else {
+			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
+		}
+		resp, err := dispatch.SendRequest(ctx, targetURL, string(convoy.HttpPost), sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration)
+
 		status := "-"
 		statusCode := 0
 		if resp != nil {
@@ -182,18 +188,20 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		})
 
 		if err == nil && statusCode >= 200 && statusCode <= 299 {
-			requestLogger.Infof("%s", eventDelivery.UID)
-			log.Infof("%s sent", eventDelivery.UID)
+			requestLogger.Debugf("%s sent", eventDelivery.UID)
 			attemptStatus = true
-			// e.Sent = true
 
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
-			eventDelivery.Latency = time.Since(eventDelivery.CreatedAt).String()
+			eventDelivery.LatencySeconds = time.Since(eventDelivery.GetLatencyStartTime()).Seconds()
+
+			// register latency
+			mm := metrics.GetDPInstance(licenser)
+			mm.RecordLatency(eventDelivery)
+
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
-			// e.Sent = false
 
 			eventDelivery.Status = datastore.RetryEventStatus
 
@@ -201,7 +209,8 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			eventDelivery.Metadata.NextSendTime = nextTime
 			attempts := eventDelivery.Metadata.NumTrials + 1
 
-			log.FromContext(ctx).Info("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID, nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
+				nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 		}
 
 		// Request failed but statusCode is 200 <= x <= 299
@@ -216,10 +225,12 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
-			// send endpoint reactivation notification
-			err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, notificationQueue, false, resp.Error, string(resp.Body), resp.StatusCode)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to send notification")
+			if licenser.AdvancedEndpointMgmt() {
+				// send endpoint reactivation notification
+				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, false, resp.Error, string(resp.Body), resp.StatusCode)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("failed to send notification")
+				}
 			}
 		}
 
@@ -227,11 +238,11 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			endpointStatus := datastore.InactiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
-				log.FromContext(ctx).Info("Failed to reactivate endpoint after successful retry")
+				log.FromContext(ctx).Errorf("Failed to reactivate endpoint after successful retry")
 			}
 		}
 
-		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
+		attempt := parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
 
 		eventDelivery.Metadata.NumTrials++
 
@@ -255,116 +266,36 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
-				// send endpoint deactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, notificationQueue, true, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.WithError(err).Error("failed to send notification")
+				if licenser.AdvancedEndpointMgmt() {
+					// send endpoint deactivation notification
+					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
+					if err != nil {
+						log.WithError(err).Error("failed to send notification")
+					}
 				}
 			}
 		}
 
-		err = eventDeliveryRepo.UpdateEventDeliveryWithAttempt(ctx, project.UID, *eventDelivery, attempt)
+		err = attemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
+		if err != nil {
+			log.WithError(err).Error("failed to create delivery attempt", eventDelivery.UID)
+			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+		}
+
+		err = eventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
 			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
-			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
+			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
-			return &EndpointError{Err: ErrDeliveryAttemptFailed, delay: delayDuration}
+			errS := "nil"
+			if err != nil {
+				errS = err.Error()
+			}
+			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS)}
 		}
 
 		return nil
 	}
-}
-
-func newSignature(endpoint *datastore.Endpoint, g *datastore.Project, data json.RawMessage) *signature.Signature {
-	s := &signature.Signature{Advanced: endpoint.AdvancedSignatures, Payload: data}
-
-	for _, version := range g.Config.Signature.Versions {
-		scheme := signature.Scheme{
-			Hash:     version.Hash,
-			Encoding: version.Encoding.String(),
-		}
-
-		for _, sc := range endpoint.Secrets {
-			if sc.DeletedAt.IsZero() {
-				// the secret has not been expired
-				scheme.Secret = append(scheme.Secret, sc.Value)
-			}
-		}
-		s.Schemes = append(s.Schemes, scheme)
-	}
-
-	return s
-}
-
-func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint, resp *net.Response, attemptStatus bool) datastore.DeliveryAttempt {
-	responseHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.ResponseHeader)
-	requestHeader := util.ConvertDefaultHeaderToCustomHeader(&resp.RequestHeader)
-
-	return datastore.DeliveryAttempt{
-		UID:        ulid.Make().String(),
-		URL:        resp.URL.String(),
-		Method:     resp.Method,
-		MsgID:      m.UID,
-		EndpointID: e.UID,
-		APIVersion: convoy.GetVersion(),
-
-		IPAddress:        resp.IP,
-		ResponseHeader:   *responseHeader,
-		RequestHeader:    *requestHeader,
-		HttpResponseCode: resp.Status,
-		ResponseData:     string(resp.Body),
-		Error:            resp.Error,
-		Status:           attemptStatus,
-
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-}
-
-type EventDeliveryConfig struct {
-	project      *datastore.Project
-	subscription *datastore.Subscription
-}
-
-type RetryConfig struct {
-	Type       datastore.StrategyProvider
-	Duration   uint64
-	RetryCount uint64
-}
-
-type RateLimitConfig struct {
-	Count    int
-	Duration time.Duration
-}
-
-func (ec *EventDeliveryConfig) retryConfig() (*RetryConfig, error) {
-	rc := &RetryConfig{}
-
-	if ec.subscription.RetryConfig != nil {
-		rc.Duration = ec.subscription.RetryConfig.Duration
-		rc.RetryCount = ec.subscription.RetryConfig.RetryCount
-		rc.Type = ec.subscription.RetryConfig.Type
-	} else {
-		rc.Duration = ec.project.Config.Strategy.Duration
-		rc.RetryCount = ec.project.Config.Strategy.RetryCount
-		rc.Type = ec.project.Config.Strategy.Type
-	}
-
-	return rc, nil
-}
-
-func (ec *EventDeliveryConfig) rateLimitConfig() *RateLimitConfig {
-	rlc := &RateLimitConfig{}
-
-	if ec.subscription.RateLimitConfig != nil {
-		rlc.Count = ec.subscription.RateLimitConfig.Count
-		rlc.Duration = time.Second * time.Duration(ec.subscription.RateLimitConfig.Duration)
-	} else {
-		rlc.Count = ec.project.Config.RateLimit.Count
-		rlc.Duration = time.Second * time.Duration(ec.project.Config.RateLimit.Duration)
-	}
-
-	return rlc
 }

@@ -1,8 +1,10 @@
 package main
 
 import (
-	"github.com/frain-dev/convoy/cmd/bootstrap"
+	"github.com/frain-dev/convoy/cmd/ff"
 	"os"
+
+	"github.com/frain-dev/convoy/cmd/bootstrap"
 
 	"github.com/frain-dev/convoy"
 	configCmd "github.com/frain-dev/convoy/cmd/config"
@@ -44,7 +46,7 @@ func main() {
 	var dbPassword string
 	var dbDatabase string
 
-	var fflag string
+	var fflag []string
 
 	var redisPort int
 	var redisHost string
@@ -54,6 +56,18 @@ func main() {
 	var redisPassword string
 	var redisDatabase string
 	var enableProfiling bool
+
+	var tracerType string
+	var sentryDSN string
+	var otelSampleRate float64
+	var otelCollectorURL string
+	var otelAuthHeaderName string
+	var otelAuthHeaderValue string
+
+	var metricsBackend string
+	var prometheusMetricsSampleTime uint64
+
+	var maxRetrySeconds uint64
 
 	var configFile string
 
@@ -78,8 +92,23 @@ func main() {
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
-	c.Flags().StringVar(&fflag, "feature-flag", "", "Enable feature flags (experimental)")
+	c.Flags().StringSliceVar(&fflag, "enable-feature-flag", []string{}, "List of feature flags to enable e.g. \"full-text-search,prometheus\"")
+
 	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling")
+
+	// tracing
+	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
+	c.Flags().StringVar(&sentryDSN, "sentry-dsn", "", "Sentry backend dsn")
+	c.Flags().Float64Var(&otelSampleRate, "otel-sample-rate", 1.0, "OTel tracing sample rate")
+	c.Flags().StringVar(&otelCollectorURL, "otel-collector-url", "", "OTel collector URL")
+	c.Flags().StringVar(&otelAuthHeaderName, "otel-auth-header-name", "", "OTel backend auth header name")
+	c.Flags().StringVar(&otelAuthHeaderValue, "otel-auth-header-value", "", "OTel backend auth header value")
+
+	// metrics
+	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('prometheus' feature flag required")
+	c.Flags().Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
+
+	c.Flags().Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))
@@ -95,6 +124,7 @@ func main() {
 	c.AddCommand(ingest.AddIngestCommand(app))
 	c.AddCommand(stream.AddStreamCommand(app))
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
+	c.AddCommand(ff.AddFeatureFlagsCommand())
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)

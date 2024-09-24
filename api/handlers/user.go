@@ -48,8 +48,10 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Queue:         h.A.Queue,
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
-		BaseURL:       baseUrl,
-		Data:          &newUser,
+		Licenser:      h.A.Licenser,
+
+		BaseURL: baseUrl,
+		Data:    &newUser,
 	}
 
 	user, token, err := rs.Run(r.Context())
@@ -206,12 +208,8 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		Data:     &forgotPassword,
 	}
 
-	err = gp.Run(r.Context())
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
-	_ = render.Render(w, r, util.NewServerResponse("Password reset token has been sent successfully", nil, http.StatusOK))
+	_ = gp.Run(r.Context())
+	_ = render.Render(w, r, util.NewServerResponse("if your email is registered on the platform, please check the email we have sent you to verify your account", nil, http.StatusOK))
 }
 
 func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +249,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	user, err := rs.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse("failed to reset password", http.StatusBadRequest))
 		return
 	}
 

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { PROJECT } from 'src/app/models/project.model';
 import { PrivateService } from '../../private.service';
 import { Router } from '@angular/router';
+import { LicensesService } from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-projects',
@@ -15,7 +16,7 @@ export class ProjectsComponent implements OnInit {
 	showOrganisationModal = false;
 	isLoadingProject: boolean = false;
 
-	constructor(private privateService: PrivateService, private router: Router) {
+	constructor(private privateService: PrivateService, private router: Router, public licenseService: LicensesService) {
 		this.privateService.projects$.subscribe(projects => (this.projects = projects.data));
 	}
 

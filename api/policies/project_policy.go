@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
@@ -13,6 +15,7 @@ type ProjectPolicy struct {
 	*authz.BasePolicy
 	OrganisationRepo       datastore.OrganisationRepository
 	OrganisationMemberRepo datastore.OrganisationMemberRepository
+	Licenser               license.Licenser
 }
 
 func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
@@ -28,33 +31,47 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		return ErrNotAllowed
 	}
 
-	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
-	if ok {
-		// Personal Access Tokens
-		if apiKey.Type == datastore.PersonalKey {
-			_, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, apiKey.UserID, org.UID)
-			if err != nil {
-				return ErrNotAllowed
-			}
-
-			return nil
+	// Dashboard Access or Personal Access Token
+	if authCtx.User != nil {
+		user, ok := authCtx.User.(*datastore.User)
+		if !ok {
+			return ErrNotAllowed
 		}
-
-		// API Key
-		if apiKey.Role.Project != project.UID {
+		member, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
+		if err != nil {
 			return ErrNotAllowed
 		}
 
-		return nil
+		// to allow admin roles, MultiPlayerMode must be enabled
+		adminAllowed := isAdmin(member) && pp.Licenser.MultiPlayerMode()
+
+		if isSuperAdmin(member) || adminAllowed {
+			return nil
+		}
+
+		return ErrNotAllowed
 	}
 
-	// JWT Access.
-	orgPolicy := OrganisationPolicy{
-		OrganisationMemberRepo: pp.OrganisationMemberRepo,
+	// API Key Access.
+	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
+	if !ok {
+		return ErrNotAllowed
 	}
-	return orgPolicy.Manage(ctx, org)
+
+	if apiKey.Role.Project != project.UID {
+		return ErrNotAllowed
+	}
+	return nil
 }
 
 func (pp *ProjectPolicy) GetName() string {
 	return "project"
+}
+
+func isAdmin(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleAdmin
+}
+
+func isSuperAdmin(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleSuperUser
 }

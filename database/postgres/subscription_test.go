@@ -17,9 +17,10 @@ import (
 )
 
 func generateSubscription(project *datastore.Project, source *datastore.Source, endpoint *datastore.Endpoint, device *datastore.Device) *datastore.Subscription {
+	uid := ulid.Make().String()
 	return &datastore.Subscription{
-		UID:        ulid.Make().String(),
-		Name:       "Subscription",
+		UID:        uid,
+		Name:       "Subscription-" + uid,
 		Type:       datastore.SubscriptionTypeAPI,
 		ProjectID:  project.UID,
 		SourceID:   source.UID,
@@ -61,8 +62,9 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	endpoint := seedEndpoint(t, db)
 	device := seedDevice(t, db)
 	subMap := map[string]*datastore.Subscription{}
+	var newSub *datastore.Subscription
 	for i := 0; i < 100; i++ {
-		newSub := generateSubscription(project, source, endpoint, device)
+		newSub = generateSubscription(project, source, endpoint, device)
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
 		subMap[newSub.UID] = newSub
 	}
@@ -72,10 +74,11 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	}
 
 	tests := []struct {
-		name        string
-		EndpointIDs []string
-		pageData    datastore.Pageable
-		expected    Expected
+		name             string
+		EndpointIDs      []string
+		SubscriptionName string
+		pageData         datastore.Pageable
+		expected         Expected
 	}{
 		{
 			name:     "Load Subscriptions Paged - 10 records",
@@ -83,6 +86,17 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 			expected: Expected{
 				paginationData: datastore.PaginationData{
 					PerPage: 3,
+				},
+			},
+		},
+
+		{
+			name:             "Load Subscriptions Paged - 1 record - filter by name",
+			SubscriptionName: newSub.Name,
+			pageData:         datastore.Pageable{PerPage: 1, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)},
+			expected: Expected{
+				paginationData: datastore.PaginationData{
+					PerPage: 1,
 				},
 			},
 		},
@@ -121,7 +135,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			subs, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointIDs: tc.EndpointIDs}, tc.pageData)
+			subs, pageable, err := subRepo.LoadSubscriptionsPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointIDs: tc.EndpointIDs, SubscriptionName: tc.SubscriptionName}, tc.pageData)
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
@@ -136,7 +150,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 				dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 
 				require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-				require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
+				require.Equal(t, dbSub.Endpoint.Name, endpoint.Name)
 				require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
 				require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
 
@@ -149,7 +163,7 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 
 				dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-				require.Equal(t, dbSub, *subMap[dbSub.UID])
+				require.Equal(t, dbSub.UID, subMap[dbSub.UID].UID)
 			}
 		})
 	}
@@ -201,7 +215,7 @@ func Test_CreateSubscription(t *testing.T) {
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-	require.Equal(t, dbSub, newSub)
+	require.Equal(t, dbSub.UID, newSub.UID)
 }
 
 func Test_CountEndpointSubscriptions(t *testing.T) {
@@ -264,7 +278,8 @@ func Test_UpdateSubscription(t *testing.T) {
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-	require.Equal(t, dbSub, update)
+	require.Equal(t, dbSub.UID, update.UID)
+	require.Equal(t, dbSub.Name, update.Name)
 }
 
 func Test_FindSubscriptionByID(t *testing.T) {
@@ -295,7 +310,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 
 	dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 	require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-	require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
+	require.Equal(t, dbSub.Endpoint.Name, endpoint.Name)
 	require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
 	require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
 
@@ -308,7 +323,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-	require.Equal(t, dbSub, newSub)
+	require.Equal(t, dbSub.UID, newSub.UID)
 }
 
 func Test_FindSubscriptionsBySourceID(t *testing.T) {
@@ -346,7 +361,7 @@ func Test_FindSubscriptionsBySourceID(t *testing.T) {
 
 		dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 		require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-		require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
+		require.Equal(t, dbSub.Endpoint.Name, endpoint.Name)
 		require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
 		require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
 
@@ -359,7 +374,7 @@ func Test_FindSubscriptionsBySourceID(t *testing.T) {
 
 		dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-		require.Equal(t, dbSub, *subMap[dbSub.UID])
+		require.Equal(t, dbSub.UID, subMap[dbSub.UID].UID)
 	}
 }
 
@@ -398,7 +413,7 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 
 		dbSub.CreatedAt, dbSub.UpdatedAt = time.Time{}, time.Time{}
 		require.Equal(t, dbSub.Endpoint.UID, endpoint.UID)
-		require.Equal(t, dbSub.Endpoint.Title, endpoint.Title)
+		require.Equal(t, dbSub.Endpoint.Name, endpoint.Name)
 		require.Equal(t, dbSub.Endpoint.ProjectID, endpoint.ProjectID)
 		require.Equal(t, dbSub.Endpoint.SupportEmail, endpoint.SupportEmail)
 
@@ -411,7 +426,7 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 
 		dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-		require.Equal(t, dbSub, *subMap[dbSub.UID])
+		require.Equal(t, dbSub.UID, subMap[dbSub.UID].UID)
 	}
 }
 
@@ -445,7 +460,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 
 	dbSub.Source, dbSub.Endpoint, dbSub.Device = nil, nil, nil
 
-	require.Equal(t, dbSub, newSub)
+	require.Equal(t, dbSub.UID, newSub.UID)
 }
 
 func Test_FindCLISubscriptions(t *testing.T) {

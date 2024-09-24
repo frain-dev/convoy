@@ -15,8 +15,8 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 
 	"github.com/frain-dev/convoy"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
@@ -65,7 +65,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 				endpoint := &datastore.Endpoint{
 					UID:    "endpoint-id-1",
-					Title:  "testing-1",
+					Name:   "testing-1",
 					Status: datastore.ActiveEndpointStatus,
 					Secrets: datastore.Secrets{
 						{
@@ -100,7 +100,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -140,12 +140,10 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "project-id-1").Times(1).Return(&datastore.Endpoint{
 					UID:                "endpoint-id-1",
 					ProjectID:          project.UID,
-					Title:              fmt.Sprintf("endpoint-%s", ulid.Make().String()),
-					TargetURL:          "https:/google.com",
-					RateLimit:          convoy.RATE_LIMIT,
+					Name:               fmt.Sprintf("endpoint-%s", ulid.Make().String()),
+					Url:                "https:/google.com",
 					HttpTimeout:        convoy.HTTP_TIMEOUT,
 					AdvancedSignatures: true,
-					RateLimitDuration:  convoy.RATE_LIMIT_DURATION,
 					Status:             datastore.ActiveEndpointStatus,
 					CreatedAt:          time.Now(),
 					UpdatedAt:          time.Now(),
@@ -164,7 +162,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				ed, _ := args.eventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().CreateEventDelivery(gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				ed.EXPECT().CreateEventDeliveries(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).Times(1).Return(nil)
@@ -192,7 +190,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo)
+			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.licenser)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

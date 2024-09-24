@@ -37,18 +37,20 @@ type ApiKeyFilter struct {
 }
 
 type FilterBy struct {
-	OwnerID      string
-	EndpointID   string
-	EndpointIDs  []string
-	ProjectID    string
-	SourceID     string
-	SearchParams SearchParams
+	OwnerID          string
+	EndpointID       string
+	EndpointIDs      []string
+	SubscriptionName string
+	ProjectID        string
+	SourceID         string
+	SearchParams     SearchParams
 }
 
-func (f *FilterBy) String() *string {
+func (f *FilterBy) String() string {
 	var s string
 	filterByBuilder := new(strings.Builder)
-	filterByBuilder.WriteString(fmt.Sprintf("project_id:=%s", f.ProjectID)) // TODO(daniel, RT): how to work around this?
+	// TODO(daniel, raymond): how to work around this?
+	filterByBuilder.WriteString(fmt.Sprintf("project_id:=%s", f.ProjectID))
 	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd))
 
 	if len(f.EndpointID) > 0 {
@@ -61,9 +63,7 @@ func (f *FilterBy) String() *string {
 
 	s = filterByBuilder.String()
 
-	// we only return a pointer address here
-	// because the typesense lib needs a string pointer
-	return &s
+	return s
 }
 
 type SearchFilter struct {

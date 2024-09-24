@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, OnInit, OnDestroy, Output, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { EVENT_DELIVERY, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
@@ -6,7 +6,6 @@ import { HTTP_RESPONSE } from 'src/app/models/global.model';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EventsService } from '../events.service';
 import { PrivateService } from 'src/app/private/private.service';
-import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { ProjectService } from '../../project.service';
 
 @Component({
@@ -14,7 +13,7 @@ import { ProjectService } from '../../project.service';
 	templateUrl: './event-deliveries.component.html',
 	styleUrls: ['./event-deliveries.component.scss']
 })
-export class EventDeliveriesComponent implements OnInit {
+export class EventDeliveriesComponent implements OnInit, OnDestroy {
 	@Output() pushEventDeliveries = new EventEmitter<any>();
 	eventDeliveryStatuses = ['Success', 'Failure', 'Retry', 'Scheduled', 'Processing', 'Discarded'];
 	eventDelTableHead: string[] = ['Status', 'Event type', this.projectService.activeProjectDetails?.type == 'incoming' ? 'Subscription' : 'Endpoint', 'Attempts', 'Next Attempt', 'Time', '', ''];

@@ -4,6 +4,8 @@ import (
 	"context"
 	"io"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/flatten"
 )
 
 type APIKeyRepository interface {
@@ -20,15 +22,17 @@ type APIKeyRepository interface {
 type EventDeliveryRepository interface {
 	ExportRepository
 	CreateEventDelivery(context.Context, *EventDelivery) error
+	CreateEventDeliveries(context.Context, []*EventDelivery) error
 	FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*EventDelivery, error)
+	FindEventDeliveryByIDSlim(ctx context.Context, projectID string, id string) (*EventDelivery, error)
 	FindEventDeliveriesByIDs(ctx context.Context, projectID string, ids []string) ([]EventDelivery, error)
 	FindEventDeliveriesByEventID(ctx context.Context, projectID string, id string) ([]EventDelivery, error)
 	CountDeliveriesByStatus(ctx context.Context, projectID string, status EventDeliveryStatus, params SearchParams) (int64, error)
 	UpdateStatusOfEventDelivery(ctx context.Context, projectID string, eventDelivery EventDelivery, status EventDeliveryStatus) error
 	UpdateStatusOfEventDeliveries(ctx context.Context, projectID string, ids []string, status EventDeliveryStatus) error
 	FindDiscardedEventDeliveries(ctx context.Context, projectID, deviceId string, params SearchParams) ([]EventDelivery, error)
-
-	UpdateEventDeliveryWithAttempt(ctx context.Context, projectID string, eventDelivery EventDelivery, attempt DeliveryAttempt) error
+	FindStuckEventDeliveriesByStatus(ctx context.Context, status EventDeliveryStatus) ([]EventDelivery, error)
+	UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery *EventDelivery) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
@@ -60,6 +64,7 @@ type EventCatalogueRepository interface {
 type ProjectRepository interface {
 	LoadProjects(context.Context, *ProjectFilter) ([]*Project, error)
 	CreateProject(context.Context, *Project) error
+	CountProjects(ctx context.Context) (int64, error)
 	UpdateProject(context.Context, *Project) error
 	DeleteProject(ctx context.Context, uid string) error
 	FetchProjectByID(context.Context, string) (*Project, error)
@@ -69,6 +74,7 @@ type ProjectRepository interface {
 
 type OrganisationRepository interface {
 	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
+	CountOrganisations(ctx context.Context) (int64, error)
 	CreateOrganisation(context.Context, *Organisation) error
 	UpdateOrganisation(context.Context, *Organisation) error
 	DeleteOrganisation(context.Context, string) error
@@ -123,8 +129,11 @@ type SubscriptionRepository interface {
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
 	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
-	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}) (bool, error)
-	TransformPayload(ctx context.Context, function string, payload map[string]interface{}) (interface{}, []string, error)
+	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}, isFlattened bool) (bool, error)
+	CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error)
+	LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]Subscription, error)
+	FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]Subscription, error)
+	FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]Subscription, error)
 }
 
 type SourceRepository interface {
@@ -163,11 +172,11 @@ type JobRepository interface {
 type UserRepository interface {
 	CreateUser(context.Context, *User) error
 	UpdateUser(ctx context.Context, user *User) error
+	CountUsers(ctx context.Context) (int64, error)
 	FindUserByEmail(context.Context, string) (*User, error)
 	FindUserByID(context.Context, string) (*User, error)
 	FindUserByToken(context.Context, string) (*User, error)
 	FindUserByEmailVerificationToken(ctx context.Context, token string) (*User, error)
-	LoadUsersPaged(context.Context, Pageable) ([]User, PaginationData, error)
 }
 
 type ConfigurationRepository interface {
@@ -195,4 +204,12 @@ type MetaEventRepository interface {
 
 type ExportRepository interface {
 	ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error)
+}
+
+type DeliveryAttemptsRepository interface {
+	ExportRepository
+	CreateDeliveryAttempt(context.Context, *DeliveryAttempt) error
+	FindDeliveryAttemptById(context.Context, string, string) (*DeliveryAttempt, error)
+	FindDeliveryAttempts(context.Context, string) ([]DeliveryAttempt, error)
+	DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *DeliveryAttemptsFilter, hardDelete bool) error
 }

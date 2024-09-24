@@ -38,7 +38,7 @@ func addUpCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Fatalf("Error fetching the config.")
+				log.WithError(err).Fatal("Error fetching the config.")
 			}
 
 			db, err := postgres.NewDB(cfg)
@@ -53,6 +53,7 @@ func addUpCommand() *cobra.Command {
 			if err != nil {
 				log.Fatalf("migration up failed with error: %+v", err)
 			}
+			log.Info("migration up succeeded")
 		},
 	}
 
@@ -73,7 +74,7 @@ func addDownCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Fatalf("Error fetching the config.")
+				log.WithError(err).Fatal("Error fetching the config.")
 			}
 
 			db, err := postgres.NewDB(cfg)

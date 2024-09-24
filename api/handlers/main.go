@@ -49,5 +49,8 @@ package handlers
 //	@tag.name			Portal Links
 //	@tag.description	Portal Links related APIs
 
+//	@tag.name			Meta Events
+//	@tag.description	Meta Events related APIs
+
 // Stub represents empty json or arbitrary json bodies for our doc annotations
 type Stub struct{}

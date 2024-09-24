@@ -3,17 +3,22 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/net"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/golang/mock/gomock"
 	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
+	"go.uber.org/mock/gomock"
 )
 
 func TestProcessMetaEvent(t *testing.T) {
@@ -61,6 +66,7 @@ func TestProcessMetaEvent(t *testing.T) {
 						UID: "123",
 						Config: &datastore.ProjectConfig{
 							MetaEvent: &datastore.MetaEventConfiguration{},
+							SSL:       &datastore.DefaultSSLConfig,
 						},
 					}, nil)
 
@@ -101,6 +107,7 @@ func TestProcessMetaEvent(t *testing.T) {
 						UID: "123",
 						Config: &datastore.ProjectConfig{
 							MetaEvent: &datastore.MetaEventConfiguration{},
+							SSL:       &datastore.DefaultSSLConfig,
 						},
 					}, nil)
 
@@ -126,8 +133,13 @@ func TestProcessMetaEvent(t *testing.T) {
 
 			metaEventRepo := mocks.NewMockMetaEventRepository(ctrl)
 			projectRepo := mocks.NewMockProjectRepository(ctrl)
+			licenser := mocks.NewMockLicenser(ctrl)
+			licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 
-			err := config.LoadConfig(tc.cfgPath)
+			dispatcher, err := net.NewDispatcher("", licenser, false)
+			require.NoError(t, err)
+
+			err = config.LoadConfig(tc.cfgPath)
 			if err != nil {
 				t.Errorf("failed to load config file: %v", err)
 			}
@@ -141,7 +153,7 @@ func TestProcessMetaEvent(t *testing.T) {
 				tc.dbFn(metaEventRepo, projectRepo)
 			}
 
-			processFn := ProcessMetaEvent(projectRepo, metaEventRepo)
+			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher)
 			payload := MetaEvent{
 				MetaEventID: tc.msg.MetaEventID,
 				ProjectID:   tc.msg.ProjectID,

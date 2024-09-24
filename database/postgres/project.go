@@ -4,13 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/r3labs/diff/v3"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
@@ -34,14 +36,14 @@ const (
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		id, retention_policy_policy, search_policy,
+		id, search_policy,
         max_payload_read_size, replay_attacks_prevention_enabled,
-		retention_policy_enabled, ratelimit_count,
+		ratelimit_count,
 		ratelimit_duration, strategy_type,
 		strategy_duration, strategy_retry_count,
 		signature_header, signature_versions, disable_endpoint,
 		meta_events_enabled, meta_events_type, meta_events_event_type,
-		meta_events_url, meta_events_secret, meta_events_pub_sub
+		meta_events_url, meta_events_secret, meta_events_pub_sub,ssl_enforce_secure_endpoints, multiple_endpoint_subscriptions
 	  )
 	  VALUES
 		(
@@ -52,25 +54,25 @@ const (
 
 	updateProjectConfiguration = `
 	UPDATE convoy.project_configurations SET
-		retention_policy_policy = $2,
-		max_payload_read_size = $3,
-		replay_attacks_prevention_enabled = $4,
-		retention_policy_enabled = $5,
-		ratelimit_count = $6,
-		ratelimit_duration = $7,
-		strategy_type = $8,
-		strategy_duration = $9,
-		strategy_retry_count = $10,
-		signature_header = $11,
-		signature_versions = $12,
-		disable_endpoint = $13,
-		meta_events_enabled = $14,
-		meta_events_type = $15,
-		meta_events_event_type = $16,
-		meta_events_url = $17,
-		meta_events_secret = $18,
-		meta_events_pub_sub = $19,
-		search_policy = $20,
+		max_payload_read_size = $2,
+		replay_attacks_prevention_enabled = $3,
+		ratelimit_count = $4,
+		ratelimit_duration = $5,
+		strategy_type = $6,
+		strategy_duration = $7,
+		strategy_retry_count = $8,
+		signature_header = $9,
+		signature_versions = $10,
+		disable_endpoint = $11,
+		meta_events_enabled = $12,
+		meta_events_type = $13,
+		meta_events_event_type = $14,
+		meta_events_url = $15,
+		meta_events_secret = $16,
+		meta_events_pub_sub = $17,
+		search_policy = $18,
+		ssl_enforce_secure_endpoints = $19,
+		multiple_endpoint_subscriptions = $20,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -83,11 +85,10 @@ const (
 		p.logo_url,
 		p.organisation_id,
 		p.project_configuration_id,
-		c.retention_policy_policy AS "config.retention_policy.policy",
-		c.search_policy AS "config.retention_policy.search_policy",
+		c.search_policy AS "config.search_policy",
 		c.max_payload_read_size AS "config.max_payload_read_size",
+		c.multiple_endpoint_subscriptions AS "config.multiple_endpoint_subscriptions",
 		c.replay_attacks_prevention_enabled AS "config.replay_attacks_prevention_enabled",
-		c.retention_policy_enabled AS "config.retention_policy_enabled",
 		c.ratelimit_count AS "config.ratelimit.count",
 		c.ratelimit_duration AS "config.ratelimit.duration",
 		c.strategy_type AS "config.strategy.type",
@@ -96,6 +97,7 @@ const (
 		c.signature_header AS "config.signature.header",
 		c.signature_versions AS "config.signature.versions",
 		c.disable_endpoint AS "config.disable_endpoint",
+		c.ssl_enforce_secure_endpoints as "config.ssl.enforce_secure_endpoints",
 		c.meta_events_enabled AS "config.meta_event.is_enabled",
 		COALESCE(c.meta_events_type, '') AS "config.meta_event.type",
 		c.meta_events_event_type AS "config.meta_event.event_type",
@@ -109,8 +111,7 @@ const (
 	LEFT JOIN convoy.project_configurations c
 	ON p.project_configuration_id = c.id
 	WHERE p.id = $1 AND p.deleted_at IS NULL;
-	`
-
+`
 	fetchProjects = `
   SELECT
 	p.id,
@@ -120,15 +121,15 @@ const (
 	p.logo_url,
 	p.organisation_id,
 	p.project_configuration_id,
-	c.retention_policy_policy AS "config.retention_policy.policy",
-    c.search_policy AS "config.retention_policy.search_policy",
+    c.search_policy AS "config.search_policy",
 	c.max_payload_read_size AS "config.max_payload_read_size",
+	c.multiple_endpoint_subscriptions AS "config.multiple_endpoint_subscriptions",
 	c.replay_attacks_prevention_enabled AS "config.replay_attacks_prevention_enabled",
-	c.retention_policy_enabled AS "config.retention_policy_enabled",
 	c.ratelimit_count AS "config.ratelimit.count",
 	c.ratelimit_duration AS "config.ratelimit.duration",
 	c.strategy_type AS "config.strategy.type",
 	c.strategy_duration AS "config.strategy.duration",
+	c.ssl_enforce_secure_endpoints as "config.ssl.enforce_secure_endpoints",
 	c.strategy_retry_count AS "config.strategy.retry_count",
 	c.signature_header AS "config.signature.header",
 	c.signature_versions AS "config.signature.versions",
@@ -190,7 +191,7 @@ const (
 	updateProjectEndpointStatus = `
 	UPDATE convoy.endpoints SET status = ?, updated_at = NOW()
 	WHERE project_id = ? AND status IN (?) AND deleted_at IS NULL RETURNING
-	id, title, status, owner_id, target_url,
+	id, name, status, owner_id, url,
     description, http_timeout, rate_limit, rate_limit_duration,
     advanced_signatures, slack_webhook_url, support_email,
     app_id, project_id, secrets, created_at, updated_at,
@@ -208,6 +209,11 @@ const (
     GROUP BY p.id
     ORDER BY events_count DESC;
     `
+
+	countProjects = `
+	SELECT COUNT(*) AS count
+	FROM convoy.projects
+	WHERE deleted_at IS NULL`
 )
 
 type projectRepo struct {
@@ -223,6 +229,16 @@ func NewProjectRepo(db database.Database, ca cache.Cache) datastore.ProjectRepos
 	return &projectRepo{db: db.GetDB(), hook: db.GetHook(), cache: ca}
 }
 
+func (o *projectRepo) CountProjects(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetContext(ctx, &count, countProjects)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
 func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {
 	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -230,7 +246,6 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	}
 	defer rollbackTx(tx)
 
-	rc := project.Config.GetRetentionPolicyConfig()
 	rlc := project.Config.GetRateLimitConfig()
 	sc := project.Config.GetStrategyConfig()
 	sgc := project.Config.GetSignatureConfig()
@@ -239,11 +254,9 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	configID := ulid.Make().String()
 	result, err := tx.ExecContext(ctx, createProjectConfiguration,
 		configID,
-		rc.Policy,
-		rc.SearchPolicy,
+		project.Config.SearchPolicy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
-		project.Config.IsRetentionPolicyEnabled,
 		rlc.Count,
 		rlc.Duration,
 		sc.Type,
@@ -258,6 +271,8 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		me.URL,
 		me.Secret,
 		me.PubSub,
+		project.Config.SSL.EnforceSecureEndpoints,
+		project.Config.MultipleEndpointSubscriptions,
 	)
 	if err != nil {
 		return err
@@ -340,7 +355,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 
 	pRes, err := tx.ExecContext(ctx, updateProjectById, project.UID, project.Name, project.LogoURL, project.RetainedEvents)
 	if err != nil {
-		return err
+		return fmt.Errorf("update project err: %v", err)
 	}
 
 	rowsAffected, err := pRes.RowsAffected()
@@ -352,20 +367,23 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectNotUpdated
 	}
 
+	rlc := project.Config.GetRateLimitConfig()
+	sc := project.Config.GetStrategyConfig()
+	sgc := project.Config.GetSignatureConfig()
+	ssl := project.Config.GetSSLConfig()
 	me := project.Config.GetMetaEventConfig()
+
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.ProjectConfigID,
-		project.Config.RetentionPolicy.Policy,
 		project.Config.MaxIngestSize,
 		project.Config.ReplayAttacks,
-		project.Config.IsRetentionPolicyEnabled,
-		project.Config.RateLimit.Count,
-		project.Config.RateLimit.Duration,
-		project.Config.Strategy.Type,
-		project.Config.Strategy.Duration,
-		project.Config.Strategy.RetryCount,
-		project.Config.Signature.Header,
-		project.Config.Signature.Versions,
+		rlc.Count,
+		rlc.Duration,
+		sc.Type,
+		sc.Duration,
+		sc.RetryCount,
+		sgc.Header,
+		sgc.Versions,
 		project.Config.DisableEndpoint,
 		me.IsEnabled,
 		me.Type,
@@ -373,10 +391,12 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.URL,
 		me.Secret,
 		me.PubSub,
-		project.Config.RetentionPolicy.SearchPolicy,
+		project.Config.SearchPolicy,
+		ssl.EnforceSecureEndpoints,
+		project.Config.MultipleEndpointSubscriptions,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("update project config err: %v", err)
 	}
 
 	rowsAffected, err = cRes.RowsAffected()

@@ -11,6 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
+
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/riandyrn/otelchi"
 
@@ -45,6 +49,27 @@ type AuthorizedLogin struct {
 	ExpiryTime time.Time `json:"expiry_time"`
 }
 
+func RateLimiterHandler(rateLimiter limiter.RateLimiter) func(next http.Handler) http.Handler {
+	limit := convoy.HTTP_RATE_LIMIT_PER_MIN
+	key := "http-api"
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			err := rateLimiter.AllowWithDuration(r.Context(), key, limit, 60)
+			if err == nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
+			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", 0))
+			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%f", rlimiter.GetRetryAfter(err).Seconds()))
+			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(rlimiter.GetRetryAfter(err)).Unix()))
+
+			_ = render.Render(w, r, util.NewErrorResponse("exceeded rate limit", http.StatusTooManyRequests))
+		})
+	}
+}
+
 func InstrumentPath(path string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -66,17 +91,10 @@ func WriteRequestIDHeader(next http.Handler) http.Handler {
 	})
 }
 
-func CanAccessFeature(fflag *fflag.FFlag, featureKey string) func(next http.Handler) http.Handler {
+func CanAccessFeature(fflag *fflag.FFlag, featureKey fflag.FeatureFlagKey) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			cfg, err := config.Get()
-			if err != nil {
-				log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
-				_ = render.Render(w, r, util.NewErrorResponse("something went wrong", http.StatusInternalServerError))
-				return
-			}
-
-			if !fflag.CanAccessFeature(featureKey, &cfg) {
+			if !fflag.CanAccessFeature(featureKey) {
 				_ = render.Render(w, r, util.NewErrorResponse("this feature is not enabled in this server", http.StatusForbidden))
 				return
 			}
@@ -134,7 +152,6 @@ func RequireAuth() func(next http.Handler) http.Handler {
 
 			authUser, err := rc.Authenticate(r.Context(), creds)
 			if err != nil {
-				log.FromContext(r.Context()).WithError(err).Error("failed to authenticate")
 				_ = render.Render(w, r, util.NewErrorResponse("authorization failed", http.StatusUnauthorized))
 				return
 			}
@@ -350,12 +367,10 @@ func statusLevel(status int) log.Level {
 		return log.WarnLevel
 	case status < 400:
 		return log.InfoLevel
-	case status >= 400 && status < 500:
+	case status < 500:
 		return log.WarnLevel
-	case status >= 500:
-		return log.ErrorLevel
 	default:
-		return log.InfoLevel
+		return log.ErrorLevel
 	}
 }
 

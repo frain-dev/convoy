@@ -18,6 +18,7 @@ import (
 
 // GetEventDelivery
 //
+//	@Id				GetEventDelivery
 //	@Summary		Retrieve an event delivery
 //	@Description	This endpoint fetches an event delivery.
 //	@Tags			Event Deliveries
@@ -43,6 +44,7 @@ func (h *Handler) GetEventDelivery(w http.ResponseWriter, r *http.Request) {
 
 // ResendEventDelivery
 //
+//	@Id				ResendEventDelivery
 //	@Summary		Retry event delivery
 //	@Description	This endpoint retries an event delivery.
 //	@Tags			Event Deliveries
@@ -91,6 +93,7 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Batch retry event delivery
 //	@Description	This endpoint batch retries multiple event deliveries at once.
 //	@Tags			Event Deliveries
+//	@Id				BatchRetryEventDelivery
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string							true	"Project ID"
@@ -114,7 +117,33 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("the portal link doesn't contain any endpoints", nil, http.StatusOK))
+			return
+		}
+
+		data.Filter.EndpointIDs = endpointIDs
+	}
+
 	data.Filter.Project = project
+	ep := datastore.Pageable{}
+	if data.Filter.Pageable == ep {
+		data.Filter.Pageable.PerPage = 2000000000
+	}
 
 	br := services.BatchRetryEventDeliveryService{
 		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache),
@@ -137,6 +166,7 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 //
 //	@Summary		Force retry event delivery
 //	@Description	This endpoint enables you retry a previously successful event delivery
+//	@Id				ForceResendEventDeliveries
 //	@Tags			Event Deliveries
 //	@Accept			json
 //	@Produce		json
@@ -184,6 +214,7 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 //	@Description	This endpoint retrieves all event deliveries paginated.
 //	@Tags			Event Deliveries
 //	@Accept			json
+//	@Id				GetEventDeliveriesPaged
 //	@Produce		json
 //	@Param			projectID	path		string							true	"Project ID"
 //	@Param			request		query		models.QueryListEventDelivery	false	"Query Params"
@@ -269,6 +300,28 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("event deliveries count successful", map[string]interface{}{"num": 0}, http.StatusOK))
+			return
+		}
+
+		data.Filter.EndpointIDs = endpointIDs
 	}
 
 	f := data.Filter

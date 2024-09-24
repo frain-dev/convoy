@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/flatten"
+
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
@@ -150,7 +152,7 @@ type (
 	StorageType      string
 	KeyType          string
 	PubSubType       string
-	PubSubHandler    func(context.Context, *Source, string) error
+	PubSubHandler    func(context.Context, *Source, string, []byte) error
 	MetaEventType    string
 	HookEventType    string
 )
@@ -263,27 +265,28 @@ func (k KeyType) IsValid() bool {
 }
 
 const (
-	DefaultStrategyProvider                      = LinearStrategyProvider
 	LinearStrategyProvider      StrategyProvider = "linear"
 	ExponentialStrategyProvider StrategyProvider = "exponential"
 )
 
 var (
 	DefaultProjectConfig = ProjectConfig{
-		RetentionPolicy:          &DefaultRetentionPolicy,
-		MaxIngestSize:            config.MaxResponseSize,
-		ReplayAttacks:            false,
-		IsRetentionPolicyEnabled: false,
-		DisableEndpoint:          false,
-		AddEventIDTraceHeaders:   false,
-		RateLimit:                &DefaultRateLimitConfig,
-		Strategy:                 &DefaultStrategyConfig,
-		Signature:                GetDefaultSignatureConfig(),
-		MetaEvent:                &MetaEventConfiguration{IsEnabled: false},
+		SearchPolicy:           "720h",
+		MaxIngestSize:          config.MaxResponseSize,
+		ReplayAttacks:          false,
+		DisableEndpoint:        false,
+		AddEventIDTraceHeaders: false,
+		SSL:                    &DefaultSSLConfig,
+		RateLimit:              &DefaultRateLimitConfig,
+		Strategy:               &DefaultStrategyConfig,
+		Signature:              GetDefaultSignatureConfig(),
+		MetaEvent:              &MetaEventConfiguration{IsEnabled: false},
 	}
 
+	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
+
 	DefaultStrategyConfig = StrategyConfiguration{
-		Type:       DefaultStrategyProvider,
+		Type:       LinearStrategyProvider,
 		Duration:   100,
 		RetryCount: 10,
 	}
@@ -311,8 +314,8 @@ var (
 	}
 
 	DefaultRetentionPolicy = RetentionPolicyConfiguration{
-		Policy:       "720h",
-		SearchPolicy: "720h",
+		IsRetentionPolicyEnabled: false,
+		Policy:                   "720h",
 	}
 )
 
@@ -389,8 +392,8 @@ type Endpoint struct {
 	UID                string  `json:"uid" db:"id"`
 	ProjectID          string  `json:"project_id" db:"project_id"`
 	OwnerID            string  `json:"owner_id,omitempty" db:"owner_id"`
-	TargetURL          string  `json:"target_url" db:"target_url"`
-	Title              string  `json:"title" db:"title"`
+	Url                string  `json:"url" db:"url"`
+	Name               string  `json:"name" db:"name"`
 	Secrets            Secrets `json:"secrets" db:"secrets"`
 	AdvancedSignatures bool    `json:"advanced_signatures" db:"advanced_signatures"`
 	Description        string  `json:"description" db:"description"`
@@ -398,13 +401,13 @@ type Endpoint struct {
 	SupportEmail       string  `json:"support_email,omitempty" db:"support_email"`
 	AppID              string  `json:"-" db:"app_id"` // Deprecated but necessary for backward compatibility
 
-	HttpTimeout uint64         `json:"http_timeout" db:"http_timeout"`
-	RateLimit   int            `json:"rate_limit" db:"rate_limit"`
-	Events      int64          `json:"events,omitempty" db:"event_count"`
-	Status      EndpointStatus `json:"status" db:"status"`
+	Status         EndpointStatus          `json:"status" db:"status"`
+	HttpTimeout    uint64                  `json:"http_timeout" db:"http_timeout"`
+	Events         int64                   `json:"events,omitempty" db:"event_count"`
+	Authentication *EndpointAuthentication `json:"authentication" db:"authentication"`
 
-	RateLimitDuration uint64                  `json:"rate_limit_duration" db:"rate_limit_duration"`
-	Authentication    *EndpointAuthentication `json:"authentication" db:"authentication"`
+	RateLimit         int    `json:"rate_limit" db:"rate_limit"`
+	RateLimitDuration uint64 `json:"rate_limit_duration" db:"rate_limit_duration"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -520,16 +523,17 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize            uint64                        `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks            bool                          `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	IsRetentionPolicyEnabled bool                          `json:"retention_policy_enabled" db:"retention_policy_enabled"`
-	AddEventIDTraceHeaders   bool                          `json:"add_event_id_trace_headers"`
-	DisableEndpoint          bool                          `json:"disable_endpoint" db:"disable_endpoint"`
-	RetentionPolicy          *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	RateLimit                *RateLimitConfiguration       `json:"ratelimit" db:"ratelimit"`
-	Strategy                 *StrategyConfiguration        `json:"strategy" db:"strategy"`
-	Signature                *SignatureConfiguration       `json:"signature" db:"signature"`
-	MetaEvent                *MetaEventConfiguration       `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                  `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                    `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	AddEventIDTraceHeaders        bool                    `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                    `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                    `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	SearchPolicy                  string                  `json:"search_policy" db:"search_policy"`
+	SSL                           *SSLConfiguration       `json:"ssl" db:"ssl"`
+	RateLimit                     *RateLimitConfiguration `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration  `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration `json:"meta_event" db:"meta_event"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -553,11 +557,11 @@ func (p *ProjectConfig) GetSignatureConfig() SignatureConfiguration {
 	return SignatureConfiguration{}
 }
 
-func (p *ProjectConfig) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
-	if p.RetentionPolicy != nil {
-		return *p.RetentionPolicy
+func (p *ProjectConfig) GetSSLConfig() SSLConfiguration {
+	if p.SSL != nil {
+		return *p.SSL
 	}
-	return RetentionPolicyConfiguration{}
+	return SSLConfiguration{}
 }
 
 func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
@@ -601,9 +605,13 @@ type MetaEventConfiguration struct {
 	PubSub    *PubSubConfig  `json:"pub_sub" db:"pub_sub"`
 }
 
+type SSLConfiguration struct {
+	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints" db:"enforce_secure_endpoints"`
+}
+
 type RetentionPolicyConfiguration struct {
-	Policy       string `json:"policy" db:"policy" valid:"required~please provide a valid retention policy"`
-	SearchPolicy string `json:"search_policy" db:"search_policy"`
+	Policy                   string `json:"policy" db:"policy"`
+	IsRetentionPolicyEnabled bool   `json:"retention_policy_enabled" db:"enabled"`
 }
 
 type ProjectStatistics struct {
@@ -629,6 +637,12 @@ type EventDeliveryFilter struct {
 	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
 }
 
+type DeliveryAttemptsFilter struct {
+	ProjectID      string `json:"project_id" bson:"project_id"`
+	CreatedAtStart int64  `json:"created_at_start" bson:"created_at_start"`
+	CreatedAtEnd   int64  `json:"created_at_end" bson:"created_at_end"`
+}
+
 func (o *Project) IsDeleted() bool { return o.DeletedAt.Valid }
 
 func (o *Project) IsOwner(e *Endpoint) bool { return o.UID == e.ProjectID }
@@ -644,7 +658,8 @@ var (
 	ErrEndpointNotFound              = errors.New("endpoint not found")
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
 	ErrEventDeliveryNotFound         = errors.New("event delivery not found")
-	ErrEventDeliveryAttemptNotFound  = errors.New("event delivery attempt not found")
+	ErrDeliveryAttemptNotFound       = errors.New("event delivery attempt not found")
+	ErrDeliveryAttemptsNotDeleted    = errors.New("event delivery attempts not deleted")
 	ErrPortalLinkNotFound            = errors.New("portal link not found")
 	ErrNotAuthorisedToAccessDocument = errors.New("your credentials cannot access or modify this resource")
 	ErrConfigNotFound                = errors.New("config not found")
@@ -715,26 +730,27 @@ type Event struct {
 	Data json.RawMessage `json:"data,omitempty" db:"data"`
 	Raw  string          `json:"raw,omitempty" db:"raw"`
 
-	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
+	CreatedAt      time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
-func (e *Event) GetRawHeaders() interface{} {
-	h := map[string]interface{}{}
-	for k, v := range e.Headers {
+func (e *Event) GetRawHeaders() map[string]interface{} {
+	h := make(map[string]interface{}, len(e.Headers))
+
+	// re-use mem allocated for these copied variables
+	var k string
+	var v []string
+
+	for k, v = range e.Headers {
 		h[k] = v[0]
 	}
 	return h
 }
 
 func (e *Event) GetRawHeadersJSON() ([]byte, error) {
-	h := map[string]interface{}{}
-	for k, v := range e.Headers {
-		h[k] = v[0]
-	}
-
-	return json.Marshal(h)
+	return json.Marshal(e.GetRawHeaders())
 }
 
 type (
@@ -743,6 +759,15 @@ type (
 	HttpHeader          map[string]string
 )
 
+func (h *HttpHeader) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("HttpHeader: expected []byte, got %T", value)
+	}
+
+	return json.Unmarshal(bytes, h)
+}
+
 func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 	for k, v := range h {
 		r.Header.Set(k, v)
@@ -750,7 +775,7 @@ func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 }
 
 const (
-	// ScheduledEventStatus : when an Event has been scheduled for delivery
+	// ScheduledEventStatus when an Event has been scheduled for delivery
 	ScheduledEventStatus  EventDeliveryStatus = "Scheduled"
 	ProcessingEventStatus EventDeliveryStatus = "Processing"
 	DiscardedEventStatus  EventDeliveryStatus = "Discarded"
@@ -793,6 +818,8 @@ type Metadata struct {
 	IntervalSeconds uint64 `json:"interval_seconds" bson:"interval_seconds"`
 
 	RetryLimit uint64 `json:"retry_limit" bson:"retry_limit"`
+
+	MaxRetrySeconds uint64 `json:"max_retry_seconds" bson:"max_retry_seconds"`
 }
 
 func (m *Metadata) Scan(value interface{}) error {
@@ -828,7 +855,7 @@ func (m *Metadata) Value() (driver.Value, error) {
 type EventIntervalData struct {
 	Interval  int64  `json:"index" db:"index"`
 	Time      string `json:"date" db:"total_time"`
-	GroupStub string `json:"-" db:"group_only"` // ugnore
+	GroupStub string `json:"-" db:"group_only"` // ignore
 }
 
 type EventInterval struct {
@@ -837,12 +864,13 @@ type EventInterval struct {
 }
 
 type DeliveryAttempt struct {
-	UID        string `json:"uid" db:"id"`
-	MsgID      string `json:"msg_id" db:"msg_id"`
-	URL        string `json:"url" db:"url"`
-	Method     string `json:"method" db:"method"`
-	EndpointID string `json:"endpoint_id" db:"endpoint_id"`
-	APIVersion string `json:"api_version" db:"api_version"`
+	UID             string `json:"uid" db:"id"`
+	URL             string `json:"url" db:"url"`
+	Method          string `json:"method" db:"method"`
+	EndpointID      string `json:"endpoint_id" db:"endpoint_id"`
+	APIVersion      string `json:"api_version" db:"api_version"`
+	ProjectId       string `json:"project_id" db:"project_id"`
+	EventDeliveryId string `json:"msg_id" db:"event_delivery_id"`
 
 	IPAddress        string     `json:"ip_address,omitempty" db:"ip_address"`
 	RequestHeader    HttpHeader `json:"request_http_header,omitempty" db:"request_http_header"`
@@ -850,7 +878,7 @@ type DeliveryAttempt struct {
 	HttpResponseCode string     `json:"http_status,omitempty" db:"http_status"`
 	ResponseData     string     `json:"response_data,omitempty" db:"response_data"`
 	Error            string     `json:"error,omitempty" db:"error"`
-	Status           bool       `json:"status,omitempty" db:"statu,"`
+	Status           bool       `json:"status,omitempty" db:"status"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -904,8 +932,10 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
-	Latency        string                `json:"latency" db:"latency"`
-	EventType      EventType             `json:"event_type,omitempty" db:"event_type"`
+	// Deprecated: Latency is deprecated.
+	Latency        string    `json:"latency" db:"latency"`
+	LatencySeconds float64   `json:"latency_seconds" db:"latency_seconds"`
+	EventType      EventType `json:"event_type,omitempty" db:"event_type"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -917,9 +947,17 @@ type EventDelivery struct {
 	Metadata         *Metadata           `json:"metadata" db:"metadata"`
 	CLIMetadata      *CLIMetadata        `json:"cli_metadata" db:"cli_metadata"`
 	Description      string              `json:"description,omitempty" db:"description"`
+	AcknowledgedAt   null.Time           `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
 	CreatedAt        time.Time           `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time           `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time           `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (d *EventDelivery) GetLatencyStartTime() time.Time {
+	if d.AcknowledgedAt.IsZero() {
+		return d.CreatedAt
+	}
+	return d.AcknowledgedAt.Time
 }
 
 type CLIMetadata struct {
@@ -984,7 +1022,7 @@ type Subscription struct {
 	SourceID   string           `json:"-" db:"source_id"`
 	EndpointID string           `json:"-" db:"endpoint_id"`
 	DeviceID   string           `json:"-" db:"device_id"`
-	Function   null.String      `json:"function" db:"function"`
+	Function   null.String      `json:"function" db:"function" swaggertype:"string"`
 
 	Source   *Source   `json:"source_metadata" db:"source_metadata"`
 	Endpoint *Endpoint `json:"endpoint_metadata" db:"endpoint_metadata"`
@@ -1058,6 +1096,8 @@ type Source struct {
 	ForwardHeaders  pq.StringArray  `json:"forward_headers" db:"forward_headers"`
 	PubSub          *PubSubConfig   `json:"pub_sub" db:"pub_sub"`
 	IdempotencyKeys pq.StringArray  `json:"idempotency_keys" db:"idempotency_keys"`
+	BodyFunction    *string         `json:"body_function" db:"body_function"`
+	HeaderFunction  *string         `json:"header_function" db:"header_function"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`
@@ -1124,7 +1164,8 @@ type AmqpPubSubConfig struct {
 	Port               string           `json:"port" db:"port"`
 	Queue              string           `json:"queue" db:"queue"`
 	Auth               *AmqpCredentials `json:"auth" db:"auth"`
-	BindedExchange     *string          `json:"bindedExchange" db:"binded_exchange"`
+	BoundExchange      *string          `json:"bindedExchange" db:"binded_exchange"`
+	Vhost              *string          `json:"vhost" db:"vhost"`
 	RoutingKey         string           `json:"routingKey" db:"routing_key"`
 	DeadLetterExchange *string          `json:"deadLetterExchange" db:"dead_letter_exchange"`
 }
@@ -1176,13 +1217,24 @@ type FilterConfiguration struct {
 
 type M map[string]interface{}
 
-func (h M) Map() map[string]interface{} {
-	m := map[string]interface{}{}
-	x := map[string]interface{}(h)
-	for k, v := range x {
-		m[k] = v
+// Flatten is only intended for use for filter body & headers
+// It will modify the calling M map, so use carefully.
+func (h *M) Flatten() error {
+	if h == nil {
+		return nil
 	}
-	return h
+
+	// The flatten.M conversion is important here, because flatten.Flatten cannot
+	// reconcile M to map[string]interface{}, they are distinct types
+	// whereas flatten.M = map[string]interface{} they are identical. See
+	// https://go.dev/ref/spec#Type_identity for more info.
+	f, err := flatten.Flatten(flatten.M(*h))
+	if err != nil {
+		return err
+	}
+
+	*h = f
+	return nil
 }
 
 func (h *M) Scan(value interface{}) error {
@@ -1212,8 +1264,9 @@ func (h M) Value() (driver.Value, error) {
 }
 
 type FilterSchema struct {
-	Headers M `json:"headers" db:"headers"`
-	Body    M `json:"body" db:"body"`
+	IsFlattened bool `json:"is_flattened" db:"is_flattened"`
+	Headers     M    `json:"headers" db:"headers"`
+	Body        M    `json:"body" db:"body"`
 }
 
 type ProviderConfig struct {
@@ -1260,14 +1313,22 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	UID                string                      `json:"uid" db:"id"`
-	IsAnalyticsEnabled bool                        `json:"is_analytics_enabled" db:"is_analytics_enabled"`
-	IsSignupEnabled    bool                        `json:"is_signup_enabled" db:"is_signup_enabled"`
-	StoragePolicy      *StoragePolicyConfiguration `json:"storage_policy" db:"storage_policy"`
+	UID                string                        `json:"uid" db:"id"`
+	IsAnalyticsEnabled bool                          `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsSignupEnabled    bool                          `json:"is_signup_enabled" db:"is_signup_enabled"`
+	StoragePolicy      *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
+	RetentionPolicy    *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
+	if c.RetentionPolicy != nil {
+		return *c.RetentionPolicy
+	}
+	return RetentionPolicyConfiguration{}
 }
 
 type StoragePolicyConfiguration struct {
@@ -1385,6 +1446,7 @@ type PortalLink struct {
 	OwnerID           string           `json:"owner_id" db:"owner_id"`
 	Endpoints         pq.StringArray   `json:"endpoints" db:"endpoints"`
 	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
+	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`

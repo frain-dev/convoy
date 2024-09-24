@@ -82,80 +82,10 @@ brews:
     commit_author:
       name: frain-dev
       email: dev@frain.dev
-    tap:
+    repository:
       owner: frain-dev
       name: homebrew-tools
     url_template: https://dl.cloudsmith.io/public/convoy/convoy/raw/versions/{{.Version}}/{{ .ArtifactName }}
-
-dockers:
-  - image_templates:
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-amd64"
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-amd64"
-    use: buildx
-    goos: linux
-    goarch: amd64
-    dockerfile: release.Dockerfile
-    extra_files:
-      - configs/local/start.sh
-    ids:
-      - cobin
-    build_flag_templates:
-      - --platform=linux/amd64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
-      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}
-      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
-      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-      - --label=org.opencontainers.image.licenses=MPL-2.0
-
-  - image_templates:
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-arm64"
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-arm64"
-    use: buildx
-    goos: linux
-    goarch: arm64
-    dockerfile: release.Dockerfile
-    extra_files:
-      - configs/local/start.sh
-    ids:
-      - cobin
-    build_flag_templates:
-      - --platform=linux/arm64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
-      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}
-      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
-      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-      - --label=org.opencontainers.image.licenses=MPL-2.0
-
-  - image_templates:
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-slim"
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-slim"
-    use: buildx
-    goos: linux
-    goarch: amd64
-    dockerfile: slim.Dockerfile
-    ids:
-      - cobin
-    build_flag_templates:
-      - --platform=linux/amd64
-      - --label=org.opencontainers.image.title={{ .ProjectName }}
-      - --label=org.opencontainers.image.description=A fast & secure open source webhooks service
-      - --label=org.opencontainers.image.url=https://github.com/{{ .Env.REPO_NAME }}
-      - --label=org.opencontainers.image.source=https://github.com/{{ .Env.REPO_NAME }}
-      - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
-      - --label=org.opencontainers.image.licenses=MPL-2.0
-
-docker_manifests:
-  - name_template: "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}"
-    image_templates:
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-amd64"
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:{{ .Tag }}-arm64"
-
-  - name_template: "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest"
-    image_templates:
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-amd64"
-      - "docker.cloudsmith.io/convoy/convoy/{{ .Env.REPO_NAME }}:latest-arm64"
 
 checksum:
   name_template: "{{ .ProjectName}}_checksums.txt"

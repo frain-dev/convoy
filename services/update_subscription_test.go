@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -18,6 +18,7 @@ func provideUpdateSubscriptionService(ctrl *gomock.Controller, projectID string,
 		SubRepo:        mocks.NewMockSubscriptionRepository(ctrl),
 		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
 		SourceRepo:     mocks.NewMockSourceRepository(ctrl),
+		Licenser:       mocks.NewMockLicenser(ctrl),
 		ProjectId:      projectID,
 		SubscriptionId: subID,
 		Update:         update,

@@ -1,6 +1,6 @@
 <div>
 	<div class="flex justify-between items-center mb-24px">
-		<h3 class="text-16 font-bold text-new.gray-600">Team</h3>
+		<h3 class="text-16 font-bold text-neutral-10">Team</h3>
 		<button convoy-permission="Team|MANAGE" convoy-button size="sm" class="" (click)="action = 'create'; teamsDialog.showModal()">
 			<svg width="18" height="18" class="mr-2 fill-white-100">
 				<use xlink:href="#plus-icon"></use>
@@ -12,15 +12,15 @@
 	<div class="flex flex-row items-center mb-24px">
 		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-white-100">
 			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-			<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-grey-40 text-14 outline-none" />
-			<button convoy-button fill="clear" *ngIf="searchString && searchString.length > 0" class="transition-all duration-200 !p-0" (click)="searchTeam({ searchInput: $event })">
+			<input type="search" placeholder="Search team member" [(ngModel)]="searchString" (change)="searchTeam({ searchInput: $event })" [ngModelOptions]="{ standalone: true }" class="w-full text-neutral-11 text-14 outline-none" />
+			<button convoy-button fill="text" *ngIf="searchString && searchString.length > 0" class="transition-all duration-200 !p-0" (click)="searchTeam({ searchInput: $event })">
 				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
 			</button>
 		</form>
 
 		<div convoy-dropdown size="sm">
-			<button dropdownTrigger convoy-button size="sm" fill="outline" color="grey" class="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
-				<span class="text-grey-40 text-12 mr-4px">Filter By:</span>
+			<button dropdownTrigger convoy-button size="sm" fill="outline" color="neutral" class="px-10px border border-primary-400 mx-16px min-w-[180px] whitespace-nowrap justify-between h-36px">
+				<span class="text-neutral-11 text-12 mr-4px">Filter By:</span>
 				<span class="text-primary-100 text-12 capitalize">{{ selectedFilterOption }} Invites</span>
 				<img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-[16px] ml-8px" />
 			</button>
@@ -57,16 +57,16 @@
 							<td convoy-table-cell>All projects</td>
 							<td convoy-table-cell>
 								<div convoy-dropdown size="md" position="left" *ngIf="team.user_id !== userDetails?.uid">
-									<button dropdownTrigger convoy-button size="sm" fill="clear">
+									<button dropdownTrigger convoy-button size="sm" fill="text">
 										<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 									</button>
 
 									<ul dropdownOptions>
 										<li>
-											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" class="w-full !justify-start" (click)="showUpdateMemberModal(team)">Update</button>
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="text" class="w-full !justify-start" (click)="showUpdateMemberModal(team)">Update</button>
 										</li>
 										<li>
-											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full !justify-start" (click)="deleteDialog.showModal(); selectedMember = team; showOverlay = false">Deactivate</button>
+											<button convoy-permission="Team|MANAGE" convoy-dropdown-option convoy-button fill="text" color="error" class="w-full !justify-start" (click)="deleteDialog.showModal(); selectedMember = team; showOverlay = false">Deactivate</button>
 										</li>
 									</ul>
 								</div>
@@ -118,16 +118,16 @@
 						<td convoy-table-cell>All projects</td>
 						<td convoy-table-cell>
 							<div convoy-dropdown>
-								<button dropdownTrigger convoy-button size="sm" fill="clear">
+								<button dropdownTrigger convoy-button size="sm" fill="text">
 									<img src="/assets/img/nav-bar-more-primary.svg" alt="more icon" />
 								</button>
 
 								<ul dropdownOptions>
-									<li class="border-b border-b-grey-10">
-										<button convoy-dropdown-option convoy-button fill="clear" color="grey" class="w-full" (click)="resendInvite(team.uid)">Resend Invite</button>
+									<li class="border-b border-b-neutral-a3">
+										<button convoy-dropdown-option convoy-button fill="text" color="neutral" class="w-full" (click)="resendInvite(team.uid)">Resend Invite</button>
 									</li>
 									<li>
-										<button convoy-dropdown-option convoy-button fill="clear" color="danger" class="w-full" (click)="deleteDialog.showModal(); showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
+										<button convoy-dropdown-option convoy-button fill="text" color="neutral" class="w-full" (click)="deleteDialog.showModal(); showCancelInviteModal = true; selectedMember = team; showPendingInvitesDropdown = false">Cancel Invite</button>
 									</li>
 								</ul>
 							</div>
@@ -163,13 +163,15 @@
 				<convoy-input-error *ngIf="inviteUserForm.get('invitee_email')?.touched && inviteUserForm.get('invitee_email')?.invalid">Please enter a valid email</convoy-input-error>
 			</convoy-input-field>
 
-			<ng-container formGroupName="role">
-				<convoy-select *convoy-enterprise className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="inviteUserForm.get('role')?.patchValue({ type: $event })"></convoy-select>
-			</ng-container>
+			<ng-container *ngIf="licenseService.hasLicense('RBAC')">
+                <ng-container formGroupName="role">
+                    <convoy-select className="mb-24px" label="Role" name="role" formControlName="type" [options]="roles" errorMessage="Select user role" [required]="true" (selectedOption)="inviteUserForm.get('role')?.patchValue({ type: $event })"></convoy-select>
+                </ng-container>
+            </ng-container>
 
 			<ng-container *ngIf="inviteLink">
-				<p class="text-grey-40 text-12 mt-20px">Invite Link</p>
-				<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-grey-10 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
+				<p class="text-neutral-11 text-12 mt-20px">Invite Link</p>
+				<div class="flex items-center justify-between w-full h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px mb-12px last-of-type:mb-8px">
 					<span class="text-14 font-normal whitespace-nowrap w-380px overflow-hidden text-ellipsis">{{ inviteLink || '' }}</span>
 					<convoy-copy-button [text]="inviteLink || ''" notificationText="Invite link has been copied to clipboard!"></convoy-copy-button>
 				</div>

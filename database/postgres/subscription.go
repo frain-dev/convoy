@@ -5,19 +5,18 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
+	"time"
 
-	"github.com/dop251/goja"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
-	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/util"
-
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -30,9 +29,10 @@ const (
 	retry_config_type,retry_config_duration,
 	retry_config_retry_count,filter_config_event_types,
 	filter_config_filter_headers,filter_config_filter_body,
+    filter_config_filter_is_flattened,
 	rate_limit_config_count,rate_limit_config_duration,function
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19);
     `
 
 	updateSubscription = `
@@ -48,9 +48,11 @@ const (
 	filter_config_event_types=$11,
 	filter_config_filter_headers=$12,
 	filter_config_filter_body=$13,
-	rate_limit_config_count=$14,
-	rate_limit_config_duration=$15,
-	function=$16
+	filter_config_filter_is_flattened=$14,
+	rate_limit_config_count=$15,
+	rate_limit_config_duration=$16,
+	function=$17,
+    updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
     `
@@ -74,15 +76,16 @@ const (
 	s.filter_config_event_types AS "filter_config.event_types",
 	s.filter_config_filter_headers AS "filter_config.filter.headers",
 	s.filter_config_filter_body AS "filter_config.filter.body",
+	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
 	s.rate_limit_config_count AS "rate_limit_config.count",
 	s.rate_limit_config_duration AS "rate_limit_config.duration",
 
 	COALESCE(em.secrets,'[]') AS "endpoint_metadata.secrets",
 	COALESCE(em.id,'') AS "endpoint_metadata.id",
-	COALESCE(em.title,'') AS "endpoint_metadata.title",
+	COALESCE(em.name,'') AS "endpoint_metadata.name",
 	COALESCE(em.project_id,'') AS "endpoint_metadata.project_id",
 	COALESCE(em.support_email,'') AS "endpoint_metadata.support_email",
-	COALESCE(em.target_url,'') AS "endpoint_metadata.target_url",
+	COALESCE(em.url,'') AS "endpoint_metadata.url",
 	COALESCE(em.status, '') AS "endpoint_metadata.status",
 	COALESCE(em.owner_id, '') AS "endpoint_metadata.owner_id",
 
@@ -114,6 +117,68 @@ const (
 	LEFT JOIN convoy.devices d ON s.device_id = d.id
 	WHERE s.deleted_at IS NULL `
 
+	fetchSubscriptionsForBroadcast = `
+    select id, type, project_id, endpoint_id, function,
+    filter_config_event_types AS "filter_config.event_types",
+    filter_config_filter_headers AS "filter_config.filter.headers",
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
+    from convoy.subscriptions
+    where (ARRAY[$4] <@ filter_config_event_types OR ARRAY['*'] <@ filter_config_event_types)
+    AND id > $1
+    AND project_id = $2
+    AND deleted_at is null
+    ORDER BY id LIMIT $3`
+
+	loadAllSubscriptionsConfiguration = `
+    select name, id, type, project_id, endpoint_id, function, updated_at,
+    filter_config_event_types AS "filter_config.event_types",
+    filter_config_filter_headers AS "filter_config.filter.headers",
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
+    from convoy.subscriptions
+    where id > ?
+    AND project_id IN (?)
+    AND deleted_at is null
+    ORDER BY id LIMIT ?`
+
+	fetchUpdatedSubscriptions = `
+    select name, id, type, project_id, endpoint_id, function, updated_at,
+    filter_config_event_types AS "filter_config.event_types",
+    filter_config_filter_headers AS "filter_config.filter.headers",
+	filter_config_filter_body AS "filter_config.filter.body",
+	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
+    from convoy.subscriptions
+    where updated_at > ?
+    AND id > ?
+    AND project_id IN (?)
+    AND deleted_at is null
+    ORDER BY id LIMIT ?`
+
+	countDeletedSubscriptions = `
+    select COUNT(id) from convoy.subscriptions
+    where (deleted_at IS NOT NULL AND deleted_at > ?)
+    AND project_id IN (?)`
+
+	countUpdatedSubscriptions = `
+    SELECT COUNT(*)
+    FROM (
+        SELECT DISTINCT id
+        FROM convoy.subscriptions
+        WHERE deleted_at IS NULL
+            AND updated_at > ?
+            AND project_id IN (?)
+    ) AS distinct_ids`
+
+	fetchDeletedSubscriptions = `
+    select  id,deleted_at, project_id,
+    filter_config_event_types AS "filter_config.event_types"
+    from convoy.subscriptions
+    where (deleted_at IS NOT NULL AND deleted_at > ?)
+    AND id > ?
+    AND project_id IN (?)
+    ORDER BY id LIMIT ?`
+
 	baseFetchSubscriptionsPagedForward = `
 	%s
 	%s
@@ -136,8 +201,14 @@ const (
 	SELECT * FROM subscriptions ORDER BY id DESC
 	`
 
+	countProjectSubscriptions = `
+	SELECT COUNT(s.id) AS count
+	FROM convoy.subscriptions s
+	WHERE s.deleted_at IS NULL
+	AND s.project_id IN (?)`
+
 	countEndpointSubscriptions = `
-	SELECT COUNT(DISTINCT(s.id)) AS count
+	SELECT COUNT(s.id) AS count
 	FROM convoy.subscriptions s
 	WHERE s.deleted_at IS NULL
 	AND s.project_id = $1 AND s.endpoint_id = $2`
@@ -208,6 +279,173 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 	return &subscriptionRepo{db: db.GetDB(), cache: ca}
 }
 
+func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	return s.fetchChangedSubscriptionConfig(ctx, countUpdatedSubscriptions, fetchUpdatedSubscriptions, projectIDs, t, pageSize)
+}
+
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	return s.fetchChangedSubscriptionConfig(ctx, countDeletedSubscriptions, fetchDeletedSubscriptions, projectIDs, t, pageSize)
+}
+
+func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	query, args, err := sqlx.In(countProjectSubscriptions, projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var subCount int64
+	err = s.db.GetContext(ctx, &subCount, s.db.Rebind(query), args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if subCount == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	subs := make([]datastore.Subscription, subCount)
+	cursor := "0"
+	var rows *sqlx.Rows // reuse the mem
+	counter := 0
+	numBatches := int64(math.Ceil(float64(subCount) / float64(pageSize)))
+
+	for i := int64(0); i < numBatches; i++ {
+		query, args, err = sqlx.In(loadAllSubscriptionsConfiguration, cursor, projectIDs, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		rows, err = s.db.QueryxContext(ctx, s.db.Rebind(query), args...)
+		if err != nil {
+			return nil, err
+		}
+
+		// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
+		func() {
+			defer closeWithError(rows)
+			for rows.Next() {
+				sub := datastore.Subscription{}
+				if err = rows.StructScan(&sub); err != nil {
+					return
+				}
+
+				nullifyEmptyConfig(&sub)
+				subs[counter] = sub
+				counter++
+			}
+
+			if counter > 0 {
+				cursor = subs[counter-1].UID
+			}
+		}()
+
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	return subs[:counter], nil
+}
+
+func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]datastore.Subscription, error) {
+	subs, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, eventType), 10, func() ([]datastore.Subscription, error) {
+		var _subs []datastore.Subscription
+		cursor := "0"
+
+		for {
+			rows, err := s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, eventType)
+			if err != nil {
+				return nil, err
+			}
+
+			subscriptions, err := scanSubscriptions(rows)
+			if err != nil {
+				return nil, err
+			}
+
+			if len(subscriptions) == 0 {
+				break
+			}
+
+			_subs = append(_subs, subscriptions...)
+			cursor = subscriptions[len(subscriptions)-1].UID
+		}
+
+		return _subs, nil
+	})
+
+	return subs, err
+}
+
+func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, countQuery, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	q, args, err := sqlx.In(countQuery, t, projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	var subCount int64
+	err = s.db.GetContext(ctx, &subCount, s.db.Rebind(q), args...)
+	if err != nil {
+		return nil, err
+	}
+
+	if subCount == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
+	subs := make([]datastore.Subscription, subCount)
+	cursor := "0"
+	var rows *sqlx.Rows // reuse the mem
+	counter := 0
+	numBatches := int64(math.Ceil(float64(subCount) / float64(pageSize)))
+
+	for i := int64(0); i < numBatches; i++ {
+		q, args, err = sqlx.In(query, t, cursor, projectIDs, pageSize)
+		if err != nil {
+			return nil, err
+		}
+
+		rows, err = s.db.QueryxContext(ctx, s.db.Rebind(q), args...)
+		if err != nil {
+			return nil, err
+		}
+
+		// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
+		func() {
+			defer closeWithError(rows)
+			for rows.Next() {
+				sub := datastore.Subscription{}
+				if err = rows.StructScan(&sub); err != nil {
+					return
+				}
+
+				nullifyEmptyConfig(&sub)
+				subs[counter] = sub
+				counter++
+			}
+
+			if counter > 0 {
+				cursor = subs[counter-1].UID
+			}
+		}()
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return subs[:counter], nil
+}
+
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
 	if projectID != subscription.ProjectID {
 		return datastore.ErrNotAuthorisedToAccessDocument
@@ -231,12 +469,24 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		deviceID = &subscription.DeviceID
 	}
 
+	err := fc.Filter.Body.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten body filter: %v", err)
+	}
+
+	err = fc.Filter.Headers.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten header filter: %v", err)
+	}
+
+	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
+
 	result, err := s.db.ExecContext(
 		ctx, createSubscription, subscription.UID,
 		subscription.Name, subscription.Type, subscription.ProjectID,
 		endpointID, deviceID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 	)
 	if err != nil {
@@ -251,6 +501,18 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 	if rowsAffected < 1 {
 		return ErrSubscriptionNotCreated
 	}
+
+	_subscription := &datastore.Subscription{}
+	err = s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscription.UID, projectID).StructScan(_subscription)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return datastore.ErrSubscriptionNotFound
+		}
+		return err
+	}
+
+	nullifyEmptyConfig(_subscription)
+	*subscription = *_subscription
 
 	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(subscription.UID).String()
 	err = s.cache.Set(ctx, subscriptionCacheKey, &subscription, config.DefaultCacheTTL)
@@ -272,11 +534,23 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		sourceID = &subscription.SourceID
 	}
 
+	err := fc.Filter.Body.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten body filter: %v", err)
+	}
+
+	err = fc.Filter.Headers.Flatten()
+	if err != nil {
+		return fmt.Errorf("failed to flatten header filter: %v", err)
+	}
+
+	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
+
 	result, err := s.db.ExecContext(
 		ctx, updateSubscription, subscription.UID, projectID,
 		subscription.Name, subscription.EndpointID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
-		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body,
+		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 	)
 	if err != nil {
@@ -302,6 +576,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 	}
 
 	nullifyEmptyConfig(_subscription)
+	*subscription = *_subscription
 
 	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(subscription.UID).String()
 	err = s.cache.Set(ctx, subscriptionCacheKey, &_subscription, config.DefaultCacheTTL)
@@ -321,6 +596,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		"endpoint_ids": filter.EndpointIDs,
 		"limit":        pageable.Limit(),
 		"cursor":       pageable.Cursor(),
+		"name":         fmt.Sprintf("%%%s%%", filter.SubscriptionName),
 	}
 
 	var query, filterQuery string
@@ -333,6 +609,10 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	filterQuery = ` AND s.project_id = :project_id`
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery += ` AND s.endpoint_id IN (:endpoint_ids)`
+	}
+
+	if !util.IsStringEmpty(filter.SubscriptionName) {
+		filterQuery += ` AND s.name LIKE :name`
 	}
 
 	query = fmt.Sprintf(query, baseFetchSubscription, filterQuery)
@@ -350,11 +630,6 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 	query = s.db.Rebind(query)
 
 	rows, err = s.db.QueryxContext(ctx, query, args...)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
-	defer closeWithError(rows)
-
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -463,7 +738,7 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 }
 
 func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceID string) ([]datastore.Subscription, error) {
-	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, sourceID), func() ([]datastore.Subscription, error) {
+	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, sourceID), 0, func() ([]datastore.Subscription, error) {
 		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.source_id"), projectID, sourceID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -483,7 +758,7 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 }
 
 func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]datastore.Subscription, error) {
-	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectId, endpointID), func() ([]datastore.Subscription, error) {
+	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectId, endpointID), 0, func() ([]datastore.Subscription, error) {
 		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.endpoint_id"), projectId, endpointID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -526,7 +801,7 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 }
 
 func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
-	subscriptions, err := s.readManyFromCache(ctx, projectID, func() ([]datastore.Subscription, error) {
+	subscriptions, err := s.readManyFromCache(ctx, projectID, 0, func() ([]datastore.Subscription, error) {
 		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchCLISubscriptions, "s.project_id", "s.type"), projectID, datastore.SubscriptionTypeCLI)
 		if err != nil {
 			return nil, err
@@ -543,6 +818,7 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 
 func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
 	var count int64
+
 	err := s.db.GetContext(ctx, &count, countEndpointSubscriptions, projectID, endpointID)
 	if err != nil {
 		return 0, err
@@ -551,28 +827,46 @@ func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, proje
 	return count, nil
 }
 
-func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}) (bool, error) {
+func (s *subscriptionRepo) TestSubscriptionFilter(_ context.Context, payload, filter interface{}, isFlattened bool) (bool, error) {
+	if payload == nil || filter == nil {
+		return true, nil
+	}
+
 	p, err := flatten.Flatten(payload)
 	if err != nil {
 		return false, err
 	}
 
-	f, err := flatten.Flatten(filter)
-	if err != nil {
-		return false, err
+	if !isFlattened {
+		filter, err = flatten.Flatten(filter)
+		if err != nil {
+			return false, err
+		}
 	}
 
-	return compare.Compare(p, f)
+	// The filter must be of type flatten.M, because flatten.Flatten always returns that type,
+	// so whether pre-flattened or not, this must hold true
+	v, ok := filter.(flatten.M)
+	if !ok {
+		return false, fmt.Errorf("unknown type %T for filter", filter)
+	}
+	return compare.Compare(p, v)
 }
 
-func (s *subscriptionRepo) TransformPayload(_ context.Context, function string, payload map[string]interface{}) (interface{}, []string, error) {
-	transformer := transform.NewTransformer(goja.New())
-	mutated, consoleLog, err := transformer.Transform(function, payload)
-	if err != nil {
-		return nil, []string{}, err
+func (s *subscriptionRepo) CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error) {
+	if payload == nil || filter == nil {
+		return true, nil
 	}
 
-	return mutated, consoleLog, nil
+	if !isFlattened {
+		var err error
+		filter, err = flatten.Flatten(filter)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return compare.Compare(payload, filter)
 }
 
 var (
@@ -639,7 +933,7 @@ func (s *subscriptionRepo) readFromCache(ctx context.Context, cacheKey string, r
 	return sub, err
 }
 
-func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey string, readManyFromDB func() ([]datastore.Subscription, error)) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey string, ttl time.Duration, readManyFromDB func() ([]datastore.Subscription, error)) ([]datastore.Subscription, error) {
 	var subscriptions []datastore.Subscription
 
 	subscriptionCacheKey := convoy.SubscriptionCacheKey.Get(cacheKey).String()
@@ -657,7 +951,17 @@ func (s *subscriptionRepo) readManyFromCache(ctx context.Context, cacheKey strin
 		return nil, err
 	}
 
-	err = s.cache.Set(ctx, subscriptionCacheKey, subs, config.DefaultCacheTTL)
+	if ttl != 0 {
+		ttl = config.DefaultCacheTTL
+	} else {
+		ttl = ttl * time.Second
+	}
+
+	if len(subs) == 0 {
+		return nil, err
+	}
+
+	err = s.cache.Set(ctx, subscriptionCacheKey, subs, ttl)
 	if err != nil {
 		return nil, err
 	}

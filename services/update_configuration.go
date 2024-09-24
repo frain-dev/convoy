@@ -32,6 +32,10 @@ func (c *UpdateConfigService) Run(ctx context.Context) (*datastore.Configuration
 		cfg.StoragePolicy = c.Config.StoragePolicy.Transform()
 	}
 
+	if c.Config.RetentionPolicy != nil {
+		cfg.RetentionPolicy = c.Config.RetentionPolicy.Transform()
+	}
+
 	err = c.ConfigRepo.UpdateConfiguration(ctx, cfg)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update configuration")

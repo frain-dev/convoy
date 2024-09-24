@@ -21,11 +21,12 @@ import (
 //	@Summary		Create an endpoint
 //	@Description	This endpoint creates an endpoint
 //	@Tags			Endpoints
+//	@Id				CreateEndpoint
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			endpoint	body		models.CreateEndpoint	true	"Endpoint Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Success		201			{object}	util.ServerResponse{data=models.EndpointResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints [post]
@@ -74,6 +75,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		ProjectRepo:    postgres.NewProjectRepo(h.A.DB, h.A.Cache),
 		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache),
+		Licenser:       h.A.Licenser,
 		E:              e,
 		ProjectID:      project.UID,
 	}
@@ -108,6 +110,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Retrieve endpoint
 //	@Description	This endpoint fetches an endpoint
+//	@Id				GetEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json
@@ -155,6 +158,7 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Summary		List all endpoints
 //	@Description	This endpoint fetches an endpoints
 //	@Tags			Endpoints
+//	@Id				GetEndpoints
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string						true	"Project ID"
@@ -229,13 +233,14 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update an endpoint
 //	@Description	This endpoint updates an endpoint
+//	@Id				UpdateEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string					true	"Project ID"
 //	@Param			endpointID	path		string					true	"Endpoint ID"
 //	@Param			endpoint	body		models.UpdateEndpoint	true	"Endpoint Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Success		202			{object}	util.ServerResponse{data=models.EndpointResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID} [put]
@@ -277,6 +282,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		Cache:        h.A.Cache,
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		ProjectRepo:  postgres.NewProjectRepo(h.A.DB, h.A.Cache),
+		Licenser:     h.A.Licenser,
 		E:            e,
 		Endpoint:     endpoint,
 		Project:      project,
@@ -289,9 +295,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	serverResponse := util.NewServerResponse(
-		"Endpoint updated successfully",
-		resp, http.StatusAccepted)
+	serverResponse := util.NewServerResponse("Endpoint updated successfully", resp, http.StatusAccepted)
 
 	rb, err := json.Marshal(serverResponse)
 	if err != nil {
@@ -313,6 +317,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Summary		Delete endpoint
 //	@Description	This endpoint deletes an endpoint
 //	@Tags			Endpoints
+//	@Id				DeleteEndpoint
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
@@ -349,6 +354,7 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Roll endpoint secret
 //	@Description	This endpoint expires and re-generates the endpoint secret.
+//	@Id				ExpireSecret
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json
@@ -405,12 +411,13 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Pause endpoint
 //	@Description	This endpoint toggles an endpoint status between the active and paused states
+//	@Id				PauseEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
 //	@Param			endpointID	path		string	true	"Endpoint ID"
-//	@Success		200			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Success		202			{object}	util.ServerResponse{data=models.EndpointResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/pause [put]
@@ -434,7 +441,21 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
-	_ = render.Render(w, r, util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted))
+	serverResponse := util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted)
+
+	rb, err := json.Marshal(serverResponse)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resBytes, err := h.RM.VersionResponse(r, rb, "UpdateEndpoint")
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	util.WriteResponse(w, r, resBytes, http.StatusAccepted)
 }
 
 func (h *Handler) retrieveEndpoint(ctx context.Context, endpointID, projectID string) (*datastore.Endpoint, error) {

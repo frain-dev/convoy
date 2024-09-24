@@ -3,9 +3,14 @@ package kafka
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"time"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -16,25 +21,28 @@ import (
 	"github.com/segmentio/kafka-go/sasl/scram"
 )
 
-var ErrInvalidCredentials = errors.New("your kafka credentials are invalid. please verify you're providing the correct credentials")
-
 type Kafka struct {
-	Cfg     *datastore.KafkaPubSubConfig
-	source  *datastore.Source
-	workers int
-	ctx     context.Context
-	handler datastore.PubSubHandler
-	log     log.StdLogger
+	Cfg         *datastore.KafkaPubSubConfig
+	source      *datastore.Source
+	workers     int
+	ctx         context.Context
+	handler     datastore.PubSubHandler
+	log         log.StdLogger
+	rateLimiter limiter.RateLimiter
+	licenser    license.Licenser
+	instanceId  string
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger) *Kafka {
-
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Kafka {
 	return &Kafka{
-		Cfg:     source.PubSub.Kafka,
-		source:  source,
-		workers: source.PubSub.Workers,
-		handler: handler,
-		log:     log,
+		Cfg:         source.PubSub.Kafka,
+		source:      source,
+		workers:     source.PubSub.Workers,
+		handler:     handler,
+		log:         log,
+		rateLimiter: rateLimiter,
+		licenser:    licenser,
+		instanceId:  instanceId,
 	}
 }
 
@@ -99,18 +107,16 @@ func (k *Kafka) Verify() error {
 
 	_, err = dialer.DialContext(context.Background(), "tcp", k.Cfg.Brokers[0])
 	if err != nil {
-		log.WithError(err).Error("failed to connect to kafka instance")
 		return err
 	}
 
 	return nil
-
 }
 
 func (k *Kafka) consume() {
 	dialer, err := k.dialer()
 	if err != nil {
-		log.WithError(err).Error("failed to fetch kafka auth")
+		log.WithError(err).Errorf("failed to fetch auth for kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
 
@@ -122,33 +128,61 @@ func (k *Kafka) consume() {
 
 	// make a new reader that consumes from topic
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: k.Cfg.Brokers,
-		GroupID: consumerGroup,
-		Topic:   k.Cfg.TopicName,
-		Dialer:  dialer,
+		Brokers:               k.Cfg.Brokers,
+		GroupID:               consumerGroup,
+		Topic:                 k.Cfg.TopicName,
+		Dialer:                dialer,
+		WatchPartitionChanges: true,
 	})
 
 	defer k.handleError(r)
+
+	cfg, err := config.Get()
+	if err != nil {
+		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
+		return
+	}
+	println("kafka ingest rate:", cfg.InstanceIngestRate)
 
 	for {
 		select {
 		case <-k.ctx.Done():
 			return
 		default:
+			if !util.IsStringEmpty(k.instanceId) {
+				err = k.rateLimiter.Allow(k.ctx, k.instanceId, cfg.InstanceIngestRate)
+				if err != nil {
+					time.Sleep(time.Millisecond * 250)
+					continue
+				}
+			}
+
 			m, err := r.FetchMessage(k.ctx)
 			if err != nil {
-				log.WithError(err).Errorf("failed to fetch message from topic %s - kafka", k.Cfg.TopicName)
+				log.WithError(err).Errorf("failed to fetch message from kafka source %s with id %s from topic %s - kafka", k.source.Name, k.source.UID, k.Cfg.TopicName)
 				continue
 			}
 
-			ctx := context.Background()
-			if err := k.handler(ctx, k.source, string(m.Value)); err != nil {
-				k.log.WithError(err).Error("failed to write message to create event queue - kafka pub sub")
+			mm := metrics.GetDPInstance(k.licenser)
+			mm.IncrementIngestTotal(k.source)
+
+			var d D = m.Headers
+			headers, err := msgpack.EncodeMsgPack(d.Map())
+			if err != nil {
+				k.log.WithError(err).Error("failed to marshall message headers")
+			}
+
+			if err := k.handler(k.ctx, k.source, string(m.Value), headers); err != nil {
+				k.log.WithError(err).Errorf("failed to write message from kafka source %s with id %s to create event queue - kafka pub sub", k.source.Name, k.source.UID)
+				mm.IncrementIngestErrorsTotal(k.source)
 			} else {
 				// acknowledge the message
-				err := r.CommitMessages(ctx, m)
+				err := r.CommitMessages(k.ctx, m)
 				if err != nil {
 					k.log.WithError(err).Error("failed to commit message - kafka pub sub")
+					mm.IncrementIngestErrorsTotal(k.source)
+				} else {
+					mm.IncrementIngestConsumedTotal(k.source)
 				}
 			}
 		}
@@ -161,6 +195,20 @@ func (k *Kafka) handleError(reader *kafka.Reader) {
 	}
 
 	if err := recover(); err != nil {
-		k.log.WithError(fmt.Errorf("sourceID: %s, Errror: %s", k.source.UID, err)).Error("kafka pubsub source crashed")
+		k.log.WithError(fmt.Errorf("sourceID: %s, Error: %s", k.source.UID, err)).Error("kafka pubsub source crashed")
 	}
+}
+
+type M map[string]any
+
+// D is an array representation of Kafka Headers.
+type D []kafka.Header
+
+// Map creates a map from the elements of the D.
+func (d D) Map() M {
+	m := make(M, len(d))
+	for _, e := range d {
+		m[e.Key] = e.Value
+	}
+	return m
 }

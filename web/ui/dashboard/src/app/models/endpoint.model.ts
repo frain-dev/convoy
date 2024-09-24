@@ -21,9 +21,10 @@ export interface ENDPOINT {
     owner_id?:string;
 	description: string;
 	events?: any;
-	status?: string;
+	status: string;
 	secrets?: SECRET[];
 	name?: string;
+	url: string;
 	target_url: string;
 	updated_at: string;
 	rate_limit: number;

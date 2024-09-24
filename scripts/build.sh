@@ -22,7 +22,7 @@ buildConvoy() {
 	cd ./web/ui/dashboard
 
 	# Install dependencies
-	npm ci
+	npm i
 
 	# Run production build
 	if [[ "$build" == "ce" ]]; then

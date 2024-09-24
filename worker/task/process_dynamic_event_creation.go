@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/google/uuid"
@@ -22,7 +25,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository) func(context.Context, *asynq.Task) error {
+func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var dynamicEvent models.DynamicEvent
 
@@ -69,8 +72,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 			Headers:          getCustomHeaders(dynamicEvent.CustomHeaders),
 			IsDuplicateEvent: isDuplicate,
 			Raw:              string(dynamicEvent.Data),
-			CreatedAt:        time.Now(),
-			UpdatedAt:        time.Now(),
+			AcknowledgedAt:   null.TimeFrom(time.Now()),
 		}
 
 		err = eventRepo.CreateEvent(ctx, event)
@@ -85,7 +87,7 @@ func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, even
 
 		return writeEventDeliveriesToQueue(
 			ctx, []datastore.Subscription{*s}, event, project, eventDeliveryRepo,
-			subRepo, eventQueue, deviceRepo, endpointRepo,
+			eventQueue, deviceRepo, endpointRepo, licenser,
 		)
 	}
 }
@@ -102,12 +104,10 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 		endpoint = &datastore.Endpoint{
 			UID:                uid,
 			ProjectID:          project.UID,
-			Title:              fmt.Sprintf("endpoint-%s", uid),
-			TargetURL:          dynamicEvent.URL,
-			RateLimit:          convoy.RATE_LIMIT,
+			Name:               fmt.Sprintf("endpoint-%s", uid),
+			Url:                dynamicEvent.URL,
 			HttpTimeout:        convoy.HTTP_TIMEOUT,
 			AdvancedSignatures: true,
-			RateLimitDuration:  convoy.RATE_LIMIT_DURATION,
 			Status:             datastore.ActiveEndpointStatus,
 			CreatedAt:          time.Now(),
 			UpdatedAt:          time.Now(),

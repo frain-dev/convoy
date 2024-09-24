@@ -9,8 +9,8 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -53,7 +53,7 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				ctx: ctx,
 				newApiKey: &models.CreateEndpointApiKey{
 					Project:  &datastore.Project{UID: "1234"},
-					Endpoint: &datastore.Endpoint{UID: "abc", ProjectID: "1234", Title: "test_endpoint"},
+					Endpoint: &datastore.Endpoint{UID: "abc", ProjectID: "1234", Name: "test_endpoint"},
 					KeyType:  datastore.AppPortalKey,
 					BaseUrl:  "https://getconvoy.io",
 					Name:     "api-key-1",
@@ -83,7 +83,7 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				ctx: ctx,
 				newApiKey: &models.CreateEndpointApiKey{
 					Project:    &datastore.Project{UID: "1234"},
-					Endpoint:   &datastore.Endpoint{UID: "abc", ProjectID: "1234", Title: "test_endpoint"},
+					Endpoint:   &datastore.Endpoint{UID: "abc", ProjectID: "1234", Name: "test_endpoint"},
 					KeyType:    datastore.CLIKey,
 					BaseUrl:    "https://getconvoy.io",
 					Name:       "api-key-1",
@@ -124,7 +124,7 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				ctx: ctx,
 				newApiKey: &models.CreateEndpointApiKey{
 					Project:  &datastore.Project{UID: "1234"},
-					Endpoint: &datastore.Endpoint{UID: "abc", ProjectID: "1234", Title: "test_app"},
+					Endpoint: &datastore.Endpoint{UID: "abc", ProjectID: "1234", Name: "test_app"},
 					BaseUrl:  "https://getconvoy.io",
 				},
 			},

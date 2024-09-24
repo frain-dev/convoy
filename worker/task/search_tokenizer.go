@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/go-redsync/redsync/v4"
@@ -53,9 +54,9 @@ func GeneralTokenizerHandler(projectRepository datastore.ProjectRepository, even
 				log.WithError(err).Errorf("failed to tokenize events for project with id %s", p.Id)
 				continue
 			}
-			fmt.Printf("done tokenizing events for %+v with %v events\n", p.Id, p.EventsCount)
+			log.Debugf("done tokenizing events for %+v with %v events", p.Id, p.EventsCount)
 		}
-		fmt.Println("done tokenizing events in the interval")
+		log.Debug("done tokenizing events in the interval")
 
 		return nil
 	}
@@ -74,12 +75,25 @@ func TokenizerHandler(eventRepo datastore.EventRepository, jobRepo datastore.Job
 		if err != nil {
 			return err
 		}
+		log.Debugf("done tokenizing events in the last %d hours for project with id %s", params.Interval, params.ProjectID)
 
 		return nil
 	}
 }
 
 func tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo datastore.JobRepository, projectId string, interval int) error {
+	cfg, err := config.Get()
+	if err != nil {
+		return err
+	}
+	fflag, err := fflag2.NewFFlag(&cfg)
+	if err != nil {
+		return nil
+	}
+	if !fflag.CanAccessFeature(fflag2.FullTextSearch) {
+		return fflag2.ErrFeatureNotEnabled
+	}
+
 	// check if a job for a given project is currently running
 	jobs, err := jobRepo.FetchRunningJobsByProjectId(ctx, projectId)
 	if err != nil {
@@ -108,7 +122,7 @@ func tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo 
 		return err
 	}
 
-	// if a job is not currently running start a new job
+	// if a job is not currently running, start a new job
 	err = eventRepo.CopyRows(ctx, projectId, interval)
 	if err != nil {
 		err = jobRepo.MarkJobAsFailed(ctx, job.UID, projectId)

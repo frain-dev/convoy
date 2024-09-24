@@ -18,7 +18,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
+func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
@@ -59,13 +59,18 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			return err
 		}
 
+		if len(projects) == 0 {
+			log.Warn("no existing projects, retention policy job exiting")
+			return nil
+		}
+
 		for _, p := range projects {
-			exporter, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config)
+			e, err := exporter.NewExporter(projectRepo, eventRepo, eventDeliveryRepo, p, config, attemptsRepo)
 			if err != nil {
 				return err
 			}
 
-			result, err := exporter.Export(ctx)
+			result, err := e.Export(ctx)
 			if err != nil {
 				log.WithError(err).Errorf("Failed to archive project id's (%s) events ", p.UID)
 			}
@@ -77,20 +82,22 @@ func RetentionPolicies(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 
 			for _, r := range result {
-				err = objectStoreClient.Save(r.ExportFile)
-				if err != nil {
-					return err
+				if r.NumDocs > 0 { // skip if no record was exported
+					err = objectStoreClient.Save(r.ExportFile)
+					if err != nil {
+						return err
+					}
 				}
 			}
 
 			// prune tables and files.
-			err = exporter.Cleanup(ctx)
+			err = e.Cleanup(ctx)
 			if err != nil {
 				return err
 			}
 		}
 
-		fmt.Printf("Retention policy job took %f minutes to run", time.Since(c).Minutes())
+		log.Printf("Retention policy job took %f minutes to run", time.Since(c).Minutes())
 		return nil
 	}
 }

@@ -2,8 +2,11 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/api/models"
@@ -21,10 +24,22 @@ type CreateOrganisationService struct {
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	NewOrg        *models.Organisation
 	User          *datastore.User
+	Licenser      license.Licenser
 }
 
+var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
+
 func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organisation, error) {
-	err := util.Validate(co.NewOrg)
+	ok, err := co.Licenser.CreateOrg(ctx)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !ok {
+		return nil, &ServiceError{ErrMsg: ErrOrgLimit.Error(), Err: ErrOrgLimit}
+	}
+
+	err = util.Validate(co.NewOrg)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -57,7 +72,7 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 		log.FromContext(ctx).WithError(err).Error("failed to create organisation")
 		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
 	}
-	_, err = NewOrganisationMemberService(co.OrgMemberRepo).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleSuperUser})
+	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleSuperUser})
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create super_user member for organisation owner")
 	}

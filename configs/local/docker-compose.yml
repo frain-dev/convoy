@@ -2,11 +2,11 @@ version: "3"
 
 services:
     web:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
+        image: getconvoy/convoy:latest
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
-        restart: on-failure
+        restart: unless-stopped
         ports:
             - "5005:5005"
         healthcheck:
@@ -18,54 +18,64 @@ services:
         depends_on:
             - postgres
             - redis_server
-
+            - pgbouncer
     worker:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
+        image: getconvoy/convoy:latest
         command: ["./cmd", "worker", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
-        restart: on-failure
+        restart: unless-stopped
         depends_on:
             web:
                 condition: service_healthy
-
-    stream:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
-        command: ["./cmd", "stream", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
-        depends_on:
-            web:
-                condition: service_healthy
-
     ingest:
-        image: docker.cloudsmith.io/convoy/convoy/frain-dev/convoy:v24.1.2
+        image: getconvoy/convoy:latest
         command: ["./cmd", "ingest", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
-        restart: on-failure
+        restart: unless-stopped
         depends_on:
             web:
                 condition: service_healthy
-
-    postgres:
-        image: postgres:15.2-alpine
+    pgbouncer:
+        image: bitnami/pgbouncer:latest
+        hostname: pgbouncer
         restart: unless-stopped
-        environment:
-            POSTGRES_DB: convoy
-            POSTGRES_USER: convoy
-            POSTGRES_PASSWORD: convoy
-            PGDATA: /data/postgres
+        depends_on:
+          postgres:
+            condition: service_healthy
+        env_file:
+            - ./conf/.env
         volumes:
-          - postgres_data:/data/postgres
-
+            - ./conf/:/bitnami/pgbouncer/conf/
+            - ./conf/userlists.txt:/bitnami/userlists.txt
+        ports:
+            - "6432:6432"
+    postgres:
+        image: bitnami/postgresql:latest
+        restart: on-failure
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRESQL_DATABASE: convoy
+            POSTGRESQL_USERNAME: convoy
+            POSTGRES_PASSWORD: pg_password
+            POSTGRESQL_MAX_CONNECTIONS: 250
+            POSTGRESQL_POSTGRES_PASSWORD: postgres
+            POSTGRESQL_SHARED_PRELOAD_LIBRARIES: pg_stat_statements
+        volumes:
+          - postgresql_master_data:/bitnami/postgresql
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U convoy"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
     redis_server:
         image: redis:alpine
-        restart: always
+        restart: unless-stopped
         volumes:
           - redis_data:/data
-
 volumes:
-    postgres_data:
+    postgresql_master_data:
     redis_data:

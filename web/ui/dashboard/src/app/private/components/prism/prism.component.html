@@ -1,4 +1,4 @@
-<h4 *ngIf="title" class="py-8px text-12 text-new.gray-400 -mb-2px">{{ title }}</h4>
+<h4 *ngIf="title" class="py-8px text-12 text-neutral-10 -mb-2px">{{ title }}</h4>
 
 <div *ngIf="type === 'default'" class="border border-new.primary-25 rounded-8px mb-26px">
 	<div class="">
@@ -17,8 +17,8 @@
 </div>
 
 <div *ngIf="type === 'headers'" class="border border-new.primary-25 rounded-8px mb-26px">
-	<div *ngFor="let header of getHeaders()?.headers; let i = index" class="flex border-b border-new.primary-25 last-of-type:border-none p-12px text-12 text-new.gray-800">
-		<div class="w-2/5 font-medium uppercase text-new.gray-500">
+	<div *ngFor="let header of getHeaders()?.headers; let i = index" class="flex border-b border-new.primary-25 last-of-type:border-none p-12px text-12 text-neutral-12">
+		<div class="w-2/5 font-medium uppercase text-neutral-11">
 			{{ header.header }}
 		</div>
 		<div class="w-3/5 whitespace-nowrap overflow-hidden text-ellipsis">
@@ -38,7 +38,7 @@
 
 <div *ngIf="type === 'display'">
 	<div class="flex items-start px-12px pt-12px">
-		<div class="text-12 text-new.gray-600 pr-10px">LOG:</div>
+		<div class="text-12 text-neutral-10 pr-10px">LOG:</div>
 		<pre *ngIf="language" class="language-{{ language }} log-display">
 <code #codeEle class="language-{{ language }}">{{code}}</code>
 </pre>

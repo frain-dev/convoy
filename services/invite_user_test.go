@@ -5,19 +5,22 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestInviteUserService(t *testing.T) {
 	type args struct {
 		inviteRepo datastore.OrganisationInviteRepository
 		queue      queue.Queuer
+		Licenser   license.Licenser
 	}
 
 	dbErr := errors.New("failed to create invite")
@@ -37,6 +40,10 @@ func TestInviteUserService(t *testing.T) {
 			user:         &datastore.User{},
 			organisation: &datastore.Organisation{},
 			mockDep: func(a args) {
+				licenser, _ := a.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+
 				ivRepo, _ := a.inviteRepo.(*mocks.MockOrganisationInviteRepository)
 				ivRepo.EXPECT().CreateOrganisationInvite(
 					gomock.Any(),
@@ -54,11 +61,26 @@ func TestInviteUserService(t *testing.T) {
 			organisation: &datastore.Organisation{},
 			err:          dbErr,
 			mockDep: func(a args) {
+				licenser, _ := a.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+
 				ivRepo, _ := a.inviteRepo.(*mocks.MockOrganisationInviteRepository)
 				ivRepo.EXPECT().CreateOrganisationInvite(
 					gomock.Any(),
 					gomock.Any(),
 				).Return(dbErr)
+			},
+		},
+		{
+			name:         "should_fail_to_invite_user_for_license_check",
+			inviteeEmail: "sidemen@default.com",
+			user:         &datastore.User{},
+			organisation: &datastore.Organisation{},
+			err:          ErrUserLimit,
+			mockDep: func(a args) {
+				licenser, _ := a.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(false, nil)
 			},
 		},
 	}
@@ -74,6 +96,7 @@ func TestInviteUserService(t *testing.T) {
 			args := args{
 				inviteRepo: mocks.NewMockOrganisationInviteRepository(ctrl),
 				queue:      mocks.NewMockQueuer(ctrl),
+				Licenser:   mocks.NewMockLicenser(ctrl),
 			}
 
 			if tt.mockDep != nil {
@@ -86,6 +109,7 @@ func TestInviteUserService(t *testing.T) {
 				InviteeEmail: tt.inviteeEmail,
 				User:         tt.user,
 				Organisation: tt.organisation,
+				Licenser:     args.Licenser,
 				Role:         tt.role,
 			}
 

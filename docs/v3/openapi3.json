@@ -48,6 +48,9 @@
 					},
 					"schema": {
 						"type": "string"
+					},
+					"vhost": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -134,6 +137,9 @@
 						"type": "string"
 					},
 					"msg_id": {
+						"type": "string"
+					},
+					"project_id": {
 						"type": "string"
 					},
 					"request_http_header": {
@@ -239,6 +245,9 @@
 					"http_timeout": {
 						"type": "integer"
 					},
+					"name": {
+						"type": "string"
+					},
 					"owner_id": {
 						"type": "string"
 					},
@@ -266,16 +275,13 @@
 					"support_email": {
 						"type": "string"
 					},
-					"target_url": {
-						"type": "string"
-					},
-					"title": {
-						"type": "string"
-					},
 					"uid": {
 						"type": "string"
 					},
 					"updated_at": {
+						"type": "string"
+					},
+					"url": {
 						"type": "string"
 					}
 				},
@@ -318,6 +324,9 @@
 			},
 			"datastore.Event": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"app_id": {
 						"description": "Deprecated",
 						"type": "string"
@@ -478,6 +487,9 @@
 					},
 					"headers": {
 						"$ref": "#/components/schemas/datastore.M"
+					},
+					"is_flattened": {
+						"type": "boolean"
 					}
 				},
 				"type": "object"
@@ -590,6 +602,9 @@
 						"type": "array"
 					},
 					"interval_seconds": {
+						"type": "integer"
+					},
+					"max_retry_seconds": {
 						"type": "integer"
 					},
 					"next_send_time": {
@@ -755,6 +770,9 @@
 			},
 			"datastore.Source": {
 				"properties": {
+					"body_function": {
+						"type": "string"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -769,6 +787,9 @@
 							"type": "string"
 						},
 						"type": "array"
+					},
+					"header_function": {
+						"type": "string"
 					},
 					"idempotency_keys": {
 						"items": {
@@ -846,12 +867,10 @@
 			"datastore.StrategyProvider": {
 				"enum": [
 					"linear",
-					"linear",
 					"exponential"
 				],
 				"type": "string",
 				"x-enum-varnames": [
-					"DefaultStrategyProvider",
 					"LinearStrategyProvider",
 					"ExponentialStrategyProvider"
 				]
@@ -939,9 +958,11 @@
 			"models.AlertConfiguration": {
 				"properties": {
 					"count": {
+						"description": "Count",
 						"type": "integer"
 					},
 					"threshold": {
+						"description": "Threshold",
 						"type": "string"
 					}
 				},
@@ -991,6 +1012,9 @@
 					},
 					"schema": {
 						"type": "string"
+					},
+					"vhost": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1019,23 +1043,26 @@
 			},
 			"models.BroadcastEvent": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"custom_headers": {
 						"additionalProperties": {
 							"type": "string"
 						},
+						"description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
 						"type": "object"
 					},
 					"data": {
 						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
+						"type": "object"
 					},
 					"event_type": {
+						"description": "Event Type is used for filtering and debugging e.g invoice.paid",
 						"type": "string"
 					},
 					"idempotency_key": {
+						"description": "Specify a key for event deduplication",
 						"type": "string"
 					}
 				},
@@ -1101,7 +1128,7 @@
 						"type": "string"
 					},
 					"slack_webhook_url": {
-						"description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications.",
+						"description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications on a slack channel.",
 						"type": "string"
 					},
 					"support_email": {
@@ -1118,31 +1145,30 @@
 			"models.CreateEvent": {
 				"properties": {
 					"app_id": {
-						"description": "Deprecated but necessary for backward compatibility",
+						"description": "Deprecated but necessary for backward compatibility.",
 						"type": "string"
 					},
 					"custom_headers": {
 						"additionalProperties": {
 							"type": "string"
 						},
+						"description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
 						"type": "object"
 					},
 					"data": {
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
+						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+						"type": "object"
 					},
 					"endpoint_id": {
+						"description": "Specifies the endpoint to send this event to.",
 						"type": "string"
 					},
 					"event_type": {
+						"description": "Event Type is used for filtering and debugging e.g invoice.paid",
 						"type": "string"
 					},
 					"idempotency_key": {
-						"type": "string"
-					},
-					"owner_id": {
+						"description": "Specify a key for event deduplication",
 						"type": "string"
 					}
 				},
@@ -1150,6 +1176,10 @@
 			},
 			"models.CreateSource": {
 				"properties": {
+					"body_function": {
+						"description": "Function is a javascript function used to mutate the payload\nimmediately after ingesting an event",
+						"type": "string"
+					},
 					"custom_response": {
 						"allOf": [
 							{
@@ -1158,6 +1188,10 @@
 						],
 						"description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only."
 					},
+					"header_function": {
+						"description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
+						"type": "string"
+					},
 					"idempotency_keys": {
 						"description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
 						"items": {
@@ -1165,16 +1199,17 @@
 						},
 						"type": "array"
 					},
-					"is_disabled": {
-						"description": "This is used to manually enable/disable the source.",
-						"type": "boolean"
-					},
 					"name": {
 						"description": "Source name.",
 						"type": "string"
 					},
 					"provider": {
-						"$ref": "#/components/schemas/datastore.SourceProvider"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.SourceProvider"
+							}
+						],
+						"description": "Use this to specify one of our predefined source types."
 					},
 					"pub_sub": {
 						"allOf": [
@@ -1190,7 +1225,7 @@
 								"$ref": "#/components/schemas/datastore.SourceType"
 							}
 						],
-						"description": "Source Type. Currently supported values are - sqs, kafka or pubsub."
+						"description": "Source Type."
 					},
 					"verifier": {
 						"allOf": [
@@ -1206,31 +1241,55 @@
 			"models.CreateSubscription": {
 				"properties": {
 					"alert_config": {
-						"$ref": "#/components/schemas/models.AlertConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.AlertConfiguration"
+							}
+						],
+						"description": "Alert configuration"
 					},
 					"app_id": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
 					},
 					"endpoint_id": {
+						"description": "Destination endpoint ID",
 						"type": "string"
 					},
 					"filter_config": {
-						"$ref": "#/components/schemas/models.FilterConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.FilterConfiguration"
+							}
+						],
+						"description": "Filter configuration"
 					},
 					"function": {
+						"description": "Convoy supports mutating your request payload using a js function. Use this field\nto specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more",
 						"type": "string"
 					},
 					"name": {
+						"description": "Subscription Nme",
 						"type": "string"
 					},
 					"rate_limit_config": {
-						"$ref": "#/components/schemas/models.RateLimitConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.RateLimitConfiguration"
+							}
+						],
+						"description": "Rate limit configuration"
 					},
 					"retry_config": {
-						"$ref": "#/components/schemas/models.RetryConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.RetryConfiguration"
+							}
+						],
+						"description": "Retry configuration"
 					},
 					"source_id": {
+						"description": "Source Id",
 						"type": "string"
 					}
 				},
@@ -1249,34 +1308,41 @@
 			},
 			"models.DynamicEvent": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"custom_headers": {
 						"additionalProperties": {
 							"type": "string"
 						},
+						"description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
 						"type": "object"
 					},
 					"data": {
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
+						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
+						"type": "object"
 					},
 					"event_type": {
+						"description": "Event Type is used for filtering and debugging e.g invoice.paid",
 						"type": "string"
 					},
 					"event_types": {
+						"description": "A list of event types for the subscription filter config",
 						"items": {
 							"type": "string"
 						},
 						"type": "array"
 					},
 					"idempotency_key": {
+						"description": "Specify a key for event deduplication",
 						"type": "string"
 					},
 					"secret": {
+						"description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
 						"type": "string"
 					},
 					"url": {
+						"description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
 						"type": "string"
 					}
 				},
@@ -1316,6 +1382,9 @@
 					"http_timeout": {
 						"type": "integer"
 					},
+					"name": {
+						"type": "string"
+					},
 					"owner_id": {
 						"type": "string"
 					},
@@ -1343,16 +1412,13 @@
 					"support_email": {
 						"type": "string"
 					},
-					"target_url": {
-						"type": "string"
-					},
-					"title": {
-						"type": "string"
-					},
 					"uid": {
 						"type": "string"
 					},
 					"updated_at": {
+						"type": "string"
+					},
+					"url": {
 						"type": "string"
 					}
 				},
@@ -1360,6 +1426,9 @@
 			},
 			"models.EventDeliveryResponse": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"cli_metadata": {
 						"$ref": "#/components/schemas/datastore.CLIMetadata"
 					},
@@ -1400,7 +1469,11 @@
 						"type": "string"
 					},
 					"latency": {
+						"description": "Deprecated: Latency is deprecated.",
 						"type": "string"
+					},
+					"latency_seconds": {
+						"type": "number"
 					},
 					"metadata": {
 						"$ref": "#/components/schemas/datastore.Metadata"
@@ -1431,6 +1504,9 @@
 			},
 			"models.EventResponse": {
 				"properties": {
+					"acknowledged_at": {
+						"type": "string"
+					},
 					"app_id": {
 						"description": "Deprecated",
 						"type": "string"
@@ -1499,9 +1575,11 @@
 			"models.ExpireSecret": {
 				"properties": {
 					"expiration": {
+						"description": "Amount of time to wait before expiring the old endpoint secret.\nIf AdvancedSignatures is turned on for the project, signatures for both secrets will be generated up until\nthe old signature is expired.",
 						"type": "integer"
 					},
 					"secret": {
+						"description": "New Endpoint secret value.",
 						"type": "string"
 					}
 				},
@@ -1524,22 +1602,23 @@
 						"additionalProperties": {
 							"type": "string"
 						},
+						"description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
 						"type": "object"
 					},
 					"data": {
 						"description": "Data is an arbitrary JSON value that gets sent as the body of the\nwebhook to the endpoints",
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
+						"type": "object"
 					},
 					"event_type": {
+						"description": "Event Type is used for filtering and debugging e.g invoice.paid",
 						"type": "string"
 					},
 					"idempotency_key": {
+						"description": "Specify a key for event deduplication",
 						"type": "string"
 					},
 					"owner_id": {
+						"description": "Used for fanout, sends this event to all endpoints with this OwnerID.",
 						"type": "string"
 					}
 				},
@@ -1548,13 +1627,19 @@
 			"models.FilterConfiguration": {
 				"properties": {
 					"event_types": {
+						"description": "List of event types that the subscription should match",
 						"items": {
 							"type": "string"
 						},
 						"type": "array"
 					},
 					"filter": {
-						"$ref": "#/components/schemas/models.FS"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.FS"
+							}
+						],
+						"description": "Body \u0026 Header filters"
 					}
 				},
 				"type": "object"
@@ -1563,6 +1648,33 @@
 				"properties": {
 					"body": {},
 					"header": {}
+				},
+				"type": "object"
+			},
+			"models.FunctionRequest": {
+				"properties": {
+					"function": {
+						"type": "string"
+					},
+					"payload": {
+						"additionalProperties": {},
+						"type": "object"
+					},
+					"type": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.FunctionResponse": {
+				"properties": {
+					"log": {
+						"items": {
+							"type": "string"
+						},
+						"type": "array"
+					},
+					"payload": {}
 				},
 				"type": "object"
 			},
@@ -1696,18 +1808,22 @@
 			"models.PortalLink": {
 				"properties": {
 					"can_manage_endpoint": {
+						"description": "Specify whether endpoint management can be done through the Portal Link UI",
 						"type": "boolean"
 					},
 					"endpoints": {
+						"description": "IDs of endpoints in this portal link",
 						"items": {
 							"type": "string"
 						},
 						"type": "array"
 					},
 					"name": {
+						"description": "Portal Link Name",
 						"type": "string"
 					},
 					"owner_id": {
+						"description": "Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID",
 						"type": "string"
 					}
 				},
@@ -1800,16 +1916,24 @@
 			"models.RetryConfiguration": {
 				"properties": {
 					"duration": {
+						"description": "Used to specify a valid Go time duration e.g 10s, 1h3m for how long to wait between event delivery retries",
 						"type": "string"
 					},
 					"interval_seconds": {
+						"description": "Used to specify a time in seconds for how long to wait between event delivery retries,",
 						"type": "integer"
 					},
 					"retry_count": {
+						"description": "Used to specify the max number of retries",
 						"type": "integer"
 					},
 					"type": {
-						"$ref": "#/components/schemas/datastore.StrategyProvider"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.StrategyProvider"
+							}
+						],
+						"description": "Retry Strategy type"
 					}
 				},
 				"type": "object"
@@ -1833,6 +1957,9 @@
 			},
 			"models.SourceResponse": {
 				"properties": {
+					"body_function": {
+						"type": "string"
+					},
 					"created_at": {
 						"type": "string"
 					},
@@ -1847,6 +1974,9 @@
 							"type": "string"
 						},
 						"type": "array"
+					},
+					"header_function": {
+						"type": "string"
 					},
 					"idempotency_keys": {
 						"items": {
@@ -1893,18 +2023,6 @@
 				},
 				"type": "object"
 			},
-			"models.SubscriptionFunctionResponse": {
-				"properties": {
-					"log": {
-						"items": {
-							"type": "string"
-						},
-						"type": "array"
-					},
-					"payload": {}
-				},
-				"type": "object"
-			},
 			"models.SubscriptionResponse": {
 				"properties": {
 					"alert_config": {
@@ -1931,7 +2049,7 @@
 						"$ref": "#/components/schemas/datastore.FilterConfiguration"
 					},
 					"function": {
-						"$ref": "#/components/schemas/null.String"
+						"type": "string"
 					},
 					"name": {
 						"type": "string"
@@ -1960,22 +2078,20 @@
 			"models.TestFilter": {
 				"properties": {
 					"request": {
-						"$ref": "#/components/schemas/models.FilterSchema"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.FilterSchema"
+							}
+						],
+						"description": "Same Request \u0026 Headers"
 					},
 					"schema": {
-						"$ref": "#/components/schemas/models.FilterSchema"
-					}
-				},
-				"type": "object"
-			},
-			"models.TestWebhookFunction": {
-				"properties": {
-					"function": {
-						"type": "string"
-					},
-					"payload": {
-						"additionalProperties": true,
-						"type": "object"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.FilterSchema"
+							}
+						],
+						"description": "Sample test schema"
 					}
 				},
 				"type": "object"
@@ -2011,42 +2127,58 @@
 			"models.UpdateEndpoint": {
 				"properties": {
 					"advanced_signatures": {
+						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
 						"type": "boolean"
 					},
 					"authentication": {
-						"$ref": "#/components/schemas/models.EndpointAuthentication"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.EndpointAuthentication"
+							}
+						],
+						"description": "This is used to define any custom authentication required by the endpoint. This\nshouldn't be needed often because webhook endpoints usually should be exposed to\nthe internet."
 					},
 					"description": {
+						"description": "Human-readable description of the endpoint. Think of this as metadata describing\nthe endpoint",
 						"type": "string"
 					},
 					"http_timeout": {
+						"description": "Define endpoint http timeout in seconds.",
 						"type": "integer"
 					},
 					"is_disabled": {
+						"description": "This is used to manually enable/disable the endpoint.",
 						"type": "boolean"
 					},
 					"name": {
 						"type": "string"
 					},
 					"owner_id": {
+						"description": "The OwnerID is used to group more than one endpoint together to achieve\n[fanout](https://getconvoy.io/docs/manual/endpoints#Endpoint%20Owner%20ID)",
 						"type": "string"
 					},
 					"rate_limit": {
+						"description": "Rate limit is the total number of requests to be sent to an endpoint in\nthe time duration specified in RateLimitDuration",
 						"type": "integer"
 					},
 					"rate_limit_duration": {
+						"description": "Rate limit duration specifies the time range for the rate limit.",
 						"type": "integer"
 					},
 					"secret": {
+						"description": "Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.",
 						"type": "string"
 					},
 					"slack_webhook_url": {
+						"description": "Slack webhook URL is an alternative method to support email where endpoint developers\ncan receive failure notifications on a slack channel.",
 						"type": "string"
 					},
 					"support_email": {
+						"description": "Endpoint developers support email. This is used for communicating endpoint state\nchanges. You should always turn this on when disabling endpoints are enabled.",
 						"type": "string"
 					},
 					"url": {
+						"description": "URL is the endpoint's URL prefixed with https. non-https urls are currently\nnot supported.",
 						"type": "string"
 					}
 				},
@@ -2054,35 +2186,67 @@
 			},
 			"models.UpdateSource": {
 				"properties": {
+					"body_function": {
+						"description": "Function is a javascript function used to mutate the payload\nimmediately after ingesting an event",
+						"type": "string"
+					},
 					"custom_response": {
-						"$ref": "#/components/schemas/models.UpdateCustomResponse"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.UpdateCustomResponse"
+							}
+						],
+						"description": "Custom response is used to define a custom response for incoming\nwebhooks project sources only."
 					},
 					"forward_headers": {
+						"description": "Soecfy header you want convoy to save from the ingest request and forward to your endpoints when the event is dispatched.",
 						"items": {
 							"type": "string"
 						},
 						"type": "array"
 					},
+					"header_function": {
+						"description": "Function is a javascript function used to mutate the headers\nimmediately after ingesting an event",
+						"type": "string"
+					},
 					"idempotency_keys": {
+						"description": "IdempotencyKeys are used to specify parts of a webhook request to uniquely\nidentify the event in an incoming webhooks project.",
 						"items": {
 							"type": "string"
 						},
 						"type": "array"
 					},
 					"is_disabled": {
+						"description": "This is used to manually enable/disable the source.",
 						"type": "boolean"
 					},
 					"name": {
+						"description": "Source name.",
 						"type": "string"
 					},
 					"pub_sub": {
-						"$ref": "#/components/schemas/models.PubSubConfig"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.PubSubConfig"
+							}
+						],
+						"description": "PubSub are used to specify message broker sources for outgoing\nwebhooks projects, you only need to specify this when the source type is `pub_sub`."
 					},
 					"type": {
-						"$ref": "#/components/schemas/datastore.SourceType"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.SourceType"
+							}
+						],
+						"description": "Source Type."
 					},
 					"verifier": {
-						"$ref": "#/components/schemas/models.VerifierConfig"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.VerifierConfig"
+							}
+						],
+						"description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects."
 					}
 				},
 				"type": "object"
@@ -2090,30 +2254,55 @@
 			"models.UpdateSubscription": {
 				"properties": {
 					"alert_config": {
-						"$ref": "#/components/schemas/models.AlertConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.AlertConfiguration"
+							}
+						],
+						"description": "Alert configuration"
 					},
 					"app_id": {
+						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
 					},
 					"endpoint_id": {
+						"description": "Destination endpoint ID",
 						"type": "string"
 					},
 					"filter_config": {
-						"$ref": "#/components/schemas/models.FilterConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.FilterConfiguration"
+							}
+						],
+						"description": "Filter configuration"
 					},
 					"function": {
+						"description": "Convoy supports mutating your request payload using a js function. Use this field\nto specify a `transform` function for this purpose. See this[https://docs.getconvoy.io/product-manual/subscriptions#functions] for more",
 						"type": "string"
 					},
 					"name": {
+						"description": "Subscription Nme",
 						"type": "string"
 					},
 					"rate_limit_config": {
-						"$ref": "#/components/schemas/models.RateLimitConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.RateLimitConfiguration"
+							}
+						],
+						"description": "Rate limit configuration"
 					},
 					"retry_config": {
-						"$ref": "#/components/schemas/models.RetryConfiguration"
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.RetryConfiguration"
+							}
+						],
+						"description": "Retry configuration"
 					},
 					"source_id": {
+						"description": "Source Id",
 						"type": "string"
 					}
 				},
@@ -2136,26 +2325,8 @@
 				},
 				"type": "object"
 			},
-			"null.String": {
-				"properties": {
-					"string": {
-						"type": "string"
-					},
-					"valid": {
-						"description": "Valid is true if String is not NULL",
-						"type": "boolean"
-					}
-				},
-				"type": "object"
-			},
 			"util.ServerResponse": {
 				"properties": {
-					"data": {
-						"items": {
-							"type": "integer"
-						},
-						"type": "array"
-					},
 					"message": {
 						"type": "string"
 					},
@@ -2821,6 +2992,7 @@
 		"/v1/projects/{projectID}/endpoints": {
 			"get": {
 				"description": "This endpoint fetches an endpoints",
+				"operationId": "GetEndpoints",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -2887,7 +3059,7 @@
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -3012,6 +3184,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates an endpoint",
+				"operationId": "CreateEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3036,7 +3209,7 @@
 					"x-originalParamName": "endpoint"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3056,7 +3229,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -3139,6 +3312,7 @@
 		"/v1/projects/{projectID}/endpoints/{endpointID}": {
 			"delete": {
 				"description": "This endpoint deletes an endpoint",
+				"operationId": "DeleteEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3261,6 +3435,7 @@
 			},
 			"get": {
 				"description": "This endpoint fetches an endpoint",
+				"operationId": "GetEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3383,6 +3558,7 @@
 			},
 			"put": {
 				"description": "This endpoint updates an endpoint",
+				"operationId": "UpdateEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3416,7 +3592,7 @@
 					"x-originalParamName": "endpoint"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3436,7 +3612,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -3519,6 +3695,7 @@
 		"/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
 			"put": {
 				"description": "This endpoint expires and re-generates the endpoint secret.",
+				"operationId": "ExpireSecret",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3655,6 +3832,7 @@
 		"/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
 			"put": {
 				"description": "This endpoint toggles an endpoint status between the active and paused states",
+				"operationId": "PauseEndpoint",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3676,7 +3854,7 @@
 					}
 				],
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -3696,7 +3874,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -3779,6 +3957,7 @@
 		"/v1/projects/{projectID}/eventdeliveries": {
 			"get": {
 				"description": "This endpoint retrieves all event deliveries paginated.",
+				"operationId": "GetEventDeliveriesPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3824,6 +4003,7 @@
 						}
 					},
 					{
+						"description": "Event ID to filter by",
 						"in": "query",
 						"name": "eventId",
 						"schema": {
@@ -3831,6 +4011,7 @@
 						}
 					},
 					{
+						"description": "EventType to filter by",
 						"in": "query",
 						"name": "event_type",
 						"schema": {
@@ -3838,6 +4019,7 @@
 						}
 					},
 					{
+						"description": "IdempotencyKey to filter by",
 						"in": "query",
 						"name": "idempotencyKey",
 						"schema": {
@@ -3869,7 +4051,7 @@
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -3896,6 +4078,7 @@
 						}
 					},
 					{
+						"description": "SubscriptionID to filter by",
 						"in": "query",
 						"name": "subscriptionId",
 						"schema": {
@@ -4022,6 +4205,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/batchretry": {
 			"post": {
 				"description": "This endpoint batch retries multiple event deliveries at once.",
+				"operationId": "BatchRetryEventDelivery",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4067,6 +4251,7 @@
 						}
 					},
 					{
+						"description": "Event ID to filter by",
 						"in": "query",
 						"name": "eventId",
 						"schema": {
@@ -4074,6 +4259,7 @@
 						}
 					},
 					{
+						"description": "EventType to filter by",
 						"in": "query",
 						"name": "event_type",
 						"schema": {
@@ -4081,6 +4267,7 @@
 						}
 					},
 					{
+						"description": "IdempotencyKey to filter by",
 						"in": "query",
 						"name": "idempotencyKey",
 						"schema": {
@@ -4112,7 +4299,7 @@
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -4139,6 +4326,7 @@
 						}
 					},
 					{
+						"description": "SubscriptionID to filter by",
 						"in": "query",
 						"name": "subscriptionId",
 						"schema": {
@@ -4250,6 +4438,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/forceresend": {
 			"post": {
 				"description": "This endpoint enables you retry a previously successful event delivery",
+				"operationId": "ForceResendEventDeliveries",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4377,6 +4566,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}": {
 			"get": {
 				"description": "This endpoint fetches an event delivery.",
+				"operationId": "GetEventDelivery",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4501,6 +4691,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts": {
 			"get": {
 				"description": "This endpoint fetches an app message's delivery attempts",
+				"operationId": "GetDeliveryAttempts",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4628,6 +4819,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/deliveryattempts/{deliveryAttemptID}": {
 			"get": {
 				"description": "This endpoint fetches an app event delivery attempt",
+				"operationId": "GetDeliveryAttempt",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4761,6 +4953,7 @@
 		"/v1/projects/{projectID}/eventdeliveries/{eventDeliveryID}/resend": {
 			"put": {
 				"description": "This endpoint retries an event delivery.",
+				"operationId": "ResendEventDelivery",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4885,6 +5078,7 @@
 		"/v1/projects/{projectID}/events": {
 			"get": {
 				"description": "This endpoint fetches app events with pagination",
+				"operationId": "GetEventsPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -4930,6 +5124,7 @@
 						}
 					},
 					{
+						"description": "IdempotencyKey to filter by",
 						"in": "query",
 						"name": "idempotencyKey",
 						"schema": {
@@ -4969,7 +5164,7 @@
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -4977,6 +5172,7 @@
 						}
 					},
 					{
+						"description": "A list of Source IDs to filter the events by.",
 						"in": "query",
 						"name": "sourceId",
 						"schema": {
@@ -5112,6 +5308,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates an endpoint event",
+				"operationId": "CreateEndpointEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5136,7 +5333,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5156,7 +5353,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -5239,6 +5436,7 @@
 		"/v1/projects/{projectID}/events/batchreplay": {
 			"post": {
 				"description": "This endpoint replays multiple events at once.",
+				"operationId": "BatchReplayEvents",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5284,6 +5482,7 @@
 						}
 					},
 					{
+						"description": "IdempotencyKey to filter by",
 						"in": "query",
 						"name": "idempotencyKey",
 						"schema": {
@@ -5323,7 +5522,7 @@
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -5331,6 +5530,7 @@
 						}
 					},
 					{
+						"description": "A list of Source IDs to filter the events by.",
 						"in": "query",
 						"name": "sourceId",
 						"schema": {
@@ -5464,7 +5664,8 @@
 		},
 		"/v1/projects/{projectID}/events/broadcast": {
 			"post": {
-				"description": "This endpoint broadcasts an endpoint event to all matching subscriptions",
+				"description": "This endpoint creates a event that is broadcast to every endpoint whose subscription matches the given event type.",
+				"operationId": "CreateBroadcastEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5489,7 +5690,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5500,7 +5701,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/handlers.Stub"
+													"$ref": "#/components/schemas/models.EventResponse"
 												}
 											},
 											"type": "object"
@@ -5509,7 +5710,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -5592,6 +5793,7 @@
 		"/v1/projects/{projectID}/events/dynamic": {
 			"post": {
 				"description": "This endpoint does not require creating endpoint and subscriptions ahead of time. Instead, you supply the endpoint and the payload, and Convoy delivers the events",
+				"operationId": "CreateDynamicEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5616,7 +5818,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5624,7 +5826,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -5707,6 +5909,7 @@
 		"/v1/projects/{projectID}/events/fanout": {
 			"post": {
 				"description": "This endpoint uses the owner_id to fan out an event to multiple endpoints.",
+				"operationId": "CreateEndpointFanoutEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5731,7 +5934,7 @@
 					"x-originalParamName": "event"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -5751,7 +5954,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -5834,6 +6037,7 @@
 		"/v1/projects/{projectID}/events/{eventID}": {
 			"get": {
 				"description": "This endpoint retrieves an event",
+				"operationId": "GetEndpointEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -5958,6 +6162,7 @@
 		"/v1/projects/{projectID}/events/{eventID}/replay": {
 			"put": {
 				"description": "This endpoint replays an event afresh assuming it is a new event.",
+				"operationId": "ReplayEndpointEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6082,6 +6287,7 @@
 		"/v1/projects/{projectID}/meta-events": {
 			"get": {
 				"description": "This endpoint fetches meta events with pagination",
+				"operationId": "GetMetaEventsPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6140,7 +6346,7 @@
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -6275,6 +6481,7 @@
 		"/v1/projects/{projectID}/meta-events/{metaEventID}": {
 			"get": {
 				"description": "This endpoint retrieves a meta event",
+				"operationId": "GetMetaEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6399,6 +6606,7 @@
 		"/v1/projects/{projectID}/meta-events/{metaEventID}/resend": {
 			"put": {
 				"description": "This endpoint retries a meta event",
+				"operationId": "ResendMetaEvent",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6523,6 +6731,7 @@
 		"/v1/projects/{projectID}/portal-links": {
 			"get": {
 				"description": "This endpoint fetches multiple portal links",
+				"operationId": "LoadPortalLinksPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6531,17 +6740,6 @@
 						"required": true,
 						"schema": {
 							"type": "string"
-						}
-					},
-					{
-						"description": "list of endpoint ids",
-						"in": "query",
-						"name": "endpointID",
-						"schema": {
-							"items": {
-								"type": "string"
-							},
-							"type": "array"
 						}
 					},
 					{
@@ -6560,6 +6758,7 @@
 						]
 					},
 					{
+						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
 						"schema": {
@@ -6567,13 +6766,23 @@
 						}
 					},
 					{
+						"description": "The owner ID of the endpoint",
 						"in": "query",
-						"name": "per_page",
+						"name": "ownerId",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "The number of items to return per page",
+						"in": "query",
+						"name": "perPage",
 						"schema": {
 							"type": "integer"
 						}
 					},
 					{
+						"description": "A pagination cursor to fetch the previous page of a list",
 						"in": "query",
 						"name": "prev_page_cursor",
 						"schema": {
@@ -6581,30 +6790,15 @@
 						}
 					},
 					{
+						"description": "The name of the endpoint",
 						"in": "query",
-						"name": "sort",
+						"name": "q",
 						"schema": {
 							"type": "string"
 						}
 					},
 					{
-						"description": "results per page",
-						"in": "query",
-						"name": "perPage",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "page number",
-						"in": "query",
-						"name": "page",
-						"schema": {
-							"type": "string"
-						}
-					},
-					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -6729,6 +6923,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates a portal link",
+				"operationId": "CreatePortalLink",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6753,7 +6948,7 @@
 					"x-originalParamName": "portallink"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -6773,7 +6968,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -6856,6 +7051,7 @@
 		"/v1/projects/{projectID}/portal-links/{portalLinkID}": {
 			"get": {
 				"description": "This endpoint retrieves a portal link by its id.",
+				"operationId": "GetPortalLink",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -6978,6 +7174,7 @@
 			},
 			"put": {
 				"description": "This endpoint updates a portal link",
+				"operationId": "UpdatePortalLink",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7011,7 +7208,7 @@
 					"x-originalParamName": "portallink"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7031,7 +7228,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -7114,6 +7311,7 @@
 		"/v1/projects/{projectID}/portal-links/{portalLinkID}/revoke": {
 			"put": {
 				"description": "This endpoint revokes a portal link",
+				"operationId": "RevokePortalLink",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7238,6 +7436,7 @@
 		"/v1/projects/{projectID}/sources": {
 			"get": {
 				"description": "This endpoint fetches multiple sources",
+				"operationId": "LoadSourcesPaged",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7296,7 +7495,7 @@
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -7429,6 +7628,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates a source",
+				"operationId": "CreateSource",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7453,7 +7653,7 @@
 					"x-originalParamName": "source"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7473,7 +7673,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -7556,6 +7756,7 @@
 		"/v1/projects/{projectID}/sources/{sourceID}": {
 			"delete": {
 				"description": "This endpoint deletes a source",
+				"operationId": "DeleteSource",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7678,6 +7879,7 @@
 			},
 			"get": {
 				"description": "This endpoint retrieves a source by its id",
+				"operationId": "GetSource",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7800,6 +8002,7 @@
 			},
 			"put": {
 				"description": "This endpoint updates a source",
+				"operationId": "UpdateSource",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7833,7 +8036,7 @@
 					"x-originalParamName": "source"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -7853,7 +8056,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -7936,6 +8139,7 @@
 		"/v1/projects/{projectID}/subscriptions": {
 			"get": {
 				"description": "This endpoint fetches all the subscriptions",
+				"operationId": "GetSubscriptions",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -7973,6 +8177,14 @@
 						}
 					},
 					{
+						"description": "Subscription name to filter by",
+						"in": "query",
+						"name": "name",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
 						"description": "A pagination cursor to fetch the next page of a list",
 						"in": "query",
 						"name": "next_page_cursor",
@@ -7997,7 +8209,7 @@
 						}
 					},
 					{
-						"description": "sort order",
+						"description": "Sort order, values are `ASC` or `DESC`, defaults to `DESC`",
 						"in": "query",
 						"name": "sort",
 						"schema": {
@@ -8122,6 +8334,7 @@
 			},
 			"post": {
 				"description": "This endpoint creates a subscriptions",
+				"operationId": "CreateSubscription",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8146,7 +8359,7 @@
 					"x-originalParamName": "subscription"
 				},
 				"responses": {
-					"200": {
+					"201": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -8166,7 +8379,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Created"
 					},
 					"400": {
 						"content": {
@@ -8249,6 +8462,7 @@
 		"/v1/projects/{projectID}/subscriptions/test_filter": {
 			"post": {
 				"description": "This endpoint validates that a filter will match a certain payload structure.",
+				"operationId": "TestSubscriptionFilter",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8375,7 +8589,8 @@
 		},
 		"/v1/projects/{projectID}/subscriptions/test_function": {
 			"post": {
-				"description": "This endpoint validates that a filter will match a certain payload structure.",
+				"description": "This endpoint test runs a transform function against a payload.",
+				"operationId": "TestSubscriptionFunction",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8391,7 +8606,7 @@
 					"content": {
 						"application/json": {
 							"schema": {
-								"$ref": "#/components/schemas/models.TestWebhookFunction"
+								"$ref": "#/components/schemas/models.FunctionRequest"
 							}
 						}
 					},
@@ -8411,7 +8626,7 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.SubscriptionFunctionResponse"
+													"$ref": "#/components/schemas/models.FunctionResponse"
 												}
 											},
 											"type": "object"
@@ -8494,7 +8709,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Validate subscription filter",
+				"summary": "Test a subscription function",
 				"tags": [
 					"Subscriptions"
 				]
@@ -8503,6 +8718,7 @@
 		"/v1/projects/{projectID}/subscriptions/{subscriptionID}": {
 			"delete": {
 				"description": "This endpoint deletes a subscription",
+				"operationId": "DeleteSubscription",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8625,6 +8841,7 @@
 			},
 			"get": {
 				"description": "This endpoint retrieves a single subscription",
+				"operationId": "GetSubscription",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8747,6 +8964,7 @@
 			},
 			"put": {
 				"description": "This endpoint updates a subscription",
+				"operationId": "UpdateSubscription",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -8780,7 +8998,7 @@
 					"x-originalParamName": "subscription"
 				},
 				"responses": {
-					"200": {
+					"202": {
 						"content": {
 							"application/json": {
 								"schema": {
@@ -8800,7 +9018,7 @@
 								}
 							}
 						},
-						"description": "OK"
+						"description": "Accepted"
 					},
 					"400": {
 						"content": {
@@ -8922,6 +9140,10 @@
 		{
 			"description": "Portal Links related APIs",
 			"name": "Portal Links"
+		},
+		{
+			"description": "Meta Events related APIs",
+			"name": "Meta Events"
 		}
 	]
 }

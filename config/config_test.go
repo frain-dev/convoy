@@ -121,9 +121,14 @@ func TestLoadConfig(t *testing.T) {
 					Host:   "localhost",
 					Port:   8379,
 				},
+				RetentionPolicy: RetentionPolicyConfiguration{
+					Policy:                   "720h",
+					IsRetentionPolicyEnabled: true,
+				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
+						IngestPort: 5009,
 						AgentPort:  5008,
 						WorkerPort: 5006,
 					},
@@ -157,6 +162,15 @@ func TestLoadConfig(t *testing.T) {
 						InsecureSkipVerify: true,
 					},
 				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: false,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
+					},
+				},
+				WorkerExecutionMode: DefaultExecutionMode,
+				InstanceIngestRate:  50,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -170,6 +184,7 @@ func TestLoadConfig(t *testing.T) {
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
 				ConsumerPoolSize: 100,
+				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h"},
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",
@@ -191,6 +206,7 @@ func TestLoadConfig(t *testing.T) {
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
 						AgentPort:  5008,
+						IngestPort: 5009,
 						WorkerPort: 5006,
 					},
 				},
@@ -223,6 +239,15 @@ func TestLoadConfig(t *testing.T) {
 						InsecureSkipVerify: true,
 					},
 				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: false,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
+					},
+				},
+				InstanceIngestRate:  50,
+				WorkerExecutionMode: DefaultExecutionMode,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -235,6 +260,7 @@ func TestLoadConfig(t *testing.T) {
 			wantCfg: Configuration{
 				APIVersion:       DefaultAPIVersion,
 				Host:             "localhost:5005",
+				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h"},
 				ConsumerPoolSize: 100,
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
@@ -256,6 +282,7 @@ func TestLoadConfig(t *testing.T) {
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
 						AgentPort:  5008,
+						IngestPort: 5009,
 						WorkerPort: 5006,
 					},
 				},
@@ -288,6 +315,15 @@ func TestLoadConfig(t *testing.T) {
 						InsecureSkipVerify: true,
 					},
 				},
+				Metrics: MetricsConfiguration{
+					IsEnabled: false,
+					Backend:   "prometheus",
+					Prometheus: PrometheusMetricsConfiguration{
+						SampleTime: 5,
+					},
+				},
+				InstanceIngestRate:  50,
+				WorkerExecutionMode: DefaultExecutionMode,
 			},
 			wantErr:    false,
 			wantErrMsg: "",
@@ -333,6 +369,7 @@ func TestLoadConfig(t *testing.T) {
 
 			cfg, err := Get()
 			require.NoError(t, err)
+
 			require.Equal(t, tt.wantCfg, cfg)
 		})
 	}

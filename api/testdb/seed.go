@@ -41,12 +41,15 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 
 	endpoint := &datastore.Endpoint{
 		UID:       uid,
-		Title:     title,
+		Name:      title,
 		ProjectID: g.UID,
 		OwnerID:   ownerID,
 		Status:    status,
-		Secrets:   datastore.Secrets{},
-		AppID:     uid,
+		Secrets: []datastore.Secret{
+			{Value: "1234"},
+		},
+		AppID: uid,
+		Url:   "http://localhost:8889",
 	}
 
 	// Seed Data.
@@ -64,7 +67,7 @@ func SeedMultipleEndpoints(db database.Database, project *datastore.Project, cou
 		uid := ulid.Make().String()
 		app := &datastore.Endpoint{
 			UID:       uid,
-			Title:     fmt.Sprintf("Test-%s", uid),
+			Name:      fmt.Sprintf("Test-%s", uid),
 			ProjectID: project.UID,
 			Secrets: datastore.Secrets{
 				{UID: ulid.Make().String()},
@@ -101,6 +104,9 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 }
 
 func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project, error) {
+	return SeedDefaultProjectWithSSL(db, orgID, &datastore.DefaultSSLConfig)
+}
+func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastore.SSLConfiguration) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = ulid.Make().String()
 	}
@@ -112,10 +118,11 @@ func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project,
 		OrganisationID: orgID,
 		Config: &datastore.ProjectConfig{
 			Strategy: &datastore.StrategyConfiguration{
-				Type:       datastore.DefaultStrategyProvider,
+				Type:       datastore.LinearStrategyProvider,
 				Duration:   10,
 				RetryCount: 2,
 			},
+			SSL: ssl,
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.DefaultSignatureHeader,
 				Versions: []datastore.SignatureVersion{
@@ -128,6 +135,7 @@ func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project,
 				},
 			},
 			ReplayAttacks: false,
+			MaxIngestSize: 50,
 		},
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -324,15 +332,14 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 	}
 
 	ev := &datastore.Event{
-		UID:       uid,
-		EventType: datastore.EventType(eventType),
-		Data:      data,
-		Endpoints: []string{endpoint.UID},
-		Headers:   httpheader.HTTPHeader{},
-		ProjectID: projectID,
-		SourceID:  sourceID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:            uid,
+		EventType:      datastore.EventType(eventType),
+		Data:           data,
+		Endpoints:      []string{endpoint.UID},
+		Headers:        httpheader.HTTPHeader{},
+		ProjectID:      projectID,
+		SourceID:       sourceID,
+		AcknowledgedAt: null.TimeFrom(time.Now()),
 	}
 
 	// Seed Data.
@@ -360,8 +367,7 @@ func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *d
 		Headers:        httpheader.HTTPHeader{},
 		Metadata:       &datastore.Metadata{},
 		ProjectID:      projectID,
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		AcknowledgedAt: null.TimeFrom(time.Now()),
 	}
 
 	// Seed Data.
@@ -665,6 +671,7 @@ func PurgeDB(t *testing.T, db database.Database) {
 func truncateTables(db database.Database) error {
 	tables := `
 		convoy.event_deliveries,
+		convoy.delivery_attempts,
 		convoy.events,
 		convoy.api_keys,
 		convoy.subscriptions,

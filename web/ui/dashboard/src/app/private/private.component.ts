@@ -7,6 +7,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms'
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
 import { Observable, Subscription } from 'rxjs';
+import { LicensesService } from '../services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-private',
@@ -47,13 +48,13 @@ export class PrivateComponent implements OnInit {
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
 
-	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder) {}
+	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		this.shouldShowOrgModal();
 
 		this.checkIfTokenIsExpired();
-		await Promise.all([this.getConfiguration(), this.getUserDetails(), this.getOrganizations()]);
+		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations()]);
 	}
 
 	ngOnDestroy() {
@@ -69,6 +70,10 @@ export class PrivateComponent implements OnInit {
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH');
 		return authDetails ? JSON.parse(authDetails) : false;
+	}
+
+	shouldMountAppRouter(): boolean {
+		return !this.isLoadingOrganisations && (Boolean(this.organisations?.length) || this.router.url.startsWith('/user-settings'));
 	}
 
 	async getConfiguration() {
@@ -158,6 +163,7 @@ export class PrivateComponent implements OnInit {
 			this.generalService.showNotification({ style: 'success', message: response.message });
 			this.creatingOrganisation = false;
 			this.dialog.nativeElement.close();
+			this.licenseService.setLicenses();
 
 			await this.getOrganizations(true);
 			this.selectOrganisation(response.data);

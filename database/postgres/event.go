@@ -19,11 +19,13 @@ import (
 )
 
 const (
+	PartitionSize = 30_000
+
 	createEvent = `
 	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
 	                           source_id,headers,raw,data,url_query_params,
-	                           idempotency_key,is_duplicate_event,created_at,updated_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	                           idempotency_key,is_duplicate_event,acknowledged_at)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	`
 
 	createEventEndpoints = `
@@ -35,7 +37,8 @@ const (
     raw, data, headers, is_duplicate_event,
 	COALESCE(source_id, '') AS source_id,
 	COALESCE(idempotency_key, '') AS idempotency_key,
-	COALESCE(url_query_params, '') AS url_query_params
+	COALESCE(url_query_params, '') AS url_query_params,
+	created_at,updated_at,acknowledged_at
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -60,7 +63,7 @@ const (
 	COALESCE(ev.idempotency_key, '') AS idempotency_key,
 	COALESCE(ev.url_query_params, '') AS url_query_params,
 	ev.headers, ev.raw, ev.data, ev.created_at,
-	ev.updated_at, ev.deleted_at,
+	ev.updated_at, ev.deleted_at,ev.acknowledged_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
@@ -73,14 +76,14 @@ const (
 	`
 
 	countProjectMessages = `
-	SELECT COUNT(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL;
+    SELECT COUNT(project_id) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 	countEvents = `
 	SELECT COUNT(DISTINCT(ev.id)) FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
 	LEFT JOIN convoy.endpoints e ON ee.endpoint_id = e.id
-	WHERE ev.project_id = $1 AND (e.id = $2 OR $2 = '' )
-	AND (ev.source_id = $3 OR $3 = '') AND ev.created_at >= $4 AND ev.created_at <= $5 AND ev.deleted_at IS NULL;
+	WHERE ev.project_id = :project_id
+	AND ev.created_at >= :start_date AND ev.created_at <= :end_date AND ev.deleted_at IS NULL;
 	`
 
 	baseEventsPaged = `
@@ -90,7 +93,7 @@ const (
 	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
-	ev.updated_at, ev.deleted_at,
+	ev.updated_at, ev.deleted_at,ev.acknowledged_at,
 	COALESCE(s.id, '') AS "source_metadata.id",
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
@@ -103,7 +106,7 @@ const (
 	SELECT ev.id, ev.project_id,
 	ev.id AS event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at,
+	ev.headers, ev.raw, ev.data, ev.created_at,ev.acknowledged_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
 	ev.updated_at, ev.deleted_at,
@@ -171,7 +174,7 @@ const (
 
 	hardDeleteProjectEvents = `
 	DELETE FROM convoy.events WHERE project_id = $1 AND created_at >= $2 AND created_at <= $3
-	AND deleted_at IS NULL AND NOT EXISTS (
+    AND NOT EXISTS (
     SELECT 1
     FROM convoy.event_deliveries
     WHERE event_id = convoy.events.id
@@ -181,7 +184,6 @@ const (
 	hardDeleteTokenizedEvents = `
 	DELETE FROM convoy.events_search
     WHERE project_id = $1
-	AND deleted_at IS NULL
 	`
 
 	copyRowsFromEventsToEventsSearch = `
@@ -205,11 +207,14 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		sourceID = &event.SourceID
 	}
 
-	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, isWrapped, err := GetTx(ctx, e.db)
 	if err != nil {
 		return err
 	}
-	defer rollbackTx(tx)
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
 
 	_, err = tx.ExecContext(ctx, createEvent,
 		event.UID,
@@ -223,16 +228,22 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		event.URLQueryParams,
 		event.IdempotencyKey,
 		event.IsDuplicateEvent,
-		event.CreatedAt,
-		event.UpdatedAt,
+		event.AcknowledgedAt,
 	)
 	if err != nil {
 		return err
 	}
 
-	var ids []interface{}
-	if len(event.Endpoints) > 0 {
-		for _, endpointID := range event.Endpoints {
+	records := event.Endpoints
+	var j int
+	for i := 0; i < len(records); i += PartitionSize {
+		j += PartitionSize
+		if j > len(records) {
+			j = len(records)
+		}
+
+		var ids []interface{}
+		for _, endpointID := range records[i:j] {
 			ids = append(ids, &EventEndpoint{EventID: event.UID, EndpointID: endpointID})
 		}
 
@@ -240,6 +251,10 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		if err != nil {
 			return err
 		}
+	}
+
+	if isWrapped {
+		return nil
 	}
 
 	return tx.Commit()
@@ -286,8 +301,8 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	return events, nil
 }
 
-func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, id string) ([]datastore.Event, error) {
-	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, id, projectID)
+func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]datastore.Event, error) {
+	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, idempotencyKey, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -328,21 +343,49 @@ func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projec
 }
 
 func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) (int64, error) {
-	var count int64
+	var c int64
 
-	err := e.db.QueryRowxContext(ctx, countProjectMessages, projectID).Scan(&count)
+	err := e.db.QueryRowxContext(ctx, countProjectMessages, projectID).Scan(&c)
 	if err != nil {
-		return count, err
+		return c, err
 	}
 
-	return count, nil
+	return c, nil
 }
 
 func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *datastore.Filter) (int64, error) {
 	var count int64
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
-	err := e.db.QueryRowxContext(ctx, countEvents, projectID, filter.EndpointID, filter.SourceID, startDate, endDate).Scan(&count)
+	arg := map[string]interface{}{
+		"endpoint_ids": filter.EndpointIDs,
+		"project_id":   projectID,
+		"source_id":    filter.SourceID,
+		"start_date":   startDate,
+		"end_date":     endDate,
+	}
+
+	query := countEvents
+	if len(filter.EndpointIDs) > 0 {
+		query += ` AND e.id IN (:endpoint_ids) `
+	}
+
+	if !util.IsStringEmpty(filter.SourceID) {
+		query += ` AND ev.source_id = :source_id `
+	}
+
+	query, args, err := sqlx.Named(query, arg)
+	if err != nil {
+		return 0, err
+	}
+
+	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return 0, err
+	}
+
+	query = e.db.Rebind(query)
+	err = e.db.QueryRowxContext(ctx, query, args...).Scan(&count)
 	if err != nil {
 		return count, err
 	}

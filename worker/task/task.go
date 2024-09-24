@@ -1,10 +1,19 @@
 package task
 
 import (
+	"github.com/frain-dev/convoy/datastore"
 	"time"
 
 	"github.com/hibiken/asynq"
 )
+
+type DeliveryError struct {
+	Err error
+}
+
+func (d *DeliveryError) Error() string {
+	return d.Err.Error()
+}
 
 type EndpointError struct {
 	delay time.Duration
@@ -42,5 +51,51 @@ func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
 	if rateLimitError, ok := err.(*RateLimitError); ok {
 		return rateLimitError.Delay()
 	}
-	return defaultDelay
+
+	return asynq.DefaultRetryDelayFunc(n, err, t)
+}
+
+type SignatureValues struct {
+	HMAC      string
+	Timestamp string
+}
+type EventDelivery struct {
+	EventDeliveryID string
+	ProjectID       string
+}
+
+type EventDeliveryConfig struct {
+	project      *datastore.Project
+	subscription *datastore.Subscription
+	endpoint     *datastore.Endpoint
+}
+
+type RetryConfig struct {
+	Type       datastore.StrategyProvider
+	Duration   uint64
+	RetryCount uint64
+}
+
+type RateLimitConfig struct {
+	Rate       int
+	BucketSize int
+}
+
+func (ec *EventDeliveryConfig) RetryConfig() (*RetryConfig, error) {
+	rc := &RetryConfig{}
+
+	rc.Duration = ec.project.Config.Strategy.Duration
+	rc.RetryCount = ec.project.Config.Strategy.RetryCount
+	rc.Type = ec.project.Config.Strategy.Type
+
+	return rc, nil
+}
+
+func (ec *EventDeliveryConfig) RateLimitConfig() *RateLimitConfig {
+	rlc := &RateLimitConfig{}
+
+	rlc.Rate = ec.endpoint.RateLimit
+	rlc.BucketSize = int(ec.endpoint.RateLimitDuration)
+
+	return rlc
 }

@@ -21,16 +21,14 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-var (
-	ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")
-)
+var ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")
 
 type MetaEvent struct {
 	MetaEventID string
 	ProjectID   string
 }
 
-func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository) func(context.Context, *asynq.Task) error {
+func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data MetaEvent
 
@@ -66,10 +64,16 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 			log.WithError(err).Error("failed to update meta event status")
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
+		cfg, err := config.Get()
+		if err != nil {
+			log.WithError(err).Error("failed to get config")
+			return &EndpointError{Err: err, delay: defaultDelay}
+		}
+		metaEvent.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*metaEvent.Metadata).NextDuration(metaEvent.Metadata.NumTrials)
 
-		resp, err := sendUrlRequest(project, metaEvent)
+		resp, err := sendUrlRequest(ctx, project, metaEvent, dispatch)
 		metaEvent.Metadata.NumTrials++
 
 		if resp != nil {
@@ -116,16 +120,9 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 	}
 }
 
-func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) (*net.Response, error) {
+func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent, dispatch *net.Dispatcher) (*net.Response, error) {
 	cfg, err := config.Get()
 	if err != nil {
-		return nil, err
-	}
-
-	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
-	dispatch, err := net.NewDispatcher(httpDuration, cfg.Server.HTTP.HttpProxy)
-	if err != nil {
-		log.WithError(err).Error("error occurred while creating http client")
 		return nil, err
 	}
 
@@ -147,7 +144,9 @@ func sendUrlRequest(project *datastore.Project, metaEvent *datastore.MetaEvent) 
 	}
 
 	url := project.Config.MetaEvent.URL
-	resp, err := dispatch.SendRequest(url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID))
+
+	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
+	resp, err := dispatch.SendRequest(ctx, url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID), httpDuration)
 	if err != nil {
 		return nil, err
 	}

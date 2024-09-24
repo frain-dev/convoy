@@ -106,7 +106,7 @@ func startConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	flag := fflag.NewFFlag()
+	flag, err := fflag.NewFFlag(&cfg)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to create fflag controller")
 	}
@@ -128,11 +128,13 @@ func startConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:  flag,
-			DB:     a.DB,
-			Queue:  a.Queue,
-			Logger: lo,
-			Cache:  a.Cache,
+			FFlag:    flag,
+			DB:       a.DB,
+			Queue:    a.Queue,
+			Logger:   lo,
+			Cache:    a.Cache,
+			Rate:     a.Rate,
+			Licenser: a.Licenser,
 		})
 	if err != nil {
 		return err
@@ -152,7 +154,6 @@ func startConvoyServer(a *cli.App) error {
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
 	s.RegisterTask("0 0 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
-	s.RegisterTask("55 23 * * *", convoy.ScheduleQueue, convoy.DailyAnalytics)
 	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
 	// Start scheduler

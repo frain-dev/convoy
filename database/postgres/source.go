@@ -23,8 +23,8 @@ import (
 const (
 	createSource = `
     INSERT INTO convoy.sources (id,source_verifier_id,name,type,mask_id,provider,is_disabled,forward_headers,project_id,
-                                pub_sub,custom_response_body,custom_response_content_type,idempotency_keys)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13);
+                                pub_sub,custom_response_body,custom_response_content_type,idempotency_keys, body_function, header_function)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
     `
 
 	createSourceVerifier = `
@@ -49,6 +49,8 @@ const (
 	custom_response_body = $10,
 	custom_response_content_type = $11,
 	idempotency_keys = $12,
+	body_function = $13,
+	header_function = $14,
 	updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL ;
 	`
@@ -80,6 +82,8 @@ const (
 		s.forward_headers,
 		s.idempotency_keys,
 		s.project_id,
+		s.body_function,
+		s.header_function,
 		COALESCE(s.source_verifier_id, '') AS source_verifier_id,
 		COALESCE(s.custom_response_body, '') AS "custom_response.body",
 		COALESCE(s.custom_response_content_type, '') AS "custom_response.content_type",
@@ -110,6 +114,8 @@ const (
 		is_disabled,
 		forward_headers,
 		idempotency_keys,
+		body_function,
+		header_function,
 		project_id,
 		created_at,
 		updated_at
@@ -119,10 +125,6 @@ const (
     ORDER BY id DESC
     LIMIT :limit
 	`
-
-	fetchSource = baseFetchSource + ` AND %s = $1;`
-
-	fetchSourceByName = baseFetchSource + ` AND %s = $1 AND %s = $2;`
 
 	deleteSource = `
 	UPDATE convoy.sources SET
@@ -177,6 +179,11 @@ const (
 	WHERE s.deleted_at IS NULL
 	%s
 	AND s.id > :cursor GROUP BY s.id ORDER BY s.id DESC LIMIT 1`
+)
+
+var (
+	fetchSource       = baseFetchSource + ` AND %s = $1;`
+	fetchSourceByName = baseFetchSource + ` AND %s = $1 AND %s = $2;`
 )
 
 var (
@@ -251,7 +258,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		ctx, createSource, source.UID, sourceVerifierID, source.Name, source.Type, source.MaskID,
 		source.Provider, source.IsDisabled, pq.Array(source.ForwardHeaders), source.ProjectID,
 		source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
-		source.IdempotencyKeys,
+		source.IdempotencyKeys, source.BodyFunction, source.HeaderFunction,
 	)
 	if err != nil {
 		return err
@@ -272,7 +279,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 	}
 
 	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
-	err = s.cache.Set(ctx, srcCacheKey, source, time.Hour*24)
+	err = s.cache.Set(ctx, srcCacheKey, source, time.Minute*1)
 	if err != nil {
 		return err
 	}
@@ -289,9 +296,9 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 
 	result, err := tx.ExecContext(
 		ctx, updateSourceById, source.UID, source.Name, source.Type, source.MaskID,
-		source.Provider, source.IsDisabled, source.ForwardHeaders, source.ProjectID,
+		source.Provider, source.IsDisabled, source.ForwardHeaders, projectID,
 		source.PubSub, source.CustomResponse.Body, source.CustomResponse.ContentType,
-		source.IdempotencyKeys,
+		source.IdempotencyKeys, source.BodyFunction, source.HeaderFunction,
 	)
 	if err != nil {
 		return err
@@ -345,7 +352,13 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 	}
 
 	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
-	err = s.cache.Set(ctx, srcCacheKey, source, time.Hour*24)
+	err = s.cache.Set(ctx, srcCacheKey, source, time.Minute*1)
+	if err != nil {
+		return err
+	}
+
+	srcCacheKey2 := convoy.SourceCacheKey.Get(source.MaskID).String()
+	err = s.cache.Set(ctx, srcCacheKey2, source, time.Minute*1)
 	if err != nil {
 		return err
 	}
@@ -563,7 +576,7 @@ func (s *sourceRepo) readFromCache(ctx context.Context, key string, readFromDB f
 		return nil, err
 	}
 
-	err = s.cache.Set(ctx, srcCacheKey, fromDB, time.Hour*24)
+	err = s.cache.Set(ctx, srcCacheKey, fromDB, time.Minute*1)
 	if err != nil {
 		return nil, err
 	}

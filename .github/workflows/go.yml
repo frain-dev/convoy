@@ -10,11 +10,10 @@ jobs:
         if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
         strategy:
             matrix:
-                go-version: [1.20.x]
+                go-version: [1.21.x]
                 os: [ubuntu-latest, macos-latest]
                 postgres-version: ["15"]
                 redis-version: ["6.2.6"]
-                typesense-version: ["0.24.0"]
 
         runs-on: ubuntu-latest
         services:
@@ -35,12 +34,6 @@ jobs:
               with:
                   redis-version: ${{ matrix.redis-version }}
                   redis-port: 6379
-
-            - name: Start Typesense v${{ matrix.typesense-version }}
-              uses: jirevwe/typesense-github-action@v1.0.1
-              with:
-                  typesense-version: ${{ matrix.typesense-version }}
-                  typesense-api-key: some-api-key
 
             - name: Get the version
               id: get_version
@@ -97,6 +90,19 @@ jobs:
                   TEST_REDIS_SCHEME: redis
                   TEST_REDIS_HOST: localhost
                   TEST_REDIS_PORT: 6379
-                  TEST_TYPESENSE_HOST: http://localhost:8108
-                  TEST_TYPESENSE_API_KEY: some-api-key
-                  TEST_SEARCH_TYPE: typesense
+
+            - name: Run integration tests (with test containers)
+              run: make docker_e2e_tests
+              env:
+                  TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+                  TEST_DB_SCHEME: postgres
+                  TEST_DB_HOST: localhost
+                  TEST_DB_USERNAME: postgres
+                  TEST_DB_PASSWORD: postgres
+                  TEST_DB_DATABASE: convoy
+                  TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
+                  TEST_DB_PORT: 5432
+                  TEST_REDIS_SCHEME: redis
+                  TEST_REDIS_HOST: localhost
+                  TEST_REDIS_PORT: 6379
+

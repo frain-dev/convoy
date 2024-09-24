@@ -5,13 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/services"
+
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
-	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -29,6 +33,15 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ok, err := a.Licenser.CreateUser(context.Background())
+			if err != nil {
+				return err
+			}
+
+			if !ok {
+				return services.ErrUserLimit
+			}
+
 			if format != "json" && format != "human" {
 				return errors.New("unsupported output format")
 			}
@@ -60,6 +73,24 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 
 			userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 			err = userRepo.CreateUser(context.Background(), user)
+			if err != nil {
+				if errors.Is(err, datastore.ErrDuplicateEmail) {
+					// user already exists
+					log.WithError(err).Error("bootstrap failed: user already exists")
+					return nil
+				}
+
+				return err
+			}
+
+			co := services.CreateOrganisationService{
+				OrgRepo:       postgres.NewOrgRepo(a.DB, a.Cache),
+				OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB, a.Cache),
+				NewOrg:        &models.Organisation{Name: "Default Organisation"},
+				User:          user,
+			}
+
+			_, err = co.Run(context.Background())
 			if err != nil {
 				return err
 			}

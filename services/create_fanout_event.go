@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"gopkg.in/guregu/null.v4"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -45,14 +46,15 @@ type newEvent struct {
 	CustomHeaders  map[string]string
 	IdempotencyKey string
 	IsDuplicate    bool
+	AcknowledgedAt time.Time
 }
 
-func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, error) {
+func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Event, err error) {
 	if e.Project == nil {
 		return nil, &ServiceError{ErrMsg: "an error occurred while creating event - invalid project"}
 	}
 
-	if err := util.Validate(e.NewMessage); err != nil {
+	if err = util.Validate(e.NewMessage); err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
@@ -72,13 +74,11 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 	}
 
 	if len(endpoints) == 0 {
-		_, err := e.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
+		_, err = e.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 		if err != nil {
-			if errors.Is(err, datastore.ErrPortalLinkNotFound) {
-				return nil, &ServiceError{ErrMsg: ErrNoValidOwnerIDEndpointFound.Error()}
+			if !errors.Is(err, datastore.ErrPortalLinkNotFound) {
+				return nil, &ServiceError{ErrMsg: err.Error()}
 			}
-
-			return nil, &ServiceError{ErrMsg: err.Error()}
 		}
 	}
 
@@ -90,9 +90,10 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (*datastore.Event, e
 		Raw:            string(e.NewMessage.Data),
 		CustomHeaders:  e.NewMessage.CustomHeaders,
 		IsDuplicate:    isDuplicate,
+		AcknowledgedAt: time.Now(),
 	}
 
-	event, err := createEvent(ctx, endpoints, ev, e.Project, e.Queue)
+	event, err = createEvent(ctx, endpoints, ev, e.Project, e.Queue)
 	if err != nil {
 		return nil, err
 	}
@@ -115,10 +116,9 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		IdempotencyKey:   newMessage.IdempotencyKey,
 		IsDuplicateEvent: newMessage.IsDuplicate,
 		Headers:          getCustomHeaders(newMessage.CustomHeaders),
-		CreatedAt:        time.Now(),
-		UpdatedAt:        time.Now(),
 		Endpoints:        endpointIDs,
 		ProjectID:        g.UID,
+		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
 	if (g.Config == nil || g.Config.Strategy == nil) ||

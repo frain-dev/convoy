@@ -1,7 +1,7 @@
 <div class="flex flex-col items-center justify-center">
 	<img *ngIf="imgSrc" [src]="imgSrc" alt="empty state" class="mb-46px h-156px" />
-	<h2 *ngIf="heading" class="font-bold mb-14px text-16 text-new.gray-800 text-center">{{ heading }}</h2>
-	<p *ngIf="description" class="text-14 text-new.gray-500 w-full max-w-[410px] text-center mt-8px">{{ description }}</p>
+	<h2 *ngIf="heading" class="font-bold mb-14px text-16 text-neutral-12 text-center">{{ heading }}</h2>
+	<p *ngIf="description" class="text-14 text-neutral-10 w-full max-w-[410px] text-center mt-8px">{{ description }}</p>
 	<button convoy-button *ngIf="buttonText" class="mt-22px" (click)="onAction.emit()">{{ buttonText }}</button>
 	<div class="empty:hidden">
 		<ng-content select="[emptyStateCTA]"></ng-content>

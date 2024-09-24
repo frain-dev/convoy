@@ -18,6 +18,8 @@ import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialo
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { SourceURLComponent } from './source-url/source-url.component';
+import { CreateTransformFunctionComponent } from '../create-transform-function/create-transform-function.component';
+import { TagComponent } from 'src/app/components/tag/tag.component';
 
 @NgModule({
 	declarations: [CreateSourceComponent],
@@ -43,7 +45,9 @@ import { SourceURLComponent } from './source-url/source-url.component';
 		DialogDirective,
 		NotificationComponent,
 		ConfigButtonComponent,
-		SourceURLComponent
+		SourceURLComponent,
+        CreateTransformFunctionComponent,
+        TagComponent
 	],
 	exports: [CreateSourceComponent]
 })

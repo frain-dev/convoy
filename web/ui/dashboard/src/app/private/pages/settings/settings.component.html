@@ -3,21 +3,33 @@
 		<div class="w-full max-w-[200px]">
 			<div class="flex gap-8px items-center mb-24px">
 				<a routerLink="/projects" class="block p-2px rounded-100px border border-new.primary-50">
-					<svg width="24" height="24" class="fill-new.gray-600 scale-75">
+					<svg width="24" height="24" class="fill-neutral-10 scale-75">
 						<use xlink:href="#arrow-left-icon"></use>
 					</svg>
 				</a>
-				<h3 class="text-12 text-new.gray-800 font-semibold">Organisation Settings</h3>
+				<h3 class="text-12 text-neutral-12 font-semibold">Organisation Settings</h3>
 			</div>
 
-			<ul class="flex gap-24px flex-col w-full border-l-2 border-l-new.gray-200">
-				<li *ngFor="let menu of settingsMenu" class="!list-none last-of-type:mr-0 -ml-2px">
-					<button class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all" [class]="activePage === menu.name ? 'border-l-new.primary-400' : ''" type="button" (click)="toggleActivePage(menu.name)">
-						<svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-new.gray-600'">
+			<ul class="flex gap-24px flex-col w-full border-l-2 border-l-neutral-5">
+				<li *ngFor="let menu of settingsMenu" class="!list-none last-of-type:mr-0 -ml-2px flex items-center gap-12px">
+					<button
+						class="pt-0px pl-16px flex items-center border-l border-l-transparent transition-all"
+						[class]="activePage === menu.name ? 'border-l-new.primary-400' : ''"
+						type="button"
+						(click)="toggleActivePage(menu.name)"
+						[disabled]="menu.name === 'team' && !licenseService.hasLicense('CREATE_USER')"
+					>
+						<svg width="18" height="18" class="mr-10px transition-all scale-75" [class]="activePage === menu.name ? menu.svg + '-new.primary-400' : menu.svg + '-neutral-10'">
 							<use [attr.xlink:href]="'#' + menu.icon + '-icon'"></use>
 						</svg>
-						<span class="text-12 text-left capitalize tracking-[0.02em] mobile:min-w-[80px] !font-medium" [class]="activePage === menu.name ? 'text-new.primary-400 !font-semibold' : 'text-new.gray-600'">{{ menu.name }}</span>
+						<span class="text-12 text-left capitalize tracking-[0.02em] mobile:min-w-[80px] !font-medium" [class]="activePage === menu.name ? 'text-new.primary-400 !font-semibold' : 'text-neutral-10'">{{ menu.name }}</span>
 					</button>
+					<div convoy-tag size="sm" color="primary" *ngIf="menu.name === 'team' && !licenseService.hasLicense('CREATE_USER')">
+						<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+							<use xlink:href="#lock-icon"></use>
+						</svg>
+						Business
+					</div>
 				</li>
 			</ul>
 		</div>
@@ -31,9 +43,9 @@
 				<app-teams></app-teams>
 			</ng-container>
 
-			<ng-container *ngIf="activePage === 'configuration settings'">
+			<!-- <ng-container *ngIf="activePage === 'configuration settings'">
 				<configurations></configurations>
-			</ng-container>
+			</ng-container> -->
 		</div>
 	</div>
 </div>

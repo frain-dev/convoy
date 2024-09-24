@@ -25,13 +25,23 @@ type IDs struct {
 
 type QueryListEventDelivery struct {
 	// A list of endpoint IDs to filter by
-	EndpointIDs    []string `json:"endpointId"`
-	EventID        string   `json:"eventId"`
-	SubscriptionID string   `json:"subscriptionId"`
-	IdempotencyKey string   `json:"idempotencyKey"`
-	EventType      string   `json:"event_type"`
+	EndpointIDs []string `json:"endpointId"`
+
+	// Event ID to filter by
+	EventID string `json:"eventId"`
+
+	// SubscriptionID to filter by
+	SubscriptionID string `json:"subscriptionId"`
+
+	// IdempotencyKey to filter by
+	IdempotencyKey string `json:"idempotencyKey"`
+
+	// EventType to filter by
+	EventType string `json:"event_type"`
+
 	// A list of event delivery statuses to filter by
 	Status []string `json:"status"`
+
 	SearchParams
 	Pageable
 }

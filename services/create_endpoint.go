@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -20,30 +23,24 @@ type CreateEndpointService struct {
 	PortalLinkRepo datastore.PortalLinkRepository
 	EndpointRepo   datastore.EndpointRepository
 	ProjectRepo    datastore.ProjectRepository
+	Licenser       license.Licenser
 
 	E         models.CreateEndpoint
 	ProjectID string
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	url, err := util.CleanEndpoint(a.E.URL)
+	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
+	}
+
+	url, err := util.ValidateEndpoint(a.E.URL, project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	a.E.URL = url
-	if a.E.RateLimit == 0 {
-		a.E.RateLimit = convoy.RATE_LIMIT
-	}
-
-	if a.E.RateLimitDuration == 0 {
-		a.E.RateLimitDuration = convoy.RATE_LIMIT_DURATION
-	}
-
-	project, err := a.ProjectRepo.FetchProjectByID(ctx, a.ProjectID)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
-	}
 
 	truthValue := true
 	switch project.Type {
@@ -61,10 +58,10 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		UID:                ulid.Make().String(),
 		ProjectID:          a.ProjectID,
 		OwnerID:            a.E.OwnerID,
-		Title:              a.E.Name,
+		Name:               a.E.Name,
 		SupportEmail:       a.E.SupportEmail,
 		SlackWebhookURL:    a.E.SlackWebhookURL,
-		TargetURL:          a.E.URL,
+		Url:                a.E.URL,
 		Description:        a.E.Description,
 		RateLimit:          a.E.RateLimit,
 		HttpTimeout:        a.E.HttpTimeout,
@@ -74,6 +71,14 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		Status:             datastore.ActiveEndpointStatus,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
+	}
+
+	if !a.Licenser.AdvancedEndpointMgmt() {
+		// switch to default timeout
+		endpoint.HttpTimeout = convoy.HTTP_TIMEOUT
+
+		endpoint.SupportEmail = ""
+		endpoint.SlackWebhookURL = ""
 	}
 
 	if util.IsStringEmpty(endpoint.AppID) {

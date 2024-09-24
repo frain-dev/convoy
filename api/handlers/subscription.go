@@ -4,6 +4,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/transform"
+
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -20,6 +23,7 @@ import (
 //
 //	@Summary		List all subscriptions
 //	@Description	This endpoint fetches all the subscriptions
+//	@Id				GetSubscriptions
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -37,8 +41,43 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var q *models.QueryListSubscription
-
 	data := q.Transform(r)
+
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(endpointIDs) == 0 {
+			_ = render.Render(w, r, util.NewServerResponse("Subscriptions fetched successfully",
+				models.PagedResponse{Content: []models.SubscriptionResponse{}, Pagination: &datastore.PaginationData{PerPage: 0}}, http.StatusOK))
+			return
+		}
+
+		// verify that the listed endpoints are all in this portal link
+		if len(data.FilterBy.EndpointIDs) != 0 {
+			for _, endpointID := range data.FilterBy.EndpointIDs {
+				if !util.StringSliceContains(endpointIDs, endpointID) {
+					_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+					return
+				}
+			}
+		} else {
+			data.FilterBy.EndpointIDs = endpointIDs
+		}
+
+	}
+
 	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
@@ -86,6 +125,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Retrieve a subscription
 //	@Description	This endpoint retrieves a single subscription
+//	@Id				GetSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -121,12 +161,13 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Create a subscription
 //	@Description	This endpoint creates a subscriptions
+//	@Id				CreateSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID		path		string						true	"Project ID"
 //	@Param			subscription	body		models.CreateSubscription	true	"Subscription details"
-//	@Success		200				{object}	util.ServerResponse{data=models.SubscriptionResponse}
+//	@Success		201				{object}	util.ServerResponse{data=models.SubscriptionResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions [post]
@@ -150,10 +191,32 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			return
+		}
+	}
+
 	cs := services.CreateSubscriptionService{
 		SubRepo:         postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
 		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		SourceRepo:      postgres.NewSourceRepo(h.A.DB, h.A.Cache),
+		Licenser:        h.A.Licenser,
 		Project:         project,
 		NewSubscription: &sub,
 	}
@@ -173,6 +236,7 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Delete subscription
 //	@Description	This endpoint deletes a subscription
+//	@Id				DeleteSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -200,6 +264,26 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			return
+		}
+	}
+
 	err = postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete subscription")
@@ -214,13 +298,14 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Update a subscription
 //	@Description	This endpoint updates a subscription
+//	@Id				UpdateSubscription
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID		path		string						true	"Project ID"
 //	@Param			subscriptionID	path		string						true	"subscription id"
 //	@Param			subscription	body		models.UpdateSubscription	true	"Subscription Details"
-//	@Success		200				{object}	util.ServerResponse{data=models.SubscriptionResponse}
+//	@Success		202				{object}	util.ServerResponse{data=models.SubscriptionResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID} [put]
@@ -245,10 +330,43 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		endpointIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		sub, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+		if err != nil {
+			log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
+			if errors.Is(err, datastore.ErrSubscriptionNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
+				return
+			}
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if !util.StringSliceContains(endpointIDs, sub.EndpointID) {
+			_ = render.Render(w, r, util.NewErrorResponse("unauthorized", http.StatusUnauthorized))
+			return
+		}
+	}
+
 	us := services.UpdateSubscriptionService{
 		SubRepo:        postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
 		SourceRepo:     postgres.NewSourceRepo(h.A.DB, h.A.Cache),
+		Licenser:       h.A.Licenser,
 		ProjectId:      project.UID,
 		SubscriptionId: chi.URLParam(r, "subscriptionID"),
 		Update:         &update,
@@ -273,6 +391,7 @@ func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Reques
 //
 //	@Summary		Validate subscription filter
 //	@Description	This endpoint validates that a filter will match a certain payload structure.
+//	@Id				TestSubscriptionFilter
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
@@ -283,6 +402,11 @@ func (h *Handler) ToggleSubscriptionStatus(w http.ResponseWriter, r *http.Reques
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_filter [post]
 func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request) {
+	if !h.A.Licenser.AdvancedSubscriptions() {
+		_ = render.Render(w, r, util.NewErrorResponse("your instance does not have access to subscription filters, upgrade to access this feature", http.StatusBadRequest))
+		return
+	}
+
 	var test models.TestFilter
 	err := util.ReadJSON(r, &test)
 	if err != nil {
@@ -291,14 +415,14 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 	}
 
 	subRepo := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache)
-	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body)
+	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body, false)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
 		return
 	}
 
-	isHeaderValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers)
+	isHeaderValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Headers, test.Schema.Headers, false)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to validate subscription filter", http.StatusBadRequest))
@@ -307,42 +431,48 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 
 	isValid := isBodyValid && isHeaderValid
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscriptions filter validated successfully", isValid, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Filter validated successfully", isValid, http.StatusOK))
 }
 
 // TestSubscriptionFunction
 //
-//	@Summary		Validate subscription filter
-//	@Description	This endpoint validates that a filter will match a certain payload structure.
+//	@Summary		Test a subscription function
+//	@Description	This endpoint test runs a transform function against a payload.
+//	@Id				TestSubscriptionFunction
 //	@Tags			Subscriptions
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string						true	"Project ID"
-//	@Param			filter		body		models.TestWebhookFunction	true	"Function Details"
-//	@Success		200			{object}	util.ServerResponse{data=models.SubscriptionFunctionResponse}
+//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			filter		body		models.FunctionRequest	true	"Function Details"
+//	@Success		200			{object}	util.ServerResponse{data=models.FunctionResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/test_function [post]
 func (h *Handler) TestSubscriptionFunction(w http.ResponseWriter, r *http.Request) {
-	var test models.TestWebhookFunction
+	if !h.A.Licenser.Transformations() {
+		_ = render.Render(w, r, util.NewErrorResponse("your instance does not have access to transformations, upgrade to access this feature", http.StatusBadRequest))
+		return
+	}
+
+	var test models.FunctionRequest
 	err := util.ReadJSON(r, &test)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache)
-	mutatedPayload, consoleLog, err := subRepo.TransformPayload(r.Context(), test.Function, test.Payload)
+	transformer := transform.NewTransformer()
+	mutatedPayload, consoleLog, err := transformer.Transform(test.Function, test.Payload)
 	if err != nil {
-		log.FromContext(r.Context()).WithError(err).Error("failed to transform payload")
+		log.FromContext(r.Context()).WithError(err).Error("failed to transform function")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
 
-	functionResponse := models.SubscriptionFunctionResponse{
+	functionResponse := models.FunctionResponse{
 		Payload: mutatedPayload,
 		Log:     consoleLog,
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Subscription transformer function run successfully", functionResponse, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Transformer function run successfully", functionResponse, http.StatusOK))
 }
