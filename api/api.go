@@ -59,7 +59,7 @@ type ApplicationHandler struct {
 	Router http.Handler
 	rm     *requestmigrations.RequestMigration
 	A      *types.APIOptions
-	cfg    *config.Configuration
+	cfg    config.Configuration
 }
 
 func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
@@ -70,9 +70,7 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		return nil, err
 	}
 
-	if &cfg != nil {
-		appHandler.cfg = &cfg
-	}
+	appHandler.cfg = cfg
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
