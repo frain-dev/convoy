@@ -21,7 +21,6 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/jaswdr/faker"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
@@ -85,7 +84,7 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 
 func (s *PublicEndpointIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound() {
@@ -699,7 +698,7 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 
 func (s *PublicEventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
@@ -721,12 +720,12 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	//// Deep Assert.
-	//var event datastore.Event
-	//parseResponse(s.T(), w.Result(), &event)
+	// // Deep Assert.
+	// var event datastore.Event
+	// parseResponse(s.T(), w.Result(), &event)
 	//
-	//require.NotEmpty(s.T(), event.UID)
-	//require.Equal(s.T(), event.Endpoinints[0], endpointID)
+	// require.NotEmpty(s.T(), event.UID)
+	// require.Equal(s.T(), event.Endpoinints[0], endpointID)
 }
 
 func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
@@ -1276,7 +1275,6 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 
 func (s *PublicPortalLinkIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
@@ -1818,7 +1816,7 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectsWithPersonalAPIKey() 
 
 func (s *PublicProjectIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func TestPublicProjectIntegrationTestSuite(t *testing.T) {
@@ -1878,7 +1876,7 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 
 func (s *PublicSourceIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *PublicSourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
@@ -2211,7 +2209,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 
 func (s *PublicSubscriptionIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription() {
@@ -2712,7 +2710,7 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 
 func (s *PublicMetaEventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) Test_GetMetaEventsPaged() {

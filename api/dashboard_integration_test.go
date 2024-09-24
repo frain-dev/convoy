@@ -22,7 +22,6 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/jaswdr/faker"
 	"github.com/oklog/ulid/v2"
 	"github.com/sebdah/goldie/v2"
@@ -68,7 +67,7 @@ func (u *AuthIntegrationTestSuite) SetupTest() {
 
 func (u *AuthIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(u.T(), u.DB)
-	metrics.Reset()
+
 }
 
 func (u *AuthIntegrationTestSuite) Test_LoginUser() {
@@ -359,7 +358,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 
 func (s *DashboardIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
@@ -643,7 +642,6 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 
 func (s *EndpointIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
 }
 
 func (s *EndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound() {
@@ -1087,7 +1085,7 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 
 func (s *EventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent() {
@@ -1638,7 +1636,6 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 
 func (s *OrganisationIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
@@ -1943,7 +1940,6 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 
 func (s *OrganisationInviteIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
 }
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_InviteUserToOrganisation() {
@@ -2372,7 +2368,7 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 
 func (s *OrganisationMemberIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
@@ -2613,7 +2609,7 @@ func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 
 func (s *PortalLinkIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
@@ -3147,7 +3143,7 @@ func (s *ProjectIntegrationTestSuite) TestGetProjectStats() {
 
 func (s *ProjectIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func TestProjectIntegrationTestSuite(t *testing.T) {
@@ -3204,7 +3200,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 
 func (s *SourceIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *SourceIntegrationTestSuite) Test_GetSourceByID_SourceNotFound() {
@@ -3537,7 +3533,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 func (s *SubscriptionIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription() {
@@ -4014,7 +4010,7 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 
 func (u *UserIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(u.T(), u.DB)
-	metrics.Reset()
+
 }
 
 func (u *UserIntegrationTestSuite) Test_RegisterUser() {
@@ -4517,7 +4513,7 @@ func (s *MetaEventIntegrationTestSuite) SetupTest() {
 
 func (s *MetaEventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	metrics.Reset()
+
 }
 
 func (s *MetaEventIntegrationTestSuite) Test_GetMetaEventsPaged() {

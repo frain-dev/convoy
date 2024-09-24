@@ -11,12 +11,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/stretchr/testify/require"
 
@@ -62,7 +60,6 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(i.T(), i.DB)
-	metrics.Reset()
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {
