@@ -10,7 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy/mocks"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"

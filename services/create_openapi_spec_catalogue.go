@@ -88,7 +88,7 @@ func getRuntime(openapiSpec string) (*goja.Runtime, error) {
 		return nil, err
 	}
 
-	rt.Set("openApiFilePath", string(dec))
+	_ = rt.Set("openApiFilePath", string(dec))
 
 	v, err := rt.RunString(`
 

@@ -200,7 +200,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 					})
 					projectSubRouter.Route("/catalogue", func(catalogueRouter chi.Router) {
 						catalogueRouter.Post("/add_event", handler.AddEventToCatalogue)
-						catalogueRouter.Post("/add_openapi_spec", handler.CreateOpenAPISpecCatalogue)
+						// catalogueRouter.Post("/add_openapi_spec", handler.CreateOpenAPISpecCatalogue)
 						catalogueRouter.Get("/", handler.GetCatalogue)
 
 						catalogueRouter.Route("/{catalogueID}", func(catalogueSubRouter chi.Router) {
@@ -328,7 +328,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 						projectSubRouter.Route("/catalogue", func(catalogueRouter chi.Router) {
 							catalogueRouter.Post("/add_event", handler.AddEventToCatalogue)
-							catalogueRouter.Post("/add_openapi_spec", handler.CreateOpenAPISpecCatalogue)
+							// catalogueRouter.Post("/add_openapi_spec", handler.CreateOpenAPISpecCatalogue)
 							catalogueRouter.Get("/", handler.GetCatalogue)
 
 							catalogueRouter.Route("/{catalogueID}", func(catalogueSubRouter chi.Router) {
