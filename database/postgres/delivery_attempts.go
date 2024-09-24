@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -134,7 +133,6 @@ func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Contex
 
 func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]circuit_breaker.PollResult, error) {
 	resultsMap := map[string]circuit_breaker.PollResult{}
-	fmt.Printf("rowValue: %+v\n", resetTimes)
 
 	query := `
 		SELECT
@@ -173,14 +171,12 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
 		var rowValue circuit_breaker.PollResult
 		err = d.db.QueryRowxContext(ctx, query2, k, t).StructScan(&rowValue)
 		if err != nil {
-			if !errors.Is(err, sql.ErrNoRows) {
-				return nil, err
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
 			}
 		}
 
-		if &rowValue != nil {
-			resultsMap[k] = rowValue
-		}
+		resultsMap[k] = rowValue
 	}
 
 	return resultsMap, nil
