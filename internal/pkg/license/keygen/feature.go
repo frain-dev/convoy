@@ -25,6 +25,7 @@ const (
 	ConsumerPoolTuning       Feature = "CONSUMER_POOL_TUNING"
 	AdvancedWebhookFiltering Feature = "ADVANCED_WEBHOOK_FILTERING"
 	MultiPlayerMode          Feature = "MULTI_PLAYER_MODE"
+	AgentExecutionMode       Feature = "AGENT_EXECUTION_MODE"
 )
 
 const (

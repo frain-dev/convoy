@@ -22,6 +22,7 @@ type Licenser interface {
 	ConsumerPoolTuning() bool
 	AdvancedWebhookFiltering() bool
 	MultiPlayerMode() bool
+	AgentExecutionMode() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool
