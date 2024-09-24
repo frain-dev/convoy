@@ -14,7 +14,6 @@ type ExponentialBackoffRetryStrategy struct {
 }
 
 func (r *ExponentialBackoffRetryStrategy) NextDuration(attempts uint64) time.Duration {
-
 	retrySeconds := float64(r.intervalSeconds) * math.Pow(2, float64(attempts))
 	if uint64(retrySeconds) > r.maxRetrySeconds {
 		retrySeconds = float64(r.maxRetrySeconds)
@@ -33,6 +32,7 @@ func NewExponential(intervalSeconds uint64, maxRetrySeconds uint64) *Exponential
 	if maxRetrySeconds == 0 {
 		maxRetrySeconds = 7200
 	}
+
 	return &ExponentialBackoffRetryStrategy{
 		intervalSeconds: intervalSeconds,
 		maxRetrySeconds: maxRetrySeconds,

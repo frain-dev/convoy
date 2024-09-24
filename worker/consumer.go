@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"

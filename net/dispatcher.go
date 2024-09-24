@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -46,17 +47,17 @@ func NewDispatcher(httpProxy string, licenser license.Licenser, enforceSecure bo
 	}
 
 	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.
-	//if !enforceSecure {
+	// if !enforceSecure {
 	//	tr.TLSClientConfig = &tls.Config{
 	//		InsecureSkipVerify: true,
 	//	}
-	//} else {
+	// } else {
 	//	tr.TLSClientConfig = &tls.Config{
 	//		MinVersion: tls.VersionTLS12,
 	//	}
-	//}
+	// }
 
-	d.client.Transport = tr
+	d.client.Transport = otelhttp.NewTransport(http.DefaultTransport)
 
 	return d, nil
 }
