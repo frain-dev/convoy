@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -57,7 +56,7 @@ func NewDispatcher(httpProxy string, licenser license.Licenser, enforceSecure bo
 	//	}
 	// }
 
-	d.client.Transport = otelhttp.NewTransport(http.DefaultTransport)
+	d.client.Transport = tr
 
 	return d, nil
 }
