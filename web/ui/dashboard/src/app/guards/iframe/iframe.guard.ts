@@ -6,8 +6,7 @@ import { CanActivate } from '@angular/router';
 })
 export class IframeGuard implements CanActivate {
 	canActivate(): boolean {
-		const isIframe = window.self !== window.top;
-		if (isIframe) return false;
+		return window.self === window.top;
 		return true;
 	}
 }
