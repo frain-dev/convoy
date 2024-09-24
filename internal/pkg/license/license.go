@@ -23,6 +23,7 @@ type Licenser interface {
 	AdvancedWebhookFiltering() bool
 	MultiPlayerMode() bool
 	IngestRate() bool
+	AgentExecutionMode() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool

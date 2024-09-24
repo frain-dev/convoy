@@ -26,6 +26,7 @@ const (
 	AdvancedWebhookFiltering Feature = "ADVANCED_WEBHOOK_FILTERING"
 	MultiPlayerMode          Feature = "MULTI_PLAYER_MODE"
 	IngestRate               Feature = "INGEST_RATE"
+	AgentExecutionMode       Feature = "AGENT_EXECUTION_MODE"
 )
 
 const (

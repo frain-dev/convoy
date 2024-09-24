@@ -106,3 +106,7 @@ func (Licenser) MultiPlayerMode() bool {
 func (Licenser) IngestRate() bool {
 	return true
 }
+
+func (Licenser) AgentExecutionMode() bool {
+	return true
+}
