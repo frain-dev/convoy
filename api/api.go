@@ -131,6 +131,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	// TODO(subomi): left this here temporarily till the data plane is stable.
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceId, a.cfg.InstanceIngestRate))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -511,6 +512,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceId, a.cfg.InstanceIngestRate))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
