@@ -1,10 +1,12 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { IframeGuard } from './guards/iframe/iframe.guard';
 
 const routes: Routes = [
 	{
 		path: '',
-		loadChildren: () => import('./private/private.module').then(m => m.PrivateModule)
+		loadChildren: () => import('./private/private.module').then(m => m.PrivateModule),
+		canActivate: [IframeGuard]
 	},
 	{
 		path: 'portal',
@@ -38,7 +40,8 @@ const routes: Routes = [
 	},
 	{
 		path: '',
-		loadChildren: () => import('./public/public.module').then(m => m.PublicModule)
+		loadChildren: () => import('./public/public.module').then(m => m.PublicModule),
+		canActivate: [IframeGuard]
 	},
     {
 		path: 'portal/events',
