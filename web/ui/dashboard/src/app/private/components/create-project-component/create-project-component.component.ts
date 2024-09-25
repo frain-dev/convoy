@@ -80,7 +80,7 @@ export class CreateProjectComponent implements OnInit {
 	projectDetails!: PROJECT;
 	signatureVersions!: { date: string; content: VERSIONS[] }[];
 	configurations = [
-		{ uid: 'strategy', name: 'Retry Config', show: false },
+		// { uid: 'strategy', name: 'Retry Config', show: false },
 		{ uid: 'ratelimit', name: 'Rate Limit', show: false },
 		{ uid: 'search_policy', name: 'Search Policy', show: false },
 		{ uid: 'signature', name: 'Signature Format', show: false }

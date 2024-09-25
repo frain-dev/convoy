@@ -182,7 +182,7 @@
 					<div class="flex gap-24px items-center" *ngIf="shouldShowBorder < configurations.length">
 						<ng-container *ngFor="let config of configurations; let i = index">
 							<ng-container *ngIf="!config.show">
-								<convoy-config-button *ngIf="i < 3 || this.projectForm.controls['type'].value === 'outgoing'" (onClick)="toggleConfigForm(config.uid)" convoy-permission="Project Settings|MANAGE">{{ config.name }}</convoy-config-button>
+								<convoy-config-button *ngIf="i < 2 || this.projectForm.controls['type'].value === 'outgoing'" (onClick)="toggleConfigForm(config.uid)" convoy-permission="Project Settings|MANAGE">{{ config.name }}</convoy-config-button>
 							</ng-container>
 						</ng-container>
 					</div>
