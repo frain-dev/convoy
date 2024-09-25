@@ -143,7 +143,7 @@ func (k *Amqp) consume() {
 	}
 
 	mm := metrics.GetDPInstance(k.licenser)
-	mm.IncrementIngestTotal(k.source)
+	mm.IncrementIngestTotal(k.source.UID, k.source.ProjectID)
 
 	for d := range messages {
 		headers, err := msgpack.EncodeMsgPack(d.Headers)

@@ -124,7 +124,7 @@ func sendUserVerificationEmail(ctx context.Context, baseURL string, user *datast
 			"email_verification_url": fmt.Sprintf("%s/verify-email?verification-token=%s", baseURL, user.EmailVerificationToken),
 			"recipient_name":         user.FirstName,
 			"email":                  user.Email,
-			"expires_at":             user.EmailVerificationExpiresAt.String(),
+			"expires_at":             user.EmailVerificationExpiresAt.Format(time.RFC1123),
 		},
 	}
 

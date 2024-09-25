@@ -13,9 +13,7 @@ import (
 )
 
 var reg *prometheus.Registry
-var requestDuration *prometheus.HistogramVec
-
-var re, rd sync.Once
+var re sync.Once
 
 func Reg() *prometheus.Registry {
 	re.Do(func() {
@@ -27,27 +25,14 @@ func Reg() *prometheus.Registry {
 
 // Reset is only intended for use in tests
 func Reset() {
-	requestDuration, reg = nil, nil
-	re, rd = sync.Once{}, sync.Once{}
+	reg = nil
+	re = sync.Once{}
 	prometheus.DefaultRegisterer = prometheus.NewRegistry()
 }
 
-func RequestDuration() *prometheus.HistogramVec {
-	rd.Do(func() {
-		requestDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "request_duration_seconds",
-			Help:    "Time (in seconds) spent serving HTTP requests.",
-			Buckets: prometheus.DefBuckets,
-		}, []string{"method", "route", "status_code"})
-	})
-
-	return requestDuration
-}
-
 func RegisterQueueMetrics(q queue.Queuer, db database.Database) {
-	Reg().MustRegister(
-		metrics.NewQueueMetricsCollector(q.(*redisqueue.RedisQueue).Inspector()),
-	)
+	Reg().MustRegister(metrics.NewQueueMetricsCollector(q.(*redisqueue.RedisQueue).Inspector()))
+
 	configuration, err := config.Get()
 	if err == nil && configuration.Metrics.IsEnabled {
 		Reg().MustRegister(q.(*redisqueue.RedisQueue), db.(*postgres.Postgres))

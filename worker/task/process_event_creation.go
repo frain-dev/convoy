@@ -233,7 +233,6 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			job := &queue.Job{
 				ID:      eventDelivery.UID,
 				Payload: data,
-				Delay:   1 * time.Second,
 			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
@@ -325,7 +324,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	//	{
 	//		".members_url": "danvixent"
 	//	}
-	//]
+	// ]
 	var payload interface{}
 	err := json.Unmarshal(e.Data, &payload) // TODO(all): find a way to stop doing this repeatedly, json.Unmarshal is slow and costly
 	if err != nil {
