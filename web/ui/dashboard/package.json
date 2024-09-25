@@ -29,7 +29,7 @@
 		"date-fns": "^2.27.0",
 		"generate-schema": "^2.6.0",
 		"monaco-editor": "^0.34.1",
-		"posthog-js": "^1.36.0",
+		"posthog-js": "1.36.0",
 		"prismjs": "^1.29.0",
 		"rxjs": "^6.6.0",
 		"tslib": "^2.3.1",

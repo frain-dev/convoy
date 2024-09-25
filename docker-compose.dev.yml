@@ -67,7 +67,7 @@ services:
         - ./postgres_data:/data/postgres
 
     redis_server:
-        image: redis:alpine
+        image: redis:7-alpine
         restart: always
         volumes:
           - ./redis_data:/data
