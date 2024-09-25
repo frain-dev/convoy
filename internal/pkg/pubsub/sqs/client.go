@@ -154,7 +154,7 @@ func (s *Sqs) consume() {
 			}
 
 			mm := metrics.GetDPInstance(s.licenser)
-			mm.IncrementIngestTotal(s.source)
+			mm.IncrementIngestTotal(s.source.UID, s.source.ProjectID)
 
 			var wg sync.WaitGroup
 			for _, message := range output.Messages {

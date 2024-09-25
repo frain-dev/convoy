@@ -252,6 +252,20 @@ func (mr *MockLicenserMockRecorder) HADeployment() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HADeployment", reflect.TypeOf((*MockLicenser)(nil).HADeployment))
 }
 
+// IngestRate mocks base method.
+func (m *MockLicenser) IngestRate() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IngestRate")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IngestRate indicates an expected call of IngestRate.
+func (mr *MockLicenserMockRecorder) IngestRate() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IngestRate", reflect.TypeOf((*MockLicenser)(nil).IngestRate))
+}
+
 // MultiPlayerMode mocks base method.
 func (m *MockLicenser) MultiPlayerMode() bool {
 	m.ctrl.T.Helper()
