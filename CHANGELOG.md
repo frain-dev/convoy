@@ -7,7 +7,7 @@
 
 # 24.9.1
 
-## License Changes
+### License Changes
 - Moved ee rbac into community and renamed to multiplayer mode #2146
 - Setting the worker/agent execution mode can only be done using a license #2155
 
