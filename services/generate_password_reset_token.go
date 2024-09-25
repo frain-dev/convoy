@@ -57,10 +57,11 @@ func (u *GeneratePasswordResetTokenService) sendPasswordResetEmail(ctx context.C
 		Email:        user.Email,
 		Subject:      "Convoy Password Reset",
 		TemplateName: email.TemplateResetPassword,
-		Params: map[string]string{
+		Params: map[string]interface{}{
+			"email":              user.Email,
 			"password_reset_url": fmt.Sprintf("%s/reset-password?auth-token=%s", baseURL, token),
 			"recipient_name":     user.FirstName,
-			"expires_at":         user.ResetPasswordExpiresAt.String(),
+			"expires_at":         user.ResetPasswordExpiresAt.Format(time.RFC1123),
 		},
 	}
 
