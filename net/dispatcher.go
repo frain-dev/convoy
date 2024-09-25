@@ -46,15 +46,15 @@ func NewDispatcher(httpProxy string, licenser license.Licenser, enforceSecure bo
 	}
 
 	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.
-	//if !enforceSecure {
+	// if !enforceSecure {
 	//	tr.TLSClientConfig = &tls.Config{
 	//		InsecureSkipVerify: true,
 	//	}
-	//} else {
+	// } else {
 	//	tr.TLSClientConfig = &tls.Config{
 	//		MinVersion: tls.VersionTLS12,
 	//	}
-	//}
+	// }
 
 	d.client.Transport = tr
 

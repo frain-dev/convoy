@@ -451,6 +451,14 @@ func (k *Licenser) MultiPlayerMode() bool {
 	return ok
 }
 
+func (k *Licenser) IngestRate() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[IngestRate]
+	return ok
+}
+
 func (k *Licenser) AgentExecutionMode() bool {
 	if checkExpiry(k.license) != nil {
 		return false
