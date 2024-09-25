@@ -52,7 +52,7 @@ jobs:
                   restore-keys: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
 
             - name: Check out code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
 
             - name: Get and verify dependencies
               run: go mod download && go mod verify
