@@ -3,7 +3,6 @@ version: "3"
 volumes:
   postgres_data:
   redis_data:
-  typesense_data:
 
 services:
     jaeger:
