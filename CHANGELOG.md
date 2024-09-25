@@ -1,3 +1,10 @@
+# 24.9.2
+
+### Enhancements
+- Set CORS allow origin to the configured convoy instance host #2152
+- Properly format token expiry time forgot/reset password email #2152
+- Restrict loading of the Convoy dashboard (except portal link dashboards) in an iframe #2153
+
 # 24.9.1
 
 ## License Changes
