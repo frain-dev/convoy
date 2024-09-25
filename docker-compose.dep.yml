@@ -36,7 +36,7 @@ services:
         - "5432:5432"
 
     redis_server:
-        image: redis:alpine
+        image: redis:7-alpine
         restart: always
         volumes:
           - ./redis_data:/data
