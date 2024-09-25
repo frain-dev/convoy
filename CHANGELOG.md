@@ -1,3 +1,19 @@
+# 24.9.1
+
+## License Changes
+- Moved ee rbac into community and renamed to multiplayer mode #2146
+- Setting the worker/agent execution mode can only be done using a license #2155
+
+### Features
+- Added support for inbound webhooks that use urlencoded content type #2119
+
+### Enhancements
+- HTTP ingest now uses the instance ingest rate #2156
+- Show endpoint authentication config in the UI #2141
+
+### Bug Fixes
+- Make forgot password response obscure #2144
+
 # 24.8.2
 
 ### Bug Fixes
