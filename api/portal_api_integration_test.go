@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -79,7 +80,7 @@ func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
 
 func (s *PortalEndpointIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-
+	metrics.Reset()
 }
 
 func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound() {
@@ -220,6 +221,7 @@ func (s *PortalEventIntegrationTestSuite) SetupTest() {
 
 func (s *PortalEventIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(s.T(), s.DB)
+	metrics.Reset()
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {

@@ -23,6 +23,13 @@ func Reg() *prometheus.Registry {
 	return reg
 }
 
+// Reset is only intended for use in tests
+func Reset() {
+	reg = nil
+	re = sync.Once{}
+	prometheus.DefaultRegisterer = prometheus.NewRegistry()
+}
+
 func RegisterQueueMetrics(q queue.Queuer, db database.Database) {
 	Reg().MustRegister(metrics.NewQueueMetricsCollector(q.(*redisqueue.RedisQueue).Inspector()))
 

@@ -76,7 +76,7 @@ func InstrumentPath(l license.Licenser) func(http.Handler) http.Handler {
 
 			val := chi.URLParam(r, "projectID")
 			mm.RecordIngestLatency(val, m.Duration.Seconds())
-			mm.IncrementIngestTotal("http", r.PathValue("projectID"))
+			mm.IncrementIngestTotal("http", val)
 		})
 	}
 }
