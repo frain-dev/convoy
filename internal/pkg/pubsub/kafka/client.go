@@ -142,7 +142,6 @@ func (k *Kafka) consume() {
 		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
-	println("kafka ingest rate:", cfg.InstanceIngestRate)
 
 	for {
 		select {

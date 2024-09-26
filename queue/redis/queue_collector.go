@@ -35,17 +35,22 @@ func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 	if q == nil {
 		return
 	}
+
 	cfg, err := config.Get()
 	if err != nil {
 		return
 	}
+
 	if !cfg.Metrics.IsEnabled {
 		return
 	}
+
 	qinfo, err := q.inspector.GetQueueInfo(string(convoy.CreateEventQueue))
 	if err != nil {
+		log.Errorf("an error occurred while fetching queue %+v", err)
 		return
 	}
+
 	qMSinfo, err := q.inspector.GetQueueInfo(string(convoy.EventWorkflowQueue))
 	if err != nil {
 		log.Errorf("an error occurred while fetching queue %+v", err)
