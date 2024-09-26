@@ -42,8 +42,8 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 			return ErrNotAllowed
 		}
 
-		// to allow admin roles, RBAC must be enabled
-		adminAllowed := isAdmin(member) && pp.Licenser.RBAC()
+		// to allow admin roles, MultiPlayerMode must be enabled
+		adminAllowed := isAdmin(member) && pp.Licenser.MultiPlayerMode()
 
 		if isSuperAdmin(member) || adminAllowed {
 			return nil

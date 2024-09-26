@@ -53,7 +53,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 		UpdatedAt:      time.Now(),
 	}
 
-	if !iu.Licenser.RBAC() {
+	if !iu.Licenser.MultiPlayerMode() {
 		iu.Role.Type = auth.RoleSuperUser
 	}
 
@@ -92,7 +92,7 @@ func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user
 			"invite_url":        fmt.Sprintf("%s/accept-invite?invite-token=%s", baseURL, iv.Token),
 			"organisation_name": org.Name,
 			"inviter_name":      fmt.Sprintf("%s %s", user.FirstName, user.LastName),
-			"expires_at":        iv.ExpiresAt.String(),
+			"expires_at":        iv.ExpiresAt.Format(time.RFC1123),
 		},
 	}
 

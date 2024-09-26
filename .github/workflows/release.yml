@@ -16,11 +16,12 @@ jobs:
     name: Build UI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Build Artifact
         run: "make ui_install type=ce"
+      
       - name: Archive Build artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: dist-without-markdown
           path: |
@@ -34,7 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download Build Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: dist-without-markdown
           path: api/ui/build
@@ -54,7 +55,7 @@ jobs:
          pip install --upgrade cloudsmith-cli
          echo $(cloudsmith --version)
 
-      - uses: goreleaser/goreleaser-action@v2
+      - uses: goreleaser/goreleaser-action@v6
         name: Release, Upload & Publish
         with:
           version: latest

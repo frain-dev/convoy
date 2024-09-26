@@ -91,7 +91,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().RBAC().Times(1).Return(true)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 		},
 		{
@@ -182,7 +182,7 @@ func TestRegisterUserService_Run(t *testing.T) {
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
-				licenser.EXPECT().RBAC().Times(1).Return(true)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 		},
 		{

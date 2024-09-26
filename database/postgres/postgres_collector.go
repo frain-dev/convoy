@@ -72,31 +72,31 @@ var (
 	eventQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_queue_total"),
 		"Total number of tasks in the event queue",
-		[]string{"project_id", "source", "status"}, nil,
+		[]string{"project", "source", "status"}, nil,
 	)
 
 	eventQueueBacklogDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_queue_backlog_seconds"),
 		"Number of seconds the oldest pending task is waiting in pending state to be processed.",
-		[]string{"project_id", "source"}, nil,
+		[]string{"project", "source"}, nil,
 	)
 
 	eventDeliveryQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_total"),
 		"Total number of tasks in the delivery queue per endpoint",
-		[]string{"project_id", "endpoint", "status"}, nil,
+		[]string{"project", "endpoint", "status"}, nil,
 	)
 
 	eventDeliveryQueueBacklogDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_backlog_seconds"),
 		"Number of seconds the oldest pending task is waiting in pending state to be processed per endpoint",
-		[]string{"project_id", "endpoint"}, nil,
+		[]string{"project", "endpoint"}, nil,
 	)
 
 	eventDeliveryAttemptsTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_attempts_total"),
 		"Total number of attempts per endpoint",
-		[]string{"project_id", "endpoint", "status", "http_status_code"}, nil,
+		[]string{"project", "endpoint", "status", "http_status_code"}, nil,
 	)
 )
 

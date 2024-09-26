@@ -15,8 +15,9 @@ var (
 )
 
 const (
-	projectLabel = "project"
-	sourceLabel  = "source"
+	projectLabel  = "project"
+	sourceLabel   = "source"
+	endpointLabel = "endpoint"
 )
 
 // Metrics for the data plane
@@ -25,6 +26,7 @@ type Metrics struct {
 	IngestTotal          *prometheus.CounterVec
 	IngestConsumedTotal  *prometheus.CounterVec
 	IngestErrorsTotal    *prometheus.CounterVec
+	IngestLatency        *prometheus.HistogramVec
 	EventDeliveryLatency *prometheus.HistogramVec
 }
 
@@ -86,13 +88,21 @@ func InitMetrics(licenser license.Licenser) *Metrics {
 			},
 			[]string{projectLabel, sourceLabel},
 		),
+		IngestLatency: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "convoy_ingest_latency",
+				Help:    "Total time (in seconds) an event spends in Convoy.",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{projectLabel},
+		),
 		EventDeliveryLatency: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
 				Name:    "convoy_end_to_end_latency",
 				Help:    "Total time (in seconds) an event spends in Convoy.",
 				Buckets: prometheus.DefBuckets,
 			},
-			[]string{projectLabel},
+			[]string{projectLabel, endpointLabel},
 		),
 	}
 	return m
@@ -102,14 +112,21 @@ func (m *Metrics) RecordLatency(ev *datastore.EventDelivery) {
 	if !m.IsEnabled {
 		return
 	}
-	m.EventDeliveryLatency.With(prometheus.Labels{projectLabel: ev.ProjectID}).Observe(ev.LatencySeconds)
+	m.EventDeliveryLatency.With(prometheus.Labels{projectLabel: ev.ProjectID, endpointLabel: ev.EndpointID}).Observe(ev.LatencySeconds)
 }
 
-func (m *Metrics) IncrementIngestTotal(source *datastore.Source) {
+func (m *Metrics) RecordIngestLatency(projectId string, latency float64) {
 	if !m.IsEnabled {
 		return
 	}
-	m.IngestTotal.With(prometheus.Labels{projectLabel: source.ProjectID, sourceLabel: source.UID}).Inc()
+	m.IngestLatency.With(prometheus.Labels{projectLabel: projectId}).Observe(latency)
+}
+
+func (m *Metrics) IncrementIngestTotal(source string, project string) {
+	if !m.IsEnabled {
+		return
+	}
+	m.IngestTotal.With(prometheus.Labels{projectLabel: project, sourceLabel: source}).Inc()
 }
 
 func (m *Metrics) IncrementIngestConsumedTotal(source *datastore.Source) {
