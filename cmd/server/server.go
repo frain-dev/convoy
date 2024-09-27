@@ -154,7 +154,7 @@ func startConvoyServer(a *cli.App) error {
 	s.RegisterTask("0 0 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB)
+	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 
 	// Start scheduler
 	s.Start()
