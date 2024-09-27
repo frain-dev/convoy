@@ -122,26 +122,26 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 }
 
 func startServerComponent(_ context.Context, a *cli.App) error {
+	lo := a.Logger.(*log.Logger)
+	lo.SetPrefix("agent")
+
 	cfg, err := config.Get()
 	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to load configuration")
+		lo.WithError(err).Fatal("Failed to load configuration")
 	}
 
 	start := time.Now()
-	a.Logger.Info("Starting Convoy data plane ...")
+	lo.Info("Starting Convoy data plane")
 
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB, a.Cache)
 	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB, a.Cache)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache)
 	if err != nil {
-		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
+		lo.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
 	flag := fflag.NewFFlag(&cfg)
-
-	lo := a.Logger.(*log.Logger)
-	lo.SetPrefix("api server")
 
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
@@ -168,7 +168,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 
 	srv.SetHandler(evHandler.BuildDataPlaneRoutes())
 
-	log.Infof("Started convoy server in %s\n", time.Since(start))
+	lo.Infof("Started convoy server in %s", time.Since(start))
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
@@ -177,7 +177,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 		return nil
 	}
 
-	log.Println("Starting Convoy Agent on port %v\n", cfg.Server.HTTP.AgentPort)
+	lo.Infof("Starting Convoy Agent on port %v", cfg.Server.HTTP.AgentPort)
 
 	go func() {
 		srv.Listen()

@@ -133,7 +133,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	sc, err := smtp.NewClient(&cfg.SMTP)
 	if err != nil {
-		a.Logger.WithError(err).Error("Failed to create smtp client")
+		lo.WithError(err).Error("Failed to create smtp client")
 		return err
 	}
 
@@ -227,11 +227,11 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	configuration, err := configRepo.LoadConfiguration(context.Background())
 	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to instance configuration")
+		lo.WithError(err).Fatal("Failed to instance configuration")
 		return err
 	}
 
-	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger, 0)
+	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, lo, 0)
 	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
 
 	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
@@ -247,14 +247,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	go memorystore.DefaultStore.Sync(ctx, interval)
 
-	newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
+	newTelemetry := telemetry.NewTelemetry(lo, configuration,
 		telemetry.OptionTracker(counter),
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
 	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, a.Licenser, false)
 	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
+		lo.WithError(err).Fatal("Failed to create new net dispatcher")
 		return err
 	}
 
@@ -272,15 +272,15 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 			}),
 		)
 		if err != nil {
-			a.Logger.WithError(err).Fatal("Failed to create circuit breaker manager")
+			lo.WithError(err).Fatal("Failed to create circuit breaker manager")
 		}
 
 		go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
 	} else {
-		a.Logger.Warn(fflag.ErrCircuitBreakerNotEnabled)
+		lo.Warn(fflag.ErrCircuitBreakerNotEnabled)
 	}
 
-  channels := make(map[string]task.EventChannel)
+	channels := make(map[string]task.EventChannel)
 	defaultCh, broadcastCh, dynamicCh := task.NewDefaultEventChannel(), task.NewBroadcastEventChannel(subscriptionsTable), task.NewDynamicEventChannel()
 	channels["default"] = defaultCh
 	channels["broadcast"] = broadcastCh

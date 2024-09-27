@@ -21,3 +21,7 @@ alter table convoy.configurations drop column if exists cb_success_threshold;
 alter table convoy.configurations drop column if exists cb_observability_window;
 alter table convoy.configurations drop column if exists cb_notification_thresholds;
 alter table convoy.configurations drop column if exists cb_consecutive_failure_threshold;
+drop index if exists convoy.idx_delivery_attempts_created_at;
+drop index if exists convoy.idx_delivery_attempts_event_delivery_id_created_at;
+drop index if exists convoy.idx_delivery_attempts_event_delivery_id;
+

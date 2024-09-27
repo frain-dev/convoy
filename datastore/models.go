@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"math"
 	"net/http"
 	"strings"
@@ -1342,7 +1342,7 @@ type Configuration struct {
 
 	StoragePolicy        *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
 	RetentionPolicy      *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	CircuitBreakerConfig *CircuitBreakerConfig         `json:"breaker_config" db:"breaker_config"`
+	CircuitBreakerConfig *CircuitBreakerConfig         `json:"circuit_breaker" db:"circuit_breaker"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -1356,13 +1356,13 @@ func (c *Configuration) GetCircuitBreakerConfig() CircuitBreakerConfig {
 	return CircuitBreakerConfig{}
 }
 
-func (c *Configuration) ToCircuitBreakerConfig() *circuit_breaker.CircuitBreakerConfig {
+func (c *Configuration) ToCircuitBreakerConfig() *cb.CircuitBreakerConfig {
 	notificationThresholds := [3]uint64{}
 	for i := range c.CircuitBreakerConfig.NotificationThresholds {
 		notificationThresholds[i] = uint64(c.CircuitBreakerConfig.NotificationThresholds[i])
 	}
 
-	return &circuit_breaker.CircuitBreakerConfig{
+	return &cb.CircuitBreakerConfig{
 		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
 		FailureCount:                c.CircuitBreakerConfig.FailureCount,
 		BreakerTimeout:              c.CircuitBreakerConfig.ErrorTimeout,
