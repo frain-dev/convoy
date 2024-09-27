@@ -127,7 +127,6 @@ func (s *Sqs) consume() {
 		log.WithError(err).Errorf("failed to load config.Get() in sqs source %s with id %s", s.source.Name, s.source.UID)
 		return
 	}
-	println("sqs ingest rate:", cfg.InstanceIngestRate)
 
 	for {
 		select {

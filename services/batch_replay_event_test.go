@@ -46,8 +46,8 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 				e, _ := br.EventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
 					[]datastore.Event{
-						{UID: "event1"},
-						{UID: "event2"},
+						{UID: "event1", ProjectID: "proj0"},
+						{UID: "event2", ProjectID: "proj1"},
 					},
 					datastore.PaginationData{},
 					nil,
@@ -73,9 +73,9 @@ func TestBatchReplayEventService_Run(t *testing.T) {
 				e, _ := br.EventRepo.(*mocks.MockEventRepository)
 				e.EXPECT().LoadEventsPaged(gomock.Any(), "1234", gomock.Any()).Times(1).Return(
 					[]datastore.Event{
-						{UID: "event1"},
-						{UID: "event2"},
-						{UID: "event3"},
+						{UID: "event1", ProjectID: "proj0"},
+						{UID: "event2", ProjectID: "proj1"},
+						{UID: "event3", ProjectID: "proj2"},
 					},
 					datastore.PaginationData{},
 					nil,

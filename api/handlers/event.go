@@ -90,8 +90,9 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	jobId := fmt.Sprintf("single:%s:%s", e.Params.ProjectID, e.Params.UID)
 	job := &queue.Job{
-		ID:      newMessage.UID,
+		ID:      jobId,
 		Payload: eventByte,
 		Delay:   0,
 	}
@@ -138,14 +139,10 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jid := ulid.Make().String()
-	newMessage.JobID = jid
-
 	cbe := services.CreateBroadcastEventService{
 		Queue:          h.A.Queue,
 		BroadcastEvent: &newMessage,
 		Project:        project,
-		JobID:          jid,
 	}
 
 	err = cbe.Run(r.Context())

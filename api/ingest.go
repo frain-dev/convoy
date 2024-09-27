@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -211,8 +212,9 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	jobId := fmt.Sprintf("single:%s:%s", event.ProjectID, event.UID)
 	job := &queue.Job{
-		ID:      event.UID,
+		ID:      jobId,
 		Payload: eventByte,
 		Delay:   0,
 	}

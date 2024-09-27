@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/frain-dev/convoy/worker/task"
 	"gopkg.in/guregu/null.v4"
 	"time"
 
@@ -11,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/worker/task"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -136,8 +137,9 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
+	jobId := fmt.Sprintf("fanout:%s:%s", event.ProjectID, event.UID)
 	job := &queue.Job{
-		ID:      event.UID,
+		ID:      jobId,
 		Payload: eventByte,
 		Delay:   0,
 	}
