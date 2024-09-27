@@ -65,7 +65,7 @@ services:
         - backendCluster
 
     redis_server:
-        image: redis:alpine
+        image: redis:7-alpine
         hostname: redis_server
         container_name: redis_server
         restart: always

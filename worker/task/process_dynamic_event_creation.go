@@ -40,7 +40,7 @@ func (d *DynamicEventChannel) GetConfig() *EventChannelConfig {
 	}
 }
 
-func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, _ datastore.SubscriptionRepository, licenser license.Licenser) (*datastore.Event, error) {
+func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
 	var dynamicEvent models.DynamicEvent
 
 	err := msgpack.DecodeMsgPack(t.Payload(), &dynamicEvent)
@@ -55,14 +55,14 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		dynamicEvent.EventID = ulid.Make().String() // legacy events
 	}
 
-	project, err := projectRepo.FetchProjectByID(ctx, dynamicEvent.ProjectID)
+	project, err := args.projectRepo.FetchProjectByID(ctx, dynamicEvent.ProjectID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
 
 	var isDuplicate bool
 	if len(dynamicEvent.IdempotencyKey) > 0 {
-		events, err := eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.ProjectID, dynamicEvent.IdempotencyKey)
+		events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, dynamicEvent.ProjectID, dynamicEvent.IdempotencyKey)
 		if err != nil {
 			return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 		}
@@ -94,7 +94,7 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
-	err = eventRepo.CreateEvent(ctx, event)
+	err = args.eventRepo.CreateEvent(ctx, event)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
@@ -102,19 +102,19 @@ func (d *DynamicEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 	return event, nil
 }
 
-func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, subRepo datastore.SubscriptionRepository, licenser license.Licenser) (*EventChannelSubResponse, error) {
+func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, args EventChannelArgs) (*EventChannelSubResponse, error) {
 	response := EventChannelSubResponse{}
 
-	project, err := projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
+	project, err := args.projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}
-	event, err := eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
+	event, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
-	err = eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
+	err = args.eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -132,17 +132,17 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
 	}
-	endpoint, err := findEndpoint(ctx, project, endpointRepo, &dynamicEvent)
+	endpoint, err := findEndpoint(ctx, project, args.endpointRepo, &dynamicEvent)
 	if err != nil {
 		return nil, err
 	}
 
-	s, err := findDynamicSubscription(ctx, &dynamicEvent, subRepo, project, endpoint)
+	s, err := findDynamicSubscription(ctx, &dynamicEvent, args.subRepo, project, endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	err = eventRepo.UpdateEventEndpoints(ctx, event, []string{endpoint.UID})
+	err = args.eventRepo.UpdateEventEndpoints(ctx, event, []string{endpoint.UID})
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 	}

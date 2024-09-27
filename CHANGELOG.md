@@ -1,3 +1,26 @@
+# 24.9.2
+
+### Enhancements
+- Set CORS allow origin to the configured convoy instance host #2152
+- Properly format token expiry time forgot/reset password email #2152
+- Restrict loading of the Convoy dashboard (except portal link dashboards) in an iframe #2153
+
+# 24.9.1
+
+### License Changes
+- Moved ee rbac into community and renamed to multiplayer mode #2146
+- Setting the worker/agent execution mode can only be done using a license #2155
+
+### Features
+- Added support for inbound webhooks that use urlencoded content type #2119
+
+### Enhancements
+- HTTP ingest now uses the instance ingest rate #2156
+- Show endpoint authentication config in the UI #2141
+
+### Bug Fixes
+- Make forgot password response obscure #2144
+
 # 24.8.2
 
 ### Bug Fixes

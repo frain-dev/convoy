@@ -64,7 +64,7 @@ func (d *DefaultEventChannel) GetConfig() *EventChannelConfig {
 // create event
 // find & match subscriptions & create deliveries (e = SUCCESS)
 // deliver ed (ed = SUCCESS)
-func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, _ datastore.SubscriptionRepository, licenser license.Licenser) (*datastore.Event, error) {
+func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
 	var createEvent CreateEvent
 	var event *datastore.Event
 	var projectID string
@@ -83,13 +83,13 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		projectID = createEvent.Params.ProjectID
 	}
 
-	project, err := projectRepo.FetchProjectByID(ctx, projectID)
+	project, err := args.projectRepo.FetchProjectByID(ctx, projectID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
 	if createEvent.Event == nil {
-		event, err = buildEvent(ctx, eventRepo, endpointRepo, &createEvent.Params, project)
+		event, err = buildEvent(ctx, args.eventRepo, args.endpointRepo, &createEvent.Params, project)
 		if err != nil {
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -97,7 +97,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		event = createEvent.Event
 	}
 
-	_, err = eventRepo.FindEventByID(ctx, project.UID, event.UID)
+	_, err = args.eventRepo.FindEventByID(ctx, project.UID, event.UID)
 	if err != nil { // 404
 		err := updateEventMetadata(channel, event, createEvent.CreateSubscription)
 		if err != nil {
@@ -106,7 +106,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 		var isDuplicate bool
 		if len(event.IdempotencyKey) > 0 {
-			events, err := eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
+			events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
 			if err != nil {
 				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
 			}
@@ -115,7 +115,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 		}
 		event.IsDuplicateEvent = isDuplicate
 
-		err = eventRepo.CreateEvent(ctx, event)
+		err = args.eventRepo.CreateEvent(ctx, event)
 		if err != nil {
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
 		}
@@ -140,19 +140,19 @@ func updateEventMetadata(channel EventChannel, event *datastore.Event, createSub
 	return err
 }
 
-func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, subRepo datastore.SubscriptionRepository, licenser license.Licenser) (*EventChannelSubResponse, error) {
+func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, args EventChannelArgs) (*EventChannelSubResponse, error) {
 	response := EventChannelSubResponse{}
 
-	project, err := projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
+	project, err := args.projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
-	event, err := eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
+	event, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
-	err = eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
+	err = args.eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +168,7 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 		createSubscription = !util.IsStringEmpty(cs) && cs == "true"
 	}
 
-	subscriptions, err := findSubscriptions(ctx, endpointRepo, subRepo, licenser, project, event, createSubscription)
+	subscriptions, err := findSubscriptions(ctx, args.endpointRepo, args.subRepo, args.licenser, project, event, createSubscription)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
@@ -299,7 +299,6 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			job := &queue.Job{
 				ID:      eventDelivery.UID,
 				Payload: data,
-				Delay:   1 * time.Second,
 			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
@@ -391,7 +390,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	//	{
 	//		".members_url": "danvixent"
 	//	}
-	//]
+	// ]
 	var payload interface{}
 	err := json.Unmarshal(e.Data, &payload) // TODO(all): find a way to stop doing this repeatedly, json.Unmarshal is slow and costly
 	if err != nil {

@@ -164,6 +164,15 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		string(convoy.EventWorkflowQueue): 3,
 	}
 
+	if !a.Licenser.AgentExecutionMode() {
+		cfg.WorkerExecutionMode = config.DefaultExecutionMode
+	}
+
+	err = config.Override(&cfg)
+	if err != nil {
+		return err
+	}
+
 	var queueNames map[string]int
 	switch cfg.WorkerExecutionMode {
 	case config.RetryExecutionMode:

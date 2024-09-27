@@ -21,7 +21,9 @@ type Licenser interface {
 	PortalLinks() bool
 	ConsumerPoolTuning() bool
 	AdvancedWebhookFiltering() bool
-	RBAC() bool
+	MultiPlayerMode() bool
+	IngestRate() bool
+	AgentExecutionMode() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool

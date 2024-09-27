@@ -201,10 +201,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		if !app.Licenser.ConsumerPoolTuning() {
-			cfg.ConsumerPoolSize = config.DefaultConfiguration.ConsumerPoolSize
-		}
-
+		licenseOverrideCfg(&cfg, app.Licenser)
 		if err = config.Override(&cfg); err != nil {
 			return err
 		}
@@ -224,6 +221,16 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		return nil
+	}
+}
+
+func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {
+	if !licenser.ConsumerPoolTuning() {
+		cfg.ConsumerPoolSize = config.DefaultConfiguration.ConsumerPoolSize
+	}
+
+	if !licenser.IngestRate() {
+		cfg.InstanceIngestRate = config.DefaultConfiguration.InstanceIngestRate
 	}
 }
 

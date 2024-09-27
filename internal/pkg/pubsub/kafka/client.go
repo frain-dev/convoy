@@ -164,7 +164,7 @@ func (k *Kafka) consume() {
 			}
 
 			mm := metrics.GetDPInstance(k.licenser)
-			mm.IncrementIngestTotal(k.source)
+			mm.IncrementIngestTotal(k.source.UID, k.source.ProjectID)
 
 			var d D = m.Headers
 			headers, err := msgpack.EncodeMsgPack(d.Map())

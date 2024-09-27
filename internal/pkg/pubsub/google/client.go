@@ -106,7 +106,7 @@ func (g *Google) consume() {
 		}
 
 		mm := metrics.GetDPInstance(g.licenser)
-		mm.IncrementIngestTotal(g.source)
+		mm.IncrementIngestTotal(g.source.UID, g.source.ProjectID)
 
 		if err := g.handler(ctx, g.source, string(m.Data), attributes); err != nil {
 			g.log.WithError(err).Error("failed to write message to create event queue - google pub sub")

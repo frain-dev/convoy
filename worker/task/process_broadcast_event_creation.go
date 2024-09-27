@@ -40,21 +40,21 @@ func (b *BroadcastEventChannel) GetConfig() *EventChannelConfig {
 	}
 }
 
-func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, _ datastore.SubscriptionRepository, licenser license.Licenser) (*datastore.Event, error) {
+func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
 	var broadcastEvent models.BroadcastEvent
 	err := msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
 	if err != nil {
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 
-	project, err := projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
+	project, err := args.projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
 	if err != nil {
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 
 	var isDuplicate bool
 	if len(broadcastEvent.IdempotencyKey) > 0 {
-		events, err := eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
+		events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
 		if err != nil {
 			return nil, &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
@@ -80,7 +80,7 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 		return nil, err
 	}
 
-	err = eventRepo.CreateEvent(ctx, event)
+	err = args.eventRepo.CreateEvent(ctx, event)
 	if err != nil {
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
@@ -88,19 +88,19 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 	return event, nil
 }
 
-func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, endpointRepo datastore.EndpointRepository, subRepo datastore.SubscriptionRepository, licenser license.Licenser) (*EventChannelSubResponse, error) {
+func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, args EventChannelArgs) (*EventChannelSubResponse, error) {
 	response := EventChannelSubResponse{}
 
-	project, err := projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
+	project, err := args.projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
-	broadcastEvent, err := eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
+	broadcastEvent, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
 	if err != nil {
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
-	err = eventRepo.UpdateEventStatus(ctx, broadcastEvent, datastore.ProcessingStatus)
+	err = args.eventRepo.UpdateEventStatus(ctx, broadcastEvent, datastore.ProcessingStatus)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 
 	// subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
 
-	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, subRepo, licenser, subscriptions, true)
+	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, args.subRepo, args.licenser, subscriptions, true)
 	if err != nil {
 		return nil, &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
@@ -126,7 +126,7 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	es, ss := getEndpointIDs(subscriptions)
 	broadcastEvent.Endpoints = es
 
-	err = eventRepo.UpdateEventEndpoints(ctx, broadcastEvent, es)
+	err = args.eventRepo.UpdateEventEndpoints(ctx, broadcastEvent, es)
 	if err != nil {
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1011, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}

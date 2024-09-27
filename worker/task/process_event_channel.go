@@ -27,6 +27,14 @@ type EventChannelMetadata struct {
 	Config *EventChannelConfig
 }
 
+type EventChannelArgs struct {
+	eventRepo    datastore.EventRepository
+	projectRepo  datastore.ProjectRepository
+	endpointRepo datastore.EndpointRepository
+	subRepo      datastore.SubscriptionRepository
+	licenser     license.Licenser
+}
+
 type EventChannelSubResponse struct {
 	Event            *datastore.Event
 	Project          *datastore.Project
@@ -36,8 +44,8 @@ type EventChannelSubResponse struct {
 
 type EventChannel interface {
 	GetConfig() *EventChannelConfig
-	CreateEvent(context.Context, *asynq.Task, EventChannel, datastore.EventRepository, datastore.ProjectRepository, datastore.EndpointRepository, datastore.SubscriptionRepository, license.Licenser) (*datastore.Event, error)
-	MatchSubscriptions(context.Context, EventChannelMetadata, datastore.EventRepository, datastore.ProjectRepository, datastore.EndpointRepository, datastore.SubscriptionRepository, license.Licenser) (*EventChannelSubResponse, error)
+	CreateEvent(context.Context, *asynq.Task, EventChannel, EventChannelArgs) (*datastore.Event, error)
+	MatchSubscriptions(context.Context, EventChannelMetadata, EventChannelArgs) (*EventChannelSubResponse, error)
 }
 
 func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
@@ -53,11 +61,15 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 
 		var event *datastore.Event
 		if lastEvent != nil {
-			log.Info("[asynq] processing last event")
 			event = lastEvent
 		} else {
-			log.Info("[asyq] creating new event")
-			event, err = channel.CreateEvent(ctx, t, channel, eventRepo, projectRepo, endpointRepo, subRepo, licenser)
+			event, err = channel.CreateEvent(ctx, t, channel, EventChannelArgs{
+				eventRepo,
+				projectRepo,
+				endpointRepo,
+				subRepo,
+				licenser,
+			})
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {
 					lastEvent, err = eventRepo.FindEventByID(ctx, event.ProjectID, event.UID)
@@ -94,7 +106,6 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			Delay:   0,
 		}
 
-		log.Info("[asynq] writing to queue to match subscriptions")
 		err = eventQueue.Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred while matching event subs")
@@ -122,7 +133,13 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 		cfg := metadata.Config
 		log.Infof("about to match subs for channel: %s\n", cfg.Channel)
 
-		subResponse, err := channel.MatchSubscriptions(ctx, metadata, eventRepo, projectRepo, endpointRepo, subRepo, licenser)
+		subResponse, err := channel.MatchSubscriptions(ctx, metadata, EventChannelArgs{
+			eventRepo,
+			projectRepo,
+			endpointRepo,
+			subRepo,
+			licenser,
+		})
 		if err != nil {
 			return err
 		}
