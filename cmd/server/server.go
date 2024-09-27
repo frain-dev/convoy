@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	_ "net/http/pprof"
 	"time"
 
@@ -152,6 +153,8 @@ func startConvoyServer(a *cli.App) error {
 	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
 	s.RegisterTask("0 0 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
+
+	metrics.RegisterQueueMetrics(a.Queue, a.DB)
 
 	// Start scheduler
 	s.Start()

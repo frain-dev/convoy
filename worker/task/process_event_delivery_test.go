@@ -1014,41 +1014,6 @@ func TestProcessEventDeliveryConfig(t *testing.T) {
 		wantDisableEndpoint bool
 	}{
 		{
-			name: "Subscription Config is primary config",
-			subscription: &datastore.Subscription{
-				RetryConfig: &datastore.RetryConfiguration{
-					Type:       datastore.LinearStrategyProvider,
-					Duration:   2,
-					RetryCount: 3,
-				},
-				RateLimitConfig: &datastore.RateLimitConfiguration{
-					Count:    100,
-					Duration: 1,
-				},
-			},
-			project: &datastore.Project{
-				Config: &datastore.ProjectConfig{
-					Strategy:  &datastore.DefaultStrategyConfig,
-					RateLimit: &datastore.DefaultRateLimitConfig,
-				},
-			},
-			endpoint: &datastore.Endpoint{
-				RateLimit:         100,
-				RateLimitDuration: 60,
-			},
-			wantRetryConfig: &datastore.StrategyConfiguration{
-				Type:       datastore.LinearStrategyProvider,
-				Duration:   2,
-				RetryCount: 3,
-			},
-			wantRateLimitConfig: &RateLimitConfig{
-				Rate:       100,
-				BucketSize: 60,
-			},
-			wantDisableEndpoint: true,
-		},
-
-		{
 			name:         "Project Config is primary config",
 			subscription: &datastore.Subscription{},
 			project: &datastore.Project{

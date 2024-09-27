@@ -24,12 +24,20 @@ const (
 	createEvent = `
 	INSERT INTO convoy.events (id,event_type,endpoints,project_id,
 	                           source_id,headers,raw,data,url_query_params,
-	                           idempotency_key,is_duplicate_event,acknowledged_at)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	                           idempotency_key,is_duplicate_event,acknowledged_at,metadata,status)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+	`
+
+	updateEventEndpoints = `
+	UPDATE convoy.events SET endpoints=$1 WHERE project_id= $2 AND id=$3
+	`
+	updateEventStatus = `
+	UPDATE convoy.events SET status=$1 WHERE project_id= $2 AND id=$3
 	`
 
 	createEventEndpoints = `
 	INSERT INTO convoy.events_endpoints (endpoint_id, event_id) VALUES (:endpoint_id, :event_id)
+	ON CONFLICT (endpoint_id, event_id) DO NOTHING
 	`
 
 	fetchEventById = `
@@ -38,7 +46,7 @@ const (
 	COALESCE(source_id, '') AS source_id,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
-	created_at,updated_at,acknowledged_at
+	created_at,updated_at,acknowledged_at,metadata,status
 	FROM convoy.events WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -206,6 +214,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	if !util.IsStringEmpty(event.SourceID) {
 		sourceID = &event.SourceID
 	}
+	event.Status = datastore.PendingStatus
 
 	tx, isWrapped, err := GetTx(ctx, e.db)
 	if err != nil {
@@ -229,21 +238,23 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		event.IdempotencyKey,
 		event.IsDuplicateEvent,
 		event.AcknowledgedAt,
+		event.Metadata,
+		event.Status,
 	)
 	if err != nil {
 		return err
 	}
 
-	records := event.Endpoints
+	endpoints := event.Endpoints
 	var j int
-	for i := 0; i < len(records); i += PartitionSize {
+	for i := 0; i < len(endpoints); i += PartitionSize {
 		j += PartitionSize
-		if j > len(records) {
-			j = len(records)
+		if j > len(endpoints) {
+			j = len(endpoints)
 		}
 
 		var ids []interface{}
-		for _, endpointID := range records[i:j] {
+		for _, endpointID := range endpoints[i:j] {
 			ids = append(ids, &EventEndpoint{EventID: event.UID, EndpointID: endpointID})
 		}
 
@@ -251,6 +262,76 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 		if err != nil {
 			return err
 		}
+	}
+
+	if isWrapped {
+		return nil
+	}
+
+	return tx.Commit()
+}
+
+func (e *eventRepo) UpdateEventEndpoints(ctx context.Context, event *datastore.Event, endpoints []string) error {
+	tx, isWrapped, err := GetTx(ctx, e.db)
+	if err != nil {
+		return err
+	}
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
+
+	_, err = tx.ExecContext(ctx, updateEventEndpoints,
+		event.Endpoints,
+		event.ProjectID,
+		event.UID,
+	)
+	if err != nil {
+		return err
+	}
+
+	var j int
+	for i := 0; i < len(endpoints); i += PartitionSize {
+		j += PartitionSize
+		if j > len(endpoints) {
+			j = len(endpoints)
+		}
+
+		var ids []interface{}
+		for _, endpointID := range endpoints[i:j] {
+			ids = append(ids, &EventEndpoint{EventID: event.UID, EndpointID: endpointID})
+		}
+
+		_, err = tx.NamedExecContext(ctx, createEventEndpoints, ids)
+		if err != nil {
+			return err
+		}
+	}
+
+	if isWrapped {
+		return nil
+	}
+
+	return tx.Commit()
+}
+
+func (e *eventRepo) UpdateEventStatus(ctx context.Context, event *datastore.Event, status datastore.EventStatus) error {
+	tx, isWrapped, err := GetTx(ctx, e.db)
+	if err != nil {
+		return err
+	}
+
+	if !isWrapped {
+		defer rollbackTx(tx)
+	}
+
+	_, err = tx.ExecContext(ctx, updateEventStatus,
+		status,
+		event.ProjectID,
+		event.UID,
+	)
+	if err != nil {
+		return err
 	}
 
 	if isWrapped {

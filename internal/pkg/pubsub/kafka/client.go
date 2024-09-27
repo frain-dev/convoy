@@ -142,7 +142,6 @@ func (k *Kafka) consume() {
 		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
 		return
 	}
-	println("kafka ingest rate:", cfg.InstanceIngestRate)
 
 	for {
 		select {
@@ -164,7 +163,7 @@ func (k *Kafka) consume() {
 			}
 
 			mm := metrics.GetDPInstance(k.licenser)
-			mm.IncrementIngestTotal(k.source)
+			mm.IncrementIngestTotal(k.source.UID, k.source.ProjectID)
 
 			var d D = m.Headers
 			headers, err := msgpack.EncodeMsgPack(d.Map())

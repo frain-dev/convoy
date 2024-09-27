@@ -58,7 +58,7 @@
 			>
 				<div class="flex gap-50px text-12 text-neutral-10 max-w-[790px] w-full items-center min-h-[28px]">
 					<div class="w-280px truncate pl-16px" *ngIf="privateService.getProjectDetails?.type === 'outgoing'">{{ subscription.name }}</div>
-					<div class="flex items-center pl-16px min-w-[356px]" *ngIf="privateService.getProjectDetails?.type === 'incoming'">
+					<div class="flex items-center pl-16px min-w-[370px]" *ngIf="privateService.getProjectDetails?.type === 'incoming'">
 						<div class="flex items-center">
 							<span class="max-w-[150px] truncate">{{ subscription.source_metadata.name }}</span>
 							<div convoy-tag *ngIf="subscription.source_metadata.verifier.type !== 'noop'" class="flex items-center ml-8px bg-neutral-4 !py-2px !px-8px text-10">
@@ -76,7 +76,7 @@
 					<div class="whitespace-nowrap flex">
 						<div convoy-tag *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'neutral'" class="mr-8px py-2px">Filter</div>
 						<div convoy-tag *ngIf="privateService.getProjectDetails?.type === 'incoming' && licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" [color]="subscription.function ? 'primary' : 'neutral'" class="mr-8px py-2px">Transform</div>
-						<div convoy-tag [color]="subscription.retry_config ? 'primary' : 'neutral'" class="mr-8px py-2px">Retry Logic</div>
+						<!-- <div convoy-tag [color]="subscription.retry_config ? 'primary' : 'neutral'" class="mr-8px py-2px">Retry Logic</div> -->
 						<div convoy-tag *ngIf="privateService.getProjectDetails?.type === 'outgoing'" [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'neutral'" class="py-2px">Event Types</div>
 					</div>
 				</div>

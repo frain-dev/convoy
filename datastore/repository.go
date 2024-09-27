@@ -43,6 +43,8 @@ type EventDeliveryRepository interface {
 type EventRepository interface {
 	ExportRepository
 	CreateEvent(context.Context, *Event) error
+	UpdateEventEndpoints(context.Context, *Event, []string) error
+	UpdateEventStatus(context.Context, *Event, EventStatus) error
 	FindEventByID(ctx context.Context, projectID string, id string) (*Event, error)
 	FindEventsByIDs(ctx context.Context, projectID string, ids []string) ([]Event, error)
 	CountProjectMessages(ctx context.Context, projectID string) (int64, error)

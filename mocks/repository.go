@@ -635,6 +635,34 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(ctx, projectID, f any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), ctx, projectID, f)
 }
 
+// UpdateEventEndpoints mocks base method.
+func (m *MockEventRepository) UpdateEventEndpoints(arg0 context.Context, arg1 *datastore.Event, arg2 []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEventEndpoints", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateEventEndpoints indicates an expected call of UpdateEventEndpoints.
+func (mr *MockEventRepositoryMockRecorder) UpdateEventEndpoints(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventEndpoints", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventEndpoints), arg0, arg1, arg2)
+}
+
+// UpdateEventStatus mocks base method.
+func (m *MockEventRepository) UpdateEventStatus(arg0 context.Context, arg1 *datastore.Event, arg2 datastore.EventStatus) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEventStatus", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateEventStatus indicates an expected call of UpdateEventStatus.
+func (mr *MockEventRepositoryMockRecorder) UpdateEventStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventStatus", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventStatus), arg0, arg1, arg2)
+}
+
 // MockProjectRepository is a mock of ProjectRepository interface.
 type MockProjectRepository struct {
 	ctrl     *gomock.Controller

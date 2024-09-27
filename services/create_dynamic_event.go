@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -28,7 +29,9 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "an error occurred while creating dynamic event - invalid project"}
 	}
 
+	e.DynamicEvent.EventID = uuid.NewString()
 	e.DynamicEvent.ProjectID = e.Project.UID
+	jobId := fmt.Sprintf("dynamic:%s:%s", e.DynamicEvent.ProjectID, e.DynamicEvent.EventID)
 	e.DynamicEvent.AcknowledgedAt = time.Now()
 
 	if len(e.DynamicEvent.EventTypes) == 0 {
@@ -43,7 +46,7 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 	}
 
 	job := &queue.Job{
-		ID:      uuid.NewString(),
+		ID:      jobId,
 		Payload: eventByte,
 		Delay:   0,
 	}

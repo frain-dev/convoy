@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gopkg.in/guregu/null.v4"
+	"strconv"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"gopkg.in/guregu/null.v4"
-
 	"github.com/frain-dev/convoy/pkg/flatten"
 
 	"github.com/frain-dev/convoy"
@@ -41,82 +41,148 @@ type CreateEventTaskParams struct {
 }
 
 type CreateEvent struct {
+	JobID              string `json:"jid" swaggerignore:"true"`
 	Params             CreateEventTaskParams
 	Event              *datastore.Event
 	CreateSubscription bool
 }
 
-func ProcessEventCreation(
-	endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
-	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
-	subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser,
-) func(context.Context, *asynq.Task) error {
-	return func(ctx context.Context, t *asynq.Task) error {
-		var createEvent CreateEvent
-		var event *datastore.Event
-		var projectID string
+type DefaultEventChannel struct {
+}
 
-		err := msgpack.DecodeMsgPack(t.Payload(), &createEvent)
-		if err != nil {
-			err := json.Unmarshal(t.Payload(), &createEvent)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
-		}
+func NewDefaultEventChannel() *DefaultEventChannel {
+	return &DefaultEventChannel{}
+}
 
-		if createEvent.Event != nil {
-			projectID = createEvent.Event.ProjectID
-		} else {
-			projectID = createEvent.Params.ProjectID
-		}
-
-		project, err := projectRepo.FetchProjectByID(ctx, projectID)
-		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
-		}
-
-		if createEvent.Event == nil {
-			event, err = buildEvent(ctx, eventRepo, endpointRepo, &createEvent.Params, project)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
-		} else {
-			event = createEvent.Event
-		}
-
-		subscriptions, err := findSubscriptions(ctx, endpointRepo, subRepo, licenser, project, event, createEvent.CreateSubscription)
-		if err != nil {
-			return &EndpointError{Err: err, delay: defaultDelay}
-		}
-
-		_, err = eventRepo.FindEventByID(ctx, project.UID, event.UID)
-		if err != nil {
-			if len(event.Endpoints) < 1 {
-				var endpointIDs []string
-				for _, s := range subscriptions {
-					if s.Type != datastore.SubscriptionTypeCLI {
-						endpointIDs = append(endpointIDs, s.EndpointID)
-					}
-				}
-				event.Endpoints = endpointIDs
-			}
-
-			err = eventRepo.CreateEvent(ctx, event)
-			if err != nil {
-				return &EndpointError{Err: err, delay: defaultDelay}
-			}
-		}
-
-		if event.IsDuplicateEvent {
-			log.FromContext(ctx).Infof("[asynq]: duplicate event with idempotency key %v will not be sent", event.IdempotencyKey)
-			return nil
-		}
-
-		return writeEventDeliveriesToQueue(
-			ctx, subscriptions, event, project, eventDeliveryRepo,
-			eventQueue, deviceRepo, endpointRepo, licenser,
-		)
+func (d *DefaultEventChannel) GetConfig() *EventChannelConfig {
+	return &EventChannelConfig{
+		Channel:      "default",
+		DefaultDelay: defaultDelay,
 	}
+}
+
+// create event
+// find & match subscriptions & create deliveries (e = SUCCESS)
+// deliver ed (ed = SUCCESS)
+func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
+	var createEvent CreateEvent
+	var event *datastore.Event
+	var projectID string
+
+	err := msgpack.DecodeMsgPack(t.Payload(), &createEvent)
+	if err != nil {
+		err := json.Unmarshal(t.Payload(), &createEvent)
+		if err != nil {
+			return nil, &EndpointError{Err: err, delay: defaultDelay}
+		}
+	}
+
+	if createEvent.Event != nil {
+		projectID = createEvent.Event.ProjectID
+	} else {
+		projectID = createEvent.Params.ProjectID
+	}
+
+	project, err := args.projectRepo.FetchProjectByID(ctx, projectID)
+	if err != nil {
+		return nil, &EndpointError{Err: err, delay: defaultDelay}
+	}
+
+	if createEvent.Event == nil {
+		event, err = buildEvent(ctx, args.eventRepo, args.endpointRepo, &createEvent.Params, project)
+		if err != nil {
+			return nil, &EndpointError{Err: err, delay: defaultDelay}
+		}
+	} else {
+		event = createEvent.Event
+	}
+
+	_, err = args.eventRepo.FindEventByID(ctx, project.UID, event.UID)
+	if err != nil { // 404
+		err := updateEventMetadata(channel, event, createEvent.CreateSubscription)
+		if err != nil {
+			return nil, err
+		}
+
+		var isDuplicate bool
+		if len(event.IdempotencyKey) > 0 {
+			events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, event.ProjectID, event.IdempotencyKey)
+			if err != nil {
+				return nil, &EndpointError{Err: err, delay: 10 * time.Second}
+			}
+
+			isDuplicate = len(events) > 0
+		}
+		event.IsDuplicateEvent = isDuplicate
+
+		err = args.eventRepo.CreateEvent(ctx, event)
+		if err != nil {
+			return nil, &EndpointError{Err: err, delay: defaultDelay}
+		}
+	}
+
+	return event, nil
+}
+
+func updateEventMetadata(channel EventChannel, event *datastore.Event, createSubscription bool) error {
+	metadata := make(map[string]string)
+	metadata["channel"] = channel.GetConfig().Channel
+	metadata["delay"] = strconv.FormatInt(int64(channel.GetConfig().DefaultDelay), 10)
+	if createSubscription {
+		metadata["createSubscription"] = "true"
+	}
+	m, err := json.Marshal(metadata)
+	if err != nil {
+		log.WithError(err).Error("failed to marshal metadata for event")
+		return &EndpointError{Err: err, delay: defaultDelay}
+	}
+	event.Metadata = string(m)
+	return err
+}
+
+func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, args EventChannelArgs) (*EventChannelSubResponse, error) {
+	response := EventChannelSubResponse{}
+
+	project, err := args.projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
+	if err != nil {
+		return nil, &EndpointError{Err: err, delay: defaultDelay}
+	}
+	event, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
+	if err != nil {
+		return nil, &EndpointError{Err: err, delay: defaultDelay}
+	}
+
+	err = args.eventRepo.UpdateEventStatus(ctx, event, datastore.ProcessingStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	var createSubscription bool
+	if !util.IsStringEmpty(event.Metadata) {
+		var m map[string]string
+		err := json.Unmarshal([]byte(event.Metadata), &m)
+		if err != nil {
+			return nil, &EndpointError{Err: err, delay: defaultDelay}
+		}
+		cs := m["createSubscription"]
+		createSubscription = !util.IsStringEmpty(cs) && cs == "true"
+	}
+
+	subscriptions, err := findSubscriptions(ctx, args.endpointRepo, args.subRepo, args.licenser, project, event, createSubscription)
+	if err != nil {
+		return nil, &EndpointError{Err: err, delay: defaultDelay}
+	}
+
+	response.Event = event
+	response.Project = project
+	response.Subscriptions = subscriptions
+	response.IsDuplicateEvent = event.IsDuplicateEvent
+
+	return &response, nil
+}
+
+func ProcessEventCreation(ch *DefaultEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
+	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, licenser)
 }
 
 func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser) error {
@@ -233,7 +299,6 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			job := &queue.Job{
 				ID:      eventDelivery.UID,
 				Payload: data,
-				Delay:   1 * time.Second,
 			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
@@ -325,7 +390,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	//	{
 	//		".members_url": "danvixent"
 	//	}
-	//]
+	// ]
 	var payload interface{}
 	err := json.Unmarshal(e.Data, &payload) // TODO(all): find a way to stop doing this repeatedly, json.Unmarshal is slow and costly
 	if err != nil {

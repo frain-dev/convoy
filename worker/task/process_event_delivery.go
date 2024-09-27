@@ -39,6 +39,8 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var data EventDelivery
+		var delayDuration time.Duration
+
 		defer func() {
 			// retrieve the value of err
 			if err == nil {
@@ -48,9 +50,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			// set the error to nil, so it's removed from the event queue
 			err = nil
 
+			if delayDuration == 0 {
+				delayDuration = defaultEventDelay
+			}
+
 			job := &queue.Job{
 				Payload: t.Payload(),
-				Delay:   defaultEventDelay,
+				Delay:   delayDuration,
 				ID:      data.EventDeliveryID,
 			}
 
@@ -80,7 +86,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		}
 		eventDelivery.Metadata.MaxRetrySeconds = cfg.MaxRetrySeconds
 
-		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
+		delayDuration = retrystrategies.NewRetryStrategyFromMetadata(*eventDelivery.Metadata).NextDuration(eventDelivery.Metadata.NumTrials)
 
 		project, err := projectRepo.FetchProjectByID(ctx, eventDelivery.ProjectID)
 		if err != nil {

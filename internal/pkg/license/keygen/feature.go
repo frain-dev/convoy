@@ -26,6 +26,8 @@ const (
 	AdvancedWebhookFiltering Feature = "ADVANCED_WEBHOOK_FILTERING"
 	CircuitBreaking          Feature = "CIRCUIT_BREAKING"
 	MultiPlayerMode          Feature = "MULTI_PLAYER_MODE"
+	IngestRate               Feature = "INGEST_RATE"
+	AgentExecutionMode       Feature = "AGENT_EXECUTION_MODE"
 )
 
 const (
@@ -34,8 +36,6 @@ const (
 	EnterprisePlan PlanType = "enterprise"
 )
 
-// Properties will hold characteristics for features like organisation
-// number limit, but it can also be empty, because certain feature don't need them
 type Properties struct {
 	Limit   int64 `mapstructure:"limit" json:"-"`
 	Allowed bool  `json:"allowed"`

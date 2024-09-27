@@ -87,15 +87,9 @@ type RateLimitConfig struct {
 func (ec *EventDeliveryConfig) RetryConfig() (*RetryConfig, error) {
 	rc := &RetryConfig{}
 
-	if ec.subscription.RetryConfig != nil {
-		rc.Duration = ec.subscription.RetryConfig.Duration
-		rc.RetryCount = ec.subscription.RetryConfig.RetryCount
-		rc.Type = ec.subscription.RetryConfig.Type
-	} else {
-		rc.Duration = ec.project.Config.Strategy.Duration
-		rc.RetryCount = ec.project.Config.Strategy.RetryCount
-		rc.Type = ec.project.Config.Strategy.Type
-	}
+	rc.Duration = ec.project.Config.Strategy.Duration
+	rc.RetryCount = ec.project.Config.Strategy.RetryCount
+	rc.Type = ec.project.Config.Strategy.Type
 
 	return rc, nil
 }

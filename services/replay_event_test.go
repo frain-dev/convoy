@@ -40,7 +40,7 @@ func TestReplayEventService_Run(t *testing.T) {
 			name: "should_replay_app_event",
 			args: args{
 				ctx:   ctx,
-				event: &datastore.Event{UID: "123"},
+				event: &datastore.Event{UID: "123", ProjectID: "proj1"},
 				g:     &datastore.Project{UID: "123", Name: "test_project"},
 			},
 			dbFn: func(es *ReplayEventService) {
@@ -54,7 +54,7 @@ func TestReplayEventService_Run(t *testing.T) {
 			name: "should_fail_to_replay_app_event",
 			args: args{
 				ctx:   ctx,
-				event: &datastore.Event{UID: "123"},
+				event: &datastore.Event{UID: "123", ProjectID: "proj1"},
 				g:     &datastore.Project{UID: "123", Name: "test_project"},
 			},
 			dbFn: func(es *ReplayEventService) {

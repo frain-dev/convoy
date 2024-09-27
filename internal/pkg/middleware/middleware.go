@@ -6,12 +6,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 
@@ -49,18 +49,16 @@ type AuthorizedLogin struct {
 	ExpiryTime time.Time `json:"expiry_time"`
 }
 
-func RateLimiterHandler(rateLimiter limiter.RateLimiter) func(next http.Handler) http.Handler {
-	limit := convoy.HTTP_RATE_LIMIT_PER_MIN
-	key := "http-api"
+func RateLimiterHandler(rateLimiter limiter.RateLimiter, rateLimitKey string, instanceIngestRate int) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			err := rateLimiter.AllowWithDuration(r.Context(), key, limit, 60)
+			err := rateLimiter.Allow(r.Context(), rateLimitKey, instanceIngestRate)
 			if err == nil {
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", limit))
+			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", instanceIngestRate))
 			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", 0))
 			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%f", rlimiter.GetRetryAfter(err).Seconds()))
 			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(rlimiter.GetRetryAfter(err)).Unix()))
@@ -70,12 +68,15 @@ func RateLimiterHandler(rateLimiter limiter.RateLimiter) func(next http.Handler)
 	}
 }
 
-func InstrumentPath(path string) func(http.Handler) http.Handler {
+func InstrumentPath(l license.Licenser) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			m := httpsnoop.CaptureMetrics(next, w, r)
-			metrics.RequestDuration().WithLabelValues(r.Method, path,
-				strconv.Itoa(m.Code)).Observe(m.Duration.Seconds())
+			mm := metrics.GetDPInstance(l)
+
+			val := chi.URLParam(r, "projectID")
+			mm.RecordIngestLatency(val, m.Duration.Seconds())
+			mm.IncrementIngestTotal("http", val)
 		})
 	}
 }
@@ -113,7 +114,7 @@ func SetupCORS(next http.Handler) http.Handler {
 		}
 
 		if env := cfg.Environment; string(env) == "development" {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Origin", cfg.Host)
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
 		}

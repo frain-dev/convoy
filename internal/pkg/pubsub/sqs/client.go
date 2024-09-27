@@ -127,7 +127,6 @@ func (s *Sqs) consume() {
 		log.WithError(err).Errorf("failed to load config.Get() in sqs source %s with id %s", s.source.Name, s.source.UID)
 		return
 	}
-	println("sqs ingest rate:", cfg.InstanceIngestRate)
 
 	for {
 		select {
@@ -154,7 +153,7 @@ func (s *Sqs) consume() {
 			}
 
 			mm := metrics.GetDPInstance(s.licenser)
-			mm.IncrementIngestTotal(s.source)
+			mm.IncrementIngestTotal(s.source.UID, s.source.ProjectID)
 
 			var wg sync.WaitGroup
 			for _, message := range output.Messages {

@@ -109,7 +109,7 @@ var DefaultConfiguration = Configuration{
 			SampleTime: 5,
 		},
 	},
-	InstanceIngestRate:  50,
+	InstanceIngestRate:  25,
 	WorkerExecutionMode: DefaultExecutionMode,
 }
 

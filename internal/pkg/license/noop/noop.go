@@ -106,3 +106,11 @@ func (Licenser) CircuitBreaking() bool {
 func (Licenser) MultiPlayerMode() bool {
 	return true
 }
+
+func (Licenser) IngestRate() bool {
+	return true
+}
+
+func (Licenser) AgentExecutionMode() bool {
+	return true
+}

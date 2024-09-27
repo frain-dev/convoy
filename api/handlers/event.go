@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -40,20 +38,8 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events [post]
 func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
-	cfg, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
-		return
-	}
-
-	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
-		return
-	}
-
 	var newMessage models.CreateEvent
-	err = util.ReadJSON(r, &newMessage)
+	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -104,8 +90,9 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	jobId := fmt.Sprintf("single:%s:%s", e.Params.ProjectID, e.Params.UID)
 	job := &queue.Job{
-		ID:      newMessage.UID,
+		ID:      jobId,
 		Payload: eventByte,
 		Delay:   0,
 	}
@@ -133,20 +120,8 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/broadcast [post]
 func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
-	cfg, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
-		return
-	}
-
-	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
-		return
-	}
-
 	var newMessage models.BroadcastEvent
-	err = util.ReadJSON(r, &newMessage)
+	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -164,14 +139,10 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jid := ulid.Make().String()
-	newMessage.JobID = jid
-
 	cbe := services.CreateBroadcastEventService{
 		Queue:          h.A.Queue,
 		BroadcastEvent: &newMessage,
 		Project:        project,
-		JobID:          jid,
 	}
 
 	err = cbe.Run(r.Context())
@@ -198,20 +169,8 @@ func (h *Handler) CreateBroadcastEvent(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/fanout [post]
 func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Request) {
-	cfg, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
-		return
-	}
-
-	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
-		return
-	}
-
 	var newMessage models.FanoutEvent
-	err = util.ReadJSON(r, &newMessage)
+	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -266,20 +225,8 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/events/dynamic [post]
 func (h *Handler) CreateDynamicEvent(w http.ResponseWriter, r *http.Request) {
-	cfg, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
-		return
-	}
-
-	err = h.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("instance ingest rate limit exceeded", http.StatusTooManyRequests))
-		return
-	}
-
 	var newMessage models.DynamicEvent
-	err = util.ReadJSON(r, &newMessage)
+	err := util.ReadJSON(r, &newMessage)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return

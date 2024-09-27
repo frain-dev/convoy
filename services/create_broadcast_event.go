@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"github.com/oklog/ulid/v2"
 	"net/http"
 	"time"
 
@@ -19,7 +21,6 @@ type CreateBroadcastEventService struct {
 	EventRepo      datastore.EventRepository
 	PortalLinkRepo datastore.PortalLinkRepository
 	Queue          queue.Queuer
-	JobID          string
 
 	BroadcastEvent *models.BroadcastEvent
 	Project        *datastore.Project
@@ -30,7 +31,9 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "an error occurred while creating broadcast event - invalid project"}
 	}
 
+	e.BroadcastEvent.EventID = ulid.Make().String()
 	e.BroadcastEvent.ProjectID = e.Project.UID
+	jobId := fmt.Sprintf("broadcast:%s:%s", e.BroadcastEvent.ProjectID, e.BroadcastEvent.EventID)
 	e.BroadcastEvent.AcknowledgedAt = time.Now()
 
 	taskName := convoy.CreateBroadcastEventProcessor
@@ -41,7 +44,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 	}
 
 	job := &queue.Job{
-		ID:      e.JobID,
+		ID:      jobId,
 		Payload: eventByte,
 		Delay:   0,
 	}

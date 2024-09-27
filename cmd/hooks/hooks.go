@@ -96,11 +96,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 		queueNames := map[string]int{
-			string(convoy.EventQueue):       5,
-			string(convoy.CreateEventQueue): 2,
-			string(convoy.ScheduleQueue):    1,
-			string(convoy.DefaultQueue):     1,
-			string(convoy.MetaEventQueue):   1,
+			string(convoy.EventQueue):         5,
+			string(convoy.CreateEventQueue):   2,
+			string(convoy.EventWorkflowQueue): 3,
+			string(convoy.ScheduleQueue):      1,
+			string(convoy.DefaultQueue):       1,
+			string(convoy.MetaEventQueue):     1,
 		}
 
 		opts := queue.QueueOptions{
@@ -201,10 +202,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		if !app.Licenser.ConsumerPoolTuning() {
-			cfg.ConsumerPoolSize = config.DefaultConfiguration.ConsumerPoolSize
-		}
-
+		licenseOverrideCfg(&cfg, app.Licenser)
 		if err = config.Override(&cfg); err != nil {
 			return err
 		}
@@ -224,6 +222,16 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		return nil
+	}
+}
+
+func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {
+	if !licenser.ConsumerPoolTuning() {
+		cfg.ConsumerPoolSize = config.DefaultConfiguration.ConsumerPoolSize
+	}
+
+	if !licenser.IngestRate() {
+		cfg.InstanceIngestRate = config.DefaultConfiguration.InstanceIngestRate
 	}
 }
 
