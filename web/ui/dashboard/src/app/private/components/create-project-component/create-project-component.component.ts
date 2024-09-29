@@ -7,6 +7,7 @@ import { PrivateService } from '../../private.service';
 import { CreateProjectComponentService } from './create-project-component.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { environment } from 'src/environments/environment';
 
 interface TAB {
     label: string;
@@ -106,6 +107,7 @@ export class CreateProjectComponent implements OnInit {
 	showOpenApi = false;
 	showEventsButton = false;
 	confirmPreviewCatalogue = false;
+	portalLinkUrl!: string;
 
     constructor(
 		private formBuilder: FormBuilder,
@@ -161,6 +163,8 @@ export class CreateProjectComponent implements OnInit {
 			this.projectDetails = this.privateService.getProjectDetails;
 
 			this.setSignatureVersions();
+
+			if (this.projectDetails?.type === 'outgoing') this.getPortalTokens();
 
             if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
 
@@ -358,26 +362,33 @@ export class CreateProjectComponent implements OnInit {
         } catch { }
     }
 
-    async getEventsCatalog() {
-        try {
-            const response = await this.createProjectService.getEventCatalogue();
-            const { data } = response;
-            if (data.events && data.events.length > 0) {
-                this.showOpenApi = false;
-                this.showEventsButton = true;
-            } else if (data.open_api_spec && data.open_api_spec !== null) {
-                this.showOpenApi = true;
-                this.showEventsButton = false;
-            } else {
-                this.showOpenApi = true;
-                this.showEventsButton = true;
-            }
-            console.log(response);
-        } catch {
-            this.showOpenApi = true;
-            this.showEventsButton = true;
-        }
-    }
+	async getEventsCatalog() {
+		try {
+			const response = await this.createProjectService.getEventCatalogue();
+			const { data } = response;
+			if (data.events && data.events.length > 0) {
+				this.showOpenApi = false;
+				this.showEventsButton = true;
+			} else if (data.open_api_spec && data.open_api_spec !== null) {
+				this.showOpenApi = true;
+				this.showEventsButton = false;
+			} else {
+				this.showOpenApi = true;
+				this.showEventsButton = true;
+			}
+		} catch {
+			this.showOpenApi = true;
+			this.showEventsButton = true;
+		}
+	}
+
+	async getPortalTokens() {
+		try {
+			const response = await this.privateService.getPortalLinks();
+			const portalLinkToken = response.data.content.length ? response.data.content[0].token : '';
+			this.portalLinkUrl = `${environment.production ? location.origin : 'http://localhost:5005'}/portal/events?token=${portalLinkToken}`;
+		} catch {}
+	}
 
     closeOpenAPIDialog(e?: any) {
         if (e === 'apiSpecAdded') this.previewCatalog.nativeElement.showModal();

@@ -291,7 +291,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		try {
 			const response = await this.privateService.getPortalLinks();
 			const portalLinkToken = response.data.content.length ? response.data.content[0].token : '';
-			this.portalLinkUrl = `${environment.production ? location.origin : 'http://localhost:5005'}/ui/portal/events?token=${portalLinkToken}`;
+			this.portalLinkUrl = `${environment.production ? location.origin : 'http://localhost:5005'}/portal/events?token=${portalLinkToken}`;
 		} catch {}
 	}
 
