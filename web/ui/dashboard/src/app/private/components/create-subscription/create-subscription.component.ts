@@ -11,6 +11,7 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { CreateProjectComponentService } from '../create-project-component/create-project-component.service';
+import { CreateProjectComponentService } from '../create-project-component/create-project-component.service';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -80,8 +81,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	subscription!: SUBSCRIPTION;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 	eventTypes!: string[];
+	eventTypes!: string[];
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService, private createProjectService: CreateProjectComponentService) { }
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService, private createProjectService: CreateProjectComponentService) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
@@ -294,9 +296,7 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.createProjectService.getEventCatalogue();
 			const { events } = response.data;
 			this.eventTypes = events.map((event: any) => event.Name);
-			console.log(response);
-			console.log(this.eventTypes);
-		} catch { }
+		} catch {}
 	}
 
 	get shouldShowBorder(): number {

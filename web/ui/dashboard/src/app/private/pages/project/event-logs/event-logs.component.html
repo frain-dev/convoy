@@ -38,7 +38,7 @@
 								convoy-table-row
 								class="group"
 								*ngFor="let event of eventGroup.content; let index = index"
-								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event)"
+								(click)="eventsDetailsItem = event; getEventDeliveriesForSidebar(event.uid); getDuplicateEvents(event); showEventForm = false; eventName = ''"
 								class="cursor-pointer rounded-8px border-b border-b-new.primary-25"
 								[active]="event.uid === eventsDetailsItem?.uid"
 							>
@@ -58,7 +58,7 @@
                                     </div>
                                 </td>
 
-                                <td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
+								<td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
 
 								<td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
 									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag size="sm">Duplicate</div>
@@ -295,8 +295,39 @@
             's' : '' }}</div>
         <button convoy-button [disabled]="isRetrying || batchRetryCount == 0" class="m-auto"
             (click)="batchReplayEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
-        <button convoy-button fill="text" class="font-semibold m-auto" (click)="batchDialog.close()">No,
+        <button convoy-button fill="clear" class="font-semibold m-auto" (click)="batchDialog.close()">No,
             Cancel</button>
+	</div>
+</dialog>
+
+<dialog #previewCatalog convoy-dialog position="center" size="sm">
+	<div class="px-20px py-30px">
+		<p class="text-14 font-semibold">Preview events catalog</p>
+		<p class="text-12 text-new.gray-400 mb-12px">Copy the url below to preview your events catalog.</p>
+
+		<div class="mb-24px">
+			<convoy-copy-button [text]="portalLinkUrl" color="primary" show-icon="false" notificationText="URL has been copied to clipboard">
+				<div convoy-tag color="primary" class="flex items-center !gap-12px">
+					<span class="max-w-[230px] truncate">{{ portalLinkUrl }}</span>
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="scale-[.6]" xmlns="http://www.w3.org/2000/svg">
+						<path d="M8 12.2002H15" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M8 16.2002H12.38" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+						<path d="M10 6H14C16 6 16 5 16 4C16 2 15 2 14 2H10C9 2 8 2 8 4C8 6 9 6 10 6Z" stroke="#292D32" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round" />
+						<path
+							d="M16 4.01953C19.33 4.19953 21 5.42953 21 9.99953V15.9995C21 19.9995 20 21.9995 15 21.9995H9C4 21.9995 3 19.9995 3 15.9995V9.99953C3 5.43953 4.67 4.19953 8 4.01953"
+							stroke="#292D32"
+							stroke-width="1.5"
+							stroke-miterlimit="10"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					</svg>
+				</div>
+			</convoy-copy-button>
+		</div>
+		<div class="flex justify-end">
+			<button convoy-button color="primary" class="mr-12px px-16px" (click)="previewCatalog.close()">Close</button>
+		</div>
     </div>
 </dialog>
 
