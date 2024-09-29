@@ -6,11 +6,11 @@ import { DropdownComponent, DropdownOptionDirective } from '../dropdown/dropdown
 import { ButtonComponent } from '../button/button.component';
 
 @Component({
-	selector: 'convoy-multi-input',
-	standalone: true,
-	imports: [CommonModule, TooltipComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent],
-	templateUrl: './multi-input.component.html',
-	styleUrls: ['./multi-input.component.scss']
+    selector: 'convoy-multi-input',
+    standalone: true,
+    imports: [CommonModule, TooltipComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent],
+    templateUrl: './multi-input.component.html',
+    styleUrls: ['./multi-input.component.scss']
 })
 export class MultiInputComponent implements OnInit {
 	@Output() inputValues = new EventEmitter<string[]>();

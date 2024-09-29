@@ -82,7 +82,7 @@ export class EndpointsComponent implements OnInit {
 	userSearch = false;
 	
 
-	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
+	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) { }
 
 	ngOnInit() {
 		const urlParam = this.route.snapshot.params.id;

@@ -28,7 +28,7 @@ import { ListItemComponent } from 'src/app/components/list-item/list-item.compon
 import { EventDeliveryFilterComponent } from 'src/app/private/components/event-delivery-filter/event-delivery-filter.component';
 import { InputDirective, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
 import { CreateProjectComponentService } from 'src/app/private/components/create-project-component/create-project-component.service';
-import { environment } from 'src/environments/environment';
+import { EventCatalogueComponent } from 'src/app/private/components/event-catalogue/event-catalogue.component';
 
 @Component({
     selector: 'convoy-event-logs',
@@ -65,58 +65,92 @@ import { environment } from 'src/environments/environment';
     ],
     templateUrl: './event-logs.component.html',
     styleUrls: ['./event-logs.component.scss']
+    selector: 'convoy-event-logs',
+    standalone: true,
+    imports: [
+        CommonModule,
+        RouterModule,
+        StatusColorModule,
+        PrismModule,
+        LoaderModule,
+        CardComponent,
+        ButtonComponent,
+        EmptyStateComponent,
+        TagComponent,
+        TableLoaderModule,
+        TableComponent,
+        TableHeadComponent,
+        TableRowComponent,
+        TableHeadCellComponent,
+        TableCellComponent,
+        DatePickerComponent,
+        DropdownComponent,
+        PaginationComponent,
+        CopyButtonComponent,
+        ListItemComponent,
+        DropdownOptionDirective,
+        DialogDirective,
+        EventDeliveryFilterComponent,
+        InputFieldDirective,
+        InputDirective,
+        LabelComponent,
+        ReactiveFormsModule,
+        EventCatalogueComponent
+    ],
+    templateUrl: './event-logs.component.html',
+    styleUrls: ['./event-logs.component.scss']
 })
 export class EventLogsComponent implements OnInit, OnDestroy {
-	@ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
-	@ViewChild('previewCatalog', { static: true }) previewCatalog!: ElementRef<HTMLDialogElement>;
+    @ViewChild('batchDialog', { static: true }) batchDialog!: ElementRef<HTMLDialogElement>;
+    @ViewChild('previewCatalog', { static: true }) previewCatalog!: ElementRef<HTMLDialogElement>;
 
-	eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
-	eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
-	dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
-	eventSource?: string;
-	isloadingEvents: boolean = false;
-	eventDetailsTabs = [
-		{ id: 'data', label: 'Event' },
-		{ id: 'response', label: 'Response' },
-		{ id: 'request', label: 'Request' }
-	];
-	displayedEvents: { date: string; content: EVENT[] }[] = [];
-	events?: { pagination: PAGINATION; content: EVENT[] };
-	duplicateEvents!: EVENT[];
-	eventDetailsActiveTab = 'data';
-	eventsDetailsItem: any;
-	sidebarEventDeliveries: EVENT_DELIVERY[] = [];
-	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-	portalToken = this.route.snapshot.params?.token;
-	filterSources: SOURCE[] = [];
-	isLoadingSidebarDeliveries = true;
-	fetchingCount = false;
-	isRetrying = false;
-	isFetchingDuplicateEvents = false;
-	batchRetryCount: any;
-	getEventsInterval: any;
-	queryParams: FILTER_QUERY_PARAM = {};
-	enableTailMode = false;
-	sortOrder: 'asc' | 'desc' = 'desc';
-	eventName = '';
-	showEventForm = false;
-	portalLinkUrl!: string;
+    eventsDateFilterFromURL: { startDate: string; endDate: string } = { startDate: '', endDate: '' };
+    eventLogsTableHead: string[] = ['Event ID', 'Source', 'Time', ''];
+    dateOptions = ['Last Year', 'Last Month', 'Last Week', 'Yesterday'];
+    eventSource?: string;
+    isloadingEvents: boolean = false;
+    eventDetailsTabs = [
+        { id: 'data', label: 'Event' },
+        { id: 'response', label: 'Response' },
+        { id: 'request', label: 'Request' }
+    ];
+    displayedEvents: { date: string; content: EVENT[] }[] = [];
+    events?: { pagination: PAGINATION; content: EVENT[] };
+    duplicateEvents!: EVENT[];
+    eventDetailsActiveTab = 'data';
+    eventsDetailsItem: any;
+    sidebarEventDeliveries: EVENT_DELIVERY[] = [];
+    @ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
+    portalToken = this.route.snapshot.params?.token;
+    filterSources: SOURCE[] = [];
+    isLoadingSidebarDeliveries = true;
+    fetchingCount = false;
+    isRetrying = false;
+    isFetchingDuplicateEvents = false;
+    batchRetryCount: any;
+    getEventsInterval: any;
+    queryParams: FILTER_QUERY_PARAM = {};
+    enableTailMode = false;
+    sortOrder: 'asc' | 'desc' = 'desc';
+    eventName = '';
+    showEventForm = false;
+    showCatalogPreview = false;
 
-	eventsForm: FormGroup = this.formBuilder.group({
-		name: ['', Validators.required],
-		description: ['']
-	});
+    eventsForm: FormGroup = this.formBuilder.group({
+        name: ['', Validators.required],
+        description: ['']
+    });
 
-	constructor(
-		private eventsLogService: EventLogsService,
-		public generalService: GeneralService,
-		public route: ActivatedRoute,
-		private router: Router,
-		public privateService: PrivateService,
-		private eventsService: EventsService,
-		private createProjectService: CreateProjectComponentService,
-		private formBuilder: FormBuilder
-	) {}
+    constructor(
+        private eventsLogService: EventLogsService,
+        public generalService: GeneralService,
+        public route: ActivatedRoute,
+        private router: Router,
+        public privateService: PrivateService,
+        private eventsService: EventsService,
+        private createProjectService: CreateProjectComponentService,
+        private formBuilder: FormBuilder
+    ) { }
 
     ngOnInit() { }
 
@@ -270,34 +304,6 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 
         this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
     }
-
-	async addEventToEventCatalogue(event_id: string) {
-		if (this.eventsForm.invalid) return this.eventsForm.markAllAsTouched();
-
-		const payload = {
-			event_id,
-			...this.eventsForm.value
-		};
-		try {
-			const response = await this.createProjectService.addEventToEventCatalogue(payload);
-			this.generalService.showNotification({ message: response.message, style: 'success' });
-			this.eventsForm.reset();
-			this.showEventForm = false;
-			this.previewCatalog.nativeElement.showModal();
-		} catch {}
-	}
-
-	async getPortalTokens() {
-		try {
-			const response = await this.privateService.getPortalLinks();
-			const portalLinkToken = response.data.content.length ? response.data.content[0].token : '';
-			this.portalLinkUrl = `${environment.production ? location.origin : 'http://localhost:5005'}/portal/events?token=${portalLinkToken}`;
-		} catch {}
-	}
-
-	previewEventCatalog() {
-		// this.router.navigateByUrl(`/portal/events?token=${this.portalLinkToken}`);
-	}
 
     async addEventToEventCatalogue(event_id: string) {
         if (this.eventsForm.invalid) return this.eventsForm.markAllAsTouched();

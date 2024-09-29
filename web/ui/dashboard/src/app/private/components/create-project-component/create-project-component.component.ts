@@ -204,12 +204,12 @@ export class CreateProjectComponent implements OnInit {
     async createProject() {
         const projectFormModal = document.getElementById('projectForm');
 
-		if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
-			projectFormModal?.scroll({ top: 0 });
-			this.projectForm.markAllAsTouched();
-			return;
-		}
-		const projectData = this.getProjectData();
+        if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
+            projectFormModal?.scroll({ top: 0 });
+            this.projectForm.markAllAsTouched();
+            return;
+        }
+        const projectData = this.getProjectData();
 
         this.isCreatingProject = true;
 
@@ -362,33 +362,25 @@ export class CreateProjectComponent implements OnInit {
         } catch { }
     }
 
-	async getEventsCatalog() {
-		try {
-			const response = await this.createProjectService.getEventCatalogue();
-			const { data } = response;
-			if (data.events && data.events.length > 0) {
-				this.showOpenApi = false;
-				this.showEventsButton = true;
-			} else if (data.open_api_spec && data.open_api_spec !== null) {
-				this.showOpenApi = true;
-				this.showEventsButton = false;
-			} else {
-				this.showOpenApi = true;
-				this.showEventsButton = true;
-			}
-		} catch {
-			this.showOpenApi = true;
-			this.showEventsButton = true;
-		}
-	}
-
-	async getPortalTokens() {
-		try {
-			const response = await this.privateService.getPortalLinks();
-			const portalLinkToken = response.data.content.length ? response.data.content[0].token : '';
-			this.portalLinkUrl = `${environment.production ? location.origin : 'http://localhost:5005'}/portal/events?token=${portalLinkToken}`;
-		} catch {}
-	}
+    async getEventsCatalog() {
+        try {
+            const response = await this.createProjectService.getEventCatalogue();
+            const { data } = response;
+            if (data.events && data.events.length > 0) {
+                this.showOpenApi = false;
+                this.showEventsButton = true;
+            } else if (data.open_api_spec && data.open_api_spec !== null) {
+                this.showOpenApi = true;
+                this.showEventsButton = false;
+            } else {
+                this.showOpenApi = true;
+                this.showEventsButton = true;
+            }
+        } catch {
+            this.showOpenApi = true;
+            this.showEventsButton = true;
+        }
+    }
 
     closeOpenAPIDialog(e?: any) {
         if (e === 'apiSpecAdded') this.previewCatalog.nativeElement.showModal();

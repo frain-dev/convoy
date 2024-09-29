@@ -58,7 +58,7 @@
                                     </div>
                                 </td>
 
-								<td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
+                                <td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
 
 								<td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
 									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag size="sm">Duplicate</div>
@@ -301,9 +301,9 @@
 </dialog>
 
 <dialog #previewCatalog convoy-dialog position="center" size="sm">
-	<div class="px-20px py-30px">
-		<p class="text-14 font-semibold">Preview events catalog</p>
-		<p class="text-12 text-new.gray-400 mb-12px">Copy the url below to preview your events catalog.</p>
+    <div class="px-20px py-30px">
+        <p class="text-14 font-semibold">Preview events catalog</p>
+        <p class="text-12 text-new.gray-400 mb-24px">Copy the url below to preview your events catalog.</p>
 
 		<div class="mb-24px">
 			<convoy-copy-button [text]="portalLinkUrl" color="primary" show-icon="false" notificationText="Preview link has been copied to clipboard">

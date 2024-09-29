@@ -83,7 +83,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	eventTypes!: string[];
 	eventTypes!: string[];
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService, private createProjectService: CreateProjectComponentService) {}
+	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService, private createProjectService: CreateProjectComponentService) { }
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
