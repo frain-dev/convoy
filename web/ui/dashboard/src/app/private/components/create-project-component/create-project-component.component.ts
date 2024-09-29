@@ -52,62 +52,6 @@ export class CreateProjectComponent implements OnInit {
 			}),
 			disable_endpoint: [false, Validators.required],
 			multiple_endpoint_subscriptions: [false, Validators.required],
-            meta_event: this.formBuilder.group({
-                is_enabled: [false, Validators.required],
-                type: ['http', Validators.required],
-                event_type: [[], Validators.required],
-                url: ['', Validators.required],
-                secret: [null]
-            }),
-            retention_policy_enabled: [true]
-        }),
-        type: [null, Validators.required]
-    });
-    newSignatureForm: FormGroup = this.formBuilder.group({
-        encoding: [null],
-        hash: [null]
-    });
-    eventsForm: FormGroup = this.formBuilder.group({
-        name: ['', Validators.required],
-        event_id: ['', Validators.required],
-        description: ['']
-    });
-    isCreatingProject = false;
-    enableMoreConfig = false;
-    regeneratingKey = false;
-    showUploadEvents = false;
-    showEventsForm = false;
-    apiKey!: string;
-    hashAlgorithms = ['SHA256', 'SHA512'];
-    retryLogicTypes = [
-        { uid: 'linear', name: 'Linear time retry' },
-        { uid: 'exponential', name: 'Exponential time backoff' }
-    ];
-    encodings = ['base64', 'hex'];
-    @Output('onAction') onAction = new EventEmitter<any>();
-    @Input('action') action: 'create' | 'update' = 'create';
-    projectDetails!: PROJECT;
-    signatureVersions!: { date: string; content: VERSIONS[] }[];
-    configurations = [
-        { uid: 'strategy', name: 'Retry Config', show: false },
-        { uid: 'ratelimit', name: 'Rate Limit', show: false },
-        { uid: 'retention_policy', name: 'Retention Policy', show: false },
-        { uid: 'signature', name: 'Signature Format', show: false }
-    ];
-    public rbacService = inject(RbacService);
-    tabs: TAB[] = [
-        { label: 'project config', svg: 'fill', icon: 'settings' },
-        { label: 'signature history', svg: 'fill', icon: 'sig-history' },
-        { label: 'endpoints config', svg: 'stroke', icon: 'endpoints' },
-        { label: 'meta events config', svg: 'stroke', icon: 'meta-events' },
-        { label: 'secrets', svg: 'stroke', icon: 'secret' }
-    ];
-    activeTab = this.tabs[0];
-    events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed'];
-    showOpenApi = false;
-    showEventsButton = false;
-    confirmPreviewCatalogue = false;
-    showCatalogPreview = false;
 			meta_event: this.formBuilder.group({
 				is_enabled: [false, Validators.required],
 				type: ['http', Validators.required],
@@ -122,9 +66,16 @@ export class CreateProjectComponent implements OnInit {
 		encoding: [null],
 		hash: [null]
 	});
+	eventsForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		event_id: ['', Validators.required],
+		description: ['']
+	});
 	isCreatingProject = false;
 	enableMoreConfig = false;
 	regeneratingKey = false;
+	showUploadEvents = false;
+	showEventsForm = false;
 	apiKey!: string;
 	hashAlgorithms = ['SHA256', 'SHA512'];
 	retryLogicTypes = [
@@ -152,6 +103,9 @@ export class CreateProjectComponent implements OnInit {
 	];
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
+	showOpenApi = false;
+	showEventsButton = false;
+	confirmPreviewCatalogue = false;
 
     constructor(
 		private formBuilder: FormBuilder,
