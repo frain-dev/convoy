@@ -1,4 +1,8 @@
 import { Injectable } from '@angular/core';
+// import SwaggerParser from '@apidevtools/swagger-parser';
+// import sampler from 'openapi-sampler';
+// @ts-ignore
+// import yaml from 'js-yaml';
 import { HttpService } from 'src/app/services/http/http.service';
 import { HTTP_RESPONSE } from 'src/app/models/global.model';
 // @ts-ignore
@@ -20,14 +24,6 @@ export class EventsCatalogueService {
 			}
 		});
 	}
-
-	// async processOpenAPI(openApiFilePath: any) {
-	// 	const openAPISpec = atob(openApiFilePath);
-	// 	try {
-	// 		const test = await processOpenAPI(openAPISpec);
-	// 		console.log(test);
-	// 	} catch {}
-	// }
 
 	// async processOpenAPI(openApiFilePath: any) {
 	// 	const sample = sampler.sample;
