@@ -1,6 +1,6 @@
 <div>
 	<div class="flex items-center mt-40px">
-		<h2 class="text-12 font-medium text-new.gray-600 mr-8px">Event Deliveries</h2>
+		<h2 class="text-12 font-medium text-neutral-10 mr-8px">Event Deliveries</h2>
 		<convoy-tooltip size="sm" position="top-right">
 			<h4 class="mb-10px font-semibold text-12">Deliveries missing?</h4>
 			<p>
@@ -25,7 +25,7 @@
 	<div convoy-card class="py-60px rounded-8px" *ngIf="!isloadingEventDeliveries && (!displayedEventDeliveries || displayedEventDeliveries?.length === 0)">
 		<div class="flex justify-center items-center p-40px flex-col">
 			<img src="/assets/img/empty-state.svg" alt="empty state image" />
-			<p class="mt-16px text-12 text-new.gray-500">No event to show here</p>
+			<p class="mt-16px text-12 text-neutral-11">No event to show here</p>
 		</div>
 	</div>
 
@@ -54,7 +54,7 @@
 									<convoy-tag className="ml-20px" [color]="event.status | statuscolor">{{ event?.status }}</convoy-tag>
 								</td>
 								<td convoy-table-cell *ngIf="projectService.activeProjectDetails?.type === 'outgoing' || portalToken">
-									<div convoy-tag class="bg-new.gray-50">{{ event.event_metadata.event_type }}</div>
+									<div convoy-tag class="bg-neutral-a2">{{ event.event_metadata.event_type }}</div>
 								</td>
 
 								<td convoy-table-cell>
@@ -111,7 +111,7 @@
 		<!-- pagination -->
 		<div class="pt-8px flex items-center justify-between px-10px" *ngIf="eventDeliveries?.pagination?.has_next_page || eventDeliveries?.pagination?.has_prev_page">
 			<convoy-pagination [pagination]="eventDeliveries.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
-			<div class="text-grey-40 text-14">{{ eventDeliveries.content.length }} event{{ eventDeliveries.content.length > 1 ? 's' : '' }}</div>
+			<div class="text-neutral-11 text-14">{{ eventDeliveries.content.length }} event{{ eventDeliveries.content.length > 1 ? 's' : '' }}</div>
 		</div>
 	</div>
 </div>
@@ -120,7 +120,7 @@
 <dialog #batchRetryDialog convoy-dialog position="center" size="sm">
 	<div class="text-center py-30px">
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-30px m-auto mb-16px" />
-		<div class="text-center text-14 font-medium text-grey-60 mb-8px">The filters applied will affect</div>
+		<div class="text-center text-14 font-medium text-neutral-11 mb-8px">The filters applied will affect</div>
 		<div class="text-center text-12 font-semibold mb-32px">{{ batchRetryCount || 0 }} event deliver{{ batchRetryCount > 1 ? 'ies' : 'y' }}</div>
 		<button convoy-button size="sm" [disabled]="isRetrying || batchRetryCount == 0" class="m-auto" (click)="batchRetryEvent()">{{ isRetrying ? 'Retrying Events...' : 'Yes, Apply' }}</button>
 		<button convoy-button fill="clear" class="font-semibold m-auto mt-16px" (click)="dialog.nativeElement.close()">No, Cancel</button>

@@ -1,10 +1,10 @@
 <div class="flex flex-col items-center justify-center p-30px">
 	<img src="/assets/img/success.gif" class="w-100px" alt="success" />
 	<h2 class="font-semibold mt-16px text-14">{{ title }}</h2>
-	<p class="text-12 text-grey-60 font-normal text-center mb-24px mt-8px m-auto">{{ description }}</p>
+	<p class="text-12 text-neutral-11 font-normal text-center mb-24px mt-8px m-auto">{{ description }}</p>
 
-	<div class="flex items-center justify-between w-full h-50px border border-grey-10 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
-		<span class="text-12 text-grey-60 font-normal truncate">{{ token }}</span>
+	<div class="flex items-center justify-between w-full h-50px border border-neutral-a3 bg-[#F7F9FC] rounded-[6px] px-16px mb-32px">
+		<span class="text-12 text-neutral-11 font-normal truncate">{{ token }}</span>
 		<div convoy-copy-button class="ml-8px" [text]="token" [notificationText]="notificationText"></div>
 	</div>
 	<button convoy-button size="sm" class="px-40px" (click)="closeModal.emit()" type="button">Done</button>

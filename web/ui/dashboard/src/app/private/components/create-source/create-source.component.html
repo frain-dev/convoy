@@ -1,7 +1,7 @@
 <form class="pb-24px" [formGroup]="sourceForm" (ngSubmit)="saveSource()">
-	<div class="relative" [ngClass]="{ 'border border-new.gray-100 shadow-xs p-24px rounded-8px': showAction == 'true' }">
+	<div class="relative" [ngClass]="{ 'border border-neutral-2 shadow-xs p-24px rounded-8px': showAction == 'true' }">
 		<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
-			<h4 class="font-semibold mb-20px text-12 text-new.gray-600">Pre-configured Sources</h4>
+			<h4 class="font-semibold mb-20px text-12 text-neutral-10">Pre-configured Sources</h4>
 			<ul class="flex flex-row w-full mb-20px gap-24px">
 				<li *ngFor="let source of preConfiguredSources" class="list-none last-of-type:mr-0">
 					<button
@@ -41,7 +41,7 @@
 				></convoy-select>
 
 				<div formGroupName="hmac" *ngIf="sourceForm.value.verifier.type === 'hmac' || isCustomSource(sourceForm.value.verifier.type)" class="mt-40px">
-					<h3 class="capitalize font-semibold mb-20px text-12 text-new.gray-600">
+					<h3 class="capitalize font-semibold mb-20px text-12 text-neutral-10">
 						<span *ngIf="isCustomSource(sourceForm.value.verifier.type)">{{ sourceForm.value.verifier.type }} Credentials</span>
 						<span *ngIf="sourceForm.value.verifier.type === 'hmac'">Configure HMAC</span>
 					</h3>
@@ -86,7 +86,7 @@
 				</div>
 
 				<div formGroupName="basic_auth" *ngIf="sourceForm.value.verifier.type === 'basic_auth'" class="mt-40px">
-					<h3 class="font-semibold mb-20px text-12 text-new.gray-600">Configure Basic Auth</h3>
+					<h3 class="font-semibold mb-20px text-12 text-neutral-10">Configure Basic Auth</h3>
 
 					<div class="grid grid-cols-2 gap-6">
 						<convoy-input-field class="mb-0">
@@ -104,7 +104,7 @@
 				</div>
 
 				<div formGroupName="api_key" *ngIf="sourceForm.value.verifier.type === 'api_key'" class="mt-40px">
-					<h3 class="font-semibold mb-20px text-12 text-new.gray-600">Configure API Key</h3>
+					<h3 class="font-semibold mb-20px text-12 text-neutral-10">Configure API Key</h3>
 
 					<div class="grid grid-cols-2 gap-6">
 						<convoy-input-field class="mb-0">
@@ -124,9 +124,9 @@
 
 			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('custom_response')">
 				<div class="flex justify-between items-center mb-16px">
-					<h4 class="text-12 text-new.gray-600 font-semibold">Custom response</h4>
+					<h4 class="text-12 text-neutral-10 font-semibold">Custom response</h4>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="sourceForm.patchValue({ custom_response: { content_type: '', body: '' } }); toggleConfigForm('custom_response')">
-						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
 					</button>
@@ -149,9 +149,9 @@
 
 			<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
 				<div class="flex justify-between items-end mb-24px">
-					<p class="text-12 font-semibold text-new.gray-600 flex items-center">Idempotency Config</p>
+					<p class="text-12 font-semibold text-neutral-10 flex items-center">Idempotency Config</p>
 					<button convoy-button type="button" size="xs" fill="outline" color="grey" texture="light" (click)="toggleConfigForm('idempotency')">
-						<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 							<use xlink:href="#delete-icon2"></use>
 						</svg>
 					</button>
@@ -163,7 +163,7 @@
 					[prefilledKeys]="sourceDetails && sourceDetails.idempotency_keys ? sourceDetails.idempotency_keys : []"
 					(inputValues)="sourceForm.get('idempotency_keys')?.patchValue($event)"
 				></convoy-multi-input>
-				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
+				<span class="text-neutral-10 font-normal italic text-10 mb-24px">The order matters. Set the value of each input with a coma (,)</span>
 			</div>
 
 			<div class="flex flex-wrap items-center mt-20px gap-24px">
@@ -201,7 +201,7 @@
 					<convoy-input-field>
 						<label for="service_account" convoy-label required="true" tooltip="Service accounts provide a way to manage authentication into your Google Pub/Sub.">Service Account</label>
 						<convoy-file-input (selectedFile)="parseJsonFile($event)" (deleteFile)="deleteJsonFile()">
-							<p class="text-center text-12 text-grey-60 max-w-[186px] mx-auto">
+							<p class="text-center text-12 text-neutral-11 max-w-[186px] mx-auto">
 								<span class="text-primary-100 font-bold">Click to {{ action === 'update' ? 'update' : 'upload' }}</span>
 								or drag and drop JSON (max 5kb)
 							</p>
@@ -333,11 +333,11 @@
 				</div>
 			</ng-container>
 			<ng-container formGroupName="kafka" *ngIf="sourceForm.value.pub_sub.type === 'kafka'">
-				<h2 class="text-16 text-new.gray-600 font-semibold mb-20px">Configure Kafka</h2>
+				<h2 class="text-16 text-neutral-10 font-semibold mb-20px">Configure Kafka</h2>
 
 				<convoy-multi-input label="Broker Addresses" required="true" [prefilledKeys]="brokerAddresses" (inputValues)="addBrokers($event)"></convoy-multi-input>
 				<convoy-input-error *ngIf="sourceForm.get('pub_sub.kafka.brokers')?.touched && sourceForm.get('pub_sub.kafka.brokers')?.invalid">Please add at least one broker address</convoy-input-error>
-				<span class="text-new.gray-400 font-normal italic text-10 mb-24px">Set the value of each input with a comma or space (,)</span>
+				<span class="text-neutral-10 font-normal italic text-10 mb-24px">Set the value of each input with a comma or space (,)</span>
 
 				<div class="grid grid-cols-2 gap-6 mt-24px">
 					<convoy-input-field [className]="'mb-0'">
