@@ -10,6 +10,8 @@ import (
 type CircuitBreaker struct {
 	// Circuit breaker key
 	Key string `json:"key"`
+	// Circuit breaker tenant id
+	TenantId string `json:"tenant_id"`
 	// Circuit breaker state
 	State State `json:"state"`
 	// Number of requests in the observability window
@@ -30,9 +32,10 @@ type CircuitBreaker struct {
 	NotificationsSent uint64 `json:"notifications_sent"`
 }
 
-func NewCircuitBreaker(key string) *CircuitBreaker {
+func NewCircuitBreaker(key string, tenantId string) *CircuitBreaker {
 	return &CircuitBreaker{
 		Key:               key,
+		TenantId:          tenantId,
 		State:             StateClosed,
 		NotificationsSent: 0,
 	}

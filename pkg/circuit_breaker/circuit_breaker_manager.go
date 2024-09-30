@@ -70,6 +70,7 @@ func (s State) String() string {
 
 type PollResult struct {
 	Key       string `json:"key" db:"key"`
+	TenantId  string `json:"tenant_id" db:"tenant_id"`
 	Failures  uint64 `json:"failures" db:"failures"`
 	Successes uint64 `json:"successes" db:"successes"`
 }
@@ -160,8 +161,10 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 	circuitBreakers := make(map[string]CircuitBreaker, len(pollResults))
 
-	keys, j := make([]string, len(pollResults)), 0
+	keys, tenants, j := make([]string, len(pollResults)), make([]string, len(pollResults)), 0
 	for k := range pollResults {
+		tenants[j] = pollResults[k].TenantId
+
 		key := fmt.Sprintf("%s%s", prefix, k)
 		keys[j] = key
 		j++
@@ -174,7 +177,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 	for i := range res {
 		if res[i] == nil {
-			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i])
+			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i], tenants[i])
 			continue
 		}
 
@@ -183,7 +186,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 			log.Errorf("[circuit breaker] breaker with key (%s) is corrupted, reseting it", keys[i])
 
 			// the circuit breaker is corrupted, create a new one in its place
-			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i])
+			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i], tenants[i])
 			continue
 		}
 

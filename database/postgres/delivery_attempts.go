@@ -137,10 +137,11 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
 	query := `
 		SELECT
             endpoint_id AS key,
+            project_id AS tenant_id,
             COUNT(CASE WHEN status = false THEN 1 END) AS failures,
             COUNT(CASE WHEN status = true THEN 1 END) AS successes
         FROM convoy.delivery_attempts
-        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1) group by endpoint_id;
+        WHERE created_at >= NOW() - MAKE_INTERVAL(hours := 1000) group by endpoint_id, project_id;
 	`
 
 	rows, err := d.db.QueryxContext(ctx, query, lookBackDuration)
@@ -161,10 +162,11 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
 	query2 := `
 		SELECT
 	        endpoint_id AS key,
+            project_id AS tenant_id,
 	        COUNT(CASE WHEN status = false THEN 1 END) AS failures,
 	        COUNT(CASE WHEN status = true THEN 1 END) AS successes
 	    FROM convoy.delivery_attempts
-	    WHERE endpoint_id = $1 AND created_at >= $2 group by endpoint_id;
+	    WHERE endpoint_id = $1 AND created_at >= $2 group by endpoint_id, project_id;
 	`
 
 	for k, t := range resetTimes {
