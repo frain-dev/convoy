@@ -141,7 +141,7 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
             COUNT(CASE WHEN status = false THEN 1 END) AS failures,
             COUNT(CASE WHEN status = true THEN 1 END) AS successes
         FROM convoy.delivery_attempts
-        WHERE created_at >= NOW() - MAKE_INTERVAL(hours := 1000) group by endpoint_id, project_id;
+        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1) group by endpoint_id, project_id;
 	`
 
 	rows, err := d.db.QueryxContext(ctx, query, lookBackDuration)
