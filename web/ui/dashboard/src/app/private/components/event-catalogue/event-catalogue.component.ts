@@ -42,7 +42,6 @@ export class EventCatalogueComponent implements OnInit {
             const processedEvents = await this.eventCatalogueService.processJSONEvent(eventsData);
             this.eventsCatalogue = processedEvents;
             this.fetchingCatalogue = false;
-            console.log(this.eventsCatalogue);
         } catch { }
     }
 

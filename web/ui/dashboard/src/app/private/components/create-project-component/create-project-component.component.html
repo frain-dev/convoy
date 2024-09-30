@@ -342,23 +342,23 @@
         <ng-container *ngIf="activeTab.label === 'events catalogue'">
             <div class="flex justify-between items-start">
                 <div>
-                    <h3 class="text-16 font-bold text-new.gray-600">Event Catalogue</h3>
-                    <p class="text-12 font-normal text-new.gray-400 mt-10px mb-24px w-full max-w-[400px]">Events
+                    <h3 class="text-16 font-bold text-neutral-11">Event Catalogue</h3>
+                    <p class="text-12 font-normal text-neutral-10 mt-10px mb-24px w-full max-w-[400px]">Events
                         catalogues enables you specify the event types you receive or send in order for your user to
                         understand your events structure.</p>
                 </div>
                 <div class="flex gap-12px">
                     <button *ngIf="showEventsButton" type="button" size="sm" convoy-button
                         (click)="showEventsForm = true">Add event type</button>
-                    <button *ngIf="showOpenApi" type="button" size="sm" convoy-button
-                        (click)="showUploadEvents = true">Add Open API SPec</button>
+                    <!-- <button *ngIf="showOpenApi" type="button" size="sm" convoy-button
+                        (click)="showUploadEvents = true">Add Open API SPec</button> -->
                 </div>
             </div>
 
             <form [formGroup]="eventsForm" (submit)="addEventToCatalogue()" class="overflow-hidden duration-300"
                 [ngClass]="showEventsForm ? 'max-h-320px pt-20px' : 'max-h-0'">
                 <hr class="border-new.gray-200 mb-24px" />
-                <h3 class="mt-24px mb-16px font-medium text-new.gray-600 text-14">Event Configuration</h3>
+                <h3 class="mt-24px mb-16px font-medium text-neutral-11 text-14">Event Configuration</h3>
 
                 <div class="grid grid-cols-2 gap-24px">
                     <convoy-input-field className="mb-0">

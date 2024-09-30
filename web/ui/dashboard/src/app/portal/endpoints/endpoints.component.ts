@@ -64,7 +64,6 @@ export class EndpointsComponent implements OnInit {
 	}
 
 	async getEndpoints(requestDetails?: CURSOR & { q?: string }) {
-        console.log(requestDetails)
 		this.isloadingSubscriptions = true;
 		try {
 			const endpoints = await this.privateService.getEndpoints(requestDetails);

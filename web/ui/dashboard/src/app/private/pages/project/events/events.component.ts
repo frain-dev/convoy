@@ -51,7 +51,6 @@ export class EventsComponent implements OnInit {
 		await this.getProjectStats();
 
 		if (this.isProjectConfigurationComplete) {
-			console.log(true);
 			await this.checkEventsOnFirstLoad();
 
 			if (this.privateService.getProjectDetails?.type === 'incoming' && !this.hasEvents) {

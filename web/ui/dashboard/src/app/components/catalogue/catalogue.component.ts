@@ -17,12 +17,11 @@ export class CatalogueComponent implements OnInit {
 	ngOnInit(): void {}
 
 	collapseCatalog(name: string) {
-		console.log(name);
 		this.selectedProperty = name;
 	}
 
-	getVariableType(type: string): { type: string; color: 'error' | 'primary' | 'warning' | 'gray' | 'success'; fill: 'outline' | 'soft' | 'solid' | 'soft-outline' } {
-		let varObj: { type: string; color: 'error' | 'primary' | 'warning' | 'gray' | 'success'; fill: 'outline' | 'soft' | 'solid' | 'soft-outline' };
+	getVariableType(type: string): { type: string; color: 'error' | 'primary' | 'warning' | 'neutral' | 'success'; fill: 'outline' | 'soft' | 'solid' | 'soft-outline' } {
+		let varObj: { type: string; color: 'error' | 'primary' | 'warning' | 'neutral' | 'success'; fill: 'outline' | 'soft' | 'solid' | 'soft-outline' };
 		switch (type) {
 			case 'string':
 				varObj = {
@@ -41,7 +40,7 @@ export class CatalogueComponent implements OnInit {
 			case 'boolean':
 				varObj = {
 					type: 'boolean',
-					color: 'gray',
+					color: 'neutral',
 					fill: 'soft'
 				};
 				break;
@@ -62,14 +61,14 @@ export class CatalogueComponent implements OnInit {
 			case 'null':
 				varObj = {
 					type: 'null',
-					color: 'gray',
+					color: 'neutral',
 					fill: 'soft'
 				};
 				break;
 			default:
 				varObj = {
 					type,
-					color: 'gray',
+					color: 'neutral',
 					fill: 'soft'
 				};
 				break;

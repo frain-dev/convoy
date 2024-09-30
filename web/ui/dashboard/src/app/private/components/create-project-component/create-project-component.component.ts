@@ -10,15 +10,15 @@ import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { environment } from 'src/environments/environment';
 
 interface TAB {
-    label: string;
-    svg: 'fill' | 'stroke';
-    icon: string;
+	label: string;
+	svg: 'fill' | 'stroke';
+	icon: string;
 }
 
 @Component({
-    selector: 'app-create-project-component',
-    templateUrl: './create-project-component.component.html',
-    styleUrls: ['./create-project-component.component.scss']
+	selector: 'app-create-project-component',
+	templateUrl: './create-project-component.component.html',
+	styleUrls: ['./create-project-component.component.scss']
 })
 export class CreateProjectComponent implements OnInit {
 	@ViewChild('disableEndpointsDialog', { static: true }) disableEndpointsDialog!: ElementRef<HTMLDialogElement>;
@@ -108,6 +108,7 @@ export class CreateProjectComponent implements OnInit {
 	showEventsButton = false;
 	confirmPreviewCatalogue = false;
 	portalLinkUrl!: string;
+	showCatalogPreview = false;
 
     constructor(
 		private formBuilder: FormBuilder,
@@ -119,34 +120,34 @@ export class CreateProjectComponent implements OnInit {
 		public licenseService: LicensesService
 	) { }
 
-    async ngOnInit() {
-        if (this.privateService.getProjectDetails?.type === 'outgoing') this.tabs.push({ label: 'events catalogue', svg: 'stroke', icon: 'meta-events' });
-        if (this.action === 'update') {
-            this.getProjectDetails();
-            this.getEventsCatalog();
-        }
-        if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
-        if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
-    }
+	async ngOnInit() {
+		if (this.privateService.getProjectDetails?.type === 'outgoing') this.tabs.push({ label: 'events catalogue', svg: 'fill', icon: 'catalog' });
+		if (this.action === 'update') {
+			this.getProjectDetails();
+			this.getEventsCatalog();
+		}
+		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
+		if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
+	}
 
-    get versions(): FormArray {
-        return this.projectForm.get('config.signature.versions') as FormArray;
-    }
+	get versions(): FormArray {
+		return this.projectForm.get('config.signature.versions') as FormArray;
+	}
 
-    get versionsLength(): any {
-        const versionsControl = this.projectForm.get('config.signature.versions') as FormArray;
-        return versionsControl.length;
-    }
-    newVersion(): FormGroup {
-        return this.formBuilder.group({
-            encoding: ['', Validators.required],
-            hash: ['', Validators.required]
-        });
-    }
+	get versionsLength(): any {
+		const versionsControl = this.projectForm.get('config.signature.versions') as FormArray;
+		return versionsControl.length;
+	}
+	newVersion(): FormGroup {
+		return this.formBuilder.group({
+			encoding: ['', Validators.required],
+			hash: ['', Validators.required]
+		});
+	}
 
-    addVersion() {
-        this.versions.push(this.newVersion());
-    }
+	addVersion() {
+		this.versions.push(this.newVersion());
+	}
 
 	toggleConfigForm(configValue: string) {
 		this.configurations.forEach(config => {
@@ -154,9 +155,9 @@ export class CreateProjectComponent implements OnInit {
 		});
 	}
 
-    showConfig(configValue: string): boolean {
-        return this.configurations.find(config => config.uid === configValue)?.show || false;
-    }
+	showConfig(configValue: string): boolean {
+		return this.configurations.find(config => config.uid === configValue)?.show || false;
+	}
 
 	async getProjectDetails() {
 		try {
@@ -164,9 +165,7 @@ export class CreateProjectComponent implements OnInit {
 
 			this.setSignatureVersions();
 
-			if (this.projectDetails?.type === 'outgoing') this.getPortalTokens();
-
-            if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
 
 			this.projectForm.patchValue(this.projectDetails);
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
@@ -201,24 +200,24 @@ export class CreateProjectComponent implements OnInit {
 		});
 	}
 
-    async createProject() {
-        const projectFormModal = document.getElementById('projectForm');
+	async createProject() {
+		const projectFormModal = document.getElementById('projectForm');
 
-        if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
-            projectFormModal?.scroll({ top: 0 });
-            this.projectForm.markAllAsTouched();
-            return;
-        }
-        const projectData = this.getProjectData();
+		if (this.projectForm.get('name')?.invalid || this.projectForm.get('type')?.invalid) {
+			projectFormModal?.scroll({ top: 0 });
+			this.projectForm.markAllAsTouched();
+			return;
+		}
+		const projectData = this.getProjectData();
 
-        this.isCreatingProject = true;
+		this.isCreatingProject = true;
 
-        try {
-            // this createProject service also updates project as active project in localstorage
-            const response = await this.createProjectService.createProject(projectData);
-            await this.privateService.getProjectStat({ refresh: true });
+		try {
+			// this createProject service also updates project as active project in localstorage
+			const response = await this.createProjectService.createProject(projectData);
+			await this.privateService.getProjectStat({ refresh: true });
 
-            this.privateService.getProjects({ refresh: true });
+			this.privateService.getProjects({ refresh: true });
 
 			projectFormModal?.scroll({ top: 0, behavior: 'smooth' });
 			this.isCreatingProject = false;
@@ -244,43 +243,43 @@ export class CreateProjectComponent implements OnInit {
 
 		this.isCreatingProject = true;
 
-        try {
-            // this updateProject service also updates project in localstorage
-            const response = await this.createProjectService.updateProject(this.projectForm.value);
+		try {
+			// this updateProject service also updates project in localstorage
+			const response = await this.createProjectService.updateProject(this.projectForm.value);
 
-            this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
-            this.onAction.emit(response.data);
-            this.isCreatingProject = false;
-        } catch (error) {
-            this.isCreatingProject = false;
-        }
-    }
+			this.generalService.showNotification({ message: 'Project updated successfully!', style: 'success' });
+			this.onAction.emit(response.data);
+			this.isCreatingProject = false;
+		} catch (error) {
+			this.isCreatingProject = false;
+		}
+	}
 
-    async regenerateKey() {
-        this.confirmationDialog.nativeElement.close();
-        this.regeneratingKey = true;
-        try {
-            const response = await this.createProjectService.regenerateKey();
-            this.generalService.showNotification({ message: response.message, style: 'success' });
-            this.regeneratingKey = false;
-            this.apiKey = response.data.key;
-            this.tokenDialog.nativeElement.showModal();
-            return;
-        } catch (error) {
-            this.regeneratingKey = false;
-            return error;
-        }
-    }
+	async regenerateKey() {
+		this.confirmationDialog.nativeElement.close();
+		this.regeneratingKey = true;
+		try {
+			const response = await this.createProjectService.regenerateKey();
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.regeneratingKey = false;
+			this.apiKey = response.data.key;
+			this.tokenDialog.nativeElement.showModal();
+			return;
+		} catch (error) {
+			this.regeneratingKey = false;
+			return error;
+		}
+	}
 
-    async createNewSignature(i: number) {
-        if (this.newSignatureForm.invalid) return this.newSignatureForm.markAllAsTouched();
+	async createNewSignature(i: number) {
+		if (this.newSignatureForm.invalid) return this.newSignatureForm.markAllAsTouched();
 
-        this.versions.at(i).patchValue(this.newSignatureForm.value);
-        await this.updateProject();
-        this.newSignatureForm.reset();
-        this.newSignatureDialog.nativeElement.close();
-        this.getProjectDetails();
-    }
+		this.versions.at(i).patchValue(this.newSignatureForm.value);
+		await this.updateProject();
+		this.newSignatureForm.reset();
+		this.newSignatureDialog.nativeElement.close();
+		this.getProjectDetails();
+	}
 
 	getProjectData() {
 		const configKeys = Object.keys(this.projectForm.value.config);
@@ -291,8 +290,8 @@ export class CreateProjectComponent implements OnInit {
 			if (this.showConfig('search_policy') && typeof projectData.config.search_policy === 'number') projectData.config.search_policy = `${projectData.config.search_policy}h`;
 		});
 
-        return projectData;
-    }
+		return projectData;
+	}
 
 	checkMetaEventsConfig() {
 		const is_meta_events_enabled = this.projectForm.value.config.meta_event.is_enabled;
@@ -311,22 +310,22 @@ export class CreateProjectComponent implements OnInit {
 		return parseInt(digits);
 	}
 
-    getTimeString(timeValue: number) {
-        if (timeValue > 59) return `${Math.round(timeValue / 60)}m`;
-        return `${timeValue}s`;
-    }
+	getTimeString(timeValue: number) {
+		if (timeValue > 59) return `${Math.round(timeValue / 60)}m`;
+		return `${timeValue}s`;
+	}
 
-    getTimeValue(timeValue: any) {
-        const [digits, word] = timeValue.match(/\D+|\d+/g);
-        if (word === 's') return parseInt(digits);
-        else if (word === 'm') return parseInt(digits) * 60;
-        return parseInt(digits);
-    }
+	getTimeValue(timeValue: any) {
+		const [digits, word] = timeValue.match(/\D+|\d+/g);
+		if (word === 's') return parseInt(digits);
+		else if (word === 'm') return parseInt(digits) * 60;
+		return parseInt(digits);
+	}
 
-    cancel() {
-        this.confirmationDialog.nativeElement.showModal();
-        document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
-    }
+	cancel() {
+		this.confirmationDialog.nativeElement.showModal();
+		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
+	}
 
     async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
         const disableValue = event.target.checked;
@@ -340,27 +339,27 @@ export class CreateProjectComponent implements OnInit {
 		disableValue ? this.updateProject() : this.disableTLSEndpointsDialog.nativeElement.showModal();
     }
 
-    switchTab(tab: TAB) {
-        if (tab.label === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
-        this.activeTab = tab;
-        this.addPageToUrl();
-    }
+	switchTab(tab: TAB) {
+		if (tab.label === 'meta events') this.projectForm.patchValue({ config: { meta_event: { type: 'http' } } });
+		this.activeTab = tab;
+		this.addPageToUrl();
+	}
 
-    addPageToUrl() {
-        const queryParams: any = {};
-        queryParams.activePage = this.activeTab.label;
-        this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
-    }
+	addPageToUrl() {
+		const queryParams: any = {};
+		queryParams.activePage = this.activeTab.label;
+		this.router.navigate([], { queryParams: Object.assign({}, queryParams) });
+	}
 
-    async addEventToCatalogue() {
-        if (this.eventsForm.invalid) return this.eventsForm.markAllAsTouched();
+	async addEventToCatalogue() {
+		if (this.eventsForm.invalid) return this.eventsForm.markAllAsTouched();
 
-        try {
-            const response = await this.createProjectService.addEventToEventCatalogue(this.eventsForm.value);
-            this.generalService.showNotification({ message: response.message, style: 'success' });
-            this.eventsForm.reset();
-        } catch { }
-    }
+		try {
+			const response = await this.createProjectService.addEventToEventCatalogue(this.eventsForm.value);
+			this.generalService.showNotification({ message: response.message, style: 'success' });
+			this.eventsForm.reset();
+		} catch {}
+	}
 
     async getEventsCatalog() {
         try {
@@ -382,16 +381,16 @@ export class CreateProjectComponent implements OnInit {
         }
     }
 
-    closeOpenAPIDialog(e?: any) {
-        if (e === 'apiSpecAdded') this.previewCatalog.nativeElement.showModal();
-        this.showUploadEvents = false;
-    }
+	closeOpenAPIDialog(e?: any) {
+		if (e === 'apiSpecAdded') this.previewCatalog.nativeElement.showModal();
+		this.showUploadEvents = false;
+	}
 
-    previewEventCatalog() {
-        this.router.navigate([`/portal/events`]);
-    }
+	previewEventCatalog() {
+		this.router.navigate([`/portal/events`]);
+	}
 
-    get shouldShowBorder(): number {
-        return this.configurations.filter(config => config.show).length;
-    }
+	get shouldShowBorder(): number {
+		return this.configurations.filter(config => config.show).length;
+	}
 }

@@ -1,15 +1,15 @@
 <div *ngFor="let property of catalog; let i = index" [ngClass]="{ 'border-b': i !== catalog.length - 1 }" class="border-b border-new.primary-25 w-full pt-16px">
 	<div [ngClass]="{ 'mb-16px': !property.children }" class="">
 		<div class="flex items-center gap-x-10px cursor-pointer" (click)="collapseCatalog(property.name)">
-			<svg width="24" height="24" class="fill-new.gray-700 scale-75">
+			<svg width="24" height="24" class="fill-neutral-11 scale-75">
 				<use xlink:href="#arrow-right-icon"></use>
 			</svg>
-			<span class="text-12 text-new.gray-600">{{ property.name }}</span>
-			<div convoy-tag size="xs" [fill]="getVariableType(property.type).fill" [color]="getVariableType(property.type).color" class="ml-10px">{{ getVariableType(property.type).type }}</div>
+			<span class="text-12 text-neutral-11">{{ property.name }}</span>
+			<div convoy-tag size="sm" [fill]="getVariableType(property.type).fill" [color]="getVariableType(property.type).color" class="ml-10px">{{ getVariableType(property.type).type }}</div>
 		</div>
 
 		<ng-container *ngIf="property.description">
-			<div class="text-10 text-new.gray-600 ml-32px mt-10px">{{ property.description }}</div>
+			<div class="text-10 text-neutral-11 ml-32px mt-10px">{{ property.description }}</div>
 		</ng-container>
 	</div>
 

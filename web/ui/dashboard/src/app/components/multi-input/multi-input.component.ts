@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TooltipComponent } from '../tooltip/tooltip.component';
 import { GeneralService } from 'src/app/services/general/general.service';
@@ -8,7 +8,7 @@ import { ButtonComponent } from '../button/button.component';
 @Component({
     selector: 'convoy-multi-input',
     standalone: true,
-    imports: [CommonModule, TooltipComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent],
+    imports: [CommonModule, TooltipComponent, ButtonComponent],
     templateUrl: './multi-input.component.html',
     styleUrls: ['./multi-input.component.scss']
 })

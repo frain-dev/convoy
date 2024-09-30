@@ -30,7 +30,6 @@ export class UploadEventsComponent implements OnInit {
 			const response = await this.createProjectService.addOpenApiSpecToCatalogue({ open_api_spec });
 			this.generalService.showNotification({ message: response.message, style: 'success' });
             this.close.emit('apiSpecAdded')
-			console.log(response);
 		} catch {}
 	}
 }
