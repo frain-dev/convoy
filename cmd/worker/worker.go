@@ -294,8 +294,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 					if innerErr != nil {
 						return innerErr
 					}
-
-					break
 				case cb.TypeDisableResource:
 					breakerErr := endpointRepo.UpdateEndpointStatus(ctx, b.TenantId, endpointId, datastore.InactiveEndpointStatus)
 					if breakerErr != nil {
@@ -313,7 +311,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 					if innerErr != nil {
 						return innerErr
 					}
-					break
 				default:
 					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
 				}
