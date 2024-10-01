@@ -452,7 +452,6 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 			SampleRate:                  2,
 			ErrorTimeout:                30,
 			FailureThreshold:            10,
-			FailureCount:                3,
 			SuccessThreshold:            1,
 			ObservabilityWindow:         5,
 			NotificationThresholds:      pq.Int64Array{10},

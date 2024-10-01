@@ -117,7 +117,6 @@ func generateConfig() *datastore.Configuration {
 			SampleRate:                  30,
 			ErrorTimeout:                30,
 			FailureThreshold:            10,
-			FailureCount:                10,
 			SuccessThreshold:            5,
 			ObservabilityWindow:         5,
 			NotificationThresholds:      pq.Int64Array{5, 10},

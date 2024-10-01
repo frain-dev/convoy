@@ -961,7 +961,6 @@ func TestProcessEventDelivery(t *testing.T) {
 				SampleRate:                  1,
 				BreakerTimeout:              30,
 				FailureThreshold:            50,
-				FailureCount:                5,
 				SuccessThreshold:            2,
 				ObservabilityWindow:         5,
 				MinimumRequestCount:         10,
