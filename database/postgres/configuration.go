@@ -21,12 +21,11 @@ const (
 		s3_region, s3_session_token, s3_endpoint,
 		retention_policy_policy, retention_policy_enabled, 
 		cb_sample_rate,cb_error_timeout,
-		cb_failure_threshold,cb_failure_count,
-		cb_success_threshold,cb_observability_window,
-		cb_notification_thresholds,cb_consecutive_failure_threshold,
-		cb_minimum_request_count
+		cb_failure_threshold, cb_success_threshold, 
+		cb_observability_window, cb_notification_thresholds,
+		cb_consecutive_failure_threshold, cb_minimum_request_count
 	  )
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23);
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22);
 	`
 
 	fetchConfiguration = `
@@ -48,7 +47,6 @@ const (
 		cb_sample_rate AS "circuit_breaker.sample_rate",
 		cb_error_timeout AS "circuit_breaker.error_timeout",
 		cb_failure_threshold AS "circuit_breaker.failure_threshold",
-		cb_failure_count AS "circuit_breaker.failure_count",
 		cb_success_threshold AS "circuit_breaker.success_threshold",
 		cb_observability_window AS "circuit_breaker.observability_window",
 		cb_minimum_request_count as "circuit_breaker.minimum_request_count",
@@ -81,12 +79,11 @@ const (
 		cb_sample_rate = $15,
 		cb_error_timeout = $16,
 		cb_failure_threshold = $17,
-		cb_failure_count = $18,
-		cb_success_threshold = $19,
-		cb_observability_window = $20,
-		cb_notification_thresholds = $21,
-		cb_consecutive_failure_threshold = $22,
-		cb_minimum_request_count = $23,
+		cb_success_threshold = $18,
+		cb_observability_window = $19,
+		cb_notification_thresholds = $20,
+		cb_consecutive_failure_threshold = $21,
+		cb_minimum_request_count = $22,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -138,7 +135,6 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		cb.SampleRate,
 		cb.ErrorTimeout,
 		cb.FailureThreshold,
-		cb.FailureCount,
 		cb.SuccessThreshold,
 		cb.ObservabilityWindow,
 		cb.NotificationThresholds,
@@ -212,7 +208,6 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		cb.SampleRate,
 		cb.ErrorTimeout,
 		cb.FailureThreshold,
-		cb.FailureCount,
 		cb.SuccessThreshold,
 		cb.ObservabilityWindow,
 		cb.NotificationThresholds,

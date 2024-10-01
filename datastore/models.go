@@ -323,7 +323,6 @@ var (
 		SampleRate:                  30,
 		ErrorTimeout:                30,
 		FailureThreshold:            70,
-		FailureCount:                10,
 		SuccessThreshold:            5,
 		ObservabilityWindow:         5,
 		NotificationThresholds:      pq.Int64Array{10, 30, 50},
@@ -1364,7 +1363,6 @@ func (c *Configuration) ToCircuitBreakerConfig() *cb.CircuitBreakerConfig {
 
 	return &cb.CircuitBreakerConfig{
 		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
-		FailureCount:                c.CircuitBreakerConfig.FailureCount,
 		BreakerTimeout:              c.CircuitBreakerConfig.ErrorTimeout,
 		FailureThreshold:            c.CircuitBreakerConfig.FailureThreshold,
 		SuccessThreshold:            c.CircuitBreakerConfig.SuccessThreshold,
@@ -1405,7 +1403,6 @@ type OnPremStorage struct {
 type CircuitBreakerConfig struct {
 	SampleRate                  uint64        `json:"sample_rate" db:"sample_rate"`
 	ErrorTimeout                uint64        `json:"error_timeout" db:"error_timeout"`
-	FailureCount                uint64        `json:"failure_count" db:"failure_count"`
 	FailureThreshold            uint64        `json:"failure_threshold" db:"failure_threshold"`
 	SuccessThreshold            uint64        `json:"success_threshold" db:"success_threshold"`
 	ObservabilityWindow         uint64        `json:"observability_window" db:"observability_window"`

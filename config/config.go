@@ -78,7 +78,6 @@ var DefaultConfiguration = Configuration{
 		SampleRate:                  30,
 		ErrorTimeout:                30,
 		FailureThreshold:            70,
-		FailureCount:                10,
 		SuccessThreshold:            5,
 		ObservabilityWindow:         5,
 		MinimumRequestCount:         10,
@@ -274,7 +273,6 @@ type RetentionPolicyConfiguration struct {
 
 type CircuitBreakerConfiguration struct {
 	SampleRate                  uint64    `json:"sample_rate" envconfig:"CONVOY_CIRCUIT_BREAKER_SAMPLE_RATE"`
-	FailureCount                uint64    `json:"failure_count" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_COUNT"`
 	ErrorTimeout                uint64    `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
 	FailureThreshold            uint64    `json:"failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD"`
 	SuccessThreshold            uint64    `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`

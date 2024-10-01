@@ -128,23 +128,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			if breakerErr != nil {
 				return &CircuitBreakerError{Err: breakerErr}
 			}
-
-			// check the circuit breaker state so we can disable the endpoint
-			cb, breakerErr := circuitBreakerManager.GetCircuitBreaker(ctx, endpoint.UID)
-			if breakerErr != nil {
-				return &CircuitBreakerError{Err: breakerErr}
-			}
-
-			if cb != nil {
-				if cb.ConsecutiveFailures > circuitBreakerManager.GetConfig().ConsecutiveFailureThreshold {
-					endpointStatus := datastore.InactiveEndpointStatus
-
-					breakerErr = endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-					if breakerErr != nil {
-						log.WithError(breakerErr).Error("failed to deactivate endpoint after failed retry")
-					}
-				}
-			}
 		}
 
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)

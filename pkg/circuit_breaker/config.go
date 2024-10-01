@@ -23,10 +23,6 @@ type CircuitBreakerConfig struct {
 	// that will trip a circuit breaker
 	MinimumRequestCount uint64 `json:"request_count"`
 
-	// FailureCount total number of failed requests in the observability window
-	// that will trip a circuit breaker
-	FailureCount uint64 `json:"failure_count"`
-
 	// SuccessThreshold is the % of successful requests in the observability window
 	// after which a circuit breaker in the half-open state will go into the closed state
 	SuccessThreshold uint64 `json:"success_threshold"`
@@ -63,11 +59,6 @@ func (c *CircuitBreakerConfig) Validate() error {
 
 	if c.MinimumRequestCount < 10 {
 		errs.WriteString("MinimumRequestCount must be greater than 10")
-		errs.WriteString("; ")
-	}
-
-	if c.FailureCount == 0 {
-		errs.WriteString("FailureCount must be greater than 0")
 		errs.WriteString("; ")
 	}
 

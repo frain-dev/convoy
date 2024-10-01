@@ -334,7 +334,6 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	circuitBreakerConfig := &datastore.CircuitBreakerConfig{
 		SampleRate:                  cfg.CircuitBreaker.SampleRate,
 		ErrorTimeout:                cfg.CircuitBreaker.ErrorTimeout,
-		FailureCount:                cfg.CircuitBreaker.FailureCount,
 		FailureThreshold:            cfg.CircuitBreaker.FailureThreshold,
 		SuccessThreshold:            cfg.CircuitBreaker.SuccessThreshold,
 		ObservabilityWindow:         cfg.CircuitBreaker.ObservabilityWindow,

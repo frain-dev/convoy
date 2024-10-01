@@ -11,11 +11,6 @@ import (
 	"time"
 )
 
-// todo(raymond): send notifications when notification thresholds are hit, then update breaker state
-// todo(raymond): save the previous failure rate along side the current so we can compare to see if it's reducing
-// todo(raymond): metrics should contain error rate
-// todo(raymond): use a guage for failure rate metrics
-
 const prefix = "breaker:"
 const mutexKey = "convoy:circuit_breaker:mutex"
 
@@ -47,12 +42,18 @@ var (
 
 // State represents a state of a CircuitBreaker.
 type State int
+type NotificationType string
 
 // These are the states of a CircuitBreaker.
 const (
 	StateClosed State = iota
 	StateHalfOpen
 	StateOpen
+)
+
+const (
+	TypeDisableResource  NotificationType = "disable"
+	TypeTriggerThreshold NotificationType = "trigger"
 )
 
 func (s State) String() string {
@@ -79,7 +80,7 @@ type CircuitBreakerManager struct {
 	config         *CircuitBreakerConfig
 	clock          clock.Clock
 	store          CircuitBreakerStore
-	notificationFn func(CircuitBreaker) error
+	notificationFn func(NotificationType, CircuitBreakerConfig, CircuitBreaker) error
 }
 
 func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerManager, error) {
@@ -144,7 +145,7 @@ func ConfigOption(config *CircuitBreakerConfig) CircuitBreakerOption {
 	}
 }
 
-func NotificationFunctionOption(fn func(c CircuitBreaker) error) CircuitBreakerOption {
+func NotificationFunctionOption(fn func(NotificationType, CircuitBreakerConfig, CircuitBreaker) error) CircuitBreakerOption {
 	return func(cb *CircuitBreakerManager) error {
 		if fn == nil {
 			return ErrNotificationFunctionMustNotBeNil
@@ -220,7 +221,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		if breaker.State == StateHalfOpen && breaker.SuccessRate >= float64(cb.config.SuccessThreshold) {
 			breaker.resetCircuitBreaker()
 		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= cb.config.MinimumRequestCount {
-			if breaker.FailureRate >= float64(cb.config.FailureThreshold) || breaker.TotalFailures >= cb.config.FailureCount {
+			if breaker.FailureRate >= float64(cb.config.FailureThreshold) {
 				breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
 			}
 		}
@@ -233,12 +234,21 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		if cb.notificationFn != nil {
 			if prevFailureRate < breaker.FailureRate && breaker.NotificationsSent < 3 {
 				if breaker.FailureRate >= float64(cb.config.NotificationThresholds[breaker.NotificationsSent]) {
-					innerErr := cb.notificationFn(breaker)
+					innerErr := cb.notificationFn(TypeTriggerThreshold, *cb.config, breaker)
 					if innerErr != nil {
-						log.WithError(innerErr).Errorf("[circuit breaker] failed to execute notification function")
+						log.WithError(innerErr).Errorf("[circuit breaker] failed to execute threshold notification function")
 					}
+					log.Debugf("[circuit breaker] executed threshold notification function at %v", cb.config.NotificationThresholds[breaker.NotificationsSent])
 					breaker.NotificationsSent++
 				}
+			}
+
+			if breaker.ConsecutiveFailures > cb.GetConfig().ConsecutiveFailureThreshold {
+				innerErr := cb.notificationFn(TypeDisableResource, *cb.config, breaker)
+				if innerErr != nil {
+					log.WithError(innerErr).Errorf("[circuit breaker] failed to execute disable resource notification function")
+				}
+				log.Debug("[circuit breaker] executed disable resource notification function")
 			}
 		}
 
@@ -305,7 +315,7 @@ func (cb *CircuitBreakerManager) getCircuitBreakerError(b CircuitBreaker) error 
 	case StateOpen:
 		return ErrOpenState
 	case StateHalfOpen:
-		if b.TotalFailures > cb.config.FailureCount {
+		if b.FailureRate > float64(cb.config.FailureThreshold) {
 			return ErrTooManyRequests
 		}
 		return nil

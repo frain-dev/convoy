@@ -55,14 +55,20 @@ func (b *CircuitBreaker) tripCircuitBreaker(resetTime time.Time) {
 	b.State = StateOpen
 	b.WillResetAt = resetTime
 	b.ConsecutiveFailures++
+	log.Infof("[circuit breaker] circuit breaker transitioned from closed to open.")
+	log.Debugf("[circuit breaker] circuit breaker state: %+v", b)
 }
 
 func (b *CircuitBreaker) toHalfOpen() {
 	b.State = StateHalfOpen
+	log.Infof("[circuit breaker] circuit breaker transitioned from open to half-open")
+	log.Debugf("[circuit breaker] circuit breaker state: %+v", b)
 }
 
 func (b *CircuitBreaker) resetCircuitBreaker() {
 	b.State = StateClosed
 	b.NotificationsSent = 0
 	b.ConsecutiveFailures = 0
+	log.Infof("[circuit breaker] circuit breaker transitioned from half-open to closed")
+	log.Debugf("[circuit breaker] circuit breaker state: %+v", b)
 }

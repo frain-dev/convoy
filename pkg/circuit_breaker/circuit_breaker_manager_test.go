@@ -62,7 +62,6 @@ func TestCircuitBreakerManager(t *testing.T) {
 		SampleRate:                  2,
 		BreakerTimeout:              30,
 		FailureThreshold:            70,
-		FailureCount:                3,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -75,11 +74,11 @@ func TestCircuitBreakerManager(t *testing.T) {
 		ClockOption(testClock),
 		StoreOption(store),
 		ConfigOption(c),
-		NotificationFunctionOption(func(c CircuitBreaker) error {
+		NotificationFunctionOption(func(n NotificationType, c CircuitBreakerConfig, b CircuitBreaker) error {
 			triggered = append(triggered, notificationTriggered{
-				State: c.State,
-				Rate:  c.FailureRate,
-				Sent:  c.NotificationsSent,
+				State: b.State,
+				Rate:  b.FailureRate,
+				Sent:  b.NotificationsSent,
 			})
 			return nil
 		}),
@@ -136,7 +135,6 @@ func TestCircuitBreakerManager_AddNewBreakerMidway(t *testing.T) {
 		SampleRate:                  2,
 		BreakerTimeout:              30,
 		FailureThreshold:            70,
-		FailureCount:                3,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -192,7 +190,6 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 		SampleRate:                  2,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                3,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -205,7 +202,6 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 	endpointId := "endpoint-1"
 	pollResults := []map[string]PollResult{
 		pollResult(t, endpointId, 1, 2),  // Closed
-		pollResult(t, endpointId, 13, 1), // Open (FailureCount reached)
 		pollResult(t, endpointId, 13, 1), // Still Open
 		pollResult(t, endpointId, 10, 1), // Half-Open (after ErrorTimeout)
 		pollResult(t, endpointId, 0, 2),  // Closed (SuccessThreshold reached)
@@ -214,7 +210,6 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 
 	expectedStates := []State{
 		StateClosed,
-		StateOpen,
 		StateOpen,
 		StateHalfOpen,
 		StateClosed,
@@ -230,7 +225,7 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 
 		require.Equal(t, expectedStates[i], breaker.State, "Iteration %d: expected state %v, got %v", i, expectedStates[i], breaker.State)
 
-		if i == 2 {
+		if i == 1 {
 			// Advance time to trigger the transition to half-open
 			testClock.AdvanceTime(time.Duration(c.BreakerTimeout+1) * time.Second)
 		} else {
@@ -261,7 +256,6 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 		SampleRate:                  2,
 		BreakerTimeout:              30,
 		FailureThreshold:            70,
-		FailureCount:                3,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -315,7 +309,6 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 		SampleRate:                  2,
 		BreakerTimeout:              30,
 		FailureThreshold:            60,
-		FailureCount:                3,
 		SuccessThreshold:            10,
 		ObservabilityWindow:         5,
 		MinimumRequestCount:         10,
@@ -362,7 +355,6 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -420,7 +412,6 @@ func TestCircuitBreakerManager_GetCircuitBreakerError(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -437,13 +428,13 @@ func TestCircuitBreakerManager_GetCircuitBreakerError(t *testing.T) {
 	})
 
 	t.Run("Half-Open State with Too Many Failures", func(t *testing.T) {
-		breaker := CircuitBreaker{State: StateHalfOpen, TotalFailures: 6}
+		breaker := CircuitBreaker{State: StateHalfOpen, FailureRate: 60}
 		err := manager.getCircuitBreakerError(breaker)
 		require.Equal(t, ErrTooManyRequests, err)
 	})
 
 	t.Run("Half-Open State with Acceptable Failures", func(t *testing.T) {
-		breaker := CircuitBreaker{State: StateHalfOpen, TotalFailures: 4}
+		breaker := CircuitBreaker{State: StateHalfOpen, FailureRate: 40}
 		err := manager.getCircuitBreakerError(breaker)
 		require.NoError(t, err)
 	})
@@ -462,7 +453,6 @@ func TestCircuitBreakerManager_SampleStore(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -509,7 +499,6 @@ func TestCircuitBreakerManager_UpdateCircuitBreakers(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -568,7 +557,6 @@ func TestCircuitBreakerManager_LoadCircuitBreakers(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -626,7 +614,6 @@ func TestCircuitBreakerManager_CanExecute(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -674,9 +661,9 @@ func TestCircuitBreakerManager_CanExecute(t *testing.T) {
 
 	t.Run("Half-Open State with Too Many Failures", func(t *testing.T) {
 		cb := CircuitBreaker{
-			Key:           "test_half_open",
-			State:         StateHalfOpen,
-			TotalFailures: 6,
+			Key:         "test_half_open",
+			State:       StateHalfOpen,
+			FailureRate: 60,
 		}
 		err := manager.store.SetOne(ctx, "breaker:test_half_open", cb, time.Minute)
 		require.NoError(t, err)
@@ -706,7 +693,6 @@ func TestCircuitBreakerManager_GetCircuitBreaker(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -756,7 +742,6 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
@@ -828,7 +813,6 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 		SampleRate:                  1,
 		BreakerTimeout:              30,
 		FailureThreshold:            50,
-		FailureCount:                5,
 		SuccessThreshold:            10,
 		MinimumRequestCount:         10,
 		ObservabilityWindow:         5,
