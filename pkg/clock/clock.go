@@ -28,7 +28,7 @@ func (_ *realTimeClock) Now() time.Time { return time.Now() }
 // This object is concurrency safe.
 type SimulatedClock struct {
 	mu *sync.Mutex
-	t  time.Time // guarded by mu
+	t  time.Time
 }
 
 func NewSimulatedClock(t time.Time) *SimulatedClock {

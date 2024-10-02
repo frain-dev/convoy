@@ -104,6 +104,21 @@ func TestCircuitBreakerConfig_Validate(t *testing.T) {
 			err:     "Notification threshold at index [0] = 0 must be greater than 0",
 		},
 		{
+			name: "Invalid NotificationThresholds",
+			config: CircuitBreakerConfig{
+				SampleRate:                  1,
+				BreakerTimeout:              30,
+				FailureThreshold:            5,
+				MinimumRequestCount:         10,
+				SuccessThreshold:            2,
+				ObservabilityWindow:         5,
+				ConsecutiveFailureThreshold: 2,
+				NotificationThresholds:      [3]uint64{1, 2},
+			},
+			wantErr: true,
+			err:     "Notification threshold at index [0] = 0 must be greater than 0",
+		},
+		{
 			name: "Invalid ConsecutiveFailureThreshold",
 			config: CircuitBreakerConfig{
 				SampleRate:                  1,

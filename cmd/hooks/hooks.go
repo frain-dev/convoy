@@ -123,6 +123,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		lo := log.NewLogger(os.Stdout)
 
+		rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
+		if err != nil {
+			return err
+		}
+
 		ca, err = cache.NewCache(cfg.Redis)
 		if err != nil {
 			return err
@@ -156,6 +161,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
+		app.Redis = rd.Client()
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo

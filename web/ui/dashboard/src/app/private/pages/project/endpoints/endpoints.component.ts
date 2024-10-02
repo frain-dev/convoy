@@ -25,6 +25,7 @@ import { DeleteModalComponent } from 'src/app/private/components/delete-modal/de
 import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
 import { EndpointsService } from './endpoints.service';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
+import {LicensesService} from "../../../../services/licenses/licenses.service";
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -68,7 +69,7 @@ export class EndpointsComponent implements OnInit {
 
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['Name', 'Status', 'Url', 'ID', '', '', ''];
+	endpointsTableHead = ['Name', 'Status', 'Url', 'ID', 'Failure Rate', '', ''];
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
@@ -81,7 +82,7 @@ export class EndpointsComponent implements OnInit {
 	action: 'create' | 'update' = 'create';
 	userSearch = false;
 
-	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute) {}
+	constructor(public router: Router, public privateService: PrivateService, public projectService: ProjectService, private endpointService: EndpointsService, private generalService: GeneralService, public route: ActivatedRoute, public licenseService: LicensesService) {}
 
 	ngOnInit() {
 		const urlParam = this.route.snapshot.params.id;
@@ -89,6 +90,10 @@ export class EndpointsComponent implements OnInit {
 			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
 			this.endpointDialog.nativeElement.showModal();
 		}
+
+		this.endpointsTableHead = this.licenseService.hasLicense("CIRCUIT_BREAKING")
+			? ['Name', 'Status', 'Url', 'ID', 'Failure Rate', '', ''] :
+			['Name', 'Status', 'Url', 'ID', '', '', ''];
 
 		this.getEndpoints();
 	}
@@ -146,6 +151,24 @@ export class EndpointsComponent implements OnInit {
 		}
 	}
 
+	async activateEndpoint() {
+		this.isTogglingEndpoint = true;
+		if (!this.selectedEndpoint?.uid) return;
+
+		try {
+			const response = await this.endpointService.activateEndpoint(this.selectedEndpoint?.uid);
+			this.displayedEndpoints?.forEach(item => {
+				item.content.forEach(endpoint => {
+					if (response.data.uid === endpoint.uid) endpoint.status = response.data.status;
+				});
+			});
+			this.generalService.showNotification({ message: `${this.selectedEndpoint?.title} status updated successfully`, style: 'success' });
+			this.isTogglingEndpoint = false;
+		} catch {
+			this.isTogglingEndpoint = false;
+		}
+	}
+
 	async sendTestEvent() {
 		const testEvent = {
 			data: { data: 'test event from Convoy', convoy: 'https://getconvoy.io', amount: 1000 },
@@ -167,4 +190,6 @@ export class EndpointsComponent implements OnInit {
 		this.endpointDialog.nativeElement.close();
 		this.router.navigateByUrl('/projects/' + this.projectService.activeProjectDetails?.uid + '/endpoints');
 	}
+
+	protected readonly Math = Math;
 }

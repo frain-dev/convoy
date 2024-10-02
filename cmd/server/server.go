@@ -130,6 +130,7 @@ func startConvoyServer(a *cli.App) error {
 			DB:       a.DB,
 			Queue:    a.Queue,
 			Logger:   lo,
+			Redis:    a.Redis,
 			Cache:    a.Cache,
 			Rate:     a.Rate,
 			Licenser: a.Licenser,
