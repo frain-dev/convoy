@@ -25,7 +25,7 @@ import { DeleteModalComponent } from 'src/app/private/components/delete-modal/de
 import { EndpointSecretComponent } from './endpoint-secret/endpoint-secret.component';
 import { EndpointsService } from './endpoints.service';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
-import {LicensesService} from "../../../../services/licenses/licenses.service";
+import { LicensesService } from '../../../../services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-endpoints',
@@ -69,7 +69,7 @@ export class EndpointsComponent implements OnInit {
 
 	showCreateEndpointModal = this.router.url.split('/')[4] === 'new';
 	showEditEndpointModal = this.router.url.split('/')[5] === 'edit';
-	endpointsTableHead = ['Name', 'Status', 'Url', 'ID', 'Failure Rate', '', ''];
+	endpointsTableHead = ['Name', 'Status', 'Url', 'ID', '', '', ''];
 	displayedEndpoints?: { date: string; content: ENDPOINT[] }[];
 	endpoints?: { pagination?: PAGINATION; content?: ENDPOINT[] };
 	selectedEndpoint?: ENDPOINT;
@@ -90,10 +90,7 @@ export class EndpointsComponent implements OnInit {
 			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
 			this.endpointDialog.nativeElement.showModal();
 		}
-
-		this.endpointsTableHead = this.licenseService.hasLicense("CIRCUIT_BREAKING")
-			? ['Name', 'Status', 'Url', 'ID', 'Failure Rate', '', ''] :
-			['Name', 'Status', 'Url', 'ID', '', '', ''];
+		this.endpointsTableHead[4] = this.licenseService.hasLicense('CIRCUIT_BREAKING') ? 'Failure Rate' : '';
 
 		this.getEndpoints();
 	}
@@ -144,7 +141,7 @@ export class EndpointsComponent implements OnInit {
 					if (response.data.uid === endpoint.uid) endpoint.status = response.data.status;
 				});
 			});
-			this.generalService.showNotification({ message: `${this.selectedEndpoint?.title} status updated successfully`, style: 'success' });
+			this.generalService.showNotification({ message: `${this.selectedEndpoint?.name} status updated successfully`, style: 'success' });
 			this.isTogglingEndpoint = false;
 		} catch {
 			this.isTogglingEndpoint = false;
@@ -162,7 +159,7 @@ export class EndpointsComponent implements OnInit {
 					if (response.data.uid === endpoint.uid) endpoint.status = response.data.status;
 				});
 			});
-			this.generalService.showNotification({ message: `${this.selectedEndpoint?.title} status updated successfully`, style: 'success' });
+			this.generalService.showNotification({ message: `${this.selectedEndpoint?.name} activated successfully`, style: 'success' });
 			this.isTogglingEndpoint = false;
 		} catch {
 			this.isTogglingEndpoint = false;

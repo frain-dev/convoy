@@ -86,8 +86,10 @@
 								</div>
 							</td>
 
-							<td convoy-table-cell>{{ licenseService.hasLicense('CIRCUIT_BREAKING') ? (endpoint.failure_rate | number) : '' }}</td>
-                            <td convoy-table-cell></td>
+							<td convoy-table-cell>
+								<span *ngIf="licenseService.hasLicense('CIRCUIT_BREAKING')">{{ endpoint.failure_rate | number }}%</span>
+							</td>
+							<td convoy-table-cell></td>
 
 							<td convoy-table-cell>
 								<div class="w-full flex items-center justify-end">
@@ -121,14 +123,14 @@
 												</button>
 											</li>
 
-                                            <li *ngIf="endpoint.status === 'inactive'" class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
-                                                <button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="activateEndpoint()" [disabled]="isTogglingEndpoint">
-                                                    <svg width="14" height="14" class="stroke-neutral-10 mr-8px">
-                                                        <use xlink:href="#play-icon"></use>
-                                                    </svg>
-                                                    Activate Endpoint
-                                                </button>
-                                            </li>
+											<li *ngIf="endpoint.status === 'inactive'" class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="activateEndpoint()" [disabled]="isTogglingEndpoint">
+													<svg width="14" height="14" class="fill-neutral-10 mr-8px">
+														<use xlink:href="#activate-icon"></use>
+													</svg>
+													Activate Endpoint
+												</button>
+											</li>
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
 												<button convoy-dropdown-option convoy-button color="neutral" fill="text" class="w-full !justify-start" [routerLink]="'./' + selectedEndpoint?.uid">
 													<svg width="17" height="16" class="fill-neutral-10 mr-8px">
