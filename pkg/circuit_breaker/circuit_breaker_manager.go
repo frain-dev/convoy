@@ -243,7 +243,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 				}
 			}
 
-			if breaker.ConsecutiveFailures > cb.GetConfig().ConsecutiveFailureThreshold {
+			if breaker.ConsecutiveFailures >= cb.GetConfig().ConsecutiveFailureThreshold {
 				innerErr := cb.notificationFn(TypeDisableResource, *cb.config, breaker)
 				if innerErr != nil {
 					log.WithError(innerErr).Errorf("[circuit breaker] failed to execute disable resource notification function")

@@ -441,7 +441,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 // PauseEndpoint
 //
 //	@Summary		Pause endpoint
-//	@Description	This endpoint toggles an endpoint status between the active and paused states
+//	@Description	Toggles an endpoint's status between active and paused states
 //	@Id				PauseEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
@@ -473,6 +473,57 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
 	serverResponse := util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted)
+
+	rb, err := json.Marshal(serverResponse)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resBytes, err := h.RM.VersionResponse(r, rb, "UpdateEndpoint")
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	util.WriteResponse(w, r, resBytes, http.StatusAccepted)
+}
+
+// ActivateEndpoint
+//
+//	@Summary		Activate endpoint
+//	@Description	Activated an inactive endpoint
+//	@Id				PauseEndpoint
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID	path		string	true	"Endpoint ID"
+//	@Success		202			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/activate [post]
+func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	aes := services.ActivateEndpointService{
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		ProjectID:    project.UID,
+		EndpointId:   chi.URLParam(r, "endpointID"),
+	}
+
+	endpoint, err := aes.Run(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resp := &models.EndpointResponse{Endpoint: endpoint}
+	serverResponse := util.NewServerResponse("endpoint status successfully activated", resp, http.StatusAccepted)
 
 	rb, err := json.Marshal(serverResponse)
 	if err != nil {

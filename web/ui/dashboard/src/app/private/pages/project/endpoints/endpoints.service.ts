@@ -95,7 +95,7 @@ export class EndpointsService {
 			try {
 				const response = await this.http.request({
 					url: `/endpoints/${endpointId}/activate`,
-					method: 'put',
+					method: 'post',
 					level: 'org_project'
 				});
 

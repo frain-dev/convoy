@@ -333,6 +333,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 								e.With(handler.RequireEnabledProject()).Delete("/", handler.DeleteEndpoint)
 								e.With(handler.RequireEnabledProject()).Put("/expire_secret", handler.ExpireSecret)
 								e.With(handler.RequireEnabledProject()).Put("/pause", handler.PauseEndpoint)
+								e.With(handler.RequireEnabledProject()).Post("/activate", handler.ActivateEndpoint)
 							})
 						})
 
