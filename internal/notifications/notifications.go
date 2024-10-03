@@ -66,10 +66,12 @@ func SendEndpointNotification(
 				Subject:      "Endpoint Status Update",
 				TemplateName: email.TemplateEndpointUpdate,
 				Params: map[string]string{
+					"name":            endpoint.Name,
 					"logo_url":        project.LogoURL,
 					"target_url":      endpoint.Url,
 					"failure_msg":     failureMsg,
 					"response_body":   responseBody,
+					"failure_rate":    fmt.Sprintf("%.2f", endpoint.FailureRate),
 					"status_code":     strconv.Itoa(statusCode),
 					"endpoint_status": string(status),
 				},
@@ -100,10 +102,7 @@ func SendEndpointNotification(
 			continue
 		}
 
-		job := &queue.Job{
-			Payload: buf,
-			Delay:   0,
-		}
+		job := &queue.Job{Payload: buf}
 
 		err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 		if err != nil {
