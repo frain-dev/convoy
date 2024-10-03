@@ -6,7 +6,6 @@ package postgres
 import (
 	"context"
 	"errors"
-	"github.com/lib/pq"
 	"testing"
 	"time"
 
@@ -119,7 +118,6 @@ func generateConfig() *datastore.Configuration {
 			FailureThreshold:            10,
 			SuccessThreshold:            5,
 			ObservabilityWindow:         5,
-			NotificationThresholds:      pq.Int64Array{5, 10},
 			ConsecutiveFailureThreshold: 10,
 		},
 	}

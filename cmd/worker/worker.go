@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"net/http"
 	"strings"
@@ -282,34 +281,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 				}
 
 				switch n {
-				case cb.TypeTriggerThreshold:
-					innerErr := notifications.SendEndpointNotification(ctx,
-						endpoint, project,
-						endpoint.Status,
-						q, true,
-						fmt.Sprintf("%+d percent of the events send to endpoint (%s) in project (%s) have failed",
-							c.NotificationThresholds[b.NotificationsSent], endpoint.Name, project.Name),
-						fmt.Sprintf("circuit breaker state for %s is %v", endpoint.Name, b.State),
-						429)
-					if innerErr != nil {
-						return innerErr
-					}
 				case cb.TypeDisableResource:
-					breakerErr := endpointRepo.UpdateEndpointStatus(ctx, b.TenantId, endpointId, datastore.InactiveEndpointStatus)
+					breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
 					if breakerErr != nil {
 						return breakerErr
-					}
-
-					innerErr := notifications.SendEndpointNotification(ctx,
-						endpoint, project,
-						endpoint.Status,
-						q, true,
-						fmt.Sprintf("Endpoint (%s)'s circuit breaker in the project (%s) has tripped %d times; the endpoint has been de-activated",
-							endpoint.Name, project.Name, c.ConsecutiveFailureThreshold),
-						fmt.Sprintf("circuit breaker state for endpoint (%s) is %v", endpoint.Name, b.State),
-						429)
-					if innerErr != nil {
-						return innerErr
 					}
 				default:
 					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)

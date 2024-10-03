@@ -325,7 +325,6 @@ var (
 		FailureThreshold:            70,
 		SuccessThreshold:            5,
 		ObservabilityWindow:         5,
-		NotificationThresholds:      pq.Int64Array{10, 30, 50},
 		ConsecutiveFailureThreshold: 10,
 	}
 )
@@ -1357,11 +1356,6 @@ func (c *Configuration) GetCircuitBreakerConfig() CircuitBreakerConfig {
 }
 
 func (c *Configuration) ToCircuitBreakerConfig() *cb.CircuitBreakerConfig {
-	notificationThresholds := [3]uint64{}
-	for i := range c.CircuitBreakerConfig.NotificationThresholds {
-		notificationThresholds[i] = uint64(c.CircuitBreakerConfig.NotificationThresholds[i])
-	}
-
 	return &cb.CircuitBreakerConfig{
 		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
 		BreakerTimeout:              c.CircuitBreakerConfig.ErrorTimeout,
@@ -1369,7 +1363,6 @@ func (c *Configuration) ToCircuitBreakerConfig() *cb.CircuitBreakerConfig {
 		SuccessThreshold:            c.CircuitBreakerConfig.SuccessThreshold,
 		ObservabilityWindow:         c.CircuitBreakerConfig.ObservabilityWindow,
 		MinimumRequestCount:         c.CircuitBreakerConfig.MinimumRequestCount,
-		NotificationThresholds:      notificationThresholds,
 		ConsecutiveFailureThreshold: c.CircuitBreakerConfig.ConsecutiveFailureThreshold,
 	}
 }
@@ -1402,14 +1395,13 @@ type OnPremStorage struct {
 }
 
 type CircuitBreakerConfig struct {
-	SampleRate                  uint64        `json:"sample_rate" db:"sample_rate"`
-	ErrorTimeout                uint64        `json:"error_timeout" db:"error_timeout"`
-	FailureThreshold            uint64        `json:"failure_threshold" db:"failure_threshold"`
-	SuccessThreshold            uint64        `json:"success_threshold" db:"success_threshold"`
-	ObservabilityWindow         uint64        `json:"observability_window" db:"observability_window"`
-	MinimumRequestCount         uint64        `json:"minimum_request_count" db:"minimum_request_count"`
-	NotificationThresholds      pq.Int64Array `json:"notification_thresholds" db:"notification_thresholds"`
-	ConsecutiveFailureThreshold uint64        `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
+	SampleRate                  uint64 `json:"sample_rate" db:"sample_rate"`
+	ErrorTimeout                uint64 `json:"error_timeout" db:"error_timeout"`
+	FailureThreshold            uint64 `json:"failure_threshold" db:"failure_threshold"`
+	SuccessThreshold            uint64 `json:"success_threshold" db:"success_threshold"`
+	ObservabilityWindow         uint64 `json:"observability_window" db:"observability_window"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" db:"minimum_request_count"`
+	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
 type OrganisationMember struct {

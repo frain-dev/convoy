@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"github.com/lib/pq"
 	"os"
 	"testing"
 	"time"
@@ -454,7 +453,6 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 			FailureThreshold:            10,
 			SuccessThreshold:            1,
 			ObservabilityWindow:         5,
-			NotificationThresholds:      pq.Int64Array{10},
 			ConsecutiveFailureThreshold: 10,
 		},
 	}

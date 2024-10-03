@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/lib/pq"
 	"io"
 	"os"
 	"time"
@@ -333,10 +332,6 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
 	}
 
-	notificationThresholds := pq.Int64Array{}
-	for i := range cfg.CircuitBreaker.NotificationThresholds {
-		notificationThresholds = append(notificationThresholds, int64(cfg.CircuitBreaker.NotificationThresholds[i]))
-	}
 	circuitBreakerConfig := &datastore.CircuitBreakerConfig{
 		SampleRate:                  cfg.CircuitBreaker.SampleRate,
 		ErrorTimeout:                cfg.CircuitBreaker.ErrorTimeout,
@@ -344,7 +339,6 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		SuccessThreshold:            cfg.CircuitBreaker.SuccessThreshold,
 		ObservabilityWindow:         cfg.CircuitBreaker.ObservabilityWindow,
 		MinimumRequestCount:         cfg.CircuitBreaker.MinimumRequestCount,
-		NotificationThresholds:      notificationThresholds,
 		ConsecutiveFailureThreshold: cfg.CircuitBreaker.ConsecutiveFailureThreshold,
 	}
 

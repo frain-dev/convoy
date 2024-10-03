@@ -52,8 +52,7 @@ const (
 )
 
 const (
-	TypeDisableResource  NotificationType = "disable"
-	TypeTriggerThreshold NotificationType = "trigger"
+	TypeDisableResource NotificationType = "disable"
 )
 
 func (s State) String() string {
@@ -209,7 +208,6 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		breaker.TotalSuccesses = result.Successes
 		breaker.Requests = breaker.TotalSuccesses + breaker.TotalFailures
 
-		prevFailureRate := breaker.FailureRate
 		if breaker.Requests == 0 {
 			breaker.FailureRate = 0
 			breaker.SuccessRate = 0
@@ -232,17 +230,6 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 		// send notifications for each circuit breaker
 		if cb.notificationFn != nil {
-			if prevFailureRate < breaker.FailureRate && breaker.NotificationsSent < 3 {
-				if breaker.FailureRate >= float64(cb.config.NotificationThresholds[breaker.NotificationsSent]) {
-					innerErr := cb.notificationFn(TypeTriggerThreshold, *cb.config, breaker)
-					if innerErr != nil {
-						log.WithError(innerErr).Errorf("[circuit breaker] failed to execute threshold notification function")
-					}
-					log.Debugf("[circuit breaker] executed threshold notification function at %v", cb.config.NotificationThresholds[breaker.NotificationsSent])
-					breaker.NotificationsSent++
-				}
-			}
-
 			if breaker.ConsecutiveFailures >= cb.GetConfig().ConsecutiveFailureThreshold {
 				innerErr := cb.notificationFn(TypeDisableResource, *cb.config, breaker)
 				if innerErr != nil {

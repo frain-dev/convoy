@@ -31,9 +31,6 @@ type CircuitBreakerConfig struct {
 	// polled when determining the number successful and failed requests
 	ObservabilityWindow uint64 `json:"observability_window"`
 
-	// NotificationThresholds These are the error thresholds after which we will send out notifications.
-	NotificationThresholds [3]uint64 `json:"notification_thresholds"`
-
 	// ConsecutiveFailureThreshold determines when we ultimately disable the endpoint.
 	// E.g., after 10 consecutive transitions from half-open → open we should disable it.
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold"`
@@ -76,25 +73,6 @@ func (c *CircuitBreakerConfig) Validate() error {
 	if (c.ObservabilityWindow * 60) <= c.SampleRate {
 		errs.WriteString("ObservabilityWindow must be greater than the SampleRate")
 		errs.WriteString("; ")
-	}
-
-	for i := 0; i < len(c.NotificationThresholds); i++ {
-		if c.NotificationThresholds[i] == 0 {
-			errs.WriteString(fmt.Sprintf("Notification threshold at index [%d] = %d must be greater than 0", i, c.NotificationThresholds[i]))
-			errs.WriteString("; ")
-		}
-
-		if c.NotificationThresholds[i] > c.FailureThreshold {
-			errs.WriteString(fmt.Sprintf("Notification threshold at index [%d] = %d must be less than the failure threshold: %d", i, c.NotificationThresholds[i], c.FailureThreshold))
-			errs.WriteString("; ")
-		}
-	}
-
-	for i := 0; i < len(c.NotificationThresholds)-1; i++ {
-		if c.NotificationThresholds[i] >= c.NotificationThresholds[i+1] {
-			errs.WriteString("NotificationThresholds should be in ascending order")
-			errs.WriteString("; ")
-		}
 	}
 
 	if c.ConsecutiveFailureThreshold == 0 {

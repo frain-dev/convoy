@@ -132,7 +132,6 @@ func TestLoadConfig(t *testing.T) {
 					SuccessThreshold:            5,
 					ObservabilityWindow:         5,
 					MinimumRequestCount:         10,
-					NotificationThresholds:      [3]uint64{10, 30, 50},
 					ConsecutiveFailureThreshold: 10,
 				},
 				Server: ServerConfiguration{
@@ -213,7 +212,6 @@ func TestLoadConfig(t *testing.T) {
 					SuccessThreshold:            5,
 					ObservabilityWindow:         5,
 					MinimumRequestCount:         10,
-					NotificationThresholds:      [3]uint64{10, 30, 50},
 					ConsecutiveFailureThreshold: 10,
 				},
 				Redis: RedisConfiguration{
@@ -289,7 +287,6 @@ func TestLoadConfig(t *testing.T) {
 					SuccessThreshold:            5,
 					ObservabilityWindow:         5,
 					MinimumRequestCount:         10,
-					NotificationThresholds:      [3]uint64{10, 30, 50},
 					ConsecutiveFailureThreshold: 10,
 				},
 				Database: DatabaseConfiguration{
