@@ -231,6 +231,7 @@ func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {
 
 	if !licenser.IngestRate() {
 		cfg.InstanceIngestRate = config.DefaultConfiguration.InstanceIngestRate
+		cfg.HttpApiRateLimit = config.DefaultConfiguration.HttpApiRateLimit
 	}
 }
 

@@ -49,16 +49,20 @@ type AuthorizedLogin struct {
 	ExpiryTime time.Time `json:"expiry_time"`
 }
 
-func RateLimiterHandler(rateLimiter limiter.RateLimiter, rateLimitKey string, instanceIngestRate int) func(next http.Handler) http.Handler {
+func RateLimiterHandler(rateLimiter limiter.RateLimiter, httpApiRateLimit int) func(next http.Handler) http.Handler {
+	duration := 60
+	rateLimit := httpApiRateLimit * duration
+	rateLimitKey := "http-api"
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			err := rateLimiter.Allow(r.Context(), rateLimitKey, instanceIngestRate)
+			err := rateLimiter.AllowWithDuration(r.Context(), rateLimitKey, rateLimit, duration)
 			if err == nil {
 				next.ServeHTTP(w, r)
 				return
 			}
 
-			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", instanceIngestRate))
+			w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", rateLimit))
 			w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", 0))
 			w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%f", rlimiter.GetRetryAfter(err).Seconds()))
 			w.Header().Set("Retry-After", fmt.Sprintf("%d", time.Now().Add(rlimiter.GetRetryAfter(err)).Unix()))
