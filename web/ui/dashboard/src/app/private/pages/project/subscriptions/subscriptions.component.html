@@ -74,8 +74,8 @@
 					</div>
 
 					<div class="whitespace-nowrap flex">
-						<div convoy-tag *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'neutral'" class="mr-8px py-2px">Filter</div>
-						<div convoy-tag *ngIf="privateService.getProjectDetails?.type === 'incoming' && licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" [color]="subscription.function ? 'primary' : 'neutral'" class="mr-8px py-2px">Transform</div>
+						<div convoy-tag [color]="hasFilter(subscription.filter_config.filter) ? 'primary' : 'neutral'" class="mr-8px py-2px">Filter</div>
+						<div convoy-tag *ngIf="privateService.getProjectDetails?.type === 'incoming'" [color]="subscription.function ? 'primary' : 'neutral'" class="mr-8px py-2px">Transform</div>
 						<!-- <div convoy-tag [color]="subscription.retry_config ? 'primary' : 'neutral'" class="mr-8px py-2px">Retry Logic</div> -->
 						<div convoy-tag *ngIf="privateService.getProjectDetails?.type === 'outgoing'" [color]="subscription.filter_config.event_types.length > 1 || subscription.filter_config.event_types[0] != '*' ? 'primary' : 'neutral'" class="py-2px">Event Types</div>
 					</div>
