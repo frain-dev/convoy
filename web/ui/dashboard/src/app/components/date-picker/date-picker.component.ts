@@ -54,9 +54,21 @@ export class DatePickerComponent implements OnInit {
 		startDate: string | Date;
 		endDate: string | Date;
 	};
+	dateRangeValues = {
+		startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}`,
+		endDate: `${format(new Date(this.selectedEndDay!), 'yyyy-MM-dd')}`
+	};
+
 	showPicker = false;
 	datesForLeftCalendar: CALENDAR_DAY[] = [];
 	datesForRightCalendar: CALENDAR_DAY[] = [];
+
+	filterStartHour: number = 0;
+	filterEndHour: number = 23;
+	filterStartMinute: number = 0;
+	filterEndMinute: number = 59;
+	timeFilterHours: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+	timeFilterMinutes: number[] = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 59];
 
 	constructor() {}
 
@@ -64,13 +76,9 @@ export class DatePickerComponent implements OnInit {
 		if (this.dateRangeValue?.startDate && this.dateRangeValue?.endDate) {
 			const startDate = new Date(this.dateRangeValue?.startDate);
 			this.selectedStartDay = startDate.getTime();
-			this.selectedStartTime = `${startDate.getHours() <= 9 ? '0' + startDate.getHours() : startDate.getHours()}:${startDate.getMinutes() <= 9 ? '0' + startDate.getMinutes() : startDate.getMinutes()}:${
-				startDate.getSeconds() <= 9 ? '0' + startDate.getSeconds() : startDate.getSeconds()
-			}`;
 
 			const endDate = new Date(this.dateRangeValue.endDate);
 			this.selectedEndDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
-			this.selectedEndTime = `${endDate.getHours() <= 9 ? '0' + endDate.getHours() : endDate.getHours()}:${endDate.getMinutes() <= 9 ? '0' + endDate.getMinutes() : endDate.getMinutes()}:${endDate.getSeconds() <= 9 ? '0' + endDate.getSeconds() : endDate.getSeconds()}`;
 
 			this.selectedDates = { startDate: new Date(this.selectedStartDay!), endDate: new Date(this.selectedEndDay!) };
 		}
@@ -103,13 +111,17 @@ export class DatePickerComponent implements OnInit {
 		this.showPicker = false;
 	}
 
-	applyDate() {
-		this.showPicker = false;
+	applyDate(applyDate: boolean = false) {
 		if (!this.selectedStartDay && !this.selectedEndDay) return;
 
-		this.selectedDates = { startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}T${this.selectedStartTime}`, endDate: `${format(new Date(this.selectedEndDay!), 'yyyy-MM-dd')}T${this.selectedEndTime}` };
+		this.dateRangeValues = { startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}`, endDate: `${this.selectedEndDay ? format(new Date(this.selectedEndDay!), 'yyyy-MM-dd') : ''}` };
 
-		this.formType === 'filter' ? this.selectedDateRange.emit(this.selectedDates) : this.selectedDate.emit(this.selectedDates.startDate);
+		this.selectedDates = { startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}${this.selectedStartTime}`, endDate: `${this.selectedEndDay ? format(new Date(this.selectedEndDay!), 'yyyy-MM-dd') : ''}${this.selectedEndTime}` };
+
+		if (applyDate) {
+			this.showPicker = false;
+			this.formType === 'filter' ? this.selectedDateRange.emit(this.selectedDates) : this.selectedDate.emit(this.selectedDates.startDate);
+		}
 	}
 
 	onselectDay(timestamp: number) {
@@ -127,6 +139,8 @@ export class DatePickerComponent implements OnInit {
 			this.selectedStartDay = timestamp;
 			delete this.selectedEndDay;
 		}
+
+		this.applyDate();
 	}
 
 	setMonth(offset: number) {
@@ -257,5 +271,41 @@ export class DatePickerComponent implements OnInit {
 	formatDate(date: any) {
 		const dateValue = new Date(date);
 		return format(dateValue, 'yyyy-MM-dd');
+	}
+
+	// time filter functions
+	onApplyFilter() {
+		const startHour = this.filterStartHour < 10 ? `0${this.filterStartHour}` : `${this.filterStartHour}`;
+		const startMinute = this.filterStartMinute < 10 ? `0${this.filterStartMinute}` : `${this.filterStartMinute}`;
+		const endHour = this.filterEndHour < 10 ? `0${this.filterEndHour}` : `${this.filterEndHour}`;
+		const endMinute = this.filterEndMinute < 10 ? `0${this.filterEndMinute}` : `${this.filterEndMinute}`;
+		this.selectedStartTime = `T${startHour}:${startMinute}:00`;
+		this.selectedEndTime = `T${endHour}:${endMinute}:59`;
+	}
+
+	filterIsActive(): boolean {
+		return !(this.filterStartHour === 0 && this.filterStartMinute === 0 && this.filterEndHour === 23 && this.filterEndMinute === 59);
+	}
+
+	clearFilter(event?: any) {
+		event?.stopPropagation();
+
+		this.filterStartHour = 0;
+		this.filterEndHour = 23;
+		this.filterStartMinute = 0;
+		this.filterEndMinute = 59;
+		this.onApplyFilter();
+	}
+
+	validateTime(inputId: string) {
+		const timeInputId = document.getElementById(inputId);
+		const timeInputIdValue = document.getElementById(inputId) as HTMLInputElement;
+		timeInputId?.addEventListener('keydown', e => {
+			if (timeInputIdValue.value.length > 2) {
+				if (!(e.key == 'Backspace' || e.key == 'Delete')) e.preventDefault();
+			}
+		});
+
+		this.onApplyFilter();
 	}
 }
