@@ -36,6 +36,9 @@ var (
 	// ErrConfigMustNotBeNil is returned when a nil config is passed to NewCircuitBreakerManager
 	ErrConfigMustNotBeNil = errors.New("[circuit breaker] config must not be nil")
 
+	// ErrLoggerMustNotBeNil is returned when a nil logger is passed to NewCircuitBreakerManager
+	ErrLoggerMustNotBeNil = errors.New("[circuit breaker] logger must not be nil")
+
 	// ErrNotificationFunctionMustNotBeNil is returned when a nil function is passed to NewCircuitBreakerManager
 	ErrNotificationFunctionMustNotBeNil = errors.New("[circuit breaker] notification function must not be nil")
 )
@@ -77,6 +80,7 @@ type PollResult struct {
 
 type CircuitBreakerManager struct {
 	config         *CircuitBreakerConfig
+	logger         *log.Logger
 	clock          clock.Clock
 	store          CircuitBreakerStore
 	notificationFn func(NotificationType, CircuitBreakerConfig, CircuitBreaker) error
@@ -102,6 +106,10 @@ func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerM
 
 	if r.config == nil {
 		return nil, ErrConfigMustNotBeNil
+	}
+
+	if r.logger == nil {
+		return nil, ErrLoggerMustNotBeNil
 	}
 
 	return r, nil
@@ -144,6 +152,17 @@ func ConfigOption(config *CircuitBreakerConfig) CircuitBreakerOption {
 	}
 }
 
+func LoggerOption(logger *log.Logger) CircuitBreakerOption {
+	return func(cb *CircuitBreakerManager) error {
+		if logger == nil {
+			return ErrLoggerMustNotBeNil
+		}
+
+		cb.logger = logger
+		return nil
+	}
+}
+
 func NotificationFunctionOption(fn func(NotificationType, CircuitBreakerConfig, CircuitBreaker) error) CircuitBreakerOption {
 	return func(cb *CircuitBreakerManager) error {
 		if fn == nil {
@@ -177,27 +196,29 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 	for i := range res {
 		if res[i] == nil {
-			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i], tenants[i])
+			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i], tenants[i], cb.logger)
 			continue
 		}
 
 		str, ok := res[i].(string)
 		if !ok {
-			log.Errorf("[circuit breaker] breaker with key (%s) is corrupted, reseting it", keys[i])
+			cb.logger.Errorf("[circuit breaker] breaker with key (%s) is corrupted, reseting it", keys[i])
 
 			// the circuit breaker is corrupted, create a new one in its place
-			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i], tenants[i])
+			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i], tenants[i], cb.logger)
 			continue
 		}
 
-		var c CircuitBreaker
+		var c *CircuitBreaker
 		asBytes := []byte(str)
 		innerErr := msgpack.DecodeMsgPack(asBytes, &c)
 		if innerErr != nil {
 			return innerErr
 		}
 
-		circuitBreakers[keys[i]] = c
+		c.logger = cb.logger
+
+		circuitBreakers[keys[i]] = *c
 	}
 
 	for key, breaker := range circuitBreakers {
@@ -217,7 +238,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		}
 
 		if breaker.State == StateHalfOpen && breaker.SuccessRate >= float64(cb.config.SuccessThreshold) {
-			breaker.resetCircuitBreaker()
+			breaker.ResetCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
 		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= cb.config.MinimumRequestCount {
 			if breaker.FailureRate >= float64(cb.config.FailureThreshold) {
 				breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
@@ -229,13 +250,13 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		}
 
 		// send notifications for each circuit breaker
-		if cb.notificationFn != nil {
+		if cb.notificationFn != nil && breaker.State != StateOpen {
 			if breaker.ConsecutiveFailures >= cb.GetConfig().ConsecutiveFailureThreshold {
 				innerErr := cb.notificationFn(TypeDisableResource, *cb.config, breaker)
 				if innerErr != nil {
-					log.WithError(innerErr).Errorf("[circuit breaker] failed to execute disable resource notification function")
+					cb.logger.WithError(innerErr).Errorf("[circuit breaker] failed to execute disable resource notification function")
 				}
-				log.Debug("[circuit breaker] executed disable resource notification function")
+				cb.logger.Debug("[circuit breaker] executed disable resource notification function")
 			}
 		}
 
@@ -243,7 +264,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 	}
 
 	if err = cb.updateCircuitBreakers(ctx, circuitBreakers); err != nil {
-		log.WithError(err).Error("[circuit breaker] failed to update state")
+		cb.logger.WithError(err).Error("[circuit breaker] failed to update state")
 		return err
 	}
 
@@ -302,7 +323,7 @@ func (cb *CircuitBreakerManager) getCircuitBreakerError(b CircuitBreaker) error 
 	case StateOpen:
 		return ErrOpenState
 	case StateHalfOpen:
-		if b.FailureRate > float64(cb.config.FailureThreshold) {
+		if b.FailureRate > float64(cb.config.FailureThreshold) && b.WillResetAt.After(cb.clock.Now()) {
 			return ErrTooManyRequests
 		}
 		return nil
@@ -381,27 +402,28 @@ func (cb *CircuitBreakerManager) GetCircuitBreakerWithError(ctx context.Context,
 func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc PollFunc) error {
 	mu, err := cb.store.Lock(ctx, mutexKey)
 	if err != nil {
-		log.WithError(err).Error("[circuit breaker] failed to acquire lock")
+		cb.logger.WithError(err).Error("[circuit breaker] failed to acquire lock")
 		return err
 	}
 
 	defer func() {
 		innerErr := cb.store.Unlock(ctx, mu)
 		if innerErr != nil {
-			log.WithError(innerErr).Error("[circuit breaker] failed to unlock mutex")
+			cb.logger.WithError(innerErr).Error("[circuit breaker] failed to unlock mutex")
 		}
 	}()
 
 	bs, err := cb.loadCircuitBreakers(ctx)
 	if err != nil {
-		log.WithError(err).Error("[circuit breaker] failed to load circuitBreakers")
+		cb.logger.WithError(err).Error("[circuit breaker] failed to load circuitBreakers")
 		return err
 	}
 
 	resetMap := make(map[string]time.Time, len(bs))
 	for i := range bs {
-		if bs[i].State == StateClosed && bs[i].WillResetAt.After(time.Time{}) {
-			resetMap[bs[i].Key] = bs[i].WillResetAt
+		if bs[i].State != StateOpen && bs[i].WillResetAt.After(time.Time{}) {
+			k := strings.Split(bs[i].Key, ":")[1]
+			resetMap[k] = bs[i].WillResetAt
 		}
 	}
 
@@ -436,7 +458,7 @@ func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 			return
 		case <-ticker.C:
 			if err := cb.sampleAndUpdate(ctx, pollFunc); err != nil {
-				log.WithError(err).Error("[circuit breaker] failed to sample and update circuit breakers")
+				cb.logger.WithError(err).Error("[circuit breaker] failed to sample and update circuit breakers")
 			}
 		}
 	}

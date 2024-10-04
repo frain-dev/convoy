@@ -30,13 +30,16 @@ type CircuitBreaker struct {
 	ConsecutiveFailures uint64 `json:"consecutive_failures"`
 	// Number of notifications (maximum of 3) sent in the observability window
 	NotificationsSent uint64 `json:"notifications_sent"`
+
+	logger *log.Logger
 }
 
-func NewCircuitBreaker(key string, tenantId string) *CircuitBreaker {
+func NewCircuitBreaker(key string, tenantId string, logger *log.Logger) *CircuitBreaker {
 	return &CircuitBreaker{
 		Key:               key,
 		TenantId:          tenantId,
 		State:             StateClosed,
+		logger:            logger,
 		NotificationsSent: 0,
 	}
 }
@@ -44,31 +47,61 @@ func NewCircuitBreaker(key string, tenantId string) *CircuitBreaker {
 func (b *CircuitBreaker) String() (s string) {
 	bytes, err := msgpack.EncodeMsgPack(b)
 	if err != nil {
-		log.WithError(err).Error("[circuit breaker] failed to encode circuit breaker")
+		if b.logger != nil {
+			b.logger.WithError(err).Error("[circuit breaker] failed to encode circuit breaker")
+		}
 		return ""
 	}
 
 	return string(bytes)
 }
 
+func (b *CircuitBreaker) asKeyValue() map[string]interface{} {
+	kv := map[string]interface{}{}
+	kv["key"] = b.Key
+	kv["tenant_id"] = b.TenantId
+	kv["state"] = b.State.String()
+	kv["requests"] = b.Requests
+	kv["failure_rate"] = b.FailureRate
+	kv["success_rate"] = b.SuccessRate
+	kv["will_reset_at"] = b.WillResetAt
+	kv["total_failures"] = b.TotalFailures
+	kv["total_successes"] = b.TotalSuccesses
+	kv["consecutive_failures"] = b.ConsecutiveFailures
+	kv["notifications_sent"] = b.NotificationsSent
+	return kv
+}
+
 func (b *CircuitBreaker) tripCircuitBreaker(resetTime time.Time) {
 	b.State = StateOpen
 	b.WillResetAt = resetTime
 	b.ConsecutiveFailures++
-	log.Infof("[circuit breaker] circuit breaker transitioned from closed to open.")
-	log.Debugf("[circuit breaker] circuit breaker state: %+v", b)
+	if b.logger != nil {
+		b.logger.Infof("[circuit breaker] circuit breaker transitioned to open.")
+		b.logger.Debugf("[circuit breaker] circuit breaker state: %+v", b.asKeyValue())
+	}
 }
 
 func (b *CircuitBreaker) toHalfOpen() {
 	b.State = StateHalfOpen
-	log.Infof("[circuit breaker] circuit breaker transitioned from open to half-open")
-	log.Debugf("[circuit breaker] circuit breaker state: %+v", b)
+	if b.logger != nil {
+		b.logger.Infof("[circuit breaker] circuit breaker transitioned from open to half-open")
+		b.logger.Debugf("[circuit breaker] circuit breaker state: %+v", b.asKeyValue())
+	}
 }
 
-func (b *CircuitBreaker) resetCircuitBreaker() {
+func (b *CircuitBreaker) ResetCircuitBreaker(resetTime time.Time) {
 	b.State = StateClosed
+	b.WillResetAt = resetTime
 	b.NotificationsSent = 0
 	b.ConsecutiveFailures = 0
-	log.Infof("[circuit breaker] circuit breaker transitioned from half-open to closed")
-	log.Debugf("[circuit breaker] circuit breaker state: %+v", b)
+	b.FailureRate = 0
+	b.SuccessRate = 0
+	b.TotalFailures = 0
+	b.TotalSuccesses = 0
+	b.Requests = 0
+	if b.logger != nil {
+		b.logger.Infof("[circuit breaker] circuit breaker transitioned from half-open to closed")
+		b.logger.Debugf("[circuit breaker] circuit breaker state: %+v", b.asKeyValue())
+	}
 }

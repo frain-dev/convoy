@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/log"
+	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -1078,6 +1080,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				cb.StoreOption(mockStore),
 				cb.ClockOption(mockClock),
 				cb.ConfigOption(breakerConfig),
+				cb.LoggerOption(log.NewLogger(os.Stdout)),
 			)
 			require.NoError(t, err)
 

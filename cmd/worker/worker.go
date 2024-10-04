@@ -268,6 +268,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 			cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
 			cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
 			cb.ClockOption(clock.NewRealClock()),
+			cb.LoggerOption(lo),
 			cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b cb.CircuitBreaker) error {
 				endpointId := strings.Split(b.Key, ":")[1]
 				project, funcErr := projectRepo.FetchProjectByID(ctx, b.TenantId)

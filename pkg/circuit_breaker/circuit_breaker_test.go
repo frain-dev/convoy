@@ -71,7 +71,7 @@ func TestCircuitBreaker_resetCircuitBreaker(t *testing.T) {
 		ConsecutiveFailures: 5,
 	}
 
-	cb.resetCircuitBreaker()
+	cb.ResetCircuitBreaker(time.Now())
 
 	require.Equal(t, StateClosed, cb.State)
 	require.Equal(t, uint64(0), cb.ConsecutiveFailures)

@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -520,6 +521,27 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	cbs, err := h.A.Redis.Get(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID)).Result()
+	if err != nil {
+		h.A.Logger.WithError(err).Error("failed to find circuit breaker")
+	}
+
+	if len(cbs) > 0 {
+		var c *circuit_breaker.CircuitBreaker
+		asBytes := []byte(cbs)
+		innerErr := msgpack.DecodeMsgPack(asBytes, &c)
+		if innerErr != nil {
+			h.A.Logger.WithError(innerErr).Error("failed to decode circuit breaker")
+		} else {
+			c.ResetCircuitBreaker(time.Now())
+			b, msgPackErr := msgpack.EncodeMsgPack(c)
+			if msgPackErr != nil {
+				h.A.Logger.WithError(msgPackErr).Error("failed to encode circuit breaker")
+			}
+			h.A.Redis.Set(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID), b, time.Minute*5)
+		}
 	}
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}

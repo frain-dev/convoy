@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -141,7 +142,8 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
             COUNT(CASE WHEN status = false THEN 1 END) AS failures,
             COUNT(CASE WHEN status = true THEN 1 END) AS successes
         FROM convoy.delivery_attempts
-        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1) group by endpoint_id, project_id;
+        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1) 
+        group by endpoint_id, project_id;
 	`
 
 	rows, err := d.db.QueryxContext(ctx, query, lookBackDuration)
@@ -166,12 +168,20 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
 	        COUNT(CASE WHEN status = false THEN 1 END) AS failures,
 	        COUNT(CASE WHEN status = true THEN 1 END) AS successes
 	    FROM convoy.delivery_attempts
-	    WHERE endpoint_id = $1 AND created_at >= $2 group by endpoint_id, project_id;
+	    WHERE endpoint_id = '%s' AND created_at >= TIMESTAMP '%s' AT TIME ZONE 'UTC'
+	    group by endpoint_id, project_id;
 	`
 
+	fmt.Printf("cb: %+v\n", resetTimes)
+
+	customFormat := "2006-01-02 15:04:05"
 	for k, t := range resetTimes {
+		// remove the old key so it doesn't pollute the results
+		delete(resultsMap, k)
+		qq := fmt.Sprintf(query2, k, t.Format(customFormat))
+
 		var rowValue circuit_breaker.PollResult
-		err = d.db.QueryRowxContext(ctx, query2, k, t).StructScan(&rowValue)
+		err = d.db.QueryRowxContext(ctx, qq).StructScan(&rowValue)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				continue
