@@ -444,7 +444,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 			// TODO(subomi): left this here temporarily till the data plane is stable.
 			portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
-				eventRouter.With(middleware.RateLimiterHandler(a.A.Rate, a.cfg.HttpApiRateLimit)).Post("/", handler.CreateEndpointEvent)
+				eventRouter.Post("/", handler.CreateEndpointEvent)
 				eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 				eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
 				eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
@@ -580,7 +580,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 				orgSubRouter.Route("/projects", func(projectRouter chi.Router) {
 					projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 						projectSubRouter.Route("/events", func(eventRouter chi.Router) {
-							eventRouter.With(middleware.RateLimiterHandler(a.A.Rate, a.cfg.HttpApiRateLimit)).Post("/", handler.CreateEndpointEvent)
+							eventRouter.Post("/", handler.CreateEndpointEvent)
 							eventRouter.Post("/fanout", handler.CreateEndpointFanoutEvent)
 							eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 							eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
@@ -622,7 +622,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 			portalLinkRouter.Use(middleware.RequireAuth())
 
 			portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
-				eventRouter.With(middleware.RateLimiterHandler(a.A.Rate, a.cfg.HttpApiRateLimit)).Post("/", handler.CreateEndpointEvent)
+				eventRouter.Post("/", handler.CreateEndpointEvent)
 				eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
 				eventRouter.Post("/batchreplay", handler.BatchReplayEvents)
 				eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
