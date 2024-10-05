@@ -231,7 +231,7 @@ func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {
 
 	if !licenser.IngestRate() {
 		cfg.InstanceIngestRate = config.DefaultConfiguration.InstanceIngestRate
-		cfg.HttpApiRateLimit = config.DefaultConfiguration.HttpApiRateLimit
+		cfg.ApiRateLimit = config.DefaultConfiguration.ApiRateLimit
 	}
 }
 
@@ -358,6 +358,22 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
+
+	// CONVOY_INSTANCE_INGEST_RATE
+	instanceIngestRate, err := cmd.Flags().GetInt("instance-ingest-rate")
+	if err != nil {
+		return nil, err
+	}
+
+	c.InstanceIngestRate = instanceIngestRate
+
+	// CONVOY_API_RATE_LIMIT
+	apiRateLimit, err := cmd.Flags().GetInt("api-rate-limit")
+	if err != nil {
+		return nil, err
+	}
+
+	c.ApiRateLimit = apiRateLimit
 
 	// CONVOY_LICENSE_KEY
 	licenseKey, err := cmd.Flags().GetString("license-key")

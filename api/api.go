@@ -129,7 +129,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	// TODO(subomi): left this here temporarily till the data plane is stable.
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.HttpApiRateLimit))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -142,7 +142,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			r.Use(middleware.RequireAuth())
 
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.HttpApiRateLimit))
+				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
 				projectRouter.Get("/", handler.GetProjects)
 				projectRouter.Post("/", handler.CreateProject)
 
@@ -510,7 +510,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.HttpApiRateLimit))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -525,7 +525,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 			r.Use(middleware.RequireAuth())
 
 			r.Route("/projects", func(projectRouter chi.Router) {
-				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.HttpApiRateLimit))
+				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
 						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/", handler.CreateEndpointEvent)
