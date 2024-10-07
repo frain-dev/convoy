@@ -99,6 +99,7 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	InstanceIngestRate:  25,
+	ApiRateLimit:        25,
 	WorkerExecutionMode: DefaultExecutionMode,
 }
 
@@ -363,6 +364,7 @@ type Configuration struct {
 	EnableProfiling     bool                         `json:"enable_profiling" envconfig:"CONVOY_ENABLE_PROFILING"`
 	Metrics             MetricsConfiguration         `json:"metrics" envconfig:"CONVOY_METRICS"`
 	InstanceIngestRate  int                          `json:"instance_ingest_rate" envconfig:"CONVOY_INSTANCE_INGEST_RATE"`
+	ApiRateLimit        int                          `json:"api_rate_limit" envconfig:"CONVOY_API_RATE_LIMIT"`
 	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
