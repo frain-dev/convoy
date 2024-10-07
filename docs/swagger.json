@@ -5786,6 +5786,9 @@
                 "is_duplicate_event": {
                     "type": "boolean"
                 },
+                "metadata": {
+                    "type": "string"
+                },
                 "project_id": {
                     "type": "string"
                 },
@@ -5797,6 +5800,9 @@
                 },
                 "source_metadata": {
                     "$ref": "#/definitions/datastore.Source"
+                },
+                "status": {
+                    "$ref": "#/definitions/datastore.EventStatus"
                 },
                 "uid": {
                     "type": "string"
@@ -5826,6 +5832,23 @@
                 "FailureEventStatus",
                 "SuccessEventStatus",
                 "RetryEventStatus"
+            ]
+        },
+        "datastore.EventStatus": {
+            "type": "string",
+            "enum": [
+                "Processing",
+                "Failure",
+                "Success",
+                "Retry",
+                "Pending"
+            ],
+            "x-enum-varnames": [
+                "ProcessingStatus",
+                "FailureStatus",
+                "SuccessStatus",
+                "RetryStatus",
+                "PendingStatus"
             ]
         },
         "datastore.FilterConfiguration": {
@@ -6885,6 +6908,9 @@
                 "is_duplicate_event": {
                     "type": "boolean"
                 },
+                "metadata": {
+                    "type": "string"
+                },
                 "project_id": {
                     "type": "string"
                 },
@@ -6896,6 +6922,9 @@
                 },
                 "source_metadata": {
                     "$ref": "#/definitions/datastore.Source"
+                },
+                "status": {
+                    "$ref": "#/definitions/datastore.EventStatus"
                 },
                 "uid": {
                     "type": "string"
