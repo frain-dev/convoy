@@ -116,9 +116,10 @@ export class DatePickerComponent implements OnInit {
 
 		this.dateRangeValues = { startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}`, endDate: `${this.selectedEndDay ? format(new Date(this.selectedEndDay!), 'yyyy-MM-dd') : ''}` };
 
-		this.selectedDates = { startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}${this.selectedStartTime}`, endDate: `${this.selectedEndDay ? format(new Date(this.selectedEndDay!), 'yyyy-MM-dd') : ''}${this.selectedEndTime}` };
+		this.selectedDates = { startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}T${this.selectedStartTime}`, endDate: `${this.selectedEndDay ? format(new Date(this.selectedEndDay!), 'yyyy-MM-dd') : ''}T${this.selectedEndTime}` };
 
 		if (applyDate) {
+            console.log(this.selectedDates)
 			this.showPicker = false;
 			this.formType === 'filter' ? this.selectedDateRange.emit(this.selectedDates) : this.selectedDate.emit(this.selectedDates.startDate);
 		}
@@ -279,8 +280,8 @@ export class DatePickerComponent implements OnInit {
 		const startMinute = this.filterStartMinute < 10 ? `0${this.filterStartMinute}` : `${this.filterStartMinute}`;
 		const endHour = this.filterEndHour < 10 ? `0${this.filterEndHour}` : `${this.filterEndHour}`;
 		const endMinute = this.filterEndMinute < 10 ? `0${this.filterEndMinute}` : `${this.filterEndMinute}`;
-		this.selectedStartTime = `T${startHour}:${startMinute}:00`;
-		this.selectedEndTime = `T${endHour}:${endMinute}:59`;
+		this.selectedStartTime = `${startHour}:${startMinute}:00`;
+		this.selectedEndTime = `${endHour}:${endMinute}:59`;
 	}
 
 	filterIsActive(): boolean {

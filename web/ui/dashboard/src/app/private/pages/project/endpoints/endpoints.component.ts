@@ -163,16 +163,8 @@ export class EndpointsComponent implements OnInit {
 		}
 	}
 
-	async viewSubscription() {
-		try {
-			const response = await this.endpointService.getEndpointSubscription(this.selectedEndpoint?.uid || '');
-
-			const subscription = response.data.content[0];
-
-			this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/subscriptions`], { queryParams: { id: subscription.uid } });
-		} catch {
-			this.generalService.showNotification({ message: `${this.selectedEndpoint?.name || this.selectedEndpoint?.name}'s subscription not available`, style: 'error' });
-		}
+	viewSubscription() {
+        this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/subscriptions`], { queryParams: { endpointId: this.selectedEndpoint?.uid || '' } });
 	}
 
 	cancel() {

@@ -24,13 +24,39 @@
 	<h1 class="text-18 font-bold text-neutral-12 mb-24px">Subscriptions</h1>
 
 	<div class="flex justify-between items-end mb-24px">
-		<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getSubscriptions({ name: subscriptionSearchString })">
-			<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-			<input type="search" placeholder="Search subscriptions" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="subscriptionSearchString" [ngModelOptions]="{ standalone: true }" />
-			<button convoy-button *ngIf="subscriptionSearchString && subscriptionSearchString.length > 0" class="transition-all duration-200" fill="text" (click)="getSubscriptions({ name: subscriptionSearchString })" size="sm">
-				<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
-			</button>
-		</form>
+		<div class="flex items-center gap-24px">
+			<form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100" (ngSubmit)="getSubscriptions({ name: subscriptionSearchString })">
+				<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
+				<input type="search" placeholder="Search subscriptions" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="subscriptionSearchString" [ngModelOptions]="{ standalone: true }" />
+				<div class="flex gap-8px" *ngIf="subscriptionSearchString && subscriptionSearchString.length > 0">
+					<button convoy-button class="transition-all duration-200 min-w-20px" fill="text" type="submit" size="sm">
+						<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" />
+					</button>
+					<button convoy-button class="transition-all duration-200" fill="text" type="button" size="sm" (click)="clearSearch()">
+						<svg width="10" height="10" class="fill-primary-100">
+							<use xlink:href="#close-icon"></use>
+						</svg>
+					</button>
+				</div>
+			</form>
+
+			<convoy-endpoint-filter [endpoint]="linkEndpoint" (set)="updateEndpointFilter($event)">
+				<button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px !border-primary-400 whitespace-nowrap justify-between" [ngClass]="{ 'text-primary-100 !bg-primary-500': linkEndpoint }">
+					<div class="flex items-center gap-10px">
+						<svg width="18" height="18" class="transition-all scale-75" [class]="linkEndpoint ? 'stroke-new.primary-400' : 'stroke-neutral-10'">
+							<use xlink:href="#endpoints-icon"></use>
+						</svg>
+						<span class="text-neutral-11">Endpoints</span>
+
+						<button type="button" *ngIf="linkEndpoint" (click)="clearEndpointFilter()">
+							<svg width="10" height="10" class="fill-primary-100">
+								<use xlink:href="#close-icon"></use>
+							</svg>
+						</button>
+					</div>
+				</button>
+			</convoy-endpoint-filter>
+		</div>
 
 		<button convoy-permission="Subscriptions|MANAGE" class="!px-14px" convoy-button size="sm" routerLink="./new" *ngIf="!isLoadindingSubscriptions && subscriptions?.content?.length">
 			<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
