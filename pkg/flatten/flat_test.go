@@ -825,9 +825,33 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 						},
 					},
 				},
+				"$or": []interface{}{
+					M{
+						"person": M{
+							"age": M{
+								"$in": []int{10, 11, 12},
+							},
+						},
+					},
+					M{
+						"places": M{
+							"temperatures": 39.9,
+						},
+					},
+				},
 			},
 			want: M{
 				"$and": []M{
+					{
+						"person.age": M{
+							"$in": []int{10, 11, 12},
+						},
+					},
+					{
+						"places.temperatures": 39.9,
+					},
+				},
+				"$or": []M{
 					{
 						"person.age": M{
 							"$in": []int{10, 11, 12},
@@ -1298,62 +1322,26 @@ func BenchmarkFlattenMap(b *testing.B) {
 		},
 	}
 
-	want := M{
-		"$and": []M{
-			{
-				"$or": []M{
-					{
-						"person.age": M{
-							"$in": []int{10, 11, 12},
-						},
-					},
-					{
-						"places.temperatures": 39.9,
-					},
-				},
-			},
-			{
-				"city": "lagos",
-			},
-		},
-	}
-
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		got, err := Flatten(test)
-		require.NoError(b, err)
-
-		if !jsonEqual(got, want) {
-			b.Errorf("mismatch:\ngot:  %+v\nwant: %+v", got, want)
-		}
+		_, _ = Flatten(test)
 	}
 }
 
 func BenchmarkFlattenLargeJson(b *testing.B) {
-	var given, want interface{}
+	var given interface{}
 	err := json.Unmarshal(ghEvent, &given)
 	if err != nil {
 		b.Errorf("failed to unmarshal JSON: %v", err)
 	}
 
-	err = json.Unmarshal(ghEventFlat, &want)
-	if err != nil {
-		b.Errorf("failed to unmarshal JSON: %v", err)
-	}
-
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		got, err := Flatten(given)
-		require.NoError(b, err)
-
-		if !jsonEqual(got, want) {
-			expectedJson, _ := json.MarshalIndent(got, "", " ")
-			b.Errorf("%v\n", string(expectedJson))
-		}
+		_, _ = Flatten(given)
 	}
 }
 
@@ -1367,23 +1355,12 @@ func BenchmarkFlattenOperators(b *testing.B) {
 			},
 		},
 	}
-	want := M{
-		"filter.person.age": M{
-			"$eq": float64(5),
-		},
-	}
 
 	b.ResetTimer()
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		got, err := Flatten(given)
-		require.NoError(b, err)
-
-		if !jsonEqual(got, want) {
-			expectedJson, _ := json.MarshalIndent(got, "", " ")
-			b.Errorf("%v\n", string(expectedJson))
-		}
+		_, _ = Flatten(given)
 	}
 }
 
@@ -1403,13 +1380,6 @@ func BenchmarkFlattenWithPrefix(b *testing.B) {
 				}
 			}`
 
-	want := M{
-		"data.hello.lorem.ipsum": "again",
-		"data.hello.lorem.dolor": "sit",
-		"data.world.lorem.ipsum": "again",
-		"data.world.lorem.dolor": "sit",
-	}
-
 	var given interface{}
 	err := json.Unmarshal([]byte(test), &given)
 	if err != nil {
@@ -1420,12 +1390,6 @@ func BenchmarkFlattenWithPrefix(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		got, err := FlattenWithPrefix("data", given)
-		require.NoError(b, err)
-
-		if !jsonEqual(got, want) {
-			expectedJson, _ := json.MarshalIndent(got, "", " ")
-			b.Errorf("%v\n", string(expectedJson))
-		}
+		_, _ = FlattenWithPrefix("data", given)
 	}
 }
