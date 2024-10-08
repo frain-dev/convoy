@@ -7,8 +7,6 @@
 <!-- filters  -->
 <convoy-event-delivery-filter type="logs" (filter)="fetchEventLogs($event)" (tail)="handleTailing($event)" (batchRetry)="fetchRetryCount($event)"></convoy-event-delivery-filter>
 
-
-
 <!-- empty state  -->
 <div class="py-80px" convoy-card *ngIf="!isloadingEvents && (!displayedEvents || displayedEvents?.length === 0); else eventsList">
 	<convoy-empty-state imgSrc="/assets/img/events-empty-state-image.svg" class="min-h-[70vh]" description="You currently do not have any event logs"></convoy-empty-state>
@@ -55,12 +53,12 @@
 									</div>
 								</td>
 
-								<td convoy-table-cell class="">{{ event.created_at | date: 'mediumTime' }}</td>
+								<td convoy-table-cell class="">{{ event.created_at | date : 'mediumTime' }}</td>
 
 								<td convoy-table-cell class="flex justify-end items-center rounded-r-8px">
 									<div [class]="event.is_duplicate_event ? 'visible' : 'invisible'" convoy-tag size="sm">Duplicate</div>
 
-									<button convoy-button fill="text" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)">
+									<button convoy-button fill="text" size="sm" class="pr-20px" (click)="viewEventDeliveries(event)" title="event deliveries">
 										<svg width="14" height="14" class="stroke-neutral-10 scale-125">
 											<use xlink:href="#arrow-up-right-icon"></use>
 										</svg>
@@ -140,7 +138,7 @@
 								<div convoy-tag size="sm" *ngIf="event.is_duplicate_event">Duplicate</div>
 							</div>
 							<div class="flex items-center justify-end text-neutral-10 text-12">
-								{{ event.created_at | date: 'shortTime' }}
+								{{ event.created_at | date : 'shortTime' }}
 							</div>
 						</li>
 					</ul>
@@ -213,7 +211,7 @@
 						</div>
 
 						<div class="flex items-center justify-end text-neutral-10 text-12 self-end">
-							{{ delivery.created_at | date: 'shortTime' }}
+							{{ delivery.created_at | date : 'shortTime' }}
 
 							<button convoy-button fill="text" size="xs" class="pr-0">
 								<svg width="24" height="24" class="fill-neutral-10">
