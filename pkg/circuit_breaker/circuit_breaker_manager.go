@@ -417,7 +417,7 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 
 		// we are sleeping the rest of the duration because the sample might be done complete,
 		// but we don't want to release the lock until the next sample time window.
-		sleepTime := stopTime.Sub(time.Now())
+		sleepTime := time.Until(stopTime)
 		if sleepTime.Seconds() > 1.0 {
 			time.Sleep(sleepTime)
 		}
