@@ -172,8 +172,6 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
 	    group by endpoint_id, project_id;
 	`
 
-	fmt.Printf("cb: %+v\n", resetTimes)
-
 	customFormat := "2006-01-02 15:04:05"
 	for k, t := range resetTimes {
 		// remove the old key so it doesn't pollute the results

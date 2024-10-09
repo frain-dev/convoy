@@ -14,7 +14,7 @@ import (
 )
 
 type CircuitBreakerStore interface {
-	Lock(ctx context.Context, lockKey string) (*redsync.Mutex, error)
+	Lock(ctx context.Context, lockKey string, expiry uint64) (*redsync.Mutex, error)
 	Unlock(ctx context.Context, mutex *redsync.Mutex) error
 	Keys(context.Context, string) ([]string, error)
 	GetOne(context.Context, string) (string, error)
@@ -35,14 +35,14 @@ func NewRedisStore(redis redis.UniversalClient, clock clock.Clock) *RedisStore {
 	}
 }
 
-func (s *RedisStore) Lock(ctx context.Context, mutexKey string) (*redsync.Mutex, error) {
+func (s *RedisStore) Lock(ctx context.Context, mutexKey string, expiry uint64) (*redsync.Mutex, error) {
 	pool := goredis.NewPool(s.redis)
 	rs := redsync.New(pool)
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()
 
-	mutex := rs.NewMutex(mutexKey, redsync.WithExpiry(time.Second), redsync.WithTries(1))
+	mutex := rs.NewMutex(mutexKey, redsync.WithExpiry(time.Duration(expiry)*time.Second), redsync.WithTries(1))
 	err := mutex.LockContext(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain lock: %v", err)
@@ -57,7 +57,7 @@ func (s *RedisStore) Unlock(ctx context.Context, mutex *redsync.Mutex) error {
 
 	ok, err := mutex.UnlockContext(ctx)
 	if !ok {
-		return errors.New("failed to release lock")
+		return fmt.Errorf("failed to release lock: %v", err)
 	}
 
 	if err != nil {
@@ -130,7 +130,7 @@ func NewTestStore() *TestStore {
 	}
 }
 
-func (t *TestStore) Lock(_ context.Context, _ string) (*redsync.Mutex, error) {
+func (t *TestStore) Lock(_ context.Context, _ string, _ uint64) (*redsync.Mutex, error) {
 	return nil, nil
 }
 

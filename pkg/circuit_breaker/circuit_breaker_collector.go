@@ -55,10 +55,16 @@ var (
 		"Number of notifications sent by the circuit breaker",
 		[]string{"key", "tenant_id"}, nil,
 	)
+	circuitBreakerSampleLatency = prometheus.NewDesc(
+		prometheus.BuildFQName(namespace, "", "sample_latency_seconds"),
+		"Latency of the circuit breaker sampling process in seconds",
+		nil, nil,
+	)
 )
 
 type Metrics struct {
 	circuitBreakers []CircuitBreaker
+	SampleLatency   time.Duration
 }
 
 func (cb *CircuitBreakerManager) collectMetrics() (*Metrics, error) {
@@ -78,6 +84,11 @@ func (cb *CircuitBreakerManager) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (cb *CircuitBreakerManager) Collect(ch chan<- prometheus.Metric) {
+	var metrics *Metrics
+	var err error
+	now := time.Now()
+	cachedMetrics = &Metrics{}
+
 	if metricsConfig == nil {
 		cfg, err := config.Get()
 		if err != nil {
@@ -85,14 +96,12 @@ func (cb *CircuitBreakerManager) Collect(ch chan<- prometheus.Metric) {
 		}
 		metricsConfig = &cfg.Metrics
 	}
+
 	if !metricsConfig.IsEnabled {
 		return
 	}
 
-	var metrics *Metrics
-	var err error
-	now := time.Now()
-	if cachedMetrics != nil && lastRun.Add(time.Duration(metricsConfig.Prometheus.SampleTime)*time.Second).After(now) {
+	if lastRun.Add(time.Duration(metricsConfig.Prometheus.SampleTime) * time.Second).After(now) {
 		metrics = cachedMetrics
 	} else {
 		metrics, err = cb.collectMetrics()
@@ -159,6 +168,11 @@ func (cb *CircuitBreakerManager) Collect(ch chan<- prometheus.Metric) {
 			float64(metric.NotificationsSent),
 			metric.Key,
 			metric.TenantId,
+		)
+		ch <- prometheus.MustNewConstMetric(
+			circuitBreakerSampleLatency,
+			prometheus.GaugeValue,
+			metrics.SampleLatency.Seconds(),
 		)
 	}
 

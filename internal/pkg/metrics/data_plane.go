@@ -108,7 +108,7 @@ func InitMetrics(licenser license.Licenser) *Metrics {
 	return m
 }
 
-func (m *Metrics) RecordLatency(ev *datastore.EventDelivery) {
+func (m *Metrics) RecordEndToEndLatency(ev *datastore.EventDelivery) {
 	if !m.IsEnabled {
 		return
 	}

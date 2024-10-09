@@ -314,7 +314,6 @@ func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]Cir
 		case CircuitBreaker: // only used in tests that use the mockStore
 			circuitBreakers[i] = res[i].(CircuitBreaker)
 		}
-
 	}
 
 	return circuitBreakers, nil
@@ -402,16 +401,41 @@ func (cb *CircuitBreakerManager) GetCircuitBreakerWithError(ctx context.Context,
 }
 
 func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc PollFunc) error {
-	mu, err := cb.store.Lock(ctx, mutexKey)
+	start := time.Now()
+	stopTime := time.Now().Add(time.Duration(cb.config.SampleRate) * time.Second)
+	isLeader := true
+
+	mu, err := cb.store.Lock(ctx, mutexKey, cb.config.SampleRate)
 	if err != nil {
-		cb.logger.WithError(err).Error("[circuit breaker] failed to acquire lock")
+		isLeader = false
+		cb.logger.WithError(err).Debugf("[circuit breaker] failed to acquire lock")
 		return err
 	}
 
 	defer func() {
+		sampleLatency := time.Since(start)
+
+		// we are sleeping the rest of the duration because the sample might be done complete,
+		// but we don't want to release the lock until the next sample time window.
+		sleepTime := stopTime.Sub(time.Now())
+		if sleepTime.Seconds() > 1.0 {
+			time.Sleep(sleepTime)
+		}
+
 		innerErr := cb.store.Unlock(ctx, mu)
 		if innerErr != nil {
-			cb.logger.WithError(innerErr).Error("[circuit breaker] failed to unlock mutex")
+			cb.logger.WithError(innerErr).Debugf("[circuit breaker] failed to unlock mutex")
+		}
+
+		if isLeader {
+			// should only be logged by the instance that runs the sample
+			cb.logger.Infof("[circuit breaker] sample completed in %v", sampleLatency)
+
+			// cachedMetrics will be nil if metrics is not enabled
+			if cachedMetrics != nil {
+				// Update the sample latency metric
+				cachedMetrics.SampleLatency = sampleLatency
+			}
 		}
 	}()
 
@@ -460,7 +484,7 @@ func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
 			return
 		case <-ticker.C:
 			if err := cb.sampleAndUpdate(ctx, pollFunc); err != nil {
-				cb.logger.WithError(err).Error("[circuit breaker] failed to sample and update circuit breakers")
+				cb.logger.WithError(err).Debug("[circuit breaker] failed to sample and update circuit breakers")
 			}
 		}
 	}

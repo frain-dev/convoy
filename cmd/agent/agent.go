@@ -25,8 +25,6 @@ import (
 
 func AddAgentCommand(a *cli.App) *cobra.Command {
 	var agentPort uint32
-	var ingestPort uint32
-	var workerPort uint32
 	var logLevel string
 	var consumerPoolSize int
 	var interval int
@@ -109,9 +107,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
 	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "SMTP Port")
 
-	cmd.Flags().Uint32Var(&agentPort, "agent-port", 0, "Agent port")
-	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
-	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 0, "Ingest port")
+	cmd.Flags().Uint32Var(&agentPort, "port", 0, "Agent port")
 
 	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
@@ -191,32 +187,13 @@ func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, erro
 	c := &config.Configuration{}
 
 	// PORT
-	port, err := cmd.Flags().GetUint32("agent-port")
+	port, err := cmd.Flags().GetUint32("port")
 	if err != nil {
 		return nil, err
 	}
 
 	if port != 0 {
 		c.Server.HTTP.AgentPort = port
-	}
-
-	ingestPort, err := cmd.Flags().GetUint32("ingest-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if ingestPort != 0 {
-		c.Server.HTTP.IngestPort = ingestPort
-	}
-
-	// CONVOY_WORKER_PORT
-	workerPort, err := cmd.Flags().GetUint32("worker-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if workerPort != 0 {
-		c.Server.HTTP.WorkerPort = workerPort
 	}
 
 	logLevel, err := cmd.Flags().GetString("log-level")

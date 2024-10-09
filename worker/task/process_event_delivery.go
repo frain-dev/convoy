@@ -213,7 +213,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 			// register latency
 			mm := metrics.GetDPInstance(licenser)
-			mm.RecordLatency(eventDelivery)
+			mm.RecordEndToEndLatency(eventDelivery)
 
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
