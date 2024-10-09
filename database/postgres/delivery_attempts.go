@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/jmoiron/sqlx"
 	"io"
 	"time"
@@ -128,6 +130,66 @@ func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Contex
 	}
 
 	return nil
+}
+
+func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]circuit_breaker.PollResult, error) {
+	resultsMap := map[string]circuit_breaker.PollResult{}
+
+	query := `
+		SELECT
+            endpoint_id AS key,
+            project_id AS tenant_id,
+            COUNT(CASE WHEN status = false THEN 1 END) AS failures,
+            COUNT(CASE WHEN status = true THEN 1 END) AS successes
+        FROM convoy.delivery_attempts
+        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1) 
+        group by endpoint_id, project_id;
+	`
+
+	rows, err := d.db.QueryxContext(ctx, query, lookBackDuration)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var rowValue circuit_breaker.PollResult
+		if rowScanErr := rows.StructScan(&rowValue); rowScanErr != nil {
+			return nil, rowScanErr
+		}
+		resultsMap[rowValue.Key] = rowValue
+	}
+
+	// this is an n+1 query? yikes
+	query2 := `
+		SELECT
+	        endpoint_id AS key,
+            project_id AS tenant_id,
+	        COUNT(CASE WHEN status = false THEN 1 END) AS failures,
+	        COUNT(CASE WHEN status = true THEN 1 END) AS successes
+	    FROM convoy.delivery_attempts
+	    WHERE endpoint_id = '%s' AND created_at >= TIMESTAMP '%s' AT TIME ZONE 'UTC'
+	    group by endpoint_id, project_id;
+	`
+
+	customFormat := "2006-01-02 15:04:05"
+	for k, t := range resetTimes {
+		// remove the old key so it doesn't pollute the results
+		delete(resultsMap, k)
+		qq := fmt.Sprintf(query2, k, t.Format(customFormat))
+
+		var rowValue circuit_breaker.PollResult
+		err = d.db.QueryRowxContext(ctx, qq).StructScan(&rowValue)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
+			}
+		}
+
+		resultsMap[k] = rowValue
+	}
+
+	return resultsMap, nil
 }
 
 func (d *deliveryAttemptRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {

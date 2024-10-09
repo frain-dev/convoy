@@ -125,6 +125,15 @@ func TestLoadConfig(t *testing.T) {
 					Policy:                   "720h",
 					IsRetentionPolicyEnabled: true,
 				},
+				CircuitBreaker: CircuitBreakerConfiguration{
+					SampleRate:                  30,
+					ErrorTimeout:                30,
+					FailureThreshold:            70,
+					SuccessThreshold:            5,
+					ObservabilityWindow:         5,
+					MinimumRequestCount:         10,
+					ConsecutiveFailureThreshold: 10,
+				},
 				Server: ServerConfiguration{
 					HTTP: HTTPServerConfiguration{
 						Port:       80,
@@ -197,6 +206,15 @@ func TestLoadConfig(t *testing.T) {
 					Port:               5432,
 					SetConnMaxLifetime: 3600,
 				},
+				CircuitBreaker: CircuitBreakerConfiguration{
+					SampleRate:                  30,
+					ErrorTimeout:                30,
+					FailureThreshold:            70,
+					SuccessThreshold:            5,
+					ObservabilityWindow:         5,
+					MinimumRequestCount:         10,
+					ConsecutiveFailureThreshold: 10,
+				},
 				Redis: RedisConfiguration{
 					Scheme:    "redis",
 					Host:      "localhost",
@@ -264,6 +282,15 @@ func TestLoadConfig(t *testing.T) {
 				Host:             "localhost:5005",
 				RetentionPolicy:  RetentionPolicyConfiguration{Policy: "720h"},
 				ConsumerPoolSize: 100,
+				CircuitBreaker: CircuitBreakerConfiguration{
+					SampleRate:                  30,
+					ErrorTimeout:                30,
+					FailureThreshold:            70,
+					SuccessThreshold:            5,
+					ObservabilityWindow:         5,
+					MinimumRequestCount:         10,
+					ConsecutiveFailureThreshold: 10,
+				},
 				Database: DatabaseConfiguration{
 					Type:               PostgresDatabaseProvider,
 					Scheme:             "postgres",

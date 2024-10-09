@@ -16,6 +16,7 @@ import (
 	time "time"
 
 	datastore "github.com/frain-dev/convoy/datastore"
+	circuit_breaker "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	flatten "github.com/frain-dev/convoy/pkg/flatten"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -2607,4 +2608,19 @@ func (m *MockDeliveryAttemptsRepository) FindDeliveryAttempts(arg0 context.Conte
 func (mr *MockDeliveryAttemptsRepositoryMockRecorder) FindDeliveryAttempts(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDeliveryAttempts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).FindDeliveryAttempts), arg0, arg1)
+}
+
+// GetFailureAndSuccessCounts mocks base method.
+func (m *MockDeliveryAttemptsRepository) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]circuit_breaker.PollResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFailureAndSuccessCounts", ctx, lookBackDuration, resetTimes)
+	ret0, _ := ret[0].(map[string]circuit_breaker.PollResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFailureAndSuccessCounts indicates an expected call of GetFailureAndSuccessCounts.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) GetFailureAndSuccessCounts(ctx, lookBackDuration, resetTimes any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFailureAndSuccessCounts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).GetFailureAndSuccessCounts), ctx, lookBackDuration, resetTimes)
 }

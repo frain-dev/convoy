@@ -443,6 +443,14 @@ func (k *Licenser) AdvancedWebhookFiltering() bool {
 	return ok
 }
 
+func (k *Licenser) CircuitBreaking() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[CircuitBreaking]
+	return ok
+}
+
 func (k *Licenser) MultiPlayerMode() bool {
 	if checkExpiry(k.license) != nil {
 		return false

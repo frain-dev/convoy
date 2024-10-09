@@ -20,10 +20,8 @@ func AddFeatureFlagsCommand() *cobra.Command {
 			if err != nil {
 				log.WithError(err).Fatal("Error fetching the config.")
 			}
-			f, err := fflag2.NewFFlag(&cfg)
-			if err != nil {
-				return err
-			}
+
+			f := fflag2.NewFFlag(&cfg)
 			return f.ListFeatures()
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},

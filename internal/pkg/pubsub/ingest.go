@@ -95,8 +95,6 @@ func (i *Ingest) getSourceKeys() []memorystore.Key {
 }
 
 func (i *Ingest) run() error {
-	i.log.Info("refreshing runner...", len(i.sources))
-
 	// cancel all stale/outdated source runners.
 	staleRows := memorystore.Difference(i.getSourceKeys(), i.table.GetKeys())
 	for _, key := range staleRows {

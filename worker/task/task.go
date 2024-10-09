@@ -51,6 +51,9 @@ func GetRetryDelay(n int, err error, t *asynq.Task) time.Duration {
 	if rateLimitError, ok := err.(*RateLimitError); ok {
 		return rateLimitError.Delay()
 	}
+	if circuitBreakerError, ok := err.(*CircuitBreakerError); ok {
+		return circuitBreakerError.Delay()
+	}
 
 	return asynq.DefaultRetryDelayFunc(n, err, t)
 }
@@ -98,4 +101,20 @@ func (ec *EventDeliveryConfig) RateLimitConfig() *RateLimitConfig {
 	rlc.BucketSize = int(ec.endpoint.RateLimitDuration)
 
 	return rlc
+}
+
+type CircuitBreakerError struct {
+	delay time.Duration
+	Err   error
+}
+
+func (e *CircuitBreakerError) Error() string {
+	if e.Err != nil {
+		return e.Err.Error()
+	}
+	return ""
+}
+
+func (e *CircuitBreakerError) Delay() time.Duration {
+	return e.delay
 }

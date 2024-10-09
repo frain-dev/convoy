@@ -74,6 +74,15 @@ var DefaultConfiguration = Configuration{
 		Policy:                   "720h",
 		IsRetentionPolicyEnabled: false,
 	},
+	CircuitBreaker: CircuitBreakerConfiguration{
+		SampleRate:                  30,
+		ErrorTimeout:                30,
+		FailureThreshold:            70,
+		SuccessThreshold:            5,
+		ObservabilityWindow:         5,
+		MinimumRequestCount:         10,
+		ConsecutiveFailureThreshold: 10,
+	},
 	Auth: AuthConfiguration{
 		IsSignupEnabled: true,
 		Native: NativeRealmOptions{
@@ -262,6 +271,16 @@ type RetentionPolicyConfiguration struct {
 	IsRetentionPolicyEnabled bool   `json:"enabled" envconfig:"CONVOY_RETENTION_POLICY_ENABLED"`
 }
 
+type CircuitBreakerConfiguration struct {
+	SampleRate                  uint64 `json:"sample_rate" envconfig:"CONVOY_CIRCUIT_BREAKER_SAMPLE_RATE"`
+	ErrorTimeout                uint64 `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
+	FailureThreshold            uint64 `json:"failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD"`
+	SuccessThreshold            uint64 `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" envconfig:"CONVOY_MINIMUM_REQUEST_COUNT"`
+	ObservabilityWindow         uint64 `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
+	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
+}
+
 type AnalyticsConfiguration struct {
 	IsEnabled bool `json:"enabled" envconfig:"CONVOY_ANALYTICS_ENABLED"`
 }
@@ -358,6 +377,7 @@ type Configuration struct {
 	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	EnableFeatureFlag   []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
 	RetentionPolicy     RetentionPolicyConfiguration `json:"retention_policy"`
+	CircuitBreaker      CircuitBreakerConfiguration  `json:"circuit_breaker"`
 	Analytics           AnalyticsConfiguration       `json:"analytics"`
 	StoragePolicy       StoragePolicyConfiguration   `json:"storage_policy"`
 	ConsumerPoolSize    int                          `json:"consumer_pool_size" envconfig:"CONVOY_CONSUMER_POOL_SIZE"`

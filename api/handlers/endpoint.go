@@ -3,7 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
+	"time"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -207,9 +211,37 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// fetch keys from redis and mutate endpoints slice
+	keys := make([]string, len(endpoints))
+	for i := 0; i < len(endpoints); i++ {
+		keys[i] = fmt.Sprintf("breaker:%s", endpoints[i].UID)
+	}
+
+	cbs, err := h.A.Redis.MGet(r.Context(), keys...).Result()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	for i := 0; i < len(cbs); i++ {
+		if cbs[i] != nil {
+			str, ok := cbs[i].(string)
+			if ok {
+				var c circuit_breaker.CircuitBreaker
+				asBytes := []byte(str)
+				innerErr := msgpack.DecodeMsgPack(asBytes, &c)
+				if innerErr != nil {
+					continue
+				}
+				endpoints[i].FailureRate = c.FailureRate
+			}
+		}
+	}
+
 	resp := models.NewListResponse(endpoints, func(endpoint datastore.Endpoint) models.EndpointResponse {
 		return models.EndpointResponse{Endpoint: &endpoint}
 	})
+
 	serverResponse := util.NewServerResponse(
 		"Endpoints fetched successfully",
 		models.PagedResponse{Content: &resp, Pagination: &paginationData}, http.StatusOK)
@@ -410,7 +442,7 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 // PauseEndpoint
 //
 //	@Summary		Pause endpoint
-//	@Description	This endpoint toggles an endpoint status between the active and paused states
+//	@Description	Toggles an endpoint's status between active and paused states
 //	@Id				PauseEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
@@ -442,6 +474,76 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	resp := &models.EndpointResponse{Endpoint: endpoint}
 	serverResponse := util.NewServerResponse("endpoint status updated successfully", resp, http.StatusAccepted)
+
+	rb, err := json.Marshal(serverResponse)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	resBytes, err := h.RM.VersionResponse(r, rb, "UpdateEndpoint")
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	util.WriteResponse(w, r, resBytes, http.StatusAccepted)
+}
+
+// ActivateEndpoint
+//
+//	@Summary		Activate endpoint
+//	@Description	Activated an inactive endpoint
+//	@Id				PauseEndpoint
+//	@Tags			Endpoints
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			endpointID	path		string	true	"Endpoint ID"
+//	@Success		202			{object}	util.ServerResponse{data=models.EndpointResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/activate [post]
+func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	aes := services.ActivateEndpointService{
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		ProjectID:    project.UID,
+		EndpointId:   chi.URLParam(r, "endpointID"),
+	}
+
+	endpoint, err := aes.Run(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	cbs, err := h.A.Redis.Get(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID)).Result()
+	if err != nil {
+		h.A.Logger.WithError(err).Error("failed to find circuit breaker")
+	}
+
+	if len(cbs) > 0 {
+		c, innerErr := circuit_breaker.NewCircuitBreakerFromStore([]byte(cbs), h.A.Logger.(*log.Logger))
+		if innerErr != nil {
+			h.A.Logger.WithError(innerErr).Error("failed to decode circuit breaker")
+		} else {
+			c.Reset(time.Now())
+			b, msgPackErr := msgpack.EncodeMsgPack(c)
+			if msgPackErr != nil {
+				h.A.Logger.WithError(msgPackErr).Error("failed to encode circuit breaker")
+			}
+			h.A.Redis.Set(r.Context(), fmt.Sprintf("breaker:%s", endpoint.UID), b, time.Minute*5)
+		}
+	}
+
+	resp := &models.EndpointResponse{Endpoint: endpoint}
+	serverResponse := util.NewServerResponse("endpoint status successfully activated", resp, http.StatusAccepted)
 
 	rb, err := json.Marshal(serverResponse)
 	if err != nil {

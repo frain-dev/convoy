@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
@@ -32,7 +34,8 @@ import (
 )
 
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser,
-	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository,
+	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
+	attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var data EventDelivery
@@ -120,6 +123,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			return &RateLimitError{Err: ErrRateLimit, delay: time.Duration(endpoint.RateLimitDuration) * time.Second}
 		}
 
+		if featureFlag.CanAccessFeature(fflag.CircuitBreaker) && licenser.CircuitBreaking() {
+			breakerErr := circuitBreakerManager.CanExecute(ctx, endpoint.UID)
+			if breakerErr != nil {
+				return &CircuitBreakerError{Err: breakerErr}
+			}
+		}
+
 		err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.ProcessingEventStatus)
 		if err != nil {
 			return &DeliveryError{Err: err}
@@ -203,7 +213,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 			// register latency
 			mm := metrics.GetDPInstance(licenser)
-			mm.RecordLatency(eventDelivery)
+			mm.RecordEndToEndLatency(eventDelivery)
 
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
@@ -224,7 +234,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
 		}
 
-		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 			endpointStatus := datastore.ActiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
@@ -240,7 +250,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 		}
 
-		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 			endpointStatus := datastore.InactiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
@@ -264,7 +274,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
 
-			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint {
+			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 				endpointStatus := datastore.InactiveEndpointStatus
 
 				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)

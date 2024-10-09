@@ -9,6 +9,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/redis/go-redis/v9"
 )
 
 type ContextKey string
@@ -16,6 +17,7 @@ type ContextKey string
 type APIOptions struct {
 	FFlag    *fflag.FFlag
 	DB       database.Database
+	Redis    redis.UniversalClient
 	Queue    queue.Queuer
 	Logger   log.StdLogger
 	Cache    cache.Cache

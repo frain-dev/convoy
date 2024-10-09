@@ -128,10 +128,13 @@ func buildServer() *ApplicationHandler {
 	noopCache := ncache.NewNoopCache()
 	r, _ := rlimiter.NewRedisLimiter(cfg.Redis.BuildDsn())
 
+	rd, _ := rdb.NewClient(cfg.Redis.BuildDsn())
+
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
 			DB:       db,
 			Queue:    newQueue,
+			Redis:    rd.Client(),
 			Logger:   logger,
 			Cache:    noopCache,
 			Rate:     r,
