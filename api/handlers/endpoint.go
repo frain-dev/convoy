@@ -529,13 +529,11 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(cbs) > 0 {
-		var c *circuit_breaker.CircuitBreaker
-		asBytes := []byte(cbs)
-		innerErr := msgpack.DecodeMsgPack(asBytes, &c)
+		c, innerErr := circuit_breaker.NewCircuitBreakerFromStore([]byte(cbs), h.A.Logger.(*log.Logger))
 		if innerErr != nil {
 			h.A.Logger.WithError(innerErr).Error("failed to decode circuit breaker")
 		} else {
-			c.ResetCircuitBreaker(time.Now())
+			c.Reset(time.Now())
 			b, msgPackErr := msgpack.EncodeMsgPack(c)
 			if msgPackErr != nil {
 				h.A.Logger.WithError(msgPackErr).Error("failed to encode circuit breaker")

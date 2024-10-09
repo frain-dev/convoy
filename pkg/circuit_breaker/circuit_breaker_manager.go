@@ -195,6 +195,7 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 	}
 
 	for i := range res {
+		// the circuit breaker doesn't exist
 		if res[i] == nil {
 			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i], tenants[i], cb.logger)
 			continue
@@ -202,21 +203,17 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 		str, ok := res[i].(string)
 		if !ok {
-			cb.logger.Errorf("[circuit breaker] breaker with key (%s) is corrupted, reseting it", keys[i])
-
 			// the circuit breaker is corrupted, create a new one in its place
+			cb.logger.Errorf("[circuit breaker] breaker with key (%s) is corrupted, reseting it", keys[i])
 			circuitBreakers[keys[i]] = *NewCircuitBreaker(keys[i], tenants[i], cb.logger)
 			continue
 		}
 
-		var c *CircuitBreaker
-		asBytes := []byte(str)
-		innerErr := msgpack.DecodeMsgPack(asBytes, &c)
+		c, innerErr := NewCircuitBreakerFromStore([]byte(str), cb.logger)
 		if innerErr != nil {
-			return innerErr
+			cb.logger.WithError(innerErr).Errorf("[circuit breaker] an error occurred loading circuit breaker (%s) state from the store", keys[i])
+			continue
 		}
-
-		c.logger = cb.logger
 
 		circuitBreakers[keys[i]] = *c
 	}
@@ -238,10 +235,10 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 		}
 
 		if breaker.State == StateHalfOpen && breaker.SuccessRate >= float64(cb.config.SuccessThreshold) {
-			breaker.ResetCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
+			breaker.Reset(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
 		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= cb.config.MinimumRequestCount {
 			if breaker.FailureRate >= float64(cb.config.FailureThreshold) {
-				breaker.tripCircuitBreaker(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
+				breaker.trip(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
 			}
 		}
 
@@ -300,19 +297,24 @@ func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]Cir
 
 	circuitBreakers := make([]CircuitBreaker, len(res))
 	for i := range res {
-		c := CircuitBreaker{}
 		switch res[i].(type) {
 		case string:
-			asBytes := []byte(res[i].(string))
-			innerErr := msgpack.DecodeMsgPack(asBytes, &c)
-			if innerErr != nil {
-				return nil, innerErr
+			str, ok := res[i].(string)
+			if !ok {
+				cb.logger.Errorf("[circuit breaker] breaker with key (%s) is corrupted", keys[i])
+				continue
 			}
-		case CircuitBreaker:
-			c = res[i].(CircuitBreaker)
+
+			c, innerErr := NewCircuitBreakerFromStore([]byte(str), cb.logger)
+			if innerErr != nil {
+				cb.logger.WithError(innerErr).Errorf("[circuit breaker] an error occurred loading circuit breaker (%s) state from the store", keys[i])
+				continue
+			}
+			circuitBreakers[i] = *c
+		case CircuitBreaker: // only used in tests that use the mockStore
+			circuitBreakers[i] = res[i].(CircuitBreaker)
 		}
 
-		circuitBreakers[i] = c
 	}
 
 	return circuitBreakers, nil

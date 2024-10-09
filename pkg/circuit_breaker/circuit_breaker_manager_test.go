@@ -531,7 +531,7 @@ func TestCircuitBreakerManager_UpdateCircuitBreakers(t *testing.T) {
 	require.Equal(t, uint64(4), cb2.TotalSuccesses)
 }
 
-func TestCircuitBreakerManager_LoadCircuitBreakers(t *testing.T) {
+func TestCircuitBreakerManager_LoadCircuitBreakers_TestStore(t *testing.T) {
 	mockStore := NewTestStore()
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
 	config := &CircuitBreakerConfig{
@@ -553,6 +553,76 @@ func TestCircuitBreakerManager_LoadCircuitBreakers(t *testing.T) {
 	require.NoError(t, err)
 
 	ctx := context.Background()
+	breakers := map[string]CircuitBreaker{
+		"breaker:test1": {
+			Key:            "test1",
+			State:          StateClosed,
+			Requests:       10,
+			TotalFailures:  3,
+			TotalSuccesses: 7,
+		},
+		"breaker:test2": {
+			Key:            "test2",
+			State:          StateOpen,
+			Requests:       10,
+			TotalFailures:  6,
+			TotalSuccesses: 4,
+		},
+	}
+
+	err = manager.updateCircuitBreakers(ctx, breakers)
+	require.NoError(t, err)
+
+	loadedBreakers, err := manager.loadCircuitBreakers(ctx)
+	require.NoError(t, err)
+	require.Len(t, loadedBreakers, 2)
+
+	// Check if loaded circuit breakers match the original ones
+	for _, cb := range loadedBreakers {
+		originalCB, exists := breakers["breaker:"+cb.Key]
+		require.True(t, exists)
+		require.Equal(t, originalCB.State, cb.State)
+		require.Equal(t, originalCB.Requests, cb.Requests)
+		require.Equal(t, originalCB.TotalFailures, cb.TotalFailures)
+		require.Equal(t, originalCB.TotalSuccesses, cb.TotalSuccesses)
+	}
+}
+
+func TestCircuitBreakerManager_LoadCircuitBreakers_RedisStore(t *testing.T) {
+	ctx := context.Background()
+
+	re, err := getRedis(t)
+	require.NoError(t, err)
+
+	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
+	store := NewRedisStore(re, mockClock)
+
+	keys, err := re.Keys(ctx, "breaker*").Result()
+	require.NoError(t, err)
+
+	for i := range keys {
+		err = re.Del(ctx, keys[i]).Err()
+		require.NoError(t, err)
+	}
+
+	config := &CircuitBreakerConfig{
+		SampleRate:                  1,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
+		ObservabilityWindow:         5,
+		ConsecutiveFailureThreshold: 3,
+	}
+
+	manager, err := NewCircuitBreakerManager(
+		StoreOption(store),
+		ClockOption(mockClock),
+		ConfigOption(config),
+		LoggerOption(log.NewLogger(os.Stdout)),
+	)
+	require.NoError(t, err)
+
 	breakers := map[string]CircuitBreaker{
 		"breaker:test1": {
 			Key:            "test1",

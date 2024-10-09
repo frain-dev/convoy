@@ -44,6 +44,18 @@ func NewCircuitBreaker(key string, tenantId string, logger *log.Logger) *Circuit
 	}
 }
 
+func NewCircuitBreakerFromStore(b []byte, logger *log.Logger) (*CircuitBreaker, error) {
+	var c *CircuitBreaker
+	innerErr := msgpack.DecodeMsgPack(b, &c)
+	if innerErr != nil {
+		return nil, innerErr
+	}
+
+	c.logger = logger
+
+	return c, nil
+}
+
 func (b *CircuitBreaker) String() (s string) {
 	bytes, err := msgpack.EncodeMsgPack(b)
 	if err != nil {
@@ -72,7 +84,7 @@ func (b *CircuitBreaker) asKeyValue() map[string]interface{} {
 	return kv
 }
 
-func (b *CircuitBreaker) tripCircuitBreaker(resetTime time.Time) {
+func (b *CircuitBreaker) trip(resetTime time.Time) {
 	b.State = StateOpen
 	b.WillResetAt = resetTime
 	b.ConsecutiveFailures++
@@ -90,7 +102,7 @@ func (b *CircuitBreaker) toHalfOpen() {
 	}
 }
 
-func (b *CircuitBreaker) ResetCircuitBreaker(resetTime time.Time) {
+func (b *CircuitBreaker) Reset(resetTime time.Time) {
 	b.State = StateClosed
 	b.WillResetAt = resetTime
 	b.NotificationsSent = 0
