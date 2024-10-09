@@ -402,7 +402,7 @@ func (cb *CircuitBreakerManager) GetCircuitBreakerWithError(ctx context.Context,
 
 func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc PollFunc) error {
 	start := time.Now()
-	stopTime := time.Now().Add(time.Duration(cb.config.SampleRate) * time.Second)
+	stopTime := time.Now().Add(time.Duration(cb.config.SampleRate-2) * time.Second)
 	isLeader := true
 
 	mu, err := cb.store.Lock(ctx, mutexKey, cb.config.SampleRate)
