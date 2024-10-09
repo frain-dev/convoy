@@ -809,7 +809,7 @@ func TestFlattenWithOrAndOperator(t *testing.T) {
 		},
 
 		{
-			name: "top level $and operator - flatten children",
+			name: "top level $and & $or operator - flatten children",
 			given: M{
 				"$and": []interface{}{
 					M{
