@@ -40,9 +40,22 @@
 							<div class="w-1/5">
 								<div convoy-tag [color]="event.status | statuscolor">{{ event?.status }}</div>
 							</div>
-							<div class="w-1/3 ml-2px max-w-[159px] whitespace-nowrap overflow-hidden text-ellipsis">{{ event?.endpoint_metadata?.title }}</div>
-							<div class="w-1/5 ml-2px">{{ event.created_at | date: 'mediumTime' }}</div>
-							<div class="w-1/5 ml-2px">{{ event.updated_at | date: 'mediumTime' }}</div>
+							<div class="w-1/3">
+								<ng-container *ngIf="privateService.getProjectDetails?.type === 'incoming'">
+									<span class="max-w-[146px] overflow-hidden overflow-ellipsis">
+										{{ event?.source_metadata?.name || 'Rest API' }}
+									</span>
+
+									<span class="px-20px font-light">→</span>
+								</ng-container>
+
+								<span [class]="privateService.getProjectDetails?.type === 'incoming' ? 'max-w-[140px] overflow-hidden overflow-ellipsis' : 'w-156px' + ' overflow-hidden overflow-ellipsis'">
+									{{ event.endpoint_metadata.title || event.endpoint_metadata.name }}
+								</span>
+							</div>
+							<!-- <div class="w-1/3 ml-2px max-w-[159px] whitespace-nowrap overflow-hidden text-ellipsis">{{ event?.endpoint_metadata?.name || event?.endpoint_metadata?.title }}</div> -->
+							<div class="w-1/5 ml-2px">{{ event.created_at | date : 'mediumTime' }}</div>
+							<div class="w-1/5 ml-2px">{{ event.updated_at | date : 'mediumTime' }}</div>
 						</div>
 					</div>
 

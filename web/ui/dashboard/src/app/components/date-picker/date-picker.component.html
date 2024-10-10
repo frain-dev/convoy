@@ -84,7 +84,7 @@
 				</div>
 			</div>
 
-			<div class="flex gap-24px px-16px mb-20px">
+			<div class="flex gap-36px px-16px">
 				<div class="flex-col gap-8px">
 					<div class="flex items-center gap-8px">
 						<label class="text-12 text-neutral-11">Start</label>
@@ -180,9 +180,17 @@
 				</div>
 			</div>
 
-			<div class="flex items-center justify-end px-16px py-10px border-t border-t-new.primary-25 mt-24px">
-				<button convoy-button size="sm" type="button" fill="outline" color="error" class="mr-14px" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate(); clearDates.emit()">Clear</button>
-				<button convoy-button size="sm" type="button" (click)="showPicker = false; applyDate(true)">Apply</button>
+			<div class="flex items-center justify-between px-16px py-10px border-t border-t-new.primary-25 mt-24px">
+				<div class="flex items-center gap-4px text-14 italic text-neutral-8">
+					<svg width="18" height="18" class="scale-90 fill-neutral-8">
+						<use xlink:href="#info-icon"></use>
+					</svg>
+					Your time is being converted to UTC after selection.
+				</div>
+				<div class="flex items-center justify-end">
+					<button convoy-button size="sm" type="button" fill="outline" color="error" class="mr-14px" *ngIf="selectedDates?.startDate && selectedDates?.endDate" (click)="clearDate(); clearDates.emit()">Clear</button>
+					<button convoy-button size="sm" type="button" (click)="showPicker = false; applyDate(true)">Apply</button>
+				</div>
 			</div>
 		</div>
 	</div>

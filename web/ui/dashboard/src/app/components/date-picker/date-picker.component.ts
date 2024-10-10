@@ -119,9 +119,11 @@ export class DatePickerComponent implements OnInit {
 		this.selectedDates = { startDate: `${format(new Date(this.selectedStartDay!), 'yyyy-MM-dd')}T${this.selectedStartTime}`, endDate: `${this.selectedEndDay ? format(new Date(this.selectedEndDay!), 'yyyy-MM-dd') : ''}T${this.selectedEndTime}` };
 
 		if (applyDate) {
-            console.log(this.selectedDates)
+			const startDate = new Date(this.selectedDates.startDate).toISOString().slice(0, -5);
+			const endDate = new Date(this.selectedDates.endDate).toISOString().slice(0, -5);
+
 			this.showPicker = false;
-			this.formType === 'filter' ? this.selectedDateRange.emit(this.selectedDates) : this.selectedDate.emit(this.selectedDates.startDate);
+			this.formType === 'filter' ? this.selectedDateRange.emit({ startDate, endDate }) : this.selectedDate.emit(startDate);
 		}
 	}
 
