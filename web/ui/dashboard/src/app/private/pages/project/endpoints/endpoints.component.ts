@@ -183,6 +183,10 @@ export class EndpointsComponent implements OnInit {
 		}
 	}
 
+	viewSubscription() {
+        this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/subscriptions`], { queryParams: { endpointId: this.selectedEndpoint?.uid || '' } });
+	}
+
 	cancel() {
 		this.endpointDialog.nativeElement.close();
 		this.router.navigateByUrl('/projects/' + this.projectService.activeProjectDetails?.uid + '/endpoints');

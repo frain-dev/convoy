@@ -114,6 +114,14 @@
 													View Secret
 												</button>
 											</li>
+                                            <li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
+												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="viewSubscription()">
+													<svg width="18" height="18" class="stroke-neutral-10 mr-8px scale-90">
+														<use xlink:href="#subscriptions-icon"></use>
+													</svg>
+													View Subscriptions
+												</button>
+											</li>
 											<li class="mb-4px rounded-8px py-4px px-6px hover:bg-new.primary-25 duration-300 transition-all">
 												<button convoy-dropdown-option convoy-button color="neutral" class="w-full !justify-start" fill="text" (click)="toggleEndpoint()" [disabled]="isTogglingEndpoint">
 													<svg width="14" height="14" class="stroke-neutral-10 mr-8px">

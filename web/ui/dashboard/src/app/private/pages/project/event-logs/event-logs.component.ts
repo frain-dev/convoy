@@ -241,6 +241,7 @@ export class EventLogsComponent implements OnInit, OnDestroy {
 		};
 		if (filterByIdempotencyKey) queryParams['idempotencyKey'] = event.idempotency_key;
 
-		this.router.navigate([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams });
+		const url = this.router.serializeUrl(this.router.createUrlTree([`/projects/${this.privateService.getProjectDetails?.uid}/events`], { queryParams }));
+		window.open(url, '_blank');
 	}
 }

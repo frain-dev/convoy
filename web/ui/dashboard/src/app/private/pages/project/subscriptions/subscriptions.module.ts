@@ -20,6 +20,7 @@ import { TableCellComponent, TableComponent, TableRowComponent } from 'src/app/c
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { LoaderModule } from 'src/app/private/components/loader/loader.module';
 import { FormsModule } from '@angular/forms';
+import { EndpointFilterComponent } from 'src/app/private/components/endpoints-filter/endpoints-filter.component';
 
 const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 
@@ -50,7 +51,8 @@ const routes: Routes = [{ path: '', component: SubscriptionsComponent }];
 		DropdownOptionDirective,
 		LoaderModule,
         DialogDirective,
-        FormsModule
+        FormsModule,
+        EndpointFilterComponent
 	]
 })
 export class SubscriptionsModule {}
