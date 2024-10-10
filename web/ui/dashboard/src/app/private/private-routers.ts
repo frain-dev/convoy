@@ -3,8 +3,8 @@ import { Routes } from '@angular/router';
 import { PrivateComponent } from './private.component';
 import { PrivateService } from './private.service';
 
-export const fetchOrganisations = async (privateService = inject(PrivateService)) => await privateService.getOrganizations();
-export const fetchMembership = async (privateService = inject(PrivateService)) => await privateService.getOrganizationMembership();
+export const fetchOrganisations = async (privateService = inject(PrivateService)) => await privateService.getOrganisations();
+export const fetchMembership = async (privateService = inject(PrivateService)) => await privateService.getOrganisationMembership();
 
 const routes: Routes = [
 	{

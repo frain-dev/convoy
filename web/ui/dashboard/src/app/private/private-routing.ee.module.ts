@@ -3,7 +3,7 @@ import { RouterModule } from '@angular/router';
 import { PrivateService } from './private.service';
 import { routes } from './private-routers';
 
-// export const fetchOrganisations = async (privateService = inject(PrivateService)) => await privateService.getOrganizations();
+// export const fetchOrganisations = async (privateService = inject(PrivateService)) => await privateService.getOrganisations();
 
 routes[0].children?.push({
 	path: 'ee',
