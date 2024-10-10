@@ -99,8 +99,6 @@ func flatten(prefix string, nested interface{}) (M, error) {
 	var (
 		// reused vars
 		currentFrame stackFrame
-		prefixInner  string
-		nestedInner  interface{}
 		b            strings.Builder
 		ok           bool
 		newPrefix    string
@@ -111,14 +109,12 @@ func flatten(prefix string, nested interface{}) (M, error) {
 		// Pop from stack
 		currentFrame = stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
-		prefixInner = currentFrame.prefix
-		nestedInner = currentFrame.nested
 
-		switch n := nestedInner.(type) {
+		switch n := currentFrame.nested.(type) {
 		case M:
 			if len(n) == 0 {
 				// nothing in n, but its prefix exists, so add empty map to result
-				result[prefixInner] = M{}
+				result[currentFrame.prefix] = M{}
 				continue
 			}
 
@@ -163,11 +159,7 @@ func flatten(prefix string, nested interface{}) (M, error) {
 							//    "$in": []int{10, 11, 12},
 							//},
 							// set key [$or or $and] to the new value of a and set it in result
-							if len(prefixInner) > 0 {
-								result[prefixInner] = M{key: a}
-							} else {
-								result = M{key: a}
-							}
+							putValueInResult(currentFrame.prefix, key, value, result)
 						default:
 							return nil, ErrOrAndMustBeArray
 						}
@@ -175,18 +167,14 @@ func flatten(prefix string, nested interface{}) (M, error) {
 
 					// it's one of the unary ops [$in, $lt, ...] these do not require recursion or expansion
 					// and so forth so just set it directly
-					if len(prefixInner) > 0 {
-						result[prefixInner] = M{key: value}
-					} else {
-						result = M{key: value}
-					}
+					putValueInResult(currentFrame.prefix, key, value, result)
 
 					continue
 				}
 
-				if len(prefixInner) > 0 {
-					b.Grow(len(key) + len(prefixInner) + 1)
-					b.WriteString(prefixInner)
+				if len(currentFrame.prefix) > 0 {
+					b.Grow(len(key) + len(currentFrame.prefix) + 1)
+					b.WriteString(currentFrame.prefix)
 					b.WriteByte('.')
 					b.WriteString(key)
 					key = b.String()
@@ -199,7 +187,7 @@ func flatten(prefix string, nested interface{}) (M, error) {
 			// either this is a nested array of maps, or a string or int float array
 			// if it is the latter, we don't need to expand it, just add it to the result
 			if isHomogenousArray(n) {
-				result[prefixInner] = n
+				result[currentFrame.prefix] = n
 				continue
 			}
 
@@ -207,9 +195,9 @@ func flatten(prefix string, nested interface{}) (M, error) {
 				switch t := n[i].(type) {
 				case M:
 					newPrefix = strconv.Itoa(i)
-					if len(prefixInner) > 0 {
-						b.Grow(len(newPrefix) + len(prefixInner) + 1)
-						b.WriteString(prefixInner)
+					if len(currentFrame.prefix) > 0 {
+						b.Grow(len(newPrefix) + len(currentFrame.prefix) + 1)
+						b.WriteString(currentFrame.prefix)
 						b.WriteByte('.')
 						b.WriteString(newPrefix)
 
@@ -222,8 +210,8 @@ func flatten(prefix string, nested interface{}) (M, error) {
 			}
 		// default will handle string and int and nil
 		default:
-			if prefixInner != "" {
-				result[prefixInner] = n
+			if currentFrame.prefix != "" {
+				result[currentFrame.prefix] = n
 			}
 		}
 	}
@@ -258,16 +246,14 @@ func countKeys(nested interface{}) (int, int) {
 	var (
 		// reused vars
 		currentFrame counterStackFrame
-		nestedInner  interface{}
 		value        interface{}
 	)
 
 	for len(stack) > 0 {
 		currentFrame = stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
-		nestedInner = currentFrame.nested
 
-		switch n := nestedInner.(type) {
+		switch n := currentFrame.nested.(type) {
 		case M:
 			if len(n) == 0 {
 				keyCount++
@@ -297,4 +283,23 @@ func countKeys(nested interface{}) (int, int) {
 	}
 
 	return keyCount, cap(stack)
+}
+
+func putValueInResult(prefix, key string, value interface{}, result M) {
+	if len(prefix) > 0 {
+		m := result[prefix]
+		if m == nil {
+			m = M{}
+			result[prefix] = m
+		}
+
+		v, ok := m.(M)
+		if !ok {
+			return
+		}
+		v[key] = value
+
+	} else {
+		result[key] = value
+	}
 }
