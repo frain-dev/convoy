@@ -20,7 +20,7 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 		}
 
 		ids := func() []string {
-			arr := make([]string, len(evs))
+			arr := make([]string, 0, len(evs))
 			for i := 0; i < len(evs); i++ {
 				arr = append(arr, evs[i].UID)
 			}
