@@ -86,7 +86,7 @@ func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user
 	baseURL := cfg.Host
 	em := email.Message{
 		Email:        iv.InviteeEmail,
-		Subject:      "Convoy Organization Invite",
+		Subject:      "Convoy Organisation Invite",
 		TemplateName: email.TemplateOrganisationInvite,
 		Params: map[string]string{
 			"invite_url":        fmt.Sprintf("%s/accept-invite?invite-token=%s", baseURL, iv.Token),

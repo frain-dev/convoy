@@ -16,7 +16,7 @@ export class RbacService {
 
 	async getUserRole(): Promise<ROLE> {
 		try {
-			const member = await this.privateService.getOrganizationMembership();
+			const member = await this.privateService.getOrganisationMembership();
 			const role = member.data.content[0].role.type;
 			switch (role) {
 				case 'super_user':

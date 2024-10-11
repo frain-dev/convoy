@@ -16,9 +16,9 @@ import (
 )
 
 var (
-	ErrOrganizationMemberNotCreated = errors.New("organization member could not be created")
-	ErrOrganizationMemberNotUpdated = errors.New("organization member could not be updated")
-	ErrOrganizationMemberNotDeleted = errors.New("organization member could not be deleted")
+	ErrOrganisationMemberNotCreated = errors.New("organisation member could not be created")
+	ErrOrganisationMemberNotUpdated = errors.New("organisation member could not be updated")
+	ErrOrganisationMemberNotDeleted = errors.New("organisation member could not be deleted")
 )
 
 const (
@@ -216,7 +216,7 @@ func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *da
 	}
 
 	if nRows < 1 {
-		return ErrOrganizationMemberNotCreated
+		return ErrOrganisationMemberNotCreated
 	}
 
 	return nil
@@ -451,7 +451,7 @@ func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *da
 	}
 
 	if nRows < 1 {
-		return ErrOrganizationMemberNotUpdated
+		return ErrOrganisationMemberNotUpdated
 	}
 
 	return nil
@@ -469,7 +469,7 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID
 	}
 
 	if nRows < 1 {
-		return ErrOrganizationMemberNotDeleted
+		return ErrOrganisationMemberNotDeleted
 	}
 
 	return nil
