@@ -84,22 +84,23 @@ func GetVersionFromFS(fs embed.FS) string {
 }
 
 const (
-	EventProcessor                TaskName = "EventProcessor"
-	RetryEventProcessor           TaskName = "RetryEventProcessor"
-	CreateEventProcessor          TaskName = "CreateEventProcessor"
-	CreateDynamicEventProcessor   TaskName = "CreateDynamicEventProcessor"
-	CreateBroadcastEventProcessor TaskName = "CreateBroadcastEventProcessor"
-	MetaEventProcessor            TaskName = "MetaEventProcessor"
-	NotificationProcessor         TaskName = "NotificationProcessor"
-	TokenizeSearch                TaskName = "tokenize search"
-	TokenizeSearchForProject      TaskName = "tokenize search for project"
-	DailyAnalytics                TaskName = "daily analytics"
-	StreamCliEventsProcessor      TaskName = "StreamCliEventsProcessor"
-	MonitorTwitterSources         TaskName = "monitor twitter sources"
-	RetentionPolicies             TaskName = "retention_policies"
-	EmailProcessor                TaskName = "EmailProcessor"
-	ExpireSecretsProcessor        TaskName = "ExpireSecretsProcessor"
-	DeleteArchivedTasksProcessor  TaskName = "DeleteArchivedTasksProcessor"
+	EventProcessor                   TaskName = "EventProcessor"
+	RetryEventProcessor              TaskName = "RetryEventProcessor"
+	CreateEventProcessor             TaskName = "CreateEventProcessor"
+	CreateDynamicEventProcessor      TaskName = "CreateDynamicEventProcessor"
+	CreateBroadcastEventProcessor    TaskName = "CreateBroadcastEventProcessor"
+	MetaEventProcessor               TaskName = "MetaEventProcessor"
+	NotificationProcessor            TaskName = "NotificationProcessor"
+	TokenizeSearch                   TaskName = "tokenize search"
+	TokenizeSearchForProject         TaskName = "tokenize search for project"
+	DailyAnalytics                   TaskName = "daily analytics"
+	StreamCliEventsProcessor         TaskName = "StreamCliEventsProcessor"
+	MonitorTwitterSources            TaskName = "monitor twitter sources"
+	RetentionPolicies                TaskName = "retention_policies"
+	EmailProcessor                   TaskName = "EmailProcessor"
+	ExpireSecretsProcessor           TaskName = "ExpireSecretsProcessor"
+	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
+	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
 
 	EndpointCacheKey       CacheKey = "endpoints"
 	ApiKeyCacheKey         CacheKey = "api_keys"
@@ -113,13 +114,14 @@ const (
 
 // queues
 const (
-	EventQueue       QueueName = "EventQueue"
-	CreateEventQueue QueueName = "CreateEventQueue"
-	MetaEventQueue   QueueName = "MetaEventQueue"
-	RetryEventQueue  QueueName = "RetryEventQueue"
-	StreamQueue      QueueName = "StreamQueue"
-	ScheduleQueue    QueueName = "ScheduleQueue"
-	DefaultQueue     QueueName = "DefaultQueue"
+	EventQueue         QueueName = "EventQueue"
+	CreateEventQueue   QueueName = "CreateEventQueue"
+	MetaEventQueue     QueueName = "MetaEventQueue"
+	RetryEventQueue    QueueName = "RetryEventQueue"
+	StreamQueue        QueueName = "StreamQueue"
+	ScheduleQueue      QueueName = "ScheduleQueue"
+	DefaultQueue       QueueName = "DefaultQueue"
+	EventWorkflowQueue QueueName = "EventWorkflowQueue"
 )
 
 // Exports dir

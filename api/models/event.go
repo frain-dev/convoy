@@ -39,6 +39,10 @@ func (e *CreateEvent) Validate() error {
 }
 
 type DynamicEvent struct {
+	JobID string `json:"jid" swaggerignore:"true"`
+
+	EventID string `json:"event_ide" swaggerignore:"true"`
+
 	// URL is the endpoint's URL prefixed with https. non-https urls are currently
 	// not supported.
 	URL string `json:"url" valid:"required~please provide a url"`
@@ -131,7 +135,8 @@ func (ds *DynamicEventStub) Validate() error {
 }
 
 type BroadcastEvent struct {
-	JobID string `json:"jid" swaggerignore:"true"`
+	JobID   string `json:"jid" swaggerignore:"true"`
+	EventID string `json:"event_id" swaggerignore:"true"`
 
 	// Event Type is used for filtering and debugging e.g invoice.paid
 	EventType string `json:"event_type" valid:"required~please provide an event type"`

@@ -95,11 +95,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 		queueNames := map[string]int{
-			string(convoy.EventQueue):       5,
-			string(convoy.CreateEventQueue): 2,
-			string(convoy.ScheduleQueue):    1,
-			string(convoy.DefaultQueue):     1,
-			string(convoy.MetaEventQueue):   1,
+			string(convoy.EventQueue):         5,
+			string(convoy.CreateEventQueue):   2,
+			string(convoy.EventWorkflowQueue): 3,
+			string(convoy.ScheduleQueue):      1,
+			string(convoy.DefaultQueue):       1,
+			string(convoy.MetaEventQueue):     1,
 		}
 
 		opts := queue.QueueOptions{
@@ -120,6 +121,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		q = redisQueue.NewQueue(opts)
 
 		lo := log.NewLogger(os.Stdout)
+
+		rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
+		if err != nil {
+			return err
+		}
 
 		ca, err = cache.NewCache(cfg.Redis)
 		if err != nil {
@@ -154,6 +160,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
+		app.Redis = rd.Client()
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo
@@ -230,6 +237,7 @@ func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {
 
 	if !licenser.IngestRate() {
 		cfg.InstanceIngestRate = config.DefaultConfiguration.InstanceIngestRate
+		cfg.ApiRateLimit = config.DefaultConfiguration.ApiRateLimit
 	}
 }
 
@@ -325,21 +333,32 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
 	}
 
+	circuitBreakerConfig := &datastore.CircuitBreakerConfig{
+		SampleRate:                  cfg.CircuitBreaker.SampleRate,
+		ErrorTimeout:                cfg.CircuitBreaker.ErrorTimeout,
+		FailureThreshold:            cfg.CircuitBreaker.FailureThreshold,
+		SuccessThreshold:            cfg.CircuitBreaker.SuccessThreshold,
+		ObservabilityWindow:         cfg.CircuitBreaker.ObservabilityWindow,
+		MinimumRequestCount:         cfg.CircuitBreaker.MinimumRequestCount,
+		ConsecutiveFailureThreshold: cfg.CircuitBreaker.ConsecutiveFailureThreshold,
+	}
+
 	configuration, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
 			a.Logger.Info("Creating Instance Config")
-			cfg := &datastore.Configuration{
-				UID:                ulid.Make().String(),
-				StoragePolicy:      storagePolicy,
-				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
-				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
-				RetentionPolicy:    retentionPolicy,
-				CreatedAt:          time.Now(),
-				UpdatedAt:          time.Now(),
+			c := &datastore.Configuration{
+				UID:                  ulid.Make().String(),
+				StoragePolicy:        storagePolicy,
+				IsAnalyticsEnabled:   cfg.Analytics.IsEnabled,
+				IsSignupEnabled:      cfg.Auth.IsSignupEnabled,
+				RetentionPolicy:      retentionPolicy,
+				CircuitBreakerConfig: circuitBreakerConfig,
+				CreatedAt:            time.Now(),
+				UpdatedAt:            time.Now(),
 			}
 
-			return cfg, configRepo.CreateConfiguration(ctx, cfg)
+			return c, configRepo.CreateConfiguration(ctx, c)
 		}
 
 		return configuration, err
@@ -348,6 +367,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	configuration.CircuitBreakerConfig = circuitBreakerConfig
 	configuration.RetentionPolicy = retentionPolicy
 	configuration.UpdatedAt = time.Now()
 
@@ -356,6 +376,22 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
+
+	// CONVOY_INSTANCE_INGEST_RATE
+	instanceIngestRate, err := cmd.Flags().GetInt("instance-ingest-rate")
+	if err != nil {
+		return nil, err
+	}
+
+	c.InstanceIngestRate = instanceIngestRate
+
+	// CONVOY_API_RATE_LIMIT
+	apiRateLimit, err := cmd.Flags().GetInt("api-rate-limit")
+	if err != nil {
+		return nil, err
+	}
+
+	c.ApiRateLimit = apiRateLimit
 
 	// CONVOY_LICENSE_KEY
 	licenseKey, err := cmd.Flags().GetString("license-key")
@@ -549,32 +585,34 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
-	flag, err := fflag2.NewFFlag(c)
-	if err != nil {
-		return nil, err
-	}
+	flag := fflag2.NewFFlag(c)
 	c.Metrics = config.MetricsConfiguration{
 		IsEnabled: false,
 	}
+
 	if flag.CanAccessFeature(fflag2.Prometheus) {
 		metricsBackend, err := cmd.Flags().GetString("metrics-backend")
 		if err != nil {
 			return nil, err
 		}
+
 		if !config.IsStringEmpty(metricsBackend) {
 			c.Metrics = config.MetricsConfiguration{
 				IsEnabled: false,
 				Backend:   config.MetricsBackend(metricsBackend),
 			}
+
 			switch c.Metrics.Backend {
 			case config.PrometheusMetricsProvider:
 				sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
 				if err != nil {
 					return nil, err
 				}
+
 				if sampleTime < 1 {
 					return nil, errors.New("metrics-prometheus-sample-time must be non-zero")
 				}
+
 				c.Metrics = config.MetricsConfiguration{
 					IsEnabled: true,
 					Backend:   config.MetricsBackend(metricsBackend),
@@ -584,14 +622,17 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 				}
 			}
 		} else {
-			log.Warn("No metrics-backend specified")
+			log.Warn("metrics backend not specified")
 		}
+	} else {
+		log.Info(fflag2.ErrPrometheusMetricsNotEnabled)
 	}
 
 	maxRetrySeconds, err := cmd.Flags().GetUint64("max-retry-seconds")
 	if err != nil {
 		return nil, err
 	}
+
 	c.MaxRetrySeconds = maxRetrySeconds
 
 	return c, nil

@@ -95,8 +95,6 @@ func (i *Ingest) getSourceKeys() []memorystore.Key {
 }
 
 func (i *Ingest) run() error {
-	i.log.Info("refreshing runner...", len(i.sources))
-
 	// cancel all stale/outdated source runners.
 	staleRows := memorystore.Difference(i.getSourceKeys(), i.table.GetKeys())
 	for _, key := range staleRows {
@@ -261,8 +259,9 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 
+		jobId := fmt.Sprintf("single:%s:%s", source.ProjectID, ce.Params.UID)
 		job := &queue.Job{
-			ID:      ce.Params.UID,
+			ID:      jobId,
 			Payload: eventByte,
 		}
 
@@ -298,8 +297,9 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 
+		jobId := fmt.Sprintf("fanout:%s:%s", source.ProjectID, ce.Params.UID)
 		job := &queue.Job{
-			ID:      ce.Params.UID,
+			ID:      jobId,
 			Payload: eventByte,
 		}
 
@@ -309,9 +309,10 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 			return err
 		}
 	case "broadcast":
-		jid := ulid.Make().String()
+		eventId := ulid.Make().String()
+		jobId := fmt.Sprintf("broadcast:%s:%s", source.ProjectID, eventId)
 		broadcastEvent := models.BroadcastEvent{
-			JobID:          jid,
+			EventID:        eventId,
 			ProjectID:      source.ProjectID,
 			SourceID:       source.UID,
 			EventType:      convoyEvent.EventType,
@@ -327,7 +328,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		}
 
 		job := &queue.Job{
-			ID:      jid,
+			ID:      jobId,
 			Payload: eventByte,
 		}
 

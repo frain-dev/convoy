@@ -447,6 +447,14 @@ func seedConfiguration(db database.Database) (*datastore.Configuration, error) {
 			Policy:                   "72h",
 			IsRetentionPolicyEnabled: true,
 		},
+		CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
+			SampleRate:                  2,
+			ErrorTimeout:                30,
+			FailureThreshold:            10,
+			SuccessThreshold:            1,
+			ObservabilityWindow:         5,
+			ConsecutiveFailureThreshold: 10,
+		},
 	}
 
 	// Seed Data

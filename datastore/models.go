@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"math"
 	"net/http"
 	"strings"
@@ -317,6 +318,15 @@ var (
 		IsRetentionPolicyEnabled: false,
 		Policy:                   "720h",
 	}
+
+	DefaultCircuitBreakerConfiguration = CircuitBreakerConfig{
+		SampleRate:                  30,
+		ErrorTimeout:                30,
+		FailureThreshold:            70,
+		SuccessThreshold:            5,
+		ObservabilityWindow:         5,
+		ConsecutiveFailureThreshold: 10,
+	}
 )
 
 func GetDefaultSignatureConfig() *SignatureConfiguration {
@@ -406,8 +416,9 @@ type Endpoint struct {
 	Events         int64                   `json:"events,omitempty" db:"event_count"`
 	Authentication *EndpointAuthentication `json:"authentication" db:"authentication"`
 
-	RateLimit         int    `json:"rate_limit" db:"rate_limit"`
-	RateLimitDuration uint64 `json:"rate_limit_duration" db:"rate_limit_duration"`
+	RateLimit         int     `json:"rate_limit" db:"rate_limit"`
+	RateLimitDuration uint64  `json:"rate_limit_duration" db:"rate_limit_duration"`
+	FailureRate       float64 `json:"failure_rate" db:"-"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -730,6 +741,9 @@ type Event struct {
 	Data json.RawMessage `json:"data,omitempty" db:"data"`
 	Raw  string          `json:"raw,omitempty" db:"raw"`
 
+	Status   EventStatus `json:"status" db:"status"`
+	Metadata string      `json:"metadata,omitempty" db:"metadata"`
+
 	AcknowledgedAt null.Time `json:"acknowledged_at,omitempty" db:"acknowledged_at,omitempty" swaggertype:"string"`
 	CreatedAt      time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt      time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
@@ -755,6 +769,7 @@ func (e *Event) GetRawHeadersJSON() ([]byte, error) {
 
 type (
 	SubscriptionType    string
+	EventStatus         string
 	EventDeliveryStatus string
 	HttpHeader          map[string]string
 )
@@ -773,6 +788,14 @@ func (h HttpHeader) SetHeadersInRequest(r *http.Request) {
 		r.Header.Set(k, v)
 	}
 }
+
+const (
+	ProcessingStatus EventStatus = "Processing"
+	FailureStatus    EventStatus = "Failure"
+	SuccessStatus    EventStatus = "Success"
+	RetryStatus      EventStatus = "Retry"
+	PendingStatus    EventStatus = "Pending"
+)
 
 const (
 	// ScheduledEventStatus when an Event has been scheduled for delivery
@@ -1313,15 +1336,36 @@ type Organisation struct {
 }
 
 type Configuration struct {
-	UID                string                        `json:"uid" db:"id"`
-	IsAnalyticsEnabled bool                          `json:"is_analytics_enabled" db:"is_analytics_enabled"`
-	IsSignupEnabled    bool                          `json:"is_signup_enabled" db:"is_signup_enabled"`
-	StoragePolicy      *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
-	RetentionPolicy    *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	UID                string `json:"uid" db:"id"`
+	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
+	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
+
+	StoragePolicy        *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
+	RetentionPolicy      *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
+	CircuitBreakerConfig *CircuitBreakerConfig         `json:"circuit_breaker" db:"circuit_breaker"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+func (c *Configuration) GetCircuitBreakerConfig() CircuitBreakerConfig {
+	if c.CircuitBreakerConfig != nil {
+		return *c.CircuitBreakerConfig
+	}
+	return CircuitBreakerConfig{}
+}
+
+func (c *Configuration) ToCircuitBreakerConfig() *cb.CircuitBreakerConfig {
+	return &cb.CircuitBreakerConfig{
+		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
+		BreakerTimeout:              c.CircuitBreakerConfig.ErrorTimeout,
+		FailureThreshold:            c.CircuitBreakerConfig.FailureThreshold,
+		SuccessThreshold:            c.CircuitBreakerConfig.SuccessThreshold,
+		ObservabilityWindow:         c.CircuitBreakerConfig.ObservabilityWindow,
+		MinimumRequestCount:         c.CircuitBreakerConfig.MinimumRequestCount,
+		ConsecutiveFailureThreshold: c.CircuitBreakerConfig.ConsecutiveFailureThreshold,
+	}
 }
 
 func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
@@ -1349,6 +1393,16 @@ type S3Storage struct {
 
 type OnPremStorage struct {
 	Path null.String `json:"path" db:"path"`
+}
+
+type CircuitBreakerConfig struct {
+	SampleRate                  uint64 `json:"sample_rate" db:"sample_rate"`
+	ErrorTimeout                uint64 `json:"error_timeout" db:"error_timeout"`
+	FailureThreshold            uint64 `json:"failure_threshold" db:"failure_threshold"`
+	SuccessThreshold            uint64 `json:"success_threshold" db:"success_threshold"`
+	ObservabilityWindow         uint64 `json:"observability_window" db:"observability_window"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" db:"minimum_request_count"`
+	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
 type OrganisationMember struct {

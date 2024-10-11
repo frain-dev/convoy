@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
@@ -94,8 +95,9 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		return err
 	}
 
+	jobId := fmt.Sprintf("meta:%s:%s", metaEvent.ProjectID, metaEvent.UID)
 	err = m.queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
-		ID:      metaEvent.UID,
+		ID:      jobId,
 		Payload: bytes,
 	})
 

@@ -65,7 +65,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 	}
 
 	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 0, "Ingest port")
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "ingest log level")
+	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds, at which the database should be polled for new pub sub sources")
 
 	return cmd
@@ -119,7 +119,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	go ingest.Run()
 
-	fmt.Println("Starting Convoy Ingester")
+	log.Println("Starting Convoy Ingester")
 
 	return nil
 }

@@ -558,21 +558,23 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 }
 
 func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
-	config := &datastore.Configuration{
-		UID:                ulid.Make().String(),
-		IsAnalyticsEnabled: true,
-		IsSignupEnabled:    true,
-		StoragePolicy:      &datastore.DefaultStoragePolicy,
+	c := &datastore.Configuration{
+		UID:                  ulid.Make().String(),
+		IsAnalyticsEnabled:   true,
+		IsSignupEnabled:      true,
+		StoragePolicy:        &datastore.DefaultStoragePolicy,
+		RetentionPolicy:      &datastore.DefaultRetentionPolicy,
+		CircuitBreakerConfig: &datastore.DefaultCircuitBreakerConfiguration,
 	}
 
 	// Seed Data
 	configRepo := postgres.NewConfigRepo(db)
-	err := configRepo.CreateConfiguration(context.TODO(), config)
+	err := configRepo.CreateConfiguration(context.TODO(), c)
 	if err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	return c, nil
 }
 
 func SeedDevice(db database.Database, g *datastore.Project, endpointID string) error {

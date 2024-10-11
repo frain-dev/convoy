@@ -99,6 +99,10 @@ func (Licenser) PortalLinks() bool {
 	return true
 }
 
+func (Licenser) CircuitBreaking() bool { 
+  return true
+}
+
 func (Licenser) MultiPlayerMode() bool {
 	return true
 }

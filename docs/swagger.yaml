@@ -249,6 +249,8 @@ definitions:
         type: string
       is_duplicate_event:
         type: boolean
+      metadata:
+        type: string
       project_id:
         type: string
       raw:
@@ -257,6 +259,8 @@ definitions:
         type: string
       source_metadata:
         $ref: '#/definitions/datastore.Source'
+      status:
+        $ref: '#/definitions/datastore.EventStatus'
       uid:
         type: string
       updated_at:
@@ -316,6 +320,20 @@ definitions:
     - FailureEventStatus
     - SuccessEventStatus
     - RetryEventStatus
+  datastore.EventStatus:
+    enum:
+    - Processing
+    - Failure
+    - Success
+    - Retry
+    - Pending
+    type: string
+    x-enum-varnames:
+    - ProcessingStatus
+    - FailureStatus
+    - SuccessStatus
+    - RetryStatus
+    - PendingStatus
   datastore.FilterConfiguration:
     properties:
       event_types:
@@ -1091,6 +1109,8 @@ definitions:
         type: string
       is_duplicate_event:
         type: boolean
+      metadata:
+        type: string
       project_id:
         type: string
       raw:
@@ -1099,6 +1119,8 @@ definitions:
         type: string
       source_metadata:
         $ref: '#/definitions/datastore.Source'
+      status:
+        $ref: '#/definitions/datastore.EventStatus'
       uid:
         type: string
       updated_at:

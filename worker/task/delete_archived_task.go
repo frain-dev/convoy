@@ -49,6 +49,7 @@ func DeleteArchivedTasks(r queue.Queuer, rd *rdb.Redis) func(context.Context, *a
 			string(convoy.DefaultQueue),
 			string(convoy.StreamQueue),
 			string(convoy.MetaEventQueue),
+			string(convoy.EventWorkflowQueue),
 		}
 
 		var q *redis.RedisQueue

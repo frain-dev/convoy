@@ -73,6 +73,9 @@ func main() {
 
 	var maxRetrySeconds uint64
 
+	var instanceIngestRate int
+	var apiRateLimit int
+
 	var licenseKey string
 
 	var configFile string
@@ -100,7 +103,11 @@ func main() {
 	c.Flags().StringVar(&redisDatabase, "redis-database", "", "Redis database")
 	c.Flags().IntVar(&redisPort, "redis-port", 0, "Redis Port")
 
+	// misc
 	c.Flags().StringSliceVar(&fflag, "enable-feature-flag", []string{}, "List of feature flags to enable e.g. \"full-text-search,prometheus\"")
+	c.Flags().IntVar(&instanceIngestRate, "instance-ingest-rate", 0, "Instance ingest Rate")
+	c.Flags().IntVar(&apiRateLimit, "api-rate-limit", 0, "API rate limit")
+
 	// tracing
 	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
 	c.Flags().StringVar(&sentryDSN, "sentry-dsn", "", "Sentry backend dsn")
@@ -113,8 +120,8 @@ func main() {
 	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('prometheus' feature flag required")
 	c.Flags().Uint64Var(&prometheusMetricsSampleTime, "metrics-prometheus-sample-time", 5, "Prometheus metrics sample time")
 
-	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "SMTP Port")
-	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "SMTP Port")
+	c.Flags().StringVar(&retentionPolicy, "retention-policy", "", "Retention Policy Duration")
+	c.Flags().BoolVar(&retentionPolicyEnabled, "retention-policy-enabled", false, "Retention Policy Enabled")
 
 	c.Flags().Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 

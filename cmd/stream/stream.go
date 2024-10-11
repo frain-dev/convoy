@@ -136,12 +136,12 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 	}
 
 	cmd.Flags().Uint32Var(&socketPort, "socket-port", 5008, "Socket port")
-	cmd.Flags().StringVar(&logLevel, "log-level", "error", "stream log level")
+	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 
 	return cmd
 }
 
-func buildCliFlagConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
+func buildCliFlagConfiguration(_ *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
 
 	return c, nil

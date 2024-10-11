@@ -16,6 +16,7 @@ import (
 	time "time"
 
 	datastore "github.com/frain-dev/convoy/datastore"
+	circuit_breaker "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	flatten "github.com/frain-dev/convoy/pkg/flatten"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -634,84 +635,32 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(ctx, projectID, f any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), ctx, projectID, f)
 }
 
-// MockEventCatalogueRepository is a mock of EventCatalogueRepository interface.
-type MockEventCatalogueRepository struct {
-	ctrl     *gomock.Controller
-	recorder *MockEventCatalogueRepositoryMockRecorder
-}
-
-// MockEventCatalogueRepositoryMockRecorder is the mock recorder for MockEventCatalogueRepository.
-type MockEventCatalogueRepositoryMockRecorder struct {
-	mock *MockEventCatalogueRepository
-}
-
-// NewMockEventCatalogueRepository creates a new mock instance.
-func NewMockEventCatalogueRepository(ctrl *gomock.Controller) *MockEventCatalogueRepository {
-	mock := &MockEventCatalogueRepository{ctrl: ctrl}
-	mock.recorder = &MockEventCatalogueRepositoryMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockEventCatalogueRepository) EXPECT() *MockEventCatalogueRepositoryMockRecorder {
-	return m.recorder
-}
-
-// CreateEventCatalogue mocks base method.
-func (m *MockEventCatalogueRepository) CreateEventCatalogue(arg0 context.Context, arg1 *datastore.EventCatalogue) error {
+// UpdateEventEndpoints mocks base method.
+func (m *MockEventRepository) UpdateEventEndpoints(arg0 context.Context, arg1 *datastore.Event, arg2 []string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateEventCatalogue", arg0, arg1)
+	ret := m.ctrl.Call(m, "UpdateEventEndpoints", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// CreateEventCatalogue indicates an expected call of CreateEventCatalogue.
-func (mr *MockEventCatalogueRepositoryMockRecorder) CreateEventCatalogue(arg0, arg1 interface{}) *gomock.Call {
+// UpdateEventEndpoints indicates an expected call of UpdateEventEndpoints.
+func (mr *MockEventRepositoryMockRecorder) UpdateEventEndpoints(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEventCatalogue", reflect.TypeOf((*MockEventCatalogueRepository)(nil).CreateEventCatalogue), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventEndpoints", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventEndpoints), arg0, arg1, arg2)
 }
 
-// DeleteEventCatalogue mocks base method.
-func (m *MockEventCatalogueRepository) DeleteEventCatalogue(arg0 context.Context, arg1, arg2 string) error {
+// UpdateEventStatus mocks base method.
+func (m *MockEventRepository) UpdateEventStatus(arg0 context.Context, arg1 *datastore.Event, arg2 datastore.EventStatus) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteEventCatalogue", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "UpdateEventStatus", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// DeleteEventCatalogue indicates an expected call of DeleteEventCatalogue.
-func (mr *MockEventCatalogueRepositoryMockRecorder) DeleteEventCatalogue(arg0, arg1, arg2 interface{}) *gomock.Call {
+// UpdateEventStatus indicates an expected call of UpdateEventStatus.
+func (mr *MockEventRepositoryMockRecorder) UpdateEventStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEventCatalogue", reflect.TypeOf((*MockEventCatalogueRepository)(nil).DeleteEventCatalogue), arg0, arg1, arg2)
-}
-
-// FindEventCatalogueByProjectID mocks base method.
-func (m *MockEventCatalogueRepository) FindEventCatalogueByProjectID(arg0 context.Context, arg1 string) (*datastore.EventCatalogue, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FindEventCatalogueByProjectID", arg0, arg1)
-	ret0, _ := ret[0].(*datastore.EventCatalogue)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FindEventCatalogueByProjectID indicates an expected call of FindEventCatalogueByProjectID.
-func (mr *MockEventCatalogueRepositoryMockRecorder) FindEventCatalogueByProjectID(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindEventCatalogueByProjectID", reflect.TypeOf((*MockEventCatalogueRepository)(nil).FindEventCatalogueByProjectID), arg0, arg1)
-}
-
-// UpdateEventCatalogue mocks base method.
-func (m *MockEventCatalogueRepository) UpdateEventCatalogue(ctx context.Context, catalogue *datastore.EventCatalogue) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateEventCatalogue", ctx, catalogue)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateEventCatalogue indicates an expected call of UpdateEventCatalogue.
-func (mr *MockEventCatalogueRepositoryMockRecorder) UpdateEventCatalogue(ctx, catalogue interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventCatalogue", reflect.TypeOf((*MockEventCatalogueRepository)(nil).UpdateEventCatalogue), ctx, catalogue)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventStatus", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventStatus), arg0, arg1, arg2)
 }
 
 // MockProjectRepository is a mock of ProjectRepository interface.
@@ -2659,4 +2608,19 @@ func (m *MockDeliveryAttemptsRepository) FindDeliveryAttempts(arg0 context.Conte
 func (mr *MockDeliveryAttemptsRepositoryMockRecorder) FindDeliveryAttempts(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindDeliveryAttempts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).FindDeliveryAttempts), arg0, arg1)
+}
+
+// GetFailureAndSuccessCounts mocks base method.
+func (m *MockDeliveryAttemptsRepository) GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]circuit_breaker.PollResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFailureAndSuccessCounts", ctx, lookBackDuration, resetTimes)
+	ret0, _ := ret[0].(map[string]circuit_breaker.PollResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFailureAndSuccessCounts indicates an expected call of GetFailureAndSuccessCounts.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) GetFailureAndSuccessCounts(ctx, lookBackDuration, resetTimes any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFailureAndSuccessCounts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).GetFailureAndSuccessCounts), ctx, lookBackDuration, resetTimes)
 }

@@ -69,7 +69,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	configurations = [
 		{ uid: 'filter_config', name: 'Event Filter', show: false },
-		{ uid: 'retry_config', name: 'Retry Logic', show: false }
+		// { uid: 'retry_config', name: 'Retry Logic', show: false }
 	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);

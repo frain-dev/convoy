@@ -35,8 +35,9 @@ func (m *MetaEventService) Run(ctx context.Context, metaEvent *datastore.MetaEve
 		return err
 	}
 
+	jobId := fmt.Sprintf("meta:%s:%s", metaEvent.ProjectID, metaEvent.UID)
 	err = m.Queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
-		ID:      metaEvent.UID,
+		ID:      jobId,
 		Payload: bytes,
 	})
 	if err != nil {

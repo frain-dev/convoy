@@ -249,6 +249,8 @@ components:
           type: string
         is_duplicate_event:
           type: boolean
+        metadata:
+          type: string
         project_id:
           type: string
         raw:
@@ -257,6 +259,8 @@ components:
           type: string
         source_metadata:
           $ref: '#/components/schemas/datastore.Source'
+        status:
+          $ref: '#/components/schemas/datastore.EventStatus'
         uid:
           type: string
         updated_at:
@@ -316,6 +320,20 @@ components:
       - FailureEventStatus
       - SuccessEventStatus
       - RetryEventStatus
+    datastore.EventStatus:
+      enum:
+      - Processing
+      - Failure
+      - Success
+      - Retry
+      - Pending
+      type: string
+      x-enum-varnames:
+      - ProcessingStatus
+      - FailureStatus
+      - SuccessStatus
+      - RetryStatus
+      - PendingStatus
     datastore.FilterConfiguration:
       properties:
         event_types:
@@ -1091,6 +1109,8 @@ components:
           type: string
         is_duplicate_event:
           type: boolean
+        metadata:
+          type: string
         project_id:
           type: string
         raw:
@@ -1099,6 +1119,8 @@ components:
           type: string
         source_metadata:
           $ref: '#/components/schemas/datastore.Source'
+        status:
+          $ref: '#/components/schemas/datastore.EventStatus'
         uid:
           type: string
         updated_at:

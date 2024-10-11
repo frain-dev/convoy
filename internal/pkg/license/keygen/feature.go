@@ -24,6 +24,7 @@ const (
 	PortalLinks              Feature = "PORTAL_LINKS"
 	ConsumerPoolTuning       Feature = "CONSUMER_POOL_TUNING"
 	AdvancedWebhookFiltering Feature = "ADVANCED_WEBHOOK_FILTERING"
+	CircuitBreaking          Feature = "CIRCUIT_BREAKING"
 	MultiPlayerMode          Feature = "MULTI_PLAYER_MODE"
 	IngestRate               Feature = "INGEST_RATE"
 	AgentExecutionMode       Feature = "AGENT_EXECUTION_MODE"

@@ -95,12 +95,13 @@ func getQueueOptions() (queue.QueueOptions, error) {
 		return opts, err
 	}
 	queueNames := map[string]int{
-		string(convoy.EventQueue):       3,
-		string(convoy.CreateEventQueue): 3,
-		string(convoy.ScheduleQueue):    1,
-		string(convoy.DefaultQueue):     1,
-		string(convoy.StreamQueue):      1,
-		string(convoy.MetaEventQueue):   1,
+		string(convoy.EventQueue):         3,
+		string(convoy.CreateEventQueue):   3,
+		string(convoy.EventWorkflowQueue): 3,
+		string(convoy.ScheduleQueue):      1,
+		string(convoy.DefaultQueue):       1,
+		string(convoy.StreamQueue):        1,
+		string(convoy.MetaEventQueue):     1,
 	}
 	opts = queue.QueueOptions{
 		Names:        queueNames,
@@ -127,10 +128,13 @@ func buildServer() *ApplicationHandler {
 	noopCache := ncache.NewNoopCache()
 	r, _ := rlimiter.NewRedisLimiter(cfg.Redis.BuildDsn())
 
+	rd, _ := rdb.NewClient(cfg.Redis.BuildDsn())
+
 	ah, _ := NewApplicationHandler(
 		&types.APIOptions{
 			DB:       db,
 			Queue:    newQueue,
+			Redis:    rd.Client(),
 			Logger:   logger,
 			Cache:    noopCache,
 			Rate:     r,
