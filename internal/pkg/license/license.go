@@ -25,6 +25,7 @@ type Licenser interface {
 	MultiPlayerMode() bool
 	IngestRate() bool
 	AgentExecutionMode() bool
+	EventCatalogue() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool

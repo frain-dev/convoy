@@ -99,8 +99,8 @@ func (Licenser) PortalLinks() bool {
 	return true
 }
 
-func (Licenser) CircuitBreaking() bool { 
-  return true
+func (Licenser) CircuitBreaking() bool {
+	return true
 }
 
 func (Licenser) MultiPlayerMode() bool {
@@ -112,5 +112,9 @@ func (Licenser) IngestRate() bool {
 }
 
 func (Licenser) AgentExecutionMode() bool {
+	return true
+}
+
+func (Licenser) EventCatalogue() bool {
 	return true
 }
