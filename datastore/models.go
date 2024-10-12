@@ -664,6 +664,7 @@ var (
 	ErrSourceNotFound                = errors.New("source not found")
 	ErrEventNotFound                 = errors.New("event not found")
 	ErrProjectNotFound               = errors.New("project not found")
+	ErrCatalogueNotFound             = errors.New("event catalogue not found")
 	ErrAPIKeyNotFound                = errors.New("api key not found")
 	ErrEndpointNotFound              = errors.New("endpoint not found")
 	ErrSubscriptionNotFound          = errors.New("subscription not found")
@@ -1599,6 +1600,51 @@ func (m *MetaEventAttempt) Value() (driver.Value, error) {
 	}
 
 	return b, nil
+}
+
+type CatalogueType string
+
+const (
+	EventsDataCatalogueType CatalogueType = "events_data"
+	OpenAPICatalogueType    CatalogueType = "openapi"
+)
+
+type EventCatalogue struct {
+	UID         string              `json:"uid,omitempty" db:"id"`
+	ProjectID   string              `json:"project_id,omitempty" db:"project_id"`
+	Type        CatalogueType       `json:"type,omitempty" db:"type"`
+	Events      EventDataCatalogues `json:"events,omitempty" db:"events"`
+	OpenAPISpec []byte              `json:"open_api_spec,omitempty" db:"open_api_spec"`
+
+	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+}
+
+type EventDataCatalogues []EventDataCatalogue
+
+func (s *EventDataCatalogues) Scan(v interface{}) error {
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", v)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, s)
+}
+
+func (s EventDataCatalogues) Value() (driver.Value, error) {
+	return json.Marshal(s)
+}
+
+type EventDataCatalogue struct {
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	EventID     string          `json:"event_id"`
+	Data        json.RawMessage `json:"data"`
 }
 
 type Password struct {

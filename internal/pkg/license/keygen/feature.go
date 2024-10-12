@@ -28,6 +28,7 @@ const (
 	MultiPlayerMode          Feature = "MULTI_PLAYER_MODE"
 	IngestRate               Feature = "INGEST_RATE"
 	AgentExecutionMode       Feature = "AGENT_EXECUTION_MODE"
+	EventCatalogue           Feature = "EVENT_CATALOGUE"
 )
 
 const (

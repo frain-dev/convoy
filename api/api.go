@@ -203,6 +203,19 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						})
 					})
 
+					if handler.A.Licenser.EventCatalogue() {
+						projectSubRouter.Route("/catalogue", func(catalogueRouter chi.Router) {
+							catalogueRouter.Post("/add_event", handler.AddEventToCatalogue)
+							// catalogueRouter.Post("/add_openapi_spec", handler.CreateOpenAPISpecCatalogue)
+							catalogueRouter.Get("/", handler.GetCatalogue)
+
+							catalogueRouter.Route("/{catalogueID}", func(catalogueSubRouter chi.Router) {
+								catalogueSubRouter.Put("/", handler.UpdateCatalogue)
+								catalogueSubRouter.Delete("/", handler.DeleteCatalogue)
+							})
+						})
+					}
+
 					projectSubRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 						subscriptionRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateSubscription)
 						subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
@@ -320,6 +333,19 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							projectKeySubRouter.With(handler.RequireEnabledProject()).Put("/regenerate", handler.RegenerateProjectAPIKey)
 						})
 
+						if handler.A.Licenser.EventCatalogue() {
+							projectSubRouter.Route("/catalogue", func(catalogueRouter chi.Router) {
+								catalogueRouter.Post("/add_event", handler.AddEventToCatalogue)
+								// catalogueRouter.Post("/add_openapi_spec", handler.CreateOpenAPISpecCatalogue)
+								catalogueRouter.Get("/", handler.GetCatalogue)
+
+								catalogueRouter.Route("/{catalogueID}", func(catalogueSubRouter chi.Router) {
+									catalogueSubRouter.Put("/", handler.UpdateCatalogue)
+									catalogueSubRouter.Delete("/", handler.DeleteCatalogue)
+								})
+							})
+						}
+
 						projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 							endpointSubRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEndpoint)
 							endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
@@ -432,6 +458,10 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			portalLinkRouter.Use(middleware.RequireAuth())
 
 			portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
+
+			if handler.A.Licenser.EventCatalogue() {
+				portalLinkRouter.Get("/view_event_catalogue", handler.GetCatalogue)
+			}
 
 			portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 				endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)

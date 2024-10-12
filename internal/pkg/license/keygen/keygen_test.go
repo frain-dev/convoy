@@ -101,6 +101,11 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	k = Licenser{featureList: map[Feature]*Properties{CircuitBreaking: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
 	require.False(t, k.CircuitBreaking())
 
+	k = Licenser{featureList: map[Feature]*Properties{EventCatalogue: {}}, license: &keygen.License{}}
+	require.True(t, k.EventCatalogue())
+	k = Licenser{featureList: map[Feature]*Properties{EventCatalogue: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
+	require.False(t, k.EventCatalogue())
+
 	k = Licenser{enabledProjects: map[string]bool{
 		"12345": true,
 	}}

@@ -19,6 +19,9 @@ var F embed.FS
 //go:embed sql/*.sql
 var MigrationFiles embed.FS
 
+//go:embed js/*.js
+var JSFiles embed.FS
+
 func (t TaskName) SetPrefix(prefix string) TaskName {
 	var name strings.Builder
 	delim := "-"
@@ -99,13 +102,14 @@ const (
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
 	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
 
-	EndpointCacheKey     CacheKey = "endpoints"
-	ApiKeyCacheKey       CacheKey = "api_keys"
-	OrganisationCacheKey CacheKey = "organisations"
-	ProjectsCacheKey     CacheKey = "projects"
-	SubscriptionCacheKey CacheKey = "subscriptions"
-	TokenCacheKey        CacheKey = "tokens"
-	SourceCacheKey       CacheKey = "sources"
+	EndpointCacheKey       CacheKey = "endpoints"
+	ApiKeyCacheKey         CacheKey = "api_keys"
+	EventCatalogueCacheKey CacheKey = "event_catalogue"
+	OrganisationCacheKey   CacheKey = "organisations"
+	ProjectsCacheKey       CacheKey = "projects"
+	SubscriptionCacheKey   CacheKey = "subscriptions"
+	TokenCacheKey          CacheKey = "tokens"
+	SourceCacheKey         CacheKey = "sources"
 )
 
 // queues
