@@ -254,7 +254,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
-	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, a.Licenser, false)
+	dispatcher, err := net.NewDispatcher(
+		net.LoggerOption(lo),
+		net.ProxyOption(a.Licenser, cfg.Server.HTTP.HttpProxy),
+		net.AllowListOption(cfg.Dispatcher.AllowList),
+		net.BlockListOption(cfg.Dispatcher.BlockList),
+		net.EnforceSecureOption(cfg.Dispatcher.EnforceSecure),
+	)
 	if err != nil {
 		lo.WithError(err).Fatal("Failed to create new net dispatcher")
 		return err

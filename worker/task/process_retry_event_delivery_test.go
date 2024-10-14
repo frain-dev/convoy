@@ -1061,7 +1061,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				tc.dbFn(endpointRepo, projectRepo, msgRepo, q, rateLimiter, attemptsRepo, licenser)
 			}
 
-			dispatcher, err := net.NewDispatcher("", licenser, false)
+			dispatcher, err := net.NewDispatcher(net.LoggerOption(log.NewLogger(os.Stdout)), net.ProxyOption(licenser, "nil"))
 			require.NoError(t, err)
 
 			mockStore := cb.NewTestStore()

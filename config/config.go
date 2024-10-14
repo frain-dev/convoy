@@ -107,6 +107,11 @@ var DefaultConfiguration = Configuration{
 			SampleTime: 5,
 		},
 	},
+	Dispatcher: DispatcherConfiguration{
+		EnforceSecure: true,
+		AllowList:     []string{"0.0.0.0/0", "::/0"},
+		BlockList:     []string{"127.0.0.0/8", "::1/128"},
+	},
 	InstanceIngestRate:  25,
 	ApiRateLimit:        25,
 	WorkerExecutionMode: DefaultExecutionMode,
@@ -388,6 +393,13 @@ type Configuration struct {
 	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
+	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
+}
+
+type DispatcherConfiguration struct {
+	EnforceSecure bool     `json:"enforce_secure" envconfig:"CONVOY_DISPATCHER_ENFORCE_SECURE"`
+	AllowList     []string `json:"allow_list" envconfig:"CONVOY_DISPATCHER_ALLOW_LIST"`
+	BlockList     []string `json:"block_list" envconfig:"CONVOY_DISPATCHER_BLOCKLIST"`
 }
 
 type PyroscopeConfiguration struct {

@@ -3,11 +3,14 @@ package net
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"github.com/stealthrocket/netjail"
 	"io"
 	"net/http"
 	"net/http/httptrace"
+	"net/netip"
 	"net/url"
 	"time"
 
@@ -19,44 +22,134 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+var (
+	ErrAllowListIsRequired = errors.New("allowlist is required")
+	ErrBlockListIsRequired = errors.New("blocklist is required")
+	ErrLoggerIsRequired    = errors.New("logger is required")
+)
+
+type DispatcherOption func(d *Dispatcher) error
+
 type Dispatcher struct {
-	client *http.Client
+	logger    *log.Logger
+	transport *http.Transport
+	client    *http.Client
+	rules     *netjail.Rules
 }
 
-func NewDispatcher(httpProxy string, licenser license.Licenser, enforceSecure bool) (*Dispatcher, error) {
-	d := &Dispatcher{client: &http.Client{}}
+func ProxyOption(l license.Licenser, httpProxy string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if httpProxy == "" {
+			return nil
+		}
 
-	tr := &http.Transport{
-		MaxIdleConns:          100,
-		IdleConnTimeout:       10 * time.Second,
-		MaxIdleConnsPerHost:   10,
-		TLSHandshakeTimeout:   3 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+		if l.UseForwardProxy() {
+			proxyUrl, isValid, err := d.setProxy(httpProxy)
+			if err != nil {
+				return err
+			}
+
+			if isValid {
+				d.transport.Proxy = http.ProxyURL(proxyUrl)
+			}
+		}
+
+		return nil
+	}
+}
+
+func AllowListOption(allowList []string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if allowList == nil || len(allowList) == 0 {
+			return ErrAllowListIsRequired
+		}
+
+		netAllow := make([]netip.Prefix, len(allowList))
+		for i := range allowList {
+			prefix := netip.MustParsePrefix(allowList[i])
+			netAllow[i] = prefix
+		}
+
+		d.rules.Allow = netAllow
+		return nil
+	}
+}
+
+func BlockListOption(blockList []string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if blockList == nil || len(blockList) == 0 {
+			return ErrBlockListIsRequired
+		}
+
+		netBlock := make([]netip.Prefix, len(blockList))
+		for i := range blockList {
+			prefix := netip.MustParsePrefix(blockList[i])
+			netBlock[i] = prefix
+		}
+
+		d.rules.Block = netBlock
+		return nil
+	}
+}
+
+// EnforceSecureOption allow self-signed certificates if set to false
+// which is susceptible to MITM attacks.
+func EnforceSecureOption(enforceSecure bool) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if !enforceSecure {
+			d.transport.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+		} else {
+			d.transport.TLSClientConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+		}
+
+		return nil
+	}
+}
+
+func LoggerOption(logger *log.Logger) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if logger == nil {
+			return ErrLoggerIsRequired
+		}
+
+		d.logger = logger
+		return nil
+	}
+}
+
+func NewDispatcher(options ...DispatcherOption) (*Dispatcher, error) {
+	d := &Dispatcher{
+		client: &http.Client{},
+		rules:  &netjail.Rules{},
+		transport: &http.Transport{
+			MaxIdleConns:          100,
+			IdleConnTimeout:       10 * time.Second,
+			MaxIdleConnsPerHost:   10,
+			TLSHandshakeTimeout:   3 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
 	}
 
-	if licenser.UseForwardProxy() {
-		proxyUrl, isValid, err := d.setProxy(httpProxy)
-		if err != nil {
+	for _, option := range options {
+		if err := option(d); err != nil {
 			return nil, err
 		}
-
-		if isValid {
-			tr.Proxy = http.ProxyURL(proxyUrl)
-		}
 	}
 
-	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.
-	// if !enforceSecure {
-	//	tr.TLSClientConfig = &tls.Config{
-	//		InsecureSkipVerify: true,
-	//	}
-	// } else {
-	//	tr.TLSClientConfig = &tls.Config{
-	//		MinVersion: tls.VersionTLS12,
-	//	}
-	// }
+	netJailTransport := &netjail.Transport{
+		New: func() *http.Transport {
+			return d.transport.Clone()
+		},
+	}
+	d.client.Transport = netJailTransport
 
-	d.client.Transport = tr
+	if d.logger == nil {
+		return nil, ErrLoggerIsRequired
+	}
 
 	return d, nil
 }
@@ -85,14 +178,14 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 	r := &Response{}
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")
-		log.WithError(err).Error("Dispatcher invalid arguments")
+		d.logger.WithError(err).Error("Dispatcher invalid arguments")
 		r.Error = err.Error()
 		return r, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(netjail.ContextWithRules(ctx, d.rules), method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.WithError(err).Error("error occurred while creating request")
+		d.logger.WithError(err).Error("error occurred while creating request")
 		return r, err
 	}
 
@@ -135,7 +228,6 @@ func updateDispatchHeaders(r *Response, res *http.Response) {
 	r.ResponseHeader = res.Header
 }
 
-// TODO(subomi): Refactor this to support Enterprise Editions
 func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }
@@ -144,7 +236,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			res.IP = connInfo.Conn.RemoteAddr().String()
-			log.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
+			d.logger.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
 		},
 	}
 
@@ -152,7 +244,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 
 	response, err := d.client.Do(req)
 	if err != nil {
-		log.WithError(err).Error("error sending request to API endpoint")
+		d.logger.WithError(err).Error("error sending request to API endpoint")
 		res.Error = err.Error()
 		return err
 	}
@@ -170,7 +262,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	res.Body = buf
 
 	if err != nil {
-		log.WithError(err).Error("couldn't parse response body")
+		d.logger.WithError(err).Error("couldn't parse response body")
 		return err
 	}
 
