@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/stealthrocket/netjail"
 	"io"
 	"net/http"
@@ -26,6 +27,7 @@ var (
 	ErrAllowListIsRequired = errors.New("allowlist is required")
 	ErrBlockListIsRequired = errors.New("blocklist is required")
 	ErrLoggerIsRequired    = errors.New("logger is required")
+	ErrInvalidIPPrefix     = errors.New("invalid IP prefix")
 )
 
 type DispatcherOption func(d *Dispatcher) error
@@ -37,6 +39,7 @@ type Dispatcher struct {
 	rules     *netjail.Rules
 }
 
+// ProxyOption defines an HTTP proxy which the client will use. It fails-open the string isn't a valid HTTP URL
 func ProxyOption(l license.Licenser, httpProxy string) DispatcherOption {
 	return func(d *Dispatcher) error {
 		if httpProxy == "" {
@@ -58,6 +61,7 @@ func ProxyOption(l license.Licenser, httpProxy string) DispatcherOption {
 	}
 }
 
+// AllowListOption sets a list of IP prefixes which will outgoing traffic will be granted access
 func AllowListOption(allowList []string) DispatcherOption {
 	return func(d *Dispatcher) error {
 		if allowList == nil || len(allowList) == 0 {
@@ -65,9 +69,12 @@ func AllowListOption(allowList []string) DispatcherOption {
 		}
 
 		netAllow := make([]netip.Prefix, len(allowList))
-		for i := range allowList {
-			prefix := netip.MustParsePrefix(allowList[i])
-			netAllow[i] = prefix
+		for i, prefix := range allowList {
+			parsed, err := netip.ParsePrefix(prefix)
+			if err != nil {
+				return fmt.Errorf("%w: %v in allowlist", ErrInvalidIPPrefix, err)
+			}
+			netAllow[i] = parsed
 		}
 
 		d.rules.Allow = netAllow
@@ -75,6 +82,7 @@ func AllowListOption(allowList []string) DispatcherOption {
 	}
 }
 
+// BlockListOption sets a list of IP prefixes which will outgoing traffic will be denied access
 func BlockListOption(blockList []string) DispatcherOption {
 	return func(d *Dispatcher) error {
 		if blockList == nil || len(blockList) == 0 {
@@ -82,9 +90,12 @@ func BlockListOption(blockList []string) DispatcherOption {
 		}
 
 		netBlock := make([]netip.Prefix, len(blockList))
-		for i := range blockList {
-			prefix := netip.MustParsePrefix(blockList[i])
-			netBlock[i] = prefix
+		for i, prefix := range blockList {
+			parsed, err := netip.ParsePrefix(prefix)
+			if err != nil {
+				return fmt.Errorf("%w: %v in blocklist", ErrInvalidIPPrefix, err)
+			}
+			netBlock[i] = parsed
 		}
 
 		d.rules.Block = netBlock
@@ -140,16 +151,30 @@ func NewDispatcher(options ...DispatcherOption) (*Dispatcher, error) {
 		}
 	}
 
+	if len(d.rules.Allow) == 0 && len(d.rules.Block) == 0 {
+		d.rules = &netjail.Rules{
+			Allow: []netip.Prefix{
+				netip.MustParsePrefix("0.0.0.0/8"),
+				netip.MustParsePrefix("::/0"),
+			},
+			Block: []netip.Prefix{
+				netip.MustParsePrefix("127.0.0.0/8"),
+				netip.MustParsePrefix("::1/128"),
+			},
+		}
+	}
+
 	netJailTransport := &netjail.Transport{
 		New: func() *http.Transport {
 			return d.transport.Clone()
 		},
 	}
-	d.client.Transport = netJailTransport
 
 	if d.logger == nil {
 		return nil, ErrLoggerIsRequired
 	}
+
+	d.client.Transport = netJailTransport
 
 	return d, nil
 }
