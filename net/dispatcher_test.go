@@ -385,7 +385,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 		require.Equal(t, "test-key", r.Header.Get("X-Convoy-Idempotency-Key"))
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "success"}`))
+		_, _ = w.Write([]byte(`{"status": "success"}`))
 	}))
 	defer server.Close()
 

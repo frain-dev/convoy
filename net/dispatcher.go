@@ -64,7 +64,7 @@ func ProxyOption(l license.Licenser, httpProxy string) DispatcherOption {
 // AllowListOption sets a list of IP prefixes which will outgoing traffic will be granted access
 func AllowListOption(allowList []string) DispatcherOption {
 	return func(d *Dispatcher) error {
-		if allowList == nil || len(allowList) == 0 {
+		if len(allowList) == 0 {
 			return ErrAllowListIsRequired
 		}
 
@@ -85,7 +85,7 @@ func AllowListOption(allowList []string) DispatcherOption {
 // BlockListOption sets a list of IP prefixes which will outgoing traffic will be denied access
 func BlockListOption(blockList []string) DispatcherOption {
 	return func(d *Dispatcher) error {
-		if blockList == nil || len(blockList) == 0 {
+		if len(blockList) == 0 {
 			return ErrBlockListIsRequired
 		}
 
