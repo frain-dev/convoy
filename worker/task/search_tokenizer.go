@@ -87,7 +87,7 @@ func tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo 
 		return err
 	}
 
-	fflag := fflag2.NewFFlag(&cfg)
+	fflag := fflag2.NewFFlag(cfg.EnableFeatureFlag)
 
 	if !fflag.CanAccessFeature(fflag2.FullTextSearch) {
 		return fflag2.ErrFullTextSearchNotEnabled
