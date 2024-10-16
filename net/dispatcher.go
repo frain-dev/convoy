@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/stealthrocket/netjail"
 	"io"
 	"net/http"
@@ -33,107 +34,20 @@ var (
 type DispatcherOption func(d *Dispatcher) error
 
 type Dispatcher struct {
+	// gating mechanisms
+	ff *fflag.FFlag
+	l  license.Licenser
+
 	logger    *log.Logger
 	transport *http.Transport
 	client    *http.Client
 	rules     *netjail.Rules
 }
 
-// ProxyOption defines an HTTP proxy which the client will use. It fails-open the string isn't a valid HTTP URL
-func ProxyOption(l license.Licenser, httpProxy string) DispatcherOption {
-	return func(d *Dispatcher) error {
-		if httpProxy == "" {
-			return nil
-		}
-
-		if l.UseForwardProxy() {
-			proxyUrl, isValid, err := d.setProxy(httpProxy)
-			if err != nil {
-				return err
-			}
-
-			if isValid {
-				d.transport.Proxy = http.ProxyURL(proxyUrl)
-			}
-		}
-
-		return nil
-	}
-}
-
-// AllowListOption sets a list of IP prefixes which will outgoing traffic will be granted access
-func AllowListOption(allowList []string) DispatcherOption {
-	return func(d *Dispatcher) error {
-		if len(allowList) == 0 {
-			return ErrAllowListIsRequired
-		}
-
-		netAllow := make([]netip.Prefix, len(allowList))
-		for i, prefix := range allowList {
-			parsed, err := netip.ParsePrefix(prefix)
-			if err != nil {
-				return fmt.Errorf("%w: %v in allowlist", ErrInvalidIPPrefix, err)
-			}
-			netAllow[i] = parsed
-		}
-
-		d.rules.Allow = netAllow
-		return nil
-	}
-}
-
-// BlockListOption sets a list of IP prefixes which will outgoing traffic will be denied access
-func BlockListOption(blockList []string) DispatcherOption {
-	return func(d *Dispatcher) error {
-		if len(blockList) == 0 {
-			return ErrBlockListIsRequired
-		}
-
-		netBlock := make([]netip.Prefix, len(blockList))
-		for i, prefix := range blockList {
-			parsed, err := netip.ParsePrefix(prefix)
-			if err != nil {
-				return fmt.Errorf("%w: %v in blocklist", ErrInvalidIPPrefix, err)
-			}
-			netBlock[i] = parsed
-		}
-
-		d.rules.Block = netBlock
-		return nil
-	}
-}
-
-// EnforceSecureOption allow self-signed certificates if set to false
-// which is susceptible to MITM attacks.
-func EnforceSecureOption(enforceSecure bool) DispatcherOption {
-	return func(d *Dispatcher) error {
-		if !enforceSecure {
-			d.transport.TLSClientConfig = &tls.Config{
-				InsecureSkipVerify: true,
-			}
-		} else {
-			d.transport.TLSClientConfig = &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			}
-		}
-
-		return nil
-	}
-}
-
-func LoggerOption(logger *log.Logger) DispatcherOption {
-	return func(d *Dispatcher) error {
-		if logger == nil {
-			return ErrLoggerIsRequired
-		}
-
-		d.logger = logger
-		return nil
-	}
-}
-
-func NewDispatcher(options ...DispatcherOption) (*Dispatcher, error) {
+func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOption) (*Dispatcher, error) {
 	d := &Dispatcher{
+		l:      l,
+		ff:     ff,
 		client: &http.Client{},
 		rules:  &netjail.Rules{},
 		transport: &http.Transport{
@@ -179,7 +93,107 @@ func NewDispatcher(options ...DispatcherOption) (*Dispatcher, error) {
 	return d, nil
 }
 
-func (d *Dispatcher) setProxy(proxyURL string) (*url.URL, bool, error) {
+// ProxyOption defines an HTTP proxy which the client will use. It fails-open the string isn't a valid HTTP URL
+func ProxyOption(httpProxy string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if httpProxy == "" {
+			return nil
+		}
+
+		if d.l.UseForwardProxy() {
+			proxyUrl, isValid, err := d.validateProxy(httpProxy)
+			if err != nil {
+				return err
+			}
+
+			if isValid {
+				d.transport.Proxy = http.ProxyURL(proxyUrl)
+			}
+		}
+
+		return nil
+	}
+}
+
+// AllowListOption sets a list of IP prefixes which will outgoing traffic will be granted access
+func AllowListOption(allowList []string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if len(allowList) == 0 {
+			return ErrAllowListIsRequired
+		}
+
+		if !d.l.IpRules() || !d.ff.CanAccessFeature(fflag.IpRules) {
+			return nil
+		}
+
+		netAllow := make([]netip.Prefix, len(allowList))
+		for i, prefix := range allowList {
+			parsed, err := netip.ParsePrefix(prefix)
+			if err != nil {
+				return fmt.Errorf("%w: %v in allowlist", ErrInvalidIPPrefix, err)
+			}
+			netAllow[i] = parsed
+			d.rules.Allow = netAllow
+		}
+
+		return nil
+	}
+}
+
+// BlockListOption sets a list of IP prefixes which will outgoing traffic will be denied access
+func BlockListOption(blockList []string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if len(blockList) == 0 {
+			return ErrBlockListIsRequired
+		}
+
+		if !d.l.IpRules() || !d.ff.CanAccessFeature(fflag.IpRules) {
+			return nil
+		}
+
+		netBlock := make([]netip.Prefix, len(blockList))
+		for i, prefix := range blockList {
+			parsed, err := netip.ParsePrefix(prefix)
+			if err != nil {
+				return fmt.Errorf("%w: %v in blocklist", ErrInvalidIPPrefix, err)
+			}
+			netBlock[i] = parsed
+		}
+
+		d.rules.Block = netBlock
+		return nil
+	}
+}
+
+// InsecureSkipVerifyOption allow self-signed certificates if set to false which is susceptible to MITM attacks.
+func InsecureSkipVerifyOption(insecureSkipVerify bool) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if insecureSkipVerify {
+			d.transport.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+		} else {
+			d.transport.TLSClientConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+		}
+
+		return nil
+	}
+}
+
+func LoggerOption(logger *log.Logger) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if logger == nil {
+			return ErrLoggerIsRequired
+		}
+
+		d.logger = logger
+		return nil
+	}
+}
+
+func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	if !util.IsStringEmpty(proxyURL) {
 		pUrl, err := url.Parse(proxyURL)
 		if err != nil {
@@ -197,6 +211,8 @@ func (d *Dispatcher) setProxy(proxyURL string) (*url.URL, bool, error) {
 }
 
 func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+	d.logger.Debugf("rules: %+v", d.rules)
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 

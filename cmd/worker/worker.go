@@ -249,24 +249,26 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	go memorystore.DefaultStore.Sync(ctx, interval)
 
+	featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 	newTelemetry := telemetry.NewTelemetry(lo, configuration,
 		telemetry.OptionTracker(counter),
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
 	dispatcher, err := net.NewDispatcher(
+		a.Licenser,
+		featureFlag,
 		net.LoggerOption(lo),
-		net.ProxyOption(a.Licenser, cfg.Server.HTTP.HttpProxy),
+		net.ProxyOption(cfg.Server.HTTP.HttpProxy),
 		net.AllowListOption(cfg.Dispatcher.AllowList),
 		net.BlockListOption(cfg.Dispatcher.BlockList),
-		net.EnforceSecureOption(cfg.Dispatcher.EnforceSecure),
+		net.InsecureSkipVerifyOption(cfg.Dispatcher.InsecureSkipVerify),
 	)
 	if err != nil {
 		lo.WithError(err).Fatal("Failed to create new net dispatcher")
 		return err
 	}
 
-	featureFlag := fflag.NewFFlag(&cfg)
 	var circuitBreakerManager *cb.CircuitBreakerManager
 
 	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) {

@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/stealthrocket/netjail"
 	"net/http"
@@ -357,8 +358,11 @@ func TestNewDispatcher(t *testing.T) {
 			}
 
 			d, err := NewDispatcher(
+				licenser,
+				fflag.NewFFlag([]string{string(fflag.IpRules)}),
 				LoggerOption(log.NewLogger(os.Stdout)),
-				ProxyOption(licenser, tt.args.httpProxy),
+				InsecureSkipVerifyOption(tt.args.enforceSecure),
+				ProxyOption(tt.args.httpProxy),
 			)
 			if tt.wantErr {
 				require.Error(t, err)
@@ -389,9 +393,19 @@ func TestDispatcherSendRequest(t *testing.T) {
 	}))
 	defer server.Close()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(2).Return(true)
+
 	// Create a new dispatcher
 	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
 		LoggerOption(log.NewLogger(os.Stdout)),
+		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"10.0.0.0/8"}),
 	)
@@ -432,8 +446,18 @@ func TestDispatcherWithTimeout(t *testing.T) {
 	}))
 	defer server.Close()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(2).Return(true)
+
 	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
 		LoggerOption(log.NewLogger(os.Stdout)),
+		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"10.0.0.0/8"}),
 	)
@@ -467,9 +491,19 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 	}))
 	defer server.Close()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(2).Return(true)
+
 	// Create a dispatcher with a block list that includes the test server's IP
 	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
 		LoggerOption(log.NewLogger(os.Stdout)),
+		ProxyOption("nil"),
 		AllowListOption([]string{"0.0.0.0/0"}),
 		BlockListOption([]string{"127.0.0.0/8"}),
 	)
@@ -488,8 +522,6 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 		"",
 		5*time.Second,
 	)
-
-	t.Log(err)
 
 	// Assert that the request was blocked
 	require.Error(t, err)

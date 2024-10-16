@@ -108,9 +108,9 @@ var DefaultConfiguration = Configuration{
 		},
 	},
 	Dispatcher: DispatcherConfiguration{
-		EnforceSecure: true,
-		AllowList:     []string{"0.0.0.0/0", "::/0"},
-		BlockList:     []string{"127.0.0.0/8", "::1/128"},
+		InsecureSkipVerify: true,
+		AllowList:          []string{"0.0.0.0/0", "::/0"},
+		BlockList:          []string{"127.0.0.0/8", "::1/128"},
 	},
 	InstanceIngestRate:  25,
 	ApiRateLimit:        25,
@@ -397,9 +397,9 @@ type Configuration struct {
 }
 
 type DispatcherConfiguration struct {
-	EnforceSecure bool     `json:"enforce_secure" envconfig:"CONVOY_DISPATCHER_ENFORCE_SECURE"`
-	AllowList     []string `json:"allow_list" envconfig:"CONVOY_DISPATCHER_ALLOW_LIST"`
-	BlockList     []string `json:"block_list" envconfig:"CONVOY_DISPATCHER_BLOCKLIST"`
+	InsecureSkipVerify bool     `json:"insecure_skip_verify" envconfig:"CONVOY_DISPATCHER_INSECURE_SKIP_VERIFY"`
+	AllowList          []string `json:"allow_list" envconfig:"CONVOY_DISPATCHER_ALLOW_LIST"`
+	BlockList          []string `json:"block_list" envconfig:"CONVOY_DISPATCHER_BLOCK_LIST"`
 }
 
 type PyroscopeConfiguration struct {

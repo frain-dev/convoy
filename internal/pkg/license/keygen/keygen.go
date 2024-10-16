@@ -475,6 +475,14 @@ func (k *Licenser) AgentExecutionMode() bool {
 	return ok
 }
 
+func (k *Licenser) IpRules() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[IpRules]
+	return ok
+}
+
 func (k *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	// only these guys have dynamic limits for now
 	for f := range k.featureList {

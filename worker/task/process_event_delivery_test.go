@@ -954,7 +954,15 @@ func TestProcessEventDelivery(t *testing.T) {
 				tc.dbFn(endpointRepo, projectRepo, msgRepo, q, rateLimiter, attemptsRepo, licenser)
 			}
 
-			dispatcher, err := net.NewDispatcher(net.LoggerOption(log.NewLogger(os.Stdout)), net.ProxyOption(licenser, "nil"))
+			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
+
+			dispatcher, err := net.NewDispatcher(
+				licenser,
+				fflag.NewFFlag([]string{string(fflag.IpRules)}),
+				net.LoggerOption(log.NewLogger(os.Stdout)),
+				// net.BlockListOption([]string{"10.0.0.0/8"}),
+				net.ProxyOption("nil"),
+			)
 			require.NoError(t, err)
 
 			mockStore := cb.NewTestStore()
@@ -977,7 +985,6 @@ func TestProcessEventDelivery(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			featureFlag := fflag.NewFFlag(&cfg)
 			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag)
 
 			payload := EventDelivery{
