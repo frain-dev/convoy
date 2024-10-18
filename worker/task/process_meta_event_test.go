@@ -3,6 +3,9 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/log"
+	"os"
 	"testing"
 	"time"
 
@@ -136,7 +139,12 @@ func TestProcessMetaEvent(t *testing.T) {
 			licenser := mocks.NewMockLicenser(ctrl)
 			licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
 
-			dispatcher, err := net.NewDispatcher("", licenser, false)
+			dispatcher, err := net.NewDispatcher(
+				licenser,
+				fflag.NewFFlag([]string{string(fflag.IpRules)}),
+				net.LoggerOption(log.NewLogger(os.Stdout)),
+				net.ProxyOption("nil"),
+			)
 			require.NoError(t, err)
 
 			err = config.LoadConfig(tc.cfgPath)

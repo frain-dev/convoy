@@ -49,6 +49,8 @@ func main() {
 	var dbDatabase string
 
 	var fflag []string
+	var ipAllowList []string
+	var ipBLockList []string
 	var enableProfiling bool
 
 	var redisPort int
@@ -105,6 +107,9 @@ func main() {
 
 	// misc
 	c.Flags().StringSliceVar(&fflag, "enable-feature-flag", []string{}, "List of feature flags to enable e.g. \"full-text-search,prometheus\"")
+	c.Flags().StringSliceVar(&ipAllowList, "ip-allow-list", []string{}, "List of IPs CIDRs to allow e.g. \" 0.0.0.0/0,127.0.0.0/8\"")
+	c.Flags().StringSliceVar(&ipBLockList, "ip-block-list", []string{}, "List of IPs CIDRs to block e.g. \" 0.0.0.0/0,127.0.0.0/8\"")
+
 	c.Flags().IntVar(&instanceIngestRate, "instance-ingest-rate", 0, "Instance ingest Rate")
 	c.Flags().IntVar(&apiRateLimit, "api-rate-limit", 0, "API rate limit")
 

@@ -644,7 +644,7 @@ func (m *MockEventRepository) UpdateEventEndpoints(arg0 context.Context, arg1 *d
 }
 
 // UpdateEventEndpoints indicates an expected call of UpdateEventEndpoints.
-func (mr *MockEventRepositoryMockRecorder) UpdateEventEndpoints(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) UpdateEventEndpoints(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventEndpoints", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventEndpoints), arg0, arg1, arg2)
 }
@@ -658,7 +658,7 @@ func (m *MockEventRepository) UpdateEventStatus(arg0 context.Context, arg1 *data
 }
 
 // UpdateEventStatus indicates an expected call of UpdateEventStatus.
-func (mr *MockEventRepositoryMockRecorder) UpdateEventStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockEventRepositoryMockRecorder) UpdateEventStatus(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventStatus", reflect.TypeOf((*MockEventRepository)(nil).UpdateEventStatus), arg0, arg1, arg2)
 }
