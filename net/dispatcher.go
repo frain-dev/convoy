@@ -65,7 +65,11 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		}
 	}
 
-	if len(d.rules.Allow) == 0 && len(d.rules.Block) == 0 {
+	if d.logger == nil {
+		return nil, ErrLoggerIsRequired
+	}
+
+	if ff.CanAccessFeature(fflag.IpRules) && len(d.rules.Allow) == 0 && len(d.rules.Block) == 0 {
 		d.rules = &netjail.Rules{
 			Allow: []netip.Prefix{
 				netip.MustParsePrefix("0.0.0.0/8"),
@@ -84,11 +88,11 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		},
 	}
 
-	if d.logger == nil {
-		return nil, ErrLoggerIsRequired
+	if ff.CanAccessFeature(fflag.IpRules) {
+		d.client.Transport = netJailTransport
+	} else {
+		d.client.Transport = d.transport
 	}
-
-	d.client.Transport = netJailTransport
 
 	return d, nil
 }
@@ -224,7 +228,11 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 		return r, err
 	}
 
-	req, err := http.NewRequestWithContext(netjail.ContextWithRules(ctx, d.rules), method, endpoint, bytes.NewBuffer(jsonData))
+	if d.ff.CanAccessFeature(fflag.IpRules) {
+		ctx = netjail.ContextWithRules(ctx, d.rules)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		d.logger.WithError(err).Error("error occurred while creating request")
 		return r, err

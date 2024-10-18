@@ -281,7 +281,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Dispatcher{client: client, logger: log.NewLogger(os.Stdout)}
+			d := &Dispatcher{client: client, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{})}
 
 			if tt.nFn != nil {
 				deferFn := tt.nFn()
