@@ -929,6 +929,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			licenser := mocks.NewMockLicenser(ctrl)
 
 			licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+			licenser.EXPECT().IpRules().Times(1).Return(true)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -960,7 +961,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
 				net.LoggerOption(log.NewLogger(os.Stdout)),
-				// net.BlockListOption([]string{"10.0.0.0/8"}),
+				net.BlockListOption([]string{"10.0.0.0/8"}),
 				net.ProxyOption("nil"),
 			)
 			require.NoError(t, err)
