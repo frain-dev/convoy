@@ -18,7 +18,9 @@
         }
     },
     "instance_ingest_rate": 50,
-    "api_rate_limit_enabled": false,
+    "dispatcher": {
+        "allow_list":"10.0.0.0/8"
+    },
     "auth": {
         "jwt": {
             "enabled": true
