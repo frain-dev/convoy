@@ -339,7 +339,7 @@ func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
 //	@Success		200			{object}	util.ServerResponse{data=models.FunctionResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
-//	@Router			/v1/projects/{projectID}/subscriptions/test_function [post]
+//	@Router			/v1/projects/{projectID}/sources/test_function [post]
 func (h *Handler) TestSourceFunction(w http.ResponseWriter, r *http.Request) {
 	var test models.FunctionRequest
 	err := util.ReadJSON(r, &test)

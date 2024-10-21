@@ -127,18 +127,11 @@ components:
       - online
       - disabled
       type: string
-      x-enum-varnames:
-      - DeviceStatusOffline
-      - DeviceStatusOnline
-      - DeviceStatusDisabled
     datastore.EncodingType:
       enum:
       - base64
       - hex
       type: string
-      x-enum-varnames:
-      - Base64Encoding
-      - HexEncoding
     datastore.Endpoint:
       properties:
         advanced_signatures:
@@ -153,6 +146,8 @@ components:
           type: string
         events:
           type: integer
+        failure_rate:
+          type: number
         http_timeout:
           type: integer
         name:
@@ -193,8 +188,6 @@ components:
       enum:
       - api_key
       type: string
-      x-enum-varnames:
-      - APIKeyAuthentication
     datastore.EndpointStatus:
       enum:
       - active
@@ -202,11 +195,6 @@ components:
       - pending
       - paused
       type: string
-      x-enum-varnames:
-      - ActiveEndpointStatus
-      - InactiveEndpointStatus
-      - PendingEndpointStatus
-      - PausedEndpointStatus
     datastore.Event:
       properties:
         acknowledged_at:
@@ -269,13 +257,6 @@ components:
       - Success
       - Retry
       type: string
-      x-enum-varnames:
-      - ScheduledEventStatus
-      - ProcessingEventStatus
-      - DiscardedEventStatus
-      - FailureEventStatus
-      - SuccessEventStatus
-      - RetryEventStatus
     datastore.EventStatus:
       enum:
       - Processing
@@ -284,12 +265,6 @@ components:
       - Retry
       - Pending
       type: string
-      x-enum-varnames:
-      - ProcessingStatus
-      - FailureStatus
-      - SuccessStatus
-      - RetryStatus
-      - PendingStatus
     datastore.FilterConfiguration:
       properties:
         event_types:
@@ -402,9 +377,6 @@ components:
       - next
       - prev
       type: string
-      x-enum-varnames:
-      - Next
-      - Prev
     datastore.PaginationData:
       properties:
         has_next_page:
@@ -445,11 +417,6 @@ components:
       - kafka
       - amqp
       type: string
-      x-enum-varnames:
-      - SqsPubSub
-      - GooglePubSub
-      - KafkaPubSub
-      - AmqpPubSub
     datastore.RateLimitConfiguration:
       properties:
         count:
@@ -543,10 +510,6 @@ components:
       - twitter
       - shopify
       type: string
-      x-enum-varnames:
-      - GithubSourceProvider
-      - TwitterSourceProvider
-      - ShopifySourceProvider
     datastore.SourceType:
       enum:
       - http
@@ -554,27 +517,16 @@ components:
       - pub_sub
       - db_change_stream
       type: string
-      x-enum-varnames:
-      - HTTPSource
-      - RestApiSource
-      - PubSubSource
-      - DBChangeStream
     datastore.StrategyProvider:
       enum:
       - linear
       - exponential
       type: string
-      x-enum-varnames:
-      - LinearStrategyProvider
-      - ExponentialStrategyProvider
     datastore.SubscriptionType:
       enum:
       - cli
       - api
       type: string
-      x-enum-varnames:
-      - SubscriptionTypeCLI
-      - SubscriptionTypeAPI
     datastore.TwitterProviderConfig:
       properties:
         crc_verified_at:
@@ -598,11 +550,6 @@ components:
       - basic_auth
       - api_key
       type: string
-      x-enum-varnames:
-      - NoopVerifier
-      - HMacVerifier
-      - BasicAuthVerifier
-      - APIKeyVerifier
     handlers.Stub:
       type: object
     httpheader.HTTPHeader:
@@ -659,6 +606,9 @@ components:
           type: string
         header_value:
           type: string
+      required:
+      - header_name
+      - header_value
       type: object
     models.BasicAuth:
       properties:
@@ -666,6 +616,9 @@ components:
           type: string
         username:
           type: string
+      required:
+      - password
+      - username
       type: object
     models.BroadcastEvent:
       properties:
@@ -826,7 +779,8 @@ components:
           - $ref: '#/components/schemas/models.VerifierConfig'
           description: |-
             Verifiers are used to verify webhook events ingested in incoming
-            webhooks projects.
+            webhooks projects. If set, type is required and match the verifier
+            type object you choose.
       type: object
     models.CreateSubscription:
       properties:
@@ -928,6 +882,8 @@ components:
           type: string
         events:
           type: integer
+        failure_rate:
+          type: number
         http_timeout:
           type: integer
         name:
@@ -1161,6 +1117,11 @@ components:
           type: string
         secret:
           type: string
+      required:
+      - encoding
+      - hash
+      - header
+      - secret
       type: object
     models.IDs:
       properties:
@@ -1534,7 +1495,8 @@ components:
           - $ref: '#/components/schemas/models.VerifierConfig'
           description: |-
             Verifiers are used to verify webhook events ingested in incoming
-            webhooks projects.
+            webhooks projects.  If set, type is required and match the verifier
+            type object you choose.
       type: object
     models.UpdateSubscription:
       properties:
@@ -1582,6 +1544,8 @@ components:
           $ref: '#/components/schemas/models.HMac'
         type:
           $ref: '#/components/schemas/datastore.VerifierType'
+      required:
+      - type
       type: object
     util.ServerResponse:
       properties:
@@ -1993,6 +1957,73 @@ paths:
       summary: Update an endpoint
       tags:
       - Endpoints
+  /v1/projects/{projectID}/endpoints/{endpointID}/activate:
+    post:
+      description: Activated an inactive endpoint
+      operationId: ActivateEndpoint
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: Endpoint ID
+        in: path
+        name: endpointID
+        required: true
+        schema:
+          type: string
+      responses:
+        "202":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.EndpointResponse'
+                  type: object
+          description: Accepted
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Activate endpoint
+      tags:
+      - Endpoints
   /v1/projects/{projectID}/endpoints/{endpointID}/expire_secret:
     put:
       description: This endpoint expires and re-generates the endpoint secret.
@@ -2070,8 +2101,7 @@ paths:
       - Endpoints
   /v1/projects/{projectID}/endpoints/{endpointID}/pause:
     put:
-      description: This endpoint toggles an endpoint status between the active and
-        paused states
+      description: Toggles an endpoint's status between active and paused states
       operationId: PauseEndpoint
       parameters:
       - description: Project ID
@@ -4437,6 +4467,75 @@ paths:
       summary: Update a source
       tags:
       - Sources
+  /v1/projects/{projectID}/sources/test_function:
+    post:
+      description: This endpoint validates that a filter will match a certain payload
+        structure.
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/models.FunctionRequest'
+        description: Function Details
+        required: true
+        x-originalParamName: filter
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.FunctionResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Validate source function
+      tags:
+      - Subscriptions
   /v1/projects/{projectID}/subscriptions:
     get:
       description: This endpoint fetches all the subscriptions

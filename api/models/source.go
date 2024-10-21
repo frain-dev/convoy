@@ -26,8 +26,9 @@ type CreateSource struct {
 	CustomResponse CustomResponse `json:"custom_response"`
 
 	// Verifiers are used to verify webhook events ingested in incoming
-	// webhooks projects.
-	Verifier VerifierConfig `json:"verifier"`
+	// webhooks projects. If set, type is required and match the verifier
+	// type object you choose.
+	Verifier VerifierConfig `json:"verifier" validate:"optional"`
 
 	// PubSub are used to specify message broker sources for outgoing
 	// webhooks projects.
@@ -147,8 +148,9 @@ type UpdateSource struct {
 	CustomResponse UpdateCustomResponse `json:"custom_response"`
 
 	// Verifiers are used to verify webhook events ingested in incoming
-	// webhooks projects.
-	Verifier VerifierConfig `json:"verifier"`
+	// webhooks projects.  If set, type is required and match the verifier
+	// type object you choose.
+	Verifier VerifierConfig `json:"verifier" validate:"optional"`
 
 	// PubSub are used to specify message broker sources for outgoing
 	// webhooks projects, you only need to specify this when the source type is `pub_sub`.
@@ -234,10 +236,10 @@ type UpdateCustomResponse struct {
 }
 
 type VerifierConfig struct {
-	Type      datastore.VerifierType `json:"type,omitempty" valid:"supported_verifier~please provide a valid verifier type"`
-	HMac      *HMac                  `json:"hmac"`
-	BasicAuth *BasicAuth             `json:"basic_auth"`
-	ApiKey    *ApiKey                `json:"api_key"`
+	Type      datastore.VerifierType `json:"type,omitempty" validate:"required" valid:"supported_verifier~please provide a valid verifier type"`
+	HMac      *HMac                  `json:"hmac" validate:"optional"`
+	BasicAuth *BasicAuth             `json:"basic_auth" validate:"optional"`
+	ApiKey    *ApiKey                `json:"api_key" validate:"optional"`
 }
 
 func (vc *VerifierConfig) Transform() *datastore.VerifierConfig {
@@ -254,10 +256,10 @@ func (vc *VerifierConfig) Transform() *datastore.VerifierConfig {
 }
 
 type HMac struct {
-	Header   string                 `json:"header" valid:"required"`
-	Hash     string                 `json:"hash" valid:"supported_hash,required"`
-	Secret   string                 `json:"secret" valid:"required"`
-	Encoding datastore.EncodingType `json:"encoding" valid:"supported_encoding~please provide a valid encoding type,required"`
+	Header   string                 `json:"header" valid:"required" validate:"required"`
+	Hash     string                 `json:"hash" valid:"supported_hash,required" validate:"required"`
+	Secret   string                 `json:"secret" valid:"required" validate:"required"`
+	Encoding datastore.EncodingType `json:"encoding" valid:"supported_encoding~please provide a valid encoding type,required" validate:"required"`
 }
 
 func (hm *HMac) transform() *datastore.HMac {
@@ -274,8 +276,8 @@ func (hm *HMac) transform() *datastore.HMac {
 }
 
 type BasicAuth struct {
-	UserName string `json:"username" valid:"required" `
-	Password string `json:"password" valid:"required"`
+	UserName string `json:"username" valid:"required" validate:"required"`
+	Password string `json:"password" valid:"required" validate:"required"`
 }
 
 func (ba *BasicAuth) transform() *datastore.BasicAuth {
@@ -290,8 +292,8 @@ func (ba *BasicAuth) transform() *datastore.BasicAuth {
 }
 
 type ApiKey struct {
-	HeaderValue string `json:"header_value" valid:"required"`
-	HeaderName  string `json:"header_name" valid:"required"`
+	HeaderValue string `json:"header_value" valid:"required" validate:"required"`
+	HeaderName  string `json:"header_name" valid:"required" validate:"required"`
 }
 
 func (ak *ApiKey) transform() *datastore.ApiKey {

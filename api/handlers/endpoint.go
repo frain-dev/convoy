@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"net/http"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -494,7 +495,7 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Activate endpoint
 //	@Description	Activated an inactive endpoint
-//	@Id				PauseEndpoint
+//	@Id				ActivateEndpoint
 //	@Tags			Endpoints
 //	@Accept			json
 //	@Produce		json
