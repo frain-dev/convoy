@@ -20,4 +20,3 @@ alter table convoy.configurations drop column if exists cb_consecutive_failure_t
 drop index if exists convoy.idx_delivery_attempts_created_at;
 drop index if exists convoy.idx_delivery_attempts_event_delivery_id_created_at;
 drop index if exists convoy.idx_delivery_attempts_event_delivery_id;
-
