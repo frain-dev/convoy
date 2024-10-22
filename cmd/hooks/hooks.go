@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/util"
-	"github.com/grafana/pyroscope-go"
+	pyro "github.com/grafana/pyroscope-go"
 
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 
@@ -272,16 +272,16 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 }
 
 func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
-	_, err := pyroscope.Start(pyroscope.Config{
+	_, err := pyro.Start(pyro.Config{
 		ApplicationName: cfg.Pyroscope.ProfileID,
 		Tags: map[string]string{
 			"cmd": cmd.Use,
 		},
-		// replace this with the address of pyroscope server
+		// replace this with the address of pyro server
 		ServerAddress: cfg.Pyroscope.URL,
 
 		// you can disable logging by setting this to nil
-		// Logger: pyroscope.StandardLogger,
+		// Logger: pyro.StandardLogger,
 		UploadRate: time.Second * 5,
 
 		// optionally, if authentication is enabled, specify the API key:
@@ -289,17 +289,17 @@ func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
 		BasicAuthPassword: cfg.Pyroscope.Password,
 
 		// but you can select the ones you want to use:
-		ProfileTypes: []pyroscope.ProfileType{
-			pyroscope.ProfileCPU,
-			pyroscope.ProfileInuseObjects,
-			pyroscope.ProfileAllocObjects,
-			pyroscope.ProfileInuseSpace,
-			pyroscope.ProfileAllocSpace,
-			pyroscope.ProfileGoroutines,
-			pyroscope.ProfileMutexCount,
-			pyroscope.ProfileMutexDuration,
-			pyroscope.ProfileBlockCount,
-			pyroscope.ProfileBlockDuration,
+		ProfileTypes: []pyro.ProfileType{
+			pyro.ProfileCPU,
+			pyro.ProfileInuseObjects,
+			pyro.ProfileAllocObjects,
+			pyro.ProfileInuseSpace,
+			pyro.ProfileAllocSpace,
+			pyro.ProfileGoroutines,
+			pyro.ProfileMutexCount,
+			pyro.ProfileMutexDuration,
+			pyro.ProfileBlockCount,
+			pyro.ProfileBlockDuration,
 		},
 	})
 	return err
@@ -519,12 +519,30 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
 	}
 
-	// Feature flags
+	// CONVOY_ENABLE_FEATURE_FLAG
 	fflag, err := cmd.Flags().GetStringSlice("enable-feature-flag")
 	if err != nil {
 		return nil, err
 	}
 	c.EnableFeatureFlag = fflag
+
+	// CONVOY_DISPATCHER_BLOCK_LIST
+	ipBlockList, err := cmd.Flags().GetStringSlice("ip-block-list")
+	if err != nil {
+		return nil, err
+	}
+	if len(ipBlockList) > 0 {
+		c.Dispatcher.BlockList = ipBlockList
+	}
+
+	// CONVOY_DISPATCHER_ALLOW_LIST
+	ipAllowList, err := cmd.Flags().GetStringSlice("ip-allow-list")
+	if err != nil {
+		return nil, err
+	}
+	if len(ipAllowList) > 0 {
+		c.Dispatcher.AllowList = ipAllowList
+	}
 
 	// tracing
 	tracingProvider, err := cmd.Flags().GetString("tracer-type")
@@ -585,7 +603,7 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
-	flag := fflag2.NewFFlag(c)
+	flag := fflag2.NewFFlag(c.EnableFeatureFlag)
 	c.Metrics = config.MetricsConfiguration{
 		IsEnabled: false,
 	}

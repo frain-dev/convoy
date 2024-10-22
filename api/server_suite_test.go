@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"io"
 	"math/rand"
 	"net/http"
@@ -137,6 +138,7 @@ func buildServer() *ApplicationHandler {
 			Redis:    rd.Client(),
 			Logger:   logger,
 			Cache:    noopCache,
+			FFlag:    fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
 			Rate:     r,
 			Licenser: noopLicenser.NewLicenser(),
 		})
