@@ -281,7 +281,7 @@ type CircuitBreakerConfiguration struct {
 	ErrorTimeout                uint64 `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
 	FailureThreshold            uint64 `json:"failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD"`
 	SuccessThreshold            uint64 `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
-	MinimumRequestCount         uint64 `json:"minimum_request_count" envconfig:"CONVOY_MINIMUM_REQUEST_COUNT"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" envconfig:"CONVOY_CIRCUIT_BREAKER_MINIMUM_REQUEST_COUNT"`
 	ObservabilityWindow         uint64 `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
 }
