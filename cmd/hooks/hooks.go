@@ -519,12 +519,30 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
 	}
 
-	// Feature flags
+	// CONVOY_ENABLE_FEATURE_FLAG
 	fflag, err := cmd.Flags().GetStringSlice("enable-feature-flag")
 	if err != nil {
 		return nil, err
 	}
 	c.EnableFeatureFlag = fflag
+
+	// CONVOY_DISPATCHER_BLOCK_LIST
+	ipBlockList, err := cmd.Flags().GetStringSlice("ip-block-list")
+	if err != nil {
+		return nil, err
+	}
+	if len(ipBlockList) > 0 {
+		c.Dispatcher.BlockList = ipBlockList
+	}
+
+	// CONVOY_DISPATCHER_ALLOW_LIST
+	ipAllowList, err := cmd.Flags().GetStringSlice("ip-allow-list")
+	if err != nil {
+		return nil, err
+	}
+	if len(ipAllowList) > 0 {
+		c.Dispatcher.AllowList = ipAllowList
+	}
 
 	// tracing
 	tracingProvider, err := cmd.Flags().GetString("tracer-type")
@@ -585,7 +603,7 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
-	flag := fflag2.NewFFlag(c)
+	flag := fflag2.NewFFlag(c.EnableFeatureFlag)
 	c.Metrics = config.MetricsConfiguration{
 		IsEnabled: false,
 	}

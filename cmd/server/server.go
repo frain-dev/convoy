@@ -107,7 +107,7 @@ func startConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	flag := fflag.NewFFlag(&cfg)
+	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")

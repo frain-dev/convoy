@@ -280,6 +280,20 @@ func (mr *MockLicenserMockRecorder) IngestRate() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IngestRate", reflect.TypeOf((*MockLicenser)(nil).IngestRate))
 }
 
+// IpRules mocks base method.
+func (m *MockLicenser) IpRules() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IpRules")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IpRules indicates an expected call of IpRules.
+func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IpRules", reflect.TypeOf((*MockLicenser)(nil).IpRules))
+}
+
 // MultiPlayerMode mocks base method.
 func (m *MockLicenser) MultiPlayerMode() bool {
 	m.ctrl.T.Helper()

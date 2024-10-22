@@ -5,7 +5,12 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/stealthrocket/netjail"
 	"net/http"
+	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -276,7 +281,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Dispatcher{client: client}
+			d := &Dispatcher{client: client, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{})}
 
 			if tt.nFn != nil {
 				deferFn := tt.nFn()
@@ -308,7 +313,7 @@ func TestNewDispatcher(t *testing.T) {
 	tests := []struct {
 		name       string
 		args       args
-		mockFn     func(licenser license.Licenser)
+		mockFn     func(license.Licenser)
 		wantProxy  bool
 		wantErr    bool
 		wantErrMsg string
@@ -351,7 +356,14 @@ func TestNewDispatcher(t *testing.T) {
 			if tt.mockFn != nil {
 				tt.mockFn(licenser)
 			}
-			d, err := NewDispatcher(tt.args.httpProxy, licenser, tt.args.enforceSecure)
+
+			d, err := NewDispatcher(
+				licenser,
+				fflag.NewFFlag([]string{string(fflag.IpRules)}),
+				LoggerOption(log.NewLogger(os.Stdout)),
+				InsecureSkipVerifyOption(tt.args.enforceSecure),
+				ProxyOption(tt.args.httpProxy),
+			)
 			if tt.wantErr {
 				require.Error(t, err)
 				require.Equal(t, tt.wantErrMsg, err.Error())
@@ -361,8 +373,158 @@ func TestNewDispatcher(t *testing.T) {
 			require.NoError(t, err)
 
 			if tt.wantProxy {
-				require.NotNil(t, d.client.Transport.(*http.Transport).Proxy)
+				require.NotNil(t, d.client.Transport.(*netjail.Transport).New().Proxy)
 			}
 		})
 	}
+}
+
+// TestDispatcherSendRequest tests the basic functionality of SendRequest
+func TestDispatcherSendRequest(t *testing.T) {
+	// Start a test server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "POST", r.Method)
+		require.Equal(t, "application/json", r.Header.Get("Content-Type"))
+		require.Equal(t, "test-hmac", r.Header.Get("X-Signature"))
+		require.Equal(t, "test-key", r.Header.Get("X-Convoy-Idempotency-Key"))
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status": "success"}`))
+	}))
+	defer server.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(2).Return(true)
+
+	// Create a new dispatcher
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
+		LoggerOption(log.NewLogger(os.Stdout)),
+		ProxyOption("nil"),
+		AllowListOption([]string{"0.0.0.0/0"}),
+		BlockListOption([]string{"10.0.0.0/8"}),
+	)
+	require.NoError(t, err)
+
+	// Prepare request data
+	jsonData := json.RawMessage(`{"key": "value"}`)
+	headers := httpheader.HTTPHeader{
+		"X-Custom-Header": []string{"custom-value"},
+	}
+
+	// Send request
+	resp, err := dispatcher.SendRequest(
+		context.Background(),
+		server.URL,
+		"POST",
+		jsonData,
+		"X-Signature",
+		"test-hmac",
+		1024,
+		headers,
+		"test-key",
+		5*time.Second,
+	)
+
+	// Assert response
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+	require.Equal(t, `{"status": "success"}`, string(resp.Body))
+	require.Equal(t, "custom-value", resp.RequestHeader.Get("X-Custom-Header"))
+}
+
+// TestDispatcherWithTimeout tests the timeout functionality
+func TestDispatcherWithTimeout(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(2).Return(true)
+
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
+		LoggerOption(log.NewLogger(os.Stdout)),
+		ProxyOption("nil"),
+		AllowListOption([]string{"0.0.0.0/0"}),
+		BlockListOption([]string{"10.0.0.0/8"}),
+	)
+	require.NoError(t, err)
+
+	// Send request with a short timeout
+	_, err = dispatcher.SendRequest(
+		context.Background(),
+		server.URL,
+		"GET",
+		nil,
+		"X-Signature",
+		"test-hmac",
+		1024,
+		nil,
+		"",
+		1*time.Second,
+	)
+
+	// Assert that we got a timeout error
+	require.Error(t, err)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	require.Contains(t, err.Error(), "context deadline exceeded")
+}
+
+// TestDispatcherWithBlockedIP tests the IP blocking functionality
+func TestDispatcherWithBlockedIP(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(2 * time.Second)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+	licenser.EXPECT().IpRules().Times(2).Return(true)
+
+	// Create a dispatcher with a block list that includes the test server's IP
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
+		LoggerOption(log.NewLogger(os.Stdout)),
+		ProxyOption("nil"),
+		AllowListOption([]string{"0.0.0.0/0"}),
+		BlockListOption([]string{"127.0.0.0/8"}),
+	)
+	require.NoError(t, err)
+
+	// Attempt to send a request
+	_, err = dispatcher.SendRequest(
+		context.Background(),
+		server.URL,
+		"GET",
+		nil,
+		"X-Signature",
+		"test-hmac",
+		1024,
+		nil,
+		"",
+		5*time.Second,
+	)
+
+	// Assert that the request was blocked
+	require.Error(t, err)
+	require.ErrorIs(t, err, netjail.ErrDenied)
+	require.Contains(t, err.Error(), "127.0.0.1: address not allowed")
 }
