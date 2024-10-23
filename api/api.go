@@ -2,6 +2,10 @@ package api
 
 import (
 	"embed"
+	"fmt"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/render"
 	"io/fs"
 	"net/http"
 	"path"
@@ -42,13 +46,6 @@ func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	}
 	http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 }
-
-const (
-	GET    = "GET"
-	POST   = "POST"
-	PUT    = "PUT"
-	DELETE = "DELETE"
-)
 
 const (
 	VersionHeader = "X-Convoy-Version"
@@ -114,6 +111,7 @@ func (a *ApplicationHandler) buildRouter() *chi.Mux {
 	router.Use(chiMiddleware.RequestID)
 	router.Use(chiMiddleware.Recoverer)
 	router.Use(middleware.WriteRequestIDHeader)
+	router.Use(middleware.WriteVersionHeader(VersionHeader, a.cfg.APIVersion))
 	router.Use(middleware.InstrumentRequests(serverName, router))
 	router.Use(middleware.LogHttpRequest(a.A))
 	router.Use(chiMiddleware.Maybe(middleware.SetupCORS, shouldApplyCORS))
@@ -495,6 +493,10 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
 	}
 
+	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
+	})
+
 	router.HandleFunc("/*", reactRootHandler)
 
 	a.Router = router
@@ -508,6 +510,10 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	if a.A.Licenser.CanExportPrometheusMetrics() {
 		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
 	}
+
+	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
+	})
 
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {

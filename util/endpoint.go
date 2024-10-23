@@ -28,7 +28,7 @@ func ValidateEndpoint(s string, enforceSecure bool) (string, error) {
 			return "", errors.New("only https endpoints allowed")
 		}
 	case "https":
-		client := &http.Client{Timeout: 60 * time.Second, Transport: &http.Transport{
+		client := &http.Client{Timeout: 10 * time.Second, Transport: &http.Transport{
 			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
 				conn, err := tls.Dial(network, addr, &tls.Config{MinVersion: tls.VersionTLS12})
 				return conn, err

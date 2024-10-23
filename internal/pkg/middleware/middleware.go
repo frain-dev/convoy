@@ -96,6 +96,15 @@ func WriteRequestIDHeader(next http.Handler) http.Handler {
 	})
 }
 
+func WriteVersionHeader(header, version string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set(header, version)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func CanAccessFeature(fflag *fflag.FFlag, featureKey fflag.FeatureFlagKey) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -351,7 +360,7 @@ func requestLogFields(r *http.Request) map[string]interface{} {
 	return requestFields
 }
 
-func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t time.Time, lvl logrus.Level) map[string]interface{} {
+func responseLogFields(w middleware.WrapResponseWriter, wbuf *bytes.Buffer, t time.Time, _ logrus.Level) map[string]interface{} {
 	responseFields := map[string]interface{}{
 		"status":  w.Status(),
 		"byes":    w.BytesWritten(),
