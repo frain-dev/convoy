@@ -40,7 +40,7 @@
 							<div class="w-1/5">
 								<div convoy-tag [color]="event.status | statuscolor">{{ event?.status }}</div>
 							</div>
-							<div class="w-1/3 ml-2px max-w-[159px] whitespace-nowrap overflow-hidden text-ellipsis">{{ event?.endpoint_metadata?.title }}</div>
+							<div class="w-1/3 ml-2px max-w-[159px] whitespace-nowrap overflow-hidden text-ellipsis">{{ event?.endpoint_metadata?.name }}</div>
 							<div class="w-1/5 ml-2px">{{ event.created_at | date: 'mediumTime' }}</div>
 							<div class="w-1/5 ml-2px">{{ event.updated_at | date: 'mediumTime' }}</div>
 						</div>

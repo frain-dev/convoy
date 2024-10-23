@@ -29,7 +29,7 @@
 			<a
 				convoy-permission="Sources|MANAGE"
 				routerLink="./new"
-				class="w-full max-w-[440px] min-w-[300px] rounded-8px border border-dashed border-new.primary-400 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
+				class="w-full max-w-[378px] min-w-[300px] rounded-8px border border-dashed border-new.primary-400 flex items-center justify-center py-8 transition-all duration-300 hover:shadow-[0_4px_20px_-2px_rgba(50,50,71,0.08)]"
 			>
 				<svg width="22" height="22" class="mr-2 scale-75" fill="#477db3">
 					<use xlink:href="#plus-icon"></use>
@@ -38,7 +38,7 @@
 			</a>
 
 			<ng-container *ngFor="let source of sources?.content; let i = index">
-				<div convoy-card [id]="'source' + i" class="w-full max-w-[440px] min-w-[300px] py-20px h-fit">
+				<div convoy-card [id]="'source' + i" class="w-full max-w-[378px] min-w-[300px] py-20px h-fit">
 					<!-- outgoing project sources -->
 					<ng-container *ngIf="privateService.getProjectDetails?.type === 'outgoing'">
 						<div class="flex items-center justify-between px-24px">
