@@ -15,6 +15,71 @@ import (
 	"github.com/go-chi/render"
 )
 
+func (h *Handler) InitLoginSSO(w http.ResponseWriter, r *http.Request) {
+
+	configuration, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	lu := services.LoginUserSSOService{
+		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
+		LicenseKey:    configuration.LicenseKey,
+		Licenser:      h.A.Licenser,
+	}
+
+	resp, err := lu.Run()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Get Redirect successful", resp, http.StatusOK))
+}
+
+func (h *Handler) RedeemSSOToken(w http.ResponseWriter, r *http.Request) {
+
+	configuration, err := config.Get()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	lu := services.LoginUserSSOService{
+		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
+		LicenseKey:    configuration.LicenseKey,
+		Licenser:      h.A.Licenser,
+	}
+
+	tokenResp, err := lu.RedeemToken(r.URL.Query())
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		return
+	}
+
+	user, token, err := lu.LoginOrRegisterUser(r.Context(), h.A, tokenResp)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		return
+	}
+
+	u := &models.LoginUserResponse{
+		User:  user,
+		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
+}
+
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
 	if err := util.ReadJSON(r, &newUser); err != nil {

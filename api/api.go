@@ -246,6 +246,10 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		})
 	})
 
+	if handler.A.Licenser.EnterpriseSSO() {
+		router.Get("/saml", handler.RedeemSSOToken)
+	}
+
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
@@ -261,6 +265,9 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
+			if handler.A.Licenser.EnterpriseSSO() {
+				authRouter.Get("/sso", handler.InitLoginSSO)
+			}
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
@@ -562,6 +569,10 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		})
 	})
 
+	if handler.A.Licenser.EnterpriseSSO() {
+		router.Get("/saml", handler.RedeemSSOToken)
+	}
+
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
@@ -570,6 +581,9 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		// TODO(subomi): added these back for the tests to pass.
 		// What should we do in the future?
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
+			if handler.A.Licenser.EnterpriseSSO() {
+				authRouter.Get("/sso", handler.InitLoginSSO)
+			}
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
@@ -693,6 +707,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 }
 
 var guestRoutes = []string{
+	"/auth/sso",
 	"/auth/login",
 	"/auth/register",
 	"/auth/token/refresh",
