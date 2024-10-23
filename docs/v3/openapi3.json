@@ -193,23 +193,14 @@
 					"online",
 					"disabled"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"DeviceStatusOffline",
-					"DeviceStatusOnline",
-					"DeviceStatusDisabled"
-				]
+				"type": "string"
 			},
 			"datastore.EncodingType": {
 				"enum": [
 					"base64",
 					"hex"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"Base64Encoding",
-					"HexEncoding"
-				]
+				"type": "string"
 			},
 			"datastore.Endpoint": {
 				"properties": {
@@ -230,6 +221,9 @@
 					},
 					"events": {
 						"type": "integer"
+					},
+					"failure_rate": {
+						"type": "number"
 					},
 					"http_timeout": {
 						"type": "integer"
@@ -291,10 +285,7 @@
 				"enum": [
 					"api_key"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"APIKeyAuthentication"
-				]
+				"type": "string"
 			},
 			"datastore.EndpointStatus": {
 				"enum": [
@@ -303,13 +294,7 @@
 					"pending",
 					"paused"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"ActiveEndpointStatus",
-					"InactiveEndpointStatus",
-					"PendingEndpointStatus",
-					"PausedEndpointStatus"
-				]
+				"type": "string"
 			},
 			"datastore.Event": {
 				"properties": {
@@ -396,15 +381,7 @@
 					"Success",
 					"Retry"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"ScheduledEventStatus",
-					"ProcessingEventStatus",
-					"DiscardedEventStatus",
-					"FailureEventStatus",
-					"SuccessEventStatus",
-					"RetryEventStatus"
-				]
+				"type": "string"
 			},
 			"datastore.EventStatus": {
 				"enum": [
@@ -414,14 +391,7 @@
 					"Retry",
 					"Pending"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"ProcessingStatus",
-					"FailureStatus",
-					"SuccessStatus",
-					"RetryStatus",
-					"PendingStatus"
-				]
+				"type": "string"
 			},
 			"datastore.FilterConfiguration": {
 				"properties": {
@@ -588,11 +558,7 @@
 					"next",
 					"prev"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"Next",
-					"Prev"
-				]
+				"type": "string"
 			},
 			"datastore.PaginationData": {
 				"properties": {
@@ -652,13 +618,7 @@
 					"kafka",
 					"amqp"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"SqsPubSub",
-					"GooglePubSub",
-					"KafkaPubSub",
-					"AmqpPubSub"
-				]
+				"type": "string"
 			},
 			"datastore.RateLimitConfiguration": {
 				"properties": {
@@ -799,12 +759,7 @@
 					"twitter",
 					"shopify"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"GithubSourceProvider",
-					"TwitterSourceProvider",
-					"ShopifySourceProvider"
-				]
+				"type": "string"
 			},
 			"datastore.SourceType": {
 				"enum": [
@@ -813,35 +768,21 @@
 					"pub_sub",
 					"db_change_stream"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"HTTPSource",
-					"RestApiSource",
-					"PubSubSource",
-					"DBChangeStream"
-				]
+				"type": "string"
 			},
 			"datastore.StrategyProvider": {
 				"enum": [
 					"linear",
 					"exponential"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"LinearStrategyProvider",
-					"ExponentialStrategyProvider"
-				]
+				"type": "string"
 			},
 			"datastore.SubscriptionType": {
 				"enum": [
 					"cli",
 					"api"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"SubscriptionTypeCLI",
-					"SubscriptionTypeAPI"
-				]
+				"type": "string"
 			},
 			"datastore.TwitterProviderConfig": {
 				"properties": {
@@ -875,13 +816,7 @@
 					"basic_auth",
 					"api_key"
 				],
-				"type": "string",
-				"x-enum-varnames": [
-					"NoopVerifier",
-					"HMacVerifier",
-					"BasicAuthVerifier",
-					"APIKeyVerifier"
-				]
+				"type": "string"
 			},
 			"handlers.Stub": {
 				"type": "object"
@@ -968,6 +903,10 @@
 						"type": "string"
 					}
 				},
+				"required": [
+					"header_name",
+					"header_value"
+				],
 				"type": "object"
 			},
 			"models.BasicAuth": {
@@ -979,6 +918,10 @@
 						"type": "string"
 					}
 				},
+				"required": [
+					"password",
+					"username"
+				],
 				"type": "object"
 			},
 			"models.BroadcastEvent": {
@@ -1164,7 +1107,7 @@
 								"$ref": "#/components/schemas/models.VerifierConfig"
 							}
 						],
-						"description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects."
+						"description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects. If set, type is required and match the verifier\ntype object you choose."
 					}
 				},
 				"type": "object"
@@ -1309,6 +1252,9 @@
 					},
 					"events": {
 						"type": "integer"
+					},
+					"failure_rate": {
+						"type": "number"
 					},
 					"http_timeout": {
 						"type": "integer"
@@ -1647,6 +1593,12 @@
 						"type": "string"
 					}
 				},
+				"required": [
+					"encoding",
+					"hash",
+					"header",
+					"secret"
+				],
 				"type": "object"
 			},
 			"models.IDs": {
@@ -2166,7 +2118,7 @@
 								"$ref": "#/components/schemas/models.VerifierConfig"
 							}
 						],
-						"description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects."
+						"description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects.  If set, type is required and match the verifier\ntype object you choose."
 					}
 				},
 				"type": "object"
@@ -2243,6 +2195,9 @@
 						"$ref": "#/components/schemas/datastore.VerifierType"
 					}
 				},
+				"required": [
+					"type"
+				],
 				"type": "object"
 			},
 			"util.ServerResponse": {
@@ -2985,6 +2940,131 @@
 				]
 			}
 		},
+		"/v1/projects/{projectID}/endpoints/{endpointID}/activate": {
+			"post": {
+				"description": "Activated an inactive endpoint",
+				"operationId": "ActivateEndpoint",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "Endpoint ID",
+						"in": "path",
+						"name": "endpointID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"202": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.EndpointResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Accepted"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Activate endpoint",
+				"tags": [
+					"Endpoints"
+				]
+			}
+		},
 		"/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
 			"put": {
 				"description": "This endpoint expires and re-generates the endpoint secret.",
@@ -3124,7 +3204,7 @@
 		},
 		"/v1/projects/{projectID}/endpoints/{endpointID}/pause": {
 			"put": {
-				"description": "This endpoint toggles an endpoint status between the active and paused states",
+				"description": "Toggles an endpoint's status between active and paused states",
 				"operationId": "PauseEndpoint",
 				"parameters": [
 					{
@@ -7043,6 +7123,133 @@
 				"summary": "Create a source",
 				"tags": [
 					"Sources"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/sources/test_function": {
+			"post": {
+				"description": "This endpoint validates that a filter will match a certain payload structure.",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.FunctionRequest"
+							}
+						}
+					},
+					"description": "Function Details",
+					"required": true,
+					"x-originalParamName": "filter"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.FunctionResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Validate source function",
+				"tags": [
+					"Subscriptions"
 				]
 			}
 		},
