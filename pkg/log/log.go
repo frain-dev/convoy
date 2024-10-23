@@ -95,7 +95,7 @@ func (l Level) ToLogrusLevel() (logrus.Level, error) {
 }
 
 // NewLogger creates and returns a new instance of Logger.
-// Log level is set to DebugLevel by default.
+// The log level is set to ErrorLevel by default.
 func NewLogger(out io.Writer) *Logger {
 	log := &logrus.Logger{
 		Out: out,
@@ -218,7 +218,7 @@ func (l *Logger) SetLevel(v Level) {
 	l.logger.SetLevel(lvl)
 }
 
-// WithField sets logger fields
+// SetPrefix sets logger fields
 func (l *Logger) SetPrefix(value interface{}) {
 	l.entry = l.entry.WithField("source", value)
 }

@@ -32,18 +32,6 @@ import (
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
-	cfg, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
-		return
-	}
-
-	err = a.A.Rate.Allow(r.Context(), cfg.InstanceId, cfg.InstanceIngestRate)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("rate limit exceeded", http.StatusTooManyRequests))
-		return
-	}
-
 	// s.AppService.CountProjectApplications()
 	// 1. Retrieve mask ID
 	maskID := chi.URLParam(r, "maskID")

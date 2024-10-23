@@ -13,7 +13,7 @@ ui_install:
 	scripts/ui.sh -b $(type)
 
 build:
-	scripts/build.sh -b $(type)
+	scripts/build.sh
 
 integration_tests:
 	go run ./cmd migrate up

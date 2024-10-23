@@ -153,6 +153,8 @@ definitions:
         type: string
       events:
         type: integer
+      failure_rate:
+        type: number
       http_timeout:
         type: integer
       name:
@@ -241,6 +243,8 @@ definitions:
         type: string
       is_duplicate_event:
         type: boolean
+      metadata:
+        type: string
       project_id:
         type: string
       raw:
@@ -249,6 +253,8 @@ definitions:
         type: string
       source_metadata:
         $ref: '#/definitions/datastore.Source'
+      status:
+        $ref: '#/definitions/datastore.EventStatus'
       uid:
         type: string
       updated_at:
@@ -272,6 +278,20 @@ definitions:
     - FailureEventStatus
     - SuccessEventStatus
     - RetryEventStatus
+  datastore.EventStatus:
+    enum:
+    - Processing
+    - Failure
+    - Success
+    - Retry
+    - Pending
+    type: string
+    x-enum-varnames:
+    - ProcessingStatus
+    - FailureStatus
+    - SuccessStatus
+    - RetryStatus
+    - PendingStatus
   datastore.FilterConfiguration:
     properties:
       event_types:
@@ -641,6 +661,9 @@ definitions:
         type: string
       header_value:
         type: string
+    required:
+    - header_name
+    - header_value
     type: object
   models.BasicAuth:
     properties:
@@ -648,6 +671,9 @@ definitions:
         type: string
       username:
         type: string
+    required:
+    - password
+    - username
     type: object
   models.BroadcastEvent:
     properties:
@@ -808,7 +834,8 @@ definitions:
         - $ref: '#/definitions/models.VerifierConfig'
         description: |-
           Verifiers are used to verify webhook events ingested in incoming
-          webhooks projects.
+          webhooks projects. If set, type is required and match the verifier
+          type object you choose.
     type: object
   models.CreateSubscription:
     properties:
@@ -910,6 +937,8 @@ definitions:
         type: string
       events:
         type: integer
+      failure_rate:
+        type: number
       http_timeout:
         type: integer
       name:
@@ -1025,6 +1054,8 @@ definitions:
         type: string
       is_duplicate_event:
         type: boolean
+      metadata:
+        type: string
       project_id:
         type: string
       raw:
@@ -1033,6 +1064,8 @@ definitions:
         type: string
       source_metadata:
         $ref: '#/definitions/datastore.Source'
+      status:
+        $ref: '#/definitions/datastore.EventStatus'
       uid:
         type: string
       updated_at:
@@ -1139,6 +1172,11 @@ definitions:
         type: string
       secret:
         type: string
+    required:
+    - encoding
+    - hash
+    - header
+    - secret
     type: object
   models.IDs:
     properties:
@@ -1512,7 +1550,8 @@ definitions:
         - $ref: '#/definitions/models.VerifierConfig'
         description: |-
           Verifiers are used to verify webhook events ingested in incoming
-          webhooks projects.
+          webhooks projects.  If set, type is required and match the verifier
+          type object you choose.
     type: object
   models.UpdateSubscription:
     properties:
@@ -1560,6 +1599,8 @@ definitions:
         $ref: '#/definitions/models.HMac'
       type:
         $ref: '#/definitions/datastore.VerifierType'
+    required:
+    - type
     type: object
   util.ServerResponse:
     properties:
@@ -1933,6 +1974,67 @@ paths:
       summary: Update an endpoint
       tags:
       - Endpoints
+  /v1/projects/{projectID}/endpoints/{endpointID}/activate:
+    post:
+      consumes:
+      - application/json
+      description: Activated an inactive endpoint
+      operationId: ActivateEndpoint
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Endpoint ID
+        in: path
+        name: endpointID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.EndpointResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Activate endpoint
+      tags:
+      - Endpoints
   /v1/projects/{projectID}/endpoints/{endpointID}/expire_secret:
     put:
       consumes:
@@ -2004,8 +2106,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: This endpoint toggles an endpoint status between the active and
-        paused states
+      description: Toggles an endpoint's status between active and paused states
       operationId: PauseEndpoint
       parameters:
       - description: Project ID
@@ -4171,6 +4272,68 @@ paths:
       summary: Update a source
       tags:
       - Sources
+  /v1/projects/{projectID}/sources/test_function:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint validates that a filter will match a certain payload
+        structure.
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Function Details
+        in: body
+        name: filter
+        required: true
+        schema:
+          $ref: '#/definitions/models.FunctionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.FunctionResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Validate source function
+      tags:
+      - Subscriptions
   /v1/projects/{projectID}/subscriptions:
     get:
       consumes:

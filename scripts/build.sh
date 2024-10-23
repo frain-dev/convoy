@@ -1,14 +1,8 @@
 #!/bin/bash
 
-helpFunc() {
-	echo ""
-	echo "Usage: $0 -b"
-	echo -e "\t-b Specify the build flag (either ce or ee)"
-	exit 1
-}
-
-
 buildConvoy() {
+    echo "Building Convoy ..."
+
 	# Build UI.
 	UIDIR="api/ui/build"
 
@@ -25,47 +19,14 @@ buildConvoy() {
 	npm i
 
 	# Run production build
-	if [[ "$build" == "ce" ]]; then
-		npm run build
-	elif [[ "$build" == "ee" ]]; then
-		npm run build:ee
-	fi
+	npm run build
 
 	# Copy build artifacts
 	cd ../../../
 	mv web/ui/dashboard/dist/* $UIDIR
 
 	# Build Binary
-	if [[ "$build" == "ce" ]]; then
-		go build -o convoy ./cmd/*.go
-	elif [[ "$build" == "ee" ]]; then
-		go build -o convoy-ee ./ee/cmd/*.go
-	fi
+	go build -o convoy ./cmd/*.go
 }
 
-while getopts ":b:" opt; do
-	case "$opt" in
-		b)
-			build="$OPTARG"
-
-			if [[ "$build" == "ce" ]]; then
-				echo "Building Convoy Community Edition ..."
-			elif [[ "$build" == "ee" ]]; then
-				echo "Building Convoy Enterprise Edition ..."
-			else
-				helpFunc
-			fi
-
-			# Build Convoy
-			echo ""
-			buildConvoy
-			;;
-		?) helpFunc ;;
-		:) helpFunc ;;
-	esac
-done
-
-if [ -z "$build" ]; then
-	echo "Missing required argument: -b build">&2
-	exit 1
-fi
+buildConvoy

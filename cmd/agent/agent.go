@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"time"
@@ -26,8 +25,6 @@ import (
 
 func AddAgentCommand(a *cli.App) *cobra.Command {
 	var agentPort uint32
-	var ingestPort uint32
-	var workerPort uint32
 	var logLevel string
 	var consumerPoolSize int
 	var interval int
@@ -110,11 +107,9 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
 	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "SMTP Port")
 
-	cmd.Flags().Uint32Var(&agentPort, "agent-port", 0, "Agent port")
-	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
-	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 0, "Ingest port")
+	cmd.Flags().Uint32Var(&agentPort, "port", 0, "Agent port")
 
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
+	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
 	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")
@@ -122,30 +117,27 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func startServerComponent(ctx context.Context, a *cli.App) error {
+func startServerComponent(_ context.Context, a *cli.App) error {
+	lo := a.Logger.(*log.Logger)
+	lo.SetPrefix("agent")
+
 	cfg, err := config.Get()
 	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to load configuration")
+		lo.WithError(err).Fatal("Failed to load configuration")
 	}
 
 	start := time.Now()
-	a.Logger.Info("Starting Convoy data plane ...")
+	lo.Info("Starting Convoy data plane")
 
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB, a.Cache)
 	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
 	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB, a.Cache)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache)
 	if err != nil {
-		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
+		lo.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	flag, err := fflag.NewFFlag(&cfg)
-	if err != nil {
-		a.Logger.WithError(err).Fatal("failed to create fflag controller")
-	}
-
-	lo := a.Logger.(*log.Logger)
-	lo.SetPrefix("api server")
+	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {
@@ -164,6 +156,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 			Logger:   lo,
 			Cache:    a.Cache,
 			Rate:     a.Rate,
+			Redis:    a.Redis,
 			Licenser: a.Licenser,
 		})
 	if err != nil {
@@ -172,7 +165,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 
 	srv.SetHandler(evHandler.BuildDataPlaneRoutes())
 
-	fmt.Printf("Started convoy server in %s\n", time.Since(start))
+	lo.Infof("Started convoy server in %s", time.Since(start))
 
 	httpConfig := cfg.Server.HTTP
 	if httpConfig.SSL {
@@ -181,7 +174,7 @@ func startServerComponent(ctx context.Context, a *cli.App) error {
 		return nil
 	}
 
-	fmt.Printf("Starting Convoy Agent on port %v\n", cfg.Server.HTTP.AgentPort)
+	lo.Infof("Starting Convoy Agent on port %v", cfg.Server.HTTP.AgentPort)
 
 	go func() {
 		srv.Listen()
@@ -194,32 +187,13 @@ func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, erro
 	c := &config.Configuration{}
 
 	// PORT
-	port, err := cmd.Flags().GetUint32("agent-port")
+	port, err := cmd.Flags().GetUint32("port")
 	if err != nil {
 		return nil, err
 	}
 
 	if port != 0 {
 		c.Server.HTTP.AgentPort = port
-	}
-
-	ingestPort, err := cmd.Flags().GetUint32("ingest-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if ingestPort != 0 {
-		c.Server.HTTP.IngestPort = ingestPort
-	}
-
-	// CONVOY_WORKER_PORT
-	workerPort, err := cmd.Flags().GetUint32("worker-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if workerPort != 0 {
-		c.Server.HTTP.WorkerPort = workerPort
 	}
 
 	logLevel, err := cmd.Flags().GetString("log-level")

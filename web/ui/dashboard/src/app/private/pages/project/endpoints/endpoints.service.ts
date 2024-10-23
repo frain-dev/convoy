@@ -89,4 +89,20 @@ export class EndpointsService {
 			}
 		});
 	}
+
+	activateEndpoint(endpointId: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/endpoints/${endpointId}/activate`,
+					method: 'post',
+					level: 'org_project'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

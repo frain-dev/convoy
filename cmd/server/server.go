@@ -107,10 +107,7 @@ func startConvoyServer(a *cli.App) error {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	flag, err := fflag.NewFFlag(&cfg)
-	if err != nil {
-		a.Logger.WithError(err).Fatal("failed to create fflag controller")
-	}
+	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
@@ -133,6 +130,7 @@ func startConvoyServer(a *cli.App) error {
 			DB:       a.DB,
 			Queue:    a.Queue,
 			Logger:   lo,
+			Redis:    a.Redis,
 			Cache:    a.Cache,
 			Rate:     a.Rate,
 			Licenser: a.Licenser,
@@ -157,7 +155,7 @@ func startConvoyServer(a *cli.App) error {
 	s.RegisterTask("0 0 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB)
+	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 
 	// Start scheduler
 	s.Start()

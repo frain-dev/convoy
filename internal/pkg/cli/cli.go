@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -18,6 +19,7 @@ import (
 type App struct {
 	Version  string
 	DB       database.Database
+	Redis    redis.UniversalClient
 	Queue    queue.Queuer
 	Logger   log.StdLogger
 	Cache    cache.Cache

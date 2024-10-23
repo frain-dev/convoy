@@ -86,12 +86,11 @@ func tokenize(ctx context.Context, eventRepo datastore.EventRepository, jobRepo 
 	if err != nil {
 		return err
 	}
-	fflag, err := fflag2.NewFFlag(&cfg)
-	if err != nil {
-		return nil
-	}
+
+	fflag := fflag2.NewFFlag(cfg.EnableFeatureFlag)
+
 	if !fflag.CanAccessFeature(fflag2.FullTextSearch) {
-		return fflag2.ErrFeatureNotEnabled
+		return fflag2.ErrFullTextSearchNotEnabled
 	}
 
 	// check if a job for a given project is currently running

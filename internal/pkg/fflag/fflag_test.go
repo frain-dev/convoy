@@ -26,7 +26,9 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     disabled,
+					IpRules:        disabled,
 					FullTextSearch: enabled,
+					CircuitBreaker: disabled,
 				},
 			},
 			args: struct {
@@ -43,7 +45,9 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     disabled,
+					IpRules:        disabled,
 					FullTextSearch: enabled,
+					CircuitBreaker: disabled,
 				},
 			},
 			args: struct {
@@ -60,7 +64,9 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     enabled,
+					IpRules:        disabled,
 					FullTextSearch: enabled,
+					CircuitBreaker: disabled,
 				},
 			},
 			args: struct {
@@ -77,7 +83,9 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     enabled,
+					IpRules:        disabled,
 					FullTextSearch: enabled,
+					CircuitBreaker: disabled,
 				},
 			},
 			args: struct {
@@ -95,6 +103,8 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     disabled,
 					FullTextSearch: disabled,
+					CircuitBreaker: disabled,
+					IpRules:        disabled,
 				},
 			},
 			args: struct {
@@ -112,6 +122,8 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     disabled,
 					FullTextSearch: disabled,
+					CircuitBreaker: disabled,
+					IpRules:        disabled,
 				},
 			},
 			args: struct {
@@ -163,6 +175,8 @@ func TestNewFFlag(t *testing.T) {
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     disabled,
 					FullTextSearch: disabled,
+					CircuitBreaker: disabled,
+					IpRules:        disabled,
 				},
 			},
 			wantErr: false,
@@ -178,6 +192,8 @@ func TestNewFFlag(t *testing.T) {
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     enabled,
 					FullTextSearch: disabled,
+					CircuitBreaker: disabled,
+					IpRules:        disabled,
 				},
 			},
 			wantErr: false,
@@ -191,6 +207,8 @@ func TestNewFFlag(t *testing.T) {
 				Features: map[FeatureFlagKey]FeatureFlagState{
 					Prometheus:     disabled,
 					FullTextSearch: disabled,
+					CircuitBreaker: disabled,
+					IpRules:        disabled,
 				},
 			},
 			wantErr: false,
@@ -198,11 +216,8 @@ func TestNewFFlag(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewFFlag(tt.args.c)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewFFlag() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+			got := NewFFlag(tt.args.c.EnableFeatureFlag)
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewFFlag() got = %v, want %v", got, tt.want)
 			}

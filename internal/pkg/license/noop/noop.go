@@ -11,7 +11,7 @@ import (
 
 type Licenser struct{}
 
-func (Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
+func (Licenser) FeatureListJSON(_ context.Context) (json.RawMessage, error) {
 	return []byte{}, nil
 }
 
@@ -19,15 +19,15 @@ func NewLicenser() *Licenser {
 	return &Licenser{}
 }
 
-func (Licenser) CreateOrg(ctx context.Context) (bool, error) {
+func (Licenser) CreateOrg(_ context.Context) (bool, error) {
 	return true, nil
 }
 
-func (Licenser) CreateUser(ctx context.Context) (bool, error) {
+func (Licenser) CreateUser(_ context.Context) (bool, error) {
 	return true, nil
 }
 
-func (Licenser) CreateProject(ctx context.Context) (bool, error) {
+func (Licenser) CreateProject(_ context.Context) (bool, error) {
 	return true, nil
 }
 
@@ -99,6 +99,10 @@ func (Licenser) PortalLinks() bool {
 	return true
 }
 
+func (Licenser) CircuitBreaking() bool {
+	return true
+}
+
 func (Licenser) MultiPlayerMode() bool {
 	return true
 }
@@ -108,5 +112,9 @@ func (Licenser) IngestRate() bool {
 }
 
 func (Licenser) AgentExecutionMode() bool {
+	return true
+}
+
+func (Licenser) IpRules() bool {
 	return true
 }

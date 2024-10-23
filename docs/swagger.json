@@ -644,6 +644,117 @@
                 }
             }
         },
+        "/v1/projects/{projectID}/endpoints/{endpointID}/activate": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Activated an inactive endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Endpoints"
+                ],
+                "summary": "Activate endpoint",
+                "operationId": "ActivateEndpoint",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Endpoint ID",
+                        "name": "endpointID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.EndpointResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{projectID}/endpoints/{endpointID}/expire_secret": {
             "put": {
                 "security": [
@@ -771,7 +882,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint toggles an endpoint status between the active and paused states",
+                "description": "Toggles an endpoint's status between active and paused states",
                 "consumes": [
                     "application/json"
                 ],
@@ -4238,6 +4349,118 @@
                 }
             }
         },
+        "/v1/projects/{projectID}/sources/test_function": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "This endpoint validates that a filter will match a certain payload structure.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Subscriptions"
+                ],
+                "summary": "Validate source function",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Project ID",
+                        "name": "projectID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Function Details",
+                        "name": "filter",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.FunctionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/models.FunctionResponse"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/util.ServerResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handlers.Stub"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/projects/{projectID}/sources/{sourceID}": {
             "get": {
                 "security": [
@@ -5660,6 +5883,9 @@
                 "events": {
                     "type": "integer"
                 },
+                "failure_rate": {
+                    "type": "number"
+                },
                 "http_timeout": {
                     "type": "integer"
                 },
@@ -5786,6 +6012,9 @@
                 "is_duplicate_event": {
                     "type": "boolean"
                 },
+                "metadata": {
+                    "type": "string"
+                },
                 "project_id": {
                     "type": "string"
                 },
@@ -5797,6 +6026,9 @@
                 },
                 "source_metadata": {
                     "$ref": "#/definitions/datastore.Source"
+                },
+                "status": {
+                    "$ref": "#/definitions/datastore.EventStatus"
                 },
                 "uid": {
                     "type": "string"
@@ -5826,6 +6058,23 @@
                 "FailureEventStatus",
                 "SuccessEventStatus",
                 "RetryEventStatus"
+            ]
+        },
+        "datastore.EventStatus": {
+            "type": "string",
+            "enum": [
+                "Processing",
+                "Failure",
+                "Success",
+                "Retry",
+                "Pending"
+            ],
+            "x-enum-varnames": [
+                "ProcessingStatus",
+                "FailureStatus",
+                "SuccessStatus",
+                "RetryStatus",
+                "PendingStatus"
             ]
         },
         "datastore.FilterConfiguration": {
@@ -6366,6 +6615,10 @@
         },
         "models.ApiKey": {
             "type": "object",
+            "required": [
+                "header_name",
+                "header_value"
+            ],
             "properties": {
                 "header_name": {
                     "type": "string"
@@ -6377,6 +6630,10 @@
         },
         "models.BasicAuth": {
             "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
             "properties": {
                 "password": {
                     "type": "string"
@@ -6565,7 +6822,7 @@
                     ]
                 },
                 "verifier": {
-                    "description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects.",
+                    "description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects. If set, type is required and match the verifier\ntype object you choose.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.VerifierConfig"
@@ -6715,6 +6972,9 @@
                 },
                 "events": {
                     "type": "integer"
+                },
+                "failure_rate": {
+                    "type": "number"
                 },
                 "http_timeout": {
                     "type": "integer"
@@ -6885,6 +7145,9 @@
                 "is_duplicate_event": {
                     "type": "boolean"
                 },
+                "metadata": {
+                    "type": "string"
+                },
                 "project_id": {
                     "type": "string"
                 },
@@ -6896,6 +7159,9 @@
                 },
                 "source_metadata": {
                     "$ref": "#/definitions/datastore.Source"
+                },
+                "status": {
+                    "$ref": "#/definitions/datastore.EventStatus"
                 },
                 "uid": {
                     "type": "string"
@@ -7033,6 +7299,12 @@
         },
         "models.HMac": {
             "type": "object",
+            "required": [
+                "encoding",
+                "hash",
+                "header",
+                "secret"
+            ],
             "properties": {
                 "encoding": {
                     "$ref": "#/definitions/datastore.EncodingType"
@@ -7561,7 +7833,7 @@
                     ]
                 },
                 "verifier": {
-                    "description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects.",
+                    "description": "Verifiers are used to verify webhook events ingested in incoming\nwebhooks projects.  If set, type is required and match the verifier\ntype object you choose.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/models.VerifierConfig"
@@ -7629,6 +7901,9 @@
         },
         "models.VerifierConfig": {
             "type": "object",
+            "required": [
+                "type"
+            ],
             "properties": {
                 "api_key": {
                     "$ref": "#/definitions/models.ApiKey"

@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -73,17 +75,26 @@ func TestProcessInviteService_Run(t *testing.T) {
 					},
 					nil,
 				)
-				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
-					OrganisationID: "123ab",
-					Status:         datastore.InviteStatusAccepted,
-					ExpiresAt:      expiry,
-					InviteeEmail:   "test@email.com",
-					Role: auth.Role{
-						Type:     auth.RoleAdmin,
-						Project:  "ref",
-						Endpoint: "",
-					},
-				}).Times(1).Return(nil)
+				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Cond(func(x any) bool {
+					iv := x.(*datastore.OrganisationInvite)
+
+					fmt.Printf("iv %+v\n", iv)
+
+					expected := &datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusAccepted,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:     auth.RoleAdmin,
+							Project:  "ref",
+							Endpoint: "",
+						},
+						DeletedAt: iv.DeletedAt, // copy deleted at
+					}
+
+					return reflect.DeepEqual(iv, expected)
+				})).Times(1).Return(nil)
 
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(
@@ -263,17 +274,26 @@ func TestProcessInviteService_Run(t *testing.T) {
 					},
 					nil,
 				)
-				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
-					OrganisationID: "123ab",
-					Status:         datastore.InviteStatusDeclined,
-					ExpiresAt:      expiry,
-					InviteeEmail:   "test@email.com",
-					Role: auth.Role{
-						Type:     auth.RoleAdmin,
-						Project:  "ref",
-						Endpoint: "",
-					},
-				}).Times(1).Return(nil)
+
+				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Cond(func(x any) bool {
+					iv := x.(*datastore.OrganisationInvite)
+
+					expected := &datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusDeclined,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:     auth.RoleAdmin,
+							Project:  "ref",
+							Endpoint: "",
+						},
+						DeletedAt: iv.DeletedAt, // copy deleted at
+					}
+
+					return reflect.DeepEqual(iv, expected)
+				})).Times(1).Return(nil)
+
 				licenser, _ := pis.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().CreateUser(gomock.Any()).Times(1).Return(true, nil)
 			},
@@ -344,17 +364,24 @@ func TestProcessInviteService_Run(t *testing.T) {
 					},
 					nil,
 				)
-				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
-					OrganisationID: "123ab",
-					Status:         datastore.InviteStatusAccepted,
-					ExpiresAt:      expiry,
-					InviteeEmail:   "test@email.com",
-					Role: auth.Role{
-						Type:     auth.RoleAdmin,
-						Project:  "ref",
-						Endpoint: "",
-					},
-				}).Times(1).Return(nil)
+				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Cond(func(x any) bool {
+					iv := x.(*datastore.OrganisationInvite)
+
+					expected := &datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusAccepted,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:     auth.RoleAdmin,
+							Project:  "ref",
+							Endpoint: "",
+						},
+						DeletedAt: iv.DeletedAt, // copy deleted at
+					}
+
+					return reflect.DeepEqual(iv, expected)
+				})).Times(1).Return(nil)
 
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").
@@ -613,17 +640,24 @@ func TestProcessInviteService_Run(t *testing.T) {
 					},
 					nil,
 				)
-				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), &datastore.OrganisationInvite{
-					OrganisationID: "123ab",
-					Status:         datastore.InviteStatusAccepted,
-					ExpiresAt:      expiry,
-					InviteeEmail:   "test@email.com",
-					Role: auth.Role{
-						Type:     auth.RoleAdmin,
-						Project:  "ref",
-						Endpoint: "",
-					},
-				}).Times(1).Return(errors.New("failed"))
+				oir.EXPECT().UpdateOrganisationInvite(gomock.Any(), gomock.Cond(func(x any) bool {
+					iv := x.(*datastore.OrganisationInvite)
+
+					expected := &datastore.OrganisationInvite{
+						OrganisationID: "123ab",
+						Status:         datastore.InviteStatusAccepted,
+						ExpiresAt:      expiry,
+						InviteeEmail:   "test@email.com",
+						Role: auth.Role{
+							Type:     auth.RoleAdmin,
+							Project:  "ref",
+							Endpoint: "",
+						},
+						DeletedAt: iv.DeletedAt, // copy deleted at
+					}
+
+					return reflect.DeepEqual(iv, expected)
+				})).Times(1).Return(errors.New("failed"))
 
 				u, _ := pis.UserRepo.(*mocks.MockUserRepository)
 				u.EXPECT().FindUserByEmail(gomock.Any(), "test@email.com").Times(1).Return(

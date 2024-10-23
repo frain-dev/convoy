@@ -3,13 +3,15 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"net/http"
+	"strings"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
@@ -19,6 +21,8 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
@@ -131,7 +135,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	sc, err := smtp.NewClient(&cfg.SMTP)
 	if err != nil {
-		a.Logger.WithError(err).Error("Failed to create smtp client")
+		lo.WithError(err).Error("Failed to create smtp client")
 		return err
 	}
 
@@ -225,11 +229,11 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	configuration, err := configRepo.LoadConfiguration(context.Background())
 	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to instance configuration")
+		lo.WithError(err).Fatal("Failed to instance configuration")
 		return err
 	}
 
-	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, a.Logger, 0)
+	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, lo, 0)
 	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
 
 	err = memorystore.DefaultStore.Register("subscriptions", subscriptionsTable)
@@ -245,15 +249,65 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	go memorystore.DefaultStore.Sync(ctx, interval)
 
-	newTelemetry := telemetry.NewTelemetry(a.Logger.(*log.Logger), configuration,
+	featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
+	newTelemetry := telemetry.NewTelemetry(lo, configuration,
 		telemetry.OptionTracker(counter),
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
-	dispatcher, err := net.NewDispatcher(cfg.Server.HTTP.HttpProxy, a.Licenser, false)
+	dispatcher, err := net.NewDispatcher(
+		a.Licenser,
+		featureFlag,
+		net.LoggerOption(lo),
+		net.ProxyOption(cfg.Server.HTTP.HttpProxy),
+		net.AllowListOption(cfg.Dispatcher.AllowList),
+		net.BlockListOption(cfg.Dispatcher.BlockList),
+		net.InsecureSkipVerifyOption(cfg.Dispatcher.InsecureSkipVerify),
+	)
 	if err != nil {
-		a.Logger.WithError(err).Fatal("Failed to create new net dispatcher")
+		lo.WithError(err).Fatal("Failed to create new net dispatcher")
 		return err
+	}
+
+	var circuitBreakerManager *cb.CircuitBreakerManager
+
+	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) {
+		circuitBreakerManager, err = cb.NewCircuitBreakerManager(
+			cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
+			cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
+			cb.ClockOption(clock.NewRealClock()),
+			cb.LoggerOption(lo),
+			cb.NotificationFunctionOption(func(n cb.NotificationType, c cb.CircuitBreakerConfig, b cb.CircuitBreaker) error {
+				endpointId := strings.Split(b.Key, ":")[1]
+				project, funcErr := projectRepo.FetchProjectByID(ctx, b.TenantId)
+				if funcErr != nil {
+					return funcErr
+				}
+
+				endpoint, funcErr := endpointRepo.FindEndpointByID(ctx, endpointId, b.TenantId)
+				if funcErr != nil {
+					return funcErr
+				}
+
+				switch n {
+				case cb.TypeDisableResource:
+					breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
+					if breakerErr != nil {
+						return breakerErr
+					}
+				default:
+					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
+				}
+				return nil
+			}),
+		)
+		if err != nil {
+			lo.WithError(err).Fatal("Failed to create circuit breaker manager")
+		}
+
+		go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
+	} else {
+		lo.Warn(fflag.ErrCircuitBreakerNotEnabled)
 	}
 
 	channels := make(map[string]task.EventChannel)
@@ -271,6 +325,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		rateLimiter,
 		dispatcher,
 		attemptRepo,
+		circuitBreakerManager,
+		featureFlag,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
@@ -286,11 +342,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
+		a.Licenser,
 		projectRepo,
 		a.Queue,
 		rateLimiter,
 		dispatcher,
 		attemptRepo,
+		circuitBreakerManager,
+		featureFlag,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
@@ -340,11 +399,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, rd), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
-	fflag, err := fflag2.NewFFlag(&cfg)
-	if err != nil {
-		return nil
-	}
-	if fflag.CanAccessFeature(fflag2.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
+	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {
 		consumer.RegisterHandlers(convoy.TokenizeSearch, task.GeneralTokenizerHandler(projectRepo, eventRepo, jobRepo, rd), nil)
 		consumer.RegisterHandlers(convoy.TokenizeSearchForProject, task.TokenizerHandler(eventRepo, jobRepo), nil)
 	}
@@ -353,11 +408,11 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB)
+	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
 
 	// start worker
 	consumer.Start()
-	fmt.Println("Starting Convoy Consumer Pool")
+	lo.Println("Starting Convoy Consumer Pool")
 
 	return ctx.Err()
 }

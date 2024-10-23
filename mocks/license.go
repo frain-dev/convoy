@@ -164,6 +164,20 @@ func (mr *MockLicenserMockRecorder) CanExportPrometheusMetrics() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanExportPrometheusMetrics", reflect.TypeOf((*MockLicenser)(nil).CanExportPrometheusMetrics))
 }
 
+// CircuitBreaking mocks base method.
+func (m *MockLicenser) CircuitBreaking() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CircuitBreaking")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CircuitBreaking indicates an expected call of CircuitBreaking.
+func (mr *MockLicenserMockRecorder) CircuitBreaking() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CircuitBreaking", reflect.TypeOf((*MockLicenser)(nil).CircuitBreaking))
+}
+
 // ConsumerPoolTuning mocks base method.
 func (m *MockLicenser) ConsumerPoolTuning() bool {
 	m.ctrl.T.Helper()
@@ -264,6 +278,20 @@ func (m *MockLicenser) IngestRate() bool {
 func (mr *MockLicenserMockRecorder) IngestRate() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IngestRate", reflect.TypeOf((*MockLicenser)(nil).IngestRate))
+}
+
+// IpRules mocks base method.
+func (m *MockLicenser) IpRules() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IpRules")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IpRules indicates an expected call of IpRules.
+func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IpRules", reflect.TypeOf((*MockLicenser)(nil).IpRules))
 }
 
 // MultiPlayerMode mocks base method.

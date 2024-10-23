@@ -14,7 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 
 	"github.com/frain-dev/convoy/util"
-	"github.com/grafana/pyroscope-go"
+	pyro "github.com/grafana/pyroscope-go"
 
 	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 
@@ -122,6 +122,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		lo := log.NewLogger(os.Stdout)
 
+		rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
+		if err != nil {
+			return err
+		}
+
 		ca, err = cache.NewCache(cfg.Redis)
 		if err != nil {
 			return err
@@ -155,6 +160,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
+		app.Redis = rd.Client()
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo
@@ -231,6 +237,7 @@ func licenseOverrideCfg(cfg *config.Configuration, licenser license.Licenser) {
 
 	if !licenser.IngestRate() {
 		cfg.InstanceIngestRate = config.DefaultConfiguration.InstanceIngestRate
+		cfg.ApiRateLimit = config.DefaultConfiguration.ApiRateLimit
 	}
 }
 
@@ -265,16 +272,16 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 }
 
 func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
-	_, err := pyroscope.Start(pyroscope.Config{
+	_, err := pyro.Start(pyro.Config{
 		ApplicationName: cfg.Pyroscope.ProfileID,
 		Tags: map[string]string{
 			"cmd": cmd.Use,
 		},
-		// replace this with the address of pyroscope server
+		// replace this with the address of pyro server
 		ServerAddress: cfg.Pyroscope.URL,
 
 		// you can disable logging by setting this to nil
-		// Logger: pyroscope.StandardLogger,
+		// Logger: pyro.StandardLogger,
 		UploadRate: time.Second * 5,
 
 		// optionally, if authentication is enabled, specify the API key:
@@ -282,17 +289,17 @@ func enableProfiling(cfg config.Configuration, cmd *cobra.Command) error {
 		BasicAuthPassword: cfg.Pyroscope.Password,
 
 		// but you can select the ones you want to use:
-		ProfileTypes: []pyroscope.ProfileType{
-			pyroscope.ProfileCPU,
-			pyroscope.ProfileInuseObjects,
-			pyroscope.ProfileAllocObjects,
-			pyroscope.ProfileInuseSpace,
-			pyroscope.ProfileAllocSpace,
-			pyroscope.ProfileGoroutines,
-			pyroscope.ProfileMutexCount,
-			pyroscope.ProfileMutexDuration,
-			pyroscope.ProfileBlockCount,
-			pyroscope.ProfileBlockDuration,
+		ProfileTypes: []pyro.ProfileType{
+			pyro.ProfileCPU,
+			pyro.ProfileInuseObjects,
+			pyro.ProfileAllocObjects,
+			pyro.ProfileInuseSpace,
+			pyro.ProfileAllocSpace,
+			pyro.ProfileGoroutines,
+			pyro.ProfileMutexCount,
+			pyro.ProfileMutexDuration,
+			pyro.ProfileBlockCount,
+			pyro.ProfileBlockDuration,
 		},
 	})
 	return err
@@ -326,21 +333,32 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
 	}
 
+	circuitBreakerConfig := &datastore.CircuitBreakerConfig{
+		SampleRate:                  cfg.CircuitBreaker.SampleRate,
+		ErrorTimeout:                cfg.CircuitBreaker.ErrorTimeout,
+		FailureThreshold:            cfg.CircuitBreaker.FailureThreshold,
+		SuccessThreshold:            cfg.CircuitBreaker.SuccessThreshold,
+		ObservabilityWindow:         cfg.CircuitBreaker.ObservabilityWindow,
+		MinimumRequestCount:         cfg.CircuitBreaker.MinimumRequestCount,
+		ConsecutiveFailureThreshold: cfg.CircuitBreaker.ConsecutiveFailureThreshold,
+	}
+
 	configuration, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
 			a.Logger.Info("Creating Instance Config")
-			cfg := &datastore.Configuration{
-				UID:                ulid.Make().String(),
-				StoragePolicy:      storagePolicy,
-				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
-				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
-				RetentionPolicy:    retentionPolicy,
-				CreatedAt:          time.Now(),
-				UpdatedAt:          time.Now(),
+			c := &datastore.Configuration{
+				UID:                  ulid.Make().String(),
+				StoragePolicy:        storagePolicy,
+				IsAnalyticsEnabled:   cfg.Analytics.IsEnabled,
+				IsSignupEnabled:      cfg.Auth.IsSignupEnabled,
+				RetentionPolicy:      retentionPolicy,
+				CircuitBreakerConfig: circuitBreakerConfig,
+				CreatedAt:            time.Now(),
+				UpdatedAt:            time.Now(),
 			}
 
-			return cfg, configRepo.CreateConfiguration(ctx, cfg)
+			return c, configRepo.CreateConfiguration(ctx, c)
 		}
 
 		return configuration, err
@@ -349,6 +367,7 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
+	configuration.CircuitBreakerConfig = circuitBreakerConfig
 	configuration.RetentionPolicy = retentionPolicy
 	configuration.UpdatedAt = time.Now()
 
@@ -357,6 +376,22 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
+
+	// CONVOY_INSTANCE_INGEST_RATE
+	instanceIngestRate, err := cmd.Flags().GetInt("instance-ingest-rate")
+	if err != nil {
+		return nil, err
+	}
+
+	c.InstanceIngestRate = instanceIngestRate
+
+	// CONVOY_API_RATE_LIMIT
+	apiRateLimit, err := cmd.Flags().GetInt("api-rate-limit")
+	if err != nil {
+		return nil, err
+	}
+
+	c.ApiRateLimit = apiRateLimit
 
 	// CONVOY_LICENSE_KEY
 	licenseKey, err := cmd.Flags().GetString("license-key")
@@ -484,12 +519,30 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
 	}
 
-	// Feature flags
+	// CONVOY_ENABLE_FEATURE_FLAG
 	fflag, err := cmd.Flags().GetStringSlice("enable-feature-flag")
 	if err != nil {
 		return nil, err
 	}
 	c.EnableFeatureFlag = fflag
+
+	// CONVOY_DISPATCHER_BLOCK_LIST
+	ipBlockList, err := cmd.Flags().GetStringSlice("ip-block-list")
+	if err != nil {
+		return nil, err
+	}
+	if len(ipBlockList) > 0 {
+		c.Dispatcher.BlockList = ipBlockList
+	}
+
+	// CONVOY_DISPATCHER_ALLOW_LIST
+	ipAllowList, err := cmd.Flags().GetStringSlice("ip-allow-list")
+	if err != nil {
+		return nil, err
+	}
+	if len(ipAllowList) > 0 {
+		c.Dispatcher.AllowList = ipAllowList
+	}
 
 	// tracing
 	tracingProvider, err := cmd.Flags().GetString("tracer-type")
@@ -550,32 +603,34 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
-	flag, err := fflag2.NewFFlag(c)
-	if err != nil {
-		return nil, err
-	}
+	flag := fflag2.NewFFlag(c.EnableFeatureFlag)
 	c.Metrics = config.MetricsConfiguration{
 		IsEnabled: false,
 	}
+
 	if flag.CanAccessFeature(fflag2.Prometheus) {
 		metricsBackend, err := cmd.Flags().GetString("metrics-backend")
 		if err != nil {
 			return nil, err
 		}
+
 		if !config.IsStringEmpty(metricsBackend) {
 			c.Metrics = config.MetricsConfiguration{
 				IsEnabled: false,
 				Backend:   config.MetricsBackend(metricsBackend),
 			}
+
 			switch c.Metrics.Backend {
 			case config.PrometheusMetricsProvider:
 				sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
 				if err != nil {
 					return nil, err
 				}
+
 				if sampleTime < 1 {
 					return nil, errors.New("metrics-prometheus-sample-time must be non-zero")
 				}
+
 				c.Metrics = config.MetricsConfiguration{
 					IsEnabled: true,
 					Backend:   config.MetricsBackend(metricsBackend),
@@ -585,14 +640,17 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 				}
 			}
 		} else {
-			log.Warn("No metrics-backend specified")
+			log.Warn("metrics backend not specified")
 		}
+	} else {
+		log.Info(fflag2.ErrPrometheusMetricsNotEnabled)
 	}
 
 	maxRetrySeconds, err := cmd.Flags().GetUint64("max-retry-seconds")
 	if err != nil {
 		return nil, err
 	}
+
 	c.MaxRetrySeconds = maxRetrySeconds
 
 	return c, nil

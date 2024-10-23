@@ -3,20 +3,23 @@ package fflag
 import (
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"os"
 	"sort"
 	"text/tabwriter"
 )
 
-var ErrFeatureNotEnabled = errors.New("this feature is not enabled")
+var ErrCircuitBreakerNotEnabled = errors.New("[feature flag] circuit breaker is not enabled")
+var ErrFullTextSearchNotEnabled = errors.New("[feature flag] full text search is not enabled")
+var ErrPrometheusMetricsNotEnabled = errors.New("[feature flag] prometheus metrics is not enabled")
 
 type (
 	FeatureFlagKey string
 )
 
 const (
+	IpRules        FeatureFlagKey = "ip-rules"
 	Prometheus     FeatureFlagKey = "prometheus"
+	CircuitBreaker FeatureFlagKey = "circuit-breaker"
 	FullTextSearch FeatureFlagKey = "full-text-search"
 )
 
@@ -30,27 +33,35 @@ const (
 )
 
 var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
+	IpRules:        disabled,
 	Prometheus:     disabled,
 	FullTextSearch: disabled,
+	CircuitBreaker: disabled,
 }
 
 type FFlag struct {
 	Features map[FeatureFlagKey]FeatureFlagState
 }
 
-func NewFFlag(c *config.Configuration) (*FFlag, error) {
+func NewFFlag(enableFeatureFlags []string) *FFlag {
 	f := &FFlag{
 		Features: clone(DefaultFeaturesState),
 	}
-	for _, flag := range c.EnableFeatureFlag {
+
+	for _, flag := range enableFeatureFlags {
 		switch flag {
+		case string(IpRules):
+			f.Features[IpRules] = enabled
 		case string(Prometheus):
 			f.Features[Prometheus] = enabled
 		case string(FullTextSearch):
 			f.Features[FullTextSearch] = enabled
+		case string(CircuitBreaker):
+			f.Features[CircuitBreaker] = enabled
 		}
 	}
-	return f, nil
+
+	return f
 }
 
 func clone(src map[FeatureFlagKey]FeatureFlagState) map[FeatureFlagKey]FeatureFlagState {

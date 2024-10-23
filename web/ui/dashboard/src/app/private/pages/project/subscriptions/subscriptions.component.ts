@@ -1,5 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ENDPOINT } from 'src/app/models/endpoint.model';
+import { FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { PROJECT } from 'src/app/models/project.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
@@ -33,17 +35,26 @@ export class SubscriptionsComponent implements OnInit {
 	action: 'create' | 'update' = 'create';
 	subscriptionSearchString!: string;
 	userSearch = false;
+	linkEndpoint?: string = this.route.snapshot.queryParams.endpointId;
+
+	queryParams: FILTER_QUERY_PARAM = {};
 
 	constructor(private route: ActivatedRoute, public privateService: PrivateService, public router: Router, private generalService: GeneralService, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
+		this.queryParams = { ...this.route.snapshot.queryParams };
+
+		const { name, endpointId } = this.queryParams;
+
+		const requestDetails = { name, endpointId };
+
 		const urlParam = this.route.snapshot.params.id;
 		if (urlParam) {
 			urlParam === 'new' ? (this.action = 'create') : (this.action = 'update');
 			this.subscriptionDialog.nativeElement.showModal();
 		}
 
-		await this.getSubscriptions();
+		await this.getSubscriptions(requestDetails);
 
 		this.route.queryParams.subscribe(params => {
 			this.activeSubscription = this.subscriptions?.content.find(subscription => subscription.uid === params?.id);
@@ -51,12 +62,15 @@ export class SubscriptionsComponent implements OnInit {
 		});
 	}
 
-	async getSubscriptions(requestDetails?: CURSOR & { name?: string }) {
+	async getSubscriptions(requestDetails?: CURSOR & { name?: string; endpointId?: string }) {
 		this.isLoadindingSubscriptions = true;
-		this.userSearch = !!requestDetails?.name;
+		this.userSearch = !!requestDetails?.name || !!this.queryParams.name;
+		this.subscriptionSearchString = this.queryParams?.name || requestDetails?.name || '';
+
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ...requestDetails });
 
 		try {
-			const subscriptionsResponse = await this.privateService.getSubscriptions(requestDetails);
+			const subscriptionsResponse = await this.privateService.getSubscriptions(this.queryParams);
 			this.subscriptions = subscriptionsResponse.data;
 			this.displayedSubscriptions = this.generalService.setContentDisplayed(subscriptionsResponse.data.content, 'desc');
 			this.subscriptions?.content?.length === 0 ? localStorage.setItem('isActiveProjectConfigurationComplete', 'false') : localStorage.setItem('isActiveProjectConfigurationComplete', 'true');
@@ -89,6 +103,29 @@ export class SubscriptionsComponent implements OnInit {
 		} catch (error) {
 			this.isDeletingSubscription = false;
 		}
+	}
+
+	updateEndpointFilter(endpoint: ENDPOINT) {
+		this.linkEndpoint = endpoint?.uid;
+		this.getSubscriptions({ endpointId: endpoint?.uid });
+	}
+
+	clearSearch() {
+		this.userSearch = false;
+		this.subscriptionSearchString = '';
+		delete this.queryParams['name'];
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, name: '' });
+
+		this.getSubscriptions();
+	}
+
+	clearEndpointFilter(event?: { stopPropagation: () => void }) {
+		event?.stopPropagation();
+		this.linkEndpoint = undefined;
+		delete this.queryParams['endpointId'];
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, endpointId: '' });
+
+		this.getSubscriptions();
 	}
 
 	getEndpointSecret(endpointSecrets: any) {

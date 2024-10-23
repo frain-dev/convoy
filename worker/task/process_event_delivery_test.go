@@ -3,12 +3,19 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/log"
+	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/frain-dev/convoy/net"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/stretchr/testify/require"
+
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -256,6 +263,8 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				licenser, _ := l.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -344,6 +353,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				licenser, _ := l.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -431,6 +441,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -521,6 +532,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -608,6 +620,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -695,6 +708,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
 			},
 			nFn: func() func() {
@@ -787,6 +801,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -880,6 +895,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				licenser, _ := l.(*mocks.MockLicenser)
+				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 			},
 			nFn: func() func() {
@@ -913,6 +929,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			licenser := mocks.NewMockLicenser(ctrl)
 
 			licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+			licenser.EXPECT().IpRules().Times(1).Return(true)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -938,10 +955,38 @@ func TestProcessEventDelivery(t *testing.T) {
 				tc.dbFn(endpointRepo, projectRepo, msgRepo, q, rateLimiter, attemptsRepo, licenser)
 			}
 
-			dispatcher, err := net.NewDispatcher("", licenser, false)
+			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
+
+			dispatcher, err := net.NewDispatcher(
+				licenser,
+				fflag.NewFFlag([]string{string(fflag.IpRules)}),
+				net.LoggerOption(log.NewLogger(os.Stdout)),
+				net.BlockListOption([]string{"10.0.0.0/8"}),
+				net.ProxyOption("nil"),
+			)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo)
+			mockStore := cb.NewTestStore()
+			mockClock := clock.NewSimulatedClock(time.Now())
+			breakerConfig := &cb.CircuitBreakerConfig{
+				SampleRate:                  1,
+				BreakerTimeout:              30,
+				FailureThreshold:            50,
+				SuccessThreshold:            2,
+				ObservabilityWindow:         5,
+				MinimumRequestCount:         10,
+				ConsecutiveFailureThreshold: 3,
+			}
+
+			manager, err := cb.NewCircuitBreakerManager(
+				cb.StoreOption(mockStore),
+				cb.ClockOption(mockClock),
+				cb.ConfigOption(breakerConfig),
+				cb.LoggerOption(log.NewLogger(os.Stdout)),
+			)
+			require.NoError(t, err)
+
+			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,
