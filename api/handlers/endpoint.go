@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
@@ -212,29 +214,31 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// fetch keys from redis and mutate endpoints slice
-	keys := make([]string, len(endpoints))
-	for i := 0; i < len(endpoints); i++ {
-		keys[i] = fmt.Sprintf("breaker:%s", endpoints[i].UID)
-	}
+	if h.A.FFlag.CanAccessFeature(fflag.CircuitBreaker) && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
+		// fetch keys from redis and mutate endpoints slice
+		keys := make([]string, len(endpoints))
+		for i := 0; i < len(endpoints); i++ {
+			keys[i] = fmt.Sprintf("breaker:%s", endpoints[i].UID)
+		}
 
-	cbs, err := h.A.Redis.MGet(r.Context(), keys...).Result()
-	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return
-	}
+		cbs, err := h.A.Redis.MGet(r.Context(), keys...).Result()
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
 
-	for i := 0; i < len(cbs); i++ {
-		if cbs[i] != nil {
-			str, ok := cbs[i].(string)
-			if ok {
-				var c circuit_breaker.CircuitBreaker
-				asBytes := []byte(str)
-				innerErr := msgpack.DecodeMsgPack(asBytes, &c)
-				if innerErr != nil {
-					continue
+		for i := 0; i < len(cbs); i++ {
+			if cbs[i] != nil {
+				str, ok := cbs[i].(string)
+				if ok {
+					var c circuit_breaker.CircuitBreaker
+					asBytes := []byte(str)
+					innerErr := msgpack.DecodeMsgPack(asBytes, &c)
+					if innerErr != nil {
+						continue
+					}
+					endpoints[i].FailureRate = c.FailureRate
 				}
-				endpoints[i].FailureRate = c.FailureRate
 			}
 		}
 	}
@@ -506,6 +510,11 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/activate [post]
 func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
+	if !h.A.Licenser.CircuitBreaking() || !h.A.FFlag.CanAccessFeature(fflag.CircuitBreaker) {
+		_ = render.Render(w, r, util.NewErrorResponse("feature not enabled", http.StatusBadRequest))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

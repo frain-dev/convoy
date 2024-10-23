@@ -107,6 +107,11 @@ var DefaultConfiguration = Configuration{
 			SampleTime: 5,
 		},
 	},
+	Dispatcher: DispatcherConfiguration{
+		InsecureSkipVerify: true,
+		AllowList:          []string{"0.0.0.0/0", "::/0"},
+		BlockList:          []string{"127.0.0.0/8", "::1/128"},
+	},
 	InstanceIngestRate:  25,
 	ApiRateLimit:        25,
 	WorkerExecutionMode: DefaultExecutionMode,
@@ -276,7 +281,7 @@ type CircuitBreakerConfiguration struct {
 	ErrorTimeout                uint64 `json:"error_timeout" envconfig:"CONVOY_CIRCUIT_BREAKER_ERROR_TIMEOUT"`
 	FailureThreshold            uint64 `json:"failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_FAILURE_THRESHOLD"`
 	SuccessThreshold            uint64 `json:"success_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_SUCCESS_THRESHOLD"`
-	MinimumRequestCount         uint64 `json:"minimum_request_count" envconfig:"CONVOY_MINIMUM_REQUEST_COUNT"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" envconfig:"CONVOY_CIRCUIT_BREAKER_MINIMUM_REQUEST_COUNT"`
 	ObservabilityWindow         uint64 `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
 }
@@ -388,6 +393,13 @@ type Configuration struct {
 	WorkerExecutionMode ExecutionMode                `json:"worker_execution_mode" envconfig:"CONVOY_WORKER_EXECUTION_MODE"`
 	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
+	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
+}
+
+type DispatcherConfiguration struct {
+	InsecureSkipVerify bool     `json:"insecure_skip_verify" envconfig:"CONVOY_DISPATCHER_INSECURE_SKIP_VERIFY"`
+	AllowList          []string `json:"allow_list" envconfig:"CONVOY_DISPATCHER_ALLOW_LIST"`
+	BlockList          []string `json:"block_list" envconfig:"CONVOY_DISPATCHER_BLOCK_LIST"`
 }
 
 type PyroscopeConfiguration struct {

@@ -3,7 +3,6 @@ package fflag
 import (
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"os"
 	"sort"
 	"text/tabwriter"
@@ -18,9 +17,10 @@ type (
 )
 
 const (
+	IpRules        FeatureFlagKey = "ip-rules"
 	Prometheus     FeatureFlagKey = "prometheus"
-	FullTextSearch FeatureFlagKey = "full-text-search"
 	CircuitBreaker FeatureFlagKey = "circuit-breaker"
+	FullTextSearch FeatureFlagKey = "full-text-search"
 )
 
 type (
@@ -33,6 +33,7 @@ const (
 )
 
 var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
+	IpRules:        disabled,
 	Prometheus:     disabled,
 	FullTextSearch: disabled,
 	CircuitBreaker: disabled,
@@ -42,13 +43,15 @@ type FFlag struct {
 	Features map[FeatureFlagKey]FeatureFlagState
 }
 
-func NewFFlag(c *config.Configuration) *FFlag {
+func NewFFlag(enableFeatureFlags []string) *FFlag {
 	f := &FFlag{
 		Features: clone(DefaultFeaturesState),
 	}
 
-	for _, flag := range c.EnableFeatureFlag {
+	for _, flag := range enableFeatureFlags {
 		switch flag {
+		case string(IpRules):
+			f.Features[IpRules] = enabled
 		case string(Prometheus):
 			f.Features[Prometheus] = enabled
 		case string(FullTextSearch):

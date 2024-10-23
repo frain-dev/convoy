@@ -3,11 +3,16 @@ package net
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/stealthrocket/netjail"
 	"io"
 	"net/http"
 	"net/http/httptrace"
+	"net/netip"
 	"net/url"
 	"time"
 
@@ -19,49 +24,180 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+var (
+	ErrAllowListIsRequired = errors.New("allowlist is required")
+	ErrBlockListIsRequired = errors.New("blocklist is required")
+	ErrLoggerIsRequired    = errors.New("logger is required")
+	ErrInvalidIPPrefix     = errors.New("invalid IP prefix")
+)
+
+type DispatcherOption func(d *Dispatcher) error
+
 type Dispatcher struct {
-	client *http.Client
+	// gating mechanisms
+	ff *fflag.FFlag
+	l  license.Licenser
+
+	logger    *log.Logger
+	transport *http.Transport
+	client    *http.Client
+	rules     *netjail.Rules
 }
 
-func NewDispatcher(httpProxy string, licenser license.Licenser, enforceSecure bool) (*Dispatcher, error) {
-	d := &Dispatcher{client: &http.Client{}}
-
-	tr := &http.Transport{
-		MaxIdleConns:          100,
-		IdleConnTimeout:       10 * time.Second,
-		MaxIdleConnsPerHost:   10,
-		TLSHandshakeTimeout:   3 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOption) (*Dispatcher, error) {
+	d := &Dispatcher{
+		l:      l,
+		ff:     ff,
+		client: &http.Client{},
+		rules:  &netjail.Rules{},
+		transport: &http.Transport{
+			MaxIdleConns:          100,
+			IdleConnTimeout:       10 * time.Second,
+			MaxIdleConnsPerHost:   10,
+			TLSHandshakeTimeout:   3 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
 	}
 
-	if licenser.UseForwardProxy() {
-		proxyUrl, isValid, err := d.setProxy(httpProxy)
-		if err != nil {
+	for _, option := range options {
+		if err := option(d); err != nil {
 			return nil, err
 		}
+	}
 
-		if isValid {
-			tr.Proxy = http.ProxyURL(proxyUrl)
+	if d.logger == nil {
+		return nil, ErrLoggerIsRequired
+	}
+
+	if ff.CanAccessFeature(fflag.IpRules) && len(d.rules.Allow) == 0 && len(d.rules.Block) == 0 {
+		d.rules = &netjail.Rules{
+			Allow: []netip.Prefix{
+				netip.MustParsePrefix("0.0.0.0/8"),
+				netip.MustParsePrefix("::/0"),
+			},
+			Block: []netip.Prefix{
+				netip.MustParsePrefix("127.0.0.0/8"),
+				netip.MustParsePrefix("::1/128"),
+			},
 		}
 	}
 
-	// if enforceSecure is false, allow self-signed certificates, susceptible to MITM attacks.
-	// if !enforceSecure {
-	//	tr.TLSClientConfig = &tls.Config{
-	//		InsecureSkipVerify: true,
-	//	}
-	// } else {
-	//	tr.TLSClientConfig = &tls.Config{
-	//		MinVersion: tls.VersionTLS12,
-	//	}
-	// }
+	netJailTransport := &netjail.Transport{
+		New: func() *http.Transport {
+			return d.transport.Clone()
+		},
+	}
 
-	d.client.Transport = tr
+	if ff.CanAccessFeature(fflag.IpRules) {
+		d.client.Transport = netJailTransport
+	} else {
+		d.client.Transport = d.transport
+	}
 
 	return d, nil
 }
 
-func (d *Dispatcher) setProxy(proxyURL string) (*url.URL, bool, error) {
+// ProxyOption defines an HTTP proxy which the client will use. It fails-open the string isn't a valid HTTP URL
+func ProxyOption(httpProxy string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if httpProxy == "" {
+			return nil
+		}
+
+		if d.l.UseForwardProxy() {
+			proxyUrl, isValid, err := d.validateProxy(httpProxy)
+			if err != nil {
+				return err
+			}
+
+			if isValid {
+				d.transport.Proxy = http.ProxyURL(proxyUrl)
+			}
+		}
+
+		return nil
+	}
+}
+
+// AllowListOption sets a list of IP prefixes which will outgoing traffic will be granted access
+func AllowListOption(allowList []string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if len(allowList) == 0 {
+			return ErrAllowListIsRequired
+		}
+
+		if !d.l.IpRules() || !d.ff.CanAccessFeature(fflag.IpRules) {
+			return nil
+		}
+
+		netAllow := make([]netip.Prefix, len(allowList))
+		for i, prefix := range allowList {
+			parsed, err := netip.ParsePrefix(prefix)
+			if err != nil {
+				return fmt.Errorf("%w: %v in allowlist", ErrInvalidIPPrefix, err)
+			}
+			netAllow[i] = parsed
+			d.rules.Allow = netAllow
+		}
+
+		return nil
+	}
+}
+
+// BlockListOption sets a list of IP prefixes which will outgoing traffic will be denied access
+func BlockListOption(blockList []string) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if len(blockList) == 0 {
+			return ErrBlockListIsRequired
+		}
+
+		if !d.l.IpRules() || !d.ff.CanAccessFeature(fflag.IpRules) {
+			return nil
+		}
+
+		netBlock := make([]netip.Prefix, len(blockList))
+		for i, prefix := range blockList {
+			parsed, err := netip.ParsePrefix(prefix)
+			if err != nil {
+				return fmt.Errorf("%w: %v in blocklist", ErrInvalidIPPrefix, err)
+			}
+			netBlock[i] = parsed
+		}
+
+		d.rules.Block = netBlock
+		return nil
+	}
+}
+
+// InsecureSkipVerifyOption allow self-signed certificates if set to false which is susceptible to MITM attacks.
+func InsecureSkipVerifyOption(insecureSkipVerify bool) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if insecureSkipVerify {
+			d.transport.TLSClientConfig = &tls.Config{
+				InsecureSkipVerify: true,
+			}
+		} else {
+			d.transport.TLSClientConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+		}
+
+		return nil
+	}
+}
+
+func LoggerOption(logger *log.Logger) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if logger == nil {
+			return ErrLoggerIsRequired
+		}
+
+		d.logger = logger
+		return nil
+	}
+}
+
+func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	if !util.IsStringEmpty(proxyURL) {
 		pUrl, err := url.Parse(proxyURL)
 		if err != nil {
@@ -79,20 +215,26 @@ func (d *Dispatcher) setProxy(proxyURL string) (*url.URL, bool, error) {
 }
 
 func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+	d.logger.Debugf("rules: %+v", d.rules)
+
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	r := &Response{}
 	if util.IsStringEmpty(signatureHeader) || util.IsStringEmpty(hmac) {
 		err := errors.New("signature header and hmac are required")
-		log.WithError(err).Error("Dispatcher invalid arguments")
+		d.logger.WithError(err).Error("Dispatcher invalid arguments")
 		r.Error = err.Error()
 		return r, err
 	}
 
+	if d.ff.CanAccessFeature(fflag.IpRules) {
+		ctx = netjail.ContextWithRules(ctx, d.rules)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.WithError(err).Error("error occurred while creating request")
+		d.logger.WithError(err).Error("error occurred while creating request")
 		return r, err
 	}
 
@@ -135,7 +277,6 @@ func updateDispatchHeaders(r *Response, res *http.Response) {
 	r.ResponseHeader = res.Header
 }
 
-// TODO(subomi): Refactor this to support Enterprise Editions
 func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }
@@ -144,7 +285,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	trace := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			res.IP = connInfo.Conn.RemoteAddr().String()
-			log.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
+			d.logger.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
 		},
 	}
 
@@ -152,7 +293,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 
 	response, err := d.client.Do(req)
 	if err != nil {
-		log.WithError(err).Error("error sending request to API endpoint")
+		d.logger.WithError(err).Error("error sending request to API endpoint")
 		res.Error = err.Error()
 		return err
 	}
@@ -170,7 +311,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	res.Body = buf
 
 	if err != nil {
-		log.WithError(err).Error("couldn't parse response body")
+		d.logger.WithError(err).Error("couldn't parse response body")
 		return err
 	}
 

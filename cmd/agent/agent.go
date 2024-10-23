@@ -137,7 +137,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 		lo.WithError(err).Fatal("failed to initialize realm chain")
 	}
 
-	flag := fflag.NewFFlag(&cfg)
+	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
 	lvl, err := log.ParseLevel(cfg.Logger.Level)
 	if err != nil {

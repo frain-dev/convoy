@@ -21,7 +21,7 @@ func AddFeatureFlagsCommand() *cobra.Command {
 				log.WithError(err).Fatal("Error fetching the config.")
 			}
 
-			f := fflag2.NewFFlag(&cfg)
+			f := fflag2.NewFFlag(cfg.EnableFeatureFlag)
 			return f.ListFeatures()
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {},

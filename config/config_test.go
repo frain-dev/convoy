@@ -178,6 +178,11 @@ func TestLoadConfig(t *testing.T) {
 						SampleTime: 5,
 					},
 				},
+				Dispatcher: DispatcherConfiguration{
+					InsecureSkipVerify: true,
+					AllowList:          []string{"0.0.0.0/0", "::/0"},
+					BlockList:          []string{"127.0.0.0/8", "::1/128"},
+				},
 				WorkerExecutionMode: DefaultExecutionMode,
 				InstanceIngestRate:  25,
 				ApiRateLimit:        25,
@@ -265,6 +270,11 @@ func TestLoadConfig(t *testing.T) {
 						SampleTime: 5,
 					},
 				},
+				Dispatcher: DispatcherConfiguration{
+					InsecureSkipVerify: true,
+					AllowList:          []string{"0.0.0.0/0", "::/0"},
+					BlockList:          []string{"127.0.0.0/8", "::1/128"},
+				},
 				InstanceIngestRate:  25,
 				ApiRateLimit:        25,
 				WorkerExecutionMode: DefaultExecutionMode,
@@ -350,6 +360,11 @@ func TestLoadConfig(t *testing.T) {
 					Prometheus: PrometheusMetricsConfiguration{
 						SampleTime: 5,
 					},
+				},
+				Dispatcher: DispatcherConfiguration{
+					InsecureSkipVerify: true,
+					AllowList:          []string{"0.0.0.0/0", "::/0"},
+					BlockList:          []string{"127.0.0.0/8", "::1/128"},
 				},
 				InstanceIngestRate:  25,
 				ApiRateLimit:        25,
