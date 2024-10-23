@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -58,6 +60,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 
 	if !pis.Accepted {
 		iv.Status = datastore.InviteStatusDeclined
+		iv.DeletedAt = null.TimeFrom(time.Now())
 		err = pis.InviteRepo.UpdateOrganisationInvite(ctx, iv)
 		if err != nil {
 			errMsg := "failed to update declined organisation invite"
@@ -94,6 +97,7 @@ func (pis *ProcessInviteService) Run(ctx context.Context) error {
 	}
 
 	iv.Status = datastore.InviteStatusAccepted
+	iv.DeletedAt = null.TimeFrom(time.Now())
 	err = pis.InviteRepo.UpdateOrganisationInvite(ctx, iv)
 	if err != nil {
 		errMsg := "failed to update accepted organisation invite"
