@@ -3,6 +3,7 @@ package types
 import (
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -24,4 +25,5 @@ type APIOptions struct {
 	Authz    *authz.Authz
 	Rate     limiter.RateLimiter
 	Licenser license.Licenser
+	Cfg      config.Configuration
 }

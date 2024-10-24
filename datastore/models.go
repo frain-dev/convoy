@@ -156,6 +156,7 @@ type (
 	PubSubHandler    func(context.Context, *Source, string, []byte) error
 	MetaEventType    string
 	HookEventType    string
+	UserAuthType     string
 )
 
 type EndpointAuthenticationType string
@@ -268,6 +269,11 @@ func (k KeyType) IsValid() bool {
 const (
 	LinearStrategyProvider      StrategyProvider = "linear"
 	ExponentialStrategyProvider StrategyProvider = "exponential"
+)
+
+const (
+	LocalUserType UserAuthType = "local"
+	SSOUserType   UserAuthType = "sso"
 )
 
 var (
@@ -1219,6 +1225,7 @@ type User struct {
 	DeletedAt                  null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 	ResetPasswordExpiresAt     time.Time `json:"reset_password_expires_at,omitempty" db:"reset_password_expires_at,omitempty" swaggertype:"string"`
 	EmailVerificationExpiresAt time.Time `json:"-" db:"email_verification_expires_at,omitempty" swaggertype:"string"`
+	AuthType                   string    `json:"auth_type" db:"auth_type" swaggertype:"string"`
 }
 
 type RetryConfiguration struct {

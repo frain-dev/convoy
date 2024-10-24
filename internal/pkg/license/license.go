@@ -26,6 +26,7 @@ type Licenser interface {
 	IngestRate() bool
 	AgentExecutionMode() bool
 	IpRules() bool
+	EnterpriseSSO() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool

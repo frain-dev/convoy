@@ -29,6 +29,7 @@ const (
 	IngestRate               Feature = "INGEST_RATE"
 	AgentExecutionMode       Feature = "AGENT_EXECUTION_MODE"
 	IpRules                  Feature = "IP_RULES"
+	EnterpriseSSO            Feature = "ENTERPRISE_SSO"
 )
 
 const (

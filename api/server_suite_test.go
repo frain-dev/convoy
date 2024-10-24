@@ -141,6 +141,7 @@ func buildServer() *ApplicationHandler {
 			FFlag:    fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
 			Rate:     r,
 			Licenser: noopLicenser.NewLicenser(),
+			Cfg:      cfg,
 		})
 
 	_ = ah.RegisterPolicy()

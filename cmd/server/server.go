@@ -134,6 +134,7 @@ func startConvoyServer(a *cli.App) error {
 			Cache:    a.Cache,
 			Rate:     a.Rate,
 			Licenser: a.Licenser,
+			Cfg:      cfg,
 		})
 	if err != nil {
 		return err

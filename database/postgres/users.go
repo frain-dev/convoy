@@ -18,8 +18,8 @@ const (
     INSERT INTO convoy.users (
 		id,first_name,last_name,email,password,
         email_verified,reset_password_token, email_verification_token,
-        reset_password_expires_at,email_verification_expires_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        reset_password_expires_at,email_verification_expires_at, auth_type)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     `
 
 	updateUser = `
@@ -73,6 +73,7 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 		user.EmailVerificationToken,
 		user.ResetPasswordExpiresAt,
 		user.EmailVerificationExpiresAt,
+		user.AuthType,
 	)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate") {
