@@ -262,7 +262,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
 			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/sso", handler.InitLoginSSO)
-            authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/saml", handler.RedeemSSOToken)
+      authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/saml", handler.RedeemSSOToken)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
