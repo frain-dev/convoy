@@ -10,6 +10,8 @@ import { LicensesService } from 'src/app/services/licenses/licenses.service';
 	styleUrls: ['./project.component.scss']
 })
 export class ProjectComponent implements OnInit {
+	screenWidth = window.innerWidth;
+
 	sideBarItems = [
 		{
 			name: 'Event Deliveries',
@@ -30,6 +32,21 @@ export class ProjectComponent implements OnInit {
 			name: 'Endpoints',
 			icon: 'endpoint',
 			route: '/endpoints'
+		},
+		{
+			name: 'Portal Links',
+			icon: 'portal',
+			route: '/portal-links'
+		},
+		{
+			name: 'Meta Events',
+			icon: 'meta',
+			route: '/meta-events'
+		},
+		{
+			name: 'Events Log',
+			icon: 'logs',
+			route: '/events-log'
 		}
 	];
 	secondarySideBarItems = [
@@ -44,13 +61,14 @@ export class ProjectComponent implements OnInit {
 			route: '/meta-events'
 		}
 	];
+	shouldShowFullSideBar = true;
 	projectDetails?: PROJECT;
 	isLoadingProjectDetails: boolean = true;
 	showHelpDropdown = false;
 	projects: PROJECT[] = [];
 	activeNavTab: any;
 
-	constructor(private privateService: PrivateService, private router: Router, public licenseService:LicensesService) {}
+	constructor(private privateService: PrivateService, private router: Router, public licenseService: LicensesService) {}
 
 	ngOnInit() {
 		Promise.all([this.getProjectDetails(), this.getProjects()]);
@@ -68,7 +86,7 @@ export class ProjectComponent implements OnInit {
 		try {
 			const projectDetails = await this.privateService.getProjectDetails;
 			this.projectDetails = projectDetails;
-			if (this.projectDetails?.type === 'outgoing') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
+			if (this.projectDetails?.type === 'incoming') this.sideBarItems = this.sideBarItems.filter(item => item.icon !== 'portal');
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
@@ -93,6 +111,17 @@ export class ProjectComponent implements OnInit {
 		return checkForStrokeIcon;
 	}
 
+	getFirstletters(text?: string) {
+		if (!text) return;
+		const firstLetters = text
+			.split(' ')
+			.map(word => word[0])
+			.join('')
+			.slice(0, 2);
+
+		return firstLetters;
+	}
+
 	async getProjectCompleteDetails(project: PROJECT) {
 		this.isLoadingProjectDetails = true;
 
@@ -113,5 +142,15 @@ export class ProjectComponent implements OnInit {
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
 		}
+	}
+
+	checkScreenSize() {
+		this.screenWidth > 1150 ? (this.shouldShowFullSideBar = true) : (this.shouldShowFullSideBar = false);
+	}
+
+	@HostListener('window:resize', ['$event'])
+	onWindowResize() {
+		this.screenWidth = window.innerWidth;
+		this.checkScreenSize();
 	}
 }
