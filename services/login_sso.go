@@ -141,7 +141,7 @@ func (u *LoginUserSSOService) RedeemToken(queryValues url.Values) (*models.SSOTo
 		return nil, errors.New("no email in token response")
 	}
 	if tokenResponse.Data.Payload.OrganizationExternalID == "" {
-		return nil, errors.New("no email in token response")
+		return nil, errors.New("no external organization id in token response")
 	}
 
 	log.Infof("Token should be successful: %+v", tokenResponse)

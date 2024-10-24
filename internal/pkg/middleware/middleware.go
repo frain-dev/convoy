@@ -43,6 +43,8 @@ const (
 	pageableCtx types.ContextKey = "pageable"
 )
 
+var ErrValidLicenseRequired = errors.New("access to this resource requires a valid license")
+
 type AuthorizedLogin struct {
 	Username   string    `json:"username,omitempty"`
 	Token      string    `json:"token"`
@@ -427,4 +429,28 @@ func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) contex
 
 func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
 	return ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+}
+
+func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !l.EnterpriseSSO() {
+				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !l.PortalLinks() {
+				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }

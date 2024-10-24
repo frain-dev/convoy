@@ -158,6 +158,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 			Rate:     a.Rate,
 			Redis:    a.Redis,
 			Licenser: a.Licenser,
+			Cfg:      cfg,
 		})
 	if err != nil {
 		return err
