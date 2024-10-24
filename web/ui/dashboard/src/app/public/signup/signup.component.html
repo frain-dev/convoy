@@ -34,15 +34,16 @@
 				<convoy-input-error *ngIf="signupForm.get('password')?.touched && signupForm.get('password')?.invalid">Password is required</convoy-input-error>
 			</convoy-input-field>
 
-			<button convoy-button [disabled]="disableSignupBtn" size="lg" class="w-full">
+			<button convoy-button [disabled]="disableSignupBtn" size="lg" class="w-full mb-24px">
 				<span class="text-14 text-white-100" *ngIf="!disableSignupBtn">Signup</span>
 				<img *ngIf="disableSignupBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
 			</button>
+
+			<button convoy-button size="lg" type="button" fill="text" class="w-full" (click)="loginWithSAML()">Login with SAML</button>
 		</form>
 	</section>
 
 	<button convoy-button fill="link" class="mt-34px w-full" (click)="router.navigateByUrl('/login')" size="sm">Log in if you already have an account</button>
 </div>
-
 
 <convoy-loader [isTransparent]="false" *ngIf="isFetchingConfig"></convoy-loader>

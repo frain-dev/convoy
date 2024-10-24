@@ -63,7 +63,16 @@ export class SignupComponent implements OnInit {
 			this.isFetchingConfig = false;
 		} catch (error) {
 			this.isFetchingConfig = false;
-			return error;
+			throw error;
+		}
+	}
+
+	async loginWithSAML() {
+		try {
+			const res = await this.signupService.loginWithSaml();
+			console.log(res);
+		} catch (error) {
+			throw error;
 		}
 	}
 }

@@ -73,4 +73,13 @@ export class LoginComponent implements OnInit {
 			return error;
 		}
 	}
+
+	async loginWithSAML() {
+		try {
+			const res = await this.loginService.loginWithSaml();
+			console.log(res);
+		} catch (error) {
+			throw error;
+		}
+	}
 }
