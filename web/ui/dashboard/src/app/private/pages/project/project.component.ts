@@ -34,14 +34,19 @@ export class ProjectComponent implements OnInit {
 			route: '/endpoints'
 		},
 		{
-			name: 'Events Log',
-			icon: 'logs',
-			route: '/events-log'
+			name: 'Portal Links',
+			icon: 'portal',
+			route: '/portal-links'
 		},
 		{
 			name: 'Meta Events',
 			icon: 'meta',
 			route: '/meta-events'
+		},
+		{
+			name: 'Events Log',
+			icon: 'logs',
+			route: '/events-log'
 		}
 	];
 	secondarySideBarItems = [
@@ -81,7 +86,7 @@ export class ProjectComponent implements OnInit {
 		try {
 			const projectDetails = await this.privateService.getProjectDetails;
 			this.projectDetails = projectDetails;
-			if (this.projectDetails?.type === 'outgoing') this.sideBarItems.push({ name: 'Portal Links', icon: 'portal', route: '/portal-links' });
+			if (this.projectDetails?.type === 'incoming') this.sideBarItems = this.sideBarItems.filter(item => item.icon !== 'portal');
 			this.isLoadingProjectDetails = false;
 		} catch (error) {
 			this.isLoadingProjectDetails = false;
