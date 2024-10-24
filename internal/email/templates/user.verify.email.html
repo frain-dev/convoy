@@ -1,167 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Convoy</title>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
 
-  <style>
-    body {
-      background: rgba(115, 122, 145, 0.03);
-      font-family: "Inter", sans-serif;
-      padding: 72px;
-      width: 100%;
-      height: 100%;
-    }
-    .card {
-      background: #ffffff;
-      border-top: 10px solid #477db3;
-      padding: 40px 28px 100px;
-      max-width: 701px;
-      width: 100%;
-      margin: auto;
-    }
-    .head {
-      border-bottom: 1px solid #edeff5;
-      padding-bottom: 26px;
-    }
-    .card h4 {
-      color: #000624;
-      font-weight: 700;
-      margin-bottom: 40px;
-    }
-    .card p,
-    .footer p {
-      color: #5f5f68;
-      font-size: 16px;
-      line-height: 30px;
-    }
-    .card p a,
-    .footer p a {
-      color: #477db3;
-      text-decoration: none;
-    }
-    .card button {
-      background: linear-gradient(0deg, #376da4 0%, #477db3 100%);
-      border: 1px solid #477db3;
-      color: #ffffff;
-      box-shadow: 0px 1px 1px rgba(22, 29, 37, 0.1),
-        inset 0px 2px 0px rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 13px;
-      width: 100%;
-      margin-top: 100px;
-        cursor: pointer;
-    }
-    .footer {
-      margin-top: 24px;
-      padding: 32px;
-      max-width: 701px;
-      width: 100%;
-      margin: auto;
-    }
-    .footer p {
-      color: #737a91;
-    }
-    .footer a {
-      color: #477db3;
-      font-size: 14px;
-      line-height: 20px;
-      font-weight: 500;
-      text-decoration: none;
-    }
-  </style>
-  <body>
-    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-      <tr>
-        <td>
-          <div class="card">
-            <div class="head">
-              <img
-                src="https://res.cloudinary.com/frain/image/upload/v1650448706/convoy-logo_li1ahy.png"
-                alt="convoy-logo"
-                style="height: 32px"
-              />
+<body>
+<div style="background: rgba(115, 122, 145, 0.03); border-radius: 0px 0px 4px 4px; padding: 2em;">
+    <div style="max-width: 640px; margin: auto">
+        <div style="background: white; width: 100%">
+            <div style="padding: 30px 40px 60px 40px">
+                <img src="https://res.cloudinary.com/frain/image/upload/v1639505046/logos/Convoy/Logo-Name-Inline-Transparent_cep9uj.png"
+                     alt="convoy-logo" style="height: 36px; display: inline; float: left;">
             </div>
-            <h4>Verify your email address</h4>
-            <p>Hi {{ .recipient_name }},</p>
-            <p>
-              Thank you for joining Convoy, please verify your email address by
-              clicking the button below or using this link:
-              <a
-                href="{{ .email_verification_url }}"
-                target="_blank"
-              >
-                  {{ .email_verification_url }}
-              </a>
-            </p>
-              <a
-                  href="{{ .email_verification_url }}"
-                  target="_blank"
-              > <button>Verify Email</button>
-              </a>
-          </div>
-          <div class="footer">
-            <p>
-              This email was sent to
-              <a href="mailto:{{ .email }}" target="_blank"
-                >{{ .email }}</a
-              >.
-            <p>Convoy, 251 Little Falls Drive, Wilminton, DE, US. 19808</p>
 
-            <table width="100%" border="0" cellspacing="0" cellpadding="0">
-              <tr>
-                <td>
-                  <a href="https://getconvoy.io" target="_blank"
-                    >getconvoy.io</a
-                  >
-                </td>
-                <td></td>
-                <td>
-                  <a href="https://getconvoy.io/blog" target="_blank"> Blog </a>
-                </td>
-                <td>
-                  <a href="https://twitter.com/getconvoy" target="_blank">
-                    <img
-                      src="https://res.cloudinary.com/frain/image/upload/v1650447737/twitter-blog-icon_gjouio.png"
-                      alt="twitter icon"
-                      style="width: 32px; height: 32px"
-                  /></a>
-                </td>
-                <td>
-                  <a
-                    href="https://convoy-community.slack.com/join/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ#/shared-invite/email"
+            <div style="background: #edf2f7; padding: 40px 48px">
+                <h1 style="color: #121a26; font-size: 24px; line-height: 34px; font-weight: 700; margin-bottom: 24px; font-family: Inter;">
+                    Verify your email address
+                </h1>
+                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
+                    Hi {{ .recipient_name }},
+                </p>
+
+                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
+                    Thank you for joining Convoy, please verify your email address by
+                    clicking the button below or using this link:
+                </p>
+
+                <a
+                    href="{{ .email_verification_url }}"
                     target="_blank"
-                  >
-                    <img
-                      src="https://res.cloudinary.com/frain/image/upload/v1650447870/slack-blog-icon_vznuby.png"
-                      alt="slack icon"
-                      style="width: 32px; height: 32px"
-                    />
-                  </a>
-                </td>
-                <td>
-                  <a href="https://github.com/frain-dev/convoy" target="_blank">
-                    <img
-                      src="https://res.cloudinary.com/frain/image/upload/v1650447537/github-blog-icon_uzsa41.png"
-                      alt="github icon"
-                      style="width: 32px; height: 32px"
-                    />
-                  </a>
-                </td>
-              </tr>
-            </table>
-          </div>
-        </td>
-      </tr>
-    </table>
-  </body>
+                >
+                    {{ .email_verification_url }}
+                </a>
+                <button>Verify Email</button>
+            </div>
+
+            <div style="padding: 40px 48px">
+                <p style="color: #9ca3af; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px; word-wrap: break-word;">
+                    2261 Market Street, San Francisco, CA 94114
+                </p>
+                <p style="color: #9ca3af; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px; word-wrap: break-word;">
+                    © 2024 Frain Technologies
+                </p>
+            </div>
+
+            <div style="background: #edf2f7; height: 24px; width: 100%"></div>
+        </div>
+    </div>
+</div>
+</body>
 </html>
