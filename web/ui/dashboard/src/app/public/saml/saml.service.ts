@@ -5,29 +5,14 @@ import { HttpService } from 'src/app/services/http/http.service';
 @Injectable({
 	providedIn: 'root'
 })
-export class LoginService {
+export class SamlService {
 	constructor(private http: HttpService) {}
 
-	login(requestDetails: { email?: string; password?: string }): Promise<HTTP_RESPONSE> {
+	authenticateWithSaml(accessCode: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: '/auth/login',
-					body: requestDetails,
-					method: 'post'
-				});
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
-	loginWithSaml(): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: '/auth/sso',
+					url: `/auth/saml?saml_access_code=${accessCode}`,
 					method: 'get'
 				});
 				return resolve(response);
