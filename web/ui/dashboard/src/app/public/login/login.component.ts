@@ -77,7 +77,9 @@ export class LoginComponent implements OnInit {
 	async loginWithSAML() {
 		try {
 			const res = await this.loginService.loginWithSaml();
-			console.log(res);
+
+			const { redirectUrl } = res.data;
+			window.open(redirectUrl);
 		} catch (error) {
 			throw error;
 		}

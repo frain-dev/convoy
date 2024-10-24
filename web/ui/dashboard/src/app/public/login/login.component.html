@@ -24,12 +24,12 @@
 				<button convoy-button fill="link" type="button" class="px-0 ml-6px" (click)="router.navigateByUrl('/forgot-password')" size="sm">Reset it here</button>
 			</div>
 
-			<button convoy-button [disabled]="disableLoginBtn" size="lg" class="mb-24px">
+			<button convoy-button [disabled]="disableLoginBtn" size="lg" class="mb-12px">
 				<span class="text-14 text-white-100" *ngIf="!disableLoginBtn">Login</span>
 				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
 			</button>
 
-			<button convoy-button size="lg" type="button" fill="text" class="w-full" (click)="loginWithSAML()">Login with SAML</button>
+			<button convoy-button size="sm" type="button" fill="text" class="w-full" (click)="loginWithSAML()">Login with SAML</button>
 		</form>
 
 		<button *ngIf="isSignupEnabled && licenseService.hasLicense('CREATE_USER')" convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>

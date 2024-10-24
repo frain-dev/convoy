@@ -67,10 +67,12 @@ export class SignupComponent implements OnInit {
 		}
 	}
 
-	async loginWithSAML() {
+	async signUpWithSAML() {
 		try {
-			const res = await this.signupService.loginWithSaml();
+			const res = await this.signupService.signUpWithSAML();
 			console.log(res);
+            const { redirectUrl } = res.data;
+			window.open(redirectUrl, '_blank');
 		} catch (error) {
 			throw error;
 		}
