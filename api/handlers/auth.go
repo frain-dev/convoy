@@ -17,11 +17,7 @@ import (
 
 func (h *Handler) InitLoginSSO(w http.ResponseWriter, r *http.Request) {
 
-	configuration, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
+	configuration := h.A.Cfg
 
 	lu := services.LoginUserSSOService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
@@ -44,11 +40,7 @@ func (h *Handler) InitLoginSSO(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) RedeemSSOToken(w http.ResponseWriter, r *http.Request) {
 
-	configuration, err := config.Get()
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
-		return
-	}
+	configuration := h.A.Cfg
 
 	lu := services.LoginUserSSOService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
