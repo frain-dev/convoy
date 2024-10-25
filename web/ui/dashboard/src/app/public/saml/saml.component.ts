@@ -30,7 +30,9 @@ export class SamlComponent implements OnInit {
 
 			await this.getOrganisations();
 			this.router.navigateByUrl('/');
-		} catch {}
+		} catch {
+            this.router.navigateByUrl('/login');
+        }
 	}
 
     async getOrganisations() {
