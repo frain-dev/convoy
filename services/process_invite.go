@@ -33,6 +33,7 @@ type ProcessInviteService struct {
 }
 
 var ErrUserLimit = errors.New("your instance has reached it's user limit, upgrade to add new users")
+var ErrUserAlreadyExist = errors.New("user already exist")
 
 func (pis *ProcessInviteService) Run(ctx context.Context) error {
 	ok, err := pis.Licenser.CreateUser(ctx)

@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 	"github.com/oklog/ulid/v2"
 	"io"
 	"net/http"
@@ -149,7 +150,7 @@ func (u *LoginUserSSOService) RedeemToken(queryValues url.Values) (*models.SSOTo
 	return &tokenResponse, nil
 }
 
-func (u *LoginUserSSOService) LoginOrRegisterUser(ctx context.Context, a *types.APIOptions, t *models.SSOTokenResponse) (*datastore.User, *jwt.Token, error) {
+func (u *LoginUserSSOService) LoginSSOUser(ctx context.Context, t *models.SSOTokenResponse) (*datastore.User, *jwt.Token, error) {
 	user, err := u.UserRepo.FindUserByEmail(ctx, t.Data.Payload.Email)
 	if user != nil && err == nil {
 		token, err := u.JWT.GenerateToken(user)
@@ -158,6 +159,22 @@ func (u *LoginUserSSOService) LoginOrRegisterUser(ctx context.Context, a *types.
 		}
 
 		return user, &token, nil
+	}
+
+	if errors.Is(err, datastore.ErrUserNotFound) {
+		return nil, nil, &ServiceError{ErrMsg: err.Error(), Err: err}
+	}
+
+	return nil, nil, &ServiceError{ErrMsg: "login failed", Err: err}
+}
+
+func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIOptions, t *models.SSOTokenResponse) (*datastore.User, *jwt.Token, error) {
+	user, err := u.UserRepo.FindUserByEmail(ctx, t.Data.Payload.Email)
+	if user != nil && err == nil {
+		return nil, nil, &ServiceError{
+			ErrMsg: ErrUserAlreadyExist.Error(),
+			Err:    ErrUserAlreadyExist,
+		}
 	}
 
 	ok, err := a.Licenser.CreateUser(ctx)
@@ -187,10 +204,11 @@ func (u *LoginUserSSOService) LoginOrRegisterUser(ctx context.Context, a *types.
 		return nil, nil, &ServiceError{ErrMsg: "failed to generate hash", Err: err}
 	}
 
+	firstName, lastName := util.ExtractOrGenerateNamesFromEmail(t.Data.Payload.Email)
 	user = &datastore.User{
-		UID: ulid.Make().String(),
-		//FirstName:                  u.Data.FirstName,
-		//LastName:                   u.Data.LastName,
+		UID:                    ulid.Make().String(),
+		FirstName:              firstName,
+		LastName:               lastName,
 		Email:                  t.Data.Payload.Email,
 		Password:               string(p.Hash),
 		EmailVerificationToken: ulid.Make().String(),

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 
 	"github.com/frain-dev/convoy/auth/realm/jwt"
@@ -15,7 +16,16 @@ import (
 	"github.com/go-chi/render"
 )
 
-func (h *Handler) InitLoginSSO(w http.ResponseWriter, r *http.Request) {
+type (
+	SSOAuthIntent string
+)
+
+const (
+	LoginIntent    SSOAuthIntent = "login"
+	RegisterIntent SSOAuthIntent = "register"
+)
+
+func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 
 	configuration := h.A.Cfg
 
@@ -31,14 +41,22 @@ func (h *Handler) InitLoginSSO(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := lu.Run()
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
 		return
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Get Redirect successful", resp, http.StatusOK))
 }
 
-func (h *Handler) RedeemSSOToken(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RedeemLoginSSOToken(w http.ResponseWriter, r *http.Request) {
+	h.redeemSSOToken(w, r, LoginIntent)
+}
+
+func (h *Handler) RedeemRegisterSSOToken(w http.ResponseWriter, r *http.Request) {
+	h.redeemSSOToken(w, r, RegisterIntent)
+}
+
+func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent SSOAuthIntent) {
 
 	configuration := h.A.Cfg
 
@@ -58,10 +76,20 @@ func (h *Handler) RedeemSSOToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, token, err := lu.LoginOrRegisterUser(r.Context(), h.A, tokenResp)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
-		return
+	var user *datastore.User
+	var token *jwt.Token
+	if intent == RegisterIntent {
+		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+			return
+		}
+	} else {
+		user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+			return
+		}
 	}
 
 	u := &models.LoginUserResponse{

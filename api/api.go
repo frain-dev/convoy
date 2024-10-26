@@ -243,7 +243,11 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		})
 	})
 
-	router.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/saml", handler.RedeemSSOToken)
+	router.Route("/saml", func(samlRouter chi.Router) {
+		samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+		samlRouter.Get("/login", handler.RedeemLoginSSOToken)
+		samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
+	})
 
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
@@ -260,7 +264,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		uiRouter.Get("/users/token", handler.FindUserByInviteToken)
 
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/sso", handler.InitLoginSSO)
+			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/sso", handler.InitSSO)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
@@ -568,7 +572,11 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		})
 	})
 
-	router.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/saml", handler.RedeemSSOToken)
+	router.Route("/saml", func(samlRouter chi.Router) {
+		samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+		samlRouter.Get("/login", handler.RedeemLoginSSOToken)
+		samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
+	})
 
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
@@ -578,7 +586,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		// TODO(subomi): added these back for the tests to pass.
 		// What should we do in the future?
 		uiRouter.Route("/auth", func(authRouter chi.Router) {
-			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/sso", handler.InitLoginSSO)
+			authRouter.With(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser)).Get("/sso", handler.InitSSO)
 			authRouter.Post("/login", handler.LoginUser)
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
