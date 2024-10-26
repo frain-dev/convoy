@@ -118,3 +118,7 @@ func (Licenser) AgentExecutionMode() bool {
 func (Licenser) IpRules() bool {
 	return true
 }
+
+func (Licenser) EnterpriseSSO() bool {
+	return true
+}

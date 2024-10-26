@@ -29,7 +29,7 @@ type ProcessInviteService struct {
 
 	Token    string
 	Accepted bool
-	NewUser  *models.User
+	NewUser  *models.User // TODO: Login Invite with SSO
 }
 
 var ErrUserLimit = errors.New("your instance has reached it's user limit, upgrade to add new users")
