@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -48,8 +47,7 @@ const (
 )
 
 type eventTypesRepo struct {
-	db    *sqlx.DB
-	cache cache.Cache
+	db *sqlx.DB
 }
 
 func NewEventTypesRepo(db database.Database) datastore.EventTypesRepository {

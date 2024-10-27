@@ -92,7 +92,7 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EventTypeResponse{EventType: pe}
-	_ = render.Render(w, r, util.NewServerResponse("Event type created successfully", resp, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event type created successfully", resp, http.StatusCreated))
 }
 
 // UpdateEventType
@@ -147,7 +147,7 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := &models.EventTypeResponse{EventType: pe}
-	_ = render.Render(w, r, util.NewServerResponse("Event type created successfully", resp, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Event type created successfully", resp, http.StatusAccepted))
 }
 
 // DeprecateEventType
