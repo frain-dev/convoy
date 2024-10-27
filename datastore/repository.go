@@ -210,3 +210,11 @@ type DeliveryAttemptsRepository interface {
 	DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *DeliveryAttemptsFilter, hardDelete bool) error
 	GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (resultsMap map[string]circuit_breaker.PollResult, err error)
 }
+
+type EventTypesRepository interface {
+	CreateEventType(context.Context, *ProjectEventType) error
+	UpdateEventType(context.Context, *ProjectEventType) error
+	DeprecateEventType(context.Context, string, string) (*ProjectEventType, error)
+	FetchEventTypeById(context.Context, string, string) (*ProjectEventType, error)
+	FetchAllEventTypes(context.Context, string) ([]ProjectEventType, error)
+}
