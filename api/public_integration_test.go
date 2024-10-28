@@ -2773,3 +2773,162 @@ func (s *PublicMetaEventIntegrationTestSuite) Test_GetMetaEvent_Valid_MetaEvent(
 func TestPublicMetaEventIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(PublicMetaEventIntegrationTestSuite))
 }
+
+type PublicEventTypeIntegrationTestSuite struct {
+	suite.Suite
+	DB             database.Database
+	Router         http.Handler
+	ConvoyApp      *ApplicationHandler
+	DefaultOrg     *datastore.Organisation
+	DefaultProject *datastore.Project
+	APIKey         string
+}
+
+func (s *PublicEventTypeIntegrationTestSuite) SetupSuite() {
+	s.DB = getDB()
+	s.ConvoyApp = buildServer()
+	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+}
+
+func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
+	testdb.PurgeDB(s.T(), s.DB)
+
+	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+
+	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
+	require.NoError(s.T(), err)
+	s.DefaultOrg = org
+
+	// Setup Default Project.
+	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
+	require.NoError(s.T(), err)
+
+	// Seed Auth
+	role := auth.Role{
+		Type:    auth.RoleAdmin,
+		Project: s.DefaultProject.UID,
+	}
+
+	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+}
+
+func (s *PublicEventTypeIntegrationTestSuite) TearDownTest() {
+	testdb.PurgeDB(s.T(), s.DB)
+	metrics.Reset()
+}
+
+func (s *PublicEventTypeIntegrationTestSuite) Test_GetEventTypes() {
+	expectedStatusCode := http.StatusOK
+
+	url := fmt.Sprintf("/api/v1/projects/%s/event-types", s.DefaultProject.UID)
+	req := createRequest(http.MethodGet, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	eventTypeId := ulid.Make().String()
+	// Just Before: Create an event type to update
+	_, err := testdb.SeedEventType(s.ConvoyApp.A.DB, s.DefaultProject.UID, eventTypeId, "Initial Name", "Initial Description", "Initial Category")
+	require.NoError(s.T(), err)
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var resp models.EventTypeListResponse
+	parseResponse(s.T(), w.Result(), &resp)
+	require.NotEmpty(s.T(), resp.EventTypes)
+}
+
+func (s *PublicEventTypeIntegrationTestSuite) Test_CreateEventType() {
+	expectedStatusCode := http.StatusCreated
+	eventTypeName := "Test Event Type"
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/event-types", s.DefaultProject.UID)
+	body := serialize(`{
+		"name": "%s",
+		"category": "Test Category",
+		"description": "Test Description"
+	}`, eventTypeName)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var resp models.EventTypeResponse
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), eventTypeName, resp.EventType.Name)
+}
+
+func (s *PublicEventTypeIntegrationTestSuite) Test_UpdateEventType() {
+	expectedStatusCode := http.StatusAccepted
+	eventTypeId := ulid.Make().String()
+
+	// Just Before: Create an event type to update
+	_, err := testdb.SeedEventType(s.ConvoyApp.A.DB, s.DefaultProject.UID, eventTypeId, "Initial Name", "Initial Description", "Initial Category")
+	require.NoError(s.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/event-types/%s", s.DefaultProject.UID, eventTypeId)
+	body := serialize(`{
+		"name": "Updated Event Type",
+		"description": "Updated Description",
+		"category": "Updated Category"
+	}`)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var resp models.EventTypeResponse
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), "Updated Category", resp.EventType.Category)
+	require.Equal(s.T(), "Updated Description", resp.EventType.Description)
+
+	// Name should not change
+	require.Equal(s.T(), "Initial Name", resp.EventType.Name)
+}
+
+func (s *PublicEventTypeIntegrationTestSuite) Test_DeprecateEventType() {
+	expectedStatusCode := http.StatusOK
+	eventTypeId := ulid.Make().String()
+
+	// Just Before: Create an event type to deprecate
+	_, err := testdb.SeedEventType(s.ConvoyApp.A.DB, s.DefaultProject.UID, eventTypeId, "Deprecate Me", "Description", "Category")
+	require.NoError(s.T(), err)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/event-types/%s/deprecate", s.DefaultProject.UID, eventTypeId)
+	req := createRequest(http.MethodPost, url, s.APIKey, nil)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var resp models.EventTypeResponse
+	parseResponse(s.T(), w.Result(), &resp)
+	require.Equal(s.T(), eventTypeId, resp.EventType.ID)
+	require.NotNil(s.T(), resp.EventType.DeprecatedAt)
+	require.True(s.T(), resp.EventType.DeprecatedAt.Valid)
+}
+
+func TestPublicEventTypeIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(PublicEventTypeIntegrationTestSuite))
+}

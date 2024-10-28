@@ -24,6 +24,24 @@ import (
 	"github.com/xdg-go/pbkdf2"
 )
 
+func SeedEventType(db database.Database, projectId, uid, name, desc, category string) (*datastore.ProjectEventType, error) {
+
+	evtTypesRepo := postgres.NewEventTypesRepo(db)
+	pe := &datastore.ProjectEventType{
+		ID:          uid,
+		Name:        name,
+		Category:    category,
+		ProjectId:   projectId,
+		Description: desc,
+	}
+
+	err := evtTypesRepo.CreateEventType(context.Background(), pe)
+	if err != nil {
+		return &datastore.ProjectEventType{}, err
+	}
+	return pe, nil
+}
+
 // SeedEndpoint creates a random endpoint for integration tests.
 func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerID string, disabled bool, status datastore.EndpointStatus) (*datastore.Endpoint, error) {
 	if util.IsStringEmpty(uid) {

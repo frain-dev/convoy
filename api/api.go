@@ -185,6 +185,13 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						})
 					})
 
+					projectSubRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
+						eventTypesRouter.Get("/", handler.GetEventTypes)
+						eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
+						eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
+						eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
+					})
+
 					projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
 						eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
 						eventDeliveryRouter.With(handler.RequireEnabledProject()).Post("/forceresend", handler.ForceResendEventDeliveries)
@@ -351,6 +358,13 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 								eventSubRouter.With(handler.RequireEnabledProject()).Put("/replay", handler.ReplayEndpointEvent)
 								eventSubRouter.Get("/", handler.GetEndpointEvent)
 							})
+						})
+
+						projectSubRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
+							eventTypesRouter.Get("/", handler.GetEventTypes)
+							eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
+							eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
+							eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
 						})
 
 						projectSubRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {

@@ -30,7 +30,7 @@ type CreateEndpoint struct {
 	AdvancedSignatures *bool `json:"advanced_signatures"`
 
 	// Endpoint name.
-	Name string `json:"name" valid:"required~please provide your endpointName"`
+	Name string `json:"name" valid:"required~please provide your endpoint name"`
 
 	// Endpoint developers support email. This is used for communicating endpoint state
 	// changes. You should always turn this on when disabling endpoints are enabled.
