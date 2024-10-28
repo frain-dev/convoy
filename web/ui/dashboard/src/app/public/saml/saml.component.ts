@@ -18,12 +18,13 @@ export class SamlComponent implements OnInit {
 	constructor(private samlService: SamlService, private route: ActivatedRoute, private router: Router, private privateService: PrivateService) {}
 
 	ngOnInit() {
-		this.authenticate();
+		const authType = localStorage.getItem('AUTH_TYPE');
+		authType === 'login' ? this.authenticateLogin() : this.authenticateSignup();
 	}
 
-	async authenticate() {
+	async authenticateLogin() {
 		try {
-			const response = await this.samlService.authenticateWithSaml(this.accessCode);
+			const response = await this.samlService.authenticateLoginWithSaml(this.accessCode);
 
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
@@ -31,11 +32,25 @@ export class SamlComponent implements OnInit {
 			await this.getOrganisations();
 			this.router.navigateByUrl('/');
 		} catch {
-            this.router.navigateByUrl('/login');
-        }
+			this.router.navigateByUrl('/login');
+		}
 	}
 
-    async getOrganisations() {
+	async authenticateSignup() {
+		try {
+			const response = await this.samlService.authenticateSignupWithSaml(this.accessCode);
+
+			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
+			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
+
+			await this.getOrganisations();
+			this.router.navigateByUrl('/');
+		} catch {
+			this.router.navigateByUrl('/signup');
+		}
+	}
+
+	async getOrganisations() {
 		try {
 			await this.privateService.getOrganizations({ refresh: true });
 			return;

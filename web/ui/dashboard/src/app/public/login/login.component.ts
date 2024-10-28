@@ -75,6 +75,8 @@ export class LoginComponent implements OnInit {
 	}
 
 	async loginWithSAML() {
+		localStorage.setItem('AUTH_TYPE', 'login');
+
 		try {
 			const res = await this.loginService.loginWithSaml();
 

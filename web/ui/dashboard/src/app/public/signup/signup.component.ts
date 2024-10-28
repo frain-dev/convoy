@@ -68,10 +68,12 @@ export class SignupComponent implements OnInit {
 	}
 
 	async signUpWithSAML() {
+		localStorage.setItem('AUTH_TYPE', 'signup');
+
 		try {
 			const res = await this.signupService.signUpWithSAML();
 			console.log(res);
-            const { redirectUrl } = res.data;
+			const { redirectUrl } = res.data;
 			window.open(redirectUrl, '_blank');
 		} catch (error) {
 			throw error;

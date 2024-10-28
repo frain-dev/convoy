@@ -8,11 +8,25 @@ import { HttpService } from 'src/app/services/http/http.service';
 export class SamlService {
 	constructor(private http: HttpService) {}
 
-	authenticateWithSaml(accessCode: string): Promise<HTTP_RESPONSE> {
+	authenticateLoginWithSaml(accessCode: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/auth/saml?saml_access_code=${accessCode}`,
+					url: `/auth/saml/login?saml_access_code=${accessCode}`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+    authenticateSignupWithSaml(accessCode: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/auth/saml/register?saml_access_code=${accessCode}`,
 					method: 'get'
 				});
 				return resolve(response);
