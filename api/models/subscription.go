@@ -30,7 +30,7 @@ type CreateSubscription struct {
 	AlertConfig *AlertConfiguration `json:"alert_config,omitempty"`
 
 	// Retry configuration
-	RetryConfig *RetryConfiguration `json:"retry_config,omitempty"`
+	RetryConfig *RetryConfiguration `json:"-"`
 
 	// Filter configuration
 	FilterConfig *FilterConfiguration `json:"filter_config,omitempty"`
