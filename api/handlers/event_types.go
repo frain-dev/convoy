@@ -158,8 +158,8 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 //	@Tags			EventTypes
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
-//	@Param			eventTypeId	path		string					true	"Event Type ID"
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			eventTypeId	path		string	true	"Event Type ID"
 //	@Success		201			{object}	util.ServerResponse{data=models.EventTypeResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
