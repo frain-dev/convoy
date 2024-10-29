@@ -12,7 +12,7 @@ export class SamlService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/auth/saml/login?saml_access_code=${accessCode}`,
+					url: `/saml/login?saml_access_code=${accessCode}`,
 					method: 'get'
 				});
 				return resolve(response);
@@ -26,7 +26,7 @@ export class SamlService {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
-					url: `/auth/saml/register?saml_access_code=${accessCode}`,
+					url: `/saml/register?saml_access_code=${accessCode}`,
 					method: 'get'
 				});
 				return resolve(response);
