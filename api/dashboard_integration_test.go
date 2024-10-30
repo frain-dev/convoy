@@ -163,7 +163,7 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 	u.Router.ServeHTTP(w, req)
 
 	// Assert
-	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
+	require.Equal(u.T(), http.StatusForbidden, w.Code)
 }
 
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
@@ -185,7 +185,7 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 	u.Router.ServeHTTP(w, req)
 
 	// Assert
-	require.Equal(u.T(), http.StatusUnauthorized, w.Code)
+	require.Equal(u.T(), http.StatusForbidden, w.Code)
 }
 
 func (u *AuthIntegrationTestSuite) Test_RefreshToken() {

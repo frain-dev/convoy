@@ -23,6 +23,6 @@ export class DropdownContainerComponent implements OnInit {
 			center: 'top-[110%] left-0',
 			'right-side': 'top-0 left-[105%]'
 		};
-		return `${this.sizes[this.size]} ${positions[this.position]} ${this.show ? 'opacity-100 h-fit pointer-events-auto overflow-y-auto overflow-x-hidden' : 'opacity-0 h-0 overflow-hidden pointer-events-none'} ${this.class}`;
+		return `${this.sizes[this.size]} ${positions[this.position]} ${this.show ? 'opacity-100 h-fit pointer-events-auto overflow-y-auto overflow-x-hidden' : 'opacity-0 h-0 overflow-hidden pointer-events-none'} absolute bg-white-100 border border-neutral-a3 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300 h-fit max-h-[440px] ${this.class}`;
 	}
 }
