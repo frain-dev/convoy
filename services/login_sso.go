@@ -162,7 +162,7 @@ func (u *LoginUserSSOService) LoginSSOUser(ctx context.Context, t *models.SSOTok
 	}
 
 	if errors.Is(err, datastore.ErrUserNotFound) {
-		return nil, nil, &ServiceError{ErrMsg: err.Error(), Err: err}
+		return nil, nil, err
 	}
 
 	return nil, nil, &ServiceError{ErrMsg: "login failed", Err: err}

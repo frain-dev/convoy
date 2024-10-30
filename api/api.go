@@ -243,11 +243,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		})
 	})
 
-	router.Route("/saml", func(samlRouter chi.Router) {
-		samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-		samlRouter.Get("/login", handler.RedeemLoginSSOToken)
-		samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
-	})
+
 
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
@@ -270,6 +266,12 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			authRouter.Post("/token/refresh", handler.RefreshToken)
 			authRouter.Post("/logout", handler.LogoutUser)
 		})
+
+        uiRouter.Route("/saml", func(samlRouter chi.Router) {
+            samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+            samlRouter.Get("/login", handler.RedeemLoginSSOToken)
+            samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
+        })
 
 		uiRouter.Route("/users", func(userRouter chi.Router) {
 			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
@@ -572,11 +574,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		})
 	})
 
-	router.Route("/saml", func(samlRouter chi.Router) {
-		samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-		samlRouter.Get("/login", handler.RedeemLoginSSOToken)
-		samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
-	})
+
 
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
@@ -592,6 +590,12 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 			authRouter.Post("/token/refresh", handler.RefreshToken)
 			authRouter.Post("/logout", handler.LogoutUser)
 		})
+
+        uiRouter.Route("/saml", func(samlRouter chi.Router) {
+            samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+            samlRouter.Get("/login", handler.RedeemLoginSSOToken)
+            samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
+        })
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {
@@ -710,6 +714,8 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 
 var guestRoutes = []string{
 	"/auth/sso",
+	"/saml/login",
+	"/saml/register",
 	"/auth/login",
 	"/auth/register",
 	"/auth/token/refresh",

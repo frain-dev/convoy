@@ -1,6 +1,7 @@
 package handlers
 
 import (
+    "errors"
 	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 
@@ -72,7 +73,7 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 
 	tokenResp, err := lu.RedeemToken(r.URL.Query())
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
 		return
 	}
 
@@ -81,13 +82,23 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 	if intent == RegisterIntent {
 		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
 		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+            if errors.Is(err, services.ErrUserAlreadyExist) {
+                _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusConflict))
+                return
+            }
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
 			return
 		}
+
+
 	} else {
 		user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
 		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+            if errors.Is(err, datastore.ErrUserNotFound) {
+                _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			    return
+            }
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
 			return
 		}
 	}
@@ -122,7 +133,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := lu.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
 		return
 	}
 
