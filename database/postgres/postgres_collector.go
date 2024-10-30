@@ -208,20 +208,27 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueMetrics = eventQueueMetrics
 
-	backlogQM := `with a1 as (
-    select ed.project_id, coalesce(source_id, 'http') as source_id,
-           EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
-    from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
-    where ed.status = 'Processing'
-    group by ed.project_id, source_id limit 1000 --samples
+	backlogQM := `WITH a1 AS (
+    SELECT ed.project_id,
+           COALESCE(e.source_id, 'http') AS source_id,
+           EXTRACT(EPOCH FROM (NOW() - MIN(ed.created_at))) AS age_seconds
+    FROM convoy.event_deliveries ed
+             LEFT JOIN convoy.events e ON e.id = ed.event_id
+    WHERE ed.status = 'Processing'
+    GROUP BY ed.project_id, e.source_id
+    LIMIT 1000 -- samples
     )
-    select * from a1
-    union all
-    select ed.project_id, coalesce(source_id, 'http'), 0 as age_seconds
-    from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
-    where ed.status = 'Success' and source_id not in (select source_id from a1)
-    group by ed.project_id, source_id
-    limit 1000 -- samples`
+    SELECT * FROM a1
+    UNION ALL
+    SELECT ed.project_id,
+           COALESCE(e.source_id, 'http'),
+           0 AS age_seconds
+    FROM convoy.event_deliveries ed
+             LEFT JOIN convoy.events e ON e.id = ed.event_id
+             LEFT JOIN a1 ON e.source_id = a1.source_id
+    WHERE ed.status = 'Success' AND a1.source_id IS NULL
+    GROUP BY ed.project_id, e.source_id
+    LIMIT 1000; -- samples`
 	rows1, err := p.GetDB().Queryx(backlogQM)
 	if err != nil {
 		return nil, err
@@ -255,20 +262,29 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventDeliveryQueueMetrics = eventDeliveryQueueMetrics
 
-	backlogEQM := `with a1 as (
-    select ed.project_id, coalesce(source_id, 'http') as source_id, endpoint_id,
-           EXTRACT(EPOCH FROM (NOW() - min(ed.created_at))) as age_seconds
-    from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
-    where ed.status = 'Processing'
-    group by ed.project_id, source_id, endpoint_id limit 1000 --samples
+	backlogEQM := `WITH a1 AS (
+    SELECT ed.project_id,
+           COALESCE(e.source_id, 'http') AS source_id,
+           ed.endpoint_id,
+           EXTRACT(EPOCH FROM (NOW() - MIN(ed.created_at))) AS age_seconds
+    FROM convoy.event_deliveries ed
+    LEFT JOIN convoy.events e ON e.id = ed.event_id
+    WHERE ed.status = 'Processing'
+    GROUP BY ed.project_id, e.source_id, ed.endpoint_id
+    LIMIT 1000 -- samples
     )
-    select * from a1
-    union all
-    select ed.project_id, coalesce(source_id, 'http'), endpoint_id, 0 as age_seconds
-    from convoy.event_deliveries ed left join convoy.events e on e.id = ed.event_id
-    where ed.status = 'Success' and endpoint_id not in (select endpoint_id from a1)
-    group by ed.project_id, source_id, endpoint_id
-    limit 1000 -- samples`
+    SELECT * FROM a1
+    UNION ALL
+    SELECT ed.project_id,
+           COALESCE(e.source_id, 'http'),
+           ed.endpoint_id,
+           0 AS age_seconds
+    FROM convoy.event_deliveries ed
+    LEFT JOIN convoy.events e ON e.id = ed.event_id
+    LEFT JOIN a1 ON ed.endpoint_id = a1.endpoint_id
+    WHERE ed.status = 'Success' AND a1.endpoint_id IS NULL
+    GROUP BY ed.project_id, e.source_id, ed.endpoint_id
+    LIMIT 1000; -- samples`
 	rows3, err := p.GetDB().Queryx(backlogEQM)
 	if err != nil {
 		return nil, err

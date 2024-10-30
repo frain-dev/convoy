@@ -1442,6 +1442,17 @@ const (
 	DeviceStatusDisabled DeviceStatus = "disabled"
 )
 
+type ProjectEventType struct {
+	ID           string    `db:"id" json:"id"`
+	Name         string    `db:"name" json:"name"`
+	Category     string    `db:"category" json:"category"`
+	ProjectId    string    `db:"project_id" json:"-"`
+	CreatedAt    time.Time `db:"created_at" json:"-"`
+	UpdatedAt    time.Time `db:"updated_at" json:"-"`
+	Description  string    `db:"description" json:"description"`
+	DeprecatedAt null.Time `db:"deprecated_at" json:"deprecated_at"`
+}
+
 type Job struct {
 	UID         string    `json:"uid" db:"id"`
 	Type        string    `json:"type" db:"type"`

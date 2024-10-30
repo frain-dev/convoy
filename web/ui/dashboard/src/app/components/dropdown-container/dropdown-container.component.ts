@@ -3,14 +3,14 @@ import { Directive, Input, OnInit } from '@angular/core';
 @Directive({
 	selector: '[convoy-dropdown-container]',
 	standalone: true,
-	host: { '[class]': 'classes' }
+	host: { class: 'absolute bg-white-100 border border-neutral-a3 rounded-12px shadow-default z-10 transition-all ease-in-out duration-300 h-fit max-h-[440px]', '[class]': 'classes' }
 })
 export class DropdownContainerComponent implements OnInit {
 	@Input('position') position: 'right' | 'left' | 'center' | 'right-side' = 'right';
 	@Input('size') size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
 	@Input('show') show = false;
 	@Input('className') class!: string;
-	sizes = { sm: 'min-w-140px', md: 'min-w-200px', lg: 'min-w-260px', xl: 'w-full min-w-[200px] max-w-[300px]', full: 'w-full' };
+	sizes = { sm: 'w-140px', md: 'w-200px', lg: 'w-260px', xl: 'w-full min-w-[200px] max-w-[300px]', full: 'w-full' };
 
 	constructor() {}
 
