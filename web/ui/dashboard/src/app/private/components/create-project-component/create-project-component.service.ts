@@ -116,6 +116,7 @@ export class CreateProjectComponentService {
 				const projectResponse = await this.http.request({
 					url: `/event-types/${eventTypeId}/deprecate`,
 					method: 'post',
+					body: {},
 					level: 'org_project'
 				});
 

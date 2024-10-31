@@ -98,7 +98,7 @@ export class CreateProjectComponent implements OnInit {
 		{ label: 'signature history', svg: 'fill', icon: 'sig-history' },
 		{ label: 'endpoints config', svg: 'stroke', icon: 'endpoints' },
 		{ label: 'meta events config', svg: 'stroke', icon: 'meta-events' },
-		{ label: 'event types', svg: 'stroke', icon: 'secret' },
+		{ label: 'event types', svg: 'stroke', icon: 'event-type' },
 		{ label: 'secrets', svg: 'stroke', icon: 'secret' }
 	];
 	activeTab = this.tabs[0];
@@ -372,7 +372,7 @@ export class CreateProjectComponent implements OnInit {
 
 	async deprecateEventType(eventTypeId: string) {
 		try {
-			await this.createProjectService.createEventType(eventTypeId);
+			await this.createProjectService.deprecateEventType(eventTypeId);
 			this.getEventTypes();
 		} catch {}
 	}
