@@ -428,9 +428,9 @@ definitions:
         type: string
       description:
         type: string
-      id:
-        type: string
       name:
+        type: string
+      uid:
         type: string
     type: object
   datastore.ProviderConfig:
@@ -2331,7 +2331,7 @@ paths:
       consumes:
       - application/json
       description: This endpoint updates an event type
-      operationId: CreateEventType
+      operationId: UpdateEventType
       parameters:
       - description: Project ID
         in: path
@@ -2392,7 +2392,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint creates an event type
+      description: This endpoint deprecates an event type
       operationId: DeprecateEventType
       parameters:
       - description: Project ID
@@ -2446,7 +2446,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create an event type
+      summary: Deprecates an event type
       tags:
       - EventTypes
   /v1/projects/{projectID}/eventdeliveries:

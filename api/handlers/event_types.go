@@ -99,7 +99,7 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Updates an event type
 //	@Description	This endpoint updates an event type
-//	@Id				CreateEventType
+//	@Id				UpdateEventType
 //	@Tags			EventTypes
 //	@Accept			json
 //	@Produce		json
