@@ -68,7 +68,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	token: string = this.route.snapshot.queryParams.token;
 
 	configurations = [
-		{ uid: 'filter_config', name: 'Event Filter', show: false },
+		{ uid: 'filter_config', name: 'Event Filter', show: false }
 		// { uid: 'retry_config', name: 'Retry Logic', show: false }
 	];
 	createdSubscription = false;
@@ -78,11 +78,14 @@ export class CreateSubscriptionComponent implements OnInit {
 	sourceURL!: string;
 	subscription!: SUBSCRIPTION;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
+	eventTypes: any;
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
+
+		this.getEventTypes();
 
 		this.projectType = this.token ? 'outgoing' : this.privateService.getProjectDetails?.type;
 
@@ -177,6 +180,20 @@ export class CreateSubscriptionComponent implements OnInit {
 			return;
 		}
 	}
+
+	async getEventTypes() {
+		if (this.privateService.getProjectDetails?.type === 'incoming') return;
+
+		try {
+			const response = await this.createSubscriptionService.getEventTypes();
+			this.eventTypes = response.data.event_types;
+			console.log(response);
+			return;
+		} catch (error) {
+			return;
+		}
+	}
+
 
 	async onCreateSource(newSource: SOURCE) {
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });

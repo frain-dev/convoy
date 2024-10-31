@@ -25,10 +25,12 @@ export class CreateProjectComponent implements OnInit {
 	@ViewChild('metaEventsDialog', { static: true }) metaEventsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('confirmationDialog', { static: true }) confirmationDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('newSignatureDialog', { static: true }) newSignatureDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('newEventTypeDialog', { static: true }) newEventTypeDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('mutliSubEndpointsDialog', { static: true }) mutliSubEndpointsDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('tokenDialog', { static: true }) tokenDialog!: ElementRef<HTMLDialogElement>;
 
 	signatureTableHead: string[] = ['Header', 'Version', 'Hash', 'Encoding'];
+	eventTypeTableHead: string[] = ['Event Type', 'Category', 'Description', ''];
 	projectForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		config: this.formBuilder.group({
@@ -61,6 +63,11 @@ export class CreateProjectComponent implements OnInit {
 		}),
 		type: [null, Validators.required]
 	});
+	newEventTypeForm: FormGroup = this.formBuilder.group({
+		name: ['', Validators.required],
+		category: ['', Validators.required],
+		description: ['', Validators.required]
+	});
 	newSignatureForm: FormGroup = this.formBuilder.group({
 		encoding: [null],
 		hash: [null]
@@ -91,10 +98,13 @@ export class CreateProjectComponent implements OnInit {
 		{ label: 'signature history', svg: 'fill', icon: 'sig-history' },
 		{ label: 'endpoints config', svg: 'stroke', icon: 'endpoints' },
 		{ label: 'meta events config', svg: 'stroke', icon: 'meta-events' },
+		{ label: 'event types', svg: 'stroke', icon: 'secret' },
 		{ label: 'secrets', svg: 'stroke', icon: 'secret' }
 	];
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
+	eventTypes: any;
+	selectedEventType: any;
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -107,6 +117,7 @@ export class CreateProjectComponent implements OnInit {
 	) {}
 
 	async ngOnInit() {
+		this.getEventTypes();
 		if (this.action === 'update') this.getProjectDetails();
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
 		if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
@@ -147,7 +158,7 @@ export class CreateProjectComponent implements OnInit {
 
 			this.setSignatureVersions();
 
-			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history');
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history' && tab.label !== 'event types' );
 
 			this.projectForm.patchValue(this.projectDetails);
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
@@ -335,5 +346,56 @@ export class CreateProjectComponent implements OnInit {
 
 	get shouldShowBorder(): number {
 		return this.configurations.filter(config => config.show).length;
+	}
+
+	async createNewEventType() {
+		try {
+			await this.createProjectService.createEventType(this.newEventTypeForm.value);
+			this.newEventTypeForm.reset();
+			this.newEventTypeDialog.nativeElement.close();
+			this.getEventTypes();
+		} catch {}
+	}
+
+	async updateNewEventType() {
+		const payload = {
+			data: this.newEventTypeForm.value,
+			eventId: this.selectedEventType.id
+		};
+		try {
+			await this.createProjectService.updateEventType(payload);
+			this.newEventTypeForm.reset();
+			this.newEventTypeDialog.nativeElement.close();
+			this.getEventTypes();
+		} catch {}
+	}
+
+	async deprecateEventType(eventTypeId: string) {
+		try {
+			await this.createProjectService.createEventType(eventTypeId);
+			this.getEventTypes();
+		} catch {}
+	}
+
+	async getEventTypes() {
+        if (this.privateService.getProjectDetails?.type === 'incoming') return;
+
+		try {
+			const response = await this.createProjectService.getEventTypes();
+			this.eventTypes = response.data.event_types;
+			return;
+		} catch (error) {
+			return;
+		}
+	}
+
+	openEditEventTypeModal(eventType: any) {
+		this.selectedEventType = eventType;
+		this.newEventTypeForm.patchValue({
+			name: eventType.name,
+			description: eventType.description,
+			category: eventType.category
+		});
+		this.newEventTypeDialog.nativeElement.showModal();
 	}
 }
