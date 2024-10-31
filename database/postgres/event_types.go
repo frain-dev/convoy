@@ -56,7 +56,7 @@ func NewEventTypesRepo(db database.Database) datastore.EventTypesRepository {
 
 func (e *eventTypesRepo) CreateEventType(ctx context.Context, eventType *datastore.ProjectEventType) error {
 	r, err := e.db.ExecContext(ctx, createEventType,
-		eventType.ID,
+		eventType.UID,
 		eventType.Name,
 		eventType.Description,
 		eventType.Category,
@@ -80,7 +80,7 @@ func (e *eventTypesRepo) CreateEventType(ctx context.Context, eventType *datasto
 
 func (e *eventTypesRepo) UpdateEventType(ctx context.Context, eventType *datastore.ProjectEventType) error {
 	r, err := e.db.ExecContext(ctx, updateEventType,
-		eventType.ID,
+		eventType.UID,
 		eventType.ProjectId,
 		eventType.Description,
 		eventType.Category,

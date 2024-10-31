@@ -79,7 +79,7 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 	pe := &datastore.ProjectEventType{
 		ProjectId:   project.UID,
 		Name:        newEventType.Name,
-		ID:          ulid.Make().String(),
+		UID:         ulid.Make().String(),
 		Category:    newEventType.Category,
 		Description: newEventType.Description,
 	}
@@ -152,8 +152,8 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 
 // DeprecateEventType
 //
-//	@Summary		Create an event type
-//	@Description	This endpoint creates an event type
+//	@Summary		Deprecates an event type
+//	@Description	This endpoint deprecates an event type
 //	@Id				DeprecateEventType
 //	@Tags			EventTypes
 //	@Accept			json
