@@ -34,11 +34,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		function: [null],
-		retry_config: this.formBuilder.group({
-			type: [],
-			retry_count: [null, Validators.pattern('^[-+]?[0-9]+$')],
-			duration: []
-		}),
 		filter_config: this.formBuilder.group({
 			event_types: [null],
 			filter: this.formBuilder.group({
@@ -68,8 +63,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	token: string = this.route.snapshot.queryParams.token;
 
 	configurations = [
-		{ uid: 'filter_config', name: 'Event Filter', show: false },
-		// { uid: 'retry_config', name: 'Retry Logic', show: false }
+		{ uid: 'filter_config', name: 'Event Filter', show: false }
 	];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
@@ -147,7 +141,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 			if (this.token) this.projectType = 'outgoing';
 
-			if (response.data?.retry_config) this.toggleConfigForm('retry_config');
 			if (response.data?.function) this.toggleConfigForm('tranform_config');
 
 			return;
@@ -223,7 +216,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		await this.runSubscriptionValidation();
 
-		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('retry_config')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
+		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
 			this.toggleFormsLoaders(false);
 			this.subscriptionForm.markAllAsTouched();
 			return;
@@ -242,8 +235,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
-		const retryDuration = this.subscriptionForm.get('retry_config.duration');
-		this.configurations[1]?.show ? (subscriptionData.retry_config.duration = retryDuration?.value + 's') : delete subscriptionData.retry_config;
 
 		// create subscription
 		try {
