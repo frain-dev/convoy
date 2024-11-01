@@ -34,11 +34,6 @@ export class CreateSubscriptionComponent implements OnInit {
 		source_id: [''],
 		endpoint_id: [null, Validators.required],
 		function: [null],
-		// retry_config: this.formBuilder.group({
-		// 	type: [],
-		// 	retry_count: [null, Validators.pattern('^[-+]?[0-9]+$')],
-		// 	duration: []
-		// }),
 		filter_config: this.formBuilder.group({
 			event_types: [null],
 			filter: this.formBuilder.group({
@@ -149,7 +144,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 			if (this.token) this.projectType = 'outgoing';
 
-			if (response.data?.retry_config) this.toggleConfigForm('retry_config');
 			if (response.data?.function) this.toggleConfigForm('tranform_config');
 
 			return;
@@ -211,7 +205,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async runSubscriptionValidation() {
 		const configFields: any = {
-			// retry_config: ['retry_config.type', 'retry_config.retry_count', 'retry_config.duration'],
 			events: ['filter_config.event_types']
 		};
 
