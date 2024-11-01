@@ -37,6 +37,7 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	@Input('tooltipContent') tooltipContent!: string;
 	@Input('searchable') searchable: boolean = false;
 	@Input('selectedValues') selectedValues: any = [];
+	@Input('selectionType') selectionType: 'eventTypes' | 'default' = 'default';
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();
 	@Output('searchString') searchString = new EventEmitter<any>();
 	@ViewChild('searchFilter', { static: false }) searchFilter!: ElementRef;
@@ -63,13 +64,13 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	removeOption(option: any) {
-		this.selectedOptions = this.selectedOptions.filter((e: any) => e !== option) || this.selectedOptions.filter((e: any) => e.uid !== option.uid);
+		this.selectedOptions = this.selectedOptions.filter((e: any) => e !== option) || this.selectedOptions.filter((e: any) => e.uid !== option.uid) || this.selectedOptions.filter((e: any) => e.name !== option.name);
 		this.updateSelectedOptions();
 	}
 
 	updateSelectedOptions() {
 		if (!this.selectedOptions?.length) return;
-		const selectedIds = typeof this.selectedOptions[0] !== 'string' ? this.selectedOptions.map((item: any) => item.uid) : this.selectedOptions;
+		const selectedIds = typeof this.selectedOptions[0] !== 'string' ? (this.selectionType === 'default' ? this.selectedOptions.map((item: any) => item.uid) : this.selectedOptions.map((item: any) => item.name)) : this.selectedOptions;
 		this.selectedOption.emit(selectedIds);
 	}
 
