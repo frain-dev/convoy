@@ -366,9 +366,9 @@
 											<div convoy-tag size="sm" [color]="event.deprecated_at ? 'error' : 'success'">{{ event.deprecated_at ? 'deprecated' : 'active' }}</div>
 										</div>
 									</td>
-									<td convoy-table-cell>{{ event.category }}</td>
+									<td convoy-table-cell>{{ event.category || '-' }}</td>
 									<td convoy-table-cell>
-										<div class="max-w-[240px] whitespace-normal text-12">{{ event.description }}</div>
+										<div class="max-w-[240px] whitespace-normal text-12">{{ event.description || '-' }}</div>
 									</td>
 									<td convoy-table-cell>
 										<div class="flex items-center gap-12px">
@@ -378,7 +378,7 @@
 												</svg>
 												Edit
 											</button>
-											<button convoy-button color="error" fill="text" type="button" [disabled]="event.deprecated_at" (click)="deprecateEventType(event.id)">
+											<button convoy-button color="error" fill="text" type="button" [disabled]="event.deprecated_at" (click)="deprecateEventType(event.uid)">
 												<svg width="14" height="14" class="fill-transparent stroke-error-9 mr-8px">
 													<use xlink:href="#delete-icon2"></use>
 												</svg>
@@ -424,14 +424,13 @@
 	<div class="p-20px h-full">
 		<form [formGroup]="newEventTypeForm" (action)="createNewEventType()">
 			<convoy-input-field className="mb-0">
-				<label for="event_name" convoy-label>Event Name</label>
+				<label for="event_name" convoy-label required="true">Event Name</label>
 				<input type="text" id="event_name" convoy-input autocomplete="event_name" placeholder="Enter event name" formControlName="name" [readonly]="selectedEventType" />
 				<convoy-input-error *ngIf="newEventTypeForm.get('name')?.touched && newEventTypeForm.get('name')?.invalid">Please enter an event name</convoy-input-error>
 			</convoy-input-field>
 			<convoy-input-field className="mb-0">
 				<label for="category" convoy-label>Category</label>
 				<input type="text" id="category" convoy-input autocomplete="category" placeholder="Enter category" formControlName="category" />
-				<convoy-input-error *ngIf="newEventTypeForm.get('category')?.touched && newEventTypeForm.get('category')?.invalid">Please enter a category</convoy-input-error>
 			</convoy-input-field>
 			<convoy-input-field>
 				<label for="event_description" convoy-label>Event description</label>

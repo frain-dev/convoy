@@ -360,7 +360,7 @@ export class CreateProjectComponent implements OnInit {
 	async updateNewEventType() {
 		const payload = {
 			data: this.newEventTypeForm.value,
-			eventId: this.selectedEventType.id
+			eventId: this.selectedEventType.uid
 		};
 		try {
 			await this.createProjectService.updateEventType(payload);
