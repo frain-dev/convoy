@@ -7,6 +7,8 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
+	"time"
 )
 
 var (
@@ -55,6 +57,38 @@ func NewEventTypesRepo(db database.Database) datastore.EventTypesRepository {
 }
 
 func (e *eventTypesRepo) CreateEventType(ctx context.Context, eventType *datastore.ProjectEventType) error {
+	r, err := e.db.ExecContext(ctx, createEventType,
+		eventType.UID,
+		eventType.Name,
+		eventType.Description,
+		eventType.Category,
+		eventType.ProjectId,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrEventTypeNotCreated
+	}
+
+	return nil
+}
+
+func (e *eventTypesRepo) CreateDefaultEventType(ctx context.Context, projectId string) error {
+	eventType := &datastore.ProjectEventType{
+		UID:       ulid.Make().String(),
+		Name:      "*",
+		ProjectId: projectId,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
 	r, err := e.db.ExecContext(ctx, createEventType,
 		eventType.UID,
 		eventType.Name,

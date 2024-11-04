@@ -18,10 +18,12 @@ func createProjectService(h *Handler) (*services.ProjectService, error) {
 	projectRepo := postgres.NewProjectRepo(h.A.DB, h.A.Cache)
 	eventRepo := postgres.NewEventRepo(h.A.DB, h.A.Cache)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache)
+	eventTypesRepo := postgres.NewEventTypesRepo(h.A.DB)
 
 	projectService, err := services.NewProjectService(
 		apiKeyRepo, projectRepo, eventRepo,
-		eventDeliveryRepo, h.A.Licenser, h.A.Cache,
+		eventDeliveryRepo, h.A.Licenser,
+		h.A.Cache, eventTypesRepo,
 	)
 	if err != nil {
 		return nil, err
