@@ -158,7 +158,7 @@ export class CreateProjectComponent implements OnInit {
 
 			this.setSignatureVersions();
 
-			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history' && tab.label !== 'event types' );
+			if (this.projectDetails?.type === 'incoming') this.tabs = this.tabs.filter(tab => tab.label !== 'signature history' && tab.label !== 'event types');
 
 			this.projectForm.patchValue(this.projectDetails);
 			this.projectForm.get('config.strategy')?.patchValue(this.projectDetails.config.strategy);
@@ -378,11 +378,11 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async getEventTypes() {
-        if (this.privateService.getProjectDetails?.type === 'incoming') return;
+		if (this.privateService.getProjectDetails?.type === 'incoming') return;
 
 		try {
 			const response = await this.createProjectService.getEventTypes();
-			this.eventTypes = response.data.event_types;
+			this.eventTypes = response.data.event_types ? response.data.event_types : [];
 			return;
 		} catch (error) {
 			return;
