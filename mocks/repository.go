@@ -2624,3 +2624,113 @@ func (mr *MockDeliveryAttemptsRepositoryMockRecorder) GetFailureAndSuccessCounts
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFailureAndSuccessCounts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).GetFailureAndSuccessCounts), ctx, lookBackDuration, resetTimes)
 }
+
+// MockEventTypesRepository is a mock of EventTypesRepository interface.
+type MockEventTypesRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockEventTypesRepositoryMockRecorder
+}
+
+// MockEventTypesRepositoryMockRecorder is the mock recorder for MockEventTypesRepository.
+type MockEventTypesRepositoryMockRecorder struct {
+	mock *MockEventTypesRepository
+}
+
+// NewMockEventTypesRepository creates a new mock instance.
+func NewMockEventTypesRepository(ctrl *gomock.Controller) *MockEventTypesRepository {
+	mock := &MockEventTypesRepository{ctrl: ctrl}
+	mock.recorder = &MockEventTypesRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockEventTypesRepository) EXPECT() *MockEventTypesRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateDefaultEventType mocks base method.
+func (m *MockEventTypesRepository) CreateDefaultEventType(ctx context.Context, projectId string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateDefaultEventType", ctx, projectId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateDefaultEventType indicates an expected call of CreateDefaultEventType.
+func (mr *MockEventTypesRepositoryMockRecorder) CreateDefaultEventType(ctx, projectId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDefaultEventType", reflect.TypeOf((*MockEventTypesRepository)(nil).CreateDefaultEventType), ctx, projectId)
+}
+
+// CreateEventType mocks base method.
+func (m *MockEventTypesRepository) CreateEventType(arg0 context.Context, arg1 *datastore.ProjectEventType) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateEventType", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateEventType indicates an expected call of CreateEventType.
+func (mr *MockEventTypesRepositoryMockRecorder) CreateEventType(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateEventType", reflect.TypeOf((*MockEventTypesRepository)(nil).CreateEventType), arg0, arg1)
+}
+
+// DeprecateEventType mocks base method.
+func (m *MockEventTypesRepository) DeprecateEventType(arg0 context.Context, arg1, arg2 string) (*datastore.ProjectEventType, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeprecateEventType", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*datastore.ProjectEventType)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeprecateEventType indicates an expected call of DeprecateEventType.
+func (mr *MockEventTypesRepositoryMockRecorder) DeprecateEventType(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeprecateEventType", reflect.TypeOf((*MockEventTypesRepository)(nil).DeprecateEventType), arg0, arg1, arg2)
+}
+
+// FetchAllEventTypes mocks base method.
+func (m *MockEventTypesRepository) FetchAllEventTypes(arg0 context.Context, arg1 string) ([]datastore.ProjectEventType, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchAllEventTypes", arg0, arg1)
+	ret0, _ := ret[0].([]datastore.ProjectEventType)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchAllEventTypes indicates an expected call of FetchAllEventTypes.
+func (mr *MockEventTypesRepositoryMockRecorder) FetchAllEventTypes(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchAllEventTypes", reflect.TypeOf((*MockEventTypesRepository)(nil).FetchAllEventTypes), arg0, arg1)
+}
+
+// FetchEventTypeById mocks base method.
+func (m *MockEventTypesRepository) FetchEventTypeById(arg0 context.Context, arg1, arg2 string) (*datastore.ProjectEventType, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchEventTypeById", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*datastore.ProjectEventType)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchEventTypeById indicates an expected call of FetchEventTypeById.
+func (mr *MockEventTypesRepositoryMockRecorder) FetchEventTypeById(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchEventTypeById", reflect.TypeOf((*MockEventTypesRepository)(nil).FetchEventTypeById), arg0, arg1, arg2)
+}
+
+// UpdateEventType mocks base method.
+func (m *MockEventTypesRepository) UpdateEventType(arg0 context.Context, arg1 *datastore.ProjectEventType) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateEventType", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateEventType indicates an expected call of UpdateEventType.
+func (mr *MockEventTypesRepositoryMockRecorder) UpdateEventType(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventType", reflect.TypeOf((*MockEventTypesRepository)(nil).UpdateEventType), arg0, arg1)
+}
