@@ -288,10 +288,24 @@ func (m *MockLicenser) IpRules() bool {
 	return ret0
 }
 
+// EnterpriseSSO mocks base method.
+func (m *MockLicenser) EnterpriseSSO() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnterpriseSSO")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
 // IpRules indicates an expected call of IpRules.
 func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IpRules", reflect.TypeOf((*MockLicenser)(nil).IpRules))
+}
+
+// EnterpriseSSO indicates an expected call of EnterpriseSSO.
+func (mr *MockLicenserMockRecorder) EnterpriseSSO() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnterpriseSSO", reflect.TypeOf((*MockLicenser)(nil).EnterpriseSSO))
 }
 
 // MultiPlayerMode mocks base method.
