@@ -17,6 +17,7 @@ import { PermissionDirective } from '../permission/permission.directive';
 import { NotificationComponent } from 'src/app/components/notification/notification.component';
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
+import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
@@ -48,7 +49,8 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		DialogDirective,
 		NotificationComponent,
 		ConfigButtonComponent,
-        TagComponent
+        TagComponent,
+        EmptyStateComponent
 	],
 	exports: [CreateProjectComponent]
 })

@@ -88,58 +88,20 @@
 					</button>
 				</div>
 
-				<convoy-multi-input [prefilledKeys]="eventTags" (inputValues)="eventTags = $event; subscriptionForm.patchValue({ filter_config: { event_types: $event } })"></convoy-multi-input>
-
-				<span class="text-neutral-8 font-normal italic text-10 mb-24px">Separate event types with comma (,) or space</span>
+				<ng-container formGroupName="filter_config">
+					<convoy-select
+						name="event_types"
+                        selectionType="eventTypes"
+						formControlName="event_types"
+						[selectedValues]="eventTags"
+						[options]="eventTypes"
+						[multiple]="true"
+						className="mb-24px"
+						(selectedOption)="subscriptionForm.patchValue({ filter_config: { event_types: $event } })"
+					></convoy-select>
+				</ng-container>
 			</div>
 		</ng-container>
-
-		<div class="border-l-2 border-neutral-3 pl-16px mb-40px" *ngIf="showConfig('retry_config')">
-			<div class="flex justify-between items-center mb-16px">
-				<p class="text-12 text-neutral-10 font-medium flex items-center">
-					Retry Logic
-					<convoy-tooltip size="sm" position="top-right" class="ml-4px">
-						These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time before
-						the next retry attempt.
-					</convoy-tooltip>
-				</p>
-				<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" *ngIf="action !== 'view'" (click)="toggleConfigForm('retry_config')">
-					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-						<use xlink:href="#delete-icon2"></use>
-					</svg>
-				</button>
-			</div>
-
-			<div class="grid grid-cols-2 gap-x-6" formGroupName="retry_config">
-				<convoy-input-field>
-					<convoy-select
-						[options]="retryLogicTypes"
-						name="type"
-						formControlName="type"
-						label="Mechanism"
-						placeholder="Select mechanism"
-						(selectedOption)="subscriptionForm.get('retry_config')?.patchValue({ type: $event })"
-						[readonly]="action === 'view'"
-						errorMessage="Select retry mechanism"
-					></convoy-select>
-				</convoy-input-field>
-
-				<convoy-input-field>
-					<label for="retry-logic-duration" convoy-label>Duration</label>
-					<div class="relative">
-						<input type="number" id="retry-logic-duration" convoy-input autocomplete="retry-logic-duration" formControlName="duration" placeholder="e.g 3" [readonly]="action === 'view'" [ngClass]="{ 'pointer-events-none': action === 'view' }" />
-						<div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
-					</div>
-					<convoy-input-error *ngIf="subscriptionForm.get('retry_config.duration')?.touched && subscriptionForm.get('retry_config.duration')?.invalid">Enter wait duration before retry</convoy-input-error>
-				</convoy-input-field>
-
-				<convoy-input-field className="!mb-0">
-					<label for="retry-logic-count" convoy-label>Limit</label>
-					<input type="number" id="retry-logic-count" convoy-input autocomplete="retry-logic-count" formControlName="retry_count" placeholder="e.g 5" [readonly]="action === 'view'" [ngClass]="{ 'pointer-events-none': action === 'view' }" />
-					<convoy-input-error *ngIf="subscriptionForm.get('retry_config.retry_count')?.touched && subscriptionForm.get('retry_config.retry_count')?.invalid">Enter max retry limit</convoy-input-error>
-				</convoy-input-field>
-			</div>
-		</div>
 
 		<ng-container *ngIf="showConfig('filter_config')">
 			<div class="border-l-2 border-neutral-3 pl-16px mb-40px flex justify-between items-center">

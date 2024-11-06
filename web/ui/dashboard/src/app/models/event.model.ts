@@ -86,3 +86,12 @@ export interface FILTER_QUERY_PARAM {
 	sort?: string;
 	eventType?: string;
 }
+
+
+export interface EVENT_TYPE{
+    name: string;
+	category?: string;
+	description?: string;
+	uid: string;
+	deprecated_at?: string;
+}

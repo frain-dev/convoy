@@ -214,6 +214,7 @@ type DeliveryAttemptsRepository interface {
 type EventTypesRepository interface {
 	CreateEventType(context.Context, *ProjectEventType) error
 	UpdateEventType(context.Context, *ProjectEventType) error
+	CreateDefaultEventType(ctx context.Context, projectId string) error
 	DeprecateEventType(context.Context, string, string) (*ProjectEventType, error)
 	FetchEventTypeById(context.Context, string, string) (*ProjectEventType, error)
 	FetchAllEventTypes(context.Context, string) ([]ProjectEventType, error)

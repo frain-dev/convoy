@@ -1219,7 +1219,7 @@
                     "EventTypes"
                 ],
                 "summary": "Updates an event type",
-                "operationId": "CreateEventType",
+                "operationId": "UpdateEventType",
                 "parameters": [
                     {
                         "type": "string",
@@ -1321,7 +1321,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates an event type",
+                "description": "This endpoint deprecates an event type",
                 "consumes": [
                     "application/json"
                 ],
@@ -1331,7 +1331,7 @@
                 "tags": [
                     "EventTypes"
                 ],
-                "summary": "Create an event type",
+                "summary": "Deprecates an event type",
                 "operationId": "DeprecateEventType",
                 "parameters": [
                     {
@@ -6719,10 +6719,10 @@
                 "description": {
                     "type": "string"
                 },
-                "id": {
+                "name": {
                     "type": "string"
                 },
-                "name": {
+                "uid": {
                     "type": "string"
                 }
             }

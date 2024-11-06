@@ -28,7 +28,7 @@ func SeedEventType(db database.Database, projectId, uid, name, desc, category st
 
 	evtTypesRepo := postgres.NewEventTypesRepo(db)
 	pe := &datastore.ProjectEventType{
-		ID:          uid,
+		UID:         uid,
 		Name:        name,
 		Category:    category,
 		ProjectId:   projectId,

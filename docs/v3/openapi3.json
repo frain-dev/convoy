@@ -591,10 +591,10 @@
 					"description": {
 						"type": "string"
 					},
-					"id": {
+					"name": {
 						"type": "string"
 					},
-					"name": {
+					"uid": {
 						"type": "string"
 					}
 				},
@@ -3641,7 +3641,7 @@
 		"/v1/projects/{projectID}/event-types/{eventTypeId}": {
 			"put": {
 				"description": "This endpoint updates an event type",
-				"operationId": "CreateEventType",
+				"operationId": "UpdateEventType",
 				"parameters": [
 					{
 						"description": "Project ID",
@@ -3768,7 +3768,7 @@
 		},
 		"/v1/projects/{projectID}/event-types/{eventTypeId}/deprecate": {
 			"post": {
-				"description": "This endpoint creates an event type",
+				"description": "This endpoint deprecates an event type",
 				"operationId": "DeprecateEventType",
 				"parameters": [
 					{
@@ -3885,7 +3885,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create an event type",
+				"summary": "Deprecates an event type",
 				"tags": [
 					"EventTypes"
 				]

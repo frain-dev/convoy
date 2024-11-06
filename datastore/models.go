@@ -1443,14 +1443,14 @@ const (
 )
 
 type ProjectEventType struct {
-	ID           string    `db:"id" json:"id"`
-	Name         string    `db:"name" json:"name"`
-	Category     string    `db:"category" json:"category"`
-	ProjectId    string    `db:"project_id" json:"-"`
-	CreatedAt    time.Time `db:"created_at" json:"-"`
-	UpdatedAt    time.Time `db:"updated_at" json:"-"`
-	Description  string    `db:"description" json:"description"`
-	DeprecatedAt null.Time `db:"deprecated_at" json:"deprecated_at"`
+	UID          string    `json:"uid" db:"id"`
+	Name         string    `json:"name" db:"name"`
+	Category     string    `json:"category" db:"category"`
+	ProjectId    string    `json:"-" db:"project_id"`
+	CreatedAt    time.Time `json:"-" db:"created_at"`
+	UpdatedAt    time.Time `json:"-" db:"updated_at"`
+	Description  string    `json:"description" db:"description"`
+	DeprecatedAt null.Time `json:"deprecated_at" db:"deprecated_at"`
 }
 
 type Job struct {
