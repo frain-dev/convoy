@@ -332,17 +332,17 @@
 				<div class="flex items-center justify-between mb-24px">
 					<h3 class="text-16 font-bold" *ngIf="action === 'update'">Event Types</h3>
 
-					<button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button" *ngIf="eventTypes?.length > 0" (click)="newEventTypeDialog.showModal()">
+					<button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button" *ngIf="eventTypes.length > 0" (click)="newEventTypeDialog.showModal()">
 						<svg width="18" height="18" class="mr-2 fill-white-100">
 							<use xlink:href="#plus-icon"></use>
 						</svg>
-						Event Type {{eventTypes?.length}}
+						Event Type
 					</button>
 				</div>
 
 				<div convoy-card>
 					<!-- empty state  -->
-					<div class="py-40px" *ngIf="eventTypes?.length == 0">
+					<div class="py-40px" *ngIf="eventTypes.length == 0">
 						<div convoy-empty-state imgSrc="/assets/img/events-log-empty-state.png" heading="You currently do not have any event types" description="Event types will be listed here when available" id="event-type-empty-state">
 							<button emptyStateCTA convoy-button type="button" size="sm" class="mt-36px" id="create-eventtype-modal-button" (click)="newEventTypeDialog.showModal()">
 								<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
@@ -352,7 +352,7 @@
 							</button>
 						</div>
 					</div>
-					<ng-container *ngIf="eventTypes?.length > 0">
+					<ng-container *ngIf="eventTypes.length > 0">
 						<table convoy-table>
 							<thead convoy-table-head>
 								<th convoy-table-head-cell [class]="i === 0 ? 'pl-20px' : ''" *ngFor="let head of eventTypeTableHead; let i = index">{{ head }}</th>

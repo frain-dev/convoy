@@ -7,6 +7,7 @@ import { PrivateService } from '../../private.service';
 import { CreateProjectComponentService } from './create-project-component.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { EVENT_TYPE } from 'src/app/models/event.model';
 
 interface TAB {
 	label: string;
@@ -103,8 +104,8 @@ export class CreateProjectComponent implements OnInit {
 	];
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
-	eventTypes: any;
-	selectedEventType: any;
+	eventTypes: EVENT_TYPE[] = [];
+	selectedEventType!: EVENT_TYPE;
 
 	constructor(
 		private formBuilder: FormBuilder,

@@ -10,6 +10,7 @@ import { CreateSubscriptionService } from './create-subscription.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { EVENT_TYPE } from 'src/app/models/event.model';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -62,9 +63,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 
-	configurations = [
-		{ uid: 'filter_config', name: 'Event Filter', show: false }
-	];
+	configurations = [{ uid: 'filter_config', name: 'Event Filter', show: false }];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
 	showFilterDialog = false;
@@ -72,7 +71,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	sourceURL!: string;
 	subscription!: SUBSCRIPTION;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
-	eventTypes: any;
+	eventTypes: EVENT_TYPE[] = []
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService) {}
 
@@ -179,7 +178,9 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		try {
 			const response = await this.createSubscriptionService.getEventTypes();
-			this.eventTypes = response.data.event_types;
+
+			const { event_types } = response.data;
+			this.eventTypes = event_types.filter((type: EVENT_TYPE) => !type.deprecated_at)
 			return;
 		} catch (error) {
 			return;

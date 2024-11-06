@@ -54,8 +54,13 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 
 	selectOption(option?: any) {
 		if (this.multiple) {
-			const selectOption = this.selectedOptions?.find((item: any) => item === option) || this.selectedOptions?.find((item: any) => item.uid === option) || this.selectedOptions?.find((item: any) => item.uid === option.uid);
-			if (!selectOption) this.selectedOptions?.push(option);
+			const selectedOption =
+				this.selectedOptions?.find((item: any) => item === option) ||
+				this.selectedOptions?.find((item: any) => item.uid === option) ||
+				this.selectedOptions?.find((item: any) => item.uid === option.uid) ||
+				this.selectedOptions?.find((item: any) => item.name === option.name && item.uid === option.uid);
+			if (!selectedOption) this.selectedOptions?.push(option);
+
 			this.updateSelectedOptions();
 		} else {
 			this.selectedValue = option;
@@ -70,7 +75,15 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 
 	updateSelectedOptions() {
 		if (!this.selectedOptions?.length) return;
-		const selectedIds = typeof this.selectedOptions[0] !== 'string' ? (this.selectionType === 'default' ? this.selectedOptions.map((item: any) => item.uid) : this.selectedOptions.map((item: any) => item.name)) : this.selectedOptions;
+		let selectedIds: any = [];
+
+		this.selectedOptions.forEach((option: any) => {
+			if (typeof option !== 'string') {
+				if (this.selectionType === 'default') selectedIds.push(option.uid);
+				else selectedIds.push(option.name);
+			} else selectedIds.push(option);
+		});
+
 		this.selectedOption.emit(selectedIds);
 	}
 
@@ -97,6 +110,8 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 				}, 100);
 			}
 			if (!this.multiple) return (this.selectedValue = value);
+
+			this.selectedValues = [];
 		}
 	}
 
