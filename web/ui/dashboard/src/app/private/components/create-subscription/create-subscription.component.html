@@ -88,9 +88,18 @@
 					</button>
 				</div>
 
-				<convoy-multi-input [prefilledKeys]="eventTags" (inputValues)="eventTags = $event; subscriptionForm.patchValue({ filter_config: { event_types: $event } })"></convoy-multi-input>
-
-				<span class="text-neutral-8 font-normal italic text-10 mb-24px">Separate event types with comma (,) or space</span>
+				<ng-container formGroupName="filter_config">
+					<convoy-select
+						name="event_types"
+                        selectionType="eventTypes"
+						formControlName="event_types"
+						[selectedValues]="eventTags"
+						[options]="eventTypes"
+						[multiple]="true"
+						className="mb-24px"
+						(selectedOption)="subscriptionForm.patchValue({ filter_config: { event_types: $event } })"
+					></convoy-select>
+				</ng-container>
 			</div>
 		</ng-container>
 

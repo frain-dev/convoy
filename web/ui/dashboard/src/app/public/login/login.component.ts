@@ -73,4 +73,17 @@ export class LoginComponent implements OnInit {
 			return error;
 		}
 	}
+
+	async loginWithSAML() {
+		localStorage.setItem('AUTH_TYPE', 'login');
+
+		try {
+			const res = await this.loginService.loginWithSaml();
+
+			const { redirectUrl } = res.data;
+			window.open(redirectUrl);
+		} catch (error) {
+			throw error;
+		}
+	}
 }

@@ -1,6 +1,8 @@
 package handlers
 
 import (
+    "errors"
+	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 
 	"github.com/frain-dev/convoy/auth/realm/jwt"
@@ -14,6 +16,100 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
 )
+
+type (
+	SSOAuthIntent string
+)
+
+const (
+	LoginIntent    SSOAuthIntent = "login"
+	RegisterIntent SSOAuthIntent = "register"
+)
+
+func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
+
+	configuration := h.A.Cfg
+
+	lu := services.LoginUserSSOService{
+		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
+		LicenseKey:    configuration.LicenseKey,
+		Licenser:      h.A.Licenser,
+	}
+
+	resp, err := lu.Run()
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Get Redirect successful", resp, http.StatusOK))
+}
+
+func (h *Handler) RedeemLoginSSOToken(w http.ResponseWriter, r *http.Request) {
+	h.redeemSSOToken(w, r, LoginIntent)
+}
+
+func (h *Handler) RedeemRegisterSSOToken(w http.ResponseWriter, r *http.Request) {
+	h.redeemSSOToken(w, r, RegisterIntent)
+}
+
+func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent SSOAuthIntent) {
+
+	configuration := h.A.Cfg
+
+	lu := services.LoginUserSSOService{
+		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
+		LicenseKey:    configuration.LicenseKey,
+		Licenser:      h.A.Licenser,
+	}
+
+	tokenResp, err := lu.RedeemToken(r.URL.Query())
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+		return
+	}
+
+	var user *datastore.User
+	var token *jwt.Token
+	if intent == RegisterIntent {
+		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
+		if err != nil {
+            if errors.Is(err, services.ErrUserAlreadyExist) {
+                _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusConflict))
+                return
+            }
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+			return
+		}
+
+
+	} else {
+		user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
+		if err != nil {
+            if errors.Is(err, datastore.ErrUserNotFound) {
+                _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			    return
+            }
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+			return
+		}
+	}
+
+	u := &models.LoginUserResponse{
+		User:  user,
+		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Login successful", u, http.StatusOK))
+}
 
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
@@ -37,7 +133,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := lu.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
 		return
 	}
 

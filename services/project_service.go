@@ -24,16 +24,18 @@ type ProjectService struct {
 	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
+	eventTypesRepo    datastore.EventTypesRepository
 	Licenser          license.Licenser
 	cache             cache.Cache
 }
 
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, cache cache.Cache) (*ProjectService, error) {
+func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, cache cache.Cache, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
 		eventRepo:         eventRepo,
 		eventDeliveryRepo: eventDeliveryRepo,
+		eventTypesRepo:    eventTypesRepo,
 		Licenser:          licenser,
 		cache:             cache,
 	}, nil
@@ -111,6 +113,11 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		}
 
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to create project"))
+	}
+
+	err = ps.eventTypesRepo.CreateDefaultEventType(ctx, project.UID)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to create default event types")
 	}
 
 	newAPIKey := &models.APIKey{

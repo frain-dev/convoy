@@ -79,7 +79,7 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 	pe := &datastore.ProjectEventType{
 		ProjectId:   project.UID,
 		Name:        newEventType.Name,
-		ID:          ulid.Make().String(),
+		UID:         ulid.Make().String(),
 		Category:    newEventType.Category,
 		Description: newEventType.Description,
 	}
@@ -99,7 +99,7 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Updates an event type
 //	@Description	This endpoint updates an event type
-//	@Id				CreateEventType
+//	@Id				UpdateEventType
 //	@Tags			EventTypes
 //	@Accept			json
 //	@Produce		json
@@ -152,14 +152,14 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 
 // DeprecateEventType
 //
-//	@Summary		Create an event type
-//	@Description	This endpoint creates an event type
+//	@Summary		Deprecates an event type
+//	@Description	This endpoint deprecates an event type
 //	@Id				DeprecateEventType
 //	@Tags			EventTypes
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
-//	@Param			eventTypeId	path		string					true	"Event Type ID"
+//	@Param			projectID	path		string	true	"Project ID"
+//	@Param			eventTypeId	path		string	true	"Event Type ID"
 //	@Success		201			{object}	util.ServerResponse{data=models.EventTypeResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth

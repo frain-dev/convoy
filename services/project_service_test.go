@@ -19,12 +19,14 @@ import (
 func provideProjectService(ctrl *gomock.Controller) (*ProjectService, error) {
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
+	eventTypesRepo := mocks.NewMockEventTypesRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+
 	l := mocks.NewMockLicenser(ctrl)
 	cache := mocks.NewMockCache(ctrl)
 
-	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, l, cache)
+	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, l, cache, eventTypesRepo)
 }
 
 func TestProjectService_CreateProject(t *testing.T) {
@@ -90,6 +92,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+
+				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -164,6 +169,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+
+				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -222,6 +230,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+
+				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project_1",
@@ -280,6 +291,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(true)
+
+				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -353,6 +367,9 @@ func TestProjectService_CreateProject(t *testing.T) {
 				licenser.EXPECT().CreateProject(gomock.Any()).Times(1).Return(true, nil)
 				licenser.EXPECT().AddEnabledProject(gomock.Any())
 				licenser.EXPECT().AdvancedWebhookFiltering().Times(1).Return(false)
+
+				eventTypesRepo := gs.eventTypesRepo.(*mocks.MockEventTypesRepository)
+				_ = eventTypesRepo.EXPECT().CreateDefaultEventType(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 			},
 			wantProject: &datastore.Project{
 				Name:           "test_project",
@@ -416,7 +433,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 			wantErrCode: http.StatusBadRequest,
 			wantErrMsg:  "failed to create project",
 		},
-		//{ TODO(daniel): commented pending the time project service is refactored
+		// { TODO(daniel): commented pending the time project service is refactored
 		//	name: "should_fail_to_create_default_api_key_for_project",
 		//	args: args{
 		//		ctx: ctx,
@@ -454,7 +471,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 		//	wantErr:     true,
 		//	wantErrCode: http.StatusBadRequest,
 		//	wantErrMsg:  "failed to create api key",
-		//},
+		// },
 		{
 			name: "should_error_for_duplicate_project_name",
 			args: args{

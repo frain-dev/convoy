@@ -2924,7 +2924,7 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_DeprecateEventType() {
 	// Deep Assert.
 	var resp models.EventTypeResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), eventTypeId, resp.EventType.ID)
+	require.Equal(s.T(), eventTypeId, resp.EventType.UID)
 	require.NotNil(s.T(), resp.EventType.DeprecatedAt)
 	require.True(s.T(), resp.EventType.DeprecatedAt.Valid)
 }

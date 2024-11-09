@@ -10,6 +10,7 @@ import { CreateSubscriptionService } from './create-subscription.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import { EVENT_TYPE } from 'src/app/models/event.model';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -62,9 +63,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 
-	configurations = [
-		{ uid: 'filter_config', name: 'Event Filter', show: false }
-	];
+	configurations = [{ uid: 'filter_config', name: 'Event Filter', show: false }];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
 	showFilterDialog = false;
@@ -72,11 +71,14 @@ export class CreateSubscriptionComponent implements OnInit {
 	sourceURL!: string;
 	subscription!: SUBSCRIPTION;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
+	eventTypes: EVENT_TYPE[] = []
 
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
+
+		this.getEventTypes();
 
 		this.projectType = this.token ? 'outgoing' : this.privateService.getProjectDetails?.type;
 
@@ -171,6 +173,20 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
+	async getEventTypes() {
+		if (this.privateService.getProjectDetails?.type === 'incoming') return;
+
+		try {
+			const response = await this.createSubscriptionService.getEventTypes();
+
+			const { event_types } = response.data;
+			this.eventTypes = event_types.filter((type: EVENT_TYPE) => !type.deprecated_at)
+			return;
+		} catch (error) {
+			return;
+		}
+	}
+
 	async onCreateSource(newSource: SOURCE) {
 		this.subscriptionForm.patchValue({ source_id: newSource.uid });
 		this.sourceURL = newSource.url;
@@ -190,9 +206,9 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async runSubscriptionValidation() {
 		const configFields: any = {
-			retry_config: ['retry_config.type', 'retry_config.retry_count', 'retry_config.duration'],
 			events: ['filter_config.event_types']
 		};
+
 		this.configurations.forEach(config => {
 			const fields = configFields[config.uid];
 			if (this.showConfig(config.uid)) {
@@ -212,7 +228,7 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async saveSubscription(setup?: boolean) {
 		this.toggleFormsLoaders(true);
-		if (this.eventTags.length === 0) this.subscriptionForm.patchValue({ filter_config: { event_types: ['*'] } });
+		if (this.subscriptionForm.get('filter_config.event_types')?.value?.length === 0) this.subscriptionForm.patchValue({ filter_config: { event_types: ['*'] } });
 
 		await this.runSubscriptionValidation();
 
