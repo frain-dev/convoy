@@ -29,19 +29,19 @@ func Validate(dst interface{}) error {
 }
 
 func init() {
-	govalidator.TagMap["supported_hash"] = govalidator.Validator(func(hash string) bool {
+	govalidator.TagMap["supported_hash"] = func(hash string) bool {
 		if _, ok := algo.M[hash]; !ok {
 			return false
 		}
 
 		return true
-	})
+	}
 
-	govalidator.TagMap["supported_source"] = govalidator.Validator(func(source string) bool {
+	govalidator.TagMap["supported_source"] = func(source string) bool {
 		return datastore.SourceType(source).IsValid()
-	})
+	}
 
-	govalidator.TagMap["supported_verifier"] = govalidator.Validator(func(verifier string) bool {
+	govalidator.TagMap["supported_verifier"] = func(verifier string) bool {
 		verifiers := map[string]bool{
 			string(datastore.NoopVerifier):      true,
 			string(datastore.HMacVerifier):      true,
@@ -54,9 +54,9 @@ func init() {
 		}
 
 		return true
-	})
+	}
 
-	govalidator.TagMap["supported_encoding"] = govalidator.Validator(func(encoder string) bool {
+	govalidator.TagMap["supported_encoding"] = func(encoder string) bool {
 		encoders := map[string]bool{
 			string(datastore.Base64Encoding): true,
 			string(datastore.HexEncoding):    true,
@@ -67,9 +67,9 @@ func init() {
 		}
 
 		return true
-	})
+	}
 
-	govalidator.TagMap["supported_retry_strategy"] = govalidator.Validator(func(encoder string) bool {
+	govalidator.TagMap["supported_retry_strategy"] = func(encoder string) bool {
 		encoders := map[string]bool{
 			string(datastore.LinearStrategyProvider):      true,
 			string(datastore.ExponentialStrategyProvider): true,
@@ -80,9 +80,9 @@ func init() {
 		}
 
 		return true
-	})
+	}
 
-	govalidator.TagMap["supported_storage"] = govalidator.Validator(func(encoder string) bool {
+	govalidator.TagMap["supported_storage"] = func(encoder string) bool {
 		encoders := map[string]bool{
 			string(datastore.S3):     true,
 			string(datastore.OnPrem): true,
@@ -93,15 +93,15 @@ func init() {
 		}
 
 		return true
-	})
+	}
 
-	govalidator.TagMap["duration"] = govalidator.Validator(func(duration string) bool {
+	govalidator.TagMap["duration"] = func(duration string) bool {
 		_, err := time.ParseDuration(duration)
 
 		return err == nil
-	})
+	}
 
-	govalidator.TagMap["supported_pub_sub"] = govalidator.Validator(func(pubsub string) bool {
+	govalidator.TagMap["supported_pub_sub"] = func(pubsub string) bool {
 		pubsubs := map[string]bool{
 			string(datastore.SqsPubSub):    true,
 			string(datastore.GooglePubSub): true,
@@ -114,5 +114,5 @@ func init() {
 		}
 
 		return true
-	})
+	}
 }
