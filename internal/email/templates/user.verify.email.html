@@ -3,54 +3,120 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>Verify Your Email Address</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body, table, td {
+            font-family: 'Inter', Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1a202c !important;
+            }
+            .email-wrapper {
+                background-color: #2d3748 !important;
+            }
+            .email-content {
+                background-color: #1a202c !important;
+            }
+            .email-header, .email-footer {
+                background-color: #2d3748 !important;
+            }
+            h1, p {
+                color: #e2e8f0 !important;
+            }
+            .button {
+                background-color: #4299e1 !important;
+                border-color: #4299e1 !important;
+            }
+            .footer-text {
+                color: #a0aec0 !important;
+            }
+        }
+    </style>
 </head>
-
-<body>
-<div style="background: rgba(115, 122, 145, 0.03); border-radius: 0px 0px 4px 4px; padding: 2em;">
-    <div style="max-width: 640px; margin: auto">
-        <div style="background: white; width: 100%">
-            <div style="padding: 30px 40px 60px 40px">
+<body style="margin: 0; padding: 0; background-color: #f7fafc;">
+<!--[if mso]>
+<table role="presentation" width="100%">
+    <tr>
+        <td>
+<![endif]-->
+<div class="email-wrapper" style="max-width: 600px; margin: auto; background-color: #edf2f7; border-radius: 8px; overflow: hidden;">
+    <table role="presentation" style="width: 100%; border: none; border-spacing: 0; background-color: #ffffff;">
+        <tr>
+            <td class="email-header" style="padding: 24px 40px; background-color: #ffffff;">
                 <img src="https://res.cloudinary.com/frain/image/upload/v1639505046/logos/Convoy/Logo-Name-Inline-Transparent_cep9uj.png"
-                     alt="convoy-logo" style="height: 36px; display: inline; float: left;">
-            </div>
-
-            <div style="background: #edf2f7; padding: 40px 48px">
-                <h1 style="color: #121a26; font-size: 24px; line-height: 34px; font-weight: 700; margin-bottom: 24px; font-family: Inter;">
+                     alt="Convoy logo" style="height: 36px; display: block;">
+            </td>
+        </tr>
+        <tr>
+            <td class="email-content" style="padding: 40px 48px; background-color: #edf2f7;">
+                <h1 style="color: #1a202c; font-size: 24px; line-height: 32px; font-weight: 700; margin: 0 0 24px 0;">
                     Verify your email address
                 </h1>
-                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
+                <p style="color: #4a5568; font-size: 16px; line-height: 24px; margin: 0 0 24px 0;">
                     Hi {{ .recipient_name }},
                 </p>
-
-                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
-                    Thank you for joining Convoy, please verify your email address by
-                    clicking the button below or using this link:
+                <p style="color: #4a5568; font-size: 16px; line-height: 24px; margin: 0 0 24px 0;">
+                    Thank you for joining Convoy. Please verify your email address by clicking the button below:
                 </p>
-
-                <a
-                    href="{{ .email_verification_url }}"
-                    target="_blank"
-                >
-                    {{ .email_verification_url }}
-                </a>
-                <button>Verify Email</button>
-            </div>
-
-            <div style="padding: 40px 48px">
-                <p style="color: #9ca3af; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px; word-wrap: break-word;">
+                <table role="presentation" style="width: 100%; border: none; border-spacing: 0; text-align: center; margin: 32px 0;">
+                    <tr>
+                        <td>
+                            <a href="{{ .email_verification_url }}" target="_blank" class="button" style="
+                                    display: inline-block;
+                                    color: #ffffff;
+                                    font-size: 16px;
+                                    font-weight: 600;
+                                    line-height: 1;
+                                    text-decoration: none;
+                                    text-align: center;
+                                    padding: 14px 30px;
+                                    background-color: #3182ce;
+                                    border-radius: 8px;
+                                ">
+                                Verify email address
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                <p style="color: #4a5568; font-size: 14px; line-height: 24px; margin: 0;">
+                    If the button doesn't work, copy and paste this link into your browser:
+                </p>
+                <p style="color: #4a5568; font-size: 14px; line-height: 24px; margin: 0 0 24px 0; word-break: break-all;">
+                    <a href="{{ .email_verification_url }}" style="color: #3182ce; text-decoration: underline;">{{ .email_verification_url }}</a>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="email-footer" style="padding: 24px 40px; background-color: #edf2f7; text-align: center;">
+                <p class="footer-text" style="color: #718096; font-size: 14px; line-height: 24px; margin: 0 0 8px 0;">
                     2261 Market Street, San Francisco, CA 94114
                 </p>
-                <p style="color: #9ca3af; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px; word-wrap: break-word;">
+                <p class="footer-text" style="color: #718096; font-size: 14px; line-height: 24px; margin: 0;">
                     © 2024 Frain Technologies
                 </p>
-            </div>
-
-            <div style="background: #edf2f7; height: 24px; width: 100%"></div>
-        </div>
-    </div>
+            </td>
+        </tr>
+    </table>
 </div>
+<!--[if mso]>
+</td>
+</tr>
+</table>
+<![endif]-->
 </body>
 </html>
