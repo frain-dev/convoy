@@ -3,70 +3,154 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>Endpoint Status Update</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            color-scheme: light dark;
+            supported-color-schemes: light dark;
+        }
+
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        .wrapper {
+            background-color: #f3f4f6;
+            padding: 2em;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            padding: 30px 40px;
+            background-color: #ffffff;
+        }
+
+        .content {
+            background-color: #f8fafc;
+            padding: 40px;
+        }
+
+        .footer {
+            padding: 30px 40px;
+            background-color: #ffffff;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        h1 {
+            color: #1f2937;
+            font-size: 24px;
+            line-height: 32px;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        p, ul {
+            color: #4b5563;
+            font-size: 16px;
+            line-height: 24px;
+            margin-bottom: 16px;
+        }
+
+
+        @media (prefers-color-scheme: dark) {
+            .wrapper { background-color: #1f2937; }
+            .container { background-color: #111827; }
+            .header, .footer { background-color: #111827; }
+            .content { background-color: #1f2937; }
+            h1 { color: #f3f4f6; }
+            p, ul { color: #d1d5db; }
+            .footer { color: #9ca3af; }
+        }
+
+        @media only screen and (max-width: 600px) {
+            .wrapper { padding: 1em; }
+            .header, .content, .footer { padding: 20px; }
+        }
+    </style>
 </head>
-
 <body>
-<div style="background: rgba(115, 122, 145, 0.03); border-radius: 0px 0px 4px 4px; padding: 2em;">
-    <div style="max-width: 640px; margin: auto">
-        <div style="background: white; width: 100%">
-            <div style="padding: 30px 40px 60px 40px">
-                <img src="https://res.cloudinary.com/frain/image/upload/v1639505046/logos/Convoy/Logo-Name-Inline-Transparent_cep9uj.png"
-                     alt="convoy-logo" style="height: 36px; display: inline; float: left;">
-            </div>
+<div class="wrapper">
+    <div class="container">
+        <div class="header">
+            <img src="https://res.cloudinary.com/frain/image/upload/v1639505046/logos/Convoy/Logo-Name-Inline-Transparent_cep9uj.png"
+                 alt="Convoy Logo" style="height: 36px; display: inline-block;">
+        </div>
 
-            <div style="background: #edf2f7; padding: 40px 48px">
-                <h1 style="color: #121a26; font-size: 24px; line-height: 34px; font-weight: 700; margin-bottom: 24px; font-family: Inter;">
-                    Endpoint Status Update
-                </h1>
-                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
-                    Hi there,
-                </p>
+        <div class="content">
+            <h1>Endpoint Status Update</h1>
+            <p>Hi there,</p>
 
-                {{if eq .endpoint_status "active" }}
-                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
-                    Your endpoint ({{ .name }}) has been enabled or the failure rate has changed.
-                </p>
-                <ul style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
-                    <li><strong>URL:</strong> {{.target_url}}</li>
-                    <li><strong>Failure Rate:</strong> {{.failure_rate}} </li>
-                </ul>
-                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
-                    <strong>Important:</strong> Your endpoint has been restored successfully. Please head over to your dashboard to retry all failed and discarded events.
-                </p>
-                {{else if eq .endpoint_status "inactive" }}
-                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
-                    Your endpoint ({{ .name }}) has been disabled.
-                </p>
-                <ul style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
-                    <li><strong>URL:</strong> {{.target_url}}</li>
-                    {{if eq .response_body ""}}
-                    <li><strong>Most recent failure message:</strong> {{ .failure_msg }}</li>
-                    {{else}}
-                    <li><strong>Endpoint Response Body:</strong> {{ .response_body }}</li>
-                    <li><strong>Status code:</strong> {{ .status_code }}</li>
-                    {{end}}
-                    <li><strong>Failure Rate:</strong> {{.failure_rate}} </li>
-                </ul>
-                <p style="color: #384860; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px;">
-                    <strong>Important:</strong> You are receiving this email because your endpoint has consecutively failed to receive events.
-                    To re-activate your endpoint please head over to your dashboard and reactivate it.
-                </p>
+            {{if eq .endpoint_status "active" }}
+            <p>
+                Your endpoint ({{ .name }}) has been enabled or the failure rate has changed.
+            </p>
+            <ul>
+                <li><strong>URL:</strong> {{.target_url}}</li>
+                <li><strong>Failure Rate:</strong> {{.failure_rate}}</li>
+            </ul>
+            <p>
+                <strong>Important:</strong> Your endpoint has been restored successfully. Please head over to your dashboard to retry all failed and discarded events.
+            </p>
+
+            {{else if eq .endpoint_status "inactive" }}
+            <p>
+                Your endpoint ({{ .name }}) has been disabled.
+            </p>
+            <ul>
+                <li><strong>URL:</strong> {{.target_url}}</li>
+                {{if eq .response_body ""}}
+                <li><strong>Most recent failure message:</strong> {{ .failure_msg }}</li>
+                {{else}}
+                <li><strong>Endpoint Response Body:</strong> {{ .response_body }}</li>
+                <li><strong>Status code:</strong> {{ .status_code }}</li>
                 {{end}}
-            </div>
+                <li><strong>Failure Rate:</strong> {{.failure_rate}}</li>
+            </ul>
+            <p>
+                <strong>Important:</strong> You are receiving this email because your endpoint has consecutively failed to receive events.
+                To re-activate your endpoint please head over to your dashboard and reactivate it.
+            </p>
 
-            <div style="padding: 40px 48px">
-                <p style="color: #9ca3af; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px; word-wrap: break-word;">
-                    2261 Market Street, San Francisco, CA 94114
-                </p>
-                <p style="color: #9ca3af; font-size: 16px; font-family: Inter; font-weight: 400; line-height: 24px; letter-spacing: 0.2px; word-wrap: break-word;">
-                    © 2024 Frain Technologies
-                </p>
-            </div>
+            {{end}}
+        </div>
 
-            <div style="background: #edf2f7; height: 24px; width: 100%"></div>
+        <div class="footer">
+            <p>
+                2261 Market Street, San Francisco, CA 94114<br>
+                © 2024 Frain Technologies
+            </p>
+<!--            <p>-->
+<!--                <a href="#" style="color: #3b82f6; text-decoration: none;">Unsubscribe</a> |-->
+<!--                <a href="#" style="color: #3b82f6; text-decoration: none;">Privacy Policy</a>-->
+<!--            </p>-->
         </div>
     </div>
 </div>

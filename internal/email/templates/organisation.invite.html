@@ -1,125 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Convoy</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;500;700&display=swap" rel="stylesheet"/>
-
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>Convoy - Team Invitation</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
     <style>
-        * {
-            font-weight: 100px;
-            color: #333333;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            color-scheme: light dark;
+            supported-color-schemes: light dark;
         }
 
         body {
-            background: rgba(115, 122, 145, 0.03);
-            font-family: "Quicksand", sans-serif;
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+            background-color: #f3f4f6;
         }
 
-        .card {
-            width: 700px;
-            background: #fff;
-            box-shadow: 0px 3px 8px -1px rgba(50, 50, 71, 0.05);
-            filter: drop-shadow(0px 0px 1px rgba(12, 26, 75, 0.24));
-            padding: 48px 32px;
-            text-align: left;
-            border-radius: 10px;
-        }
-
-        .card p,
-        .card li {
-            color: #737a91;
-            font-size: 16px;
-            line-height: 25px;
-        }
-
-        .card li {
-            margin-top: 10px;
-            font-size: 15px;
-        }
-
-        .card ul {
-            margin: 30px 0;
-        }
-
-        .card p strong {
-            color: #333333;
+        h1, h3 {
+            color: #1f2937;
+            font-size: 24px;
+            line-height: 32px;
             font-weight: 700;
-        }
-
-        .card p.issue-text {
-            opacity: 0.5;
-            font-size: 0.8rem;
-            margin: 60px 0 -30px;
-        }
-
-        .card h1 {
-            font-size: 25px;
-            line-height: 40px;
             margin-bottom: 24px;
+        }
+
+        p {
+            color: #4b5563;
+            font-size: 16px;
+            line-height: 24px;
+            margin-bottom: 16px;
         }
 
         a {
-            color: #3a6da6;
+            color: #3b82f6;
+            text-decoration: none;
         }
 
-        .head {
-            margin-bottom: 24px;
+        .button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: #ffffff !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-top: 24px;
         }
 
-        .footer {
-            margin-top: 30px;
+        body, table, td {
+            font-family: 'Inter', Arial, sans-serif;
         }
 
-        .footer p {
-            font-size: 12px;
-            margin: 0;
-            text-align: center;
-        }
+        @media (prefers-color-scheme: dark) {
+            body, .email-wrapper { background-color: #1f2937; }
+            .email-content { background-color: #1f2937; }
+            h1, h3 { color: #f3f4f6; }
+            p { color: #d1d5db; }
+            a { color: #60a5fa; }
 
-        .footer p:last-of-type {
-            margin-top: 5px;
+            body {
+                background-color: #1a202c !important;
+            }
+            .email-wrapper {
+                background-color: #2d3748 !important;
+                width: 100%;
+                table-layout: fixed;
+                padding-bottom: 40px;
+            }
+            .email-content {
+                background-color: #1a202c !important;
+                padding: 40px;
+            }
+            .email-header, .email-footer {
+                background-color: #2d3748 !important;
+            }
+            h1, p {
+                color: #e2e8f0 !important;
+            }
+            .button {
+                background-color: #4299e1 !important;
+                border-color: #4299e1 !important;
+            }
+            .footer-text {
+                color: #a0aec0 !important;
+            }
         }
     </style>
 </head>
 <body>
-<table width="100%" border="0" cellspacing="0" cellpadding="0">
-    <tbody>
-    <tr>
-        <td align="center">
-            <div class="card">
-                <div class="head">
-                    <img src={{ .logo_url }} alt="Company Logo" width="140px"/>
-                    <!-- <p>For any enquiry or complaint, kindly send an email to info@frain.dev</p> -->
-                </div>
-                <h3>Hi there</h3>
+<center class="email-wrapper" style="max-width: 600px; margin: auto; background-color: #edf2f7; border-radius: 8px; overflow: hidden;">
+    <table class="email-header" width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+            <td class="email-header" style="padding: 24px 40px; background-color: #ffffff;">
+                <img src="https://res.cloudinary.com/frain/image/upload/v1639505046/logos/Convoy/Logo-Name-Inline-Transparent_cep9uj.png"
+                     alt="Convoy logo" style="height: 36px; display: block;">
+            </td>
+        </tr>
+        <tr>
+            <td class="email-content" style="padding: 24px 40px;">
+                <h3>Hi there,</h3>
                 <p>
-                    You have been invited to {{ .inviter_name }}'s team , you can accept it by clicking the button or copying the link into your browser.
+                    You have been invited to {{ .inviter_name }}'s team. You can accept it by clicking the button below or copying the link into your browser.
                 </p>
 
-                <p><a href={{ .invite_url }}>InviteURL</a></p>
-                <p> Link: {{ .invite_url }} </p>
+                <p>
+                    <a href="{{ .invite_url }}" class="button">Accept Invitation</a>
+                </p>
+
+                <p>
+                    Or copy this link: <a href="{{ .invite_url }}">{{ .invite_url }}</a>
+                </p>
 
                 <p>
                     <strong>Important:</strong> This invite link will expire at {{ .expires_at }}.
                 </p>
 
-                <p class="issue-text">
+                <p style="font-size: 14px; color: #6b7280; margin-top: 40px;">
                     For any enquiry or complaint, you can reply to this email.
                 </p>
-            </div>
-
-            <div class="center footer">
-                <p>© <a href="https://getconvoy.io">Convoy</a></p>
-                <p>A Cloud native Webhook Service</p>
-            </div>
-        </td>
-    </tr>
-    </tbody>
-</table>
+            </td>
+        </tr>
+        <tr>
+            <td class="email-footer" style="padding: 24px 40px; background-color: #edf2f7; text-align: center;">
+                <p class="footer-text" style="color: #718096; font-size: 14px; line-height: 24px; margin: 0 0 8px 0;">
+                    2261 Market Street, San Francisco, CA 94114
+                </p>
+                <p class="footer-text" style="color: #718096; font-size: 14px; line-height: 24px; margin: 0;">
+                    © 2024 Frain Technologies
+                </p>
+            </td>
+        </tr>
+    </table>
+</center>
 </body>
 </html>
