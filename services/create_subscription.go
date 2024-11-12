@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"net/http"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -63,11 +62,6 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		}
 	}
 
-	retryConfig, err := s.NewSubscription.RetryConfig.Transform()
-	if err != nil {
-		return nil, util.NewServiceError(http.StatusBadRequest, err)
-	}
-
 	subscription := &datastore.Subscription{
 		UID:        ulid.Make().String(),
 		ProjectID:  s.Project.UID,
@@ -76,7 +70,6 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		SourceID:   s.NewSubscription.SourceID,
 		EndpointID: s.NewSubscription.EndpointID,
 
-		RetryConfig:     retryConfig,
 		AlertConfig:     s.NewSubscription.AlertConfig.Transform(),
 		RateLimitConfig: s.NewSubscription.RateLimitConfig.Transform(),
 

@@ -1,167 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Convoy</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-  </head>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <title>Verify Your Email Address</title>
+    <!--[if mso]>
+    <noscript>
+        <xml>
+            <o:OfficeDocumentSettings>
+                <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+        </xml>
+    </noscript>
+    <![endif]-->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-  <style>
-    body {
-      background: rgba(115, 122, 145, 0.03);
-      font-family: "Inter", sans-serif;
-      padding: 72px;
-      width: 100%;
-      height: 100%;
-    }
-    .card {
-      background: #ffffff;
-      border-top: 10px solid #477db3;
-      padding: 40px 28px 100px;
-      max-width: 701px;
-      width: 100%;
-      margin: auto;
-    }
-    .head {
-      border-bottom: 1px solid #edeff5;
-      padding-bottom: 26px;
-    }
-    .card h4 {
-      color: #000624;
-      font-weight: 700;
-      margin-bottom: 40px;
-    }
-    .card p,
-    .footer p {
-      color: #5f5f68;
-      font-size: 16px;
-      line-height: 30px;
-    }
-    .card p a,
-    .footer p a {
-      color: #477db3;
-      text-decoration: none;
-    }
-    .card button {
-      background: linear-gradient(0deg, #376da4 0%, #477db3 100%);
-      border: 1px solid #477db3;
-      color: #ffffff;
-      box-shadow: 0px 1px 1px rgba(22, 29, 37, 0.1),
-        inset 0px 2px 0px rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 13px;
-      width: 100%;
-      margin-top: 100px;
-        cursor: pointer;
-    }
-    .footer {
-      margin-top: 24px;
-      padding: 32px;
-      max-width: 701px;
-      width: 100%;
-      margin: auto;
-    }
-    .footer p {
-      color: #737a91;
-    }
-    .footer a {
-      color: #477db3;
-      font-size: 14px;
-      line-height: 20px;
-      font-weight: 500;
-      text-decoration: none;
-    }
-  </style>
-  <body>
-    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-      <tr>
+        body, table, td {
+            font-family: 'Inter', Arial, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1a202c !important;
+            }
+            .email-wrapper {
+                background-color: #2d3748 !important;
+            }
+            .email-content {
+                background-color: #1a202c !important;
+            }
+            .email-header, .email-footer {
+                background-color: #2d3748 !important;
+            }
+            h1, p {
+                color: #e2e8f0 !important;
+            }
+            .button {
+                background-color: #4299e1 !important;
+                border-color: #4299e1 !important;
+            }
+            .footer-text {
+                color: #a0aec0 !important;
+            }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f7fafc;">
+<!--[if mso]>
+<table role="presentation" width="100%">
+    <tr>
         <td>
-          <div class="card">
-            <div class="head">
-              <img
-                src="https://res.cloudinary.com/frain/image/upload/v1650448706/convoy-logo_li1ahy.png"
-                alt="convoy-logo"
-                style="height: 32px"
-              />
-            </div>
-            <h4>Verify your email address</h4>
-            <p>Hi {{ .recipient_name }},</p>
-            <p>
-              Thank you for joining Convoy, please verify your email address by
-              clicking the button below or using this link:
-              <a
-                href="{{ .email_verification_url }}"
-                target="_blank"
-              >
-                  {{ .email_verification_url }}
-              </a>
-            </p>
-              <a
-                  href="{{ .email_verification_url }}"
-                  target="_blank"
-              > <button>Verify Email</button>
-              </a>
-          </div>
-          <div class="footer">
-            <p>
-              This email was sent to
-              <a href="mailto:{{ .email }}" target="_blank"
-                >{{ .email }}</a
-              >.
-            <p>Convoy, 251 Little Falls Drive, Wilminton, DE, US. 19808</p>
-
-            <table width="100%" border="0" cellspacing="0" cellpadding="0">
-              <tr>
-                <td>
-                  <a href="https://getconvoy.io" target="_blank"
-                    >getconvoy.io</a
-                  >
-                </td>
-                <td></td>
-                <td>
-                  <a href="https://getconvoy.io/blog" target="_blank"> Blog </a>
-                </td>
-                <td>
-                  <a href="https://twitter.com/getconvoy" target="_blank">
-                    <img
-                      src="https://res.cloudinary.com/frain/image/upload/v1650447737/twitter-blog-icon_gjouio.png"
-                      alt="twitter icon"
-                      style="width: 32px; height: 32px"
-                  /></a>
-                </td>
-                <td>
-                  <a
-                    href="https://convoy-community.slack.com/join/shared_invite/zt-xiuuoj0m-yPp~ylfYMCV9s038QL0IUQ#/shared-invite/email"
-                    target="_blank"
-                  >
-                    <img
-                      src="https://res.cloudinary.com/frain/image/upload/v1650447870/slack-blog-icon_vznuby.png"
-                      alt="slack icon"
-                      style="width: 32px; height: 32px"
-                    />
-                  </a>
-                </td>
-                <td>
-                  <a href="https://github.com/frain-dev/convoy" target="_blank">
-                    <img
-                      src="https://res.cloudinary.com/frain/image/upload/v1650447537/github-blog-icon_uzsa41.png"
-                      alt="github icon"
-                      style="width: 32px; height: 32px"
-                    />
-                  </a>
-                </td>
-              </tr>
-            </table>
-          </div>
-        </td>
-      </tr>
+<![endif]-->
+<div class="email-wrapper" style="max-width: 600px; margin: auto; background-color: #edf2f7; border-radius: 8px; overflow: hidden;">
+    <table role="presentation" style="width: 100%; border: none; border-spacing: 0; background-color: #ffffff;">
+        <tr>
+            <td class="email-header" style="padding: 24px 40px; background-color: #ffffff;">
+                <img src="https://res.cloudinary.com/frain/image/upload/v1639505046/logos/Convoy/Logo-Name-Inline-Transparent_cep9uj.png"
+                     alt="Convoy logo" style="height: 36px; display: block;">
+            </td>
+        </tr>
+        <tr>
+            <td class="email-content" style="padding: 40px 48px; background-color: #edf2f7;">
+                <h1 style="color: #1a202c; font-size: 24px; line-height: 32px; font-weight: 700; margin: 0 0 24px 0;">
+                    Verify your email address
+                </h1>
+                <p style="color: #4a5568; font-size: 16px; line-height: 24px; margin: 0 0 24px 0;">
+                    Hi {{ .recipient_name }},
+                </p>
+                <p style="color: #4a5568; font-size: 16px; line-height: 24px; margin: 0 0 24px 0;">
+                    Thank you for joining Convoy. Please verify your email address by clicking the button below:
+                </p>
+                <table role="presentation" style="width: 100%; border: none; border-spacing: 0; text-align: center; margin: 32px 0;">
+                    <tr>
+                        <td>
+                            <a href="{{ .email_verification_url }}" target="_blank" class="button" style="
+                                    display: inline-block;
+                                    color: #ffffff;
+                                    font-size: 16px;
+                                    font-weight: 600;
+                                    line-height: 1;
+                                    text-decoration: none;
+                                    text-align: center;
+                                    padding: 14px 30px;
+                                    background-color: #3182ce;
+                                    border-radius: 8px;
+                                ">
+                                Verify email address
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                <p style="color: #4a5568; font-size: 14px; line-height: 24px; margin: 0;">
+                    If the button doesn't work, copy and paste this link into your browser:
+                </p>
+                <p style="color: #4a5568; font-size: 14px; line-height: 24px; margin: 0 0 24px 0; word-break: break-all;">
+                    <a href="{{ .email_verification_url }}" style="color: #3182ce; text-decoration: underline;">{{ .email_verification_url }}</a>
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td class="email-footer" style="padding: 24px 40px; background-color: #edf2f7; text-align: center;">
+                <p class="footer-text" style="color: #718096; font-size: 14px; line-height: 24px; margin: 0 0 8px 0;">
+                    2261 Market Street, San Francisco, CA 94114
+                </p>
+                <p class="footer-text" style="color: #718096; font-size: 14px; line-height: 24px; margin: 0;">
+                    © 2024 Frain Technologies
+                </p>
+            </td>
+        </tr>
     </table>
-  </body>
+</div>
+<!--[if mso]>
+</td>
+</tr>
+</table>
+<![endif]-->
+</body>
 </html>
