@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/prometheus/client_golang/prometheus"
@@ -130,7 +131,13 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 		cachedMetrics = metrics
 	}
 
+	metricsMap := make(map[string]struct{})
+
 	for _, metric := range metrics.EventQueueMetrics {
+		key := fmt.Sprintf("eqm_%d_%s_%s", metric.Total, metric.ProjectID, metric.SourceId)
+		if _, ok := metricsMap[key]; ok {
+			continue
+		}
 		ch <- prometheus.MustNewConstMetric(
 			eventQueueTotalDesc,
 			prometheus.GaugeValue,
@@ -139,9 +146,14 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.SourceId,
 			"success", // already in db
 		)
+		metricsMap[key] = struct{}{}
 	}
 
 	for _, metric := range metrics.EventQueueBacklogMetrics {
+		key := fmt.Sprintf("eqbm_%f_%s_%s", metric.AgeSeconds, metric.ProjectID, metric.SourceId)
+		if _, ok := metricsMap[key]; ok {
+			continue
+		}
 		ch <- prometheus.MustNewConstMetric(
 			eventQueueBacklogDesc,
 			prometheus.GaugeValue,
@@ -149,9 +161,14 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.ProjectID,
 			metric.SourceId,
 		)
+		metricsMap[key] = struct{}{}
 	}
 
 	for _, metric := range metrics.EventDeliveryQueueMetrics {
+		key := fmt.Sprintf("edqm_%d_%s_%s_%s", metric.Total, metric.ProjectID, metric.EndpointId, metric.Status)
+		if _, ok := metricsMap[key]; ok {
+			continue
+		}
 		ch <- prometheus.MustNewConstMetric(
 			eventDeliveryQueueTotalDesc,
 			prometheus.GaugeValue,
@@ -160,9 +177,14 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.EndpointId,
 			strings.ToLower(metric.Status),
 		)
+		metricsMap[key] = struct{}{}
 	}
 
 	for _, metric := range metrics.EventQueueEndpointBacklogMetrics {
+		key := fmt.Sprintf("%f_%s_%s", metric.AgeSeconds, metric.ProjectID, metric.EndpointId)
+		if _, ok := metricsMap[key]; ok {
+			continue
+		}
 		ch <- prometheus.MustNewConstMetric(
 			eventDeliveryQueueBacklogDesc,
 			prometheus.GaugeValue,
@@ -170,9 +192,14 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.ProjectID,
 			metric.EndpointId,
 		)
+		metricsMap[key] = struct{}{}
 	}
 
 	for _, metric := range metrics.EventQueueEndpointAttemptMetrics {
+		key := fmt.Sprintf("eqeam_%d_%s_%s_%s_%s", metric.Total, metric.ProjectID, metric.EndpointId, metric.Status, metric.StatusCode)
+		if _, ok := metricsMap[key]; ok {
+			continue
+		}
 		ch <- prometheus.MustNewConstMetric(
 			eventDeliveryAttemptsTotalDesc,
 			prometheus.GaugeValue,
@@ -182,7 +209,9 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			strings.ToLower(metric.Status),
 			metric.StatusCode,
 		)
+		metricsMap[key] = struct{}{}
 	}
+	clear(metricsMap)
 
 	lastRun = now
 }
