@@ -15,6 +15,10 @@ import (
 
 const pkgName = "sqlite3"
 
+type DbCtxKey string
+
+const TransactionCtx DbCtxKey = "transaction"
+
 type Sqlite struct {
 	dbx    *sqlx.DB
 	hook   *hooks.Hook
@@ -81,4 +85,21 @@ func closeWithError(closer io.Closer) {
 	if err != nil {
 		fmt.Printf("%v, an error occurred while closing the client", err)
 	}
+}
+
+func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {
+	isWrapped := false
+
+	wrappedTx, ok := ctx.Value(TransactionCtx).(*sqlx.Tx)
+	if ok && wrappedTx != nil {
+		isWrapped = true
+		return wrappedTx, isWrapped, nil
+	}
+
+	tx, err := db.BeginTxx(ctx, nil)
+	if err != nil {
+		return nil, isWrapped, err
+	}
+
+	return tx, isWrapped, nil
 }
