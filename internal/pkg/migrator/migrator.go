@@ -12,30 +12,36 @@ var (
 )
 
 type Migrator struct {
-	dbx *sqlx.DB
-	src migrate.MigrationSource
+	dbx     *sqlx.DB
+	dialect string
+	src     migrate.MigrationSource
 }
 
-func New(d database.Database) *Migrator {
+func New(d database.Database, dialect string) *Migrator {
 	migrations := &migrate.EmbedFileSystemMigrationSource{
-		FileSystem: convoy.MigrationFiles,
-		Root:       "sql",
+		FileSystem: convoy.SQLiteMigrationFiles,
+		Root:       "sql/sqlite3",
 	}
 
-	migrate.SetSchema(tableSchema)
-	return &Migrator{dbx: d.GetDB(), src: migrations}
+	if dialect == "postgres" {
+		migrations.FileSystem = convoy.PostgresMigrationFiles
+		migrations.Root = "sql/postgres"
+		migrate.SetSchema(tableSchema)
+	}
+
+	return &Migrator{dbx: d.GetDB(), src: migrations, dialect: dialect}
 }
 
 func (m *Migrator) Up() error {
-	_, err := migrate.Exec(m.dbx.DB, "postgres", m.src, migrate.Up)
+	_, err := migrate.Exec(m.dbx.DB, m.dialect, m.src, migrate.Up)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Migrator) Down(max int) error {
-	_, err := migrate.ExecMax(m.dbx.DB, "postgres", m.src, migrate.Down, max)
+func (m *Migrator) Down(maxDown int) error {
+	_, err := migrate.ExecMax(m.dbx.DB, m.dialect, m.src, migrate.Down, maxDown)
 	if err != nil {
 		return err
 	}

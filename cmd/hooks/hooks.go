@@ -667,7 +667,7 @@ func checkPendingMigrations(db database.Database) error {
 	}
 	counter := map[string]ID{}
 
-	files, err := convoy.MigrationFiles.ReadDir("sql")
+	files, err := convoy.PostgresMigrationFiles.ReadDir("sql")
 	if err != nil {
 		return err
 	}

@@ -120,6 +120,8 @@ var DefaultConfiguration = Configuration{
 type DatabaseConfiguration struct {
 	Type DatabaseProvider `json:"type" envconfig:"CONVOY_DB_TYPE"`
 
+	SqliteDB string `json:"sqlite_db" envconfig:"CONVOY_SQLITE_DB"`
+
 	Scheme   string `json:"scheme" envconfig:"CONVOY_DB_SCHEME"`
 	Host     string `json:"host" envconfig:"CONVOY_DB_HOST"`
 	Username string `json:"username" envconfig:"CONVOY_DB_USERNAME"`

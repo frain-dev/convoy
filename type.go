@@ -16,8 +16,11 @@ type CacheKey string
 //go:embed VERSION
 var F embed.FS
 
-//go:embed sql/*.sql
-var MigrationFiles embed.FS
+//go:embed sql/postgres/*.sql
+var PostgresMigrationFiles embed.FS
+
+//go:embed sql/sqlite3/*.sql
+var SQLiteMigrationFiles embed.FS
 
 func (t TaskName) SetPrefix(prefix string) TaskName {
 	var name strings.Builder
@@ -54,8 +57,7 @@ func readVersion(fs embed.FS) ([]byte, error) {
 	return data, nil
 }
 
-// TODO(subomi): This needs to be refactored for everywhere we depend
-// on this code.
+// GetVersion todo(subomi): This needs to be refactored for everywhere we depend on this code.
 func GetVersion() string {
 	v := "0.1.0"
 
