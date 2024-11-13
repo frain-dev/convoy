@@ -167,15 +167,21 @@
 					<div dropdownTrigger class="border border-new.primary-100 rounded-tl-8px rounded-bl-8px px-10px py-6px text-new.primary-300 text-12">Event Type</div>
 
 					<ng-container dropdownOptions>
-						<div>
-							<form class="border border-new.primary-400 h-36px px-14px py-0 max-w-[200px] w-full rounded-[10px] flex items-center bg-transparent">
-								<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" />
-								<input type="search" placeholder="Search event type" [(ngModel)]="eventsTypeSearchString" (change)="setEventType()" [ngModelOptions]="{ standalone: true }" class="w-full text-neutral-11 outline-none bg-transparent text-12 font-normal" />
-								<button *ngIf="eventsTypeSearchString">
-									<img src="/assets/img/enter-icon.png" alt="enter icon" class="w-16px opacity-75" />
+						<ul class="min-h-[100px] max-h-[200px] overflow-auto">
+							<li
+								convoy-dropdown-option
+								convoy-list-item
+								*ngFor="let type of eventTypes"
+								(click)="setEventType(type.name); toggleFilter('eventType', false)"
+								class="text-14 px-20px"
+								[ngClass]="{ 'text-primary-100 !bg-primary-500': queryParams && queryParams.eventType === type.name }"
+							>
+								<button convoy-button color="neutral" fill="text" class="capitalize font-normal text-left w-full !justify-start text-12">
+									{{ type.name }}
 								</button>
-							</form>
-						</div>
+							</li>
+						</ul>
+
 					</ng-container>
 				</div>
 			</ng-container>
