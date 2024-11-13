@@ -9,7 +9,7 @@ scrape_configs:
     - job_name: agent
       metrics_path: /metrics
       static_configs:
-          - targets: ["agent:5005"]
+          - targets: ["agent:5008"]
     - job_name: web
       metrics_path: /metrics
       static_configs:
