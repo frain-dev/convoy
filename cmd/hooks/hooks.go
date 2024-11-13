@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"io"
 	"os"
 	"time"
@@ -32,7 +33,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
@@ -78,11 +78,6 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		cfg, err = config.Get() // updated
-		if err != nil {
-			return err
-		}
-
-		app.TracerShutdown, err = tracer.Init(cfg.Tracer, cmd.Name())
 		if err != nil {
 			return err
 		}
@@ -226,6 +221,15 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
+		app.TracerBackend, err = tracer.Init(cfg.Tracer, cmd.Name(), app.Licenser)
+		if err != nil {
+			return err
+		}
+		if cfg.Tracer.Type == config.DatadogTracerProvider && !app.Licenser.DatadogTracing() {
+			lo.Error("your instance does not have access to datadog tracing, upgrade to access this feature")
+			_ = app.TracerBackend.Shutdown(context.Background())
+		}
+
 		return nil
 	}
 }
@@ -263,7 +267,7 @@ func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args 
 			os.Exit(0)
 		}
 
-		err = app.TracerShutdown(context.Background())
+		err = app.TracerBackend.Shutdown(context.Background())
 		if err == nil {
 			os.Exit(0)
 		}
@@ -589,6 +593,14 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 				HeaderName:  headerName,
 				HeaderValue: headerValue,
 			},
+		}
+	case config.DatadogTracerProvider:
+		agentUrl, err := cmd.Flags().GetString("datadog-agent-url")
+		if err != nil {
+			return nil, err
+		}
+		c.Tracer.Datadog = config.DatadogConfiguration{
+			AgentURL: agentUrl,
 		}
 
 	case config.SentryTracerProvider:

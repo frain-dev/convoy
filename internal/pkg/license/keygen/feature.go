@@ -30,6 +30,7 @@ const (
 	AgentExecutionMode       Feature = "AGENT_EXECUTION_MODE"
 	IpRules                  Feature = "IP_RULES"
 	EnterpriseSSO            Feature = "ENTERPRISE_SSO"
+	DatadogTracing           Feature = "DATADOG_TRACING"
 )
 
 const (

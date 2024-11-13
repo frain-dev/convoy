@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/dedup"
@@ -28,7 +29,7 @@ type MetaEvent struct {
 	ProjectID   string
 }
 
-func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher) func(context.Context, *asynq.Task) error {
+func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo datastore.MetaEventRepository, dispatch *net.Dispatcher, tracerBackend tracer2.Backend) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var data MetaEvent
 
@@ -73,7 +74,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 
 		delayDuration := retrystrategies.NewRetryStrategyFromMetadata(*metaEvent.Metadata).NextDuration(metaEvent.Metadata.NumTrials)
 
-		resp, err := sendUrlRequest(ctx, project, metaEvent, dispatch)
+		resp, err := sendUrlRequest(ctx, project, metaEvent, dispatch, tracerBackend)
 		metaEvent.Metadata.NumTrials++
 
 		if resp != nil {
@@ -120,7 +121,7 @@ func ProcessMetaEvent(projectRepo datastore.ProjectRepository, metaEventRepo dat
 	}
 }
 
-func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent, dispatch *net.Dispatcher) (*net.Response, error) {
+func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *datastore.MetaEvent, dispatch *net.Dispatcher, tracerBackend tracer2.Backend) (*net.Response, error) {
 	cfg, err := config.Get()
 	if err != nil {
 		return nil, err
@@ -146,6 +147,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 	url := project.Config.MetaEvent.URL
 
 	httpDuration := convoy.HTTP_TIMEOUT_IN_DURATION
+	start := time.Now()
 	resp, err := dispatch.SendRequest(ctx, url, string(convoy.HttpPost), sig.Payload, "X-Convoy-Signature", header, int64(cfg.MaxResponseSize), httpheader.HTTPHeader{}, dedup.GenerateChecksum(metaEvent.UID), httpDuration)
 	if err != nil {
 		return nil, err
@@ -154,16 +156,16 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 	var status string
 	var statusCode int
 
-	start := time.Now()
 	if resp != nil {
 		status = resp.Status
 		statusCode = resp.StatusCode
 	}
+	duration := time.Since(start)
 	requestLogger := log.WithFields(log.Fields{
 		"status":   status,
 		"uri":      url,
 		"method":   convoy.HttpPost,
-		"duration": time.Since(start),
+		"duration": duration,
 	})
 
 	if statusCode >= 200 && statusCode <= 299 {
@@ -171,6 +173,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		log.Infof("%s sent", metaEvent.UID)
 		return resp, nil
 	}
+	tracerBackend.Capture(project, url, resp, duration)
 
 	requestLogger.Errorf("%s", metaEvent.UID)
 	return resp, errors.New(resp.Error)

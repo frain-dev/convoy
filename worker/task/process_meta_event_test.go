@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
@@ -161,7 +162,7 @@ func TestProcessMetaEvent(t *testing.T) {
 				tc.dbFn(metaEventRepo, projectRepo)
 			}
 
-			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher)
+			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, tracer.NoOpBackend{})
 			payload := MetaEvent{
 				MetaEventID: tc.msg.MetaEventID,
 				ProjectID:   tc.msg.ProjectID,

@@ -296,6 +296,14 @@ func (m *MockLicenser) EnterpriseSSO() bool {
 	return ret0
 }
 
+// DatadogTracing mocks base method.
+func (m *MockLicenser) DatadogTracing() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DatadogTracing")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
 // IpRules indicates an expected call of IpRules.
 func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -306,6 +314,12 @@ func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
 func (mr *MockLicenserMockRecorder) EnterpriseSSO() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnterpriseSSO", reflect.TypeOf((*MockLicenser)(nil).EnterpriseSSO))
+}
+
+// DatadogTracing indicates an expected call of DatadogTracing.
+func (mr *MockLicenserMockRecorder) DatadogTracing() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DatadogTracing", reflect.TypeOf((*MockLicenser)(nil).DatadogTracing))
 }
 
 // MultiPlayerMode mocks base method.

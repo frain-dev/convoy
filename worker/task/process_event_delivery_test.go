@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
@@ -986,7 +987,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag)
+			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, tracer.NoOpBackend{})
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

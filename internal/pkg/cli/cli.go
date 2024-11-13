@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"context"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -26,8 +26,7 @@ type App struct {
 	Rate     limiter.RateLimiter
 	Licenser license.Licenser
 
-	// TODO(subomi): Let's make this cleaner.
-	TracerShutdown func(context.Context) error
+	TracerBackend tracer.Backend
 }
 
 type ConvoyCli struct {

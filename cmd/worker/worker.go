@@ -327,6 +327,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
+		a.TracerBackend,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
@@ -350,6 +351,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
+		a.TracerBackend,
 	), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
@@ -405,7 +407,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	}
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
-	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher), nil)
+	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)

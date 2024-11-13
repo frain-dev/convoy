@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
@@ -1104,7 +1105,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
-			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag)
+			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, tracer.NoOpBackend{})
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,
