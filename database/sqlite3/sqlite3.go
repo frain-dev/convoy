@@ -7,17 +7,21 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/pkg/log"
+	"gopkg.in/guregu/null.v4"
 	"io"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const pkgName = "sqlite3"
-
 type DbCtxKey string
 
-const TransactionCtx DbCtxKey = "transaction"
+const (
+	pkgName                 = "sqlite3"
+	Rfc3339Milli            = "2006-01-02T15:04:05.000Z"
+	TransactionCtx DbCtxKey = "transaction"
+)
 
 type Sqlite struct {
 	dbx    *sqlx.DB
@@ -102,4 +106,37 @@ func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {
 	}
 
 	return tx, isWrapped, nil
+}
+
+func timeAsString(t time.Time) string {
+	return t.Format(Rfc3339Milli)
+}
+
+func nullTimeAsString(t null.Time) *string {
+	strVal := ""
+	if t.Valid {
+		strVal = t.Time.Format(Rfc3339Milli)
+		return &strVal
+	}
+	return &strVal
+}
+
+func asTime(ts string) time.Time {
+	t, err := time.Parse(Rfc3339Milli, ts)
+	if err != nil {
+		return time.Now()
+	}
+	return t
+}
+
+func asNullTime(ts *string) null.Time {
+	if ts == nil {
+		return null.NewTime(time.Time{}, false)
+	}
+
+	t, err := time.Parse(Rfc3339Milli, *ts)
+	if err != nil {
+		return null.NewTime(time.Now(), false)
+	}
+	return null.NewTime(t, true)
 }

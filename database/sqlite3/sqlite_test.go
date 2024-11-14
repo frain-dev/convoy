@@ -32,7 +32,7 @@ func getDB(t *testing.T) (database.Database, func()) {
 		dbHooks := hooks.Init()
 		dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
 
-		_db, err = NewDB("file::memory:?cache=shared", log.NewLogger(os.Stdout))
+		_db, err = NewDB("test.db?cache=shared", log.NewLogger(os.Stdout))
 		require.NoError(t, err)
 
 		// run migrations
