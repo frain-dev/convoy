@@ -1,4 +1,5 @@
 -- +migrate Up
+-- configurations
 create table if not exists configurations
 (
     id                               TEXT                                       not null,
@@ -27,6 +28,7 @@ create table if not exists configurations
     cb_consecutive_failure_threshold INTEGER                  default 10           not null
 );
 
+-- event endpoints
 create table if not exists events_endpoints
 (
     event_id    TEXT not null,
@@ -47,12 +49,14 @@ create index if not exists events_endpoints_temp_event_id_idx
 create unique index if not exists idx_uq_constraint_events_endpoints_event_id_endpoint_id
     on events_endpoints (event_id, endpoint_id);
 
+-- migrations
 create table if not exists gorp_migrations
 (
     id         TEXT not null primary key,
     applied_at TEXT
 );
 
+-- project configurations
 create table if not exists project_configurations
 (
     id                                TEXT not null primary key,
@@ -80,6 +84,7 @@ create table if not exists project_configurations
     deleted_at                        TEXT
 );
 
+-- source verifiers
 create table if not exists source_verifiers
 (
     id                      TEXT not null primary key,
@@ -98,6 +103,7 @@ create table if not exists source_verifiers
     deleted_at              TEXT
 );
 
+-- token bucket
 create table if not exists token_bucket
 (
     key        TEXT not null primary key,
@@ -108,6 +114,7 @@ create table if not exists token_bucket
     expires_at TEXT not null
 );
 
+-- users
 create table if not exists users
 (
     id                            TEXT not null primary key,
@@ -123,11 +130,14 @@ create table if not exists users
     auth_type                     TEXT default 'local' not null,
     created_at                    TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     updated_at                    TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
-    deleted_at                    TEXT,
-    constraint users_email_key
-        unique (email, deleted_at)
+    deleted_at                    TEXT
 );
 
+CREATE UNIQUE INDEX if not exists idx_unique_email_deleted_at
+    ON users(email)
+    WHERE deleted_at IS NULL;
+
+-- organisations
 create table if not exists organisations
 (
     id              TEXT not null primary key,
@@ -141,10 +151,11 @@ create table if not exists organisations
     FOREIGN KEY(owner_id) REFERENCES users(id)
 );
 
-create unique index if not exists organisations_custom_domain
+create unique index if not exists idx_organisations_custom_domain_deleted_at
     on organisations (custom_domain, assigned_domain)
     where (deleted_at IS NULL);
 
+--projects
 create table if not exists projects
 (
     id                       TEXT not null primary key,
@@ -162,7 +173,11 @@ create table if not exists projects
     FOREIGN KEY(project_configuration_id) REFERENCES project_configurations(id)
 );
 
--- todo(raymond): deprecate me
+create unique index if not exists idx_name_organisation_id_deleted_at
+    on projects (organisation_id, name)
+    where (deleted_at IS NULL);
+
+-- applications todo(raymond): deprecate me
 create table if not exists applications
 (
     id                TEXT not null primary key,
@@ -176,7 +191,7 @@ create table if not exists applications
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
 
--- todo(raymond): deprecate me
+--  devices todo(raymond): deprecate me
 create table if not exists devices
 (
     id           TEXT not null primary key,
@@ -190,6 +205,7 @@ create table if not exists devices
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
 
+-- endpoints
 create table if not exists endpoints
 (
     id                                       TEXT not null primary key,
@@ -216,6 +232,23 @@ create table if not exists endpoints
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
 
+CREATE UNIQUE INDEX if not exists idx_name_project_id_deleted_at
+    ON endpoints(name, project_id)
+    WHERE deleted_at IS NULL;
+
+create index if not exists idx_endpoints_name_key
+    on endpoints (name);
+
+create index if not exists idx_endpoints_app_id_key
+    on endpoints (app_id);
+
+create index if not exists idx_endpoints_owner_id_key
+    on endpoints (owner_id);
+
+create index if not exists idx_endpoints_project_id_key
+    on endpoints (project_id);
+
+-- api keys
 create table if not exists api_keys
 (
     id            TEXT not null primary key,
@@ -232,24 +265,19 @@ create table if not exists api_keys
     updated_at    TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     expires_at    TEXT,
     deleted_at    TEXT,
-    constraint api_keys_mask_id_key unique (mask_id, deleted_at),
     FOREIGN KEY(role_project) REFERENCES projects(id),
     FOREIGN KEY(role_endpoint) REFERENCES endpoints(id),
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
 
+CREATE UNIQUE INDEX if not exists idx_mask_id_deleted_at
+    ON api_keys(mask_id)
+    WHERE deleted_at IS NULL;
+
 create index if not exists idx_api_keys_mask_id
     on api_keys (mask_id);
 
-create index if not exists idx_endpoints_app_id_key
-    on endpoints (app_id);
-
-create index if not exists idx_endpoints_owner_id_key
-    on endpoints (owner_id);
-
-create index if not exists idx_endpoints_project_id_key
-    on endpoints (project_id);
-
+-- event types
 create table if not exists event_types
 (
     id            TEXT not null primary key,
@@ -262,6 +290,10 @@ create table if not exists event_types
     deprecated_at TEXT,
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
+
+CREATE UNIQUE INDEX if not exists idx_name_project_id_deleted_at
+    ON event_types(name, project_id)
+    WHERE deprecated_at IS NULL;
 
 create index if not exists idx_event_types_category
     on event_types (category);
@@ -285,6 +317,8 @@ create index if not exists idx_event_types_name_not_deprecated
     on event_types (name)
     where (deprecated_at IS NULL);
 
+
+-- jobs
 create table if not exists jobs
 (
     id           TEXT not null primary key,
@@ -300,6 +334,7 @@ create table if not exists jobs
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
 
+-- meta events
 create table if not exists meta_events
 (
     id         TEXT not null primary key,
@@ -314,6 +349,7 @@ create table if not exists meta_events
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
 
+-- organisation invites
 create table if not exists organisation_invites
 (
     id              TEXT not null primary key,
@@ -328,11 +364,14 @@ create table if not exists organisation_invites
     updated_at      TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     expires_at      TEXT not null,
     deleted_at      TEXT,
-    constraint organisation_invites_token_key unique (token, deleted_at),
     FOREIGN KEY(role_project) REFERENCES projects(id),
     FOREIGN KEY(organisation_id) REFERENCES organisations(id),
     FOREIGN KEY(role_endpoint) REFERENCES endpoints(id)
 );
+
+CREATE UNIQUE INDEX if not exists idx_token_organisation_id_deleted_at
+    ON organisation_invites(token, organisation_id)
+    WHERE deleted_at IS NULL;
 
 create index if not exists idx_organisation_invites_token_key
     on organisation_invites (token);
@@ -340,6 +379,7 @@ create index if not exists idx_organisation_invites_token_key
 create unique index if not exists organisation_invites_invitee_email
     on organisation_invites (organisation_id, invitee_email, deleted_at);
 
+-- organisation members
 create table if not exists organisation_members
 (
     id              TEXT not null primary key,
@@ -351,13 +391,15 @@ create table if not exists organisation_members
     created_at      TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     updated_at      TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     deleted_at      TEXT,
-    constraint organisation_members_user_id_org_id_key
-        unique (organisation_id, user_id, deleted_at),
     FOREIGN KEY(role_project) REFERENCES projects(id),
     FOREIGN KEY(role_endpoint) REFERENCES endpoints(id),
     FOREIGN KEY(organisation_id) REFERENCES organisations(id),
     FOREIGN KEY(user_id) REFERENCES users(id)
 );
+
+CREATE UNIQUE INDEX if not exists idx_organisation_id_user_id_deleted_at
+    ON organisation_members(organisation_id, user_id)
+    WHERE deleted_at IS NULL;
 
 create index if not exists idx_organisation_members_deleted_at_key
     on organisation_members (deleted_at);
@@ -380,10 +422,12 @@ create table if not exists portal_links
     deleted_at          TEXT,
     owner_id            TEXT,
     can_manage_endpoint BOOLEAN default false,
-    constraint portal_links_token
-        unique (token, deleted_at),
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
+
+CREATE UNIQUE INDEX if not exists idx_token_deleted_at
+    ON portal_links(token)
+    WHERE deleted_at IS NULL;
 
 create index if not exists idx_portal_links_owner_id_key
     on portal_links (owner_id);
@@ -408,6 +452,8 @@ create index if not exists idx_portal_links_endpoints_enpdoint_id
 create index if not exists idx_portal_links_endpoints_portal_link_id
     on portal_links_endpoints (portal_link_id);
 
+
+-- sources
 create table if not exists sources
 (
     id                           TEXT not null primary key,
@@ -428,11 +474,24 @@ create table if not exists sources
     header_function              TEXT,
     created_at                   TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     updated_at                   TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
-    constraint sources_mask_id unique (mask_id, deleted_at),
     FOREIGN KEY(project_id) REFERENCES projects(id),
     FOREIGN KEY(source_verifier_id) REFERENCES source_verifiers(id)
 );
 
+CREATE UNIQUE INDEX if not exists idx_mask_id_project_id_deleted_at
+    ON sources(mask_id, project_id)
+    WHERE deleted_at IS NULL;
+
+create index if not exists idx_sources_mask_id
+    on sources (mask_id);
+
+create index if not exists idx_sources_project_id
+    on sources (project_id);
+
+create index if not exists idx_sources_source_verifier_id
+    on sources (source_verifier_id);
+
+-- events
 create table if not exists events
 (
     id                 TEXT not null primary key,
@@ -484,54 +543,7 @@ create index if not exists idx_project_id_on_not_deleted
     on events (project_id)
     where (deleted_at IS NULL);
 
-create table if not exists events_search
-(
-    id                 TEXT not null primary key,
-    event_type         TEXT not null,
-    endpoints          TEXT,
-    project_id         TEXT not null,
-    source_id          TEXT,
-    headers            TEXT,
-    raw                TEXT    not null,
-    data               TEXT   not null,
-    url_query_params   TEXT,
-    idempotency_key    TEXT,
-    is_duplicate_event BOOLEAN default false,
-    search_token       TEXT,
-    created_at         TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
-    updated_at         TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
-    deleted_at         TEXT,
-    FOREIGN KEY(source_id) REFERENCES sources(id),
-    FOREIGN KEY(project_id) REFERENCES projects(id)
-);
-
-create index if not exists idx_events_search_created_at_key
-    on events_search (created_at);
-
-create index if not exists idx_events_search_deleted_at_key
-    on events_search (deleted_at);
-
-create index if not exists idx_events_search_project_id_deleted_at_key
-    on events_search (project_id, deleted_at);
-
-create index if not exists idx_events_search_project_id_key
-    on events_search (project_id);
-
-create index if not exists idx_events_search_source_id_key
-    on events_search (source_id);
-
-create index if not exists idx_events_search_token_key
-    on events_search (search_token);
-
-create index if not exists idx_sources_mask_id
-    on sources (mask_id);
-
-create index if not exists idx_sources_project_id
-    on sources (project_id);
-
-create index if not exists idx_sources_source_verifier_id
-    on sources (source_verifier_id);
-
+-- subscriptions
 create table if not exists subscriptions
 (
     id                                TEXT not null primary key,
@@ -562,6 +574,30 @@ create table if not exists subscriptions
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
 
+CREATE UNIQUE INDEX if not exists idx_name_project_id_deleted_at
+    ON subscriptions(name, project_id)
+    WHERE deleted_at IS NULL;
+
+create index if not exists idx_subscriptions_filter_config_event_types_key
+    on subscriptions (filter_config_event_types);
+
+create index if not exists idx_subscriptions_id_deleted_at
+    on subscriptions (id, deleted_at)
+    where (deleted_at IS NOT NULL);
+
+create index if not exists idx_subscriptions_name_key
+    on subscriptions (name)
+    where (deleted_at IS NULL);
+
+create index if not exists idx_subscriptions_updated_at
+    on subscriptions (updated_at)
+    where (deleted_at IS NULL);
+
+create index if not exists idx_subscriptions_updated_at_id_project_id
+    on subscriptions (updated_at, id, project_id)
+    where (deleted_at IS NULL);
+
+-- event deliveries
 create table if not exists event_deliveries
 (
     id               TEXT not null primary key,
@@ -591,6 +627,7 @@ create table if not exists event_deliveries
     FOREIGN KEY(project_id) REFERENCES projects(id)
 );
 
+-- delivery attempts
 create table if not exists delivery_attempts
 (
     id                   TEXT not null primary key,
@@ -663,25 +700,6 @@ create index if not exists idx_event_deliveries_status
 
 create index if not exists idx_event_deliveries_status_key
     on event_deliveries (status);
-
-create index if not exists idx_subscriptions_filter_config_event_types_key
-    on subscriptions (filter_config_event_types);
-
-create index if not exists idx_subscriptions_id_deleted_at
-    on subscriptions (id, deleted_at)
-    where (deleted_at IS NOT NULL);
-
-create index if not exists idx_subscriptions_name_key
-    on subscriptions (name)
-    where (deleted_at IS NULL);
-
-create index if not exists idx_subscriptions_updated_at
-    on subscriptions (updated_at)
-    where (deleted_at IS NULL);
-
-create index if not exists idx_subscriptions_updated_at_id_project_id
-    on subscriptions (updated_at, id, project_id)
-    where (deleted_at IS NULL);
 
 -- +migrate Down
 drop table if exists configurations;
