@@ -26,7 +26,7 @@ create table if not exists configurations
     cb_success_threshold             INTEGER                  default 1            not null,
     cb_observability_window          INTEGER                  default 30           not null,
     cb_consecutive_failure_threshold INTEGER                  default 10           not null
-);
+) strict;
 
 -- event endpoints
 create table if not exists events_endpoints
@@ -35,7 +35,7 @@ create table if not exists events_endpoints
     endpoint_id TEXT not null,
     FOREIGN KEY(endpoint_id) REFERENCES endpoints(id),
     FOREIGN KEY(event_id) REFERENCES events(id)
-);
+) strict;
 
 create index if not exists events_endpoints_temp_endpoint_id_idx
     on events_endpoints (endpoint_id);
@@ -54,7 +54,7 @@ create table if not exists gorp_migrations
 (
     id         TEXT not null primary key,
     applied_at TEXT
-);
+) strict;
 
 -- project configurations
 create table if not exists project_configurations
@@ -82,7 +82,7 @@ create table if not exists project_configurations
     created_at                        TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     updated_at                        TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     deleted_at                        TEXT
-);
+) strict;
 
 -- source verifiers
 create table if not exists source_verifiers
@@ -101,7 +101,7 @@ create table if not exists source_verifiers
     created_at              TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     updated_at              TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     deleted_at              TEXT
-);
+) strict;
 
 -- token bucket
 create table if not exists token_bucket
@@ -112,7 +112,7 @@ create table if not exists token_bucket
     created_at TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     updated_at TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     expires_at TEXT not null
-);
+) strict;
 
 -- users
 create table if not exists users
@@ -131,7 +131,7 @@ create table if not exists users
     created_at                    TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     updated_at                    TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     deleted_at                    TEXT
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_unique_email_deleted_at
     ON users(email)
@@ -149,7 +149,7 @@ create table if not exists organisations
     updated_at      TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     deleted_at      TEXT,
     FOREIGN KEY(owner_id) REFERENCES users(id)
-);
+) strict;
 
 create unique index if not exists idx_organisations_custom_domain_deleted_at
     on organisations (custom_domain, assigned_domain)
@@ -171,7 +171,7 @@ create table if not exists projects
     constraint name_org_id_key unique (name, organisation_id, deleted_at),
     FOREIGN KEY(organisation_id) REFERENCES organisations(id),
     FOREIGN KEY(project_configuration_id) REFERENCES project_configurations(id)
-);
+) strict;
 
 create unique index if not exists idx_name_organisation_id_deleted_at
     on projects (organisation_id, name)
@@ -189,7 +189,7 @@ create table if not exists applications
     updated_at        TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     deleted_at        TEXT,
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 --  devices todo(raymond): deprecate me
 create table if not exists devices
@@ -203,7 +203,7 @@ create table if not exists devices
     last_seen_at TEXT not null,
     deleted_at   TEXT,
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 -- endpoints
 create table if not exists endpoints
@@ -230,7 +230,7 @@ create table if not exists endpoints
     name                                     TEXT not null,
     url                                      TEXT not null,
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_name_project_id_deleted_at
     ON endpoints(name, project_id)
@@ -268,7 +268,7 @@ create table if not exists api_keys
     FOREIGN KEY(role_project) REFERENCES projects(id),
     FOREIGN KEY(role_endpoint) REFERENCES endpoints(id),
     FOREIGN KEY(user_id) REFERENCES users(id)
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_mask_id_deleted_at
     ON api_keys(mask_id)
@@ -289,7 +289,7 @@ create table if not exists event_types
     updated_at    TEXT default (strftime('%Y-%m-%dT%H:%M:%fZ')) not null,
     deprecated_at TEXT,
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_name_project_id_deleted_at
     ON event_types(name, project_id)
@@ -332,7 +332,7 @@ create table if not exists jobs
     updated_at   TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     deleted_at   TEXT,
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 -- meta events
 create table if not exists meta_events
@@ -347,7 +347,7 @@ create table if not exists meta_events
     updated_at TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     deleted_at TEXT,
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 -- organisation invites
 create table if not exists organisation_invites
@@ -367,7 +367,7 @@ create table if not exists organisation_invites
     FOREIGN KEY(role_project) REFERENCES projects(id),
     FOREIGN KEY(organisation_id) REFERENCES organisations(id),
     FOREIGN KEY(role_endpoint) REFERENCES endpoints(id)
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_token_organisation_id_deleted_at
     ON organisation_invites(token, organisation_id)
@@ -395,7 +395,7 @@ create table if not exists organisation_members
     FOREIGN KEY(role_endpoint) REFERENCES endpoints(id),
     FOREIGN KEY(organisation_id) REFERENCES organisations(id),
     FOREIGN KEY(user_id) REFERENCES users(id)
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_organisation_id_user_id_deleted_at
     ON organisation_members(organisation_id, user_id)
@@ -423,7 +423,7 @@ create table if not exists portal_links
     owner_id            TEXT,
     can_manage_endpoint BOOLEAN default false,
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_token_deleted_at
     ON portal_links(token)
@@ -444,7 +444,7 @@ create table if not exists portal_links_endpoints
     endpoint_id    TEXT not null,
     FOREIGN KEY(portal_link_id) REFERENCES portal_links(id),
     FOREIGN KEY(endpoint_id) REFERENCES endpoints(id)
-);
+) strict;
 
 create index if not exists idx_portal_links_endpoints_enpdoint_id
     on portal_links_endpoints (endpoint_id);
@@ -476,7 +476,7 @@ create table if not exists sources
     updated_at                   TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     FOREIGN KEY(project_id) REFERENCES projects(id),
     FOREIGN KEY(source_verifier_id) REFERENCES source_verifiers(id)
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_mask_id_project_id_deleted_at
     ON sources(mask_id, project_id)
@@ -513,7 +513,7 @@ create table if not exists events
     updated_at         TEXT not null default (strftime('%Y-%m-%dT%H:%M:%fZ')),
     FOREIGN KEY(source_id) REFERENCES sources(id),
     FOREIGN KEY(project_id) REFERENCES projects(name)
-);
+) strict;
 
 create index if not exists idx_events_created_at_key
     on events (created_at);
@@ -572,7 +572,7 @@ create table if not exists subscriptions
     FOREIGN KEY(device_id) REFERENCES devices(id),
     FOREIGN KEY(endpoint_id) REFERENCES endpoints(id),
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 CREATE UNIQUE INDEX if not exists idx_name_project_id_deleted_at
     ON subscriptions(name, project_id)
@@ -625,7 +625,7 @@ create table if not exists event_deliveries
     FOREIGN KEY(event_id) REFERENCES events(id),
     FOREIGN KEY(endpoint_id) REFERENCES endpoints(id),
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 -- delivery attempts
 create table if not exists delivery_attempts
@@ -650,7 +650,7 @@ create table if not exists delivery_attempts
     FOREIGN KEY(event_delivery_id) REFERENCES event_deliveries(id),
     FOREIGN KEY(endpoint_id) REFERENCES endpoints(id),
     FOREIGN KEY(project_id) REFERENCES projects(id)
-);
+) strict;
 
 create index if not exists idx_delivery_attempts_created_at
     on delivery_attempts (created_at);
