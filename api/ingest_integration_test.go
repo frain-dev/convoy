@@ -27,6 +27,7 @@ type IngestIntegrationTestSuite struct {
 	suite.Suite
 	DB             database.Database
 	Router         http.Handler
+	DPRouter       http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultProject *datastore.Project
 }
@@ -35,6 +36,7 @@ func (i *IngestIntegrationTestSuite) SetupSuite() {
 	i.DB = getDB()
 	i.ConvoyApp = buildServer()
 	i.Router = i.ConvoyApp.BuildControlPlaneRoutes()
+	i.DPRouter = i.ConvoyApp.BuildDataPlaneRoutes()
 }
 
 func (i *IngestIntegrationTestSuite) SetupTest() {
@@ -75,7 +77,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
@@ -104,7 +106,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NotHTTPSource() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
@@ -175,7 +177,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadHmac() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
@@ -239,7 +241,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadAPIKey() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
@@ -271,7 +273,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodBasicAuth() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
@@ -303,7 +305,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadBasicAuth() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
@@ -330,7 +332,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
@@ -358,7 +360,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestB
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), expectedStatusCode, w.Code)
@@ -393,7 +395,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPa
 	w := httptest.NewRecorder()
 
 	// Act.
-	i.Router.ServeHTTP(w, req)
+	i.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(i.T(), http.StatusRequestEntityTooLarge, w.Code)

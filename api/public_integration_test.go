@@ -656,6 +656,7 @@ type PublicEventIntegrationTestSuite struct {
 	suite.Suite
 	DB             database.Database
 	Router         http.Handler
+	DPRouter       http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultProject *datastore.Project
 	APIKey         string
@@ -665,6 +666,7 @@ func (s *PublicEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	s.DPRouter = s.ConvoyApp.BuildDataPlaneRoutes()
 }
 
 func (s *PublicEventIntegrationTestSuite) SetupTest() {
@@ -716,7 +718,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -751,7 +753,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -781,7 +783,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateBroadcastEvent() {
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -803,7 +805,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoin
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -837,7 +839,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -857,7 +859,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_d
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -879,7 +881,7 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -903,7 +905,7 @@ func (s *PublicEventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event()
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -945,7 +947,7 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDeliv
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -1016,7 +1018,7 @@ func (s *PublicEventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend(
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -1054,7 +1056,7 @@ func (s *PublicEventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_Eve
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -1088,7 +1090,7 @@ func (s *PublicEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -1137,7 +1139,7 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventsPaged() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -1203,7 +1205,7 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -2778,6 +2780,7 @@ type PublicEventTypeIntegrationTestSuite struct {
 	suite.Suite
 	DB             database.Database
 	Router         http.Handler
+	DPRouter       http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultOrg     *datastore.Organisation
 	DefaultProject *datastore.Project
@@ -2788,6 +2791,7 @@ func (s *PublicEventTypeIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	s.DPRouter = s.ConvoyApp.BuildDataPlaneRoutes()
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
@@ -2811,6 +2815,12 @@ func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
+
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) TearDownTest() {
@@ -2831,7 +2841,7 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_GetEventTypes() {
 	require.NoError(s.T(), err)
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -2857,7 +2867,7 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_CreateEventType() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -2887,7 +2897,7 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_UpdateEventType() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -2916,7 +2926,7 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_DeprecateEventType() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)

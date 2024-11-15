@@ -27,6 +27,7 @@ type PortalEndpointIntegrationTestSuite struct {
 	suite.Suite
 	DB             database.Database
 	Router         http.Handler
+	DPRouter       http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultOrg     *datastore.Organisation
 	DefaultProject *datastore.Project
@@ -39,6 +40,7 @@ func (s *PortalEndpointIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	s.DPRouter = s.ConvoyApp.BuildDataPlaneRoutes()
 }
 
 func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
@@ -178,6 +180,7 @@ type PortalEventIntegrationTestSuite struct {
 	suite.Suite
 	DB             database.Database
 	Router         http.Handler
+	DPRouter       http.Handler
 	ConvoyApp      *ApplicationHandler
 	DefaultProject *datastore.Project
 	APIKey         string
@@ -187,6 +190,7 @@ func (s *PortalEventIntegrationTestSuite) SetupSuite() {
 	s.DB = getDB()
 	s.ConvoyApp = buildServer()
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
+	s.DPRouter = s.ConvoyApp.BuildDataPlaneRoutes()
 }
 
 func (s *PortalEventIntegrationTestSuite) SetupTest() {
@@ -243,7 +247,7 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -270,7 +274,7 @@ func (s *PortalEventIntegrationTestSuite) Test_ReplayEndpointEvent_Valid_Event()
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -319,7 +323,7 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDeliv
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -328,6 +332,10 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDelivery_Valid_EventDeliv
 	var respEventDelivery datastore.EventDelivery
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
 	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
+
+	w = httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusNotFound, w.Code)
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_GetEventDelivery_Event_not_found() {
@@ -377,7 +385,7 @@ func (s *PortalEventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend(
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -387,6 +395,10 @@ func (s *PortalEventIntegrationTestSuite) Test_ResendEventDelivery_Valid_Resend(
 	parseResponse(s.T(), w.Result(), &respEventDelivery)
 	require.Equal(s.T(), datastore.ScheduledEventStatus, respEventDelivery.Status)
 	require.Equal(s.T(), eventDelivery.UID, respEventDelivery.UID)
+
+	w = httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusNotFound, w.Code)
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_EventDeliveries() {
@@ -418,10 +430,14 @@ func (s *PortalEventIntegrationTestSuite) Test_BatchRetryEventDelivery_Valid_Eve
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	w = httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusNotFound, w.Code)
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Valid_Filters() {
@@ -453,7 +469,7 @@ func (s *PortalEventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Vali
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -464,6 +480,10 @@ func (s *PortalEventIntegrationTestSuite) Test_CountAffectedEventDeliveries_Vali
 	}
 	parseResponse(s.T(), w.Result(), &num)
 	require.Equal(s.T(), 3, num.Num)
+
+	w = httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusNotFound, w.Code)
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventDeliveries() {
@@ -497,7 +517,7 @@ func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -507,6 +527,10 @@ func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), expectedMessage, response["message"].(string))
+
+	w = httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusNotFound, w.Code)
 }
 
 func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
@@ -549,7 +573,7 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventsPaged() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -606,7 +630,7 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	w := httptest.NewRecorder()
 
 	// Act.
-	s.Router.ServeHTTP(w, req)
+	s.DPRouter.ServeHTTP(w, req)
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -621,6 +645,10 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	for i, delivery := range v {
 		require.Equal(s.T(), respEvents[i].UID, delivery.UID)
 	}
+
+	w = httptest.NewRecorder()
+	s.Router.ServeHTTP(w, req)
+	require.Equal(s.T(), http.StatusNotFound, w.Code)
 }
 
 func TestPortalEventIntegrationTestSuite(t *testing.T) {
