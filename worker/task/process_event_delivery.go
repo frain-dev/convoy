@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 
 	"time"
@@ -33,10 +34,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser,
-	projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher,
-	attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag,
-) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		var data EventDelivery
 		var delayDuration time.Duration
@@ -228,6 +226,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
 				nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 		}
+		tracerBackend.Capture(project, targetURL, resp, duration)
 
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {

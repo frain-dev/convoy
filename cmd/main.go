@@ -67,6 +67,7 @@ func main() {
 	var otelCollectorURL string
 	var otelAuthHeaderName string
 	var otelAuthHeaderValue string
+	var dataDogAgentUrl string
 	var metricsBackend string
 	var prometheusMetricsSampleTime uint64
 
@@ -120,6 +121,7 @@ func main() {
 	c.Flags().StringVar(&otelCollectorURL, "otel-collector-url", "", "OTel collector URL")
 	c.Flags().StringVar(&otelAuthHeaderName, "otel-auth-header-name", "", "OTel backend auth header name")
 	c.Flags().StringVar(&otelAuthHeaderValue, "otel-auth-header-value", "", "OTel backend auth header value")
+	c.Flags().StringVar(&dataDogAgentUrl, "datadog-agent-url", "", "Datadog agent URL")
 
 	// metrics
 	c.Flags().StringVar(&metricsBackend, "metrics-backend", "prometheus", "Metrics backend e.g. prometheus. ('prometheus' feature flag required")

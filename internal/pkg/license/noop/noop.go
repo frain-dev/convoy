@@ -122,3 +122,7 @@ func (Licenser) IpRules() bool {
 func (Licenser) EnterpriseSSO() bool {
 	return true
 }
+
+func (k *Licenser) DatadogTracing() bool {
+	return true
+}

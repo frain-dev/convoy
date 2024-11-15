@@ -3,12 +3,14 @@ package tracer
 import (
 	"context"
 	"errors"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/util"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc/credentials"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -24,14 +26,21 @@ var ErrInvalidOTelSSLConfig = errors.New("invalid OTel ssl cert or key configura
 var ErrFailedToCreateTLSCredentials = errors.New("failed to create tls credentials from config")
 
 type OTelTracer struct {
-	cfg config.OTelConfiguration
+	cfg        config.OTelConfiguration
+	ShutdownFn func(ctx context.Context) error
 }
 
-func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
+func NewOTelTracer(cfg config.OTelConfiguration) *OTelTracer {
+	return &OTelTracer{
+		cfg: cfg,
+	}
+}
+
+func (ot *OTelTracer) Init(componentName string) error {
 	var opts []otlptracegrpc.Option
 
 	if util.IsStringEmpty(ot.cfg.CollectorURL) {
-		return noopShutdownFn, ErrInvalidCollectorURL
+		return ErrInvalidCollectorURL
 	}
 	opts = append(opts, otlptracegrpc.WithEndpoint(ot.cfg.CollectorURL))
 
@@ -51,7 +60,7 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 
 	exporter, err := otlptrace.New(context.Background(), otlptracegrpc.NewClient(opts...))
 	if err != nil {
-		return noopShutdownFn, err
+		return err
 	}
 
 	// Configure Resources.
@@ -69,7 +78,7 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 		),
 	)
 	if err != nil {
-		return noopShutdownFn, err
+		return err
 	}
 
 	// Configure Tracer Provider.
@@ -85,5 +94,17 @@ func (ot *OTelTracer) Init(componentName string) (shutdownFn, error) {
 	// Configure Propagator
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 
-	return tp.Shutdown, nil
+	ot.ShutdownFn = tp.Shutdown
+
+	return nil
+}
+
+func (ot *OTelTracer) Type() config.TracerProvider {
+	return config.OTelTracerProvider
+}
+func (ot *OTelTracer) Capture(*datastore.Project, string, *net.Response, time.Duration) {
+
+}
+func (ot *OTelTracer) Shutdown(ctx context.Context) error {
+	return ot.ShutdownFn(ctx)
 }

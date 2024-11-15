@@ -491,6 +491,14 @@ func (k *Licenser) EnterpriseSSO() bool {
 	return ok
 }
 
+func (k *Licenser) DatadogTracing() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[DatadogTracing]
+	return ok
+}
+
 func (k *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	// only these guys have dynamic limits for now
 	for f := range k.featureList {

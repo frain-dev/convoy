@@ -27,6 +27,7 @@ type Licenser interface {
 	AgentExecutionMode() bool
 	IpRules() bool
 	EnterpriseSSO() bool
+	DatadogTracing() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool
