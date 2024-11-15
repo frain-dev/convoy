@@ -167,7 +167,7 @@ require (
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
-	github.com/in-toto/in-toto-golang v0.7.1 // indirect
+	github.com/in-toto/in-toto-golang v0.9.0 // indirect
 	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
