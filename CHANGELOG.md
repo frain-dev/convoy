@@ -1,3 +1,24 @@
+# 24.11.1 
+
+### Features 
+- Added endpoint circuit breaking. #2120
+- Added rate limiting to server apis. #2166
+- Added allow and block IP Lists #2169
+- Added event types #2180
+- Added Enterprise SSO #2175
+
+### Enhancements
+- Removed retry configuration from subscriptions. #2161 
+- Redesigned event processing system to use a workflow approach. #2131
+- Dashboard UI Improvements #2167
+- Added missing index for fetching delivery attempts #2172
+- Added version header to responses #2174
+- Optimized queries for prometheus metrics #2179
+
+### Bug Fixes 
+- Fix flatten multiple top level operator bug #2168
+- Delete an invitation after decline or accept #2171
+
 # 24.9.2
 
 ### Enhancements
