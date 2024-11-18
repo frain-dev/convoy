@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/lib/pq"
 	"gopkg.in/guregu/null.v4"
 	"io"
 	"time"
@@ -139,4 +140,12 @@ func asNullTime(ts *string) null.Time {
 		return null.NewTime(time.Now(), false)
 	}
 	return null.NewTime(t, true)
+}
+
+func asStringArray(a *string) pq.StringArray {
+	if a == nil {
+		return nil
+	}
+
+	return pq.StringArray{*a}
 }

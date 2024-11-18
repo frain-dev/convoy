@@ -852,8 +852,8 @@ type dbSubscription struct {
 	EndpointID      string                            `db:"endpoint_id"`
 	DeviceID        string                            `db:"device_id"`
 	Function        null.String                       `db:"function"`
-	Source          *datastore.Source                 `db:"source_metadata"`
-	Endpoint        *datastore.Endpoint               `db:"endpoint_metadata"`
+	Source          *dbSource                         `db:"source_metadata"`
+	Endpoint        *dbEndpoint                       `db:"endpoint_metadata"`
 	Device          *datastore.Device                 `db:"device_metadata"`
 	AlertConfig     *datastore.AlertConfiguration     `db:"alert_config"`
 	RetryConfig     *datastore.RetryConfiguration     `db:"retry_config"`
@@ -865,6 +865,17 @@ type dbSubscription struct {
 }
 
 func (ss *dbSubscription) toDatastoreSubscription() *datastore.Subscription {
+
+	var src *datastore.Source
+	if ss.Source != nil {
+		src = ss.Source.toDatastoreSource()
+	}
+
+	var end *datastore.Endpoint
+	if ss.Endpoint != nil {
+		end = ss.Endpoint.toDatastoreEndpoint()
+	}
+
 	return &datastore.Subscription{
 		UID:             ss.UID,
 		Name:            ss.Name,
@@ -874,8 +885,8 @@ func (ss *dbSubscription) toDatastoreSubscription() *datastore.Subscription {
 		EndpointID:      ss.EndpointID,
 		DeviceID:        ss.DeviceID,
 		Function:        ss.Function,
-		Source:          ss.Source,
-		Endpoint:        ss.Endpoint,
+		Source:          src,
+		Endpoint:        end,
 		Device:          ss.Device,
 		AlertConfig:     ss.AlertConfig,
 		RetryConfig:     ss.RetryConfig,

@@ -495,3 +495,49 @@ type EndpointSecret struct {
 	Endpoint datastore.Endpoint `json:"endpoint"`
 	Secret   datastore.Secret   `db:"secret"`
 }
+
+type dbEndpoint struct {
+	UID                string                            `db:"id"`
+	Name               string                            `db:"name"`
+	Status             datastore.EndpointStatus          `db:"status"`
+	OwnerID            string                            `db:"owner_id"`
+	Url                string                            `db:"url"`
+	Description        string                            `db:"description"`
+	HttpTimeout        uint64                            `db:"http_timeout"`
+	RateLimit          int                               `db:"rate_limit"`
+	RateLimitDuration  uint64                            `db:"rate_limit_duration"`
+	AdvancedSignatures bool                              `db:"advanced_signatures"`
+	SlackWebhookURL    string                            `db:"slack_webhook_url"`
+	SupportEmail       string                            `db:"support_email"`
+	AppID              string                            `db:"app_id"`
+	ProjectID          string                            `db:"project_id"`
+	Secrets            datastore.Secrets                 `db:"secrets"`
+	Authentication     *datastore.EndpointAuthentication `db:"authentication"`
+	CreatedAt          string                            `db:"created_at"`
+	UpdatedAt          string                            `db:"updated_at"`
+	DeletedAt          *string                           `db:"deleted_at"`
+}
+
+func (e *dbEndpoint) toDatastoreEndpoint() *datastore.Endpoint {
+	return &datastore.Endpoint{
+		UID:                e.UID,
+		Name:               e.Name,
+		Status:             e.Status,
+		OwnerID:            e.OwnerID,
+		Url:                e.Url,
+		Description:        e.Description,
+		HttpTimeout:        e.HttpTimeout,
+		RateLimit:          e.RateLimit,
+		RateLimitDuration:  e.RateLimitDuration,
+		AdvancedSignatures: e.AdvancedSignatures,
+		SlackWebhookURL:    e.SlackWebhookURL,
+		SupportEmail:       e.SupportEmail,
+		AppID:              e.AppID,
+		ProjectID:          e.ProjectID,
+		Secrets:            e.Secrets,
+		Authentication:     e.Authentication,
+		CreatedAt:          asTime(e.CreatedAt),
+		UpdatedAt:          asTime(e.UpdatedAt),
+		DeletedAt:          asNullTime(e.DeletedAt),
+	}
+}
