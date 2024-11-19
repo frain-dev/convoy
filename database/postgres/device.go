@@ -93,16 +93,16 @@ const (
 )
 
 type deviceRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
 func NewDeviceRepo(db database.Database, cache cache.Cache) datastore.DeviceRepository {
-	return &deviceRepo{db: db.GetDB(), cache: cache}
+	return &deviceRepo{db: db, cache: cache}
 }
 
 func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device) error {
-	r, err := d.db.ExecContext(ctx, createDevice,
+	r, err := d.db.GetReadDB().ExecContext(ctx, createDevice,
 		device.UID,
 		device.ProjectID,
 		device.HostName,
@@ -126,7 +126,7 @@ func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device)
 }
 
 func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device, endpointID, projectID string) error {
-	r, err := d.db.ExecContext(ctx, updateDevice,
+	r, err := d.db.GetReadDB().ExecContext(ctx, updateDevice,
 		device.UID,
 		projectID,
 		device.HostName,
@@ -149,7 +149,7 @@ func (d *deviceRepo) UpdateDevice(ctx context.Context, device *datastore.Device,
 }
 
 func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore.Device, endpointID, projectID string, status datastore.DeviceStatus) error {
-	r, err := d.db.ExecContext(ctx, updateDeviceLastSeen,
+	r, err := d.db.GetReadDB().ExecContext(ctx, updateDeviceLastSeen,
 		device.UID,
 		projectID,
 		status,
@@ -171,7 +171,7 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 }
 
 func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, projectID string) error {
-	r, err := d.db.ExecContext(ctx, deleteDevice, uid, projectID)
+	r, err := d.db.GetReadDB().ExecContext(ctx, deleteDevice, uid, projectID)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, p
 
 func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
-	err := d.db.QueryRowxContext(ctx, fetchDeviceById, uid, projectID).StructScan(device)
+	err := d.db.GetReadDB().QueryRowxContext(ctx, fetchDeviceById, uid, projectID).StructScan(device)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrDeviceNotFound
@@ -203,7 +203,7 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID
 
 func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
-	err := d.db.QueryRowxContext(ctx, fetchDeviceByHostName, hostName, projectID).StructScan(device)
+	err := d.db.GetReadDB().QueryRowxContext(ctx, fetchDeviceByHostName, hostName, projectID).StructScan(device)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrDeviceNotFound
@@ -245,9 +245,9 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = d.db.Rebind(query)
+	query = d.db.GetReadDB().Rebind(query)
 
-	rows, err := d.db.QueryxContext(ctx, query, args...)
+	rows, err := d.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -279,10 +279,10 @@ func (d *deviceRepo) LoadDevicesPaged(ctx context.Context, projectID string, fil
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = d.db.Rebind(countQuery)
+		countQuery = d.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := d.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := d.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}

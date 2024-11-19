@@ -123,7 +123,7 @@ var (
 )
 
 type apiKeyRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
@@ -131,7 +131,7 @@ func NewAPIKeyRepo(db database.Database, ca cache.Cache) datastore.APIKeyReposit
 	if ca == nil {
 		ca = ncache.NewNoopCache()
 	}
-	return &apiKeyRepo{db: db.GetDB(), cache: ca}
+	return &apiKeyRepo{db: db, cache: ca}
 }
 
 func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) error {
@@ -158,7 +158,7 @@ func (a *apiKeyRepo) CreateAPIKey(ctx context.Context, key *datastore.APIKey) er
 		roleType = &key.Role.Type
 	}
 
-	result, err := a.db.ExecContext(
+	result, err := a.db.GetDB().ExecContext(
 		ctx, createAPIKey, key.UID, key.Name, key.Type, key.MaskID,
 		roleType, projectID, endpointID, key.Hash,
 		key.Salt, userID, key.ExpiresAt,
@@ -202,7 +202,7 @@ func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) er
 		roleType = &key.Role.Type
 	}
 
-	result, err := a.db.ExecContext(
+	result, err := a.db.GetDB().ExecContext(
 		ctx, updateAPIKeyById, key.UID, key.Name, roleType, projectID, endpointID,
 	)
 	if err != nil {
@@ -230,7 +230,7 @@ func (a *apiKeyRepo) UpdateAPIKey(ctx context.Context, key *datastore.APIKey) er
 func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
 	fromCache, err := a.readFromCache(ctx, id, func() (*datastore.APIKey, error) {
 		apiKey := &datastore.APIKey{}
-		err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchAPIKey), id).StructScan(apiKey)
+		err := a.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchAPIKey), id).StructScan(apiKey)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrAPIKeyNotFound
@@ -251,7 +251,7 @@ func (a *apiKeyRepo) FindAPIKeyByID(ctx context.Context, id string) (*datastore.
 func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
 	fromCache, err := a.readFromCache(ctx, maskID, func() (*datastore.APIKey, error) {
 		apiKey := &datastore.APIKey{}
-		err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND mask_id = $1;", fetchAPIKey), maskID).StructScan(apiKey)
+		err := a.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND mask_id = $1;", fetchAPIKey), maskID).StructScan(apiKey)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrAPIKeyNotFound
@@ -272,7 +272,7 @@ func (a *apiKeyRepo) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 func (a *apiKeyRepo) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
 	fromCache, err := a.readFromCache(ctx, hash, func() (*datastore.APIKey, error) {
 		apiKey := &datastore.APIKey{}
-		err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND hash = $1;", fetchAPIKey), hash).StructScan(apiKey)
+		err := a.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND hash = $1;", fetchAPIKey), hash).StructScan(apiKey)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrAPIKeyNotFound
@@ -296,7 +296,7 @@ func (a *apiKeyRepo) RevokeAPIKeys(ctx context.Context, ids []string) error {
 		return err
 	}
 
-	result, err := a.db.ExecContext(ctx, a.db.Rebind(query), args...)
+	result, err := a.db.GetReadDB().ExecContext(ctx, a.db.GetReadDB().Rebind(query), args...)
 	if err != nil {
 		return err
 	}
@@ -359,9 +359,9 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = a.db.Rebind(query)
+	query = a.db.GetReadDB().Rebind(query)
 
-	rows, err := a.db.QueryxContext(ctx, query, args...)
+	rows, err := a.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -393,10 +393,10 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = a.db.Rebind(countQuery)
+		countQuery = a.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := a.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := a.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -428,7 +428,7 @@ func (a *apiKeyRepo) LoadAPIKeysPaged(ctx context.Context, filter *datastore.Api
 func (a *apiKeyRepo) FindAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
 	fromCache, err := a.readFromCache(ctx, projectID, func() (*datastore.APIKey, error) {
 		apiKey := &datastore.APIKey{}
-		err := a.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND role_project = $1;", fetchAPIKey), projectID).StructScan(apiKey)
+		err := a.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND role_project = $1;", fetchAPIKey), projectID).StructScan(apiKey)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrAPIKeyNotFound

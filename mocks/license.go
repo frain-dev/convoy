@@ -304,6 +304,14 @@ func (m *MockLicenser) DatadogTracing() bool {
 	return ret0
 }
 
+// ReadReplica mocks base method.
+func (m *MockLicenser) ReadReplica() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadReplica")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
 // IpRules indicates an expected call of IpRules.
 func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
