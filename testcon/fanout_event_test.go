@@ -66,7 +66,7 @@ func (d *DockerE2EIntegrationTestSuite) Test_FanOutEvent_Success_MustMatchSubscr
 }
 
 func (d *DockerE2EIntegrationTestSuite) initAndStartServers(ports []int, eventCount int64) (*convoy.Client, chan bool) {
-	baseURL := "http://localhost:5015/api/v1"
+	baseURL := "http://localhost:5018/api/v1"
 	c := convoy.New(baseURL, d.APIKey, d.DefaultProject.UID)
 
 	done := make(chan bool, 1)
