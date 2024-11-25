@@ -177,7 +177,7 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.privateService.getProjectDetails?.type === 'incoming') return;
 
 		try {
-			const response = await this.createSubscriptionService.getEventTypes();
+			const response = await this.privateService.getEventTypes();
 
 			const { event_types } = response.data;
 			this.eventTypes = event_types.filter((type: EVENT_TYPE) => !type.deprecated_at)

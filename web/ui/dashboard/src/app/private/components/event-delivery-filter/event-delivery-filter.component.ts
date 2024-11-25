@@ -4,7 +4,7 @@ import { ButtonComponent } from 'src/app/components/button/button.component';
 import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
 import { EndpointFilterComponent } from '../endpoints-filter/endpoints-filter.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
-import { FILTER_QUERY_PARAM } from 'src/app/models/event.model';
+import { EVENT_TYPE, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
 import { ActivatedRoute } from '@angular/router';
 import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
 import { ProjectService } from '../../pages/project/project.service';
@@ -61,6 +61,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 		{ name: 'Endpoint', id: 'endpoint', show: false },
 		{ name: 'Event type', id: 'eventType', show: false }
 	];
+
+    eventTypes: EVENT_TYPE[] = [];
 	constructor(private route: ActivatedRoute, private _location: Location, public projectService: ProjectService, private privateService: PrivateService, private generalService: GeneralService, public licenseService: LicensesService) {}
 
 	async ngOnInit() {
@@ -78,6 +80,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 		if (this.eventDeliveriesEndpoint) this.eventDeliveriesEndpointData = await this.getSelectedEndpointData();
 
 		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
+
+        this.getEventTypesForFilter();
 	}
 
 	getFiltersFromURL() {
@@ -185,9 +189,9 @@ export class EventDeliveryFilterComponent implements OnInit {
 		this.filter.emit(this.queryParams);
 	}
 
-	setEventType() {
-		this.eventDelEventType = this.eventsTypeSearchString;
-		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType: this.eventsTypeSearchString });
+	setEventType(eventType: string) {
+		this.eventDelEventType = eventType;
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, eventType });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.filter.emit(this.queryParams);
 		this.toggleFilter('eventType', false);
@@ -259,6 +263,18 @@ export class EventDeliveryFilterComponent implements OnInit {
 			this.filterSources = sourcesResponse;
 		} catch (error) {}
 	}
+
+    async getEventTypesForFilter() {
+		if (this.projectService.activeProjectDetails?.type === 'incoming') return;
+		try {
+			const response = await this.privateService.getEventTypes();
+			this.eventTypes = response.data.event_types ? response.data.event_types : [];
+			return;
+		} catch (error) {
+			return;
+		}
+	}
+
 
 	showBatchRetry() {
 		this.batchRetry.emit(this.queryParams);

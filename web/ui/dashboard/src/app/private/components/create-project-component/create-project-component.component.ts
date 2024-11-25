@@ -382,7 +382,7 @@ export class CreateProjectComponent implements OnInit {
 		if (this.privateService.getProjectDetails?.type === 'incoming') return;
 
 		try {
-			const response = await this.createProjectService.getEventTypes();
+			const response = await this.privateService.getEventTypes();
 			this.eventTypes = response.data.event_types ? response.data.event_types : [];
 			return;
 		} catch (error) {

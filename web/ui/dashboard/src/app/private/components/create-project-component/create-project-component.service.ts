@@ -60,22 +60,6 @@ export class CreateProjectComponentService {
 		});
 	}
 
-	async getEventTypes(): Promise<HTTP_RESPONSE> {
-		return new Promise(async (resolve, reject) => {
-			try {
-				const response = await this.http.request({
-					url: `/event-types`,
-					method: 'get',
-					level: 'org_project'
-				});
-
-				return resolve(response);
-			} catch (error) {
-				return reject(error);
-			}
-		});
-	}
-
 	createEventType(requestDetails: any): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
