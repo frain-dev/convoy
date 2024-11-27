@@ -524,11 +524,13 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	// CONVOY_ENABLE_FEATURE_FLAG
-	fflag, err := cmd.Flags().GetStringSlice("enable-feature-flag")
+	flags, err := cmd.Flags().GetStringSlice("enable-feature-flag")
 	if err != nil {
 		return nil, err
 	}
-	c.EnableFeatureFlag = fflag
+	if len(flags) > 0 {
+		c.EnableFeatureFlag = flags
+	}
 
 	// CONVOY_DISPATCHER_BLOCK_LIST
 	ipBlockList, err := cmd.Flags().GetStringSlice("ip-block-list")
