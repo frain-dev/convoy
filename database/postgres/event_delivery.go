@@ -63,8 +63,8 @@ const (
         COALESCE(ep.url, '') AS "endpoint_metadata.url",
         COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
         
-        ev.id AS "event_metadata.id",
-        ev.event_type AS "event_metadata.event_type",
+        ed.event_id AS "event_metadata.id",
+        ed.event_type AS "event_metadata.event_type",
 		COALESCE(ed.latency_seconds, 0) AS latency_seconds,
 
 		COALESCE(d.id,'') AS "device_metadata.id",
