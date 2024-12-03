@@ -8,6 +8,7 @@ import (
 
 type Database interface {
 	GetDB() *sqlx.DB
+	GetReadDB() *sqlx.DB
 	BeginTx(context.Context) (*sqlx.Tx, error)
 	GetHook() *hooks.Hook
 	Rollback(tx *sqlx.Tx, err error)

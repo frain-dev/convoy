@@ -125,12 +125,12 @@ const (
 )
 
 type orgInviteRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
 func NewOrgInviteRepo(db database.Database, cache cache.Cache) datastore.OrganisationInviteRepository {
-	return &orgInviteRepo{db: db.GetDB(), cache: cache}
+	return &orgInviteRepo{db: db, cache: cache}
 }
 
 func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {
@@ -144,7 +144,7 @@ func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datast
 		projectID = &iv.Role.Project
 	}
 
-	r, err := i.db.ExecContext(ctx, createOrganisationInvite,
+	r, err := i.db.GetDB().ExecContext(ctx, createOrganisationInvite,
 		iv.UID,
 		iv.OrganisationID,
 		iv.InviteeEmail,
@@ -198,9 +198,9 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = i.db.Rebind(query)
+	query = i.db.GetReadDB().Rebind(query)
 
-	rows, err := i.db.QueryxContext(ctx, query, args...)
+	rows, err := i.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -231,10 +231,10 @@ func (i *orgInviteRepo) LoadOrganisationsInvitesPaged(ctx context.Context, orgID
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = i.db.Rebind(countQuery)
+		countQuery = i.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := i.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := i.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -274,7 +274,7 @@ func (i *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datast
 		projectID = &iv.Role.Project
 	}
 
-	r, err := i.db.ExecContext(ctx,
+	r, err := i.db.GetDB().ExecContext(ctx,
 		updateOrganisationInvite,
 		iv.UID,
 		iv.Role.Type,
@@ -301,7 +301,7 @@ func (i *orgInviteRepo) UpdateOrganisationInvite(ctx context.Context, iv *datast
 }
 
 func (i *orgInviteRepo) DeleteOrganisationInvite(ctx context.Context, id string) error {
-	r, err := i.db.ExecContext(ctx, deleteOrganisationInvite, id)
+	r, err := i.db.GetDB().ExecContext(ctx, deleteOrganisationInvite, id)
 	if err != nil {
 		return err
 	}
@@ -320,7 +320,7 @@ func (i *orgInviteRepo) DeleteOrganisationInvite(ctx context.Context, id string)
 
 func (i *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id string) (*datastore.OrganisationInvite, error) {
 	invite := &datastore.OrganisationInvite{}
-	err := i.db.QueryRowxContext(ctx, fetchOrganisationInviteById, id).StructScan(invite)
+	err := i.db.GetDB().QueryRowxContext(ctx, fetchOrganisationInviteById, id).StructScan(invite)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrOrgInviteNotFound
@@ -333,7 +333,7 @@ func (i *orgInviteRepo) FetchOrganisationInviteByID(ctx context.Context, id stri
 
 func (i *orgInviteRepo) FetchOrganisationInviteByToken(ctx context.Context, token string) (*datastore.OrganisationInvite, error) {
 	invite := &datastore.OrganisationInvite{}
-	err := i.db.QueryRowxContext(ctx, fetchOrganisationInviteByToken, token).StructScan(invite)
+	err := i.db.GetDB().QueryRowxContext(ctx, fetchOrganisationInviteByToken, token).StructScan(invite)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrOrgInviteNotFound

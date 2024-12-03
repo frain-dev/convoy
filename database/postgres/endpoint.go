@@ -178,7 +178,7 @@ const (
 )
 
 type endpointRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	hook  *hooks.Hook
 	cache cache.Cache
 }
@@ -187,7 +187,7 @@ func NewEndpointRepo(db database.Database, ca cache.Cache) datastore.EndpointRep
 	if ca == nil {
 		ca = ncache.NewNoopCache()
 	}
-	return &endpointRepo{db: db.GetDB(), hook: db.GetHook(), cache: ca}
+	return &endpointRepo{db: db, hook: db.GetHook(), cache: ca}
 }
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
@@ -200,7 +200,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
 	}
 
-	result, err := e.db.ExecContext(ctx, createEndpoint, args...)
+	result, err := e.db.GetDB().ExecContext(ctx, createEndpoint, args...)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 			return ErrEndpointExists
@@ -231,7 +231,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
 	end, err := e.readFromCache(ctx, id, func() (*datastore.Endpoint, error) {
 		endpoint := &datastore.Endpoint{}
-		err := e.db.QueryRowxContext(ctx, fetchEndpointById, id, projectID).StructScan(endpoint)
+		err := e.db.GetReadDB().QueryRowxContext(ctx, fetchEndpointById, id, projectID).StructScan(endpoint)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrEndpointNotFound
@@ -254,8 +254,8 @@ func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, proj
 		return nil, err
 	}
 
-	query = e.db.Rebind(query)
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	query = e.db.GetReadDB().Rebind(query)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, proj
 }
 
 func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
-	rows, err := e.db.QueryxContext(ctx, fetchEndpointsByAppId, appID, projectID)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, fetchEndpointsByAppId, appID, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectI
 }
 
 func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
-	rows, err := e.db.QueryxContext(ctx, fetchEndpointsByOwnerId, projectID, ownerID)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, fetchEndpointsByOwnerId, projectID, ownerID)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +284,7 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 
-	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Name, endpoint.Status, endpoint.OwnerID, endpoint.Url,
+	r, err := e.db.GetReadDB().ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Name, endpoint.Status, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
 		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets,
@@ -314,7 +314,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 
 func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID string, endpointID string, status datastore.EndpointStatus) error {
 	endpoint := datastore.Endpoint{}
-	err := e.db.QueryRowxContext(ctx, updateEndpointStatus, endpointID, projectID, status).StructScan(&endpoint)
+	err := e.db.GetReadDB().QueryRowxContext(ctx, updateEndpointStatus, endpointID, projectID, status).StructScan(&endpoint)
 	if err != nil {
 		return err
 	}
@@ -329,7 +329,7 @@ func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID strin
 }
 
 func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
-	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := e.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -368,7 +368,7 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {
 	var count int64
 
-	err := e.db.QueryRowxContext(ctx, countProjectEndpoints, projectID).Scan(&count)
+	err := e.db.GetReadDB().QueryRowxContext(ctx, countProjectEndpoints, projectID).Scan(&count)
 	if err != nil {
 		return count, err
 	}
@@ -379,7 +379,7 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
 	endpoint, err := e.readFromCache(ctx, targetURL, func() (*datastore.Endpoint, error) {
 		endpoint := &datastore.Endpoint{}
-		err := e.db.QueryRowxContext(ctx, fetchEndpointByTargetURL, targetURL, projectID).StructScan(endpoint)
+		err := e.db.GetReadDB().QueryRowxContext(ctx, fetchEndpointByTargetURL, targetURL, projectID).StructScan(endpoint)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrEndpointNotFound
@@ -433,9 +433,9 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = e.db.Rebind(query)
+	query = e.db.GetReadDB().Rebind(query)
 
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -467,10 +467,10 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = e.db.Rebind(countQuery)
+		countQuery = e.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -492,7 +492,7 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 
 func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
 	endpoint := datastore.Endpoint{}
-	err := e.db.QueryRowxContext(ctx, updateEndpointSecrets, endpointID, projectID, secrets).StructScan(&endpoint)
+	err := e.db.GetReadDB().QueryRowxContext(ctx, updateEndpointSecrets, endpointID, projectID, secrets).StructScan(&endpoint)
 	if err != nil {
 		return err
 	}
@@ -515,7 +515,7 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 	sc.DeletedAt = null.NewTime(time.Now(), true)
 
 	updatedEndpoint := datastore.Endpoint{}
-	err := e.db.QueryRowxContext(ctx, updateEndpointSecrets, endpoint.UID, projectID, endpoint.Secrets).StructScan(&updatedEndpoint)
+	err := e.db.GetDB().QueryRowxContext(ctx, updateEndpointSecrets, endpoint.UID, projectID, endpoint.Secrets).StructScan(&updatedEndpoint)
 	if err != nil {
 		return err
 	}

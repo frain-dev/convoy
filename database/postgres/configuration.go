@@ -8,7 +8,6 @@ import (
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -19,9 +18,9 @@ const (
 		storage_policy_type, on_prem_path, s3_prefix,
 		s3_bucket, s3_access_key, s3_secret_key,
 		s3_region, s3_session_token, s3_endpoint,
-		retention_policy_policy, retention_policy_enabled, 
+		retention_policy_policy, retention_policy_enabled,
 		cb_sample_rate,cb_error_timeout,
-		cb_failure_threshold, cb_success_threshold, 
+		cb_failure_threshold, cb_success_threshold,
 		cb_observability_window,
 		cb_consecutive_failure_threshold, cb_minimum_request_count
 	  )
@@ -88,11 +87,11 @@ const (
 )
 
 type configRepo struct {
-	db *sqlx.DB
+	db database.Database
 }
 
 func NewConfigRepo(db database.Database) datastore.ConfigurationRepository {
-	return &configRepo{db: db.GetDB()}
+	return &configRepo{db: db}
 }
 
 func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.Configuration) error {
@@ -115,7 +114,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 	rc := config.GetRetentionPolicyConfig()
 	cb := config.GetCircuitBreakerConfig()
 
-	r, err := c.db.ExecContext(ctx, createConfiguration,
+	r, err := c.db.GetDB().ExecContext(ctx, createConfiguration,
 		config.UID,
 		util.BoolToText(config.IsAnalyticsEnabled),
 		config.IsSignupEnabled,
@@ -156,7 +155,7 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 
 func (c *configRepo) LoadConfiguration(ctx context.Context) (*datastore.Configuration, error) {
 	config := &datastore.Configuration{}
-	err := c.db.QueryRowxContext(ctx, fetchConfiguration).StructScan(config)
+	err := c.db.GetReadDB().QueryRowxContext(ctx, fetchConfiguration).StructScan(config)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrConfigNotFound
@@ -187,7 +186,7 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 	rc := cfg.GetRetentionPolicyConfig()
 	cb := cfg.GetCircuitBreakerConfig()
 
-	result, err := c.db.ExecContext(ctx, updateConfiguration,
+	result, err := c.db.GetDB().ExecContext(ctx, updateConfiguration,
 		cfg.UID,
 		util.BoolToText(cfg.IsAnalyticsEnabled),
 		cfg.IsSignupEnabled,

@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -205,6 +206,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		licenseOverrideCfg(&cfg, app.Licenser)
 		if err = config.Override(&cfg); err != nil {
 			return err
+		}
+
+		lo.Info("Read replicas: ", db.ReplicaSize())
+		if db.ReplicaSize() > 0 && !app.Licenser.ReadReplica() {
+			lo.Error("your instance does not have access to use read replicas, upgrade to access this feature")
+			db.UnsetReplicas()
 		}
 
 		// update config singleton with the instance id
@@ -447,6 +454,21 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
+	replicaDSNs, err := cmd.Flags().GetStringSlice("read-replicas-dsn")
+	if err != nil {
+		return nil, err
+	}
+
+	var readReplicas []config.DatabaseConfiguration
+	for _, replicaStr := range replicaDSNs {
+		var replica config.DatabaseConfiguration
+		if len(replicaStr) == 0 || !strings.Contains(replicaStr, "://") {
+			return nil, fmt.Errorf("invalid read-replicas-dsn: %s", replicaStr)
+		}
+		replica.DSN = replicaStr
+		readReplicas = append(readReplicas, replica)
+	}
+
 	c.Database = config.DatabaseConfiguration{
 		Type:     config.DatabaseProvider(dbType),
 		Scheme:   dbScheme,
@@ -455,6 +477,8 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Password: dbPassword,
 		Database: dbDatabase,
 		Port:     dbPort,
+
+		ReadReplicas: readReplicas,
 	}
 
 	// CONVOY_REDIS_SCHEME

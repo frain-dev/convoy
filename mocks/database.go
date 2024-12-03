@@ -78,6 +78,14 @@ func (m *MockDatabase) GetDB() *sqlx.DB {
 	return ret0
 }
 
+// GetReadDB mocks base method.
+func (m *MockDatabase) GetReadDB() *sqlx.DB {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetReadDB")
+	ret0, _ := ret[0].(*sqlx.DB)
+	return ret0
+}
+
 // GetDB indicates an expected call of GetDB.
 func (mr *MockDatabaseMockRecorder) GetDB() *gomock.Call {
 	mr.mock.ctrl.T.Helper()

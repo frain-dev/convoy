@@ -48,6 +48,7 @@ func main() {
 	var dbUsername string
 	var dbPassword string
 	var dbDatabase string
+	var dbReadReplicasDSN []string
 
 	var fflag []string
 	var ipAllowList []string
@@ -97,6 +98,7 @@ func main() {
 	c.Flags().StringVar(&dbDatabase, "db-options", "", "Database Options")
 	c.Flags().IntVar(&dbPort, "db-port", 0, "Database Port")
 	c.Flags().BoolVar(&enableProfiling, "enable-profiling", false, "Enable profiling and exporting profile data to pyroscope")
+	c.Flags().StringSliceVar(&dbReadReplicasDSN, "read-replicas-dsn", []string{}, "Comma-separated list of read replica DSNs e.g. postgres://convoy:convoy@host1:5436/db,postgres://convoy:convoy@host2:5437/db")
 
 	// redis config
 	c.Flags().StringVar(&redisHost, "redis-host", "", "Redis Host")
