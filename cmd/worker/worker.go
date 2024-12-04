@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"log/slog"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -31,6 +34,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/jirevwe/go_partman"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 )
@@ -309,6 +313,56 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	} else {
 		lo.Warn(fflag.ErrCircuitBreakerNotEnabled)
 	}
+
+	pmConfig := &partman.Config{
+		SchemaName: "convoy",
+		SampleRate: time.Minute,
+	}
+
+	pm, err := partman.NewManager(
+		partman.WithConfig(pmConfig),
+		partman.WithDB(a.DB.GetDB()),
+		partman.WithClock(partman.NewRealClock()),
+		partman.WithLogger(slog.New(slog.NewTextHandler(os.Stdout, nil))),
+	)
+	if err != nil {
+		lo.WithError(err).Fatal("Failed to create partition manager")
+	}
+
+	go func(manager *partman.Manager) {
+		ticker := time.NewTicker(time.Second * 30)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				projects, pErr := projectRepo.LoadProjects(context.Background(), &datastore.ProjectFilter{})
+				if pErr != nil {
+					lo.WithError(pErr).Error("failed to load projects")
+				}
+
+				for _, project := range projects {
+					t := partman.Table{
+						Name:              "events",
+						Schema:            "convoy",
+						TenantId:          project.UID,
+						TenantIdColumn:    "project_id",
+						PartitionBy:       "created_at",
+						PartitionType:     partman.TypeRange,
+						PartitionInterval: partman.OneDay,
+						PartitionCount:    10,
+						RetentionPeriod:   partman.OneMonth,
+					}
+					err = manager.AddManagedTable(t)
+					if err != nil {
+						lo.WithError(err).Error("failed to add managed table")
+					}
+				}
+			}
+		}
+	}(pm)
 
 	channels := make(map[string]task.EventChannel)
 	defaultCh, broadcastCh, dynamicCh := task.NewDefaultEventChannel(), task.NewBroadcastEventChannel(subscriptionsTable), task.NewDynamicEventChannel()
