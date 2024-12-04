@@ -147,7 +147,7 @@ func main() {
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())
-	c.AddCommand(utils.AddUtilsCommand())
+	c.AddCommand(utils.AddUtilsCommand(app))
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)
