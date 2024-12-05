@@ -129,7 +129,6 @@ const (
 	baseEventsPagedForward = `
 	WITH events AS (
         %s %s AND ev.id <= :cursor
-	    GROUP BY ev.id, s.id
 	    ORDER BY ev.id %s
 	    LIMIT :limit
 	)
@@ -140,7 +139,6 @@ const (
 	baseEventsPagedBackward = `
 	WITH events AS (
         %s %s AND ev.id >= :cursor
-		GROUP BY ev.id, s.id
 		ORDER BY ev.id %s
 		LIMIT :limit
 	)
@@ -535,6 +533,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		return nil, datastore.PaginationData{}, err
 	}
 
+	// fmt.Printf("%+v\n%+v\n", query, args)
 	query = e.db.Rebind(query)
 	rows, err := e.db.QueryxContext(ctx, query, args...)
 	if err != nil {

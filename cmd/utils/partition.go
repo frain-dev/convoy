@@ -48,8 +48,7 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 }
 
 var partitionEventsTable = `
-CREATE OR REPLACE FUNCTION convoy.enforce_event_fk()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION convoy.enforce_event_fk() RETURNS TRIGGER AS $$
 BEGIN
     IF NOT EXISTS (
         SELECT 1
@@ -153,7 +152,7 @@ select convoy.partition_events_table()
 `
 
 var unPartitionEventsTable = `
-do $$
+create or replace function convoy.un_partition_events_table() returns VOID as $$
 begin
 	RAISE NOTICE 'Starting un-partitioning of events table...';
     
@@ -207,5 +206,6 @@ begin
     CREATE INDEX idx_idempotency_key_key ON convoy.events (idempotency_key);
     CREATE INDEX idx_project_id_on_not_deleted ON convoy.events (project_id) WHERE deleted_at IS NULL;
 	RAISE NOTICE 'Successfully un-partitioned events table...';
-end $$;
+end $$ language plpgsql;
+select convoy.un_partition_events_table()
 `
