@@ -87,7 +87,6 @@ const (
 	    %s
 	    %s
 	    AND ed.id <= :cursor
-	    GROUP BY ed.id, ep.id, ev.id, d.id, s.id
 	    ORDER BY ed.id %s
 	    LIMIT :limit
 	)
@@ -100,7 +99,6 @@ const (
 		%s
 		%s
 		AND ed.id >= :cursor
-		GROUP BY ed.id, ep.id, ev.id, d.id, s.id
 		ORDER BY ed.id %s
 		LIMIT :limit
 	)

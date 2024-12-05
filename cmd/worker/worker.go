@@ -344,7 +344,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 				}
 
 				for _, project := range projects {
-					t := partman.Table{
+					err = manager.AddManagedTable(partman.Table{
 						Name:              "events",
 						Schema:            "convoy",
 						TenantId:          project.UID,
@@ -354,10 +354,24 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 						PartitionInterval: partman.OneDay,
 						PartitionCount:    10,
 						RetentionPeriod:   partman.OneMonth,
-					}
-					err = manager.AddManagedTable(t)
+					})
 					if err != nil {
-						lo.WithError(err).Error("failed to add managed table")
+						lo.WithError(err).Error("failed to add convoy.events managed table")
+					}
+
+					err = manager.AddManagedTable(partman.Table{
+						Name:              "event_deliveries",
+						Schema:            "convoy",
+						TenantId:          project.UID,
+						TenantIdColumn:    "project_id",
+						PartitionBy:       "created_at",
+						PartitionType:     partman.TypeRange,
+						PartitionInterval: partman.OneDay,
+						PartitionCount:    10,
+						RetentionPeriod:   partman.OneMonth,
+					})
+					if err != nil {
+						lo.WithError(err).Error("failed to add convoy.event_deliveries to managed tables")
 					}
 				}
 			}
