@@ -1,11 +1,14 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/spf13/cobra"
 )
 
 func AddPartitionCommand(a *cli.App) *cobra.Command {
+	var table string
+
 	cmd := &cobra.Command{
 		Use:   "partition",
 		Short: "runs partition commands",
@@ -14,24 +17,42 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := a.DB.GetDB().ExecContext(cmd.Context(), partitionEventsTable)
-			if err != nil {
-				return err
+			if table == "" {
+				return fmt.Errorf("table name is required")
 			}
 
-			_, err = a.DB.GetDB().ExecContext(cmd.Context(), partitionEventDeliveriesTable)
-			if err != nil {
-				return err
+			switch table {
+			case "events":
+				_, err := a.DB.GetDB().ExecContext(cmd.Context(), partitionEventsTable)
+				if err != nil {
+					return err
+				}
+			case "event-deliveries":
+				_, err := a.DB.GetDB().ExecContext(cmd.Context(), partitionEventDeliveriesTable)
+				if err != nil {
+					return err
+				}
+			case "delivery-attempts":
+				_, err := a.DB.GetDB().ExecContext(cmd.Context(), partitionDeliveryAttemptsTable)
+				if err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("unknown table %s", table)
 			}
 
 			return nil
 		},
 	}
 
+	cmd.Flags().StringVarP(&table, "table", "t", "", "table name")
+
 	return cmd
 }
 
 func AddUnPartitionCommand(a *cli.App) *cobra.Command {
+	var table string
+
 	cmd := &cobra.Command{
 		Use:   "unpartition",
 		Short: "runs partition commands",
@@ -40,19 +61,35 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, err := a.DB.GetDB().ExecContext(cmd.Context(), unPartitionEventsTable)
-			if err != nil {
-				return err
+			if table == "" {
+				return fmt.Errorf("table name is required")
 			}
 
-			_, err = a.DB.GetDB().ExecContext(cmd.Context(), unPartitionEventDeliveriesTable)
-			if err != nil {
-				return err
+			switch table {
+			case "events":
+				_, err := a.DB.GetDB().ExecContext(cmd.Context(), unPartitionEventsTable)
+				if err != nil {
+					return err
+				}
+			case "event-deliveries":
+				_, err := a.DB.GetDB().ExecContext(cmd.Context(), unPartitionEventDeliveriesTable)
+				if err != nil {
+					return err
+				}
+			case "delivery-attempts":
+				_, err := a.DB.GetDB().ExecContext(cmd.Context(), unPartitionDeliveryAttemptsTable)
+				if err != nil {
+					return err
+				}
+			default:
+				return fmt.Errorf("unknown table %s", table)
 			}
 
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVarP(&table, "table", "t", "", "table name")
 
 	return cmd
 }
@@ -410,4 +447,158 @@ begin
 	RAISE NOTICE 'Successfully un-partitioned events table...';
 end $$ language plpgsql;
 select convoy.un_partition_event_deliveries_table()
+`
+
+var partitionDeliveryAttemptsTable = `
+CREATE OR REPLACE FUNCTION partition_delivery_attempts_table()
+    RETURNS VOID AS $$
+DECLARE
+    r RECORD;
+BEGIN
+    RAISE NOTICE 'Creating partitioned delivery attempts table...';
+
+    -- Drop old partitioned table
+    DROP TABLE IF EXISTS convoy.delivery_attempts_new;
+
+    -- Create partitioned table
+   create table convoy.delivery_attempts_new
+    (
+        id                   VARCHAR not null,
+        url                  TEXT    not null,
+        method               VARCHAR not null,
+        api_version          VARCHAR not null,
+        project_id           VARCHAR not null references convoy.projects,
+        endpoint_id          VARCHAR not null references convoy.endpoints,
+        event_delivery_id    VARCHAR not null,
+        ip_address           VARCHAR,
+        request_http_header  jsonb,
+        response_http_header jsonb,
+        http_status          VARCHAR,
+        response_data        bytea,
+        error                TEXT,
+        status               BOOLEAN,
+        created_at           TIMESTAMP WITH TIME ZONE default now() not null,
+        updated_at           TIMESTAMP WITH TIME ZONE default now() not null,
+        deleted_at           TIMESTAMP WITH TIME ZONE,
+        PRIMARY KEY (id, created_at, project_id)
+    ) PARTITION BY RANGE (project_id, created_at);
+
+    RAISE NOTICE 'Creating partitions...';
+    FOR r IN
+        WITH dates AS (
+            SELECT project_id, created_at::DATE
+            FROM convoy.delivery_attempts
+            GROUP BY created_at::DATE, project_id
+            order by created_at::DATE
+        )
+        SELECT project_id,
+               created_at::TEXT AS start_date,
+               (created_at + 1)::TEXT AS stop_date,
+               'delivery_attempts_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+        FROM dates
+    LOOP
+        EXECUTE FORMAT(
+            'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.delivery_attempts_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+            r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
+        );
+    END LOOP;
+
+    RAISE NOTICE 'Migrating data...';
+    INSERT INTO convoy.delivery_attempts_new (
+        id, url, method, api_version, project_id, endpoint_id,
+        event_delivery_id, ip_address, request_http_header, response_http_header,
+        http_status, response_data, error, status, created_at,
+        updated_at, deleted_at
+    )
+    SELECT id, url, method, api_version, project_id, endpoint_id,
+        event_delivery_id, ip_address, request_http_header, response_http_header,
+        http_status, response_data, error, status, created_at,
+        updated_at, deleted_at
+    FROM convoy.delivery_attempts;
+
+    -- Manage table renaming
+    ALTER TABLE convoy.delivery_attempts RENAME TO delivery_attempts_old;
+    ALTER TABLE convoy.delivery_attempts_new RENAME TO delivery_attempts;
+    DROP TABLE IF EXISTS convoy.delivery_attempts_old;
+
+    RAISE NOTICE 'Recreating indexes...';
+    create index idx_delivery_attempts_created_at on convoy.delivery_attempts (created_at);
+    create index idx_delivery_attempts_created_at_id_event_delivery_id
+        on convoy.delivery_attempts using brin (created_at, id, project_id, event_delivery_id)
+        where (deleted_at IS NULL);
+    create index idx_delivery_attempts_event_delivery_id
+        on convoy.delivery_attempts (event_delivery_id);
+    create index idx_delivery_attempts_event_delivery_id_created_at
+        on convoy.delivery_attempts (event_delivery_id, created_at);
+    create index idx_delivery_attempts_event_delivery_id_created_at_desc
+        on convoy.delivery_attempts (event_delivery_id asc, created_at desc);
+
+    RAISE NOTICE 'Migration complete!';
+END;
+$$ LANGUAGE plpgsql;
+select partition_delivery_attempts_table();
+`
+
+var unPartitionDeliveryAttemptsTable = `
+create or replace function convoy.un_partition_delivery_attempts_table() returns VOID as $$
+begin
+	RAISE NOTICE 'Starting un-partitioning of delivery attempts table...';
+
+	-- Drop old partitioned table
+    DROP TABLE IF EXISTS convoy.delivery_attempts_new;
+
+    -- Create partitioned table
+    create table convoy.delivery_attempts_new
+    (
+        id                   VARCHAR not null primary key,
+        url                  TEXT    not null,
+        method               VARCHAR not null,
+        api_version          VARCHAR not null,
+        project_id           VARCHAR not null references convoy.projects,
+        endpoint_id          VARCHAR not null references convoy.endpoints,
+        event_delivery_id    VARCHAR not null,
+        ip_address           VARCHAR,
+        request_http_header  jsonb,
+        response_http_header jsonb,
+        http_status          VARCHAR,
+        response_data        bytea,
+        error                TEXT,
+        status               BOOLEAN,
+        created_at           TIMESTAMP WITH TIME ZONE default now() not null,
+        updated_at           TIMESTAMP WITH TIME ZONE default now() not null,
+        deleted_at           TIMESTAMP WITH TIME ZONE
+    );
+
+    RAISE NOTICE 'Migrating data...';
+    INSERT INTO convoy.delivery_attempts_new (
+        id, url, method, api_version, project_id, endpoint_id,
+        event_delivery_id, ip_address, request_http_header, response_http_header,
+        http_status, response_data, error, status, created_at,
+        updated_at, deleted_at
+    )
+    SELECT id, url, method, api_version, project_id, endpoint_id,
+           event_delivery_id, ip_address, request_http_header, response_http_header,
+           http_status, response_data, error, status, created_at,
+           updated_at, deleted_at
+    FROM convoy.delivery_attempts;
+
+    ALTER TABLE convoy.delivery_attempts RENAME TO delivery_attempts_old;
+    ALTER TABLE convoy.delivery_attempts_new RENAME TO delivery_attempts;
+    DROP TABLE IF EXISTS convoy.delivery_attempts_old;
+
+    RAISE NOTICE 'Recreating indexes...';
+	create index idx_delivery_attempts_created_at on convoy.delivery_attempts (created_at);
+    create index idx_delivery_attempts_created_at_id_event_delivery_id
+        on convoy.delivery_attempts using brin (created_at, id, project_id, event_delivery_id)
+        where (deleted_at IS NULL);
+    create index idx_delivery_attempts_event_delivery_id
+        on convoy.delivery_attempts (event_delivery_id);
+    create index idx_delivery_attempts_event_delivery_id_created_at
+        on convoy.delivery_attempts (event_delivery_id, created_at);
+    create index idx_delivery_attempts_event_delivery_id_created_at_desc
+        on convoy.delivery_attempts (event_delivery_id asc, created_at desc);
+
+	RAISE NOTICE 'Successfully un-partitioned delivery attempts table...';
+end $$ language plpgsql;
+select convoy.un_partition_delivery_attempts_table()
 `
