@@ -169,7 +169,8 @@ func BlockListOption(blockList []string) DispatcherOption {
 	}
 }
 
-// InsecureSkipVerifyOption allow self-signed certificates if set to false which is susceptible to MITM attacks.
+// InsecureSkipVerifyOption allow self-signed certificates
+// to be used if set to true but is susceptible to Man In The Middle attacks.
 func InsecureSkipVerifyOption(insecureSkipVerify bool) DispatcherOption {
 	return func(d *Dispatcher) error {
 		if insecureSkipVerify {
