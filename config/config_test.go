@@ -179,7 +179,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Dispatcher: DispatcherConfiguration{
-					InsecureSkipVerify: true,
+					InsecureSkipVerify: false,
 					AllowList:          []string{"0.0.0.0/0", "::/0"},
 					BlockList:          []string{"127.0.0.0/8", "::1/128"},
 				},
@@ -271,7 +271,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Dispatcher: DispatcherConfiguration{
-					InsecureSkipVerify: true,
+					InsecureSkipVerify: false,
 					AllowList:          []string{"0.0.0.0/0", "::/0"},
 					BlockList:          []string{"127.0.0.0/8", "::1/128"},
 				},
@@ -362,7 +362,7 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Dispatcher: DispatcherConfiguration{
-					InsecureSkipVerify: true,
+					InsecureSkipVerify: false,
 					AllowList:          []string{"0.0.0.0/0", "::/0"},
 					BlockList:          []string{"127.0.0.0/8", "::1/128"},
 				},

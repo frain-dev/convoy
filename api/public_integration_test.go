@@ -2656,6 +2656,117 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	require.Equal(s.T(), subscription.RetryConfig.Duration, dbSub.RetryConfig.Duration)
 }
 
+func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_CreatesEventTypes() {
+	// Arrange
+	endpointID := ulid.Make().String()
+	expectedStatusCode := http.StatusCreated
+
+	// Just Before
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	bodyStr := fmt.Sprintf(`{
+        "name": "test-sub",
+        "type": "incoming",
+        "project_id": "%s",
+        "endpoint_id": "%s",
+        "filter_config": {
+            "event_types": [
+                "user.created",
+                "user.updated"
+            ]
+        }
+    }`, s.DefaultProject.UID, endpoint.UID)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert
+	var subscription *datastore.Subscription
+	parseResponse(s.T(), w.Result(), &subscription)
+
+	// Verify subscription was created
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
+
+	// Verify event types were created
+	query := `SELECT COUNT(*) FROM convoy.event_types 
+              WHERE project_id = $1 AND name IN ('user.created', 'user.updated')`
+	var count int
+	err = s.ConvoyApp.A.DB.GetDB().QueryRowxContext(context.Background(), query, s.DefaultProject.UID).Scan(&count)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 2, count)
+}
+
+func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription_CreatesNewEventTypes() {
+	// Arrange
+	endpointID := ulid.Make().String()
+	expectedStatusCode := http.StatusAccepted
+
+	// Just Before
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	// Create initial subscription
+	sub, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(),
+		datastore.OutgoingProject, &datastore.Source{}, endpoint,
+		&datastore.RetryConfiguration{}, &datastore.AlertConfiguration{},
+		&datastore.FilterConfiguration{
+			EventTypes: []string{"initial.event"},
+		})
+	require.NoError(s.T(), err)
+
+	bodyStr := fmt.Sprintf(`{
+        "name": "test-sub",
+        "filter_config": {
+            "event_types": [
+                "user.deleted",
+                "user.churned"
+            ]
+        }
+    }`)
+
+	// Arrange Request
+	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, sub.UID)
+	body := serialize(bodyStr)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert
+	var subscription *datastore.Subscription
+	parseResponse(s.T(), w.Result(), &subscription)
+
+	// Verify subscription was updated
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
+
+	// Verify new event types were created
+	query := `SELECT COUNT(*) FROM convoy.event_types WHERE project_id = $1 AND name IN ('user.deleted', 'user.churned')`
+	var count int
+	err = s.ConvoyApp.A.DB.GetDB().QueryRowxContext(context.Background(), query, s.DefaultProject.UID).Scan(&count)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), 2, count)
+}
+
 func TestPublicSubscriptionIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(PublicSubscriptionIntegrationTestSuite))
 }
