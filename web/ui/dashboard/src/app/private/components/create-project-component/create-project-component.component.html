@@ -210,16 +210,13 @@
 					<convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle>
 				</div>
 
-				<hr class="border-t border-neutral-4 my-24px" />
+				<hr class="hidden border-t border-neutral-4 my-24px" />
 
-				<div class="flex justify-between items-start">
+				<div class="justify-between items-start hidden">
 					<div class="max-w-[500px]">
 						<h3 class="font-semibold mb-8px text-12">Allow endpoint have multiple subscriptions</h3>
 						<p class="text-12 text-neutral-11 mt-10px w-[460px]">Toggling this will allow an endpoint have multiple subscriptions simultaneously.</p>
 					</div>
-
-					<!-- <convoy-toggle name="enforce_secure_endpoints" formControlName="enforce_secure_endpoints" (onChange)="confirmTLSToggleAction($event)"></convoy-toggle> -->
-
 					<convoy-toggle name="multiple_endpoint_subscriptions" formControlName="multiple_endpoint_subscriptions" (onChange)="confirmToggleAction($event, 'multiEndpoints')"></convoy-toggle>
 				</div>
 			</ng-container>
