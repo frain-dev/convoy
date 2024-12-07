@@ -135,13 +135,19 @@ func TestHCPVaultKeyManagerEdgeCases(t *testing.T) {
 		case "/secrets/2023-11-28/organizations/mock-org/projects/mock-proj/apps/mock-app/secrets/mock-secret:open":
 			if r.Method == "GET" {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{"secret":{"static_version":{"value":"mock-key"}}}`))
+				_, err := w.Write([]byte(`{"secret":{"static_version":{"value":"mock-key"}}}`))
+				if err != nil {
+					return
+				}
 				return
 			}
 		case "/secrets/2023-11-28/organizations/mock-org/projects/mock-proj/apps/mock-app/secret/kv":
 			if r.Method == "POST" {
 				body := []byte(`{"name":"mock-secret","value":"new-mock-key"}`)
-				w.Write(body)
+				_, err := w.Write(body)
+				if err != nil {
+					return
+				}
 				return
 			}
 		default:
