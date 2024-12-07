@@ -31,6 +31,7 @@ const (
 	IpRules                  Feature = "IP_RULES"
 	EnterpriseSSO            Feature = "ENTERPRISE_SSO"
 	DatadogTracing           Feature = "DATADOG_TRACING"
+	CredentialEncryption     Feature = "CREDENTIAL_ENCRYPTION"
 )
 
 const (

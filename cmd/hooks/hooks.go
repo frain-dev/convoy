@@ -667,6 +667,11 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	c.MaxRetrySeconds = maxRetrySeconds
 
+	err = loadHCPVaultConfig(cmd, &c.HCPVault)
+	if err != nil {
+		return nil, err
+	}
+
 	return c, nil
 }
 
@@ -798,4 +803,65 @@ func closeWithError(closer io.Closer) {
 	if err != nil {
 		fmt.Printf("%v, an error occurred while closing the client", err)
 	}
+}
+
+func loadHCPVaultConfig(cmd *cobra.Command, vaultConfig *config.HCPVaultConfig) error {
+	// Load from CLI flags
+	clientID, err := cmd.Flags().GetString("hcp-client-id")
+	if err != nil {
+		return err
+	}
+	if clientID != "" {
+		vaultConfig.ClientID = clientID
+	}
+
+	clientSecret, err := cmd.Flags().GetString("hcp-client-secret")
+	if err != nil {
+		return err
+	}
+	if clientSecret != "" {
+		vaultConfig.ClientSecret = clientSecret
+	}
+
+	orgID, err := cmd.Flags().GetString("hcp-org-id")
+	if err != nil {
+		return err
+	}
+	if orgID != "" {
+		vaultConfig.OrgID = orgID
+	}
+
+	projectID, err := cmd.Flags().GetString("hcp-project-id")
+	if err != nil {
+		return err
+	}
+	if projectID != "" {
+		vaultConfig.ProjectID = projectID
+	}
+
+	appName, err := cmd.Flags().GetString("hcp-app-name")
+	if err != nil {
+		return err
+	}
+	if appName != "" {
+		vaultConfig.AppName = appName
+	}
+
+	secretName, err := cmd.Flags().GetString("hcp-secret-name")
+	if err != nil {
+		return err
+	}
+	if secretName != "" {
+		vaultConfig.SecretName = secretName
+	}
+
+	cacheDuration, err := cmd.Flags().GetDuration("hcp-cache-duration")
+	if err != nil {
+		return err
+	}
+	if cacheDuration > 0 {
+		vaultConfig.CacheDuration = cacheDuration
+	}
+
+	return nil
 }

@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"net/http"
 	"time"
 
@@ -117,6 +118,9 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")
+		if errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailableUpgradeOrRevert) {
+			return nil, &ServiceError{ErrMsg: err.Error(), Err: err}
+		}
 		return nil, &ServiceError{ErrMsg: "an error occurred while adding endpoint", Err: err}
 	}
 
