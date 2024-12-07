@@ -63,7 +63,7 @@ func RotateEncryptionKey(db database.Database, km KeyManager, oldKey, newKey str
 func reEncryptColumn(tx *sqlx.Tx, table, cipherColumn, oldKey, newKey string) error {
 	// Re-encrypt the cipher column with the new key
 	reEncryptQuery := fmt.Sprintf(
-		"UPDATE %s SET %s = pgp_sym_encrypt(pgp_sym_decrypt(%s::bytea, $1), $2) WHERE %s IS NOT NULL;",
+		"UPDATE convoy.%s SET %s = pgp_sym_encrypt(pgp_sym_decrypt(%s::bytea, $1), $2) WHERE %s IS NOT NULL;",
 		table, cipherColumn, cipherColumn, cipherColumn,
 	)
 	_, err := tx.Exec(reEncryptQuery, oldKey, newKey)

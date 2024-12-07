@@ -65,7 +65,7 @@ func InitEncryption(db database.Database, km KeyManager, encryptionKey string) e
 // checkEncryptionStatus checks if the column is already encrypted.
 func checkEncryptionStatus(tx *sqlx.Tx, table string) (bool, error) {
 	checkQuery := fmt.Sprintf(
-		"SELECT is_encrypted FROM %s WHERE is_encrypted=TRUE LIMIT 1;", table,
+		"SELECT is_encrypted FROM convoy.%s WHERE is_encrypted=TRUE LIMIT 1;", table,
 	)
 	var isEncrypted bool
 	err := tx.Get(&isEncrypted, checkQuery)
@@ -83,7 +83,7 @@ func lockTable(tx *sqlx.Tx, table string) error {
 		return fmt.Errorf("failed to set statement timeout: %w", err)
 	}
 
-	lockQuery := fmt.Sprintf("LOCK TABLE %s IN ACCESS EXCLUSIVE MODE;", table)
+	lockQuery := fmt.Sprintf("LOCK TABLE convoy.%s IN ACCESS EXCLUSIVE MODE;", table)
 	_, err = tx.Exec(lockQuery)
 	if err != nil {
 		return fmt.Errorf("failed to lock table %s: %w", table, err)
@@ -95,7 +95,7 @@ func lockTable(tx *sqlx.Tx, table string) error {
 func encryptColumn(tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
 	// Encrypt the column data and store it in the _cipher column
 	encryptQuery := fmt.Sprintf(
-		"UPDATE %s SET %s = pgp_sym_encrypt(%s::text, $1), %s = %s WHERE %s IS NOT NULL;",
+		"UPDATE convoy.%s SET %s = pgp_sym_encrypt(%s::text, $1), %s = %s WHERE %s IS NOT NULL;",
 		table, cipherColumn, column, column, getColumnZero(tx, table, column), column,
 	)
 	_, err := tx.Exec(encryptQuery, encryptionKey)
@@ -107,7 +107,7 @@ func encryptColumn(tx *sqlx.Tx, table, column, cipherColumn, encryptionKey strin
 }
 
 func getColumnZero(tx *sqlx.Tx, table, column string) string {
-	query := `SELECT is_nullable, data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2;`
+	query := `SELECT is_nullable, data_type FROM convoy.information_schema.columns WHERE table_name = $1 AND column_name = $2;`
 	var isNullable, columnType string
 	err := tx.QueryRow(query, table, column).Scan(&isNullable, &columnType)
 	if err != nil {
@@ -137,7 +137,7 @@ func getColumnZero(tx *sqlx.Tx, table, column string) string {
 // markTableEncrypted sets the `is_encrypted` column to true.
 func markTableEncrypted(tx *sqlx.Tx, table string) error {
 	markQuery := fmt.Sprintf(
-		"UPDATE %s SET is_encrypted = TRUE;", table,
+		"UPDATE convoy.%s SET is_encrypted = TRUE;", table,
 	)
 	_, err := tx.Exec(markQuery)
 	if err != nil {

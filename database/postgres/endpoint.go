@@ -260,7 +260,7 @@ func NewEndpointRepo(db database.Database, ca cache.Cache) datastore.EndpointRep
 
 // checkEncryptionStatus checks if any row is already encrypted.
 func checkEncryptionStatus(db *sqlx.DB) (bool, error) {
-	checkQuery := "SELECT is_encrypted FROM endpoints WHERE is_encrypted=TRUE LIMIT 1;"
+	checkQuery := "SELECT is_encrypted FROM convoy.endpoints WHERE is_encrypted=TRUE LIMIT 1;"
 	var isEncrypted bool
 	err := db.Get(&isEncrypted, checkQuery)
 	if err != nil && err.Error() != "sql: no rows in result set" {

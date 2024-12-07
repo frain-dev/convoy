@@ -59,7 +59,7 @@ func RevertEncryption(db database.Database, km KeyManager, encryptionKey string)
 func decryptAndRestoreColumn(tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
 	// Decrypt the cipher column and update the plain column, casting as needed
 	revertQuery := fmt.Sprintf(
-		"UPDATE %s SET %s = pgp_sym_decrypt(%s::bytea, $1)::%s WHERE %s IS NOT NULL;",
+		"UPDATE convoy.%s SET %s = pgp_sym_decrypt(%s::bytea, $1)::%s WHERE %s IS NOT NULL;",
 		table, column, cipherColumn, getColumnType(tx, table, column), cipherColumn,
 	)
 	_, err := tx.Exec(revertQuery, encryptionKey)
@@ -69,7 +69,7 @@ func decryptAndRestoreColumn(tx *sqlx.Tx, table, column, cipherColumn, encryptio
 
 	// Clear the cipher column
 	clearCipherQuery := fmt.Sprintf(
-		"UPDATE %s SET %s = NULL WHERE %s IS NOT NULL;",
+		"UPDATE convoy.%s SET %s = NULL WHERE %s IS NOT NULL;",
 		table, cipherColumn, cipherColumn,
 	)
 	_, err = tx.Exec(clearCipherQuery)
@@ -81,7 +81,7 @@ func decryptAndRestoreColumn(tx *sqlx.Tx, table, column, cipherColumn, encryptio
 }
 
 func getColumnType(tx *sqlx.Tx, table, column string) string {
-	query := `SELECT data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2;`
+	query := `SELECT data_type FROM convoy.information_schema.columns WHERE table_name = $1 AND column_name = $2;`
 	var columnType string
 	err := tx.Get(&columnType, query, table, column)
 	if err != nil {
@@ -94,7 +94,7 @@ func getColumnType(tx *sqlx.Tx, table, column string) string {
 // markTableDecrypted sets the `is_encrypted` column to false.
 func markTableDecrypted(tx *sqlx.Tx, table string) error {
 	markQuery := fmt.Sprintf(
-		"UPDATE %s SET is_encrypted = FALSE;", table,
+		"UPDATE convoy.%s SET is_encrypted = FALSE;", table,
 	)
 	_, err := tx.Exec(markQuery)
 	if err != nil {
