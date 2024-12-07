@@ -2,9 +2,11 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"net/http"
 	"strings"
 
@@ -132,6 +134,19 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 	lo.SetLevel(lvl)
+
+	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
+	if km.IsSet() {
+		if _, err = km.GetCurrentKey(); err != nil {
+			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
+				return err
+			}
+			km.Unset()
+		}
+	}
+	if err = keys.Set(km); err != nil {
+		return err
+	}
 
 	sc, err := smtp.NewClient(&cfg.SMTP)
 	if err != nil {

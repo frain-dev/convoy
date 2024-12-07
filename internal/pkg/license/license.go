@@ -28,6 +28,7 @@ type Licenser interface {
 	IpRules() bool
 	EnterpriseSSO() bool
 	DatadogTracing() bool
+	CredentialEncryption() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool

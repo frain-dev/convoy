@@ -4,6 +4,7 @@ import (
 	"github.com/frain-dev/convoy/cmd/ff"
 	"github.com/frain-dev/convoy/cmd/utils"
 	"os"
+	"time"
 	_ "time/tzdata"
 
 	"github.com/frain-dev/convoy/cmd/agent"
@@ -133,6 +134,8 @@ func main() {
 
 	c.Flags().Uint64Var(&maxRetrySeconds, "max-retry-seconds", 7200, "Max retry seconds exponential backoff")
 
+	AddHCPVaultFlags(c)
+
 	c.PersistentPreRunE(hooks.PreRun(app, db))
 	c.PersistentPostRunE(hooks.PostRun(app, db))
 
@@ -147,9 +150,21 @@ func main() {
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())
-	c.AddCommand(utils.AddUtilsCommand())
+	c.AddCommand(utils.AddUtilsCommand(app))
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)
 	}
+}
+
+func AddHCPVaultFlags(c *cli.ConvoyCli) {
+	c.Flags().String("hcp-client-id", "", "HCP Vault client ID")
+	c.Flags().String("hcp-client-secret", "", "HCP Vault client secret")
+	c.Flags().String("hcp-org-id", "", "HCP Vault organization ID")
+	c.Flags().String("hcp-project-id", "", "HCP Vault project ID")
+	c.Flags().String("hcp-app-name", "", "HCP Vault app name")
+	c.Flags().String("hcp-secret-name", "", "HCP Vault secret name")
+
+	// New flag for cache duration
+	c.Flags().Duration("hcp-cache-duration", 5*time.Minute, "HCP Vault key cache duration")
 }

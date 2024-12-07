@@ -126,3 +126,6 @@ func (Licenser) EnterpriseSSO() bool {
 func (k *Licenser) DatadogTracing() bool {
 	return true
 }
+func (k *Licenser) CredentialEncryption() bool {
+	return true
+}
