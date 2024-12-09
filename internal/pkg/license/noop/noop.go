@@ -129,3 +129,6 @@ func (k *Licenser) DatadogTracing() bool {
 func (k *Licenser) ReadReplica() bool {
 	return true
 }
+func (k *Licenser) CredentialEncryption() bool {
+	return true
+}

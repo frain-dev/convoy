@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"io"
 	"net"
 	"net/http"
@@ -46,6 +47,21 @@ func getConfig() config.Configuration {
 
 	cfg, err := config.Get()
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
+
+	km, err := keys.NewLocalKeyManager()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if km.IsSet() {
+		if _, err = km.GetCurrentKey(); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if err = keys.Set(km); err != nil {
 		log.Fatal(err)
 	}
 

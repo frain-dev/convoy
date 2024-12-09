@@ -312,6 +312,14 @@ func (m *MockLicenser) ReadReplica() bool {
 	return ret0
 }
 
+// CredentialEncryption mocks base method.
+func (m *MockLicenser) CredentialEncryption() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CredentialEncryption")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
 // IpRules indicates an expected call of IpRules.
 func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -328,6 +336,12 @@ func (mr *MockLicenserMockRecorder) EnterpriseSSO() *gomock.Call {
 func (mr *MockLicenserMockRecorder) DatadogTracing() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DatadogTracing", reflect.TypeOf((*MockLicenser)(nil).DatadogTracing))
+}
+
+// CredentialEncryption indicates an expected call of CredentialEncryption.
+func (mr *MockLicenserMockRecorder) CredentialEncryption() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialEncryption", reflect.TypeOf((*MockLicenser)(nil).CredentialEncryption))
 }
 
 // MultiPlayerMode mocks base method.

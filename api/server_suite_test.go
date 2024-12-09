@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"io"
 	"math/rand"
 	"net/http"
@@ -54,6 +55,8 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
 
+	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
+
 	err := config.LoadConfig("")
 	if err != nil {
 		log.Fatal(err)
@@ -61,6 +64,19 @@ func getConfig() config.Configuration {
 
 	cfg, err := config.Get()
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	km, err := keys.NewLocalKeyManager()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if km.IsSet() {
+		if _, err = km.GetCurrentKey(); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if err = keys.Set(km); err != nil {
 		log.Fatal(err)
 	}
 

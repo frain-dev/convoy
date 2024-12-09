@@ -29,6 +29,7 @@ type Licenser interface {
 	EnterpriseSSO() bool
 	DatadogTracing() bool
 	ReadReplica() bool
+	CredentialEncryption() bool
 
 	// need more fleshing out
 	AdvancedRetentionPolicy() bool
