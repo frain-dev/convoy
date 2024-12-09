@@ -415,7 +415,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
 	q := fetchEventDeliveries + " WHERE event_id = $1 AND project_id = $2 AND deleted_at IS NULL"
-	rows, err := e.db.GetDB().QueryxContext(ctx, q, eventID, projectID)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, q, eventID, projectID)
 	if err != nil {
 		return nil, err
 	}
