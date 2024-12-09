@@ -452,7 +452,7 @@ func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, project
 func (e *eventDeliveryRepo) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
-	rows, err := e.db.GetDB().QueryxContext(ctx, fetchStuckEventDeliveries, status)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, fetchStuckEventDeliveries, status)
 	if err != nil {
 		return nil, err
 	}
