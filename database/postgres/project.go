@@ -36,19 +36,18 @@ const (
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		id, search_policy,
-        max_payload_read_size, replay_attacks_prevention_enabled,
-		ratelimit_count,
-		ratelimit_duration, strategy_type,
-		strategy_duration, strategy_retry_count,
-		signature_header, signature_versions, disable_endpoint,
-		meta_events_enabled, meta_events_type, meta_events_event_type,
-		meta_events_url, meta_events_secret, meta_events_pub_sub,ssl_enforce_secure_endpoints, multiple_endpoint_subscriptions
+		id, search_policy, max_payload_read_size, 
+		replay_attacks_prevention_enabled, ratelimit_count,
+		ratelimit_duration, strategy_type,	strategy_duration,
+		strategy_retry_count, signature_header, signature_versions,
+		disable_endpoint, meta_events_enabled, meta_events_type,
+		meta_events_event_type, meta_events_url, meta_events_secret,
+		meta_events_pub_sub, ssl_enforce_secure_endpoints
 	  )
 	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		  $14, $15, $16, $17, $18, $19, $20
+		  $14, $15, $16, $17, $18, $19
 		);
 	`
 
@@ -72,7 +71,6 @@ const (
 		meta_events_pub_sub = $17,
 		search_policy = $18,
 		ssl_enforce_secure_endpoints = $19,
-		multiple_endpoint_subscriptions = $20,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -217,7 +215,7 @@ const (
 )
 
 type projectRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	hook  *hooks.Hook
 	cache cache.Cache
 }
@@ -226,12 +224,12 @@ func NewProjectRepo(db database.Database, ca cache.Cache) datastore.ProjectRepos
 	if ca == nil {
 		ca = ncache.NewNoopCache()
 	}
-	return &projectRepo{db: db.GetDB(), hook: db.GetHook(), cache: ca}
+	return &projectRepo{db: db, hook: db.GetHook(), cache: ca}
 }
 
-func (o *projectRepo) CountProjects(ctx context.Context) (int64, error) {
+func (p *projectRepo) CountProjects(ctx context.Context) (int64, error) {
 	var count int64
-	err := o.db.GetContext(ctx, &count, countProjects)
+	err := p.db.GetReadDB().GetContext(ctx, &count, countProjects)
 	if err != nil {
 		return 0, err
 	}
@@ -240,7 +238,7 @@ func (o *projectRepo) CountProjects(ctx context.Context) (int64, error) {
 }
 
 func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {
-	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -272,7 +270,6 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		me.Secret,
 		me.PubSub,
 		project.Config.SSL.EnforceSecureEndpoints,
-		project.Config.MultipleEndpointSubscriptions,
 	)
 	if err != nil {
 		return err
@@ -315,7 +312,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 }
 
 func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) ([]*datastore.Project, error) {
-	rows, err := p.db.QueryxContext(ctx, fetchProjects, f.OrgID)
+	rows, err := p.db.GetReadDB().QueryxContext(ctx, fetchProjects, f.OrgID)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +344,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return err
 	}
 
-	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -393,7 +390,6 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.PubSub,
 		project.Config.SearchPolicy,
 		ssl.EnforceSecureEndpoints,
-		project.Config.MultipleEndpointSubscriptions,
 	)
 	if err != nil {
 		return fmt.Errorf("update project config err: %v", err)
@@ -415,8 +411,8 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 			return err
 		}
 
-		query = p.db.Rebind(query)
-		rows, err := p.db.QueryxContext(ctx, query, args...)
+		query = p.db.GetDB().Rebind(query)
+		rows, err := p.db.GetDB().QueryxContext(ctx, query, args...)
 		if err != nil {
 			return err
 		}
@@ -465,7 +461,7 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datasto
 	}
 
 	project = &datastore.Project{}
-	err = p.db.GetContext(ctx, project, fetchProjectById, id)
+	err = p.db.GetDB().GetContext(ctx, project, fetchProjectById, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrProjectNotFound
@@ -483,7 +479,7 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datasto
 
 func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
 	var stats datastore.ProjectStatistics
-	err := p.db.GetContext(ctx, &stats, projectStatistics, project.UID)
+	err := p.db.GetReadDB().GetContext(ctx, &stats, projectStatistics, project.UID)
 	if err != nil {
 		return err
 	}
@@ -493,7 +489,7 @@ func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datas
 }
 
 func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
-	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -535,7 +531,7 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 
 func (p *projectRepo) GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]datastore.ProjectEvents, error) {
 	var projects []datastore.ProjectEvents
-	rows, err := p.db.QueryxContext(ctx, getProjectsWithEventsInTheInterval, interval)
+	rows, err := p.db.GetReadDB().QueryxContext(ctx, getProjectsWithEventsInTheInterval, interval)
 	if err != nil {
 		return nil, err
 	}

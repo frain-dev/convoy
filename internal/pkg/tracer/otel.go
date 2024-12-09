@@ -33,6 +33,9 @@ type OTelTracer struct {
 func NewOTelTracer(cfg config.OTelConfiguration) *OTelTracer {
 	return &OTelTracer{
 		cfg: cfg,
+		ShutdownFn: func(ctx context.Context) error {
+			return nil
+		},
 	}
 }
 

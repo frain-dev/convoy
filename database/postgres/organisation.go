@@ -88,7 +88,7 @@ const (
 )
 
 type orgRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
@@ -96,11 +96,11 @@ func NewOrgRepo(db database.Database, ca cache.Cache) datastore.OrganisationRepo
 	if ca == nil {
 		ca = ncache.NewNoopCache()
 	}
-	return &orgRepo{db: db.GetDB(), cache: ca}
+	return &orgRepo{db: db, cache: ca}
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	result, err := o.db.ExecContext(ctx, createOrganization, org.UID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain)
+	result, err := o.db.GetDB().ExecContext(ctx, createOrganization, org.UID, org.Name, org.OwnerID, org.CustomDomain, org.AssignedDomain)
 	if err != nil {
 		return err
 	}
@@ -148,9 +148,9 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = o.db.Rebind(query)
+	query = o.db.GetReadDB().Rebind(query)
 
-	rows, err := o.db.QueryxContext(ctx, query, args...)
+	rows, err := o.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -180,10 +180,10 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = o.db.Rebind(countQuery)
+		countQuery = o.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := o.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := o.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -213,7 +213,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 }
 
 func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organisation) error {
-	result, err := o.db.ExecContext(ctx, updateOrganizationById, org.UID, org.Name, org.CustomDomain, org.AssignedDomain)
+	result, err := o.db.GetDB().ExecContext(ctx, updateOrganizationById, org.UID, org.Name, org.CustomDomain, org.AssignedDomain)
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 }
 
 func (o *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
-	result, err := o.db.Exec(deleteOrganisation, uid)
+	result, err := o.db.GetDB().Exec(deleteOrganisation, uid)
 	if err != nil {
 		return err
 	}
@@ -262,7 +262,7 @@ func (o *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 
 func (o *orgRepo) CountOrganisations(ctx context.Context) (int64, error) {
 	var count int64
-	err := o.db.GetContext(ctx, &count, countOrganizations)
+	err := o.db.GetReadDB().GetContext(ctx, &count, countOrganizations)
 	if err != nil {
 		return 0, err
 	}
@@ -273,7 +273,7 @@ func (o *orgRepo) CountOrganisations(ctx context.Context) (int64, error) {
 func (o *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
 	fromCache, err := o.readFromCache(ctx, id, func() (*datastore.Organisation, error) {
 		org := &datastore.Organisation{}
-		err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1", fetchOrganisation), id).StructScan(org)
+		err := o.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1", fetchOrganisation), id).StructScan(org)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrOrgNotFound
@@ -293,7 +293,7 @@ func (o *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datast
 func (o *orgRepo) FetchOrganisationByAssignedDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
 	fromCache, err := o.readFromCache(ctx, domain, func() (*datastore.Organisation, error) {
 		org := &datastore.Organisation{}
-		err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND assigned_domain = $1", fetchOrganisation), domain).StructScan(org)
+		err := o.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND assigned_domain = $1", fetchOrganisation), domain).StructScan(org)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrOrgNotFound
@@ -313,7 +313,7 @@ func (o *orgRepo) FetchOrganisationByAssignedDomain(ctx context.Context, domain 
 func (o *orgRepo) FetchOrganisationByCustomDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
 	fromCache, err := o.readFromCache(ctx, domain, func() (*datastore.Organisation, error) {
 		org := &datastore.Organisation{}
-		err := o.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND custom_domain = $1", fetchOrganisation), domain).StructScan(org)
+		err := o.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND custom_domain = $1", fetchOrganisation), domain).StructScan(org)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrOrgNotFound

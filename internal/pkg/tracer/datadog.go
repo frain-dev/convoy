@@ -26,6 +26,9 @@ func NewDatadogTracer(cfg config.DatadogConfiguration, licenser license.Licenser
 	return &DatadogTracer{
 		cfg:      cfg,
 		Licenser: licenser,
+		ShutdownFn: func(ctx context.Context) error {
+			return nil
+		},
 	}
 }
 

@@ -98,7 +98,7 @@ func Test_UpdateEndpoint_Encrypted(t *testing.T) {
 }
 
 func assertAndInitEncryption(t *testing.T, db database.Database) {
-	isEncrypted, err := checkEncryptionStatus(db.GetDB())
+	isEncrypted, err := checkEncryptionStatus(db)
 	require.NoError(t, err)
 	require.False(t, isEncrypted)
 
@@ -107,7 +107,7 @@ func assertAndInitEncryption(t *testing.T, db database.Database) {
 	err = keys.InitEncryption(db, km, "test-key")
 	require.NoError(t, err)
 
-	isEncrypted, err = checkEncryptionStatus(db.GetDB())
+	isEncrypted, err = checkEncryptionStatus(db)
 	require.NoError(t, err)
 	require.True(t, isEncrypted)
 }
