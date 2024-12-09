@@ -24,7 +24,7 @@ import (
 )
 
 type eventDeliveryRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	hook  *hooks.Hook
 	cache cache.Cache
 }
@@ -62,7 +62,7 @@ const (
         COALESCE(ep.support_email, '') AS "endpoint_metadata.support_email",
         COALESCE(ep.url, '') AS "endpoint_metadata.url",
         COALESCE(ep.owner_id, '') AS "endpoint_metadata.owner_id",
-        
+
         ev.id AS "event_metadata.id",
         ev.event_type AS "event_metadata.event_type",
 		COALESCE(ed.latency_seconds, 0) AS latency_seconds,
@@ -226,7 +226,7 @@ const (
 )
 
 func NewEventDeliveryRepo(db database.Database, cache cache.Cache) datastore.EventDeliveryRepository {
-	return &eventDeliveryRepo{db: db.GetDB(), hook: db.GetHook(), cache: cache}
+	return &eventDeliveryRepo{db: db, hook: db.GetHook(), cache: cache}
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {
@@ -241,7 +241,7 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		deviceID = &delivery.DeviceID
 	}
 
-	tx, isWrapped, err := GetTx(ctx, e.db)
+	tx, isWrapped, err := GetTx(ctx, e.db.GetDB())
 	if err != nil {
 		return err
 	}
@@ -312,7 +312,7 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 		})
 	}
 
-	tx, isWrapped, err := GetTx(ctx, e.db)
+	tx, isWrapped, err := GetTx(ctx, e.db.GetDB())
 	if err != nil {
 		return err
 	}
@@ -357,7 +357,7 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 
 func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
-	err := e.db.QueryRowxContext(ctx, fetchEventDeliveryByID, id, projectID).StructScan(eventDelivery)
+	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventDeliveryByID, id, projectID).StructScan(eventDelivery)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventDeliveryNotFound
@@ -370,7 +370,7 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID
 
 func (e *eventDeliveryRepo) FindEventDeliveryByIDSlim(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
-	err := e.db.QueryRowxContext(ctx, fetchEventDeliverySlim, projectID, id).StructScan(eventDelivery)
+	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventDeliverySlim, projectID, id).StructScan(eventDelivery)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventDeliveryNotFound
@@ -390,9 +390,9 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 		return nil, err
 	}
 
-	query = e.db.Rebind(query)
+	query = e.db.GetDB().Rebind(query)
 
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +415,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
 	q := fetchEventDeliveries + " WHERE event_id = $1 AND project_id = $2 AND deleted_at IS NULL"
-	rows, err := e.db.QueryxContext(ctx, q, eventID, projectID)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, q, eventID, projectID)
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +441,7 @@ func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, project
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
-	err := e.db.QueryRowxContext(ctx, countEventDeliveriesByStatus, status, projectID, start, end).StructScan(&count)
+	err := e.db.GetReadDB().QueryRowxContext(ctx, countEventDeliveriesByStatus, status, projectID, start, end).StructScan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -452,7 +452,7 @@ func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, project
 func (e *eventDeliveryRepo) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
-	rows, err := e.db.QueryxContext(ctx, fetchStuckEventDeliveries, status)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, fetchStuckEventDeliveries, status)
 	if err != nil {
 		return nil, err
 	}
@@ -477,9 +477,9 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDelivery(ctx context.Context, pro
 		return err
 	}
 
-	query = e.db.Rebind(query)
+	query = e.db.GetDB().Rebind(query)
 
-	result, err := e.db.ExecContext(ctx, query, args...)
+	result, err := e.db.GetDB().ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -502,9 +502,9 @@ func (e *eventDeliveryRepo) UpdateStatusOfEventDeliveries(ctx context.Context, p
 		return err
 	}
 
-	query = e.db.Rebind(query)
+	query = e.db.GetDB().Rebind(query)
 
-	result, err := e.db.ExecContext(ctx, query, args...)
+	result, err := e.db.GetDB().ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
 	}
@@ -527,7 +527,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 	start := time.Unix(searchParams.CreatedAtStart, 0)
 	end := time.Unix(searchParams.CreatedAtEnd, 0)
 
-	rows, err := e.db.QueryxContext(ctx, fetchDiscardedEventDeliveries, datastore.DiscardedEventStatus, projectID, deviceId, start, end)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, fetchDiscardedEventDeliveries, datastore.DiscardedEventStatus, projectID, deviceId, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -547,7 +547,7 @@ func (e *eventDeliveryRepo) FindDiscardedEventDeliveries(ctx context.Context, pr
 }
 
 func (e *eventDeliveryRepo) UpdateEventDeliveryMetadata(ctx context.Context, projectID string, delivery *datastore.EventDelivery) error {
-	result, err := e.db.ExecContext(ctx, updateEventDeliveryMetadata, delivery.Status, delivery.Metadata, delivery.LatencySeconds, delivery.UID, projectID)
+	result, err := e.db.GetDB().ExecContext(ctx, updateEventDeliveryMetadata, delivery.Status, delivery.Metadata, delivery.LatencySeconds, delivery.UID, projectID)
 	if err != nil {
 		return err
 	}
@@ -596,9 +596,9 @@ func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID 
 		return 0, err
 	}
 
-	query = e.db.Rebind(query)
+	query = e.db.GetReadDB().Rebind(query)
 
-	err = e.db.QueryRowxContext(ctx, query, args...).StructScan(&count)
+	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).StructScan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -614,9 +614,9 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	end := time.Unix(filter.CreatedAtEnd, 0)
 
 	if hardDelete {
-		result, err = e.db.ExecContext(ctx, hardDeleteProjectEventDeliveries, projectID, start, end)
+		result, err = e.db.GetDB().ExecContext(ctx, hardDeleteProjectEventDeliveries, projectID, start, end)
 	} else {
-		result, err = e.db.ExecContext(ctx, softDeleteProjectEventDeliveries, projectID, start, end)
+		result, err = e.db.GetDB().ExecContext(ctx, softDeleteProjectEventDeliveries, projectID, start, end)
 	}
 
 	if err != nil {
@@ -692,9 +692,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = e.db.Rebind(query)
+	query = e.db.GetReadDB().Rebind(query)
 
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -785,10 +785,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = e.db.Rebind(countQuery)
+		countQuery = e.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -855,7 +855,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 	}
 
 	q := fmt.Sprintf(loadEventDeliveriesIntervals, timeComponent, timeComponent, format, extract)
-	rows, err := e.db.QueryxContext(ctx, q, projectID, start, end)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, q, projectID, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -892,7 +892,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 }
 
 func (e *eventDeliveryRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	return exportRecords(ctx, e.db, "convoy.event_deliveries", projectID, createdAt, w)
+	return exportRecords(ctx, e.db.GetReadDB(), "convoy.event_deliveries", projectID, createdAt, w)
 }
 
 const minLen = 30

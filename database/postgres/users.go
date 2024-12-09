@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -53,15 +52,15 @@ var (
 )
 
 type userRepo struct {
-	db *sqlx.DB
+	db database.Database
 }
 
 func NewUserRepo(db database.Database, ca cache.Cache) datastore.UserRepository {
-	return &userRepo{db: db.GetDB()}
+	return &userRepo{db: db}
 }
 
 func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
-	result, err := u.db.ExecContext(ctx,
+	result, err := u.db.GetDB().ExecContext(ctx,
 		createUser,
 		user.UID,
 		user.FirstName,
@@ -95,7 +94,7 @@ func (u *userRepo) CreateUser(ctx context.Context, user *datastore.User) error {
 }
 
 func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
-	result, err := u.db.Exec(
+	result, err := u.db.GetDB().Exec(
 		updateUser, user.UID, user.FirstName, user.LastName, user.Email, user.Password, user.EmailVerified, user.ResetPasswordToken,
 		user.EmailVerificationToken, user.ResetPasswordExpiresAt, user.EmailVerificationExpiresAt,
 	)
@@ -117,7 +116,7 @@ func (u *userRepo) UpdateUser(ctx context.Context, user *datastore.User) error {
 
 func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email = $1;", fetchUsers), email).StructScan(user)
+	err := u.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND email = $1;", fetchUsers), email).StructScan(user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -130,7 +129,7 @@ func (u *userRepo) FindUserByEmail(ctx context.Context, email string) (*datastor
 
 func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchUsers), id).StructScan(user)
+	err := u.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1;", fetchUsers), id).StructScan(user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -143,7 +142,7 @@ func (u *userRepo) FindUserByID(ctx context.Context, id string) (*datastore.User
 
 func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND reset_password_token = $1;", fetchUsers), token).StructScan(user)
+	err := u.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND reset_password_token = $1;", fetchUsers), token).StructScan(user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -156,7 +155,7 @@ func (u *userRepo) FindUserByToken(ctx context.Context, token string) (*datastor
 
 func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token string) (*datastore.User, error) {
 	user := &datastore.User{}
-	err := u.db.QueryRowxContext(ctx, fmt.Sprintf("%s AND email_verification_token = $1;", fetchUsers), token).StructScan(user)
+	err := u.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND email_verification_token = $1;", fetchUsers), token).StructScan(user)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrUserNotFound
@@ -169,7 +168,7 @@ func (u *userRepo) FindUserByEmailVerificationToken(ctx context.Context, token s
 
 func (o *userRepo) CountUsers(ctx context.Context) (int64, error) {
 	var count int64
-	err := o.db.GetContext(ctx, &count, countUsers)
+	err := o.db.GetReadDB().GetContext(ctx, &count, countUsers)
 	if err != nil {
 		return 0, err
 	}

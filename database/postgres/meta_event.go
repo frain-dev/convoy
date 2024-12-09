@@ -74,16 +74,16 @@ const (
 )
 
 type metaEventRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
 func NewMetaEventRepo(db database.Database, cache cache.Cache) datastore.MetaEventRepository {
-	return &metaEventRepo{db: db.GetDB(), cache: cache}
+	return &metaEventRepo{db: db, cache: cache}
 }
 
 func (m *metaEventRepo) CreateMetaEvent(ctx context.Context, metaEvent *datastore.MetaEvent) error {
-	r, err := m.db.ExecContext(ctx, createMetaEvent, metaEvent.UID, metaEvent.EventType, metaEvent.ProjectID,
+	r, err := m.db.GetDB().ExecContext(ctx, createMetaEvent, metaEvent.UID, metaEvent.EventType, metaEvent.ProjectID,
 		metaEvent.Metadata, metaEvent.Status,
 	)
 	if err != nil {
@@ -104,7 +104,7 @@ func (m *metaEventRepo) CreateMetaEvent(ctx context.Context, metaEvent *datastor
 
 func (m *metaEventRepo) FindMetaEventByID(ctx context.Context, projectID string, id string) (*datastore.MetaEvent, error) {
 	metaEvent := &datastore.MetaEvent{}
-	err := m.db.QueryRowxContext(ctx, fetchMetaEventById, id, projectID).StructScan(metaEvent)
+	err := m.db.GetDB().QueryRowxContext(ctx, fetchMetaEventById, id, projectID).StructScan(metaEvent)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrMetaEventNotFound
@@ -146,8 +146,8 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = m.db.Rebind(query)
-	rows, err := m.db.QueryxContext(ctx, query, args...)
+	query = m.db.GetReadDB().Rebind(query)
+	rows, err := m.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -177,8 +177,8 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = m.db.Rebind(countQuery)
-		rows, err := m.db.QueryxContext(ctx, countQuery, qargs...)
+		countQuery = m.db.GetReadDB().Rebind(countQuery)
+		rows, err := m.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -208,7 +208,7 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 }
 
 func (m *metaEventRepo) UpdateMetaEvent(ctx context.Context, projectID string, metaEvent *datastore.MetaEvent) error {
-	result, err := m.db.ExecContext(ctx, updateMetaEvent, metaEvent.UID, projectID, metaEvent.EventType, metaEvent.Metadata,
+	result, err := m.db.GetDB().ExecContext(ctx, updateMetaEvent, metaEvent.UID, projectID, metaEvent.EventType, metaEvent.Metadata,
 		metaEvent.Attempt, metaEvent.Status,
 	)
 	if err != nil {

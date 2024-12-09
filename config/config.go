@@ -128,12 +128,19 @@ type DatabaseConfiguration struct {
 	Options  string `json:"options" envconfig:"CONVOY_DB_OPTIONS"`
 	Port     int    `json:"port" envconfig:"CONVOY_DB_PORT"`
 
+	DSN string `json:"dsn" envconfig:"CONVOY_DB_DSN"`
+
 	SetMaxOpenConnections int `json:"max_open_conn" envconfig:"CONVOY_DB_MAX_OPEN_CONN"`
 	SetMaxIdleConnections int `json:"max_idle_conn" envconfig:"CONVOY_DB_MAX_IDLE_CONN"`
 	SetConnMaxLifetime    int `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
+
+	ReadReplicas []DatabaseConfiguration `json:"read_replicas" envconfig:"CONVOY_DB_READ_REPLICAS"`
 }
 
 func (dc DatabaseConfiguration) BuildDsn() string {
+	if len(dc.DSN) > 0 {
+		return dc.DSN
+	}
 	if dc.Scheme == "" {
 		return ""
 	}

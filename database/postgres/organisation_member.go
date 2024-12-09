@@ -179,12 +179,12 @@ const (
 )
 
 type orgMemberRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
 func NewOrgMemberRepo(db database.Database, cache cache.Cache) datastore.OrganisationMemberRepository {
-	return &orgMemberRepo{db: db.GetDB(), cache: cache}
+	return &orgMemberRepo{db: db, cache: cache}
 }
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
@@ -198,7 +198,7 @@ func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *da
 		projectID = &member.Role.Project
 	}
 
-	r, err := o.db.ExecContext(ctx, createOrgMember,
+	r, err := o.db.GetDB().ExecContext(ctx, createOrgMember,
 		member.UID,
 		member.OrganisationID,
 		member.UserID,
@@ -248,9 +248,9 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = o.db.Rebind(query)
+	query = o.db.GetReadDB().Rebind(query)
 
-	rows, err := o.db.QueryxContext(ctx, query, args...)
+	rows, err := o.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -280,10 +280,10 @@ func (o *orgMemberRepo) LoadOrganisationMembersPaged(ctx context.Context, organi
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = o.db.Rebind(countQuery)
+		countQuery = o.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := o.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := o.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -337,9 +337,9 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = o.db.Rebind(query)
+	query = o.db.GetReadDB().Rebind(query)
 
-	rows, err := o.db.QueryxContext(ctx, query, args...)
+	rows, err := o.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -369,10 +369,10 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = o.db.Rebind(countQuery)
+		countQuery = o.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := o.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := o.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -402,7 +402,7 @@ func (o *orgMemberRepo) LoadUserOrganisationsPaged(ctx context.Context, userID s
 }
 
 func (o *orgMemberRepo) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {
-	rows, err := o.db.QueryxContext(ctx, fetchUserProjects, userID)
+	rows, err := o.db.GetReadDB().QueryxContext(ctx, fetchUserProjects, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -434,7 +434,7 @@ func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *da
 		projectID = &member.Role.Project
 	}
 
-	r, err := o.db.ExecContext(ctx,
+	r, err := o.db.GetDB().ExecContext(ctx,
 		updateOrgMember,
 		member.UID,
 		member.Role.Type,
@@ -458,7 +458,7 @@ func (o *orgMemberRepo) UpdateOrganisationMember(ctx context.Context, member *da
 }
 
 func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID string) error {
-	r, err := o.db.ExecContext(ctx, deleteOrgMember, uid, orgID)
+	r, err := o.db.GetDB().ExecContext(ctx, deleteOrgMember, uid, orgID)
 	if err != nil {
 		return err
 	}
@@ -477,7 +477,7 @@ func (o *orgMemberRepo) DeleteOrganisationMember(ctx context.Context, uid, orgID
 
 func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, orgID string) (*datastore.OrganisationMember, error) {
 	member := &datastore.OrganisationMember{}
-	err := o.db.QueryRowxContext(ctx, fetchOrgMemberById, uid, orgID).StructScan(member)
+	err := o.db.GetDB().QueryRowxContext(ctx, fetchOrgMemberById, uid, orgID).StructScan(member)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrOrgMemberNotFound
@@ -490,7 +490,7 @@ func (o *orgMemberRepo) FetchOrganisationMemberByID(ctx context.Context, uid, or
 
 func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, userID, orgID string) (*datastore.OrganisationMember, error) {
 	member := &datastore.OrganisationMember{}
-	err := o.db.QueryRowxContext(ctx, fetchOrgMemberByUserId, userID, orgID).StructScan(member)
+	err := o.db.GetDB().QueryRowxContext(ctx, fetchOrgMemberByUserId, userID, orgID).StructScan(member)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrOrgMemberNotFound

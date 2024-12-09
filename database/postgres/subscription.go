@@ -272,7 +272,7 @@ var (
 )
 
 type subscriptionRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
@@ -280,7 +280,7 @@ func NewSubscriptionRepo(db database.Database, ca cache.Cache) datastore.Subscri
 	if ca == nil {
 		ca = ncache.NewNoopCache()
 	}
-	return &subscriptionRepo{db: db.GetDB(), cache: ca}
+	return &subscriptionRepo{db: db, cache: ca}
 }
 
 func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
@@ -302,7 +302,7 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 	}
 
 	var subCount int64
-	err = s.db.GetContext(ctx, &subCount, s.db.Rebind(query), args...)
+	err = s.db.GetReadDB().GetContext(ctx, &subCount, s.db.GetReadDB().Rebind(query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +323,7 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 			return nil, err
 		}
 
-		rows, err = s.db.QueryxContext(ctx, s.db.Rebind(query), args...)
+		rows, err = s.db.GetReadDB().QueryxContext(ctx, s.db.GetReadDB().Rebind(query), args...)
 		if err != nil {
 			return nil, err
 		}
@@ -362,7 +362,7 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 		cursor := "0"
 
 		for {
-			rows, err := s.db.QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, eventType)
+			rows, err := s.db.GetReadDB().QueryxContext(ctx, fetchSubscriptionsForBroadcast, cursor, projectID, pageSize, eventType)
 			if err != nil {
 				return nil, err
 			}
@@ -397,7 +397,7 @@ func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, c
 	}
 
 	var subCount int64
-	err = s.db.GetContext(ctx, &subCount, s.db.Rebind(q), args...)
+	err = s.db.GetReadDB().GetContext(ctx, &subCount, s.db.GetReadDB().Rebind(q), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +418,7 @@ func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, c
 			return nil, err
 		}
 
-		rows, err = s.db.QueryxContext(ctx, s.db.Rebind(q), args...)
+		rows, err = s.db.GetReadDB().QueryxContext(ctx, s.db.GetReadDB().Rebind(q), args...)
 		if err != nil {
 			return nil, err
 		}
@@ -485,7 +485,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 
 	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
 
-	tx, err := s.db.BeginTxx(ctx, nil)
+	tx, err := s.db.GetDB().BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -583,7 +583,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 
 	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
 
-	tx, err := s.db.BeginTxx(ctx, nil)
+	tx, err := s.db.GetDB().BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -594,7 +594,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		}
 	}(tx)
 
-	result, err := s.db.ExecContext(
+	result, err := s.db.GetDB().ExecContext(
 		ctx, updateSubscription, subscription.UID, projectID,
 		subscription.Name, subscription.EndpointID, sourceID,
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
@@ -697,9 +697,9 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = s.db.Rebind(query)
+	query = s.db.GetReadDB().Rebind(query)
 
-	rows, err = s.db.QueryxContext(ctx, query, args...)
+	rows, err = s.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -729,10 +729,10 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = s.db.Rebind(countQuery)
+		countQuery = s.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := s.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := s.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -762,7 +762,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 }
 
 func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
-	result, err := s.db.ExecContext(ctx, deleteSubscriptions, subscription.UID, projectID)
+	result, err := s.db.GetDB().ExecContext(ctx, deleteSubscriptions, subscription.UID, projectID)
 	if err != nil {
 		return err
 	}
@@ -788,7 +788,7 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, projectID str
 func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID string, subscriptionID string) (*datastore.Subscription, error) {
 	sub, err := s.readFromCache(ctx, subscriptionID, func() (*datastore.Subscription, error) {
 		subscription := &datastore.Subscription{}
-		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscriptionID, projectID).StructScan(subscription)
+		err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscriptionID, projectID).StructScan(subscription)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrSubscriptionNotFound
@@ -809,7 +809,7 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 
 func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceID string) ([]datastore.Subscription, error) {
 	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectID, sourceID), 0, func() ([]datastore.Subscription, error) {
-		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.source_id"), projectID, sourceID)
+		rows, err := s.db.GetDB().QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.source_id"), projectID, sourceID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrSubscriptionNotFound
@@ -829,7 +829,7 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 
 func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]datastore.Subscription, error) {
 	subscriptions, err := s.readManyFromCache(ctx, fmt.Sprintf("%s:%s", projectId, endpointID), 0, func() ([]datastore.Subscription, error) {
-		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.endpoint_id"), projectId, endpointID)
+		rows, err := s.db.GetDB().QueryxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.project_id", "s.endpoint_id"), projectId, endpointID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrSubscriptionNotFound
@@ -850,7 +850,7 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType datastore.SubscriptionType) (*datastore.Subscription, error) {
 	sub, err := s.readFromCache(ctx, fmt.Sprintf("%s:%s", projectId, deviceID), func() (*datastore.Subscription, error) {
 		subscription := &datastore.Subscription{}
-		err := s.db.QueryRowxContext(ctx, fetchSubscriptionByDeviceID, deviceID, projectId, subscriptionType).StructScan(subscription)
+		err := s.db.GetDB().QueryRowxContext(ctx, fetchSubscriptionByDeviceID, deviceID, projectId, subscriptionType).StructScan(subscription)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrSubscriptionNotFound
@@ -872,7 +872,7 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 
 func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
 	subscriptions, err := s.readManyFromCache(ctx, projectID, 0, func() ([]datastore.Subscription, error) {
-		rows, err := s.db.QueryxContext(ctx, fmt.Sprintf(fetchCLISubscriptions, "s.project_id", "s.type"), projectID, datastore.SubscriptionTypeCLI)
+		rows, err := s.db.GetReadDB().QueryxContext(ctx, fmt.Sprintf(fetchCLISubscriptions, "s.project_id", "s.type"), projectID, datastore.SubscriptionTypeCLI)
 		if err != nil {
 			return nil, err
 		}
@@ -889,7 +889,7 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
 	var count int64
 
-	err := s.db.GetContext(ctx, &count, countEndpointSubscriptions, projectID, endpointID)
+	err := s.db.GetReadDB().GetContext(ctx, &count, countEndpointSubscriptions, projectID, endpointID)
 	if err != nil {
 		return 0, err
 	}
