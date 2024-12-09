@@ -392,7 +392,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 
 	query = e.db.GetDB().Rebind(query)
 
-	rows, err := e.db.GetDB().QueryxContext(ctx, query, args...)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
