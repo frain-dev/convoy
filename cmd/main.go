@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/frain-dev/convoy/cmd/ff"
+	"github.com/frain-dev/convoy/cmd/utils"
 	"os"
 	_ "time/tzdata"
 
@@ -148,6 +149,7 @@ func main() {
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())
+	c.AddCommand(utils.AddUtilsCommand())
 
 	if err := c.Execute(); err != nil {
 		slog.Fatal(err)

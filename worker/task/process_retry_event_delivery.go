@@ -285,7 +285,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 
 		err = attemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
 		if err != nil {
-			log.WithError(err).Error("failed to create delivery attempt", eventDelivery.UID)
+			log.WithError(err).Errorf("failed to create delivery attempt for event delivery with id: %s", eventDelivery.UID)
 			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
 		}
 

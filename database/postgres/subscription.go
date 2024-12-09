@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/oklog/ulid/v2"
 	"math"
 	"time"
 
@@ -259,6 +260,9 @@ const (
 	deleted_at = NOW()
 	WHERE id = $1 AND project_id = $2;
 	`
+
+	upsertSubscriptionEventTypes = `
+	INSERT INTO convoy.event_types (id, name, project_id, description, category) VALUES (:id, :name, :project_id, :description, :category) on conflict do nothing;`
 )
 
 var (
@@ -481,7 +485,18 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 
 	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
 
-	result, err := s.db.GetDB().ExecContext(
+	tx, err := s.db.GetDB().BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func(tx *sqlx.Tx) {
+		innerErr := tx.Rollback()
+		if innerErr != nil {
+			err = innerErr
+		}
+	}(tx)
+
+	result, err := tx.ExecContext(
 		ctx, createSubscription, subscription.UID,
 		subscription.Name, subscription.Type, subscription.ProjectID,
 		endpointID, deviceID, sourceID,
@@ -503,11 +518,33 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 	}
 
 	_subscription := &datastore.Subscription{}
-	err = s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscription.UID, projectID).StructScan(_subscription)
+	err = tx.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscription.UID, projectID).StructScan(_subscription)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return datastore.ErrSubscriptionNotFound
 		}
+		return err
+	}
+
+	eventTypesSlice := make([]*datastore.ProjectEventType, len(subscription.FilterConfig.EventTypes))
+	for i := range subscription.FilterConfig.EventTypes {
+		eventTypesSlice[i] = &datastore.ProjectEventType{
+			UID:         ulid.Make().String(),
+			Name:        subscription.FilterConfig.EventTypes[i],
+			ProjectId:   subscription.ProjectID,
+			Description: "",
+			Category:    "",
+		}
+	}
+
+	// create event types for each subscription
+	_, err = tx.NamedExecContext(ctx, upsertSubscriptionEventTypes, eventTypesSlice)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
 		return err
 	}
 
@@ -520,7 +557,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
-	return nil
+	return err
 }
 
 func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
@@ -546,6 +583,17 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 
 	fc.Filter.IsFlattened = true // this is just a flag so we can identify old records
 
+	tx, err := s.db.GetDB().BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func(tx *sqlx.Tx) {
+		innerErr := tx.Rollback()
+		if innerErr != nil {
+			err = innerErr
+		}
+	}(tx)
+
 	result, err := s.db.GetDB().ExecContext(
 		ctx, updateSubscription, subscription.UID, projectID,
 		subscription.Name, subscription.EndpointID, sourceID,
@@ -567,11 +615,33 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 	}
 
 	_subscription := &datastore.Subscription{}
-	err = s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscription.UID, projectID).StructScan(_subscription)
+	err = tx.QueryRowxContext(ctx, fmt.Sprintf(fetchSubscriptionByID, "s.id", "s.project_id"), subscription.UID, projectID).StructScan(_subscription)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return datastore.ErrSubscriptionNotFound
 		}
+		return err
+	}
+
+	eventTypesSlice := make([]*datastore.ProjectEventType, len(subscription.FilterConfig.EventTypes))
+	for i := range subscription.FilterConfig.EventTypes {
+		eventTypesSlice[i] = &datastore.ProjectEventType{
+			UID:         ulid.Make().String(),
+			Name:        subscription.FilterConfig.EventTypes[i],
+			ProjectId:   subscription.ProjectID,
+			Description: "",
+			Category:    "",
+		}
+	}
+
+	// create event types for each subscription
+	_, err = tx.NamedExecContext(ctx, upsertSubscriptionEventTypes, eventTypesSlice)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
 		return err
 	}
 
@@ -584,7 +654,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
-	return nil
+	return err
 }
 
 func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
