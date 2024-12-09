@@ -154,7 +154,6 @@ BEGIN
                'events_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
     LOOP
-
         EXECUTE FORMAT(
             'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.events_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
             r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
@@ -326,8 +325,6 @@ BEGIN
                'event_deliveries_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
         FROM dates
     LOOP
-        RAISE NOTICE '%', FORMAT ('CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.event_deliveries_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
-            r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date);
         EXECUTE FORMAT(
             'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.event_deliveries_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
             r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date

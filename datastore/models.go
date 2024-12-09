@@ -84,7 +84,8 @@ type PaginationData struct {
 }
 
 type PrevRowCount struct {
-	Count int
+	Count  int
+	Exists bool
 }
 
 func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationData {
@@ -108,7 +109,7 @@ func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationDat
 		p.HasNextPage = true
 	}
 
-	if p.PrevRowCount.Count > 0 {
+	if p.PrevRowCount.Count > 0 || p.PrevRowCount.Exists {
 		p.HasPreviousPage = true
 	}
 

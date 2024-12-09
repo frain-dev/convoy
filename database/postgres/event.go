@@ -60,7 +60,7 @@ const (
 	AND is_duplicate_event IS FALSE
     AND project_id = $2
     AND deleted_at IS NULL
-	ORDER BY id
+	ORDER BY created_at
 	LIMIT 1;
 	`
 
@@ -129,21 +129,21 @@ const (
 	baseEventsPagedForward = `
 	WITH events AS (
         %s %s AND ev.id <= :cursor
-	    ORDER BY ev.id %s
+	    ORDER BY ev.created_at %s
 	    LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY id %s
+	SELECT * FROM events ORDER BY created_at %s
 	`
 
 	baseEventsPagedBackward = `
 	WITH events AS (
         %s %s AND ev.id >= :cursor
-		ORDER BY ev.id %s
+		ORDER BY ev.created_at %s
 		LIMIT :limit
 	)
 
-	SELECT * FROM events ORDER BY id %s
+	SELECT * FROM events ORDER BY created_at %s
 	`
 
 	baseEventFilter = ` AND ev.project_id = :project_id
@@ -158,19 +158,21 @@ const (
 	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
 
 	baseCountPrevEvents = `
-	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
-	FROM convoy.events ev
-	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
-	WHERE ev.deleted_at IS NULL
+	select exists(
+		SELECT 1
+		FROM convoy.events ev
+		LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+		WHERE ev.deleted_at IS NULL
 	`
 
 	baseCountPrevEventSearch = `
-	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
-	FROM convoy.events_search ev
-	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
-	WHERE ev.deleted_at IS NULL
+	select exists(
+		SELECT 1
+		FROM convoy.events_search ev
+		LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+		WHERE ev.deleted_at IS NULL
 	`
-	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id %s LIMIT 1`
+	countPrevEvents = ` AND ev.id > :cursor ORDER BY ev.created_at %s`
 
 	softDeleteProjectEvents = `
 	UPDATE convoy.events SET deleted_at = NOW()
@@ -397,7 +399,7 @@ func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID st
 	for rows.Next() {
 		var event datastore.Event
 
-		err := rows.StructScan(&event)
+		err = rows.StructScan(&event)
 		if err != nil {
 			return nil, err
 		}
@@ -553,7 +555,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		events = append(events, data)
 	}
 
-	var count datastore.PrevRowCount
+	var prevRow datastore.PrevRowCount
 	if len(events) > 0 {
 		first := events[0]
 		qarg := arg
@@ -567,7 +569,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		tmp := getCountDeliveriesPrevRowQuery(filter.Pageable.SortOrder())
 		tmp = fmt.Sprintf(tmp, filter.Pageable.SortOrder())
 
-		cq := baseCountEvents + filterQuery + tmp
+		cq := baseCountEvents + filterQuery + tmp + ");"
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -580,14 +582,14 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		countQuery = e.db.Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err = e.db.QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 		defer closeWithError(rows)
 
 		if rows.Next() {
-			err = rows.StructScan(&count)
+			err = rows.StructScan(&prevRow)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
@@ -603,7 +605,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		events = events[:len(events)-1]
 	}
 
-	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination := &datastore.PaginationData{PrevRowCount: prevRow}
 	pagination = pagination.Build(filter.Pageable, ids)
 
 	return events, *pagination, nil
