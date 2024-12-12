@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"context"
 	"fmt"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -14,18 +15,20 @@ func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, 
 		lo.WithError(err).Error("failed to begin transaction")
 		return err
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	for table, columns := range tablesAndColumns {
 		lo.Infof("Processing table: %s", table)
 
-		err = lockTable(tx, table, timeout)
+		err = lockTable(ctx, tx, table, timeout)
 		if err != nil {
 			rollback(lo, tx)
 			log.WithError(err).Error("failed to lock table")
 			return err
 		}
 
-		isEncrypted, err := checkEncryptionStatus(tx, table)
+		isEncrypted, err := checkEncryptionStatus(ctx, tx, table)
 		if err != nil {
 			rollback(lo, tx)
 			log.WithError(err).Error("failed to check encryption status")
@@ -40,7 +43,7 @@ func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, 
 		for plainColumn, cipherColumn := range columns {
 			lo.Infof("Re-encrypting column %s (%s) in table %s", plainColumn, cipherColumn, table)
 
-			err = reEncryptColumn(tx, table, cipherColumn, oldKey, newKey)
+			err = reEncryptColumn(ctx, tx, table, cipherColumn, oldKey, newKey)
 			if err != nil {
 				rollback(lo, tx)
 				log.WithError(err).Error("failed to re-encrypt column")
@@ -65,13 +68,13 @@ func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, 
 	return nil
 }
 
-func reEncryptColumn(tx *sqlx.Tx, table, cipherColumn, oldKey, newKey string) error {
+func reEncryptColumn(ctx context.Context, tx *sqlx.Tx, table, cipherColumn, oldKey, newKey string) error {
 	// Re-encrypt the cipher column with the new key
 	reEncryptQuery := fmt.Sprintf(
 		"UPDATE convoy.%s SET %s = pgp_sym_encrypt(pgp_sym_decrypt(%s::bytea, $1), $2) WHERE %s IS NOT NULL;",
 		table, cipherColumn, cipherColumn, cipherColumn,
 	)
-	_, err := tx.Exec(reEncryptQuery, oldKey, newKey)
+	_, err := tx.ExecContext(ctx, reEncryptQuery, oldKey, newKey)
 	if err != nil {
 		return fmt.Errorf("failed to re-encrypt column %s in table %s: %w", cipherColumn, table, err)
 	}
