@@ -7,51 +7,53 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func RevertEncryption(db database.Database, km KeyManager, encryptionKey string) error {
+func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey string, timeout int) error {
 	// Start a transaction
 	tx, err := db.GetDB().Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		lo.WithError(err).Error("failed to begin transaction")
+		return err
 	}
 
 	for table, columns := range tablesAndColumns {
-		log.Infof("Processing table: %s", table)
+		lo.Infof("Processing table: %s", table)
 
-		if err := lockTable(tx, table); err != nil {
-			_ = tx.Rollback()
+		if err := lockTable(tx, table, timeout); err != nil {
+			rollback(lo, tx)
 			return err
 		}
 
 		isEncrypted, err := checkEncryptionStatus(tx, table)
 		if err != nil {
-			_ = tx.Rollback()
+			rollback(lo, tx)
 			return err
 		}
 
 		if !isEncrypted {
-			log.Infof("Table %s is not encrypted. Skipping revert.", table)
+			lo.Infof("Table %s is not encrypted. Skipping revert.", table)
 			continue
 		}
 
 		for column, cipherColumn := range columns {
 			if err := decryptAndRestoreColumn(tx, table, column, cipherColumn, encryptionKey); err != nil {
-				_ = tx.Rollback()
+				rollback(lo, tx)
 				return err
 			}
 		}
 
 		if err := markTableDecrypted(tx, table); err != nil {
-			_ = tx.Rollback()
+			rollback(lo, tx)
 			return err
 		}
 	}
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit transaction: %w", err)
+		lo.WithError(err).Error("failed to commit transaction")
+		return err
 	}
 
-	log.Infof("Encryption revert completed successfully.")
+	lo.Infof("Encryption revert completed successfully.")
 	return nil
 }
 

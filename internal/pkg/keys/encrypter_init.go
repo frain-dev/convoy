@@ -1,6 +1,7 @@
 package keys
 
 import (
+	"context"
 	"fmt"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -8,58 +9,72 @@ import (
 	"strings"
 )
 
-func InitEncryption(db database.Database, km KeyManager, encryptionKey string) error {
+func InitEncryption(lo log.StdLogger, db database.Database, km KeyManager, encryptionKey string, timeout int) error {
 	// Start a transaction
 	tx, err := db.GetDB().Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		lo.WithError(err).Error("failed to begin transaction")
+		return err
 	}
 
 	for table, columns := range tablesAndColumns {
-		log.Infof("Processing table: %s", table)
+		lo.Infof("Processing table: %s", table)
 
-		if err := lockTable(tx, table); err != nil {
-			_ = tx.Rollback()
+		if err := lockTable(tx, table, timeout); err != nil {
+			rollback(lo, tx)
+			lo.WithError(err).Error("failed to lock table")
 			return err
 		}
 
 		isEncrypted, err := checkEncryptionStatus(tx, table)
 		if err != nil {
-			_ = tx.Rollback()
+			rollback(lo, tx)
+			lo.WithError(err).Error("failed to check encryption status")
 			return err
 		}
 
 		if isEncrypted {
-			log.Infof("Table %s is already encrypted. Skipping encryption.", table)
+			lo.Infof("Table %s is already encrypted. Skipping encryption.", table)
 			continue
 		}
 
 		for column, cipherColumn := range columns {
 			if err := encryptColumn(tx, table, column, cipherColumn, encryptionKey); err != nil {
-				_ = tx.Rollback()
-				return err
+				rollback(lo, tx)
+				lo.WithError(err).Error("failed to encrypt column")
+				return fmt.Errorf("failed to encrypt column %s: %w", columns, err)
 			}
 		}
 
 		if err := markTableEncrypted(tx, table); err != nil {
-			_ = tx.Rollback()
-			return err
+			rollback(lo, tx)
+			lo.WithError(err).Error("failed to mark table")
+			return fmt.Errorf("failed to mark encryption status for table %s: %w", table, err)
 		}
 	}
 
 	err = km.SetKey(encryptionKey)
 	if err != nil {
-		_ = tx.Rollback()
+		rollback(lo, tx)
+		lo.WithError(err).Error("failed to set encryption key")
 		return fmt.Errorf("failed to update encryption key: %w", err)
 	}
 
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
+		lo.WithError(err).Error("failed to commit transaction")
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	log.Infof("Encryption initialization completed successfully.")
+	lo.Infof("Encryption initialization completed successfully.")
 	return nil
+}
+
+func rollback(lo log.StdLogger, tx *sqlx.Tx) {
+	rErr := tx.Rollback()
+	if rErr != nil {
+		lo.WithError(rErr).Error("failed to rollback transaction")
+	}
 }
 
 // checkEncryptionStatus checks if the column is already encrypted.
@@ -76,9 +91,11 @@ func checkEncryptionStatus(tx *sqlx.Tx, table string) (bool, error) {
 }
 
 // lockTable ensures the specified table is locked for exclusive access during the operation.
-func lockTable(tx *sqlx.Tx, table string) error {
+func lockTable(tx *sqlx.Tx, table string, timeout int) error {
 	// Set a statement timeout to avoid indefinite hanging on the lock
-	_, err := tx.Exec("SET statement_timeout = '120s';")
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	_, err := tx.ExecContext(ctx, fmt.Sprintf("SET statement_timeout = '%ds';", timeout))
 	if err != nil {
 		return fmt.Errorf("failed to set statement timeout: %w", err)
 	}

@@ -7,39 +7,43 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func RotateEncryptionKey(db database.Database, km KeyManager, oldKey, newKey string) error {
+func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, oldKey, newKey string, timeout int) error {
 
 	tx, err := db.GetDB().Beginx()
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		lo.WithError(err).Error("failed to begin transaction")
+		return err
 	}
 
 	for table, columns := range tablesAndColumns {
-		log.Infof("Processing table: %s", table)
+		lo.Infof("Processing table: %s", table)
 
-		err = lockTable(tx, table)
+		err = lockTable(tx, table, timeout)
 		if err != nil {
-			_ = tx.Rollback()
-			return fmt.Errorf("failed to lock table %s: %w", table, err)
+			rollback(lo, tx)
+			log.WithError(err).Error("failed to lock table")
+			return err
 		}
 
 		isEncrypted, err := checkEncryptionStatus(tx, table)
 		if err != nil {
-			_ = tx.Rollback()
+			rollback(lo, tx)
+			log.WithError(err).Error("failed to check encryption status")
 			return err
 		}
 
 		if !isEncrypted {
-			_ = tx.Rollback()
+			rollback(lo, tx)
 			return fmt.Errorf("table %s has not been encrypted. Please initialize encryption first", table)
 		}
 
 		for plainColumn, cipherColumn := range columns {
-			log.Infof("Re-encrypting column %s (%s) in table %s", plainColumn, cipherColumn, table)
+			lo.Infof("Re-encrypting column %s (%s) in table %s", plainColumn, cipherColumn, table)
 
 			err = reEncryptColumn(tx, table, cipherColumn, oldKey, newKey)
 			if err != nil {
-				_ = tx.Rollback()
+				rollback(lo, tx)
+				log.WithError(err).Error("failed to re-encrypt column")
 				return err
 			}
 		}
@@ -47,16 +51,17 @@ func RotateEncryptionKey(db database.Database, km KeyManager, oldKey, newKey str
 
 	err = km.SetKey(newKey)
 	if err != nil {
-		_ = tx.Rollback()
+		rollback(lo, tx)
 		return fmt.Errorf("failed to update encryption key: %w", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
+		lo.WithError(err).Error("failed to commit transaction")
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	log.Infof("Key rotation completed successfully.")
+	lo.Infof("Key rotation completed successfully.")
 	return nil
 }
 

@@ -2,13 +2,18 @@ package utils
 
 import (
 	"errors"
-	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/spf13/cobra"
+)
+
+var (
+	ErrOldKeyCannotBeEmpty = errors.New("old-key cannot be empty")
+	ErrNewKeyCannotBeEmpty = errors.New("new-key cannot be empty")
 )
 
 func AddRotateKeyCommand(a *cli.App) *cobra.Command {
@@ -16,15 +21,25 @@ func AddRotateKeyCommand(a *cli.App) *cobra.Command {
 		Use:   "rotate-key <old-key> <new-key>",
 		Short: "Rotates the encryption key by re-encrypting data with a new key",
 		Args:  cobra.ExactArgs(2),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			oldKey, newKey, err := validateAndGetKeys(args)
 			if err != nil {
+				return err
+			}
+			timeout, err := cmd.Flags().GetInt("timeout")
+			if err != nil {
+				log.WithError(err).Errorln("failed to get timeout")
 				return err
 			}
 
 			cfg, err := config.Get()
 			if err != nil {
-				log.WithError(err).Fatal("Error fetching the config.")
+				log.WithError(err).Error("Error fetching the config.")
+				return err
+			}
+			flag := fflag2.NewFFlag(cfg.EnableFeatureFlag)
+			if !flag.CanAccessFeature(fflag2.CredentialEncryption) {
+				return fflag2.ErrCredentialEncryptionNotEnabled
 			}
 
 			if !a.Licenser.CredentialEncryption() {
@@ -33,7 +48,7 @@ func AddRotateKeyCommand(a *cli.App) *cobra.Command {
 
 			km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
 			if !km.IsSet() {
-				return errors.New("missing required HCP vault configuration")
+				return ErrMissingHCPVaultConfig
 			}
 
 			log.Infof("Starting key rotation...")
@@ -44,18 +59,24 @@ func AddRotateKeyCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 			if oldKey != currentKey {
-				return fmt.Errorf("provided old key does not match the current encryption key")
+				return ErrOldEncryptionKeyMismatch
 			}
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
-				log.Fatal(err)
+				log.WithError(err).Error("Error connecting to database.")
+				return err
 			}
 			defer db.Close()
 
-			return keys.RotateEncryptionKey(db, km, oldKey, newKey)
+			err = keys.RotateEncryptionKey(a.Logger, db, km, oldKey, newKey, timeout)
+			if err != nil {
+				log.WithError(err).Error("Error rotating key.")
+			}
+			return err
 		},
 	}
+	cmd.Flags().Int("timeout", 120, "Optional statement timeout in seconds (default: 120)")
 	return cmd
 }
 
@@ -64,10 +85,10 @@ func validateAndGetKeys(args []string) (string, string, error) {
 	newKey := args[1]
 
 	if oldKey == "" {
-		return "", "", fmt.Errorf("old-key cannot be empty")
+		return "", "", ErrOldKeyCannotBeEmpty
 	}
 	if newKey == "" {
-		return "", "", fmt.Errorf("new-key cannot be empty")
+		return "", "", ErrNewKeyCannotBeEmpty
 	}
 	return oldKey, newKey, nil
 }

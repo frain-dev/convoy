@@ -14,12 +14,12 @@ import (
 )
 
 var (
-	HCPClientID     = os.Getenv("HCP_CLIENT_ID")
-	HCPClientSecret = os.Getenv("HCP_CLIENT_SECRET")
-	HCPOrgID        = os.Getenv("HCP_ORG_ID")
-	HCPProjectID    = os.Getenv("HCP_PROJECT_ID")
-	HCPAppName      = os.Getenv("HCP_APP_NAME")
-	HCPSecretName   = os.Getenv("HCP_SECRET_NAME")
+	HCPClientID     = os.Getenv("CONVOY_HCP_CLIENT_ID")
+	HCPClientSecret = os.Getenv("CONVOY_HCP_CLIENT_SECRET")
+	HCPOrgID        = os.Getenv("CONVOY_HCP_ORG_ID")
+	HCPProjectID    = os.Getenv("CONVOY_HCP_PROJECT_ID")
+	HCPAppName      = os.Getenv("CONVOY_HCP_APP_NAME")
+	HCPSecretName   = os.Getenv("CONVOY_HCP_SECRET_NAME")
 )
 
 func TestNewHCPVaultKeyManagerEnv(t *testing.T) {
@@ -114,12 +114,7 @@ func TestNewHCPVaultKeyManager(t *testing.T) {
 	h.currentKeyCached = time.Time{} // Force cache expiration
 	keyAfterSet, err := h.GetCurrentKey()
 	assert.Nil(t, err)
-	assert.Equal(t, "mock-key", keyAfterSet) // Still mock-key as the mock server response doesn't reflect the set key
-
-	// Skipping test if environment variables are missing
-	if HCPClientID == "" || HCPClientSecret == "" || HCPOrgID == "" || HCPProjectID == "" {
-		t.Skip("Skipping test due to missing environment variables")
-	}
+	assert.Equal(t, "mock-key", keyAfterSet)
 }
 
 func TestHCPVaultKeyManagerEdgeCases(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/log"
 	"testing"
 	"time"
 
@@ -104,7 +105,7 @@ func assertAndInitEncryption(t *testing.T, db database.Database) {
 
 	km, err := keys.Get()
 	require.NoError(t, err)
-	err = keys.InitEncryption(db, km, "test-key")
+	err = keys.InitEncryption(log.FromContext(context.Background()), db, km, "test-key", 120)
 	require.NoError(t, err)
 
 	isEncrypted, err = checkEncryptionStatus(db)

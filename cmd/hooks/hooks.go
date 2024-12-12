@@ -150,7 +150,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		hooks.RegisterHook(datastore.EventDeliveryUpdated, eventDeliveryListener.AfterUpdate)
 
 		if ok := shouldCheckMigration(cmd); ok {
-			err = checkPendingMigrations(db)
+			err = checkPendingMigrations(lo, db)
 			if err != nil {
 				return err
 			}
@@ -699,7 +699,7 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	return c, nil
 }
 
-func checkPendingMigrations(db database.Database) error {
+func checkPendingMigrations(lo *log.Logger, db database.Database) error {
 	p, ok := db.(*postgres.Postgres)
 	if !ok {
 		return errors.New("failed to open database")
@@ -726,7 +726,7 @@ func checkPendingMigrations(db database.Database) error {
 	if err != nil {
 		return err
 	}
-	defer closeWithError(rows)
+	defer closeWithError(lo, rows)
 
 	for rows.Next() {
 		var id ID
@@ -822,10 +822,10 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	return nil
 }
 
-func closeWithError(closer io.Closer) {
+func closeWithError(lo *log.Logger, closer io.Closer) {
 	err := closer.Close()
 	if err != nil {
-		fmt.Printf("%v, an error occurred while closing the client", err)
+		lo.Printf("%v, an error occurred while closing the client", err)
 	}
 }
 
