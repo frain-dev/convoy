@@ -509,7 +509,7 @@ BEGIN
     )
     SELECT id, url, method, api_version, project_id, endpoint_id,
         event_delivery_id, ip_address, request_http_header, response_http_header,
-        http_status, response_data, error, status, created_at,
+        http_status, response_data::bytea, error, status, created_at,
         updated_at, deleted_at
     FROM convoy.delivery_attempts;
 
@@ -575,7 +575,7 @@ begin
     )
     SELECT id, url, method, api_version, project_id, endpoint_id,
            event_delivery_id, ip_address, request_http_header, response_http_header,
-           http_status, response_data, error, status, created_at,
+           http_status, response_data::bytea, error, status, created_at,
            updated_at, deleted_at
     FROM convoy.delivery_attempts;
 
