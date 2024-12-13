@@ -2,7 +2,7 @@ package task
 
 import (
 	"context"
-	"encoding/json"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"sync"
 	"time"
 
@@ -137,7 +137,8 @@ func processEventDeliveryBatch(ctx context.Context, status datastore.EventDelive
 				EventDeliveryID: delivery.UID,
 				ProjectID:       delivery.ProjectID,
 			}
-			data, err := json.Marshal(payload)
+
+			data, err := msgpack.EncodeMsgPack(payload)
 			if err != nil {
 				log.WithError(err).Error("failed to marshal process event delivery payload")
 			}

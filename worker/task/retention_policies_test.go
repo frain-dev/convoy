@@ -414,7 +414,7 @@ func seedDeliveryAttempt(db database.Database, delivery *datastore.EventDelivery
 		RequestHeader:    map[string]string{"Content-Type": "application/json"},
 		ResponseHeader:   map[string]string{"Content-Type": "application/json"},
 		HttpResponseCode: "200",
-		ResponseData:     "200 OK",
+		ResponseData:     []byte("200 OK"),
 		Status:           true,
 		CreatedAt:        filter.CreatedAt,
 		UpdatedAt:        filter.CreatedAt,

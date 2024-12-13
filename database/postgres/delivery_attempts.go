@@ -97,6 +97,8 @@ func (d *deliveryAttemptRepo) FindDeliveryAttempts(ctx context.Context, eventDel
 			return nil, err
 		}
 
+		(&attempt).ResponseDataString = string(attempt.ResponseData)
+
 		attempts = append(attempts, attempt)
 	}
 
