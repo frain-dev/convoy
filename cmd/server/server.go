@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	_ "net/http/pprof"
 	"strings"
@@ -159,6 +160,19 @@ func startConvoyServer(a *cli.App) error {
 	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
+
+	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
+	if km.IsSet() {
+		if _, err = km.GetCurrentKey(); err != nil {
+			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
+				return err
+			}
+			km.Unset()
+		}
+	}
+	if err = keys.Set(km); err != nil {
+		return err
+	}
 
 	// Start scheduler
 	s.Start()

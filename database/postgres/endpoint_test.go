@@ -6,6 +6,8 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/log"
 	"testing"
 	"time"
 
@@ -22,6 +24,10 @@ import (
 func Test_UpdateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runUpdateEndpointTest(t, db)
+}
+
+func runUpdateEndpointTest(t *testing.T, db database.Database) {
 
 	endpointRepo := NewEndpointRepo(db, nil)
 
@@ -81,10 +87,49 @@ func Test_UpdateEndpoint(t *testing.T) {
 	require.Equal(t, updatedEndpoint, dbEndpoint)
 }
 
-func Test_UpdateEndpointStatus(t *testing.T) {
+func Test_UpdateEndpoint_Encrypted(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	runUpdateEndpointTest(t, db)
+
+	assertAndInitEncryption(t, db)
+
+	runUpdateEndpointTest(t, db)
+}
+
+func assertAndInitEncryption(t *testing.T, db database.Database) {
+	isEncrypted, err := checkEncryptionStatus(db)
+	require.NoError(t, err)
+	require.False(t, isEncrypted)
+
+	km, err := keys.Get()
+	require.NoError(t, err)
+	err = keys.InitEncryption(log.FromContext(context.Background()), db, km, "test-key", 120)
+	require.NoError(t, err)
+
+	isEncrypted, err = checkEncryptionStatus(db)
+	require.NoError(t, err)
+	require.True(t, isEncrypted)
+}
+
+func Test_UpdateEndpointStatus(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runUpdateEndpointStatusTest(t, db)
+}
+
+func Test_UpdateEndpointStatus_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runUpdateEndpointStatusTest(t, db)
+
+	assertAndInitEncryption(t, db)
+
+	runUpdateEndpointStatusTest(t, db)
+}
+
+func runUpdateEndpointStatusTest(t *testing.T, db database.Database) {
 	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
@@ -110,6 +155,19 @@ func Test_DeleteEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
+	runDeleteEndpointTest(t, db)
+}
+
+func Test_DeleteEndpoint_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	runDeleteEndpointTest(t, db)
+	assertAndInitEncryption(t, db)
+	runDeleteEndpointTest(t, db)
+}
+
+func runDeleteEndpointTest(t *testing.T, db database.Database) {
 	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
@@ -154,6 +212,10 @@ func Test_DeleteEndpoint(t *testing.T) {
 func Test_CreateEndpoint(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runCreateEndpointTest(t, db)
+}
+
+func runCreateEndpointTest(t *testing.T, db database.Database) {
 
 	projectRepo := NewProjectRepo(db, nil)
 	endpointRepo := NewEndpointRepo(db, nil)
@@ -196,9 +258,31 @@ func Test_CreateEndpoint(t *testing.T) {
 	require.Equal(t, endpoint, dbEndpoint)
 }
 
+func Test_CreateEndpoint_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	runCreateEndpointTest(t, db)
+
+	assertAndInitEncryption(t, db)
+
+	runCreateEndpointTest(t, db)
+}
+
 func Test_LoadEndpointsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runLoadEndpointsPagedTest(t, db)
+}
+
+func Test_LoadEndpointsPaged_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runLoadEndpointsPagedTest(t, db)
+	assertAndInitEncryption(t, db)
+	runLoadEndpointsPagedTest(t, db)
+}
+func runLoadEndpointsPagedTest(t *testing.T, db database.Database) {
 
 	endpointRepo := NewEndpointRepo(db, nil)
 	eventRepo := NewEventRepo(db, nil)
@@ -238,6 +322,16 @@ func Test_LoadEndpointsPaged(t *testing.T) {
 func Test_FindEndpointsByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runFindEndpointsByIDTest(t, db)
+}
+func Test_FindEndpointsByID_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runFindEndpointsByIDTest(t, db)
+	assertAndInitEncryption(t, db)
+	runFindEndpointsByIDTest(t, db)
+}
+func runFindEndpointsByIDTest(t *testing.T, db database.Database) {
 
 	endpointRepo := NewEndpointRepo(db, nil)
 	eventRepo := NewEventRepo(db, nil)
@@ -296,7 +390,18 @@ func Test_FindEndpointsByID(t *testing.T) {
 func Test_FindEndpointsByAppID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runFindEndpointsByAppIDTest(t, db)
+}
 
+func Test_FindEndpointsByAppID_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runFindEndpointsByAppIDTest(t, db)
+	assertAndInitEncryption(t, db)
+	runFindEndpointsByAppIDTest(t, db)
+}
+
+func runFindEndpointsByAppIDTest(t *testing.T, db database.Database) {
 	endpointRepo := NewEndpointRepo(db, nil)
 	eventRepo := NewEventRepo(db, nil)
 
@@ -352,6 +457,18 @@ func Test_FindEndpointsByAppID(t *testing.T) {
 func Test_FindEndpointsByOwnerID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runFindEndpointsByOwnerIDTest(t, db)
+}
+
+func Test_FindEndpointsByOwnerID_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runFindEndpointsByOwnerIDTest(t, db)
+	assertAndInitEncryption(t, db)
+	runFindEndpointsByOwnerIDTest(t, db)
+}
+
+func runFindEndpointsByOwnerIDTest(t *testing.T, db database.Database) {
 
 	endpointRepo := NewEndpointRepo(db, nil)
 	eventRepo := NewEventRepo(db, nil)
@@ -436,7 +553,18 @@ func Test_CountProjectEndpoints(t *testing.T) {
 func Test_FindEndpointByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runFindEndpointByIDTest(t, db)
+}
 
+func Test_FindEndpointByID_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runFindEndpointByIDTest(t, db)
+	assertAndInitEncryption(t, db)
+	runFindEndpointByIDTest(t, db)
+}
+
+func runFindEndpointByIDTest(t *testing.T, db database.Database) {
 	endpointRepo := NewEndpointRepo(db, nil)
 	eventRepo := NewEventRepo(db, nil)
 
@@ -479,7 +607,18 @@ func Test_FindEndpointByID(t *testing.T) {
 func Test_UpdateSecrets(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runUpdateSecretsTest(t, db)
+}
 
+func Test_UpdateSecrets_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runUpdateSecretsTest(t, db)
+	assertAndInitEncryption(t, db)
+	runUpdateSecretsTest(t, db)
+}
+
+func runUpdateSecretsTest(t *testing.T, db database.Database) {
 	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)
@@ -520,7 +659,18 @@ func Test_UpdateSecrets(t *testing.T) {
 func Test_DeleteSecret(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
+	runDeleteSecretTest(t, db)
+}
 
+func Test_DeleteSecret_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+	runDeleteSecretTest(t, db)
+	assertAndInitEncryption(t, db)
+	runDeleteSecretTest(t, db)
+}
+
+func runDeleteSecretTest(t *testing.T, db database.Database) {
 	endpointRepo := NewEndpointRepo(db, nil)
 
 	project := seedProject(t, db)

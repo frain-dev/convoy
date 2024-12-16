@@ -32,6 +32,7 @@ const (
 	EnterpriseSSO            Feature = "ENTERPRISE_SSO"
 	DatadogTracing           Feature = "DATADOG_TRACING"
 	ReadReplica              Feature = "READ_REPLICA"
+	CredentialEncryption     Feature = "CREDENTIAL_ENCRYPTION"
 )
 
 const (

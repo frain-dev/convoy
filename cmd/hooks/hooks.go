@@ -150,7 +150,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		hooks.RegisterHook(datastore.EventDeliveryUpdated, eventDeliveryListener.AfterUpdate)
 
 		if ok := shouldCheckMigration(cmd); ok {
-			err = checkPendingMigrations(db)
+			err = checkPendingMigrations(lo, db)
 			if err != nil {
 				return err
 			}
@@ -691,10 +691,15 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	c.MaxRetrySeconds = maxRetrySeconds
 
+	err = loadHCPVaultConfig(cmd, &c.HCPVault)
+	if err != nil {
+		return nil, err
+	}
+
 	return c, nil
 }
 
-func checkPendingMigrations(db database.Database) error {
+func checkPendingMigrations(lo *log.Logger, db database.Database) error {
 	p, ok := db.(*postgres.Postgres)
 	if !ok {
 		return errors.New("failed to open database")
@@ -721,7 +726,7 @@ func checkPendingMigrations(db database.Database) error {
 	if err != nil {
 		return err
 	}
-	defer closeWithError(rows)
+	defer closeWithError(lo, rows)
 
 	for rows.Next() {
 		var id ID
@@ -817,9 +822,70 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	return nil
 }
 
-func closeWithError(closer io.Closer) {
+func closeWithError(lo *log.Logger, closer io.Closer) {
 	err := closer.Close()
 	if err != nil {
-		fmt.Printf("%v, an error occurred while closing the client", err)
+		lo.Printf("%v, an error occurred while closing the client", err)
 	}
+}
+
+func loadHCPVaultConfig(cmd *cobra.Command, vaultConfig *config.HCPVaultConfig) error {
+	// Load from CLI flags
+	clientID, err := cmd.Flags().GetString("hcp-client-id")
+	if err != nil {
+		return err
+	}
+	if clientID != "" {
+		vaultConfig.ClientID = clientID
+	}
+
+	clientSecret, err := cmd.Flags().GetString("hcp-client-secret")
+	if err != nil {
+		return err
+	}
+	if clientSecret != "" {
+		vaultConfig.ClientSecret = clientSecret
+	}
+
+	orgID, err := cmd.Flags().GetString("hcp-org-id")
+	if err != nil {
+		return err
+	}
+	if orgID != "" {
+		vaultConfig.OrgID = orgID
+	}
+
+	projectID, err := cmd.Flags().GetString("hcp-project-id")
+	if err != nil {
+		return err
+	}
+	if projectID != "" {
+		vaultConfig.ProjectID = projectID
+	}
+
+	appName, err := cmd.Flags().GetString("hcp-app-name")
+	if err != nil {
+		return err
+	}
+	if appName != "" {
+		vaultConfig.AppName = appName
+	}
+
+	secretName, err := cmd.Flags().GetString("hcp-secret-name")
+	if err != nil {
+		return err
+	}
+	if secretName != "" {
+		vaultConfig.SecretName = secretName
+	}
+
+	cacheDuration, err := cmd.Flags().GetDuration("hcp-cache-duration")
+	if err != nil {
+		return err
+	}
+	if cacheDuration > 0 {
+		vaultConfig.CacheDuration = cacheDuration
+	}
+
+	return nil
 }

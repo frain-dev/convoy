@@ -407,6 +407,7 @@ type Configuration struct {
 	MaxRetrySeconds     uint64                       `json:"max_retry_seconds,omitempty" envconfig:"CONVOY_MAX_RETRY_SECONDS"`
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
 	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
+	HCPVault            HCPVaultConfig               `json:"hcp_vault"`
 }
 
 type DispatcherConfiguration struct {
@@ -421,6 +422,16 @@ type PyroscopeConfiguration struct {
 	Username        string `json:"username" envconfig:"CONVOY_PYROSCOPE_USERNAME"`
 	Password        string `json:"password" envconfig:"CONVOY_PYROSCOPE_PASSWORD"`
 	ProfileID       string `json:"profile_id" envconfig:"CONVOY_PYROSCOPE_PROFILE_ID"`
+}
+
+type HCPVaultConfig struct {
+	ClientID      string        `json:"client_id" envconfig:"CONVOY_HCP_CLIENT_ID"`
+	ClientSecret  string        `json:"client_secret" envconfig:"CONVOY_HCP_CLIENT_SECRET"`
+	OrgID         string        `json:"org_id" envconfig:"CONVOY_HCP_ORG_ID"`
+	ProjectID     string        `json:"project_id" envconfig:"CONVOY_HCP_PROJECT_ID"`
+	AppName       string        `json:"app_name" envconfig:"CONVOY_HCP_APP_NAME"`
+	SecretName    string        `json:"secret_name" envconfig:"CONVOY_HCP_SECRET_NAME"`
+	CacheDuration time.Duration `json:"cache_duration" envconfig:"CONVOY_HCP_CACHE_DURATION"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called
