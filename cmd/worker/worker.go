@@ -371,33 +371,39 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 						lo.WithError(err).Error("failed to add convoy.events managed table")
 					}
 
-					// err = manager.AddManagedTable(partman.Table{
-					// 	Name:              "event_deliveries",
-					// 	Schema:            "convoy",
-					// 	TenantId:          project.UID,
-					// 	TenantIdColumn:    "project_id",
-					// 	PartitionBy:       "created_at",
-					// 	PartitionType:     partman.TypeRange,
-					// 	PartitionInterval: partman.OneDay,
-					// 	PartitionCount:    10,
-					// 	RetentionPeriod:   partman.OneMonth,
-					// })
-					// if err != nil {
-					// 	lo.WithError(err).Error("failed to add convoy.event_deliveries to managed tables")
-					// }
-
-					err = manager.DropOldPartitions(ctx)
+					err = manager.AddManagedTable(partman.Table{
+						Name:              "event_deliveries",
+						Schema:            "convoy",
+						TenantId:          project.UID,
+						TenantIdColumn:    "project_id",
+						PartitionBy:       "created_at",
+						PartitionType:     partman.TypeRange,
+						RetentionPeriod:   partman.OneWeek,
+						PartitionInterval: partman.OneDay,
+						PartitionCount:    10,
+					})
 					if err != nil {
-						lo.WithError(err).Error("failed to drop old partitions")
+						lo.WithError(err).Error("failed to add convoy.event_deliveries to managed tables")
+					}
+
+					err = manager.AddManagedTable(partman.Table{
+						Name:              "delivery_attempts",
+						Schema:            "convoy",
+						TenantId:          project.UID,
+						TenantIdColumn:    "project_id",
+						PartitionBy:       "created_at",
+						PartitionType:     partman.TypeRange,
+						RetentionPeriod:   partman.OneWeek,
+						PartitionInterval: partman.OneDay,
+						PartitionCount:    10,
+					})
+					if err != nil {
+						lo.WithError(err).Error("failed to add convoy.delivery_attempts to managed tables")
 					}
 				}
 			}
 		}
 	}(pm)
-	err = pm.Start(ctx)
-	if err != nil {
-		lo.WithError(err).Fatal("Failed to start partition manager")
-	}
 
 	channels := make(map[string]task.EventChannel)
 	defaultCh, broadcastCh, dynamicCh := task.NewDefaultEventChannel(), task.NewBroadcastEventChannel(subscriptionsTable), task.NewDynamicEventChannel()
@@ -464,14 +470,17 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		deviceRepo, a.Licenser), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptRepo,
-		rd,
-	), nil)
+	if a.Licenser.RetentionPolicy() {
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, pm), nil)
+		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(
+			configRepo,
+			projectRepo,
+			eventRepo,
+			eventDeliveryRepo,
+			attemptRepo,
+			rd,
+		), nil)
+	}
 
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(
 		channels,

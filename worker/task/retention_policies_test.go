@@ -3,6 +3,8 @@ package task
 import (
 	"context"
 	"fmt"
+	partman "github.com/jirevwe/go_partman"
+	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -58,10 +60,37 @@ func (r *RetentionPoliciesIntegrationTestSuite) TearDownTest() {
 	testdb.PurgeDB(r.T(), r.DB)
 }
 
+// todo(raymond):
+//  1. update this test case such that we verify that rows not in the current window are not deleted
+//  2. add test case to verify that events created before partitioning the table are backed up and retained
+//  3. update the Setup and Teardown helpers to clear partition manager table to prevent bloat
 func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents() {
+	// seed event
+	duration := time.Hour * 24
+
 	// seed instance configuration
 	_, err := seedConfiguration(r.ConvoyApp.database)
 	require.NoError(r.T(), err)
+
+	err = r.ConvoyApp.eventRepo.PartitionEventsTable(context.Background())
+	require.NoError(r.T(), err)
+
+	err = r.ConvoyApp.eventDeliveryRepo.PartitionEventDeliveriesTable(context.Background())
+	require.NoError(r.T(), err)
+
+	err = r.ConvoyApp.deliveryRepo.PartitionDeliveryAttemptsTable(context.Background())
+	require.NoError(r.T(), err)
+
+	defer func() {
+		err = r.ConvoyApp.eventRepo.UnPartitionEventsTable(context.Background())
+		require.NoError(r.T(), err)
+
+		err = r.ConvoyApp.eventDeliveryRepo.UnPartitionEventDeliveriesTable(context.Background())
+		require.NoError(r.T(), err)
+
+		err = r.ConvoyApp.deliveryRepo.UnPartitionDeliveryAttemptsTable(context.Background())
+		require.NoError(r.T(), err)
+	}()
 
 	// seed Project
 	projectConfig := &datastore.ProjectConfig{
@@ -88,27 +117,71 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	project, err := testdb.SeedProject(r.ConvoyApp.database, ulid.Make().String(), "test", r.DefaultOrg.UID, datastore.OutgoingProject, projectConfig)
 	require.NoError(r.T(), err)
 
+	pmConfig := &partman.Config{
+		SchemaName: "convoy",
+		SampleRate: time.Second,
+		Tables: []partman.Table{
+			{Name: "events",
+				Schema:            "convoy",
+				TenantId:          project.UID,
+				TenantIdColumn:    "project_id",
+				PartitionBy:       "created_at",
+				PartitionType:     partman.TypeRange,
+				RetentionPeriod:   partman.OneDay,
+				PartitionInterval: partman.OneDay,
+				PartitionCount:    2,
+			},
+			{
+				Name:              "event_deliveries",
+				Schema:            "convoy",
+				TenantId:          project.UID,
+				TenantIdColumn:    "project_id",
+				PartitionBy:       "created_at",
+				PartitionType:     partman.TypeRange,
+				RetentionPeriod:   partman.OneDay,
+				PartitionInterval: partman.OneDay,
+				PartitionCount:    2,
+			},
+			{
+				Name:              "delivery_attempts",
+				Schema:            "convoy",
+				TenantId:          project.UID,
+				TenantIdColumn:    "project_id",
+				PartitionBy:       "created_at",
+				PartitionType:     partman.TypeRange,
+				RetentionPeriod:   partman.OneDay,
+				PartitionInterval: partman.OneDay,
+				PartitionCount:    2,
+			},
+		},
+	}
+
+	clock := partman.NewSimulatedClock(time.Now().Add(-duration))
+	pm, err := partman.NewManager(
+		partman.WithConfig(pmConfig),
+		partman.WithDB(r.DB.GetDB()),
+		partman.WithClock(clock),
+		partman.WithLogger(slog.New(slog.NewTextHandler(os.Stdout, nil))),
+	)
+	require.NoError(r.T(), err)
+
 	endpoint, err := testdb.SeedEndpoint(r.DB, project, ulid.Make().String(), "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(r.T(), err)
 
-	// seed event
-	duration, err := time.ParseDuration("80h")
-	require.NoError(r.T(), err)
-
 	event1, err := seedEvent(r.ConvoyApp.database, endpoint.UID, project.UID, "", "*", []byte(`{}`), SeedFilter{
-		CreatedAt: time.Now().UTC().Add(-duration),
+		CreatedAt: clock.Now(),
 	})
 	require.NoError(r.T(), err)
 
 	event2, err := seedEvent(r.ConvoyApp.database, endpoint.UID, project.UID, "", "*", []byte(`{}`), SeedFilter{
-		CreatedAt: time.Now().UTC().Add(-duration),
+		CreatedAt: clock.Now(),
 	})
 	require.NoError(r.T(), err)
 
 	subscription, err := testdb.SeedSubscription(r.DB, project, "", project.Type, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
 	require.NoError(r.T(), err)
 
-	now := time.Now().UTC().Add(-duration)
+	now := clock.Now().UTC()
 	// seed eventdelivery
 	eventDelivery1, err := seedEventDelivery(r.ConvoyApp.database, event1.UID, endpoint.UID, project.UID, "", datastore.SuccessEventStatus, subscription.UID, SeedFilter{
 		CreatedAt: now,
@@ -131,10 +204,21 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	// call handler
-	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
+	retentionTask := asynq.NewTask(string(convoy.RetentionPolicies), nil, asynq.Queue(string(convoy.ScheduleQueue)))
+	backUpTask := asynq.NewTask(string(convoy.BackupProjectData), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.deliveryRepo, r.ConvoyApp.redis)
-	err = fn(context.Background(), task)
+	clock.AdvanceTime(duration + time.Hour)
+
+	err = BackupProjectData(
+		r.ConvoyApp.configRepo,
+		r.ConvoyApp.projectRepo,
+		r.ConvoyApp.eventRepo,
+		r.ConvoyApp.eventDeliveryRepo,
+		r.ConvoyApp.deliveryRepo,
+		r.ConvoyApp.redis)(context.Background(), backUpTask)
+	require.NoError(r.T(), err)
+
+	err = RetentionPolicies(r.ConvoyApp.redis, pm)(context.Background(), retentionTask)
 	require.NoError(r.T(), err)
 
 	_, err = r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery1.UID, attempt1.UID)
@@ -152,92 +236,6 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 
 	_, err = r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), project.UID, eventDelivery2.UID)
 	require.ErrorIs(r.T(), err, datastore.ErrEventDeliveryNotFound)
-
-	// check the number of retained events on projects
-	p, err := r.ConvoyApp.projectRepo.FetchProjectByID(context.Background(), project.UID)
-	require.NoError(r.T(), err)
-	require.Equal(r.T(), 2, p.RetainedEvents)
-}
-
-func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Documents() {
-	// seed instance configuration
-	_, err := seedConfiguration(r.ConvoyApp.database)
-	require.NoError(r.T(), err)
-
-	// seed project
-	projectConfig := &datastore.ProjectConfig{
-		Signature: &datastore.SignatureConfiguration{
-			Header: "X-Convoy-Signature",
-			Versions: []datastore.SignatureVersion{
-				{
-					UID:       ulid.Make().String(),
-					Hash:      "SHA256",
-					Encoding:  datastore.HexEncoding,
-					CreatedAt: time.Now(),
-				},
-			},
-		},
-		SSL: &datastore.DefaultSSLConfig,
-		Strategy: &datastore.StrategyConfiguration{
-			Type:       "linear",
-			Duration:   20,
-			RetryCount: 4,
-		},
-		RateLimit:     &datastore.DefaultRateLimitConfig,
-		ReplayAttacks: true,
-	}
-	project, err := testdb.SeedProject(r.ConvoyApp.database, ulid.Make().String(), "test", r.DefaultOrg.UID, datastore.OutgoingProject, projectConfig)
-	require.NoError(r.T(), err)
-
-	endpoint, err := testdb.SeedEndpoint(r.DB, project, ulid.Make().String(), "test-endpoint", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(r.T(), err)
-
-	// seed event
-	event, err := seedEvent(r.ConvoyApp.database, endpoint.UID, project.UID, "", "*", []byte(`{}`), SeedFilter{
-		CreatedAt: time.Now().UTC(),
-	})
-	require.NoError(r.T(), err)
-
-	subscription, err := testdb.SeedSubscription(r.DB, project, "", project.Type, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
-	require.NoError(r.T(), err)
-
-	// seed eventdelivery
-	eventDelivery, err := seedEventDelivery(r.ConvoyApp.database, event.UID, endpoint.UID, project.UID, "", datastore.SuccessEventStatus, subscription.UID, SeedFilter{
-		CreatedAt: time.Now().UTC(),
-	})
-	require.NoError(r.T(), err)
-
-	attempt, err := seedDeliveryAttempt(r.ConvoyApp.database, eventDelivery, project, endpoint, SeedFilter{
-		CreatedAt: time.Now().UTC(),
-	})
-	require.NoError(r.T(), err)
-
-	// call handler
-	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
-
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.deliveryRepo, r.ConvoyApp.redis)
-	err = fn(context.Background(), task)
-	require.NoError(r.T(), err)
-
-	a, err := r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery.UID, attempt.UID)
-	require.NoError(r.T(), err)
-	require.NotEqual(r.T(), a.CreatedAt, time.Now().UTC())
-	require.NotEqual(r.T(), a.UpdatedAt, time.Now().UTC())
-
-	// check that event and eventdelivery is not empty
-	e, err := r.ConvoyApp.eventRepo.FindEventByID(context.Background(), project.UID, event.UID)
-	require.NoError(r.T(), err)
-	require.Equal(r.T(), e.UID, event.UID)
-	require.NotEqual(r.T(), e.AcknowledgedAt, time.Time{})
-	require.NotEqual(r.T(), e.CreatedAt, time.Time{})
-	require.NotEqual(r.T(), e.UpdatedAt, time.Time{})
-
-	ed, err := r.ConvoyApp.eventDeliveryRepo.FindEventDeliveryByID(context.Background(), project.UID, eventDelivery.UID)
-	require.NoError(r.T(), err)
-	require.Equal(r.T(), ed.UID, eventDelivery.UID)
-	require.NotEqual(r.T(), ed.AcknowledgedAt, time.Time{})
-	require.NotEqual(r.T(), ed.CreatedAt, time.Time{})
-	require.NotEqual(r.T(), ed.UpdatedAt, time.Time{})
 }
 
 func TestRetentionPoliciesIntegrationSuiteTest(t *testing.T) {

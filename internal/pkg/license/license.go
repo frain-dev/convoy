@@ -29,8 +29,7 @@ type Licenser interface {
 	EnterpriseSSO() bool
 	DatadogTracing() bool
 
-	// need more fleshing out
-	AdvancedRetentionPolicy() bool
+	RetentionPolicy() bool
 	AdvancedMsgBroker() bool
 	WebhookAnalytics() bool
 	HADeployment() bool

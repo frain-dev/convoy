@@ -250,8 +250,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		})
 	})
 
-
-
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
@@ -274,11 +272,11 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			authRouter.Post("/logout", handler.LogoutUser)
 		})
 
-        uiRouter.Route("/saml", func(samlRouter chi.Router) {
-            samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-            samlRouter.Get("/login", handler.RedeemLoginSSOToken)
-            samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
-        })
+		uiRouter.Route("/saml", func(samlRouter chi.Router) {
+			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+			samlRouter.Get("/login", handler.RedeemLoginSSOToken)
+			samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
+		})
 
 		uiRouter.Route("/users", func(userRouter chi.Router) {
 			userRouter.Route("/{userID}", func(userSubRouter chi.Router) {
@@ -475,29 +473,29 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			})
 		})
 
-    portalLinkRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
-      eventTypesRouter.Get("/", handler.GetEventTypes)
-      eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
-      eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
-      eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
-    })
+		portalLinkRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
+			eventTypesRouter.Get("/", handler.GetEventTypes)
+			eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
+			eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
+			eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
+		})
 
-    portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
-      eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
-      eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
-      eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
-      eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
+		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {
+			eventDeliveryRouter.With(middleware.Pagination).Get("/", handler.GetEventDeliveriesPaged)
+			eventDeliveryRouter.Post("/forceresend", handler.ForceResendEventDeliveries)
+			eventDeliveryRouter.Post("/batchretry", handler.BatchRetryEventDelivery)
+			eventDeliveryRouter.Get("/countbatchretryevents", handler.CountAffectedEventDeliveries)
 
-      eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
-        eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
-        eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
+			eventDeliveryRouter.Route("/{eventDeliveryID}", func(eventDeliverySubRouter chi.Router) {
+				eventDeliverySubRouter.Get("/", handler.GetEventDelivery)
+				eventDeliverySubRouter.Put("/resend", handler.ResendEventDelivery)
 
-        eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
-          deliveryRouter.Get("/", handler.GetDeliveryAttempts)
-          deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
-        })
-      })
-    })
+				eventDeliverySubRouter.Route("/deliveryattempts", func(deliveryRouter chi.Router) {
+					deliveryRouter.Get("/", handler.GetDeliveryAttempts)
+					deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
+				})
+			})
+		})
 
 		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 			subscriptionRouter.Post("/", handler.CreateSubscription)
@@ -595,8 +593,6 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		})
 	})
 
-
-
 	// Dashboard API.
 	router.Route("/ui", func(uiRouter chi.Router) {
 		uiRouter.Use(middleware.JsonResponse)
@@ -612,11 +608,11 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 			authRouter.Post("/logout", handler.LogoutUser)
 		})
 
-        uiRouter.Route("/saml", func(samlRouter chi.Router) {
-            samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
-            samlRouter.Get("/login", handler.RedeemLoginSSOToken)
-            samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
-        })
+		uiRouter.Route("/saml", func(samlRouter chi.Router) {
+			samlRouter.Use(middleware.RequireValidEnterpriseSSOLicense(handler.A.Licenser))
+			samlRouter.Get("/login", handler.RedeemLoginSSOToken)
+			samlRouter.Get("/register", handler.RedeemRegisterSSOToken)
+		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Route("/{orgID}", func(orgSubRouter chi.Router) {

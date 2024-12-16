@@ -153,8 +153,15 @@ func startConvoyServer(a *cli.App) error {
 	// register tasks
 	s.RegisterTask("58 23 * * *", convoy.ScheduleQueue, convoy.DeleteArchivedTasksProcessor)
 	s.RegisterTask("30 * * * *", convoy.ScheduleQueue, convoy.MonitorTwitterSources)
-	s.RegisterTask("0 0 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
+
+	// ensures that project data is backed up about 2 hours before they are deleted
+	if a.Licenser.RetentionPolicy() {
+		// runs at 10pm
+		s.RegisterTask("0 22 * * *", convoy.ScheduleQueue, convoy.BackupProjectData)
+		// runs at 1am
+		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
+	}
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 
