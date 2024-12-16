@@ -1056,3 +1056,208 @@ func reverseOrder(sortOrder string) string {
 		return "ASC"
 	}
 }
+
+func (e *eventDeliveryRepo) PartitionEventDeliveriesTable(ctx context.Context) error {
+	_, err := e.db.ExecContext(ctx, partitionEventDeliveriesTable)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *eventDeliveryRepo) UnPartitionEventDeliveriesTable(ctx context.Context) error {
+	_, err := e.db.ExecContext(ctx, unPartitionEventDeliveriesTable)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+var partitionEventDeliveriesTable = `
+CREATE OR REPLACE FUNCTION enforce_event_delivery_fk()
+    RETURNS TRIGGER AS $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM convoy.event_deliveries
+        WHERE id = NEW.event_delivery_id
+    ) THEN
+        RAISE EXCEPTION 'Foreign key violation: event_delivery_id % does not exist in event deliveries', NEW.event_delivery_id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION partition_event_deliveries_table()
+    RETURNS VOID AS $$
+DECLARE
+    r RECORD;
+BEGIN
+    RAISE NOTICE 'Creating partitioned event deliveries table...';
+
+    -- Drop old partitioned table
+    DROP TABLE IF EXISTS convoy.event_deliveries_new;
+
+    -- Create partitioned table
+   create table convoy.event_deliveries_new
+    (
+        id               VARCHAR not null,
+        status           TEXT    not null,
+        description      TEXT    not null,
+        project_id       VARCHAR not null references convoy.projects,
+        endpoint_id      VARCHAR references convoy.endpoints,
+        event_id         VARCHAR not null,
+        device_id        VARCHAR references convoy.devices,
+        subscription_id  VARCHAR not null references convoy.subscriptions,
+        metadata         jsonb   not null,
+        headers          jsonb,
+        attempts         bytea,
+        cli_metadata     jsonb,
+        created_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
+        updated_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
+        deleted_at       TIMESTAMP WITH TIME ZONE,
+        url_query_params VARCHAR,
+        idempotency_key  TEXT,
+        latency          TEXT,
+        event_type       TEXT,
+        acknowledged_at  TIMESTAMP WITH TIME ZONE,
+        latency_seconds  NUMERIC,
+        PRIMARY KEY (id, created_at, project_id)
+    ) PARTITION BY RANGE (project_id, created_at);
+
+    RAISE NOTICE 'Creating partitions...';
+    FOR r IN
+        WITH dates AS (
+            SELECT project_id, created_at::DATE
+            FROM convoy.event_deliveries
+            GROUP BY created_at::DATE, project_id
+            order by created_at::DATE
+        )
+        SELECT project_id,
+               created_at::TEXT AS start_date,
+               (created_at + 1)::TEXT AS stop_date,
+               'event_deliveries_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+        FROM dates
+    LOOP
+        EXECUTE FORMAT(
+            'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.event_deliveries_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+            r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
+        );
+    END LOOP;
+
+    RAISE NOTICE 'Migrating data...';
+    INSERT INTO convoy.event_deliveries_new (
+        id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
+        attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
+        latency_seconds
+    )
+    SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
+           attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
+           latency_seconds
+    FROM convoy.event_deliveries;
+
+    -- Manage table renaming
+    ALTER TABLE convoy.delivery_attempts DROP CONSTRAINT IF EXISTS delivery_attempts_event_delivery_id_fkey;
+    ALTER TABLE convoy.event_deliveries RENAME TO event_deliveries_old;
+    ALTER TABLE convoy.event_deliveries_new RENAME TO event_deliveries;
+    DROP TABLE IF EXISTS convoy.event_deliveries_old;
+
+    RAISE NOTICE 'Recreating indexes...';
+    create index event_deliveries_event_type on convoy.event_deliveries (event_type);
+    create index idx_event_deliveries_created_at_key on convoy.event_deliveries (created_at);
+    create index idx_event_deliveries_deleted_at_key on convoy.event_deliveries (deleted_at);
+    create index idx_event_deliveries_device_id_key on convoy.event_deliveries (device_id);
+    create index idx_event_deliveries_endpoint_id_key on convoy.event_deliveries (endpoint_id);
+    create index idx_event_deliveries_event_id_key on convoy.event_deliveries (event_id);
+    create index idx_event_deliveries_project_id_endpoint_id on convoy.event_deliveries (project_id, endpoint_id);
+    create index idx_event_deliveries_project_id_endpoint_id_status on convoy.event_deliveries (project_id, endpoint_id, status);
+    create index idx_event_deliveries_project_id_event_id on convoy.event_deliveries (project_id, event_id);
+    create index idx_event_deliveries_project_id_key on convoy.event_deliveries (project_id);
+    create index idx_event_deliveries_status on convoy.event_deliveries (status);
+    create index idx_event_deliveries_status_key on convoy.event_deliveries (status);
+
+    -- Recreate FK using trigger
+    CREATE OR REPLACE TRIGGER event_delivery_fk_check
+    BEFORE INSERT ON convoy.delivery_attempts
+    FOR EACH ROW EXECUTE FUNCTION enforce_event_delivery_fk();
+
+    RAISE NOTICE 'Migration complete!';
+END;
+$$ LANGUAGE plpgsql;
+select partition_event_deliveries_table();
+`
+
+var unPartitionEventDeliveriesTable = `
+create or replace function convoy.un_partition_event_deliveries_table() returns VOID as $$
+begin
+	RAISE NOTICE 'Starting un-partitioning of event deliveries table...';
+
+	-- Drop old partitioned table
+    DROP TABLE IF EXISTS convoy.event_deliveries_new;
+
+    -- Create partitioned table
+    CREATE TABLE convoy.event_deliveries_new
+    (
+        id               VARCHAR not null primary key ,
+        status           TEXT    not null,
+        description      TEXT    not null,
+        project_id       VARCHAR not null references convoy.projects,
+        endpoint_id      VARCHAR references convoy.endpoints,
+        event_id         VARCHAR not null,
+        device_id        VARCHAR references convoy.devices,
+        subscription_id  VARCHAR not null references convoy.subscriptions,
+        metadata         jsonb   not null,
+        headers          jsonb,
+        attempts         bytea,
+        cli_metadata     jsonb,
+        created_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
+        updated_at       TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
+        deleted_at       TIMESTAMP WITH TIME ZONE,
+        url_query_params VARCHAR,
+        idempotency_key  TEXT,
+        latency          TEXT,
+        event_type       TEXT,
+        acknowledged_at  TIMESTAMP WITH TIME ZONE,
+        latency_seconds  NUMERIC
+    );
+
+    RAISE NOTICE 'Migrating data...';
+    INSERT INTO convoy.event_deliveries_new (
+        id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
+        attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
+        latency_seconds
+    )
+    SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
+           attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
+           latency_seconds
+    FROM convoy.event_deliveries;
+
+    ALTER TABLE convoy.delivery_attempts DROP CONSTRAINT if exists delivery_attempts_event_delivery_id_fkey;
+    ALTER TABLE convoy.delivery_attempts
+        ADD CONSTRAINT delivery_attempts_event_delivery_id_fkey
+            FOREIGN KEY (event_delivery_id) REFERENCES convoy.event_deliveries_new (id);
+
+    ALTER TABLE convoy.event_deliveries RENAME TO event_deliveries_old;
+    ALTER TABLE convoy.event_deliveries_new RENAME TO event_deliveries;
+    DROP TABLE IF EXISTS convoy.event_deliveries_old;
+
+    RAISE NOTICE 'Recreating indexes...';
+    create index event_deliveries_event_type on convoy.event_deliveries (event_type);
+    create index idx_event_deliveries_created_at_key on convoy.event_deliveries (created_at);
+    create index idx_event_deliveries_deleted_at_key on convoy.event_deliveries (deleted_at);
+    create index idx_event_deliveries_device_id_key on convoy.event_deliveries (device_id);
+    create index idx_event_deliveries_endpoint_id_key on convoy.event_deliveries (endpoint_id);
+    create index idx_event_deliveries_event_id_key on convoy.event_deliveries (event_id);
+    create index idx_event_deliveries_project_id_endpoint_id on convoy.event_deliveries (project_id, endpoint_id);
+    create index idx_event_deliveries_project_id_endpoint_id_status on convoy.event_deliveries (project_id, endpoint_id, status);
+    create index idx_event_deliveries_project_id_event_id on convoy.event_deliveries (project_id, event_id);
+    create index idx_event_deliveries_project_id_key on convoy.event_deliveries (project_id);
+    create index idx_event_deliveries_status on convoy.event_deliveries (status);
+    create index idx_event_deliveries_status_key on convoy.event_deliveries (status);
+
+	RAISE NOTICE 'Successfully un-partitioned events table...';
+end $$ language plpgsql;
+select convoy.un_partition_event_deliveries_table()
+`
