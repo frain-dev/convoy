@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	partman "github.com/jirevwe/go_partman"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
@@ -97,7 +97,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 	}
 }
 
-func RetentionPolicies(rd *rdb.Redis, manager *partman.Manager) func(context.Context, *asynq.Task) error {
+func RetentionPolicies(rd *rdb.Redis, ret retention.Retentioner) func(context.Context, *asynq.Task) error {
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
@@ -124,7 +124,7 @@ func RetentionPolicies(rd *rdb.Redis, manager *partman.Manager) func(context.Con
 		}()
 
 		c := time.Now()
-		err = manager.Maintain(ctx)
+		err = ret.Perform(ctx)
 		if err != nil {
 			return err
 		}

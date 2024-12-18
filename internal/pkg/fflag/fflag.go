@@ -10,6 +10,7 @@ import (
 
 var ErrCircuitBreakerNotEnabled = errors.New("[feature flag] circuit breaker is not enabled")
 var ErrFullTextSearchNotEnabled = errors.New("[feature flag] full text search is not enabled")
+var ErrRetentionPolicyNotEnabled = errors.New("[feature flag] retention policy is not enabled")
 var ErrPrometheusMetricsNotEnabled = errors.New("[feature flag] prometheus metrics is not enabled")
 
 type (
@@ -17,10 +18,11 @@ type (
 )
 
 const (
-	IpRules        FeatureFlagKey = "ip-rules"
-	Prometheus     FeatureFlagKey = "prometheus"
-	CircuitBreaker FeatureFlagKey = "circuit-breaker"
-	FullTextSearch FeatureFlagKey = "full-text-search"
+	IpRules         FeatureFlagKey = "ip-rules"
+	Prometheus      FeatureFlagKey = "prometheus"
+	CircuitBreaker  FeatureFlagKey = "circuit-breaker"
+	FullTextSearch  FeatureFlagKey = "full-text-search"
+	RetentionPolicy FeatureFlagKey = "retention-policy"
 )
 
 type (
@@ -33,10 +35,11 @@ const (
 )
 
 var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
-	IpRules:        disabled,
-	Prometheus:     disabled,
-	FullTextSearch: disabled,
-	CircuitBreaker: disabled,
+	IpRules:         disabled,
+	Prometheus:      disabled,
+	FullTextSearch:  disabled,
+	CircuitBreaker:  disabled,
+	RetentionPolicy: disabled,
 }
 
 type FFlag struct {
@@ -58,6 +61,8 @@ func NewFFlag(enableFeatureFlags []string) *FFlag {
 			f.Features[FullTextSearch] = enabled
 		case string(CircuitBreaker):
 			f.Features[CircuitBreaker] = enabled
+		case string(RetentionPolicy):
+			f.Features[RetentionPolicy] = enabled
 		}
 	}
 

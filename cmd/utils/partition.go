@@ -2,8 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +20,20 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				a.Logger.WithError(err).Fatal("Failed to load configuration")
+			}
+
+			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
+			if !featureFlag.CanAccessFeature(fflag.RetentionPolicy) {
+				return fmt.Errorf("partitioning is only avaliable when the retention policy fflag is enabled")
+			}
+
+			if !a.Licenser.RetentionPolicy() {
+				return fmt.Errorf("partitioning is only avaliable with a license key")
+			}
+
 			eventsRepo := postgres.NewEventRepo(a.DB, nil)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, nil)
 			deliveryAttemptsRepo := postgres.NewDeliveryAttemptRepo(a.DB)
@@ -66,6 +82,20 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "true",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg, err := config.Get()
+			if err != nil {
+				a.Logger.WithError(err).Fatal("Failed to load configuration")
+			}
+
+			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
+			if !featureFlag.CanAccessFeature(fflag.RetentionPolicy) {
+				return fmt.Errorf("partitioning is only avaliable when the retention policy fflag is enabled")
+			}
+
+			if !a.Licenser.RetentionPolicy() {
+				return fmt.Errorf("partitioning is only avaliable with a license key")
+			}
+
 			eventsRepo := postgres.NewEventRepo(a.DB, nil)
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, nil)
 			deliveryAttemptsRepo := postgres.NewDeliveryAttemptRepo(a.DB)

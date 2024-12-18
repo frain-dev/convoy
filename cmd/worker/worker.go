@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"log/slog"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -34,7 +33,6 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/jirevwe/go_partman"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/cobra"
 )
@@ -275,7 +273,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	var circuitBreakerManager *cb.CircuitBreakerManager
 
-	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) {
+	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) && a.Licenser.CircuitBreaking() {
 		circuitBreakerManager, err = cb.NewCircuitBreakerManager(
 			cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
 			cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
@@ -314,96 +312,28 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		lo.Warn(fflag.ErrCircuitBreakerNotEnabled)
 	}
 
-	pmConfig := &partman.Config{
-		SchemaName: "convoy",
-		SampleRate: time.Minute,
-	}
-
-	pm, err := partman.NewManager(
-		partman.WithConfig(pmConfig),
-		partman.WithDB(a.DB.GetDB()),
-		partman.WithClock(partman.NewRealClock()),
-		partman.WithLogger(slog.New(slog.NewTextHandler(os.Stdout, nil))),
-	)
-	if err != nil {
-		lo.WithError(err).Fatal("Failed to create partition manager")
-	}
-
-	err = pm.ImportExistingPartitions(ctx, partman.Table{
-		TenantIdColumn:    "project_id",
-		PartitionBy:       "created_at",
-		PartitionType:     partman.TypeRange,
-		RetentionPeriod:   partman.OneWeek,
-		PartitionInterval: partman.OneDay,
-		PartitionCount:    10,
-	})
-	if err != nil {
-		lo.WithError(err).Fatal("Failed to import existing partitions")
-	}
-
-	go func(manager *partman.Manager) {
-		ticker := time.NewTicker(time.Minute)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				projects, pErr := projectRepo.LoadProjects(context.Background(), &datastore.ProjectFilter{})
-				if pErr != nil {
-					lo.WithError(pErr).Error("failed to load projects")
-				}
-
-				for _, project := range projects {
-					err = manager.AddManagedTable(partman.Table{
-						Name:              "events",
-						Schema:            "convoy",
-						TenantId:          project.UID,
-						TenantIdColumn:    "project_id",
-						PartitionBy:       "created_at",
-						PartitionType:     partman.TypeRange,
-						RetentionPeriod:   partman.OneWeek,
-						PartitionInterval: partman.OneDay,
-						PartitionCount:    10,
-					})
-					if err != nil {
-						lo.WithError(err).Error("failed to add convoy.events managed table")
-					}
-
-					err = manager.AddManagedTable(partman.Table{
-						Name:              "event_deliveries",
-						Schema:            "convoy",
-						TenantId:          project.UID,
-						TenantIdColumn:    "project_id",
-						PartitionBy:       "created_at",
-						PartitionType:     partman.TypeRange,
-						RetentionPeriod:   partman.OneWeek,
-						PartitionInterval: partman.OneDay,
-						PartitionCount:    10,
-					})
-					if err != nil {
-						lo.WithError(err).Error("failed to add convoy.event_deliveries to managed tables")
-					}
-
-					err = manager.AddManagedTable(partman.Table{
-						Name:              "delivery_attempts",
-						Schema:            "convoy",
-						TenantId:          project.UID,
-						TenantIdColumn:    "project_id",
-						PartitionBy:       "created_at",
-						PartitionType:     partman.TypeRange,
-						RetentionPeriod:   partman.OneWeek,
-						PartitionInterval: partman.OneDay,
-						PartitionCount:    10,
-					})
-					if err != nil {
-						lo.WithError(err).Error("failed to add convoy.delivery_attempts to managed tables")
-					}
-				}
-			}
+	var ret retention.Retentioner
+	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && a.Licenser.RetentionPolicy() {
+		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
+		if _err != nil {
+			lo.WithError(_err).Fatal("Failed to parse retention policy")
+			return _err
 		}
-	}(pm)
+
+		ret, err = retention.NewRetentionPolicy(a.DB, lo, policy)
+		if err != nil {
+			lo.WithError(err).Fatal("Failed to create retention policy")
+		}
+
+		go func(r retention.Retentioner) {
+			err = r.Start(ctx)
+			if err != nil {
+				lo.WithError(err).Fatal("retention policy loop failed")
+			}
+		}(ret)
+	} else {
+		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
+	}
 
 	channels := make(map[string]task.EventChannel)
 	defaultCh, broadcastCh, dynamicCh := task.NewDefaultEventChannel(), task.NewBroadcastEventChannel(subscriptionsTable), task.NewDynamicEventChannel()
@@ -471,7 +401,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		deviceRepo, a.Licenser), newTelemetry)
 
 	if a.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, pm), nil)
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
 		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(
 			configRepo,
 			projectRepo,
