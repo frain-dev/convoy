@@ -38,7 +38,7 @@ func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey stri
 		}
 
 		for column, cipherColumn := range columns {
-			if err := decryptAndRestoreColumn(ctx, tx, table, column, cipherColumn, encryptionKey); err != nil {
+			if err := decryptAndRestoreColumn(lo, ctx, tx, table, column, cipherColumn, encryptionKey); err != nil {
 				rollback(lo, tx)
 				return err
 			}
@@ -61,9 +61,9 @@ func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey stri
 }
 
 // decryptAndRestoreColumn decrypts the cipher column and restores the data to the plain column.
-func decryptAndRestoreColumn(ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
+func decryptAndRestoreColumn(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
 	// Decrypt the cipher column and update the plain column, casting as needed
-	columnType, err := getColumnType(ctx, tx, table, column)
+	columnType, err := getColumnType(lo, ctx, tx, table, column)
 	if err != nil {
 		return err
 	}
@@ -89,12 +89,12 @@ func decryptAndRestoreColumn(ctx context.Context, tx *sqlx.Tx, table, column, ci
 	return nil
 }
 
-func getColumnType(ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
+func getColumnType(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
 	query := `SELECT data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2;`
 	var columnType string
 	err := tx.GetContext(ctx, &columnType, query, table, column)
 	if err != nil {
-		log.Errorf("Failed to fetch column type for %s.%s: %v", table, column, err)
+		lo.Errorf("Failed to fetch column type for %s.%s: %v", table, column, err)
 		return "", err
 	}
 	return columnType, nil

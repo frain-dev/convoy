@@ -43,7 +43,7 @@ func InitEncryption(lo log.StdLogger, db database.Database, km KeyManager, encry
 		}
 
 		for column, cipherColumn := range columns {
-			if err := encryptColumn(ctx, tx, table, column, cipherColumn, encryptionKey); err != nil {
+			if err := encryptColumn(lo, ctx, tx, table, column, cipherColumn, encryptionKey); err != nil {
 				rollback(lo, tx)
 				lo.WithError(err).Error("failed to encrypt column")
 				return fmt.Errorf("failed to encrypt column %s: %w", columns, err)
@@ -111,9 +111,9 @@ func lockTable(ctx context.Context, tx *sqlx.Tx, table string, timeout int) erro
 }
 
 // encryptColumn encrypts the specified column in the table.
-func encryptColumn(ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
+func encryptColumn(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
 	// Encrypt the column data and store it in the _cipher column
-	columnZero, err := getColumnZero(ctx, tx, table, column)
+	columnZero, err := getColumnZero(lo, ctx, tx, table, column)
 	if err != nil {
 		return err
 	}
@@ -129,12 +129,12 @@ func encryptColumn(ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn
 	return nil
 }
 
-func getColumnZero(ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
+func getColumnZero(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
 	query := `SELECT is_nullable, data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2;`
 	var isNullable, columnType string
 	err := tx.QueryRowContext(ctx, query, table, column).Scan(&isNullable, &columnType)
 	if err != nil {
-		log.Errorf("Failed to fetch column info for %s.%s: %v", table, column, err)
+		lo.Errorf("Failed to fetch column info for %s.%s: %v", table, column, err)
 		return NULL, err
 	}
 
@@ -149,7 +149,7 @@ func getColumnZero(ctx context.Context, tx *sqlx.Tx, table, column string) (stri
 		case strings.Contains(columnType, "bool"):
 			return "FALSE", nil
 		default:
-			log.Warnf("Unknown type %s for %s.%s, defaulting to NULL", columnType, table, column)
+			lo.Warnf("Unknown type %s for %s.%s, defaulting to NULL", columnType, table, column)
 			return NULL, nil
 		}
 	}
