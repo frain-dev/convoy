@@ -113,11 +113,15 @@ func lockTable(ctx context.Context, tx *sqlx.Tx, table string, timeout int) erro
 // encryptColumn encrypts the specified column in the table.
 func encryptColumn(ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
 	// Encrypt the column data and store it in the _cipher column
+	columnZero, err := getColumnZero(ctx, tx, table, column)
+	if err != nil {
+		return err
+	}
 	encryptQuery := fmt.Sprintf(
 		"UPDATE convoy.%s SET %s = pgp_sym_encrypt(%s::text, $1), %s = %s WHERE %s IS NOT NULL;",
-		table, cipherColumn, column, column, getColumnZero(ctx, tx, table, column), column,
+		table, cipherColumn, column, column, columnZero, column,
 	)
-	_, err := tx.ExecContext(ctx, encryptQuery, encryptionKey)
+	_, err = tx.ExecContext(ctx, encryptQuery, encryptionKey)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt column %s in table %s: %w", column, table, err)
 	}
@@ -125,32 +129,32 @@ func encryptColumn(ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn
 	return nil
 }
 
-func getColumnZero(ctx context.Context, tx *sqlx.Tx, table, column string) string {
-	query := `SELECT is_nullable, data_type FROM convoy.information_schema.columns WHERE table_name = $1 AND column_name = $2;`
+func getColumnZero(ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
+	query := `SELECT is_nullable, data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2;`
 	var isNullable, columnType string
 	err := tx.QueryRowContext(ctx, query, table, column).Scan(&isNullable, &columnType)
 	if err != nil {
-		log.Infof("Failed to fetch column info for %s.%s: %v", table, column, err)
-		return NULL
+		log.Errorf("Failed to fetch column info for %s.%s: %v", table, column, err)
+		return NULL, err
 	}
 
 	if isNullable == "NO" {
 		switch {
 		case strings.Contains(columnType, "json"):
-			return "'[]'::jsonb"
+			return "'[]'::jsonb", nil
 		case strings.Contains(columnType, "text") || strings.Contains(columnType, "char"):
-			return "''"
+			return "''", nil
 		case strings.Contains(columnType, "int") || strings.Contains(columnType, "numeric"):
-			return "0"
+			return "0", nil
 		case strings.Contains(columnType, "bool"):
-			return "FALSE"
+			return "FALSE", nil
 		default:
 			log.Warnf("Unknown type %s for %s.%s, defaulting to NULL", columnType, table, column)
-			return NULL
+			return NULL, nil
 		}
 	}
 
-	return NULL
+	return NULL, nil
 }
 
 // markTableEncrypted sets the `is_encrypted` column to true.
