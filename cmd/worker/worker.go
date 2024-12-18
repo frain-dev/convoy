@@ -325,12 +325,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 			lo.WithError(err).Fatal("Failed to create retention policy")
 		}
 
-		go func(r retention.Retentioner) {
-			err = r.Start(ctx)
-			if err != nil {
-				lo.WithError(err).Fatal("retention policy loop failed")
-			}
-		}(ret)
+		ret.Start(ctx, time.Minute)
 	} else {
 		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
 	}

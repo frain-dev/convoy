@@ -3,8 +3,8 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	partman "github.com/jirevwe/go_partman"
-	"log/slog"
 	"os"
 	"testing"
 	"time"
@@ -118,17 +118,17 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	require.NoError(r.T(), err)
 
 	pmConfig := &partman.Config{
-		SchemaName: "convoy",
 		SampleRate: time.Second,
 		Tables: []partman.Table{
-			{Name: "events",
+			{
+				Name:              "events",
 				Schema:            "convoy",
 				TenantId:          project.UID,
 				TenantIdColumn:    "project_id",
 				PartitionBy:       "created_at",
 				PartitionType:     partman.TypeRange,
-				RetentionPeriod:   partman.OneDay,
-				PartitionInterval: partman.OneDay,
+				RetentionPeriod:   time.Hour * 24,
+				PartitionInterval: time.Hour * 24,
 				PartitionCount:    2,
 			},
 			{
@@ -138,8 +138,8 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 				TenantIdColumn:    "project_id",
 				PartitionBy:       "created_at",
 				PartitionType:     partman.TypeRange,
-				RetentionPeriod:   partman.OneDay,
-				PartitionInterval: partman.OneDay,
+				RetentionPeriod:   time.Hour * 24,
+				PartitionInterval: time.Hour * 24,
 				PartitionCount:    2,
 			},
 			{
@@ -149,8 +149,8 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 				TenantIdColumn:    "project_id",
 				PartitionBy:       "created_at",
 				PartitionType:     partman.TypeRange,
-				RetentionPeriod:   partman.OneDay,
-				PartitionInterval: partman.OneDay,
+				RetentionPeriod:   time.Hour * 24,
+				PartitionInterval: time.Hour * 24,
 				PartitionCount:    2,
 			},
 		},
@@ -161,9 +161,12 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		partman.WithConfig(pmConfig),
 		partman.WithDB(r.DB.GetDB()),
 		partman.WithClock(clock),
-		partman.WithLogger(slog.New(slog.NewTextHandler(os.Stdout, nil))),
+		partman.WithLogger(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(r.T(), err)
+
+	ret := retention.NewTestRetentionPolicy(r.DB, pm)
+	ret.Start(context.Background(), time.Second)
 
 	endpoint, err := testdb.SeedEndpoint(r.DB, project, ulid.Make().String(), "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(r.T(), err)
@@ -218,7 +221,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		r.ConvoyApp.redis)(context.Background(), backUpTask)
 	require.NoError(r.T(), err)
 
-	err = RetentionPolicies(r.ConvoyApp.redis, pm)(context.Background(), retentionTask)
+	err = RetentionPolicies(r.ConvoyApp.redis, ret)(context.Background(), retentionTask)
 	require.NoError(r.T(), err)
 
 	_, err = r.ConvoyApp.deliveryRepo.FindDeliveryAttemptById(context.Background(), eventDelivery1.UID, attempt1.UID)
