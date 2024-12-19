@@ -393,6 +393,34 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesPaged(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesPaged", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesPaged), ctx, projectID, endpointIDs, eventID, subscriptionID, status, params, pageable, idempotencyKey, eventType)
 }
 
+// PartitionEventDeliveriesTable mocks base method.
+func (m *MockEventDeliveryRepository) PartitionEventDeliveriesTable(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PartitionEventDeliveriesTable", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PartitionEventDeliveriesTable indicates an expected call of PartitionEventDeliveriesTable.
+func (mr *MockEventDeliveryRepositoryMockRecorder) PartitionEventDeliveriesTable(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PartitionEventDeliveriesTable", reflect.TypeOf((*MockEventDeliveryRepository)(nil).PartitionEventDeliveriesTable), ctx)
+}
+
+// UnPartitionEventDeliveriesTable mocks base method.
+func (m *MockEventDeliveryRepository) UnPartitionEventDeliveriesTable(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnPartitionEventDeliveriesTable", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnPartitionEventDeliveriesTable indicates an expected call of UnPartitionEventDeliveriesTable.
+func (mr *MockEventDeliveryRepositoryMockRecorder) UnPartitionEventDeliveriesTable(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnPartitionEventDeliveriesTable", reflect.TypeOf((*MockEventDeliveryRepository)(nil).UnPartitionEventDeliveriesTable), ctx)
+}
+
 // UpdateEventDeliveryMetadata mocks base method.
 func (m *MockEventDeliveryRepository) UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery *datastore.EventDelivery) error {
 	m.ctrl.T.Helper()
@@ -633,6 +661,34 @@ func (m *MockEventRepository) LoadEventsPaged(ctx context.Context, projectID str
 func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(ctx, projectID, f any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), ctx, projectID, f)
+}
+
+// PartitionEventsTable mocks base method.
+func (m *MockEventRepository) PartitionEventsTable(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PartitionEventsTable", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PartitionEventsTable indicates an expected call of PartitionEventsTable.
+func (mr *MockEventRepositoryMockRecorder) PartitionEventsTable(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PartitionEventsTable", reflect.TypeOf((*MockEventRepository)(nil).PartitionEventsTable), ctx)
+}
+
+// UnPartitionEventsTable mocks base method.
+func (m *MockEventRepository) UnPartitionEventsTable(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnPartitionEventsTable", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnPartitionEventsTable indicates an expected call of UnPartitionEventsTable.
+func (mr *MockEventRepositoryMockRecorder) UnPartitionEventsTable(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnPartitionEventsTable", reflect.TypeOf((*MockEventRepository)(nil).UnPartitionEventsTable), ctx)
 }
 
 // UpdateEventEndpoints mocks base method.
@@ -2623,6 +2679,34 @@ func (m *MockDeliveryAttemptsRepository) GetFailureAndSuccessCounts(ctx context.
 func (mr *MockDeliveryAttemptsRepositoryMockRecorder) GetFailureAndSuccessCounts(ctx, lookBackDuration, resetTimes any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFailureAndSuccessCounts", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).GetFailureAndSuccessCounts), ctx, lookBackDuration, resetTimes)
+}
+
+// PartitionDeliveryAttemptsTable mocks base method.
+func (m *MockDeliveryAttemptsRepository) PartitionDeliveryAttemptsTable(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PartitionDeliveryAttemptsTable", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PartitionDeliveryAttemptsTable indicates an expected call of PartitionDeliveryAttemptsTable.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) PartitionDeliveryAttemptsTable(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PartitionDeliveryAttemptsTable", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).PartitionDeliveryAttemptsTable), ctx)
+}
+
+// UnPartitionDeliveryAttemptsTable mocks base method.
+func (m *MockDeliveryAttemptsRepository) UnPartitionDeliveryAttemptsTable(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnPartitionDeliveryAttemptsTable", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnPartitionDeliveryAttemptsTable indicates an expected call of UnPartitionDeliveryAttemptsTable.
+func (mr *MockDeliveryAttemptsRepositoryMockRecorder) UnPartitionDeliveryAttemptsTable(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnPartitionDeliveryAttemptsTable", reflect.TypeOf((*MockDeliveryAttemptsRepository)(nil).UnPartitionDeliveryAttemptsTable), ctx)
 }
 
 // MockEventTypesRepository is a mock of EventTypesRepository interface.

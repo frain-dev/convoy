@@ -8,9 +8,8 @@ INSERT INTO convoy.events_endpoints_temp
 SELECT DISTINCT ON (event_id, endpoint_id) *
 FROM convoy.events_endpoints_deprecated ON CONFLICT DO NOTHING;
 
--- safely DROP convoy.events_endpoints_deprecated; if need be
+DROP table if exists convoy.events_endpoints_deprecated;
 ALTER TABLE convoy.events_endpoints_temp RENAME TO events_endpoints;
-
 
 ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS status text DEFAULT NULL;
 ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS metadata text DEFAULT NULL;

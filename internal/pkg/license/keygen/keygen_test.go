@@ -35,10 +35,10 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	require.False(t, k.AdvancedEndpointMgmt())
 
 	k = Licenser{featureList: map[Feature]*Properties{AdvancedWebhookArchiving: {}}, license: &keygen.License{}}
-	require.True(t, k.AdvancedRetentionPolicy())
+	require.True(t, k.RetentionPolicy())
 
 	k = Licenser{featureList: map[Feature]*Properties{AdvancedWebhookArchiving: {}}, license: &keygen.License{Expiry: timePtr(time.Now().Add(-400000 * time.Hour))}}
-	require.False(t, k.AdvancedRetentionPolicy())
+	require.False(t, k.RetentionPolicy())
 
 	k = Licenser{featureList: map[Feature]*Properties{AdvancedMsgBroker: {}}, license: &keygen.License{}}
 	require.True(t, k.AdvancedMsgBroker())
@@ -127,7 +127,7 @@ func TestKeygenLicenserBoolMethods(t *testing.T) {
 	require.False(t, falseLicenser.PortalLinks())
 	require.False(t, falseLicenser.CanExportPrometheusMetrics())
 	require.False(t, falseLicenser.AdvancedEndpointMgmt())
-	require.False(t, falseLicenser.AdvancedRetentionPolicy())
+	require.False(t, falseLicenser.RetentionPolicy())
 	require.False(t, falseLicenser.AdvancedMsgBroker())
 	require.False(t, falseLicenser.AdvancedSubscriptions())
 	require.False(t, falseLicenser.Transformations())

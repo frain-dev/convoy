@@ -84,7 +84,8 @@ type PaginationData struct {
 }
 
 type PrevRowCount struct {
-	Count int
+	Count  int
+	Exists bool
 }
 
 func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationData {
@@ -108,7 +109,7 @@ func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationDat
 		p.HasNextPage = true
 	}
 
-	if p.PrevRowCount.Count > 0 {
+	if p.PrevRowCount.Count > 0 || p.PrevRowCount.Exists {
 		p.HasPreviousPage = true
 	}
 
@@ -632,10 +633,10 @@ type RetentionPolicyConfiguration struct {
 }
 
 type ProjectStatistics struct {
-	MessagesSent       int64 `json:"messages_sent" db:"messages_sent"`
-	TotalEndpoints     int64 `json:"total_endpoints" db:"total_endpoints"`
-	TotalSubscriptions int64 `json:"total_subscriptions" db:"total_subscriptions"`
-	TotalSources       int64 `json:"total_sources" db:"total_sources"`
+	MessagesSent       bool `json:"messages_sent" db:"messages_sent"`
+	TotalEndpoints     bool `json:"total_endpoints" db:"total_endpoints"`
+	TotalSubscriptions bool `json:"total_subscriptions" db:"total_subscriptions"`
+	TotalSources       bool `json:"total_sources" db:"total_sources"`
 }
 
 type ProjectFilter struct {

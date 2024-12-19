@@ -761,7 +761,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		countQuery = s.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := s.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
+		rows, err = s.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}

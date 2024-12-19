@@ -347,7 +347,7 @@ func (k *Licenser) AdvancedEndpointMgmt() bool {
 	return ok
 }
 
-func (k *Licenser) AdvancedRetentionPolicy() bool {
+func (k *Licenser) RetentionPolicy() bool {
 	if checkExpiry(k.license) != nil {
 		return false
 	}

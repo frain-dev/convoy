@@ -207,7 +207,7 @@ export class CreateProjectComponent implements OnInit {
 		this.isCreatingProject = true;
 
 		try {
-			// this createProject service also updates project as active project in localstorage
+			// this createProject service also updates the project as an active project in localstorage
 			const response = await this.createProjectService.createProject(projectData);
 			await this.privateService.getProjectStat({ refresh: true });
 
