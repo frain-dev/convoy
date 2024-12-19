@@ -114,7 +114,7 @@ const (
 	SELECT ev.id, ev.project_id,
 	ev.id AS event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at,ev.acknowledged_at,
+	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
 	ev.updated_at, ev.deleted_at,
