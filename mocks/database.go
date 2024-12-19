@@ -78,14 +78,6 @@ func (m *MockDatabase) GetDB() *sqlx.DB {
 	return ret0
 }
 
-// GetReadDB mocks base method.
-func (m *MockDatabase) GetReadDB() *sqlx.DB {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetReadDB")
-	ret0, _ := ret[0].(*sqlx.DB)
-	return ret0
-}
-
 // GetDB indicates an expected call of GetDB.
 func (mr *MockDatabaseMockRecorder) GetDB() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -104,6 +96,20 @@ func (m *MockDatabase) GetHook() *hooks.Hook {
 func (mr *MockDatabaseMockRecorder) GetHook() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHook", reflect.TypeOf((*MockDatabase)(nil).GetHook))
+}
+
+// GetReadDB mocks base method.
+func (m *MockDatabase) GetReadDB() *sqlx.DB {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetReadDB")
+	ret0, _ := ret[0].(*sqlx.DB)
+	return ret0
+}
+
+// GetReadDB indicates an expected call of GetReadDB.
+func (mr *MockDatabaseMockRecorder) GetReadDB() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetReadDB", reflect.TypeOf((*MockDatabase)(nil).GetReadDB))
 }
 
 // Rollback mocks base method.
