@@ -114,7 +114,7 @@ const (
 	SELECT ev.id, ev.project_id,
 	ev.id AS event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at,ev.acknowledged_at,
+	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
 	ev.updated_at, ev.deleted_at,
@@ -200,12 +200,12 @@ const (
 )
 
 type eventRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
 func NewEventRepo(db database.Database, cache cache.Cache) datastore.EventRepository {
-	return &eventRepo{db: db.GetDB(), cache: cache}
+	return &eventRepo{db: db, cache: cache}
 }
 
 func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) error {
@@ -216,7 +216,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 	}
 	event.Status = datastore.PendingStatus
 
-	tx, isWrapped, err := GetTx(ctx, e.db)
+	tx, isWrapped, err := GetTx(ctx, e.db.GetDB())
 	if err != nil {
 		return err
 	}
@@ -272,7 +272,7 @@ func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) err
 }
 
 func (e *eventRepo) UpdateEventEndpoints(ctx context.Context, event *datastore.Event, endpoints []string) error {
-	tx, isWrapped, err := GetTx(ctx, e.db)
+	tx, isWrapped, err := GetTx(ctx, e.db.GetDB())
 	if err != nil {
 		return err
 	}
@@ -316,7 +316,7 @@ func (e *eventRepo) UpdateEventEndpoints(ctx context.Context, event *datastore.E
 }
 
 func (e *eventRepo) UpdateEventStatus(ctx context.Context, event *datastore.Event, status datastore.EventStatus) error {
-	tx, isWrapped, err := GetTx(ctx, e.db)
+	tx, isWrapped, err := GetTx(ctx, e.db.GetDB())
 	if err != nil {
 		return err
 	}
@@ -341,9 +341,10 @@ func (e *eventRepo) UpdateEventStatus(ctx context.Context, event *datastore.Even
 	return tx.Commit()
 }
 
+// FindEventByID to find events in real time - requires the primary db
 func (e *eventRepo) FindEventByID(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
-	err := e.db.QueryRowxContext(ctx, fetchEventById, id, projectID).StructScan(event)
+	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventById, id, projectID).StructScan(event)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventNotFound
@@ -360,8 +361,8 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 		return nil, err
 	}
 
-	query = e.db.Rebind(query)
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	query = e.db.GetReadDB().Rebind(query)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -388,8 +389,8 @@ func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID st
 		return nil, err
 	}
 
-	query = e.db.Rebind(query)
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	query = e.db.GetDB().Rebind(query)
+	rows, err := e.db.GetDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +413,7 @@ func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID st
 
 func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
-	err := e.db.QueryRowxContext(ctx, fetchFirstEventWithIdempotencyKey, id, projectID).StructScan(event)
+	err := e.db.GetDB().QueryRowxContext(ctx, fetchFirstEventWithIdempotencyKey, id, projectID).StructScan(event)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrEventNotFound
@@ -426,7 +427,7 @@ func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projec
 func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) (int64, error) {
 	var c int64
 
-	err := e.db.QueryRowxContext(ctx, countProjectMessages, projectID).Scan(&c)
+	err := e.db.GetReadDB().QueryRowxContext(ctx, countProjectMessages, projectID).Scan(&c)
 	if err != nil {
 		return c, err
 	}
@@ -465,8 +466,8 @@ func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *d
 		return 0, err
 	}
 
-	query = e.db.Rebind(query)
-	err = e.db.QueryRowxContext(ctx, query, args...).Scan(&count)
+	query = e.db.GetReadDB().Rebind(query)
+	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).Scan(&count)
 	if err != nil {
 		return count, err
 	}
@@ -535,9 +536,8 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		return nil, datastore.PaginationData{}, err
 	}
 
-	// fmt.Printf("%+v\n%+v\n", query, args)
-	query = e.db.Rebind(query)
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	query = e.db.GetReadDB().Rebind(query)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -579,10 +579,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = e.db.Rebind(countQuery)
+		countQuery = e.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err = e.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err = e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -619,7 +619,7 @@ func (e *eventRepo) DeleteProjectEvents(ctx context.Context, projectID string, f
 		query = hardDeleteProjectEvents
 	}
 
-	_, err := e.db.ExecContext(ctx, query, projectID, startDate, endDate)
+	_, err := e.db.GetDB().ExecContext(ctx, query, projectID, startDate, endDate)
 	if err != nil {
 		return err
 	}
@@ -632,7 +632,7 @@ func (e *eventRepo) DeleteProjectTokenizedEvents(ctx context.Context, projectID 
 
 	query := hardDeleteTokenizedEvents + " AND created_at >= $2 AND created_at <= $3"
 
-	_, err := e.db.ExecContext(ctx, query, projectID, startDate, endDate)
+	_, err := e.db.GetDB().ExecContext(ctx, query, projectID, startDate, endDate)
 	if err != nil {
 		return err
 	}
@@ -641,7 +641,7 @@ func (e *eventRepo) DeleteProjectTokenizedEvents(ctx context.Context, projectID 
 }
 
 func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int) error {
-	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := e.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -663,7 +663,7 @@ func (e *eventRepo) CopyRows(ctx context.Context, projectID string, interval int
 }
 
 func (e *eventRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	return exportRecords(ctx, e.db, "convoy.events", projectID, createdAt, w)
+	return exportRecords(ctx, e.db.GetReadDB(), "convoy.events", projectID, createdAt, w)
 }
 
 func getCreatedDateFilter(startDate, endDate int64) (time.Time, time.Time) {
@@ -700,7 +700,7 @@ func getCountDeliveriesPrevRowQuery(sortOrder string) string {
 }
 
 func (e *eventRepo) PartitionEventsTable(ctx context.Context) error {
-	_, err := e.db.ExecContext(ctx, partitionEventsTable)
+	_, err := e.db.GetDB().ExecContext(ctx, partitionEventsTable)
 	if err != nil {
 		return err
 	}
@@ -709,7 +709,7 @@ func (e *eventRepo) PartitionEventsTable(ctx context.Context) error {
 }
 
 func (e *eventRepo) UnPartitionEventsTable(ctx context.Context) error {
-	_, err := e.db.ExecContext(ctx, unPartitionEventsTable)
+	_, err := e.db.GetDB().ExecContext(ctx, unPartitionEventsTable)
 	if err != nil {
 		return err
 	}

@@ -28,6 +28,8 @@ type Licenser interface {
 	IpRules() bool
 	EnterpriseSSO() bool
 	DatadogTracing() bool
+	ReadReplica() bool
+	CredentialEncryption() bool
 
 	RetentionPolicy() bool
 	AdvancedMsgBroker() bool

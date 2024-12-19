@@ -8,18 +8,17 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/jmoiron/sqlx"
 	"io"
 	"time"
 )
 
 type deliveryAttemptRepo struct {
-	db *sqlx.DB
+	db database.Database
 }
 
 func NewDeliveryAttemptRepo(db database.Database) datastore.DeliveryAttemptsRepository {
 	return &deliveryAttemptRepo{
-		db: db.GetDB(),
+		db: db,
 	}
 }
 
@@ -47,7 +46,7 @@ const (
 )
 
 func (d *deliveryAttemptRepo) CreateDeliveryAttempt(ctx context.Context, attempt *datastore.DeliveryAttempt) error {
-	result, err := d.db.ExecContext(
+	result, err := d.db.GetDB().ExecContext(
 		ctx, creatDeliveryAttempt, attempt.UID, attempt.URL, attempt.Method, attempt.APIVersion, attempt.EndpointID,
 		attempt.EventDeliveryId, attempt.ProjectId, attempt.IPAddress, attempt.RequestHeader, attempt.ResponseHeader, attempt.HttpResponseCode,
 		attempt.ResponseData, attempt.Error, attempt.Status,
@@ -70,7 +69,7 @@ func (d *deliveryAttemptRepo) CreateDeliveryAttempt(ctx context.Context, attempt
 
 func (d *deliveryAttemptRepo) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId string, id string) (*datastore.DeliveryAttempt, error) {
 	attempt := &datastore.DeliveryAttempt{}
-	err := d.db.QueryRowxContext(ctx, findOneDeliveryAttempt, id, eventDeliveryId).StructScan(attempt)
+	err := d.db.GetReadDB().QueryRowxContext(ctx, findOneDeliveryAttempt, id, eventDeliveryId).StructScan(attempt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrDeliveryAttemptNotFound
@@ -83,7 +82,7 @@ func (d *deliveryAttemptRepo) FindDeliveryAttemptById(ctx context.Context, event
 
 func (d *deliveryAttemptRepo) FindDeliveryAttempts(ctx context.Context, eventDeliveryId string) ([]datastore.DeliveryAttempt, error) {
 	var attempts []datastore.DeliveryAttempt
-	rows, err := d.db.QueryxContext(ctx, findDeliveryAttempts, eventDeliveryId)
+	rows, err := d.db.GetReadDB().QueryxContext(ctx, findDeliveryAttempts, eventDeliveryId)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +95,8 @@ func (d *deliveryAttemptRepo) FindDeliveryAttempts(ctx context.Context, eventDel
 		if err != nil {
 			return nil, err
 		}
+
+		(&attempt).ResponseDataString = string(attempt.ResponseData)
 
 		attempts = append(attempts, attempt)
 	}
@@ -111,9 +112,9 @@ func (d *deliveryAttemptRepo) DeleteProjectDeliveriesAttempts(ctx context.Contex
 	end := time.Unix(filter.CreatedAtEnd, 0)
 
 	if hardDelete {
-		result, err = d.db.ExecContext(ctx, hardDeleteProjectDeliveryAttempts, projectID, start, end)
+		result, err = d.db.GetDB().ExecContext(ctx, hardDeleteProjectDeliveryAttempts, projectID, start, end)
 	} else {
-		result, err = d.db.ExecContext(ctx, softDeleteProjectDeliveryAttempts, projectID, start, end)
+		result, err = d.db.GetDB().ExecContext(ctx, softDeleteProjectDeliveryAttempts, projectID, start, end)
 	}
 
 	if err != nil {
@@ -142,11 +143,11 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
             COUNT(CASE WHEN status = false THEN 1 END) AS failures,
             COUNT(CASE WHEN status = true THEN 1 END) AS successes
         FROM convoy.delivery_attempts
-        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1) 
+        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1)
         group by endpoint_id, project_id;
 	`
 
-	rows, err := d.db.QueryxContext(ctx, query, lookBackDuration)
+	rows, err := d.db.GetReadDB().QueryxContext(ctx, query, lookBackDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +180,7 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
 		qq := fmt.Sprintf(query2, k, t.Format(customFormat))
 
 		var rowValue circuit_breaker.PollResult
-		err = d.db.QueryRowxContext(ctx, qq).StructScan(&rowValue)
+		err = d.db.GetReadDB().QueryRowxContext(ctx, qq).StructScan(&rowValue)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				continue
@@ -193,11 +194,11 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
 }
 
 func (d *deliveryAttemptRepo) ExportRecords(ctx context.Context, projectID string, createdAt time.Time, w io.Writer) (int64, error) {
-	return exportRecords(ctx, d.db, "convoy.delivery_attempts", projectID, createdAt, w)
+	return exportRecords(ctx, d.db.GetReadDB(), "convoy.delivery_attempts", projectID, createdAt, w)
 }
 
 func (d *deliveryAttemptRepo) PartitionDeliveryAttemptsTable(ctx context.Context) error {
-	_, err := d.db.ExecContext(ctx, partitionDeliveryAttemptsTable)
+	_, err := d.db.GetDB().ExecContext(ctx, partitionDeliveryAttemptsTable)
 	if err != nil {
 		return err
 	}
@@ -206,7 +207,7 @@ func (d *deliveryAttemptRepo) PartitionDeliveryAttemptsTable(ctx context.Context
 }
 
 func (d *deliveryAttemptRepo) UnPartitionDeliveryAttemptsTable(ctx context.Context) error {
-	_, err := d.db.ExecContext(ctx, unPartitionDeliveryAttemptsTable)
+	_, err := d.db.GetDB().ExecContext(ctx, unPartitionDeliveryAttemptsTable)
 	if err != nil {
 		return err
 	}

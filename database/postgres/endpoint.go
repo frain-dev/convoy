@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/log"
 	"strings"
 	"time"
 
@@ -29,18 +31,23 @@ var (
 
 const (
 	createEndpoint = `
-	INSERT INTO convoy.endpoints (
-		id, name, status, secrets, owner_id, url, description, http_timeout,
-		rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
-		support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
-		authentication_type_api_key_header_value
-	)
-	VALUES
-	  (
-		$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		$14, $15, $16, $17, $18
-	  );
-	`
+            INSERT INTO convoy.endpoints (
+                id, name, status, secrets, owner_id, url, description, http_timeout,
+                rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
+                support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
+                authentication_type_api_key_header_value,
+                is_encrypted, secrets_cipher, authentication_type_api_key_header_value_cipher
+            )
+            VALUES
+              (
+                $1, $2, $3, CASE WHEN $19 THEN '[]'::jsonb ELSE $4::jsonb END,
+                $5, $6, $7, $8, $9, $10, $11, $12, $13,
+                $14, $15, $16, $17, CASE WHEN $19 THEN '' ELSE $18 END,
+               $19,
+               CASE WHEN $19 THEN pgp_sym_encrypt($4::text, $20)  END, -- Ciphered values if encrypted
+               CASE WHEN $19 THEN pgp_sym_encrypt($18, $20) END
+              );
+            `
 
 	baseEndpointFetch = `
 	SELECT
@@ -48,30 +55,44 @@ const (
 	e.url, e.description, e.http_timeout,
 	e.rate_limit, e.rate_limit_duration, e.advanced_signatures,
 	e.slack_webhook_url, e.support_email, e.app_id,
-	e.project_id, e.secrets, e.created_at, e.updated_at,
+	e.project_id,
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.secrets_cipher::bytea, $1)::jsonb
+        ELSE e.secrets
+    END AS secrets, e.created_at, e.updated_at,
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $1)::text
+        ELSE e.authentication_type_api_key_header_value
+    END AS "authentication.api_key.header_value"
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
 	`
 
-	fetchEndpointById = baseEndpointFetch + ` AND e.id = $1 AND e.project_id = $2;`
+	fetchEndpointById = baseEndpointFetch + ` AND e.id = $2 AND e.project_id = $3;`
 
 	fetchEndpointsById = baseEndpointFetch + ` AND e.id IN (?) AND e.project_id = ? GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsByAppId = baseEndpointFetch + ` AND e.app_id = $1 AND e.project_id = $2 GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointsByAppId = baseEndpointFetch + ` AND e.app_id = $2 AND e.project_id = $3 GROUP BY e.id ORDER BY e.id;`
 
-	fetchEndpointsByOwnerId = baseEndpointFetch + ` AND e.project_id = $1 AND e.owner_id = $2 GROUP BY e.id ORDER BY e.id;`
+	fetchEndpointsByOwnerId = baseEndpointFetch + ` AND e.project_id = $2 AND e.owner_id = $3 GROUP BY e.id ORDER BY e.id;`
 
 	fetchEndpointByTargetURL = `
     SELECT e.id, e.name, e.status, e.owner_id, e.url,
     e.description, e.http_timeout, e.rate_limit, e.rate_limit_duration,
     e.advanced_signatures, e.slack_webhook_url, e.support_email,
-    e.app_id, e.project_id, e.secrets, e.created_at, e.updated_at,
+    e.app_id, e.project_id,
+    CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.secrets_cipher::bytea, $3)::jsonb
+        ELSE e.secrets
+    END AS secrets, e.created_at, e.updated_at,
     e.authentication_type AS "authentication.type",
     e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-    e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $3)::text
+        ELSE e.authentication_type_api_key_header_value
+    END AS "authentication.api_key.header_value"
     FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.url = $1 AND e.project_id = $2;
     `
 
@@ -82,7 +103,20 @@ const (
 	rate_limit = $9, rate_limit_duration = $10, advanced_signatures = $11,
 	slack_webhook_url = $12, support_email = $13,
 	authentication_type = $14, authentication_type_api_key_header_name = $15,
-	authentication_type_api_key_header_value = $16, secrets = $17,
+	authentication_type_api_key_header_value_cipher = CASE
+        WHEN is_encrypted THEN pgp_sym_encrypt($16, $18)
+    END,
+    authentication_type_api_key_header_value = CASE
+        WHEN is_encrypted THEN ''
+        ELSE $16
+    END,
+    secrets_cipher = CASE
+        WHEN is_encrypted THEN pgp_sym_encrypt($17::jsonb::text, $18)
+    END,
+    secrets = CASE
+        WHEN is_encrypted THEN '[]'
+        ELSE $17
+    END,
 	updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
@@ -93,23 +127,45 @@ const (
 	id, name, status, owner_id, url,
     description, http_timeout, rate_limit, rate_limit_duration,
     advanced_signatures, slack_webhook_url, support_email,
-    app_id, project_id, secrets, created_at, updated_at,
+    app_id, project_id,
+    CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(secrets_cipher::bytea, $4)::jsonb
+        ELSE secrets
+    END AS secrets, created_at, updated_at,
     authentication_type AS "authentication.type",
     authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-    authentication_type_api_key_header_value AS "authentication.api_key.header_value";
+    CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::text
+        ELSE authentication_type_api_key_header_value
+    END AS "authentication.api_key.header_value";
 	`
 
 	updateEndpointSecrets = `
 	UPDATE convoy.endpoints SET
-	    secrets = $3, updated_at = NOW()
+	    secrets_cipher = CASE
+        WHEN is_encrypted THEN pgp_sym_encrypt($3::jsonb::text, $4)
+        END,
+        secrets = CASE
+            WHEN is_encrypted THEN '[]'
+            ELSE $3
+        END,
+	    updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL RETURNING
 	id, name, status, owner_id, url,
     description, http_timeout, rate_limit, rate_limit_duration,
     advanced_signatures, slack_webhook_url, support_email,
-    app_id, project_id, secrets, created_at, updated_at,
+    app_id, project_id,
+	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(secrets_cipher::bytea, $4)::jsonb
+        ELSE secrets
+    END AS secrets,
+	created_at, updated_at,
     authentication_type AS "authentication.type",
     authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-    authentication_type_api_key_header_value AS "authentication.api_key.header_value";
+    CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::text
+        ELSE authentication_type_api_key_header_value
+    END AS "authentication.api_key.header_value";
 	`
 
 	deleteEndpoint = `
@@ -133,10 +189,17 @@ const (
 	e.url, e.description, e.http_timeout,
 	e.rate_limit, e.rate_limit_duration, e.advanced_signatures,
 	e.slack_webhook_url, e.support_email, e.app_id,
-	e.project_id, e.secrets, e.created_at, e.updated_at,
+	e.project_id,
+    CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.secrets_cipher::bytea, :encryption_key)::jsonb
+        ELSE e.secrets
+    END AS secrets, e.created_at, e.updated_at,
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
-	e.authentication_type_api_key_header_value AS "authentication.api_key.header_value"
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, :encryption_key)::text
+        ELSE e.authentication_type_api_key_header_value
+    END AS "authentication.api_key.header_value"
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
 	AND e.project_id = :project_id
@@ -178,32 +241,66 @@ const (
 )
 
 type endpointRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	hook  *hooks.Hook
 	cache cache.Cache
+	km    keys.KeyManager
 }
 
 func NewEndpointRepo(db database.Database, ca cache.Cache) datastore.EndpointRepository {
 	if ca == nil {
 		ca = ncache.NewNoopCache()
 	}
-	return &endpointRepo{db: db.GetDB(), hook: db.GetHook(), cache: ca}
+	km, err := keys.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &endpointRepo{db: db, hook: db.GetHook(), cache: ca, km: km}
+}
+
+// checkEncryptionStatus checks if any row is already encrypted.
+func checkEncryptionStatus(db database.Database) (bool, error) {
+	checkQuery := "SELECT is_encrypted FROM convoy.endpoints WHERE is_encrypted=TRUE LIMIT 1;"
+	var isEncrypted bool
+	err := db.GetReadDB().Get(&isEncrypted, checkQuery)
+	if err != nil && err.Error() != "sql: no rows in result set" {
+		return false, fmt.Errorf("failed to check encryption status of endpoints: %w", err)
+	}
+
+	return isEncrypted, nil
 }
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
+	key, err := e.km.GetCurrentKey()
+	if err != nil {
+		return err
+	}
+
+	isEncrypted, err := checkEncryptionStatus(e.db)
+	if err != nil {
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return err2
+		}
+		return err
+	}
 
 	args := []interface{}{
 		endpoint.UID, endpoint.Name, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
-		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue,
+		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, isEncrypted, key,
 	}
 
-	result, err := e.db.ExecContext(ctx, createEndpoint, args...)
+	result, err := e.db.GetDB().ExecContext(ctx, createEndpoint, args...)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
 			return ErrEndpointExists
+		}
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return err2
 		}
 		return err
 	}
@@ -231,10 +328,18 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
 	end, err := e.readFromCache(ctx, id, func() (*datastore.Endpoint, error) {
 		endpoint := &datastore.Endpoint{}
-		err := e.db.QueryRowxContext(ctx, fetchEndpointById, id, projectID).StructScan(endpoint)
+		key, err := e.km.GetCurrentKey()
+		if err != nil {
+			return nil, err
+		}
+		err = e.db.GetReadDB().QueryRowxContext(ctx, fetchEndpointById, key, id, projectID).StructScan(endpoint)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrEndpointNotFound
+			}
+			isEncErr, err2 := e.isEncryptionError(err)
+			if isEncErr && err2 != nil {
+				return nil, err2
 			}
 			return nil, err
 		}
@@ -249,14 +354,22 @@ func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID strin
 }
 
 func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]datastore.Endpoint, error) {
-	query, args, err := sqlx.In(fetchEndpointsById, ids, projectID)
+	key, err := e.km.GetCurrentKey()
+	if err != nil {
+		return nil, err
+	}
+	query, args, err := sqlx.In(strings.Replace(fetchEndpointsById, "$1", "?", 1), key, ids, projectID)
 	if err != nil {
 		return nil, err
 	}
 
-	query = e.db.Rebind(query)
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	query = e.db.GetReadDB().Rebind(query)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return nil, err2
+		}
 		return nil, err
 	}
 
@@ -264,8 +377,16 @@ func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, proj
 }
 
 func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
-	rows, err := e.db.QueryxContext(ctx, fetchEndpointsByAppId, appID, projectID)
+	key, err := e.km.GetCurrentKey()
 	if err != nil {
+		return nil, err
+	}
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, fetchEndpointsByAppId, key, appID, projectID)
+	if err != nil {
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return nil, err2
+		}
 		return nil, err
 	}
 
@@ -273,8 +394,16 @@ func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectI
 }
 
 func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
-	rows, err := e.db.QueryxContext(ctx, fetchEndpointsByOwnerId, projectID, ownerID)
+	key, err := e.km.GetCurrentKey()
 	if err != nil {
+		return nil, err
+	}
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, fetchEndpointsByOwnerId, key, projectID, ownerID)
+	if err != nil {
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return nil, err2
+		}
 		return nil, err
 	}
 
@@ -284,12 +413,21 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 
-	r, err := e.db.ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Name, endpoint.Status, endpoint.OwnerID, endpoint.Url,
+	key, err := e.km.GetCurrentKey()
+	if err != nil {
+		return err
+	}
+
+	r, err := e.db.GetReadDB().ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Name, endpoint.Status, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
-		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets,
+		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets, key,
 	)
 	if err != nil {
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return err2
+		}
 		return err
 	}
 
@@ -314,8 +452,16 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 
 func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID string, endpointID string, status datastore.EndpointStatus) error {
 	endpoint := datastore.Endpoint{}
-	err := e.db.QueryRowxContext(ctx, updateEndpointStatus, endpointID, projectID, status).StructScan(&endpoint)
+	key, err := e.km.GetCurrentKey()
 	if err != nil {
+		return err
+	}
+	err = e.db.GetReadDB().QueryRowxContext(ctx, updateEndpointStatus, endpointID, projectID, status, key).StructScan(&endpoint)
+	if err != nil {
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return err2
+		}
 		return err
 	}
 
@@ -329,7 +475,7 @@ func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID strin
 }
 
 func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
-	tx, err := e.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := e.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -368,7 +514,7 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID string) (int64, error) {
 	var count int64
 
-	err := e.db.QueryRowxContext(ctx, countProjectEndpoints, projectID).Scan(&count)
+	err := e.db.GetReadDB().QueryRowxContext(ctx, countProjectEndpoints, projectID).Scan(&count)
 	if err != nil {
 		return count, err
 	}
@@ -379,10 +525,18 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
 	endpoint, err := e.readFromCache(ctx, targetURL, func() (*datastore.Endpoint, error) {
 		endpoint := &datastore.Endpoint{}
-		err := e.db.QueryRowxContext(ctx, fetchEndpointByTargetURL, targetURL, projectID).StructScan(endpoint)
+		key, err := e.km.GetCurrentKey()
+		if err != nil {
+			return nil, err
+		}
+		err = e.db.GetReadDB().QueryRowxContext(ctx, fetchEndpointByTargetURL, targetURL, projectID, key).StructScan(endpoint)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrEndpointNotFound
+			}
+			isEncErr, err2 := e.isEncryptionError(err)
+			if isEncErr && err2 != nil {
+				return nil, err2
 			}
 			return nil, err
 		}
@@ -402,13 +556,19 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		q = fmt.Sprintf("%%%s%%", q)
 	}
 
+	key, err := e.km.GetCurrentKey()
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
 	arg := map[string]interface{}{
-		"project_id":   projectId,
-		"owner_id":     filter.OwnerID,
-		"limit":        pageable.Limit(),
-		"cursor":       pageable.Cursor(),
-		"endpoint_ids": filter.EndpointIDs,
-		"name":         q,
+		"encryption_key": key,
+		"project_id":     projectId,
+		"owner_id":       filter.OwnerID,
+		"limit":          pageable.Limit(),
+		"cursor":         pageable.Cursor(),
+		"endpoint_ids":   filter.EndpointIDs,
+		"name":           q,
 	}
 
 	var query, filterQuery string
@@ -433,10 +593,16 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = e.db.Rebind(query)
+	query = e.db.GetReadDB().Rebind(query)
 
-	rows, err := e.db.QueryxContext(ctx, query, args...)
+	query = strings.ReplaceAll(query, ":", "::")
+
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return nil, datastore.PaginationData{}, err2
+		}
 		return nil, datastore.PaginationData{}, err
 	}
 
@@ -467,10 +633,10 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = e.db.Rebind(countQuery)
+		countQuery = e.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := e.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -490,9 +656,23 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 	return endpoints, *pagination, nil
 }
 
+func (e *endpointRepo) isEncryptionError(err error) (bool, error) {
+	if strings.Contains(err.Error(), "Illegal argument") {
+		isEncrypted, err2 := checkEncryptionStatus(e.db)
+		if err2 == nil && isEncrypted {
+			return true, keys.ErrCredentialEncryptionFeatureUnavailableUpgradeOrRevert
+		}
+	}
+	return false, nil
+}
+
 func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
 	endpoint := datastore.Endpoint{}
-	err := e.db.QueryRowxContext(ctx, updateEndpointSecrets, endpointID, projectID, secrets).StructScan(&endpoint)
+	key, err := e.km.GetCurrentKey()
+	if err != nil {
+		return err
+	}
+	err = e.db.GetReadDB().QueryRowxContext(ctx, updateEndpointSecrets, endpointID, projectID, secrets, key).StructScan(&endpoint)
 	if err != nil {
 		return err
 	}
@@ -515,7 +695,11 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 	sc.DeletedAt = null.NewTime(time.Now(), true)
 
 	updatedEndpoint := datastore.Endpoint{}
-	err := e.db.QueryRowxContext(ctx, updateEndpointSecrets, endpoint.UID, projectID, endpoint.Secrets).StructScan(&updatedEndpoint)
+	key, err := e.km.GetCurrentKey()
+	if err != nil {
+		return err
+	}
+	err = e.db.GetReadDB().QueryRowxContext(ctx, updateEndpointSecrets, endpoint.UID, projectID, endpoint.Secrets, key).StructScan(&updatedEndpoint)
 	if err != nil {
 		return err
 	}

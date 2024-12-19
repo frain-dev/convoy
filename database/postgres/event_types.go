@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 	"time"
 )
@@ -33,8 +32,8 @@ const (
 
 	deprecateEventType = `
 	UPDATE convoy.event_types SET
-	deprecated_at = NOW() 
-	WHERE id = $1 and project_id = $2 
+	deprecated_at = NOW()
+	WHERE id = $1 and project_id = $2
 	returning *;
 	`
 
@@ -49,15 +48,15 @@ const (
 )
 
 type eventTypesRepo struct {
-	db *sqlx.DB
+	db database.Database
 }
 
 func NewEventTypesRepo(db database.Database) datastore.EventTypesRepository {
-	return &eventTypesRepo{db: db.GetDB()}
+	return &eventTypesRepo{db: db}
 }
 
 func (e *eventTypesRepo) CreateEventType(ctx context.Context, eventType *datastore.ProjectEventType) error {
-	r, err := e.db.ExecContext(ctx, createEventType,
+	r, err := e.db.GetDB().ExecContext(ctx, createEventType,
 		eventType.UID,
 		eventType.Name,
 		eventType.Description,
@@ -89,7 +88,7 @@ func (e *eventTypesRepo) CreateDefaultEventType(ctx context.Context, projectId s
 		UpdatedAt: time.Now(),
 	}
 
-	r, err := e.db.ExecContext(ctx, createEventType,
+	r, err := e.db.GetDB().ExecContext(ctx, createEventType,
 		eventType.UID,
 		eventType.Name,
 		eventType.Description,
@@ -113,7 +112,7 @@ func (e *eventTypesRepo) CreateDefaultEventType(ctx context.Context, projectId s
 }
 
 func (e *eventTypesRepo) UpdateEventType(ctx context.Context, eventType *datastore.ProjectEventType) error {
-	r, err := e.db.ExecContext(ctx, updateEventType,
+	r, err := e.db.GetDB().ExecContext(ctx, updateEventType,
 		eventType.UID,
 		eventType.ProjectId,
 		eventType.Description,
@@ -137,7 +136,7 @@ func (e *eventTypesRepo) UpdateEventType(ctx context.Context, eventType *datasto
 
 func (e *eventTypesRepo) DeprecateEventType(ctx context.Context, id, projectId string) (*datastore.ProjectEventType, error) {
 	eventType := &datastore.ProjectEventType{}
-	err := e.db.QueryRowxContext(ctx, deprecateEventType, id, projectId).StructScan(eventType)
+	err := e.db.GetDB().QueryRowxContext(ctx, deprecateEventType, id, projectId).StructScan(eventType)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrEventTypeNotFound
@@ -148,9 +147,10 @@ func (e *eventTypesRepo) DeprecateEventType(ctx context.Context, id, projectId s
 	return eventType, nil
 }
 
+// FetchEventTypeById to update
 func (e *eventTypesRepo) FetchEventTypeById(ctx context.Context, id, projectId string) (*datastore.ProjectEventType, error) {
 	eventType := &datastore.ProjectEventType{}
-	err := e.db.QueryRowxContext(ctx, fetchEventTypeById, id, projectId).StructScan(eventType)
+	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventTypeById, id, projectId).StructScan(eventType)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrEventTypeNotFound
@@ -163,7 +163,7 @@ func (e *eventTypesRepo) FetchEventTypeById(ctx context.Context, id, projectId s
 
 func (e *eventTypesRepo) FetchAllEventTypes(ctx context.Context, projectId string) ([]datastore.ProjectEventType, error) {
 	var eventTypes []datastore.ProjectEventType
-	rows, err := e.db.QueryxContext(ctx, fetchAllEventTypes, projectId)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, fetchAllEventTypes, projectId)
 	if err != nil {
 		return nil, err
 	}

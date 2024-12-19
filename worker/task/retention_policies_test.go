@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	partman "github.com/jirevwe/go_partman"
 	"os"
@@ -258,6 +259,8 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
 
+	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
+
 	err := config.LoadConfig("")
 	if err != nil {
 		log.Fatal(err)
@@ -265,6 +268,19 @@ func getConfig() config.Configuration {
 
 	cfg, err := config.Get()
 	if err != nil {
+		log.Fatal(err)
+	}
+
+	km, err := keys.NewLocalKeyManager()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if km.IsSet() {
+		if _, err = km.GetCurrentKey(); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if err = keys.Set(km); err != nil {
 		log.Fatal(err)
 	}
 
@@ -415,7 +431,7 @@ func seedDeliveryAttempt(db database.Database, delivery *datastore.EventDelivery
 		RequestHeader:    map[string]string{"Content-Type": "application/json"},
 		ResponseHeader:   map[string]string{"Content-Type": "application/json"},
 		HttpResponseCode: "200",
-		ResponseData:     "200 OK",
+		ResponseData:     []byte("200 OK"),
 		Status:           true,
 		CreatedAt:        filter.CreatedAt,
 		UpdatedAt:        filter.CreatedAt,

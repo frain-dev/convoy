@@ -19,7 +19,12 @@ type SentryTracer struct {
 }
 
 func NewSentryTracer(cfg config.SentryConfiguration) *SentryTracer {
-	return &SentryTracer{cfg: cfg}
+	return &SentryTracer{
+		cfg: cfg,
+		ShutdownFn: func(ctx context.Context) error {
+			return nil
+		},
+	}
 }
 
 func (st *SentryTracer) Init(componentName string) error {

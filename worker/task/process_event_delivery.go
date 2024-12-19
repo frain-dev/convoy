@@ -97,7 +97,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				eventDelivery.Description = datastore.ErrEndpointNotFound.Error()
 				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.DiscardedEventStatus)
 				if err != nil {
-					log.WithError(err).Error("failed to update event delivery status to discarded")
+					log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to discarded")
 				}
 
 				return nil
@@ -136,7 +136,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		done := true
 
 		if eventDelivery.Status == datastore.SuccessEventStatus {
-			log.Debugf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID)
+			log.FromContext(ctx).Debugf("endpoint %s already merged with message %s\n", endpoint.Url, eventDelivery.UID)
 			return nil
 		}
 
@@ -146,7 +146,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				return &DeliveryError{Err: err}
 			}
 
-			log.Debugf("endpoint %s is inactive, failing to send.", endpoint.Url)
+			log.FromContext(ctx).Debugf("endpoint %s is inactive, failing to send.", endpoint.Url)
 			return nil
 		}
 
@@ -160,7 +160,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if !util.IsStringEmpty(eventDelivery.URLQueryParams) {
 			targetURL, err = url.ConcatQueryParams(endpoint.Url, eventDelivery.URLQueryParams)
 			if err != nil {
-				log.WithError(err).Error("failed to concat url query params")
+				log.FromContext(ctx).WithError(err).Error("failed to concat url query params")
 				return &DeliveryError{Err: err}
 			}
 		}
@@ -230,14 +230,14 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {
-			log.Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
+			log.FromContext(ctx).Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
 		}
 
 		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 			endpointStatus := datastore.ActiveEndpointStatus
 			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
-				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
+				log.FromContext(ctx).WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
 
 			if licenser.AdvancedEndpointMgmt() {
@@ -264,11 +264,11 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		if eventDelivery.Metadata.NumTrials >= eventDelivery.Metadata.RetryLimit {
 			if done {
 				if eventDelivery.Status != datastore.SuccessEventStatus {
-					log.Errorln("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
+					log.FromContext(ctx).Error("an anomaly has occurred. retry limit exceeded, fan out is done but event status is not successful")
 					eventDelivery.Status = datastore.FailureEventStatus
 				}
 			} else {
-				log.Errorf("%s retry limit exceeded ", eventDelivery.UID)
+				log.FromContext(ctx).Errorf("%s retry limit exceeded ", eventDelivery.UID)
 				eventDelivery.Description = "Retry limit exceeded"
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
@@ -278,14 +278,14 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 				err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 				if err != nil {
-					log.WithError(err).Error("failed to deactivate endpoint after failed retry")
+					log.FromContext(ctx).WithError(err).Error("failed to deactivate endpoint after failed retry")
 				}
 
 				if licenser.AdvancedEndpointMgmt() {
 					// send endpoint deactivation notification
 					err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, q, true, resp.Error, string(resp.Body), resp.StatusCode)
 					if err != nil {
-						log.WithError(err).Error("failed to send notification")
+						log.FromContext(ctx).WithError(err).Error("failed to send notification")
 					}
 				}
 			}
@@ -293,13 +293,15 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		err = attemptsRepo.CreateDeliveryAttempt(ctx, &attempt)
 		if err != nil {
-			log.WithError(err).Error("failed to create delivery attempt", eventDelivery.UID)
+			log.FromContext(ctx).
+				WithError(err).
+				Errorf("failed to create delivery attempt for event delivery with id: %s and delivery attempt: %s", eventDelivery.UID, attempt.ResponseData)
 			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
 		}
 
 		err = eventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
-			log.WithError(err).Error("failed to update message ", eventDelivery.UID)
+			log.FromContext(ctx).WithError(err).Error("failed to update message ", eventDelivery.UID)
 			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
 		}
 

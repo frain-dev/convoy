@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -149,7 +150,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		hooks.RegisterHook(datastore.EventDeliveryUpdated, eventDeliveryListener.AfterUpdate)
 
 		if ok := shouldCheckMigration(cmd); ok {
-			err = checkPendingMigrations(db)
+			err = checkPendingMigrations(lo, db)
 			if err != nil {
 				return err
 			}
@@ -205,6 +206,12 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		licenseOverrideCfg(&cfg, app.Licenser)
 		if err = config.Override(&cfg); err != nil {
 			return err
+		}
+
+		lo.Info("Read replicas: ", db.ReplicaSize())
+		if db.ReplicaSize() > 0 && !app.Licenser.ReadReplica() {
+			lo.Error("your instance does not have access to use read replicas, upgrade to access this feature")
+			db.UnsetReplicas()
 		}
 
 		// update config singleton with the instance id
@@ -447,6 +454,21 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
+	replicaDSNs, err := cmd.Flags().GetStringSlice("read-replicas-dsn")
+	if err != nil {
+		return nil, err
+	}
+
+	var readReplicas []config.DatabaseConfiguration
+	for _, replicaStr := range replicaDSNs {
+		var replica config.DatabaseConfiguration
+		if len(replicaStr) == 0 || !strings.Contains(replicaStr, "://") {
+			return nil, fmt.Errorf("invalid read-replicas-dsn: %s", replicaStr)
+		}
+		replica.DSN = replicaStr
+		readReplicas = append(readReplicas, replica)
+	}
+
 	c.Database = config.DatabaseConfiguration{
 		Type:     config.DatabaseProvider(dbType),
 		Scheme:   dbScheme,
@@ -455,6 +477,8 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Password: dbPassword,
 		Database: dbDatabase,
 		Port:     dbPort,
+
+		ReadReplicas: readReplicas,
 	}
 
 	// CONVOY_REDIS_SCHEME
@@ -524,11 +548,13 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	// CONVOY_ENABLE_FEATURE_FLAG
-	fflag, err := cmd.Flags().GetStringSlice("enable-feature-flag")
+	flags, err := cmd.Flags().GetStringSlice("enable-feature-flag")
 	if err != nil {
 		return nil, err
 	}
-	c.EnableFeatureFlag = fflag
+	if len(flags) > 0 {
+		c.EnableFeatureFlag = flags
+	}
 
 	// CONVOY_DISPATCHER_BLOCK_LIST
 	ipBlockList, err := cmd.Flags().GetStringSlice("ip-block-list")
@@ -665,10 +691,15 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	c.MaxRetrySeconds = maxRetrySeconds
 
+	err = loadHCPVaultConfig(cmd, &c.HCPVault)
+	if err != nil {
+		return nil, err
+	}
+
 	return c, nil
 }
 
-func checkPendingMigrations(db database.Database) error {
+func checkPendingMigrations(lo *log.Logger, db database.Database) error {
 	p, ok := db.(*postgres.Postgres)
 	if !ok {
 		return errors.New("failed to open database")
@@ -695,7 +726,7 @@ func checkPendingMigrations(db database.Database) error {
 	if err != nil {
 		return err
 	}
-	defer closeWithError(rows)
+	defer closeWithError(lo, rows)
 
 	for rows.Next() {
 		var id ID
@@ -791,9 +822,70 @@ func ensureDefaultUser(ctx context.Context, a *cli.App) error {
 	return nil
 }
 
-func closeWithError(closer io.Closer) {
+func closeWithError(lo *log.Logger, closer io.Closer) {
 	err := closer.Close()
 	if err != nil {
-		fmt.Printf("%v, an error occurred while closing the client", err)
+		lo.Printf("%v, an error occurred while closing the client", err)
 	}
+}
+
+func loadHCPVaultConfig(cmd *cobra.Command, vaultConfig *config.HCPVaultConfig) error {
+	// Load from CLI flags
+	clientID, err := cmd.Flags().GetString("hcp-client-id")
+	if err != nil {
+		return err
+	}
+	if clientID != "" {
+		vaultConfig.ClientID = clientID
+	}
+
+	clientSecret, err := cmd.Flags().GetString("hcp-client-secret")
+	if err != nil {
+		return err
+	}
+	if clientSecret != "" {
+		vaultConfig.ClientSecret = clientSecret
+	}
+
+	orgID, err := cmd.Flags().GetString("hcp-org-id")
+	if err != nil {
+		return err
+	}
+	if orgID != "" {
+		vaultConfig.OrgID = orgID
+	}
+
+	projectID, err := cmd.Flags().GetString("hcp-project-id")
+	if err != nil {
+		return err
+	}
+	if projectID != "" {
+		vaultConfig.ProjectID = projectID
+	}
+
+	appName, err := cmd.Flags().GetString("hcp-app-name")
+	if err != nil {
+		return err
+	}
+	if appName != "" {
+		vaultConfig.AppName = appName
+	}
+
+	secretName, err := cmd.Flags().GetString("hcp-secret-name")
+	if err != nil {
+		return err
+	}
+	if secretName != "" {
+		vaultConfig.SecretName = secretName
+	}
+
+	cacheDuration, err := cmd.Flags().GetDuration("hcp-cache-duration")
+	if err != nil {
+		return err
+	}
+	if cacheDuration > 0 {
+		vaultConfig.CacheDuration = cacheDuration
+	}
+
+	return nil
 }

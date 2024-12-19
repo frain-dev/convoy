@@ -2,8 +2,11 @@ package server
 
 import (
 	"errors"
+	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	_ "net/http/pprof"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -165,6 +168,19 @@ func startConvoyServer(a *cli.App) error {
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
 
+	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
+	if km.IsSet() {
+		if _, err = km.GetCurrentKey(); err != nil {
+			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
+				return err
+			}
+			km.Unset()
+		}
+	}
+	if err = keys.Set(km); err != nil {
+		return err
+	}
+
 	// Start scheduler
 	s.Start()
 
@@ -247,6 +263,21 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		return nil, err
 	}
 
+	replicaDSNs, err := cmd.Flags().GetStringSlice("read-replicas-dsn")
+	if err != nil {
+		return nil, err
+	}
+
+	var readReplicas []config.DatabaseConfiguration
+	for _, replicaStr := range replicaDSNs {
+		var replica config.DatabaseConfiguration
+		if len(replicaStr) == 0 || !strings.Contains(replicaStr, "://") {
+			return nil, fmt.Errorf("invalid read-replicas-dsn: %s", replicaStr)
+		}
+		replica.DSN = replicaStr
+		readReplicas = append(readReplicas, replica)
+	}
+
 	c.Database = config.DatabaseConfiguration{
 		Type:     config.DatabaseProvider(dbType),
 		Scheme:   dbScheme,
@@ -255,6 +286,8 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		Password: dbPassword,
 		Database: dbDatabase,
 		Port:     dbPort,
+
+		ReadReplicas: readReplicas,
 	}
 
 	// CONVOY_REDIS_SCHEME

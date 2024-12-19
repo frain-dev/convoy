@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"io"
+	"math/rand"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
@@ -28,17 +29,45 @@ const TransactionCtx DbCtxKey = "transaction"
 var ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, please run convoy migrate first")
 
 type Postgres struct {
-	dbx  *sqlx.DB
-	hook *hooks.Hook
-	pool *pgxpool.Pool
+	id       int
+	dbx      *sqlx.DB
+	hook     *hooks.Hook
+	pool     *pgxpool.Pool
+	replicas []*Postgres
+	randGen  *rand.Rand
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
 	dbConfig := cfg.Database
 
+	primary, err := parseDBConfig(dbConfig)
+	primary.id = 0
+	replicas := make([]*Postgres, 0)
+	for i, replica := range dbConfig.ReadReplicas {
+		if replica.Scheme == "" {
+			replica.Scheme = dbConfig.Scheme
+		}
+		r, e := parseDBConfig(replica, "replica ")
+		if e != nil {
+			return nil, e
+		}
+		r.id = i + 1
+		replicas = append(replicas, r)
+	}
+	primary.replicas = replicas
+	primary.randGen = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	if err_ := ping(primary); err_ != nil {
+		return nil, err_
+	}
+
+	return primary, err
+}
+
+func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postgres, error) {
 	pgxCfg, err := pgxpool.ParseConfig(dbConfig.BuildDsn())
 	if err != nil {
-		return nil, fmt.Errorf("failed to create connection pool: %w", err)
+		return nil, fmt.Errorf("failed to create %sconnection pool: %w", src, err)
 	}
 
 	if dbConfig.SetMaxOpenConnections > 0 {
@@ -50,7 +79,7 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	pool, err := pgxpool.NewWithConfig(context.Background(), pgxCfg)
 	if err != nil {
 		defer pool.Close()
-		return nil, fmt.Errorf("[%s]: failed to open database - %v", pkgName, err)
+		return nil, fmt.Errorf("[%s]: failed to open %sdatabase - %v", pkgName, src, err)
 	}
 
 	sqlDB := stdlib.OpenDBFromPool(pool)
@@ -61,6 +90,33 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 
 func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
+}
+
+func (p *Postgres) GetReadDB() *sqlx.DB {
+	if len(p.replicas) > 0 {
+		r, err := p.getRandomReplica()
+		if err != nil || r == nil {
+			var id = ""
+			if r != nil {
+				id = fmt.Sprintf(" %d", r.id)
+			}
+			log.WithError(err).Errorf("failed to get random replica%s", id)
+			return p.dbx
+		}
+		log.Debugf("fetched replica %d", r.id)
+		return r.dbx
+	}
+	return p.dbx
+}
+
+func (p *Postgres) getRandomReplica() (*Postgres, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic occurred: %v", r)
+		}
+	}()
+	return p.replicas[p.randGen.Intn(len(p.replicas))], err
 }
 
 func (p *Postgres) Close() error {
@@ -98,6 +154,47 @@ func (p *Postgres) GetHook() *hooks.Hook {
 
 	p.hook = hook
 	return p.hook
+}
+
+func (p *Postgres) ReplicaSize() int {
+	return len(p.replicas)
+}
+
+func (p *Postgres) UnsetReplicas() {
+	clear(p.replicas)
+}
+
+func ping(p *Postgres) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err := p.Ping(ctx)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel = context.WithTimeout(context.Background(), time.Duration(len(p.replicas)+1)*5*time.Second)
+	defer cancel()
+	err = p.PingReplicas(ctx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Postgres) Ping(ctx context.Context) error {
+	return p.dbx.PingContext(ctx)
+}
+
+func (p *Postgres) PingReplicas(ctx context.Context) error {
+	for _, replica := range p.replicas {
+		if err := replica.dbx.PingContext(ctx); err != nil {
+			log.WithError(err).Errorf("replica %d ping failed", replica.id)
+			return err
+		}
+	}
+	return nil
 }
 
 func GetTx(ctx context.Context, db *sqlx.DB) (*sqlx.Tx, bool, error) {

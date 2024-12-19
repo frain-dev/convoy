@@ -194,7 +194,7 @@ var (
 )
 
 type sourceRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
@@ -202,12 +202,12 @@ func NewSourceRepo(db database.Database, ca cache.Cache) datastore.SourceReposit
 	if ca == nil {
 		ca = ncache.NewNoopCache()
 	}
-	return &sourceRepo{db: db.GetDB(), cache: ca}
+	return &sourceRepo{db: db, cache: ca}
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {
 	var sourceVerifierID *string
-	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := s.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -288,7 +288,7 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 }
 
 func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source *datastore.Source) error {
-	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := s.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -369,7 +369,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id string) (*datastore.Source, error) {
 	fromCache, err := s.readFromCache(ctx, id, func() (*datastore.Source, error) {
 		source := &datastore.Source{}
-		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
+		err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrSourceNotFound
@@ -390,7 +390,7 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id st
 func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID string, name string) (*datastore.Source, error) {
 	fromCache, err := s.readFromCache(ctx, name, func() (*datastore.Source, error) {
 		source := &datastore.Source{}
-		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
+		err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrSourceNotFound
@@ -411,7 +411,7 @@ func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID string, nam
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
 	fromCache, err := s.readFromCache(ctx, maskID, func() (*datastore.Source, error) {
 		source := &datastore.Source{}
-		err := s.db.QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
+		err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, datastore.ErrSourceNotFound
@@ -430,7 +430,7 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*da
 }
 
 func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id, sourceVerifierId string) error {
-	tx, err := s.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := s.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -494,9 +494,9 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = s.db.Rebind(query)
+	query = s.db.GetReadDB().Rebind(query)
 
-	rows, err := s.db.QueryxContext(ctx, query, args...)
+	rows, err := s.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -527,10 +527,10 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = s.db.Rebind(countQuery)
+		countQuery = s.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := s.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := s.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -603,9 +603,9 @@ func (s *sourceRepo) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectI
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = s.db.Rebind(query)
+	query = s.db.GetReadDB().Rebind(query)
 
-	rows, err := s.db.QueryxContext(ctx, query, args...)
+	rows, err := s.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}

@@ -12,17 +12,19 @@ var ErrCircuitBreakerNotEnabled = errors.New("[feature flag] circuit breaker is 
 var ErrFullTextSearchNotEnabled = errors.New("[feature flag] full text search is not enabled")
 var ErrRetentionPolicyNotEnabled = errors.New("[feature flag] retention policy is not enabled")
 var ErrPrometheusMetricsNotEnabled = errors.New("[feature flag] prometheus metrics is not enabled")
+var ErrCredentialEncryptionNotEnabled = errors.New("[feature flag] credential encryption is not enabled")
 
 type (
 	FeatureFlagKey string
 )
 
 const (
-	IpRules         FeatureFlagKey = "ip-rules"
-	Prometheus      FeatureFlagKey = "prometheus"
-	CircuitBreaker  FeatureFlagKey = "circuit-breaker"
-	FullTextSearch  FeatureFlagKey = "full-text-search"
-	RetentionPolicy FeatureFlagKey = "retention-policy"
+	IpRules              FeatureFlagKey = "ip-rules"
+	Prometheus           FeatureFlagKey = "prometheus"
+	CircuitBreaker       FeatureFlagKey = "circuit-breaker"
+	FullTextSearch       FeatureFlagKey = "full-text-search"
+	RetentionPolicy      FeatureFlagKey = "retention-policy"
+	CredentialEncryption FeatureFlagKey = "credential-encryption"
 )
 
 type (
@@ -35,11 +37,12 @@ const (
 )
 
 var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
-	IpRules:         disabled,
-	Prometheus:      disabled,
-	FullTextSearch:  disabled,
-	CircuitBreaker:  disabled,
-	RetentionPolicy: disabled,
+	IpRules:              disabled,
+	Prometheus:           disabled,
+	FullTextSearch:       disabled,
+	CircuitBreaker:       disabled,
+	RetentionPolicy:      disabled,
+	CredentialEncryption: disabled,
 }
 
 type FFlag struct {
@@ -63,6 +66,8 @@ func NewFFlag(enableFeatureFlags []string) *FFlag {
 			f.Features[CircuitBreaker] = enabled
 		case string(RetentionPolicy):
 			f.Features[RetentionPolicy] = enabled
+		case string(CredentialEncryption):
+			f.Features[CredentialEncryption] = enabled
 		}
 	}
 
@@ -108,7 +113,7 @@ func (c *FFlag) ListFeatures() error {
 			state = "enabled"
 		}
 
-		_, err := fmt.Fprintf(w, "%s\t%s\n", k, state)
+		_, err = fmt.Fprintf(w, "%s\t%s\n", k, state)
 		if err != nil {
 			return err
 		}

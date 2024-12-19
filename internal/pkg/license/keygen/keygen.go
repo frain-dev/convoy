@@ -499,6 +499,22 @@ func (k *Licenser) DatadogTracing() bool {
 	return ok
 }
 
+func (k *Licenser) ReadReplica() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[ReadReplica]
+	return ok
+}
+
+func (k *Licenser) CredentialEncryption() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[CredentialEncryption]
+	return ok
+}
+
 func (k *Licenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	// only these guys have dynamic limits for now
 	for f := range k.featureList {

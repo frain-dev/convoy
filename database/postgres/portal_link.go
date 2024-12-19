@@ -55,7 +55,7 @@ const (
 	p.endpoints,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
-	CASE 
+	CASE
 		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
 		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
 	END AS endpoint_count,
@@ -80,7 +80,7 @@ const (
 	p.endpoints,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
-	CASE 
+	CASE
 		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
 		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
 	END AS endpoint_count,
@@ -105,7 +105,7 @@ const (
 	p.endpoints,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
-	CASE 
+	CASE
 		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
 		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
 	END AS endpoint_count,
@@ -141,7 +141,7 @@ const (
 	p.endpoints,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
-	CASE 
+	CASE
 		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
 		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
 	END AS endpoint_count,
@@ -188,16 +188,16 @@ const (
 )
 
 type portalLinkRepo struct {
-	db    *sqlx.DB
+	db    database.Database
 	cache cache.Cache
 }
 
 func NewPortalLinkRepo(db database.Database, cache cache.Cache) datastore.PortalLinkRepository {
-	return &portalLinkRepo{db: db.GetDB(), cache: cache}
+	return &portalLinkRepo{db: db, cache: cache}
 }
 
 func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
-	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -234,7 +234,7 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 }
 
 func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string, portal *datastore.PortalLink) error {
-	tx, err := p.db.BeginTxx(ctx, &sql.TxOptions{})
+	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -270,7 +270,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 
 func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, id string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{}
-	err := p.db.QueryRowxContext(ctx, fetchPortalLinkById, id, projectID).StructScan(portalLink)
+	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, id, projectID).StructScan(portalLink)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
@@ -283,7 +283,7 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID strin
 
 func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID string, ownerID string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{}
-	err := p.db.QueryRowxContext(ctx, fetchPortalLinkByOwnerID, ownerID, projectID).StructScan(portalLink)
+	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkByOwnerID, ownerID, projectID).StructScan(portalLink)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
@@ -296,7 +296,7 @@ func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID 
 
 func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{}
-	err := p.db.QueryRowxContext(ctx, fetchPortalLinkByToken, token).StructScan(portalLink)
+	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkByToken, token).StructScan(portalLink)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
@@ -345,9 +345,9 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 		return nil, datastore.PaginationData{}, err
 	}
 
-	query = p.db.Rebind(query)
+	query = p.db.GetReadDB().Rebind(query)
 
-	rows, err := p.db.QueryxContext(ctx, query, args...)
+	rows, err := p.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -384,10 +384,10 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 			return nil, datastore.PaginationData{}, err
 		}
 
-		countQuery = p.db.Rebind(countQuery)
+		countQuery = p.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := p.db.QueryxContext(ctx, countQuery, qargs...)
+		rows, err := p.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -417,7 +417,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 }
 
 func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, projectID string, id string) error {
-	r, err := p.db.ExecContext(ctx, deletePortalLink, id, projectID)
+	r, err := p.db.GetDB().ExecContext(ctx, deletePortalLink, id, projectID)
 	if err != nil {
 		return err
 	}
@@ -442,7 +442,7 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpointID})
 		}
 	} else if !util.IsStringEmpty(portal.OwnerID) {
-		rows, err := p.db.QueryxContext(ctx, fetchEndpointsByOwnerId, portal.ProjectID, portal.OwnerID)
+		rows, err := p.db.GetDB().QueryxContext(ctx, fetchEndpointsByOwnerId, portal.ProjectID, portal.OwnerID)
 		if err != nil {
 			return err
 		}

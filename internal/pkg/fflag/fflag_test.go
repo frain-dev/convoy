@@ -25,11 +25,12 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      disabled,
-					IpRules:         disabled,
-					FullTextSearch:  enabled,
-					CircuitBreaker:  disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           disabled,
+					IpRules:              disabled,
+					FullTextSearch:       enabled,
+					CircuitBreaker:       disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			args: struct {
@@ -45,11 +46,12 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      disabled,
-					IpRules:         disabled,
-					FullTextSearch:  enabled,
-					CircuitBreaker:  disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           disabled,
+					IpRules:              disabled,
+					FullTextSearch:       enabled,
+					CircuitBreaker:       disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			args: struct {
@@ -65,11 +67,12 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      enabled,
-					IpRules:         disabled,
-					FullTextSearch:  enabled,
-					CircuitBreaker:  disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           enabled,
+					IpRules:              disabled,
+					FullTextSearch:       enabled,
+					CircuitBreaker:       disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			args: struct {
@@ -85,11 +88,12 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      enabled,
-					IpRules:         disabled,
-					FullTextSearch:  enabled,
-					CircuitBreaker:  disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           enabled,
+					IpRules:              disabled,
+					FullTextSearch:       enabled,
+					CircuitBreaker:       disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			args: struct {
@@ -105,11 +109,12 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      disabled,
-					FullTextSearch:  disabled,
-					CircuitBreaker:  disabled,
-					IpRules:         disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           disabled,
+					FullTextSearch:       disabled,
+					CircuitBreaker:       disabled,
+					IpRules:              disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			args: struct {
@@ -125,11 +130,12 @@ func TestFFlag_CanAccessFeature(t *testing.T) {
 				Features map[FeatureFlagKey]FeatureFlagState
 			}{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      disabled,
-					FullTextSearch:  disabled,
-					CircuitBreaker:  disabled,
-					IpRules:         disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           disabled,
+					FullTextSearch:       disabled,
+					CircuitBreaker:       disabled,
+					IpRules:              disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			args: struct {
@@ -179,11 +185,12 @@ func TestNewFFlag(t *testing.T) {
 			},
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      disabled,
-					FullTextSearch:  disabled,
-					CircuitBreaker:  disabled,
-					IpRules:         disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           disabled,
+					FullTextSearch:       disabled,
+					CircuitBreaker:       disabled,
+					IpRules:              disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			wantErr: false,
@@ -197,11 +204,12 @@ func TestNewFFlag(t *testing.T) {
 			},
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      enabled,
-					FullTextSearch:  disabled,
-					CircuitBreaker:  disabled,
-					IpRules:         disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           enabled,
+					FullTextSearch:       disabled,
+					CircuitBreaker:       disabled,
+					IpRules:              disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			wantErr: false,
@@ -213,11 +221,12 @@ func TestNewFFlag(t *testing.T) {
 			},
 			want: &FFlag{
 				Features: map[FeatureFlagKey]FeatureFlagState{
-					Prometheus:      disabled,
-					FullTextSearch:  disabled,
-					CircuitBreaker:  disabled,
-					IpRules:         disabled,
-					RetentionPolicy: disabled,
+					Prometheus:           disabled,
+					FullTextSearch:       disabled,
+					CircuitBreaker:       disabled,
+					IpRules:              disabled,
+					RetentionPolicy:      disabled,
+					CredentialEncryption: disabled,
 				},
 			},
 			wantErr: false,

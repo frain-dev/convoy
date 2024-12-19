@@ -901,13 +901,15 @@ type DeliveryAttempt struct {
 	ProjectId       string `json:"project_id" db:"project_id"`
 	EventDeliveryId string `json:"msg_id" db:"event_delivery_id"`
 
-	IPAddress        string     `json:"ip_address,omitempty" db:"ip_address"`
-	RequestHeader    HttpHeader `json:"request_http_header,omitempty" db:"request_http_header"`
-	ResponseHeader   HttpHeader `json:"response_http_header,omitempty" db:"response_http_header"`
-	HttpResponseCode string     `json:"http_status,omitempty" db:"http_status"`
-	ResponseData     string     `json:"response_data,omitempty" db:"response_data"`
-	Error            string     `json:"error,omitempty" db:"error"`
-	Status           bool       `json:"status,omitempty" db:"status"`
+	IPAddress          string     `json:"ip_address,omitempty" db:"ip_address"`
+	RequestHeader      HttpHeader `json:"request_http_header,omitempty" db:"request_http_header"`
+	ResponseHeader     HttpHeader `json:"response_http_header,omitempty" db:"response_http_header"`
+	HttpResponseCode   string     `json:"http_status,omitempty" db:"http_status"`
+	ResponseData       []byte     `json:"-,omitempty" db:"response_data"`
+	ResponseDataString string     `json:"response_data,omitempty" db:"-"`
+
+	Error  string `json:"error,omitempty" db:"error"`
+	Status bool   `json:"status,omitempty" db:"status"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`

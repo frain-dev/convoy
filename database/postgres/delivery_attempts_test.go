@@ -43,7 +43,7 @@ func TestCreateDeliveryAttempt(t *testing.T) {
 		RequestHeader:    map[string]string{"Content-Type": "application/json"},
 		ResponseHeader:   map[string]string{"Content-Type": "application/json"},
 		HttpResponseCode: "200",
-		ResponseData:     "{\"status\":\"ok\"}",
+		ResponseData:     []byte("{\"status\":\"ok\"}"),
 		Status:           true,
 	}
 
@@ -87,7 +87,7 @@ func TestFindDeliveryAttempts(t *testing.T) {
 			RequestHeader:    map[string]string{"Content-Type": "application/json"},
 			ResponseHeader:   map[string]string{"Content-Type": "application/json"},
 			HttpResponseCode: "200",
-			ResponseData:     "{\"status\":\"ok\"}",
+			ResponseData:     []byte("{\"status\":\"ok\"}"),
 			Status:           true,
 		},
 		{
@@ -102,7 +102,7 @@ func TestFindDeliveryAttempts(t *testing.T) {
 			RequestHeader:    map[string]string{"Content-Type": "application/json"},
 			ResponseHeader:   map[string]string{"Content-Type": "application/json"},
 			HttpResponseCode: "400",
-			ResponseData:     "{\"status\":\"Not Found\"}",
+			ResponseData:     []byte("{\"status\":\"Not Found\"}"),
 			Error:            "",
 			Status:           false,
 		},

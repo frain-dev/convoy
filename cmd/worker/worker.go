@@ -2,9 +2,11 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"net/http"
 	"strings"
@@ -134,6 +136,19 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 	lo.SetLevel(lvl)
+
+	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
+	if km.IsSet() {
+		if _, err = km.GetCurrentKey(); err != nil {
+			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
+				return err
+			}
+			km.Unset()
+		}
+	}
+	if err = keys.Set(km); err != nil {
+		return err
+	}
 
 	sc, err := smtp.NewClient(&cfg.SMTP)
 	if err != nil {
@@ -273,7 +288,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	var circuitBreakerManager *cb.CircuitBreakerManager
 
-	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) && a.Licenser.CircuitBreaking() {
+	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) {
 		circuitBreakerManager, err = cb.NewCircuitBreakerManager(
 			cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
 			cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
@@ -395,17 +410,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		deviceRepo, a.Licenser), newTelemetry)
 
-	if a.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
-		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(
-			configRepo,
-			projectRepo,
-			eventRepo,
-			eventDeliveryRepo,
-			attemptRepo,
-			rd,
-		), nil)
-	}
+	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
 
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(
 		channels,
