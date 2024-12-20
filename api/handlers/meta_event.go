@@ -41,7 +41,7 @@ func (h *Handler) GetMetaEventsPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metaEvents, paginationData, err := postgres.NewMetaEventRepo(h.A.DB, h.A.Cache).LoadMetaEventsPaged(r.Context(), project.UID, data.Filter)
+	metaEvents, paginationData, err := postgres.NewMetaEventRepo(h.A.DB).LoadMetaEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching meta events", http.StatusInternalServerError))
 		return
@@ -101,7 +101,7 @@ func (h *Handler) ResendMetaEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metaEventRepo := postgres.NewMetaEventRepo(h.A.DB, h.A.Cache)
+	metaEventRepo := postgres.NewMetaEventRepo(h.A.DB)
 	metaEventService := &services.MetaEventService{Queue: h.A.Queue, MetaEventRepo: metaEventRepo}
 	err = metaEventService.Run(r.Context(), metaEvent)
 	if err != nil {
@@ -120,6 +120,6 @@ func (h *Handler) retrieveMetaEvent(r *http.Request) (*datastore.MetaEvent, erro
 	}
 
 	metaEventID := chi.URLParam(r, "metaEventID")
-	metaEventRepo := postgres.NewMetaEventRepo(h.A.DB, h.A.Cache)
+	metaEventRepo := postgres.NewMetaEventRepo(h.A.DB)
 	return metaEventRepo.FindMetaEventByID(r.Context(), project.UID, metaEventID)
 }

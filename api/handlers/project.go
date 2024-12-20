@@ -14,16 +14,16 @@ import (
 )
 
 func createProjectService(h *Handler) (*services.ProjectService, error) {
-	apiKeyRepo := postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache)
-	projectRepo := postgres.NewProjectRepo(h.A.DB, h.A.Cache)
-	eventRepo := postgres.NewEventRepo(h.A.DB, h.A.Cache)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache)
+	apiKeyRepo := postgres.NewAPIKeyRepo(h.A.DB)
+	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	eventRepo := postgres.NewEventRepo(h.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
 	eventTypesRepo := postgres.NewEventTypesRepo(h.A.DB)
 
 	projectService, err := services.NewProjectService(
 		apiKeyRepo, projectRepo, eventRepo,
 		eventDeliveryRepo, h.A.Licenser,
-		h.A.Cache, eventTypesRepo,
+		eventTypesRepo,
 	)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (h *Handler) GetProjectStatistics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewProjectRepo(h.A.DB, h.A.Cache).FillProjectsStatistics(r.Context(), project)
+	err = postgres.NewProjectRepo(h.A.DB).FillProjectsStatistics(r.Context(), project)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to count project statistics")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to count project statistics", http.StatusBadRequest))
@@ -72,7 +72,7 @@ func (h *Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewProjectRepo(h.A.DB, h.A.Cache).DeleteProject(r.Context(), project.UID)
+	err = postgres.NewProjectRepo(h.A.DB).DeleteProject(r.Context(), project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete project")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete project", http.StatusBadRequest))
@@ -183,7 +183,7 @@ func (h *Handler) GetProjects(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := &datastore.ProjectFilter{OrgID: org.UID}
-	projects, err := postgres.NewProjectRepo(h.A.DB, h.A.Cache).LoadProjects(r.Context(), filter)
+	projects, err := postgres.NewProjectRepo(h.A.DB).LoadProjects(r.Context(), filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load projects")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching projects", http.StatusBadRequest))

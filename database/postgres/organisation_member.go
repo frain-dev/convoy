@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/database"
@@ -179,12 +177,11 @@ const (
 )
 
 type orgMemberRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewOrgMemberRepo(db database.Database, cache cache.Cache) datastore.OrganisationMemberRepository {
-	return &orgMemberRepo{db: db, cache: cache}
+func NewOrgMemberRepo(db database.Database) datastore.OrganisationMemberRepository {
+	return &orgMemberRepo{db: db}
 }
 
 func (o *orgMemberRepo) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {

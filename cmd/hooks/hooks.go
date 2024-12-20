@@ -137,9 +137,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		// the order matters here
 		projectListener := listener.NewProjectListener(q)
 		hooks.RegisterHook(datastore.ProjectUpdated, projectListener.AfterUpdate)
-		projectRepo := postgres.NewProjectRepo(postgresDB, ca)
+		projectRepo := postgres.NewProjectRepo(postgresDB)
 
-		metaEventRepo := postgres.NewMetaEventRepo(postgresDB, ca)
+		metaEventRepo := postgres.NewMetaEventRepo(postgresDB)
 		attemptsRepo := postgres.NewDeliveryAttemptRepo(postgresDB)
 		endpointListener := listener.NewEndpointListener(q, projectRepo, metaEventRepo)
 		eventDeliveryListener := listener.NewEventDeliveryListener(q, projectRepo, metaEventRepo, attemptsRepo)
@@ -194,8 +194,8 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Licenser, err = license.NewLicenser(&license.Config{
 			KeyGen: keygen.Config{
 				LicenseKey:  cfg.LicenseKey,
-				OrgRepo:     postgres.NewOrgRepo(app.DB, app.Cache),
-				UserRepo:    postgres.NewUserRepo(app.DB, app.Cache),
+				OrgRepo:     postgres.NewOrgRepo(app.DB),
+				UserRepo:    postgres.NewUserRepo(app.DB),
 				ProjectRepo: projectRepo,
 			},
 		})
@@ -784,7 +784,7 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 }
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {
-	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
+	userRepo := postgres.NewUserRepo(a.DB)
 	count, err := userRepo.CountUsers(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to count users: %v", err)

@@ -21,7 +21,6 @@ func provideUpdateSourceService(ctrl *gomock.Controller, t *testing.T, sourceUpd
 
 	return &UpdateSourceService{
 		SourceRepo:   mocks.NewMockSourceRepository(ctrl),
-		Cache:        mocks.NewMockCache(ctrl),
 		Project:      project,
 		SourceUpdate: sourceUpdate,
 		Source:       source,

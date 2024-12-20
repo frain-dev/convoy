@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy/database"
@@ -129,7 +128,6 @@ const (
 	baseEventsPagedForward = `
 	WITH events AS (
         %s %s AND ev.id <= :cursor
-	    GROUP BY ev.id, s.id
 	    ORDER BY ev.id %s
 	    LIMIT :limit
 	)
@@ -140,7 +138,6 @@ const (
 	baseEventsPagedBackward = `
 	WITH events AS (
         %s %s AND ev.id >= :cursor
-		GROUP BY ev.id, s.id
 		ORDER BY ev.id %s
 		LIMIT :limit
 	)
@@ -200,12 +197,11 @@ const (
 )
 
 type eventRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewEventRepo(db database.Database, cache cache.Cache) datastore.EventRepository {
-	return &eventRepo{db: db, cache: cache}
+func NewEventRepo(db database.Database) datastore.EventRepository {
+	return &eventRepo{db: db}
 }
 
 func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) error {
@@ -436,7 +432,7 @@ func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) 
 }
 
 func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *datastore.Filter) (int64, error) {
-	var count int64
+	var eventsCount int64
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
 	arg := map[string]interface{}{
@@ -467,12 +463,12 @@ func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *d
 	}
 
 	query = e.db.GetReadDB().Rebind(query)
-	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).Scan(&count)
+	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).Scan(&eventsCount)
 	if err != nil {
-		return count, err
+		return eventsCount, err
 	}
 
-	return count, nil
+	return eventsCount, nil
 }
 
 func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {

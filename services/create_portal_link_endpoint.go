@@ -25,7 +25,6 @@ type CreateEndpointPortalLinkService struct {
 
 func (p *CreateEndpointPortalLinkService) Run(ctx context.Context) (*datastore.Endpoint, error) {
 	ce := CreateEndpointService{
-		Cache:        p.Cache,
 		EndpointRepo: p.EndpointRepo,
 		ProjectRepo:  p.ProjectRepo,
 		E:            p.Data,

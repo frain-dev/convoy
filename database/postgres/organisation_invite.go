@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/database"
@@ -125,12 +123,11 @@ const (
 )
 
 type orgInviteRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewOrgInviteRepo(db database.Database, cache cache.Cache) datastore.OrganisationInviteRepository {
-	return &orgInviteRepo{db: db, cache: cache}
+func NewOrgInviteRepo(db database.Database) datastore.OrganisationInviteRepository {
+	return &orgInviteRepo{db: db}
 }
 
 func (i *orgInviteRepo) CreateOrganisationInvite(ctx context.Context, iv *datastore.OrganisationInvite) error {

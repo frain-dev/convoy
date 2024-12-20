@@ -32,9 +32,9 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cpk := &services.CreatePersonalAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(h.A.DB, h.A.Cache),
-		UserRepo:    postgres.NewUserRepo(h.A.DB, h.A.Cache),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache),
+		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
+		UserRepo:    postgres.NewUserRepo(h.A.DB),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
 		User:        user,
 		NewApiKey:   &newApiKey,
 	}
@@ -73,9 +73,9 @@ func (h *Handler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rvk := &services.RevokePersonalAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(h.A.DB, h.A.Cache),
-		UserRepo:    postgres.NewUserRepo(h.A.DB, h.A.Cache),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache),
+		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
+		UserRepo:    postgres.NewUserRepo(h.A.DB),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
 		UID:         chi.URLParam(r, "keyID"),
 		User:        user,
 	}
@@ -108,9 +108,9 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 	}
 
 	rgp := &services.RegenerateProjectAPIKeyService{
-		ProjectRepo: postgres.NewProjectRepo(h.A.DB, h.A.Cache),
-		UserRepo:    postgres.NewUserRepo(h.A.DB, h.A.Cache),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache),
+		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
+		UserRepo:    postgres.NewUserRepo(h.A.DB),
+		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
 		Project:     project,
 		Member:      member,
 	}
@@ -157,7 +157,7 @@ func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(h.A.DB, h.A.Cache).LoadAPIKeysPaged(r.Context(), f, &pageable)
+	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(h.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load api keys", http.StatusBadRequest))
