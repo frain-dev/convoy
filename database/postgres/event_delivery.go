@@ -84,7 +84,6 @@ const (
 	    %s
 	    %s
 	    AND ed.id <= :cursor
-	    GROUP BY ed.id, ep.id, ev.id, d.id, s.id
 	    ORDER BY ed.id %s
 	    LIMIT :limit
 	)
@@ -97,7 +96,6 @@ const (
 		%s
 		%s
 		AND ed.id >= :cursor
-		GROUP BY ed.id, ep.id, ev.id, d.id, s.id
 		ORDER BY ed.id %s
 		LIMIT :limit
 	)
@@ -130,14 +128,15 @@ const (
 	AND ed.deleted_at IS NULL`
 
 	countPrevEventDeliveries = `
-    SELECT COUNT(DISTINCT(ed.id))
-	FROM convoy.event_deliveries ed
-    LEFT JOIN convoy.events ev ON ed.event_id = ev.id
-	WHERE ed.deleted_at IS NULL
-	%s
-	AND ed.id > :cursor
-    GROUP BY ed.id, ev.id
-    ORDER BY ed.id %s
+    select exists(
+		SELECT 1
+		FROM convoy.event_deliveries ed
+		LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+		WHERE ed.deleted_at IS NULL
+		%s
+		AND ed.id > :cursor
+		ORDER BY ed.id %s
+	);
 	`
 
 	loadEventDeliveriesIntervals = `
@@ -759,7 +758,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		})
 	}
 
-	var count datastore.PrevRowCount
+	var rowCount datastore.PrevRowCount
 	if len(eventDeliveries) > 0 {
 		var countQuery string
 		var qargs []interface{}
@@ -783,14 +782,14 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		countQuery = e.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
+		rows, err = e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 		defer closeWithError(rows)
 
 		if rows.Next() {
-			err = rows.StructScan(&count)
+			err = rows.StructScan(&rowCount)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
@@ -806,7 +805,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		eventDeliveries = eventDeliveries[:len(eventDeliveries)-1]
 	}
 
-	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination := &datastore.PaginationData{PrevRowCount: rowCount}
 	pagination = pagination.Build(pageable, ids)
 
 	return eventDeliveries, *pagination, nil
