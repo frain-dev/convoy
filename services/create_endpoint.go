@@ -19,7 +19,6 @@ import (
 )
 
 type CreateEndpointService struct {
-	// Cache          cache.Cache
 	PortalLinkRepo datastore.PortalLinkRepository
 	EndpointRepo   datastore.EndpointRepository
 	ProjectRepo    datastore.ProjectRepository
