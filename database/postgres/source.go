@@ -5,11 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
-	ncache "github.com/frain-dev/convoy/cache/noop"
-	"time"
-
 	"github.com/lib/pq"
 
 	"github.com/oklog/ulid/v2"
@@ -194,15 +189,11 @@ var (
 )
 
 type sourceRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewSourceRepo(db database.Database, ca cache.Cache) datastore.SourceRepository {
-	if ca == nil {
-		ca = ncache.NewNoopCache()
-	}
-	return &sourceRepo{db: db, cache: ca}
+func NewSourceRepo(db database.Database) datastore.SourceRepository {
+	return &sourceRepo{db: db}
 }
 
 func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source) error {
@@ -278,12 +269,6 @@ func (s *sourceRepo) CreateSource(ctx context.Context, source *datastore.Source)
 		return err
 	}
 
-	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
-	err = s.cache.Set(ctx, srcCacheKey, source, time.Minute*1)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -351,82 +336,46 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 		return err
 	}
 
-	srcCacheKey := convoy.SourceCacheKey.Get(source.UID).String()
-	err = s.cache.Set(ctx, srcCacheKey, source, time.Minute*1)
-	if err != nil {
-		return err
-	}
-
-	srcCacheKey2 := convoy.SourceCacheKey.Get(source.MaskID).String()
-	err = s.cache.Set(ctx, srcCacheKey2, source, time.Minute*1)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id string) (*datastore.Source, error) {
-	fromCache, err := s.readFromCache(ctx, id, func() (*datastore.Source, error) {
-		source := &datastore.Source{}
-		err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrSourceNotFound
-			}
-			return nil, err
-		}
-
-		return source, nil
-	})
-
+	source := &datastore.Source{}
+	err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return source, nil
 }
 
 func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID string, name string) (*datastore.Source, error) {
-	fromCache, err := s.readFromCache(ctx, name, func() (*datastore.Source, error) {
-		source := &datastore.Source{}
-		err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrSourceNotFound
-			}
-			return nil, err
-		}
-
-		return source, nil
-	})
-
+	source := &datastore.Source{}
+	err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return source, nil
 }
 
 func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*datastore.Source, error) {
-	fromCache, err := s.readFromCache(ctx, maskID, func() (*datastore.Source, error) {
-		source := &datastore.Source{}
-		err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrSourceNotFound
-			}
-			return nil, err
-		}
-
-		return source, nil
-	})
-
+	source := &datastore.Source{}
+	err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.mask_id"), maskID).StructScan(source)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrSourceNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return source, nil
 }
 
 func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id, sourceVerifierId string) error {
@@ -452,12 +401,6 @@ func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id,
 	}
 
 	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	srcCacheKey := convoy.SourceCacheKey.Get(id).String()
-	err = s.cache.Delete(ctx, srcCacheKey)
 	if err != nil {
 		return err
 	}
@@ -557,31 +500,6 @@ func (s *sourceRepo) LoadSourcesPaged(ctx context.Context, projectID string, fil
 	pagination = pagination.Build(pageable, ids)
 
 	return sources, *pagination, nil
-}
-
-func (s *sourceRepo) readFromCache(ctx context.Context, key string, readFromDB func() (*datastore.Source, error)) (*datastore.Source, error) {
-	var source *datastore.Source
-	srcCacheKey := convoy.SourceCacheKey.Get(key).String()
-	err := s.cache.Get(ctx, srcCacheKey, &source)
-	if err != nil {
-		return nil, err
-	}
-
-	if source != nil {
-		return source, err
-	}
-
-	fromDB, err := readFromDB()
-	if err != nil {
-		return nil, err
-	}
-
-	err = s.cache.Set(ctx, srcCacheKey, fromDB, time.Minute*1)
-	if err != nil {
-		return nil, err
-	}
-
-	return fromDB, err
 }
 
 func (s *sourceRepo) LoadPubSubSourcesByProjectIDs(ctx context.Context, projectIDs []string, pageable datastore.Pageable) ([]datastore.Source, datastore.PaginationData, error) {

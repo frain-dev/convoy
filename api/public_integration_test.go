@@ -77,9 +77,9 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -126,7 +126,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -155,7 +155,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_With
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -243,7 +243,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
@@ -275,7 +275,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIK
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbApp, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbApp.Name)
@@ -355,7 +355,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -397,7 +397,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPI
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
@@ -425,7 +425,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_DeleteEndpoint() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	_, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
@@ -449,7 +449,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_DeleteEndpoint_WithPersonalAPI
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	_, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.Error(s.T(), err, datastore.ErrEndpointNotFound)
 }
@@ -584,7 +584,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_ExpireEndpointSecret() {
 	var endpoint datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	endpoint2, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.NotEmpty(s.T(), endpoint2.Secrets[0].ExpiresAt)
@@ -612,7 +612,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_PauseEndpoint_PausedStatus() {
 	var endpoint *datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointId, dbEndpoint.UID)
@@ -641,7 +641,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_PauseEndpoint_ActiveStatus() {
 	var endpoint *datastore.Endpoint
 	parseResponse(s.T(), w.Result(), &endpoint)
 
-	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
 	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointId, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointId, dbEndpoint.UID)
@@ -691,9 +691,9 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -827,7 +827,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 		Status: datastore.ActiveEndpointStatus,
 	}
 
-	err := postgres.NewEndpointRepo(s.ConvoyApp.A.DB, nil).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
+	err := postgres.NewEndpointRepo(s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
 	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
@@ -1268,9 +1268,9 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -1304,7 +1304,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	var resp models.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, nil)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
 	require.NoError(s.T(), err)
 
@@ -1349,7 +1349,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPorta
 	var resp models.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, nil)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
 
 	require.NoError(s.T(), err)
@@ -1450,7 +1450,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	var resp models.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, nil)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
 
 	require.NoError(s.T(), err)
@@ -1478,7 +1478,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	plRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, nil)
+	plRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	_, err := plRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
 	require.ErrorIs(s.T(), err, datastore.ErrPortalLinkNotFound)
 }
@@ -1528,9 +1528,9 @@ func (s *PublicProjectIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -1602,7 +1602,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	projectRepo := postgres.NewProjectRepo(s.ConvoyApp.A.DB, nil)
+	projectRepo := postgres.NewProjectRepo(s.ConvoyApp.A.DB)
 	_, err = projectRepo.FetchProjectByID(context.Background(), projectID)
 	require.Equal(s.T(), datastore.ErrProjectNotFound, err)
 }
@@ -1869,10 +1869,10 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
-	// orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB, nil)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	// orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -1917,7 +1917,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_GetSourceBy_ValidSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB, nil)
+	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB)
 	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
@@ -2122,7 +2122,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_UpdateSource() {
 	var source datastore.Source
 	parseResponse(s.T(), w.Result(), &source)
 
-	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB, nil)
+	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB)
 	dbSource, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), source.UID, dbSource.UID)
@@ -2150,7 +2150,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_DeleteSource() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB, nil)
+	sourceRepo := postgres.NewSourceRepo(s.ConvoyApp.A.DB)
 	_, err := sourceRepo.FindSourceByID(context.Background(), s.DefaultProject.UID, sourceID)
 	require.ErrorIs(s.T(), err, datastore.ErrSourceNotFound)
 }
@@ -2202,10 +2202,10 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -2258,7 +2258,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -2324,7 +2324,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Incomin
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscription.UID)
 	require.NoError(s.T(), err)
 
@@ -2484,7 +2484,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_GetOneSubscription_Outgoin
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -2531,7 +2531,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_GetOneSubscription_Incomin
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), subscription.UID, dbSub.UID)
@@ -2595,7 +2595,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_DeleteSubscription() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	_, err = subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.ErrorIs(s.T(), err, datastore.ErrSubscriptionNotFound)
 }
@@ -2648,7 +2648,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	var subscription *datastore.Subscription
 	parseResponse(s.T(), w.Result(), &subscription)
 
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscriptionId)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
@@ -2695,7 +2695,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Creates
 	parseResponse(s.T(), w.Result(), &subscription)
 
 	// Verify subscription was created
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
@@ -2754,7 +2754,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription_Creates
 	parseResponse(s.T(), w.Result(), &subscription)
 
 	// Verify subscription was updated
-	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB, nil)
+	subRepo := postgres.NewSubscriptionRepo(s.ConvoyApp.A.DB)
 	dbSub, err := subRepo.FindSubscriptionByID(context.Background(), s.DefaultProject.UID, subscription.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
@@ -2814,10 +2814,10 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB, nil)
-	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB, nil)
+	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 

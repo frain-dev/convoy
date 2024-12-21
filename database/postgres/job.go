@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -108,12 +107,11 @@ const (
 )
 
 type jobRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewJobRepo(db database.Database, cache cache.Cache) datastore.JobRepository {
-	return &jobRepo{db: db, cache: cache}
+func NewJobRepo(db database.Database) datastore.JobRepository {
+	return &jobRepo{db: db}
 }
 
 func (j *jobRepo) CreateJob(ctx context.Context, job *datastore.Job) error {

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/cache"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -93,12 +92,11 @@ const (
 )
 
 type deviceRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewDeviceRepo(db database.Database, cache cache.Cache) datastore.DeviceRepository {
-	return &deviceRepo{db: db, cache: cache}
+func NewDeviceRepo(db database.Database) datastore.DeviceRepository {
+	return &deviceRepo{db: db}
 }
 
 func (d *deviceRepo) CreateDevice(ctx context.Context, device *datastore.Device) error {

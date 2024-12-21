@@ -84,7 +84,8 @@ type PaginationData struct {
 }
 
 type PrevRowCount struct {
-	Count int
+	Count  int
+	Exists bool
 }
 
 func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationData {

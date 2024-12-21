@@ -67,7 +67,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.IsReqWithPortalLinkToken(authUser) {
-		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
+		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
 		pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -78,10 +78,9 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.CreateEndpointService{
-		Cache:          h.A.Cache,
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
-		ProjectRepo:    postgres.NewProjectRepo(h.A.DB, h.A.Cache),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:    postgres.NewProjectRepo(h.A.DB),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
 		Licenser:       h.A.Licenser,
 		E:              e,
 		ProjectID:      project.UID,
@@ -207,7 +206,7 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		data.Filter.EndpointIDs = endpointIDs
 	}
 
-	endpoints, paginationData, err := postgres.NewEndpointRepo(h.A.DB, h.A.Cache).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
+	endpoints, paginationData, err := postgres.NewEndpointRepo(h.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
 	if err != nil {
 		h.A.Logger.WithError(err).Error("failed to load endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -317,8 +316,8 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	ce := services.UpdateEndpointService{
 		Cache:        h.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
-		ProjectRepo:  postgres.NewProjectRepo(h.A.DB, h.A.Cache),
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:  postgres.NewProjectRepo(h.A.DB),
 		Licenser:     h.A.Licenser,
 		E:            e,
 		Endpoint:     endpoint,
@@ -377,7 +376,7 @@ func (h *Handler) DeleteEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewEndpointRepo(h.A.DB, h.A.Cache).DeleteEndpoint(r.Context(), endpoint, project.UID)
+	err = postgres.NewEndpointRepo(h.A.DB).DeleteEndpoint(r.Context(), endpoint, project.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete endpoint")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete endpoint", http.StatusBadRequest))
@@ -426,8 +425,8 @@ func (h *Handler) ExpireSecret(w http.ResponseWriter, r *http.Request) {
 	xs := services.ExpireSecretService{
 		Queuer:       h.A.Queue,
 		Cache:        h.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
-		ProjectRepo:  postgres.NewProjectRepo(h.A.DB, h.A.Cache),
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:  postgres.NewProjectRepo(h.A.DB),
 		S:            e,
 		Endpoint:     endpoint,
 		Project:      project,
@@ -466,7 +465,7 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ps := services.PauseEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -522,7 +521,7 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	aes := services.ActivateEndpointService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		ProjectID:    project.UID,
 		EndpointId:   chi.URLParam(r, "endpointID"),
 	}
@@ -571,6 +570,6 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) retrieveEndpoint(ctx context.Context, endpointID, projectID string) (*datastore.Endpoint, error) {
-	endpointRepo := postgres.NewEndpointRepo(h.A.DB, h.A.Cache)
+	endpointRepo := postgres.NewEndpointRepo(h.A.DB)
 	return endpointRepo.FindEndpointByID(ctx, endpointID, projectID)
 }

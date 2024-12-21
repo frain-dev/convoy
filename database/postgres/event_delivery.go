@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/lib/pq"
 
 	"github.com/frain-dev/convoy/database"
@@ -24,9 +22,8 @@ import (
 )
 
 type eventDeliveryRepo struct {
-	db    database.Database
-	hook  *hooks.Hook
-	cache cache.Cache
+	db   database.Database
+	hook *hooks.Hook
 }
 
 var (
@@ -87,7 +84,6 @@ const (
 	    %s
 	    %s
 	    AND ed.id <= :cursor
-	    GROUP BY ed.id, ep.id, ev.id, d.id, s.id
 	    ORDER BY ed.id %s
 	    LIMIT :limit
 	)
@@ -100,7 +96,6 @@ const (
 		%s
 		%s
 		AND ed.id >= :cursor
-		GROUP BY ed.id, ep.id, ev.id, d.id, s.id
 		ORDER BY ed.id %s
 		LIMIT :limit
 	)
@@ -133,14 +128,15 @@ const (
 	AND ed.deleted_at IS NULL`
 
 	countPrevEventDeliveries = `
-    SELECT COUNT(DISTINCT(ed.id))
-	FROM convoy.event_deliveries ed
-    LEFT JOIN convoy.events ev ON ed.event_id = ev.id
-	WHERE ed.deleted_at IS NULL
-	%s
-	AND ed.id > :cursor
-    GROUP BY ed.id, ev.id
-    ORDER BY ed.id %s
+    select exists(
+		SELECT 1
+		FROM convoy.event_deliveries ed
+		LEFT JOIN convoy.events ev ON ed.event_id = ev.id
+		WHERE ed.deleted_at IS NULL
+		%s
+		AND ed.id > :cursor
+		ORDER BY ed.id %s
+	);
 	`
 
 	loadEventDeliveriesIntervals = `
@@ -225,8 +221,8 @@ const (
     `
 )
 
-func NewEventDeliveryRepo(db database.Database, cache cache.Cache) datastore.EventDeliveryRepository {
-	return &eventDeliveryRepo{db: db, hook: db.GetHook(), cache: cache}
+func NewEventDeliveryRepo(db database.Database) datastore.EventDeliveryRepository {
+	return &eventDeliveryRepo{db: db, hook: db.GetHook()}
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {
@@ -435,18 +431,16 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 }
 
 func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, projectID string, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
-	count := struct {
-		Count int64
-	}{}
+	deliveriesCount := struct{ Count int64 }{}
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
-	err := e.db.GetReadDB().QueryRowxContext(ctx, countEventDeliveriesByStatus, status, projectID, start, end).StructScan(&count)
+	err := e.db.GetReadDB().QueryRowxContext(ctx, countEventDeliveriesByStatus, status, projectID, start, end).StructScan(&deliveriesCount)
 	if err != nil {
 		return 0, err
 	}
 
-	return count.Count, nil
+	return deliveriesCount.Count, nil
 }
 
 func (e *eventDeliveryRepo) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
@@ -764,7 +758,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		})
 	}
 
-	var count datastore.PrevRowCount
+	var rowCount datastore.PrevRowCount
 	if len(eventDeliveries) > 0 {
 		var countQuery string
 		var qargs []interface{}
@@ -788,14 +782,14 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		countQuery = e.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
+		rows, err = e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 		defer closeWithError(rows)
 
 		if rows.Next() {
-			err = rows.StructScan(&count)
+			err = rows.StructScan(&rowCount)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
@@ -811,7 +805,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		eventDeliveries = eventDeliveries[:len(eventDeliveries)-1]
 	}
 
-	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination := &datastore.PaginationData{PrevRowCount: rowCount}
 	pagination = pagination.Build(pageable, ids)
 
 	return eventDeliveries, *pagination, nil

@@ -22,7 +22,7 @@ func TestLoadOrganisationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgRepo := NewOrgRepo(db, nil)
+	orgRepo := NewOrgRepo(db)
 
 	user := seedUser(t, db)
 
@@ -51,7 +51,7 @@ func TestCountOrganisations(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgRepo := NewOrgRepo(db, nil)
+	orgRepo := NewOrgRepo(db)
 
 	user := seedUser(t, db)
 	count := 10
@@ -90,7 +90,7 @@ func TestCreateOrganisation(t *testing.T) {
 		UpdatedAt:      time.Now(),
 	}
 
-	err := NewOrgRepo(db, nil).CreateOrganisation(context.Background(), org)
+	err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 }
 
@@ -98,7 +98,7 @@ func TestUpdateOrganisation(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgRepo := NewOrgRepo(db, nil)
+	orgRepo := NewOrgRepo(db)
 
 	user := seedUser(t, db)
 
@@ -136,7 +136,7 @@ func TestFetchOrganisationByID(t *testing.T) {
 
 	user := seedUser(t, db)
 
-	orgRepo := NewOrgRepo(db, nil)
+	orgRepo := NewOrgRepo(db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -166,7 +166,7 @@ func TestFetchOrganisationByAssignedDomain(t *testing.T) {
 
 	user := seedUser(t, db)
 
-	orgRepo := NewOrgRepo(db, nil)
+	orgRepo := NewOrgRepo(db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -196,7 +196,7 @@ func TestFetchOrganisationByCustomDomain(t *testing.T) {
 
 	user := seedUser(t, db)
 
-	orgRepo := NewOrgRepo(db, nil)
+	orgRepo := NewOrgRepo(db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
@@ -224,7 +224,7 @@ func TestDeleteOrganisation(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	orgRepo := NewOrgRepo(db, nil)
+	orgRepo := NewOrgRepo(db)
 	user := seedUser(t, db)
 
 	org := &datastore.Organisation{Name: "new org", OwnerID: user.UID}
@@ -242,7 +242,7 @@ func TestDeleteOrganisation(t *testing.T) {
 func seedUser(t *testing.T, db database.Database) *datastore.User {
 	user := generateUser(t)
 
-	err := NewUserRepo(db, nil).CreateUser(context.Background(), user)
+	err := NewUserRepo(db).CreateUser(context.Background(), user)
 	require.NoError(t, err)
 
 	return user

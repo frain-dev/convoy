@@ -42,9 +42,9 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs := services.RegisterUserService{
-		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		Queue:         h.A.Queue,
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
@@ -86,7 +86,7 @@ func (h *Handler) ResendVerificationEmail(w http.ResponseWriter, r *http.Request
 	}
 
 	rs := services.ResendEmailVerificationTokenService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		Queue:    h.A.Queue,
 		BaseURL:  baseUrl,
 		User:     user,
@@ -132,7 +132,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := services.UpdateUserService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		Data:     &userUpdate,
 		User:     user,
 	}
@@ -167,7 +167,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	up := services.UpdatePasswordService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		Data:     &updatePassword,
 		User:     user,
 	}
@@ -202,7 +202,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	gp := services.GeneratePasswordResetTokenService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		Queue:    h.A.Queue,
 		BaseURL:  baseUrl,
 		Data:     &forgotPassword,
@@ -214,7 +214,7 @@ func (h *Handler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 	ve := services.VerifyEmailService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		Token:    r.URL.Query().Get("token"),
 	}
 
@@ -242,7 +242,7 @@ func (h *Handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs := services.ResetPasswordService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		Token:    token,
 		Data:     &resetPassword,
 	}

@@ -13,7 +13,6 @@ import (
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -26,10 +25,9 @@ type ProjectService struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventTypesRepo    datastore.EventTypesRepository
 	Licenser          license.Licenser
-	cache             cache.Cache
 }
 
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, cache cache.Cache, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
+func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
@@ -37,7 +35,6 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 		eventDeliveryRepo: eventDeliveryRepo,
 		eventTypesRepo:    eventTypesRepo,
 		Licenser:          licenser,
-		cache:             cache,
 	}, nil
 }
 

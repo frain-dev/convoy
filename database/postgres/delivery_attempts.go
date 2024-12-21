@@ -17,9 +17,7 @@ type deliveryAttemptRepo struct {
 }
 
 func NewDeliveryAttemptRepo(db database.Database) datastore.DeliveryAttemptsRepository {
-	return &deliveryAttemptRepo{
-		db: db,
-	}
+	return &deliveryAttemptRepo{db: db}
 }
 
 var (

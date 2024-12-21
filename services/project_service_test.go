@@ -24,9 +24,8 @@ func provideProjectService(ctrl *gomock.Controller) (*ProjectService, error) {
 	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
 
 	l := mocks.NewMockLicenser(ctrl)
-	cache := mocks.NewMockCache(ctrl)
 
-	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, l, cache, eventTypesRepo)
+	return NewProjectService(apiKeyRepo, projectRepo, eventRepo, eventDeliveryRepo, l, eventTypesRepo)
 }
 
 func TestProjectService_CreateProject(t *testing.T) {

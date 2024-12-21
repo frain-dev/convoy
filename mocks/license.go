@@ -237,6 +237,48 @@ func (mr *MockLicenserMockRecorder) CreateUser(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockLicenser)(nil).CreateUser), ctx)
 }
 
+// CredentialEncryption mocks base method.
+func (m *MockLicenser) CredentialEncryption() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CredentialEncryption")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CredentialEncryption indicates an expected call of CredentialEncryption.
+func (mr *MockLicenserMockRecorder) CredentialEncryption() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialEncryption", reflect.TypeOf((*MockLicenser)(nil).CredentialEncryption))
+}
+
+// DatadogTracing mocks base method.
+func (m *MockLicenser) DatadogTracing() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DatadogTracing")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// DatadogTracing indicates an expected call of DatadogTracing.
+func (mr *MockLicenserMockRecorder) DatadogTracing() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DatadogTracing", reflect.TypeOf((*MockLicenser)(nil).DatadogTracing))
+}
+
+// EnterpriseSSO mocks base method.
+func (m *MockLicenser) EnterpriseSSO() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EnterpriseSSO")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// EnterpriseSSO indicates an expected call of EnterpriseSSO.
+func (mr *MockLicenserMockRecorder) EnterpriseSSO() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnterpriseSSO", reflect.TypeOf((*MockLicenser)(nil).EnterpriseSSO))
+}
+
 // FeatureListJSON mocks base method.
 func (m *MockLicenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	m.ctrl.T.Helper()
@@ -288,60 +330,10 @@ func (m *MockLicenser) IpRules() bool {
 	return ret0
 }
 
-// EnterpriseSSO mocks base method.
-func (m *MockLicenser) EnterpriseSSO() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "EnterpriseSSO")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// DatadogTracing mocks base method.
-func (m *MockLicenser) DatadogTracing() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DatadogTracing")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// ReadReplica mocks base method.
-func (m *MockLicenser) ReadReplica() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReadReplica")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// CredentialEncryption mocks base method.
-func (m *MockLicenser) CredentialEncryption() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CredentialEncryption")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
 // IpRules indicates an expected call of IpRules.
 func (mr *MockLicenserMockRecorder) IpRules() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IpRules", reflect.TypeOf((*MockLicenser)(nil).IpRules))
-}
-
-// EnterpriseSSO indicates an expected call of EnterpriseSSO.
-func (mr *MockLicenserMockRecorder) EnterpriseSSO() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnterpriseSSO", reflect.TypeOf((*MockLicenser)(nil).EnterpriseSSO))
-}
-
-// DatadogTracing indicates an expected call of DatadogTracing.
-func (mr *MockLicenserMockRecorder) DatadogTracing() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DatadogTracing", reflect.TypeOf((*MockLicenser)(nil).DatadogTracing))
-}
-
-// CredentialEncryption indicates an expected call of CredentialEncryption.
-func (mr *MockLicenserMockRecorder) CredentialEncryption() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialEncryption", reflect.TypeOf((*MockLicenser)(nil).CredentialEncryption))
 }
 
 // MultiPlayerMode mocks base method.
@@ -398,6 +390,20 @@ func (m *MockLicenser) ProjectEnabled(projectID string) bool {
 func (mr *MockLicenserMockRecorder) ProjectEnabled(projectID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProjectEnabled", reflect.TypeOf((*MockLicenser)(nil).ProjectEnabled), projectID)
+}
+
+// ReadReplica mocks base method.
+func (m *MockLicenser) ReadReplica() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadReplica")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// ReadReplica indicates an expected call of ReadReplica.
+func (mr *MockLicenserMockRecorder) ReadReplica() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadReplica", reflect.TypeOf((*MockLicenser)(nil).ReadReplica))
 }
 
 // RemoveEnabledProject mocks base method.

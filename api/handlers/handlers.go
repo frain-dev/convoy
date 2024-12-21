@@ -49,7 +49,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	var project *datastore.Project
 	var err error
 
-	projectRepo := postgres.NewProjectRepo(h.A.DB, h.A.Cache)
+	projectRepo := postgres.NewProjectRepo(h.A.DB)
 
 	switch {
 	case h.IsReqWithJWT(authUser), h.IsReqWithPersonalAccessToken(authUser):
@@ -78,7 +78,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 			return nil, err
 		}
 	case h.IsReqWithPortalLinkToken(authUser):
-		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
+		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
 		pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
 		if err != nil {
 			return nil, err
@@ -112,7 +112,7 @@ func (h *Handler) retrieveOrganisation(r *http.Request) (*datastore.Organisation
 		orgID = r.URL.Query().Get("orgID")
 	}
 
-	orgRepo := postgres.NewOrgRepo(h.A.DB, h.A.Cache)
+	orgRepo := postgres.NewOrgRepo(h.A.DB)
 	return orgRepo.FetchOrganisationByID(r.Context(), orgID)
 }
 
@@ -127,7 +127,7 @@ func (h *Handler) retrieveMembership(r *http.Request) (*datastore.OrganisationMe
 		return &datastore.OrganisationMember{}, err
 	}
 
-	orgMemberRepo := postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache)
+	orgMemberRepo := postgres.NewOrgMemberRepo(h.A.DB)
 	return orgMemberRepo.FetchOrganisationMemberByUserID(r.Context(), user.UID, org.UID)
 }
 
@@ -143,7 +143,7 @@ func (h *Handler) retrieveUser(r *http.Request) (*datastore.User, error) {
 
 func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.PortalLink, error) {
 	var pLink *datastore.PortalLink
-	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache)
+	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
 
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
