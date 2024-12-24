@@ -102,6 +102,19 @@ func startConvoyServer(a *cli.App) error {
 	start := time.Now()
 	a.Logger.Info("Starting Convoy control plane...")
 
+	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
+	if km.IsSet() {
+		if _, err = km.GetCurrentKey(); err != nil {
+			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
+				return err
+			}
+			km.Unset()
+		}
+	}
+	if err = keys.Set(km); err != nil {
+		return err
+	}
+
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
 	userRepo := postgres.NewUserRepo(a.DB)
 	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB)
@@ -160,19 +173,6 @@ func startConvoyServer(a *cli.App) error {
 	s.RegisterTask("0 * * * *", convoy.ScheduleQueue, convoy.TokenizeSearch)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
-
-	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
-	if km.IsSet() {
-		if _, err = km.GetCurrentKey(); err != nil {
-			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
-				return err
-			}
-			km.Unset()
-		}
-	}
-	if err = keys.Set(km); err != nil {
-		return err
-	}
 
 	// Start scheduler
 	s.Start()
