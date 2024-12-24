@@ -84,7 +84,7 @@ func (r *RetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 			r.logger.Errorf("failed to import existing partitions: %v", err)
 		}
 
-		projectRepo := postgres.NewProjectRepo(r.db, nil)
+		projectRepo := postgres.NewProjectRepo(r.db)
 
 		for {
 			select {

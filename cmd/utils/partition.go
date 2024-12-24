@@ -34,8 +34,8 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("partitioning is only avaliable with a license key")
 			}
 
-			eventsRepo := postgres.NewEventRepo(a.DB, nil)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, nil)
+			eventsRepo := postgres.NewEventRepo(a.DB)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			deliveryAttemptsRepo := postgres.NewDeliveryAttemptRepo(a.DB)
 
 			if table == "" {
@@ -96,8 +96,8 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 				return fmt.Errorf("partitioning is only avaliable with a license key")
 			}
 
-			eventsRepo := postgres.NewEventRepo(a.DB, nil)
-			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, nil)
+			eventsRepo := postgres.NewEventRepo(a.DB)
+			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			deliveryAttemptsRepo := postgres.NewDeliveryAttemptRepo(a.DB)
 
 			if table == "" {
