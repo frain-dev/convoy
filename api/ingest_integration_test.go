@@ -54,9 +54,9 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(i.ConvoyApp.A.DB, i.ConvoyApp.A.Cache)
-	userRepo := postgres.NewUserRepo(i.ConvoyApp.A.DB, i.ConvoyApp.A.Cache)
-	portalLinkRepo := postgres.NewPortalLinkRepo(i.ConvoyApp.A.DB, i.ConvoyApp.A.Cache)
+	apiRepo := postgres.NewAPIKeyRepo(i.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(i.ConvoyApp.A.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(i.ConvoyApp.A.DB)
 	initRealmChain(i.T(), apiRepo, userRepo, portalLinkRepo, i.ConvoyApp.A.Cache)
 }
 

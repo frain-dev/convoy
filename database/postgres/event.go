@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy/database"
@@ -200,12 +199,11 @@ const (
 )
 
 type eventRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewEventRepo(db database.Database, cache cache.Cache) datastore.EventRepository {
-	return &eventRepo{db: db, cache: cache}
+func NewEventRepo(db database.Database) datastore.EventRepository {
+	return &eventRepo{db: db}
 }
 
 func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) error {
@@ -436,7 +434,7 @@ func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) 
 }
 
 func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *datastore.Filter) (int64, error) {
-	var count int64
+	var eventsCount int64
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
 	arg := map[string]interface{}{
@@ -467,12 +465,12 @@ func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *d
 	}
 
 	query = e.db.GetReadDB().Rebind(query)
-	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).Scan(&count)
+	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).Scan(&eventsCount)
 	if err != nil {
-		return count, err
+		return eventsCount, err
 	}
 
-	return count, nil
+	return eventsCount, nil
 }
 
 func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
@@ -555,7 +553,8 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		events = append(events, data)
 	}
 
-	var prevRow datastore.PrevRowCount
+
+	var rowCount datastore.PrevRowCount
 	if len(events) > 0 {
 		first := events[0]
 		qarg := arg
@@ -589,7 +588,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		defer closeWithError(rows)
 
 		if rows.Next() {
-			err = rows.StructScan(&prevRow)
+			err = rows.StructScan(&rowCount)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
@@ -605,7 +604,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		events = events[:len(events)-1]
 	}
 
-	pagination := &datastore.PaginationData{PrevRowCount: prevRow}
+	pagination := &datastore.PaginationData{PrevRowCount: rowCount}
 	pagination = pagination.Build(filter.Pageable, ids)
 
 	return events, *pagination, nil

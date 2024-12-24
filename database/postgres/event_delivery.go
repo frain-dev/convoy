@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/lib/pq"
 
 	"github.com/frain-dev/convoy/database"
@@ -24,9 +22,8 @@ import (
 )
 
 type eventDeliveryRepo struct {
-	db    database.Database
-	hook  *hooks.Hook
-	cache cache.Cache
+	db   database.Database
+	hook *hooks.Hook
 }
 
 var (
@@ -224,8 +221,8 @@ const (
     `
 )
 
-func NewEventDeliveryRepo(db database.Database, cache cache.Cache) datastore.EventDeliveryRepository {
-	return &eventDeliveryRepo{db: db, hook: db.GetHook(), cache: cache}
+func NewEventDeliveryRepo(db database.Database) datastore.EventDeliveryRepository {
+	return &eventDeliveryRepo{db: db, hook: db.GetHook()}
 }
 
 func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *datastore.EventDelivery) error {
@@ -434,18 +431,16 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, pr
 }
 
 func (e *eventDeliveryRepo) CountDeliveriesByStatus(ctx context.Context, projectID string, status datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
-	count := struct {
-		Count int64
-	}{}
+	deliveriesCount := struct{ Count int64 }{}
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
-	err := e.db.GetReadDB().QueryRowxContext(ctx, countEventDeliveriesByStatus, status, projectID, start, end).StructScan(&count)
+	err := e.db.GetReadDB().QueryRowxContext(ctx, countEventDeliveriesByStatus, status, projectID, start, end).StructScan(&deliveriesCount)
 	if err != nil {
 		return 0, err
 	}
 
-	return count.Count, nil
+	return deliveriesCount.Count, nil
 }
 
 func (e *eventDeliveryRepo) FindStuckEventDeliveriesByStatus(ctx context.Context, status datastore.EventDeliveryStatus) ([]datastore.EventDelivery, error) {
@@ -763,7 +758,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		})
 	}
 
-	var prevRow datastore.PrevRowCount
+	var rowCount datastore.PrevRowCount
 	if len(eventDeliveries) > 0 {
 		var countQuery string
 		var qargs []interface{}
@@ -794,7 +789,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		defer closeWithError(rows)
 
 		if rows.Next() {
-			err = rows.StructScan(&prevRow)
+			err = rows.StructScan(&rowCount)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
@@ -810,7 +805,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 		eventDeliveries = eventDeliveries[:len(eventDeliveries)-1]
 	}
 
-	pagination := &datastore.PaginationData{PrevRowCount: prevRow}
+	pagination := &datastore.PaginationData{PrevRowCount: rowCount}
 	pagination = pagination.Build(pageable, ids)
 
 	return eventDeliveries, *pagination, nil

@@ -12,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -20,7 +19,6 @@ import (
 )
 
 type CreateEndpointService struct {
-	Cache          cache.Cache
 	PortalLinkRepo datastore.PortalLinkRepository
 	EndpointRepo   datastore.EndpointRepository
 	ProjectRepo    datastore.ProjectRepository

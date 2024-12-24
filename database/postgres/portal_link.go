@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
@@ -188,12 +186,11 @@ const (
 )
 
 type portalLinkRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewPortalLinkRepo(db database.Database, cache cache.Cache) datastore.PortalLinkRepository {
-	return &portalLinkRepo{db: db, cache: cache}
+func NewPortalLinkRepo(db database.Database) datastore.PortalLinkRepository {
+	return &portalLinkRepo{db: db}
 }
 
 func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {

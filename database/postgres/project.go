@@ -7,10 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
-	ncache "github.com/frain-dev/convoy/cache/noop"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/r3labs/diff/v3"
 
@@ -215,26 +211,22 @@ const (
 )
 
 type projectRepo struct {
-	db    database.Database
-	hook  *hooks.Hook
-	cache cache.Cache
+	db   database.Database
+	hook *hooks.Hook
 }
 
-func NewProjectRepo(db database.Database, ca cache.Cache) datastore.ProjectRepository {
-	if ca == nil {
-		ca = ncache.NewNoopCache()
-	}
-	return &projectRepo{db: db, hook: db.GetHook(), cache: ca}
+func NewProjectRepo(db database.Database) datastore.ProjectRepository {
+	return &projectRepo{db: db, hook: db.GetHook()}
 }
 
 func (p *projectRepo) CountProjects(ctx context.Context) (int64, error) {
-	var count int64
-	err := p.db.GetReadDB().GetContext(ctx, &count, countProjects)
+	var projCount int64
+	err := p.db.GetReadDB().GetContext(ctx, &projCount, countProjects)
 	if err != nil {
 		return 0, err
 	}
 
-	return count, nil
+	return projCount, nil
 }
 
 func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Project) error {
@@ -302,13 +294,12 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		return ErrProjectNotCreated
 	}
 
-	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
-	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
+	err = tx.Commit()
 	if err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (p *projectRepo) LoadProjects(ctx context.Context, f *datastore.ProjectFilter) ([]*datastore.Project, error) {
@@ -420,13 +411,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 
 		for rows.Next() {
 			var endpoint datastore.Endpoint
-			err := rows.StructScan(&endpoint)
-			if err != nil {
-				return err
-			}
-
-			endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
-			err = p.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
+			err = rows.StructScan(&endpoint)
 			if err != nil {
 				return err
 			}
@@ -438,30 +423,13 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return err
 	}
 
-	projectCacheKey := convoy.ProjectsCacheKey.Get(project.UID).String()
-	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
-	if err != nil {
-		return err
-	}
-
 	go p.hook.Fire(datastore.ProjectUpdated, project, changelog)
 	return nil
 }
 
 func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datastore.Project, error) {
-	var project *datastore.Project
-	projectCacheKey := convoy.ProjectsCacheKey.Get(id).String()
-	err := p.cache.Get(ctx, projectCacheKey, &project)
-	if err != nil {
-		return nil, err
-	}
-
-	if project != nil {
-		return project, nil
-	}
-
-	project = &datastore.Project{}
-	err = p.db.GetDB().GetContext(ctx, project, fetchProjectById, id)
+	var project datastore.Project
+	err := p.db.GetDB().GetContext(ctx, &project, fetchProjectById, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrProjectNotFound
@@ -469,12 +437,7 @@ func (p *projectRepo) FetchProjectByID(ctx context.Context, id string) (*datasto
 		return nil, err
 	}
 
-	err = p.cache.Set(ctx, projectCacheKey, &project, config.DefaultCacheTTL)
-	if err != nil {
-		return nil, err
-	}
-
-	return project, nil
+	return &project, nil
 }
 
 func (p *projectRepo) FillProjectsStatistics(ctx context.Context, project *datastore.Project) error {
@@ -516,12 +479,6 @@ func (p *projectRepo) DeleteProject(ctx context.Context, id string) error {
 	}
 
 	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
-	projectCacheKey := convoy.ProjectsCacheKey.Get(id).String()
-	err = p.cache.Delete(ctx, projectCacheKey)
 	if err != nil {
 		return err
 	}

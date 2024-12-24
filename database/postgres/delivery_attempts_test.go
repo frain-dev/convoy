@@ -28,7 +28,7 @@ func TestCreateDeliveryAttempt(t *testing.T) {
 
 	uid := ulid.Make().String()
 
-	edRepo := NewEventDeliveryRepo(db, nil)
+	edRepo := NewEventDeliveryRepo(db)
 	err := edRepo.CreateEventDelivery(ctx, ed)
 
 	attempt := &datastore.DeliveryAttempt{
@@ -71,7 +71,7 @@ func TestFindDeliveryAttempts(t *testing.T) {
 	sub := seedSubscription(t, db, project, source, endpoint, device)
 	ed := generateEventDelivery(project, endpoint, event, device, sub)
 
-	edRepo := NewEventDeliveryRepo(db, nil)
+	edRepo := NewEventDeliveryRepo(db)
 	err := edRepo.CreateEventDelivery(ctx, ed)
 
 	attempts := []datastore.DeliveryAttempt{

@@ -90,7 +90,7 @@ func seedTestData(t *testing.T) *TestData {
 	time.Sleep(30 * time.Second)
 	log.Info("migration done!")
 
-	uRepo := postgres.NewUserRepo(db, q)
+	uRepo := postgres.NewUserRepo(db)
 	user, err := uRepo.FindUserByEmail(context.Background(), "default@user.com")
 	if err != nil {
 		user, err = testdb.SeedDefaultUser(db)
@@ -113,9 +113,9 @@ func seedTestData(t *testing.T) *TestData {
 
 	sub := setupSubscription(t, db, project)
 
-	apiRepo := postgres.NewAPIKeyRepo(db, q)
-	userRepo := postgres.NewUserRepo(db, q)
-	portalLinkRepo := postgres.NewPortalLinkRepo(db, q)
+	apiRepo := postgres.NewAPIKeyRepo(db)
+	userRepo := postgres.NewUserRepo(db)
+	portalLinkRepo := postgres.NewPortalLinkRepo(db)
 	err = initRealmChain(t, apiRepo, userRepo, portalLinkRepo, q)
 	require.NoError(t, err)
 

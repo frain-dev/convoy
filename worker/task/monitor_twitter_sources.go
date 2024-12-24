@@ -3,7 +3,6 @@ package task
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/go-redsync/redsync/v4"
@@ -22,10 +21,10 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func MonitorTwitterSources(db database.Database, cache cache.Cache, queue queue.Queuer, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
-	sourceRepo := postgres.NewSourceRepo(db, cache)
-	subRepo := postgres.NewSubscriptionRepo(db, cache)
-	endpointRepo := postgres.NewEndpointRepo(db, cache)
+func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.Redis) func(context.Context, *asynq.Task) error {
+	sourceRepo := postgres.NewSourceRepo(db)
+	subRepo := postgres.NewSubscriptionRepo(db)
+	endpointRepo := postgres.NewEndpointRepo(db)
 
 	pool := goredis.NewPool(redis.Client())
 	rs := redsync.New(pool)

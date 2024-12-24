@@ -1,7 +1,7 @@
 package handlers
 
 import (
-    "errors"
+	"errors"
 	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 
@@ -31,9 +31,9 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 	configuration := h.A.Cfg
 
 	lu := services.LoginUserSSOService{
-		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
 		LicenseKey:    configuration.LicenseKey,
@@ -62,9 +62,9 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 	configuration := h.A.Cfg
 
 	lu := services.LoginUserSSOService{
-		UserRepo:      postgres.NewUserRepo(h.A.DB, h.A.Cache),
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB, h.A.Cache),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB, h.A.Cache),
+		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
 		LicenseKey:    configuration.LicenseKey,
@@ -82,22 +82,21 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 	if intent == RegisterIntent {
 		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
 		if err != nil {
-            if errors.Is(err, services.ErrUserAlreadyExist) {
-                _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusConflict))
-                return
-            }
+			if errors.Is(err, services.ErrUserAlreadyExist) {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusConflict))
+				return
+			}
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
 			return
 		}
 
-
 	} else {
 		user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
 		if err != nil {
-            if errors.Is(err, datastore.ErrUserNotFound) {
-                _ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
-			    return
-            }
+			if errors.Is(err, datastore.ErrUserNotFound) {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+				return
+			}
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
 			return
 		}
@@ -125,7 +124,7 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lu := services.LoginUserService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		Cache:    h.A.Cache,
 		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Data:     &newUser,
@@ -164,7 +163,7 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rf := services.RefreshTokenService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Data:     &refreshToken,
 	}
@@ -192,7 +191,7 @@ func (h *Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lg := services.LogoutUserService{
-		UserRepo: postgres.NewUserRepo(h.A.DB, h.A.Cache),
+		UserRepo: postgres.NewUserRepo(h.A.DB),
 		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		Token:    auth.Token,
 	}

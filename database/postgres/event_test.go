@@ -23,7 +23,7 @@ func Test_CreateEvent(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	eventRepo := NewEventRepo(db, nil)
+	eventRepo := NewEventRepo(db)
 	event := generateEvent(t, db)
 	ctx := context.Background()
 
@@ -44,7 +44,7 @@ func Test_FindEventByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	eventRepo := NewEventRepo(db, nil)
+	eventRepo := NewEventRepo(db)
 	event := generateEvent(t, db)
 	ctx := context.Background()
 
@@ -69,7 +69,7 @@ func Test_FindEventsByIDs(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	eventRepo := NewEventRepo(db, nil)
+	eventRepo := NewEventRepo(db)
 	ctx := context.Background()
 	event := generateEvent(t, db)
 
@@ -119,9 +119,9 @@ func Test_CountProjectMessages(t *testing.T) {
 
 			project := seedProject(t, db)
 			endpoint := generateEndpoint(project)
-			eventRepo := NewEventRepo(db, nil)
+			eventRepo := NewEventRepo(db)
 
-			err := NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
+			err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 			require.NoError(t, err)
 
 			for i := 0; i < tc.count; i++ {
@@ -186,9 +186,9 @@ func Test_CountEvents(t *testing.T) {
 
 			project := seedProject(t, db)
 			endpoint := generateEndpoint(project)
-			eventRepo := NewEventRepo(db, nil)
+			eventRepo := NewEventRepo(db)
 
-			err := NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
+			err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 			require.NoError(t, err)
 
 			for i := 0; i < tc.count; i++ {
@@ -333,16 +333,16 @@ func Test_LoadEventsPaged(t *testing.T) {
 			if !util.IsStringEmpty(tc.sourceID) {
 				source.UID = tc.sourceID
 			}
-			eventRepo := NewEventRepo(db, nil)
+			eventRepo := NewEventRepo(db)
 
 			if !util.IsStringEmpty(tc.endpointID) {
 				endpoint.UID = tc.endpointID
 			}
 
-			err := NewSourceRepo(db, nil).CreateSource(context.Background(), source)
+			err := NewSourceRepo(db).CreateSource(context.Background(), source)
 			require.NoError(t, err)
 
-			err = NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
+			err = NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 			require.NoError(t, err)
 
 			for i := 0; i < tc.count; i++ {
@@ -384,7 +384,7 @@ func Test_SoftDeleteProjectEvents(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	eventRepo := NewEventRepo(db, nil)
+	eventRepo := NewEventRepo(db)
 	event := generateEvent(t, db)
 	ctx := context.Background()
 
@@ -407,7 +407,7 @@ func Test_HardDeleteProjectEvents(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	eventRepo := NewEventRepo(db, nil)
+	eventRepo := NewEventRepo(db)
 	event := generateEvent(t, db)
 	ctx := context.Background()
 
@@ -430,7 +430,7 @@ func generateEvent(t *testing.T, db database.Database) *datastore.Event {
 	project := seedProject(t, db)
 	endpoint := generateEndpoint(project)
 
-	err := NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
+	err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 
 	data := json.RawMessage([]byte(`{
@@ -456,7 +456,7 @@ func seedEvent(t *testing.T, db database.Database, project *datastore.Project) *
 	ev := generateEvent(t, db)
 	ev.ProjectID = project.UID
 
-	require.NoError(t, NewEventRepo(db, nil).CreateEvent(context.Background(), ev))
+	require.NoError(t, NewEventRepo(db).CreateEvent(context.Background(), ev))
 	return ev
 }
 
@@ -465,6 +465,6 @@ func seedEventWithEventType(t *testing.T, db database.Database, project *datasto
 	ev.EventType = datastore.EventType(eventType)
 	ev.ProjectID = project.UID
 
-	require.NoError(t, NewEventRepo(db, nil).CreateEvent(context.Background(), ev))
+	require.NoError(t, NewEventRepo(db).CreateEvent(context.Background(), ev))
 	return ev
 }

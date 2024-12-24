@@ -10,11 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
-	ncache "github.com/frain-dev/convoy/cache/noop"
-	"github.com/frain-dev/convoy/config"
-
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
@@ -44,7 +39,7 @@ const (
                 $5, $6, $7, $8, $9, $10, $11, $12, $13,
                 $14, $15, $16, $17, CASE WHEN $19 THEN '' ELSE $18 END,
                $19,
-               CASE WHEN $19 THEN pgp_sym_encrypt($4::text, $20)  END, -- Ciphered values if encrypted
+               CASE WHEN $19 THEN pgp_sym_encrypt($4::TEXT, $20)  END, -- Ciphered values if encrypted
                CASE WHEN $19 THEN pgp_sym_encrypt($18, $20) END
               );
             `
@@ -63,7 +58,7 @@ const (
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
 	CASE
-        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $1)::text
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $1)::TEXT
         ELSE e.authentication_type_api_key_header_value
     END AS "authentication.api_key.header_value"
 	FROM convoy.endpoints AS e
@@ -90,7 +85,7 @@ const (
     e.authentication_type AS "authentication.type",
     e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
 	CASE
-        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $3)::text
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $3)::TEXT
         ELSE e.authentication_type_api_key_header_value
     END AS "authentication.api_key.header_value"
     FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.url = $1 AND e.project_id = $2;
@@ -111,7 +106,7 @@ const (
         ELSE $16
     END,
     secrets_cipher = CASE
-        WHEN is_encrypted THEN pgp_sym_encrypt($17::jsonb::text, $18)
+        WHEN is_encrypted THEN pgp_sym_encrypt($17::jsonb::TEXT, $18)
     END,
     secrets = CASE
         WHEN is_encrypted THEN '[]'
@@ -135,7 +130,7 @@ const (
     authentication_type AS "authentication.type",
     authentication_type_api_key_header_name AS "authentication.api_key.header_name",
     CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::text
+        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::TEXT
         ELSE authentication_type_api_key_header_value
     END AS "authentication.api_key.header_value";
 	`
@@ -143,7 +138,7 @@ const (
 	updateEndpointSecrets = `
 	UPDATE convoy.endpoints SET
 	    secrets_cipher = CASE
-        WHEN is_encrypted THEN pgp_sym_encrypt($3::jsonb::text, $4)
+        WHEN is_encrypted THEN pgp_sym_encrypt($3::jsonb::TEXT, $4)
         END,
         secrets = CASE
             WHEN is_encrypted THEN '[]'
@@ -163,7 +158,7 @@ const (
     authentication_type AS "authentication.type",
     authentication_type_api_key_header_name AS "authentication.api_key.header_name",
     CASE
-        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::text
+        WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::TEXT
         ELSE authentication_type_api_key_header_value
     END AS "authentication.api_key.header_value";
 	`
@@ -197,7 +192,7 @@ const (
 	e.authentication_type AS "authentication.type",
 	e.authentication_type_api_key_header_name AS "authentication.api_key.header_name",
 	CASE
-        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, :encryption_key)::text
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, :encryption_key)::TEXT
         ELSE e.authentication_type_api_key_header_value
     END AS "authentication.api_key.header_value"
 	FROM convoy.endpoints AS e
@@ -241,21 +236,17 @@ const (
 )
 
 type endpointRepo struct {
-	db    database.Database
-	hook  *hooks.Hook
-	cache cache.Cache
-	km    keys.KeyManager
+	db   database.Database
+	hook *hooks.Hook
+	km   keys.KeyManager
 }
 
-func NewEndpointRepo(db database.Database, ca cache.Cache) datastore.EndpointRepository {
-	if ca == nil {
-		ca = ncache.NewNoopCache()
-	}
+func NewEndpointRepo(db database.Database) datastore.EndpointRepository {
 	km, err := keys.Get()
 	if err != nil {
 		log.Fatal(err)
 	}
-	return &endpointRepo{db: db, hook: db.GetHook(), cache: ca, km: km}
+	return &endpointRepo{db: db, hook: db.GetHook(), km: km}
 }
 
 // checkEncryptionStatus checks if any row is already encrypted.
@@ -316,41 +307,28 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 
 	go e.hook.Fire(datastore.EndpointCreated, endpoint, nil)
 
-	endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
-	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
-	end, err := e.readFromCache(ctx, id, func() (*datastore.Endpoint, error) {
-		endpoint := &datastore.Endpoint{}
-		key, err := e.km.GetCurrentKey()
-		if err != nil {
-			return nil, err
-		}
-		err = e.db.GetReadDB().QueryRowxContext(ctx, fetchEndpointById, key, id, projectID).StructScan(endpoint)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrEndpointNotFound
-			}
-			isEncErr, err2 := e.isEncryptionError(err)
-			if isEncErr && err2 != nil {
-				return nil, err2
-			}
-			return nil, err
-		}
-
-		return endpoint, nil
-	})
+	endpoint := &datastore.Endpoint{}
+	key, err := e.km.GetCurrentKey()
 	if err != nil {
 		return nil, err
 	}
+	err = e.db.GetReadDB().QueryRowxContext(ctx, fetchEndpointById, key, id, projectID).StructScan(endpoint)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrEndpointNotFound
+		}
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return nil, err2
+		}
+		return nil, err
+	}
 
-	return end, nil
+	return endpoint, nil
 }
 
 func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]datastore.Endpoint, error) {
@@ -440,12 +418,6 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
-	endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
-	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
-	if err != nil {
-		return err
-	}
-
 	go e.hook.Fire(datastore.EndpointUpdated, endpoint, nil)
 	return nil
 }
@@ -462,12 +434,6 @@ func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID strin
 		if isEncErr && err2 != nil {
 			return err2
 		}
-		return err
-	}
-
-	endpointCacheKey := convoy.EndpointCacheKey.Get(endpointID).String()
-	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
-	if err != nil {
 		return err
 	}
 
@@ -501,12 +467,6 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	endpointCacheKey := convoy.EndpointCacheKey.Get(endpoint.UID).String()
-	err = e.cache.Delete(ctx, endpointCacheKey)
-	if err != nil {
-		return err
-	}
-
 	go e.hook.Fire(datastore.EndpointDeleted, endpoint, nil)
 	return nil
 }
@@ -523,27 +483,20 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 }
 
 func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
-	endpoint, err := e.readFromCache(ctx, targetURL, func() (*datastore.Endpoint, error) {
-		endpoint := &datastore.Endpoint{}
-		key, err := e.km.GetCurrentKey()
-		if err != nil {
-			return nil, err
-		}
-		err = e.db.GetReadDB().QueryRowxContext(ctx, fetchEndpointByTargetURL, targetURL, projectID, key).StructScan(endpoint)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrEndpointNotFound
-			}
-			isEncErr, err2 := e.isEncryptionError(err)
-			if isEncErr && err2 != nil {
-				return nil, err2
-			}
-			return nil, err
-		}
-
-		return endpoint, nil
-	})
+	endpoint := &datastore.Endpoint{}
+	key, err := e.km.GetCurrentKey()
 	if err != nil {
+		return nil, err
+	}
+	err = e.db.GetReadDB().QueryRowxContext(ctx, fetchEndpointByTargetURL, targetURL, projectID, key).StructScan(endpoint)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrEndpointNotFound
+		}
+		isEncErr, err2 := e.isEncryptionError(err)
+		if isEncErr && err2 != nil {
+			return nil, err2
+		}
 		return nil, err
 	}
 
@@ -636,7 +589,7 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		countQuery = e.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
+		rows, err = e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
@@ -677,12 +630,6 @@ func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, pro
 		return err
 	}
 
-	endpointCacheKey := convoy.EndpointCacheKey.Get(endpointID).String()
-	err = e.cache.Set(ctx, endpointCacheKey, endpoint, config.DefaultCacheTTL)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -700,12 +647,6 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 		return err
 	}
 	err = e.db.GetReadDB().QueryRowxContext(ctx, updateEndpointSecrets, endpoint.UID, projectID, endpoint.Secrets, key).StructScan(&updatedEndpoint)
-	if err != nil {
-		return err
-	}
-
-	endpointCacheKey := convoy.EndpointCacheKey.Get(updatedEndpoint.UID).String()
-	err = e.cache.Set(ctx, endpointCacheKey, updatedEndpoint, config.DefaultCacheTTL)
 	if err != nil {
 		return err
 	}
@@ -728,31 +669,6 @@ func (e *endpointRepo) scanEndpoints(rows *sqlx.Rows) ([]datastore.Endpoint, err
 	}
 
 	return endpoints, nil
-}
-
-func (e *endpointRepo) readFromCache(ctx context.Context, id string, readFromDB func() (*datastore.Endpoint, error)) (*datastore.Endpoint, error) {
-	var endpoint *datastore.Endpoint
-	endpointCacheKey := convoy.EndpointCacheKey.Get(id).String()
-	err := e.cache.Get(ctx, endpointCacheKey, &endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	if endpoint != nil {
-		return endpoint, err
-	}
-
-	end, err := readFromDB()
-	if err != nil {
-		return nil, err
-	}
-
-	err = e.cache.Set(ctx, endpointCacheKey, end, config.DefaultCacheTTL)
-	if err != nil {
-		return nil, err
-	}
-
-	return end, err
 }
 
 type EndpointPaginated struct {

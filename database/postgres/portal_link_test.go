@@ -21,7 +21,7 @@ func Test_CreatePortalLink(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db, nil)
+	portalLinkRepo := NewPortalLinkRepo(db)
 	portalLink := generatePortalLink(t, db)
 
 	require.NoError(t, portalLinkRepo.CreatePortalLink(context.Background(), portalLink))
@@ -41,7 +41,7 @@ func Test_FindPortalLinkByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db, nil)
+	portalLinkRepo := NewPortalLinkRepo(db)
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
 
@@ -66,7 +66,7 @@ func Test_FindPortalLinkByToken(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db, nil)
+	portalLinkRepo := NewPortalLinkRepo(db)
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
 
@@ -91,9 +91,9 @@ func Test_UpdatePortalLink(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db, nil)
-	projectRepo := NewProjectRepo(db, nil)
-	endpointRepo := NewEndpointRepo(db, nil)
+	portalLinkRepo := NewPortalLinkRepo(db)
+	projectRepo := NewProjectRepo(db)
+	endpointRepo := NewEndpointRepo(db)
 
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
@@ -133,7 +133,7 @@ func Test_RevokePortalLink(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db, nil)
+	portalLinkRepo := NewPortalLinkRepo(db)
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
 
@@ -201,8 +201,9 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 			project := seedProject(t, db)
 			endpoint := generateEndpoint(project)
-			portalLinkRepo := NewPortalLinkRepo(db, nil)
-			NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
+			portalLinkRepo := NewPortalLinkRepo(db)
+			err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
+			require.NoError(t, err)
 
 			for i := 0; i < tc.count; i++ {
 				portalLink := &datastore.PortalLink{
@@ -227,7 +228,7 @@ func generatePortalLink(t *testing.T, db database.Database) *datastore.PortalLin
 	project := seedProject(t, db)
 
 	endpoint := generateEndpoint(project)
-	err := NewEndpointRepo(db, nil).CreateEndpoint(context.Background(), endpoint, project.UID)
+	err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 
 	return &datastore.PortalLink{

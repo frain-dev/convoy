@@ -71,7 +71,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 				UpdatedAt: time.Now(),
 			}
 
-			userRepo := postgres.NewUserRepo(a.DB, a.Cache)
+			userRepo := postgres.NewUserRepo(a.DB)
 			err = userRepo.CreateUser(context.Background(), user)
 			if err != nil {
 				if errors.Is(err, datastore.ErrDuplicateEmail) {
@@ -84,8 +84,8 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			}
 
 			co := services.CreateOrganisationService{
-				OrgRepo:       postgres.NewOrgRepo(a.DB, a.Cache),
-				OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB, a.Cache),
+				OrgRepo:       postgres.NewOrgRepo(a.DB),
+				OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB),
 				NewOrg:        &models.Organisation{Name: "Default Organisation"},
 				User:          user,
 			}

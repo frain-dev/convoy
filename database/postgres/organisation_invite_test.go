@@ -20,7 +20,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
-	inviteRepo := NewOrgInviteRepo(db, nil)
+	inviteRepo := NewOrgInviteRepo(db)
 	project := seedProject(t, db)
 
 	uids := []string{}
@@ -70,7 +70,7 @@ func TestCreateOrganisationInvite(t *testing.T) {
 	project := seedProject(t, db)
 
 	org := seedOrg(t, db)
-	inviteRepo := NewOrgInviteRepo(db, nil)
+	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
@@ -97,7 +97,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
 
-	inviteRepo := NewOrgInviteRepo(db, nil)
+	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
@@ -141,7 +141,7 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
 
-	inviteRepo := NewOrgInviteRepo(db, nil)
+	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
@@ -171,7 +171,7 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 	project := seedProject(t, db)
 
 	org := seedOrg(t, db)
-	inviteRepo := NewOrgInviteRepo(db, nil)
+	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
@@ -202,7 +202,7 @@ func TestFetchOrganisationInviteByToken(t *testing.T) {
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
 
-	inviteRepo := NewOrgInviteRepo(db, nil)
+	inviteRepo := NewOrgInviteRepo(db)
 	iv := &datastore.OrganisationInvite{
 		UID:            ulid.Make().String(),
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),

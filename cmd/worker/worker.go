@@ -218,14 +218,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	// register worker.
 	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo)
-	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
-	metaEventRepo := postgres.NewMetaEventRepo(a.DB, a.Cache)
-	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
-	eventRepo := postgres.NewEventRepo(a.DB, a.Cache)
-	jobRepo := postgres.NewJobRepo(a.DB, a.Cache)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB, a.Cache)
-	subRepo := postgres.NewSubscriptionRepo(a.DB, a.Cache)
-	deviceRepo := postgres.NewDeviceRepo(a.DB, a.Cache)
+	projectRepo := postgres.NewProjectRepo(a.DB)
+	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
+	endpointRepo := postgres.NewEndpointRepo(a.DB)
+	eventRepo := postgres.NewEventRepo(a.DB)
+	jobRepo := postgres.NewJobRepo(a.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
+	subRepo := postgres.NewSubscriptionRepo(a.DB)
+	deviceRepo := postgres.NewDeviceRepo(a.DB)
 	configRepo := postgres.NewConfigRepo(a.DB)
 	attemptRepo := postgres.NewDeliveryAttemptRepo(a.DB)
 
@@ -422,11 +422,11 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		deviceRepo, a.Licenser), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Cache, a.Queue, rd), nil)
+	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd), nil)
 
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 
-	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, a.Cache, rd), nil)
+	consumer.RegisterHandlers(convoy.DailyAnalytics, task.PushDailyTelemetry(lo, a.DB, rd), nil)
 	consumer.RegisterHandlers(convoy.EmailProcessor, task.ProcessEmails(sc), nil)
 
 	if featureFlag.CanAccessFeature(fflag.FullTextSearch) && a.Licenser.AdvancedWebhookFiltering() {

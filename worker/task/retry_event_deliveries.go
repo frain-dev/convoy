@@ -6,8 +6,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -18,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration string, eventId string) {
+func RetryEventDeliveries(db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration string, eventId string) {
 	if len(statuses) == 1 && util.IsStringEmpty(string(statuses[0])) {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}
@@ -61,7 +59,7 @@ func RetryEventDeliveries(db database.Database, cache cache.Cache, eventQueue qu
 		var wg sync.WaitGroup
 
 		wg.Add(1)
-		eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, cache)
+		eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 
 		go processEventDeliveryBatch(ctx, status, eventDeliveryRepo, deliveryChan, q, &wg)
 
