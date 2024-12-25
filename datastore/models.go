@@ -1049,7 +1049,7 @@ type Subscription struct {
 	UID        string           `json:"uid" db:"id"`
 	Name       string           `json:"name" db:"name"`
 	Type       SubscriptionType `json:"type" db:"type"`
-	ProjectID  string           `json:"-" db:"project_id"`
+	ProjectID  string           `json:"project_id" db:"project_id"`
 	SourceID   string           `json:"-" db:"source_id"`
 	EndpointID string           `json:"-" db:"endpoint_id"`
 	DeviceID   string           `json:"-" db:"device_id"`

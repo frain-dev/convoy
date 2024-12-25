@@ -450,6 +450,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
 
+		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)
+
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
 			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
@@ -659,6 +661,8 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		portalLinkRouter.Use(middleware.SetupCORS)
 		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
 		portalLinkRouter.Use(middleware.RequireAuth())
+
+		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)
 
 		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.Post("/", handler.CreateEndpointEvent)

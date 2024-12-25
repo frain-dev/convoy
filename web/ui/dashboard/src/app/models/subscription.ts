@@ -11,6 +11,7 @@ export interface SUBSCRIPTION {
 	status: string;
 	type: 'outgoing' | 'incoming';
 	uid: string;
+	project_id: string;
 	updated_at: string;
 	endpoint_metadata?: ENDPOINT;
 	alert_config?: { count: number; threshold: string };
