@@ -108,10 +108,18 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
 		if (!(await this.rbacService.userCanAccess('Subscriptions|MANAGE'))) this.subscriptionForm.disable();
+
+        this.toggleConfigForm('filter_config', true)
 	}
 
 	toggleConfig(configValue: string) {
 		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
+	}
+
+	deleteFilterAndToggleConfigForm(configValue: string, value?: boolean) {
+        // other cleanup ops
+
+        this.toggleConfigForm(configValue, value);
 	}
 
 	toggleConfigForm(configValue: string, value?: boolean) {
@@ -249,6 +257,18 @@ export class CreateSubscriptionComponent implements OnInit {
 			return this.subscriptionForm.markAllAsTouched();
 		}
 
+        let deletedFormFilter = false;
+        if (!this.showConfig('filter_config')) {
+            const filterGroup = this.subscriptionForm.get('filter_config.filter') as FormGroup;
+            if (filterGroup) {
+                filterGroup.patchValue({
+                    headers: {},
+                    body: {}
+                });
+                deletedFormFilter = true;
+            }
+        }
+
 		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
 
@@ -260,6 +280,9 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.privateService.getSubscriptions();
 			localStorage.removeItem('FUNCTION');
 			this.createdSubscription = true;
+            if (deletedFormFilter) {
+                localStorage.setItem('DELETE_FILTER_SETUP', 'true');
+            }
 			if (this.sourceURL) return this.sourceURLDialog.nativeElement.showModal();
 			this.onAction.emit({ data: this.subscription, action: this.action == 'update' ? 'update' : 'create' });
 		} catch (error) {
@@ -273,6 +296,12 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	setupFilter() {
+        let deleteFilter = localStorage.getItem('DELETE_FILTER_SETUP')
+        if (deleteFilter) {
+            this.subscriptionForm.get('filter_config.filter.headers')?.patchValue({})
+            this.subscriptionForm.get('filter_config.filter.body')?.patchValue({});
+            localStorage.removeItem('DELETE_FILTER_SETUP');
+        }
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.showFilterDialog = true;
 	}
