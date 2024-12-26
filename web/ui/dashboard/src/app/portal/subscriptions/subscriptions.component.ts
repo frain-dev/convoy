@@ -81,8 +81,20 @@ export class SubscriptionsComponent implements OnInit {
         }
 		this.action = action;
 		this.showSubscriptionForm = true;
-        this.location.go(`/portal/subscriptions/${action === 'create' ? 'new' : this.activeSubscription?.uid}?token=${this.token}${this.activeSubscription?.project_id ? `&projectId=${this.activeSubscription.project_id}` : ''}${this.endpointId ? `&endpointId=${this.endpointId}` : ''}`);
-	}
+        let subscriptionPath = '/portal/subscriptions/';
+        if (action === 'create') {
+            subscriptionPath += 'new';
+        } else if (this.activeSubscription?.uid) {
+            subscriptionPath += this.activeSubscription.uid;
+        }
+
+        let queryParams = `?token=${this.token}`;
+        if (this.endpointId) {
+            queryParams += `&endpointId=${this.endpointId}`;
+        }
+
+        this.location.go(subscriptionPath + queryParams);
+    }
 
 	async deleteSubscripton() {
 		this.isDeletingSubscription = true;
