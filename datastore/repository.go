@@ -38,6 +38,8 @@ type EventDeliveryRepository interface {
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period) ([]EventInterval, error)
+	PartitionEventDeliveriesTable(ctx context.Context) error
+	UnPartitionEventDeliveriesTable(ctx context.Context) error
 }
 
 type EventRepository interface {
@@ -55,6 +57,8 @@ type EventRepository interface {
 	FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]Event, error)
 	FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) (*Event, error)
 	CopyRows(ctx context.Context, projectID string, interval int) error
+	PartitionEventsTable(ctx context.Context) error
+	UnPartitionEventsTable(ctx context.Context) error
 }
 
 type ProjectRepository interface {
@@ -209,6 +213,8 @@ type DeliveryAttemptsRepository interface {
 	FindDeliveryAttempts(context.Context, string) ([]DeliveryAttempt, error)
 	DeleteProjectDeliveriesAttempts(ctx context.Context, projectID string, filter *DeliveryAttemptsFilter, hardDelete bool) error
 	GetFailureAndSuccessCounts(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (resultsMap map[string]circuit_breaker.PollResult, err error)
+	PartitionDeliveryAttemptsTable(ctx context.Context) error
+	UnPartitionDeliveryAttemptsTable(ctx context.Context) error
 }
 
 type EventTypesRepository interface {

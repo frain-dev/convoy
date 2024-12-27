@@ -55,7 +55,7 @@ func (Licenser) AsynqMonitoring() bool {
 	return true
 }
 
-func (Licenser) AdvancedRetentionPolicy() bool {
+func (Licenser) RetentionPolicy() bool {
 	return true
 }
 

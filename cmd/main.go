@@ -154,7 +154,7 @@ func main() {
 	c.AddCommand(ff.AddFeatureFlagsCommand())
 	c.AddCommand(utils.AddUtilsCommand(app))
 
-	if err := c.Execute(); err != nil {
+	if err = c.Execute(); err != nil {
 		slog.Fatal(err)
 	}
 }
