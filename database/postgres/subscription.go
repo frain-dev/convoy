@@ -497,6 +497,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
+		subscription.FilterConfig.Filter.RawHeaders, subscription.FilterConfig.Filter.RawBody,
 	)
 	if err != nil {
 		return err
@@ -519,6 +520,9 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		}
 		return err
 	}
+
+	_subscription.FilterConfig.Filter.Headers = _subscription.FilterConfig.Filter.RawHeaders
+	_subscription.FilterConfig.Filter.Body = _subscription.FilterConfig.Filter.RawBody
 
 	nullifyEmptyConfig(_subscription)
 	*subscription = *_subscription
@@ -584,6 +588,9 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		}
 		return err
 	}
+
+	_subscription.FilterConfig.Filter.Headers = _subscription.FilterConfig.Filter.RawHeaders
+	_subscription.FilterConfig.Filter.Body = _subscription.FilterConfig.Filter.RawBody
 
 	nullifyEmptyConfig(_subscription)
 	*subscription = *_subscription
