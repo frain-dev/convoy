@@ -516,6 +516,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
+		subscription.FilterConfig.Filter.RawHeaders, subscription.FilterConfig.Filter.RawBody,
 	)
 	if err != nil {
 		return err
@@ -539,6 +540,9 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
+	subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
+	subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
+
 	eventTypesSlice := make([]*datastore.ProjectEventType, len(subscription.FilterConfig.EventTypes))
 	for i := range subscription.FilterConfig.EventTypes {
 		eventTypesSlice[i] = &datastore.ProjectEventType{
@@ -561,7 +565,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
@@ -633,6 +637,9 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
+	subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
+	subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
+
 	eventTypesSlice := make([]*datastore.ProjectEventType, len(subscription.FilterConfig.EventTypes))
 	for i := range subscription.FilterConfig.EventTypes {
 		eventTypesSlice[i] = &datastore.ProjectEventType{
@@ -655,7 +662,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {
