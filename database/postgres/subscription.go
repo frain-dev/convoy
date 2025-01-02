@@ -22,16 +22,17 @@ import (
 const (
 	createSubscription = `
     INSERT INTO convoy.subscriptions (
-    id,name,type,
+	id,name,type,
 	project_id,endpoint_id,device_id,
 	source_id,alert_config_count,alert_config_threshold,
 	retry_config_type,retry_config_duration,
 	retry_config_retry_count,filter_config_event_types,
 	filter_config_filter_headers,filter_config_filter_body,
-    filter_config_filter_is_flattened,
-	rate_limit_config_count,rate_limit_config_duration,function
+	filter_config_filter_is_flattened,
+	rate_limit_config_count,rate_limit_config_duration,function,
+	filter_config_filter_raw_headers, filter_config_filter_raw_body
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21);
     `
 
 	updateSubscription = `
@@ -51,6 +52,8 @@ const (
 	rate_limit_config_count=$15,
 	rate_limit_config_duration=$16,
 	function=$17,
+	filter_config_filter_raw_headers=$18,
+	filter_config_filter_raw_body=$19,	
     updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
@@ -73,9 +76,13 @@ const (
 	s.retry_config_duration AS "retry_config.duration",
 	s.retry_config_retry_count AS "retry_config.retry_count",
 	s.filter_config_event_types AS "filter_config.event_types",
+	
+	s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+	s.filter_config_filter_raw_body AS "filter_config.filter.raw_body",
+	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
 	s.filter_config_filter_headers AS "filter_config.filter.headers",
 	s.filter_config_filter_body AS "filter_config.filter.body",
-	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
+	
 	s.rate_limit_config_count AS "rate_limit_config.count",
 	s.rate_limit_config_duration AS "rate_limit_config.duration",
 
@@ -151,6 +158,8 @@ const (
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body",
+	 filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+	filter_config_filter_raw_body AS "filter_config.filter.raw_body",
 	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
     from convoy.subscriptions
     where updated_at > ?
@@ -507,6 +516,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
+		subscription.FilterConfig.Filter.RawHeaders, subscription.FilterConfig.Filter.RawBody,
 	)
 	if err != nil {
 		return err
@@ -530,6 +540,9 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
+	subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
+	subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
+
 	eventTypesSlice := make([]*datastore.ProjectEventType, len(subscription.FilterConfig.EventTypes))
 	for i := range subscription.FilterConfig.EventTypes {
 		eventTypesSlice[i] = &datastore.ProjectEventType{
@@ -552,7 +565,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
@@ -600,6 +613,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		ac.Count, ac.Threshold, rc.Type, rc.Duration, rc.RetryCount,
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
+		fc.Filter.RawHeaders, fc.Filter.RawBody,
 	)
 	if err != nil {
 		return err
@@ -623,6 +637,9 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
+	subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
+	subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
+
 	eventTypesSlice := make([]*datastore.ProjectEventType, len(subscription.FilterConfig.EventTypes))
 	for i := range subscription.FilterConfig.EventTypes {
 		eventTypesSlice[i] = &datastore.ProjectEventType{
@@ -645,7 +662,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.Subscription, datastore.PaginationData, error) {

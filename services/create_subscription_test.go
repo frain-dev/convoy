@@ -134,8 +134,11 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
 							Filter: datastore.FilterSchema{
-								Headers: datastore.M{},
-								Body:    datastore.M{},
+								IsFlattened: false,
+								Headers:     datastore.M{},
+								Body:        datastore.M{},
+								RawHeaders:  datastore.M{},
+								RawBody:     datastore.M{},
 							},
 						},
 					}

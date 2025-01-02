@@ -347,7 +347,6 @@ func parseAttemptFromResponse(m *datastore.EventDelivery, e *datastore.Endpoint,
 		ResponseHeader:   *responseHeader,
 		RequestHeader:    *requestHeader,
 		HttpResponseCode: resp.Status,
-		ResponseData:     resp.Body,
 		Error:            resp.Error,
 		Status:           attemptStatus,
 
