@@ -10,11 +10,11 @@ import (
 )
 
 func AddPartitionCommand(a *cli.App) *cobra.Command {
-	var table string
-
 	cmd := &cobra.Command{
 		Use:   "partition",
-		Short: "runs partition commands",
+		Short: "partition tables",
+		Long:  "partition tables that are deleted by convoy during retention, valid tables are events, event_deliveries, delivery_attempts and events_search",
+		Args:  cobra.MaximumNArgs(1),
 		Annotations: map[string]string{
 			"CheckMigration":  "true",
 			"ShouldBootstrap": "true",
@@ -38,45 +38,57 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			deliveryAttemptsRepo := postgres.NewDeliveryAttemptRepo(a.DB)
 
-			if table == "" {
-				return fmt.Errorf("table name is required")
-			}
+			// if the table name isn't supplied, then we will run all of them at the same time
+			if len(args) == 0 {
+				err = eventsRepo.PartitionEventsTable(cmd.Context())
+				if err != nil {
+					return err
+				}
 
-			switch table {
-			case "events":
-				err := eventsRepo.PartitionEventsTable(cmd.Context())
+				err = eventDeliveryRepo.PartitionEventDeliveriesTable(cmd.Context())
 				if err != nil {
 					return err
 				}
-			case "event-deliveries":
-				err := eventDeliveryRepo.PartitionEventDeliveriesTable(cmd.Context())
+
+				err = deliveryAttemptsRepo.PartitionDeliveryAttemptsTable(cmd.Context())
 				if err != nil {
 					return err
 				}
-			case "delivery-attempts":
-				err := deliveryAttemptsRepo.PartitionDeliveryAttemptsTable(cmd.Context())
-				if err != nil {
-					return err
+			} else {
+				switch args[0] {
+				case "events":
+					err = eventsRepo.PartitionEventsTable(cmd.Context())
+					if err != nil {
+						return err
+					}
+				case "event_deliveries":
+					err = eventDeliveryRepo.PartitionEventDeliveriesTable(cmd.Context())
+					if err != nil {
+						return err
+					}
+				case "delivery_attempts":
+					err = deliveryAttemptsRepo.PartitionDeliveryAttemptsTable(cmd.Context())
+					if err != nil {
+						return err
+					}
+				default:
+					return fmt.Errorf("unknown table %s", args[0])
 				}
-			default:
-				return fmt.Errorf("unknown table %s", table)
 			}
 
 			return nil
 		},
 	}
-
-	cmd.Flags().StringVarP(&table, "table", "t", "", "table name")
 
 	return cmd
 }
 
 func AddUnPartitionCommand(a *cli.App) *cobra.Command {
-	var table string
-
 	cmd := &cobra.Command{
 		Use:   "unpartition",
-		Short: "runs partition commands",
+		Short: "unpartitions tables",
+		Long:  "unpartition tables that are deleted by convoy during retention, valid tables are events, event_deliveries, delivery_attempts and events_search",
+		Args:  cobra.MaximumNArgs(1),
 		Annotations: map[string]string{
 			"CheckMigration":  "true",
 			"ShouldBootstrap": "true",
@@ -100,35 +112,47 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 			eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 			deliveryAttemptsRepo := postgres.NewDeliveryAttemptRepo(a.DB)
 
-			if table == "" {
-				return fmt.Errorf("table name is required")
-			}
+			// if the table name isn't supplied, then we will run all of them at the same time
+			if len(args) == 0 {
+				err = eventsRepo.UnPartitionEventsTable(cmd.Context())
+				if err != nil {
+					return err
+				}
 
-			switch table {
-			case "events":
-				err := eventsRepo.UnPartitionEventsTable(cmd.Context())
+				err = eventDeliveryRepo.UnPartitionEventDeliveriesTable(cmd.Context())
 				if err != nil {
 					return err
 				}
-			case "event-deliveries":
-				err := eventDeliveryRepo.UnPartitionEventDeliveriesTable(cmd.Context())
+
+				err = deliveryAttemptsRepo.UnPartitionDeliveryAttemptsTable(cmd.Context())
 				if err != nil {
 					return err
 				}
-			case "delivery-attempts":
-				err := deliveryAttemptsRepo.UnPartitionDeliveryAttemptsTable(cmd.Context())
-				if err != nil {
-					return err
+			} else {
+				switch args[0] {
+				case "events":
+					err = eventsRepo.UnPartitionEventsTable(cmd.Context())
+					if err != nil {
+						return err
+					}
+				case "event_deliveries":
+					err = eventDeliveryRepo.UnPartitionEventDeliveriesTable(cmd.Context())
+					if err != nil {
+						return err
+					}
+				case "delivery_attempts":
+					err = deliveryAttemptsRepo.UnPartitionDeliveryAttemptsTable(cmd.Context())
+					if err != nil {
+						return err
+					}
+				default:
+					return fmt.Errorf("unknown table %s", args[0])
 				}
-			default:
-				return fmt.Errorf("unknown table %s", table)
 			}
 
 			return nil
 		},
 	}
-
-	cmd.Flags().StringVarP(&table, "table", "t", "", "table name")
 
 	return cmd
 }
