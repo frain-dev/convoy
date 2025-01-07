@@ -17,6 +17,7 @@ import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/d
 import { PortalService } from '../portal.service';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { TagComponent } from 'src/app/components/tag/tag.component';
+import { LicensesService } from '../../services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-subscriptions',
@@ -43,10 +44,10 @@ export class SubscriptionsComponent implements OnInit {
 
 	token: string = this.route.snapshot.queryParams.token;
 
-	constructor(private privateService: PrivateService, private generalService: GeneralService, private location: Location, private route: ActivatedRoute, private portalService: PortalService) {}
+	constructor(private privateService: PrivateService, private generalService: GeneralService, private location: Location, private route: ActivatedRoute, private portalService: PortalService, public licenseService: LicensesService) {}
 
 	ngOnInit() {
-		Promise.all([this.getPortalDetails(), this.getSubscriptions()]);
+		Promise.all([this.getPortalDetails(), this.getSubscriptions(), this.licenseService.setLicenses()]);
 	}
 
 	async getPortalDetails() {
@@ -71,10 +72,29 @@ export class SubscriptionsComponent implements OnInit {
 	}
 
 	openSubsriptionForm(action: 'create' | 'update') {
+        let project = localStorage.getItem("CONVOY_PROJECT");
+        if (!project && this.activeSubscription?.project_id) {
+            localStorage.setItem(
+                'CONVOY_PROJECT',
+                JSON.stringify({ uid: this.activeSubscription?.project_id })
+            );
+        }
 		this.action = action;
 		this.showSubscriptionForm = true;
-		this.location.go(`/portal/subscriptions/${action === 'create' ? 'new' : this.activeSubscription?.uid}?token=${this.token}${this.activeSubscription || this.endpointId ? `&endpointId=${this.activeSubscription?.uid || this.endpointId}` : ''}`);
-	}
+        let subscriptionPath = '/portal/subscriptions/';
+        if (action === 'create') {
+            subscriptionPath += 'new';
+        } else if (this.activeSubscription?.uid) {
+            subscriptionPath += this.activeSubscription.uid;
+        }
+
+        let queryParams = `?token=${this.token}`;
+        if (this.endpointId) {
+            queryParams += `&endpointId=${this.endpointId}`;
+        }
+
+        this.location.go(subscriptionPath + queryParams);
+    }
 
 	async deleteSubscripton() {
 		this.isDeletingSubscription = true;

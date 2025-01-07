@@ -18,12 +18,12 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	organisationMemberRepo := NewOrgMemberRepo(db, nil)
+	organisationMemberRepo := NewOrgMemberRepo(db)
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
 
 	userMap := map[string]*datastore.UserMetadata{}
-	userRepo := NewUserRepo(db, nil)
+	userRepo := NewUserRepo(db)
 
 	for i := 1; i < 6; i++ {
 		user := generateUser(t)
@@ -65,8 +65,8 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	organisationMemberRepo := NewOrgMemberRepo(db, nil)
-	orgRepo := NewOrgRepo(db, nil)
+	organisationMemberRepo := NewOrgMemberRepo(db)
+	orgRepo := NewOrgRepo(db)
 	project := seedProject(t, db)
 
 	user := seedUser(t, db)
@@ -104,11 +104,11 @@ func TestCreateOrganisationMember(t *testing.T) {
 	defer closeFn()
 
 	user := generateUser(t)
-	require.NoError(t, NewUserRepo(db, nil).CreateUser(context.Background(), user))
+	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
 
-	organisationMemberRepo := NewOrgMemberRepo(db, nil)
+	organisationMemberRepo := NewOrgMemberRepo(db)
 
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
@@ -140,10 +140,10 @@ func TestUpdateOrganisationMember(t *testing.T) {
 
 	user := generateUser(t)
 	org := seedOrg(t, db)
-	require.NoError(t, NewUserRepo(db, nil).CreateUser(context.Background(), user))
+	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 	project := seedProject(t, db)
 
-	organisationMemberRepo := NewOrgMemberRepo(db, nil)
+	organisationMemberRepo := NewOrgMemberRepo(db)
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
@@ -181,7 +181,7 @@ func TestDeleteOrganisationMember(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	organisationMemberRepo := NewOrgMemberRepo(db, nil)
+	organisationMemberRepo := NewOrgMemberRepo(db)
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
 
@@ -207,11 +207,11 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 	defer closeFn()
 
 	user := generateUser(t)
-	require.NoError(t, NewUserRepo(db, nil).CreateUser(context.Background(), user))
+	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
-	organisationMemberRepo := NewOrgMemberRepo(db, nil)
+	organisationMemberRepo := NewOrgMemberRepo(db)
 
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
@@ -242,12 +242,12 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 	defer closeFn()
 
 	user := generateUser(t)
-	require.NoError(t, NewUserRepo(db, nil).CreateUser(context.Background(), user))
+	require.NoError(t, NewUserRepo(db).CreateUser(context.Background(), user))
 
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
 
-	organisationMemberRepo := NewOrgMemberRepo(db, nil)
+	organisationMemberRepo := NewOrgMemberRepo(db)
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
@@ -279,13 +279,13 @@ func TestFetchUserProjects(t *testing.T) {
 	user := generateUser(t)
 	ctx := context.Background()
 
-	require.NoError(t, NewUserRepo(db, nil).CreateUser(ctx, user))
+	require.NoError(t, NewUserRepo(db).CreateUser(ctx, user))
 
 	org := seedOrg(t, db)
 	project := seedProject(t, db)
 
-	organisationMemberRepo := NewOrgMemberRepo(db, nil)
-	projectRepo := NewProjectRepo(db, nil)
+	organisationMemberRepo := NewOrgMemberRepo(db)
+	projectRepo := NewProjectRepo(db)
 	m := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,

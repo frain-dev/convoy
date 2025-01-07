@@ -70,8 +70,8 @@ func (h *Handler) ResendEventDelivery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fr := services.RetryEventDeliveryService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache),
-		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
+		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
 		Queue:             h.A.Queue,
 		EventDelivery:     eventDelivery,
 		Project:           project,
@@ -146,10 +146,10 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 	}
 
 	br := services.BatchRetryEventDeliveryService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache),
-		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
+		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
 		Queue:             h.A.Queue,
-		EventRepo:         postgres.NewEventRepo(h.A.DB, h.A.Cache),
+		EventRepo:         postgres.NewEventRepo(h.A.DB),
 		Filter:            data.Filter,
 	}
 
@@ -192,8 +192,8 @@ func (h *Handler) ForceResendEventDeliveries(w http.ResponseWriter, r *http.Requ
 	}
 
 	fr := services.ForceResendEventDeliveriesService{
-		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache),
-		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
+		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
 		Queue:             h.A.Queue,
 		IDs:               eventDeliveryIDs.IDs,
 		Project:           project,
@@ -239,7 +239,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	// if the idempotency key query is set, find the first event with the key
 	if len(data.IdempotencyKey) > 0 {
-		event, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
+		event, err := postgres.NewEventRepo(h.A.DB).FindFirstEventWithIdempotencyKey(r.Context(), project.UID, data.IdempotencyKey)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 			return
@@ -272,7 +272,7 @@ func (h *Handler) GetEventDeliveriesPaged(w http.ResponseWriter, r *http.Request
 
 	f := data.Filter
 
-	ed, paginationData, err := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType)
+	ed, paginationData, err := postgres.NewEventDeliveryRepo(h.A.DB).LoadEventDeliveriesPaged(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.SubscriptionID, f.Status, f.SearchParams, f.Pageable, f.IdempotencyKey, f.EventType)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch event deliveries")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching event deliveries", http.StatusInternalServerError))
@@ -325,7 +325,7 @@ func (h *Handler) CountAffectedEventDeliveries(w http.ResponseWriter, r *http.Re
 	}
 
 	f := data.Filter
-	count, err := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
+	count, err := postgres.NewEventDeliveryRepo(h.A.DB).CountEventDeliveries(r.Context(), project.UID, f.EndpointIDs, f.EventID, f.Status, f.SearchParams)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event deliveries")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -342,6 +342,6 @@ func (h *Handler) retrieveEventDelivery(r *http.Request) (*datastore.EventDelive
 	}
 
 	eventDeliveryID := chi.URLParam(r, "eventDeliveryID")
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
 	return eventDeliveryRepo.FindEventDeliveryByID(r.Context(), project.UID, eventDeliveryID)
 }

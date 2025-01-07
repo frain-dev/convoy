@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -74,12 +72,11 @@ const (
 )
 
 type metaEventRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewMetaEventRepo(db database.Database, cache cache.Cache) datastore.MetaEventRepository {
-	return &metaEventRepo{db: db, cache: cache}
+func NewMetaEventRepo(db database.Database) datastore.MetaEventRepository {
+	return &metaEventRepo{db: db}
 }
 
 func (m *metaEventRepo) CreateMetaEvent(ctx context.Context, metaEvent *datastore.MetaEvent) error {
@@ -165,7 +162,7 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 		metaEvents = append(metaEvents, data)
 	}
 
-	var count datastore.PrevRowCount
+	var prevRowCount datastore.PrevRowCount
 	if len(metaEvents) > 0 {
 		first := metaEvents[0]
 		qarg := arg
@@ -178,14 +175,14 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 		}
 
 		countQuery = m.db.GetReadDB().Rebind(countQuery)
-		rows, err := m.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
+		rows, err = m.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 		defer closeWithError(rows)
 
 		if rows.Next() {
-			err = rows.StructScan(&count)
+			err = rows.StructScan(&prevRowCount)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
@@ -201,7 +198,7 @@ func (m *metaEventRepo) LoadMetaEventsPaged(ctx context.Context, projectID strin
 		metaEvents = metaEvents[:len(metaEvents)-1]
 	}
 
-	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination := &datastore.PaginationData{PrevRowCount: prevRowCount}
 	pagination = pagination.Build(filter.Pageable, ids)
 
 	return metaEvents, *pagination, nil

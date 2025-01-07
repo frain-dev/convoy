@@ -47,7 +47,7 @@ func generateSubscription(project *datastore.Project, source *datastore.Source, 
 
 func seedSubscription(t *testing.T, db database.Database, project *datastore.Project, source *datastore.Source, endpoint *datastore.Endpoint, device *datastore.Device) *datastore.Subscription {
 	s := generateSubscription(project, source, endpoint, device)
-	require.NoError(t, NewSubscriptionRepo(db, nil).CreateSubscription(context.Background(), project.UID, s))
+	require.NoError(t, NewSubscriptionRepo(db).CreateSubscription(context.Background(), project.UID, s))
 	return s
 }
 
@@ -55,14 +55,14 @@ func Test_LoadSubscriptionsPaged(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	source := seedSource(t, db)
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)
 	device := seedDevice(t, db)
 	subMap := map[string]*datastore.Subscription{}
-	var newSub *datastore.Subscription
+	newSub := &datastore.Subscription{}
 	for i := 0; i < 100; i++ {
 		newSub = generateSubscription(project, source, endpoint, device)
 		require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub))
@@ -173,7 +173,7 @@ func Test_DeleteSubscription(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	project := seedProject(t, db)
 	source := seedSource(t, db)
@@ -197,7 +197,7 @@ func Test_CreateSubscription(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	project := seedProject(t, db)
 	source := seedSource(t, db)
@@ -222,7 +222,7 @@ func Test_CountEndpointSubscriptions(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	project := seedProject(t, db)
 	source := seedSource(t, db)
@@ -244,7 +244,7 @@ func Test_UpdateSubscription(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	project := seedProject(t, db)
 	source := seedSource(t, db)
@@ -286,7 +286,7 @@ func Test_FindSubscriptionByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	project := seedProject(t, db)
 	source := seedSource(t, db)
@@ -330,7 +330,7 @@ func Test_FindSubscriptionsBySourceID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	source := seedSource(t, db)
 	project := seedProject(t, db)
@@ -382,7 +382,7 @@ func Test_FindSubscriptionByEndpointID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	source := seedSource(t, db)
 	project := seedProject(t, db)
@@ -434,7 +434,7 @@ func Test_FindSubscriptionByDeviceID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	project := seedProject(t, db)
 	source := seedSource(t, db)
@@ -467,7 +467,7 @@ func Test_FindCLISubscriptions(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	subRepo := NewSubscriptionRepo(db, nil)
+	subRepo := NewSubscriptionRepo(db)
 
 	source := seedSource(t, db)
 	project := seedProject(t, db)
@@ -520,7 +520,7 @@ func seedDevice(t *testing.T, db database.Database) *datastore.Device {
 		Status:     datastore.DeviceStatusOnline,
 	}
 
-	err := NewDeviceRepo(db, nil).CreateDevice(context.Background(), d)
+	err := NewDeviceRepo(db).CreateDevice(context.Background(), d)
 	require.NoError(t, err)
 	return d
 }

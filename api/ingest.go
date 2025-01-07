@@ -37,7 +37,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	maskID := chi.URLParam(r, "maskID")
 
 	// 2. Retrieve source using mask ID.
-	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByMaskID(r.Context(), maskID)
+	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -48,7 +48,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	// 2. Retrieve source using mask ID.
-	projectRepo := postgres.NewProjectRepo(a.A.DB, a.A.Cache)
+	projectRepo := postgres.NewProjectRepo(a.A.DB)
 	project, err := projectRepo.FetchProjectByID(r.Context(), source.ProjectID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -138,7 +138,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	var checksum string
 	var isDuplicate bool
 	if len(source.IdempotencyKeys) > 0 {
-		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB, a.A.Cache))
+		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB))
 		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
 		if err != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -294,7 +294,7 @@ func convertRequestFormToJSON(r *http.Request) ([]byte, error) {
 
 func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Request) {
 	maskId := chi.URLParam(r, "maskID")
-	source, err := postgres.NewSourceRepo(a.A.DB, a.A.Cache).FindSourceByMaskID(r.Context(), maskId)
+	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskId)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -324,7 +324,7 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	sourceRepo := postgres.NewSourceRepo(a.A.DB, a.A.Cache)
+	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))

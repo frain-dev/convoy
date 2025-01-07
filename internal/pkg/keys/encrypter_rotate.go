@@ -24,14 +24,14 @@ func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, 
 		err = lockTable(ctx, tx, table, timeout)
 		if err != nil {
 			rollback(lo, tx)
-			log.WithError(err).Error("failed to lock table")
+			lo.WithError(err).Error("failed to lock table")
 			return err
 		}
 
 		isEncrypted, err := checkEncryptionStatus(ctx, tx, table)
 		if err != nil {
 			rollback(lo, tx)
-			log.WithError(err).Error("failed to check encryption status")
+			lo.WithError(err).Error("failed to check encryption status")
 			return err
 		}
 
@@ -46,7 +46,7 @@ func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, 
 			err = reEncryptColumn(ctx, tx, table, cipherColumn, oldKey, newKey)
 			if err != nil {
 				rollback(lo, tx)
-				log.WithError(err).Error("failed to re-encrypt column")
+				lo.WithError(err).Error("failed to re-encrypt column")
 				return err
 			}
 		}

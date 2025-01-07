@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
-	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -188,12 +188,16 @@ const (
 )
 
 type portalLinkRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
+	km keys.KeyManager
 }
 
-func NewPortalLinkRepo(db database.Database, cache cache.Cache) datastore.PortalLinkRepository {
-	return &portalLinkRepo{db: db, cache: cache}
+func NewPortalLinkRepo(db database.Database) datastore.PortalLinkRepository {
+	km, err := keys.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &portalLinkRepo{db: db, km: km}
 }
 
 func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
@@ -442,7 +446,11 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpointID})
 		}
 	} else if !util.IsStringEmpty(portal.OwnerID) {
-		rows, err := p.db.GetDB().QueryxContext(ctx, fetchEndpointsByOwnerId, portal.ProjectID, portal.OwnerID)
+		key, err := p.km.GetCurrentKey()
+		if err != nil {
+			return err
+		}
+		rows, err := p.db.GetDB().QueryxContext(ctx, fetchEndpointsByOwnerId, key, portal.ProjectID, portal.OwnerID)
 		if err != nil {
 			return err
 		}

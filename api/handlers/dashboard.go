@@ -86,7 +86,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apps, err := postgres.NewEndpointRepo(h.A.DB, h.A.Cache).CountProjectEndpoints(r.Context(), project.UID)
+	apps, err := postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(r.Context(), project.UID)
 	if err != nil {
 		log.WithError(err).Error("failed to count project endpoints")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
@@ -139,7 +139,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 			return
 		}
 
-		apps, err := postgres.NewEndpointRepo(h.A.DB, h.A.Cache).CountProjectEndpoints(ctx, project.UID)
+		apps, err := postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(ctx, project.UID)
 		if err != nil {
 			log.WithError(err).Error("failed to count project endpoints")
 			return
@@ -172,7 +172,7 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
 	var messagesSent uint64
 
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB, h.A.Cache)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
 	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load message intervals - ")

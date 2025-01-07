@@ -119,6 +119,8 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 				return nil, &ServiceError{ErrMsg: ErrInvalidSubscriptionFilterFormat.Error(), Err: err}
 			}
 			subscription.FilterConfig.Filter = s.Update.FilterConfig.Filter.Transform()
+		} else {
+			subscription.FilterConfig.Filter = datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}}
 		}
 	}
 

@@ -25,7 +25,7 @@ func Test_FetchProjectByID(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
-	projectRepo := NewProjectRepo(db, nil)
+	projectRepo := NewProjectRepo(db)
 
 	newProject := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -65,7 +65,7 @@ func TestCountProjects(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	projectRepository := NewProjectRepo(db, nil)
+	projectRepository := NewProjectRepo(db)
 	org := seedOrg(t, db)
 
 	count := 10
@@ -91,7 +91,7 @@ func Test_CreateProject(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	projectRepo := NewProjectRepo(db, nil)
+	projectRepo := NewProjectRepo(db)
 
 	org := seedOrg(t, db)
 
@@ -144,7 +144,7 @@ func Test_UpdateProject(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	projectRepo := NewProjectRepo(db, nil)
+	projectRepo := NewProjectRepo(db)
 
 	org := seedOrg(t, db)
 
@@ -230,7 +230,7 @@ func Test_LoadProjects(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
-	projectRepo := NewProjectRepo(db, nil)
+	projectRepo := NewProjectRepo(db)
 
 	for i := 0; i < 3; i++ {
 		project := &datastore.Project{
@@ -267,7 +267,7 @@ func Test_FillProjectStatistics(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
-	projectRepo := NewProjectRepo(db, nil)
+	projectRepo := NewProjectRepo(db)
 
 	project1 := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -318,7 +318,7 @@ func Test_FillProjectStatistics(t *testing.T) {
 		},
 	}
 
-	endpointRepo := NewEndpointRepo(db, nil)
+	endpointRepo := NewEndpointRepo(db)
 	err = endpointRepo.CreateEndpoint(context.Background(), endpoint1, project1.UID)
 	require.NoError(t, err)
 
@@ -334,7 +334,7 @@ func Test_FillProjectStatistics(t *testing.T) {
 		Verifier:  &datastore.VerifierConfig{},
 	}
 
-	err = NewSourceRepo(db, nil).CreateSource(context.Background(), source1)
+	err = NewSourceRepo(db).CreateSource(context.Background(), source1)
 	require.NoError(t, err)
 
 	subscription := &datastore.Subscription{
@@ -354,7 +354,7 @@ func Test_FillProjectStatistics(t *testing.T) {
 		},
 	}
 
-	err = NewSubscriptionRepo(db, nil).CreateSubscription(context.Background(), project2.UID, subscription)
+	err = NewSubscriptionRepo(db).CreateSubscription(context.Background(), project2.UID, subscription)
 	require.NoError(t, err)
 
 	err = projectRepo.FillProjectsStatistics(context.Background(), project1)
@@ -383,7 +383,7 @@ func Test_DeleteProject(t *testing.T) {
 	defer closeFn()
 
 	org := seedOrg(t, db)
-	projectRepo := NewProjectRepo(db, nil)
+	projectRepo := NewProjectRepo(db)
 
 	project := &datastore.Project{
 		UID:            ulid.Make().String(),
@@ -409,7 +409,7 @@ func Test_DeleteProject(t *testing.T) {
 		RateLimit:   3000,
 	}
 
-	endpointRepo := NewEndpointRepo(db, nil)
+	endpointRepo := NewEndpointRepo(db)
 	err = endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
 	require.NoError(t, err)
 
@@ -427,7 +427,7 @@ func Test_DeleteProject(t *testing.T) {
 		UpdatedAt: time.Now(),
 	}
 
-	err = NewEventRepo(db, nil).CreateEvent(context.Background(), event)
+	err = NewEventRepo(db).CreateEvent(context.Background(), event)
 	require.NoError(t, err)
 
 	sub := &datastore.Subscription{
@@ -446,7 +446,7 @@ func Test_DeleteProject(t *testing.T) {
 		RateLimitConfig: &datastore.DefaultRateLimitConfig,
 	}
 
-	err = NewSubscriptionRepo(db, nil).CreateSubscription(context.Background(), project.UID, sub)
+	err = NewSubscriptionRepo(db).CreateSubscription(context.Background(), project.UID, sub)
 	require.NoError(t, err)
 
 	err = projectRepo.DeleteProject(context.Background(), project.UID)
@@ -455,13 +455,13 @@ func Test_DeleteProject(t *testing.T) {
 	_, err = projectRepo.FetchProjectByID(context.Background(), project.UID)
 	require.Equal(t, datastore.ErrProjectNotFound, err)
 
-	_, err = NewEventRepo(db, nil).FindEventByID(context.Background(), event.ProjectID, event.UID)
+	_, err = NewEventRepo(db).FindEventByID(context.Background(), event.ProjectID, event.UID)
 	require.Equal(t, datastore.ErrEventNotFound, err)
 
-	_, err = NewEndpointRepo(db, nil).FindEndpointByID(context.Background(), project.UID, endpoint.UID)
+	_, err = NewEndpointRepo(db).FindEndpointByID(context.Background(), project.UID, endpoint.UID)
 	require.Equal(t, datastore.ErrEndpointNotFound, err)
 
-	_, err = NewSubscriptionRepo(db, nil).FindSubscriptionByID(context.Background(), project.UID, sub.UID)
+	_, err = NewSubscriptionRepo(db).FindSubscriptionByID(context.Background(), project.UID, sub.UID)
 	require.Equal(t, datastore.ErrSubscriptionNotFound, err)
 }
 
@@ -478,7 +478,7 @@ func seedOrg(t *testing.T, db database.Database) *datastore.Organisation {
 		UpdatedAt:      time.Now(),
 	}
 
-	err := NewOrgRepo(db, nil).CreateOrganisation(context.Background(), org)
+	err := NewOrgRepo(db).CreateOrganisation(context.Background(), org)
 	require.NoError(t, err)
 
 	return org
@@ -494,7 +494,7 @@ func seedProject(t *testing.T, db database.Database) *datastore.Project {
 		Config:         &datastore.DefaultProjectConfig,
 	}
 
-	err := NewProjectRepo(db, nil).CreateProject(context.Background(), p)
+	err := NewProjectRepo(db).CreateProject(context.Background(), p)
 	require.NoError(t, err)
 
 	return p

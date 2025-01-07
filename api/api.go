@@ -483,6 +483,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
 
+		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)
+
 		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
 			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
 			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
@@ -693,6 +695,8 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
 		portalLinkRouter.Use(middleware.RequireAuth())
 
+		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)
+
 		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.Post("/", handler.CreateEndpointEvent)
 			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
@@ -734,7 +738,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.UserPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
 		}
 
 		po.SetRule("god-mode", authz.RuleFunc(po.GodMode))
@@ -749,7 +753,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
 		po := &policies.OrganisationPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
 		}
 
 		po.SetRule("manage.all", authz.RuleFunc(po.ManageAll))
@@ -766,8 +770,8 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 		po := &policies.ProjectPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
 			Licenser:               a.A.Licenser,
-			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB, a.A.Cache),
-			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB, a.A.Cache),
+			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
 		}
 
 		po.SetRule("manage", authz.RuleFunc(po.Manage))

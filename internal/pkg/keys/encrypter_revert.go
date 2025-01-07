@@ -38,7 +38,7 @@ func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey stri
 		}
 
 		for column, cipherColumn := range columns {
-			if err := decryptAndRestoreColumn(ctx, tx, table, column, cipherColumn, encryptionKey); err != nil {
+			if err := decryptAndRestoreColumn(lo, ctx, tx, table, column, cipherColumn, encryptionKey); err != nil {
 				rollback(lo, tx)
 				return err
 			}
@@ -61,13 +61,17 @@ func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey stri
 }
 
 // decryptAndRestoreColumn decrypts the cipher column and restores the data to the plain column.
-func decryptAndRestoreColumn(ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
+func decryptAndRestoreColumn(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column, cipherColumn, encryptionKey string) error {
 	// Decrypt the cipher column and update the plain column, casting as needed
+	columnType, err := getColumnType(lo, ctx, tx, table, column)
+	if err != nil {
+		return err
+	}
 	revertQuery := fmt.Sprintf(
 		"UPDATE convoy.%s SET %s = pgp_sym_decrypt(%s::bytea, $1)::%s WHERE %s IS NOT NULL;",
-		table, column, cipherColumn, getColumnType(ctx, tx, table, column), cipherColumn,
+		table, column, cipherColumn, columnType, cipherColumn,
 	)
-	_, err := tx.ExecContext(ctx, revertQuery, encryptionKey)
+	_, err = tx.ExecContext(ctx, revertQuery, encryptionKey)
 	if err != nil {
 		return fmt.Errorf("failed to decrypt column %s in table %s: %w", cipherColumn, table, err)
 	}
@@ -85,15 +89,15 @@ func decryptAndRestoreColumn(ctx context.Context, tx *sqlx.Tx, table, column, ci
 	return nil
 }
 
-func getColumnType(ctx context.Context, tx *sqlx.Tx, table, column string) string {
-	query := `SELECT data_type FROM convoy.information_schema.columns WHERE table_name = $1 AND column_name = $2;`
+func getColumnType(lo log.StdLogger, ctx context.Context, tx *sqlx.Tx, table, column string) (string, error) {
+	query := `SELECT data_type FROM information_schema.columns WHERE table_name = $1 AND column_name = $2;`
 	var columnType string
 	err := tx.GetContext(ctx, &columnType, query, table, column)
 	if err != nil {
-		log.Infof("Failed to fetch column type for %s.%s: %v", table, column, err)
-		return ""
+		lo.Errorf("Failed to fetch column type for %s.%s: %v", table, column, err)
+		return "", err
 	}
-	return columnType
+	return columnType, nil
 }
 
 // markTableDecrypted sets the `is_encrypted` column to false.

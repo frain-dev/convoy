@@ -314,10 +314,10 @@ func buildApplication() *applicationHandler {
 		log.Fatal(err)
 	}
 
-	projectRepo := postgres.NewProjectRepo(db, nil)
-	eventRepo := postgres.NewEventRepo(db, nil)
+	projectRepo := postgres.NewProjectRepo(db)
+	eventRepo := postgres.NewEventRepo(db)
 	configRepo := postgres.NewConfigRepo(db)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	deliveryRepo := postgres.NewDeliveryAttemptRepo(db)
 
 	app := &applicationHandler{
@@ -359,7 +359,7 @@ func seedEvent(db database.Database, endpointID string, projectID string, uid, e
 	}
 
 	// Seed Data.
-	eventRepo := postgres.NewEventRepo(db, nil)
+	eventRepo := postgres.NewEventRepo(db)
 	err := eventRepo.CreateEvent(context.TODO(), ev)
 	if err != nil {
 		return nil, err
@@ -410,7 +410,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 	}
 
 	// Seed Data.
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db, nil)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
 	err := eventDeliveryRepo.CreateEventDelivery(context.TODO(), eventDelivery)
 	if err != nil {
 		return nil, err

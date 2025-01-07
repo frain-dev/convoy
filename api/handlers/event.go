@@ -189,9 +189,9 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	}
 
 	cf := services.CreateFanoutEventService{
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
-		EventRepo:      postgres.NewEventRepo(h.A.DB, h.A.Cache),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB, h.A.Cache),
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
+		EventRepo:      postgres.NewEventRepo(h.A.DB),
+		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
 		Queue:          h.A.Queue,
 		NewMessage:     &newMessage,
 		Project:        project,
@@ -281,7 +281,7 @@ func (h *Handler) ReplayEndpointEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs := services.ReplayEventService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		Queue:        h.A.Queue,
 		Event:        event,
 	}
@@ -331,9 +331,9 @@ func (h *Handler) BatchReplayEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bs := services.BatchReplayEventService{
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
+		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		Queue:        h.A.Queue,
-		EventRepo:    postgres.NewEventRepo(h.A.DB, h.A.Cache),
+		EventRepo:    postgres.NewEventRepo(h.A.DB),
 		Filter:       data.Filter,
 	}
 
@@ -429,7 +429,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 		data.Filter.Query = "" // event payload search not allowed
 	}
 
-	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).LoadEventsPaged(r.Context(), project.UID, data.Filter)
+	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to fetch events")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching app events", http.StatusInternalServerError))
@@ -479,7 +479,7 @@ func (h *Handler) CountAffectedEvents(w http.ResponseWriter, r *http.Request) {
 		data.Filter.EndpointIDs = endpointIDs
 	}
 
-	count, err := postgres.NewEventRepo(h.A.DB, h.A.Cache).CountEvents(r.Context(), p.UID, data.Filter)
+	count, err := postgres.NewEventRepo(h.A.DB).CountEvents(r.Context(), p.UID, data.Filter)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching event")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -496,6 +496,6 @@ func (h *Handler) retrieveEvent(r *http.Request) (*datastore.Event, error) {
 	}
 
 	eventID := chi.URLParam(r, "eventID")
-	eventRepo := postgres.NewEventRepo(h.A.DB, h.A.Cache)
+	eventRepo := postgres.NewEventRepo(h.A.DB)
 	return eventRepo.FindEventByID(r.Context(), project.UID, eventID)
 }

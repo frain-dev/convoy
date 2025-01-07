@@ -6,11 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cache"
-	ncache "github.com/frain-dev/convoy/cache/noop"
-	"github.com/frain-dev/convoy/config"
-
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/jmoiron/sqlx"
@@ -92,15 +87,11 @@ const (
 )
 
 type orgRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewOrgRepo(db database.Database, ca cache.Cache) datastore.OrganisationRepository {
-	if ca == nil {
-		ca = ncache.NewNoopCache()
-	}
-	return &orgRepo{db: db, cache: ca}
+func NewOrgRepo(db database.Database) datastore.OrganisationRepository {
+	return &orgRepo{db: db}
 }
 
 func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organisation) error {
@@ -116,12 +107,6 @@ func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organis
 
 	if rowsAffected < 1 {
 		return ErrOrganizationNotCreated
-	}
-
-	orCacheKey := convoy.OrganisationCacheKey.Get(org.UID).String()
-	err = o.cache.Set(ctx, orCacheKey, org, config.DefaultCacheTTL)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -172,7 +157,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		organizations = append(organizations, org)
 	}
 
-	var count datastore.PrevRowCount
+	var prevRowCount datastore.PrevRowCount
 	if len(organizations) > 0 {
 		var countQuery string
 		var qargs []interface{}
@@ -187,14 +172,14 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		countQuery = o.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := o.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
+		rows, err = o.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 		defer closeWithError(rows)
 
 		if rows.Next() {
-			err = rows.StructScan(&count)
+			err = rows.StructScan(&prevRowCount)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
@@ -210,7 +195,7 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		organizations = organizations[:len(organizations)-1]
 	}
 
-	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination := &datastore.PaginationData{PrevRowCount: prevRowCount}
 	pagination = pagination.Build(pageable, ids)
 
 	return organizations, *pagination, nil
@@ -231,12 +216,6 @@ func (o *orgRepo) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 		return ErrOrganizationNotUpdated
 	}
 
-	orCacheKey := convoy.OrganisationCacheKey.Get(org.UID).String()
-	err = o.cache.Set(ctx, orCacheKey, org, config.DefaultCacheTTL)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -255,126 +234,67 @@ func (o *orgRepo) DeleteOrganisation(ctx context.Context, uid string) error {
 		return ErrOrganizationNotDeleted
 	}
 
-	orgCacheKey := convoy.OrganisationCacheKey.Get(uid).String()
-	err = o.cache.Delete(ctx, orgCacheKey)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func (o *orgRepo) CountOrganisations(ctx context.Context) (int64, error) {
-	var count int64
-	err := o.db.GetReadDB().GetContext(ctx, &count, countOrganizations)
+	var orgCount int64
+	err := o.db.GetReadDB().GetContext(ctx, &orgCount, countOrganizations)
 	if err != nil {
 		return 0, err
 	}
 
-	return count, nil
+	return orgCount, nil
 }
 
 func (o *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datastore.Organisation, error) {
-	fromCache, err := o.readFromCache(ctx, id, func() (*datastore.Organisation, error) {
-		org := &datastore.Organisation{}
-		err := o.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1", fetchOrganisation), id).StructScan(org)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrOrgNotFound
-			}
-			return nil, err
-		}
-
-		return org, nil
-	})
+	org := &datastore.Organisation{}
+	err := o.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND id = $1", fetchOrganisation), id).StructScan(org)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return org, nil
 }
 
 func (o *orgRepo) FetchOrganisationByAssignedDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
-	fromCache, err := o.readFromCache(ctx, domain, func() (*datastore.Organisation, error) {
-		org := &datastore.Organisation{}
-		err := o.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND assigned_domain = $1", fetchOrganisation), domain).StructScan(org)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrOrgNotFound
-			}
-			return nil, err
-		}
-
-		return org, nil
-	})
+	org := &datastore.Organisation{}
+	err := o.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND assigned_domain = $1", fetchOrganisation), domain).StructScan(org)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return org, nil
 }
 
 func (o *orgRepo) FetchOrganisationByCustomDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {
-	fromCache, err := o.readFromCache(ctx, domain, func() (*datastore.Organisation, error) {
-		org := &datastore.Organisation{}
-		err := o.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND custom_domain = $1", fetchOrganisation), domain).StructScan(org)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrOrgNotFound
-			}
-			return nil, err
+	org := &datastore.Organisation{}
+	err := o.db.GetReadDB().QueryRowxContext(ctx, fmt.Sprintf("%s AND custom_domain = $1", fetchOrganisation), domain).StructScan(org)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgNotFound
 		}
-
-		return org, nil
-	})
-	if err != nil {
 		return nil, err
 	}
 
-	return fromCache, nil
-}
-
-func (o *orgRepo) readFromCache(ctx context.Context, key string, readFromDB func() (*datastore.Organisation, error)) (*datastore.Organisation, error) {
-	var organisation *datastore.Organisation
-	userCacheKey := convoy.OrganisationCacheKey.Get(key).String()
-	err := o.cache.Get(ctx, userCacheKey, &organisation)
-	if err != nil {
-		return nil, err
-	}
-
-	if organisation != nil {
-		return organisation, err
-	}
-
-	fromDB, err := readFromDB()
-	if err != nil {
-		return nil, err
-	}
-
-	err = o.cache.Set(ctx, userCacheKey, fromDB, config.DefaultCacheTTL)
-	if err != nil {
-		return nil, err
-	}
-
-	return fromDB, err
+	return org, nil
 }
 
 func (o *orgRepo) FetchOrganisationByProjectID(ctx context.Context, id string) (*datastore.Organisation, error) {
-	fromCache, err := o.readFromCache(ctx, id, func() (*datastore.Organisation, error) {
-		org := &datastore.Organisation{}
-		err := o.db.GetDB().QueryRowxContext(ctx, fetchOrganisationByProjectId, id).StructScan(org)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, datastore.ErrOrgNotFound
-			}
-			return nil, err
-		}
-
-		return org, nil
-	})
+	org := &datastore.Organisation{}
+	err := o.db.GetDB().QueryRowxContext(ctx, fetchOrganisationByProjectId, id).StructScan(org)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgNotFound
+		}
 		return nil, err
 	}
 
-	return fromCache, nil
+	return org, nil
 }

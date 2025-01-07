@@ -6,7 +6,6 @@ package api
 import (
 	"context"
 	"github.com/frain-dev/convoy/api/testdb"
-	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -31,7 +30,7 @@ func Test_CircuitBreakerManagerWorks(t *testing.T) {
 
 	configRepo := postgres.NewConfigRepo(db)
 	attemptRepo := postgres.NewDeliveryAttemptRepo(db)
-	projectRepo := postgres.NewProjectRepo(db, mcache.NewMemoryCache())
+	projectRepo := postgres.NewProjectRepo(db)
 
 	user, err := testdb.SeedDefaultUser(db)
 	require.NoError(t, err)

@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 
 	"github.com/frain-dev/convoy/database"
@@ -114,7 +113,7 @@ const (
 	SELECT ev.id, ev.project_id,
 	ev.id AS event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
-	ev.headers, ev.raw, ev.data, ev.created_at,ev.acknowledged_at,
+	ev.headers, ev.raw, ev.data, ev.created_at,
 	COALESCE(idempotency_key, '') AS idempotency_key,
 	COALESCE(url_query_params, '') AS url_query_params,
 	ev.updated_at, ev.deleted_at,
@@ -129,7 +128,6 @@ const (
 	baseEventsPagedForward = `
 	WITH events AS (
         %s %s AND ev.id <= :cursor
-	    GROUP BY ev.id, s.id
 	    ORDER BY ev.id %s
 	    LIMIT :limit
 	)
@@ -140,7 +138,6 @@ const (
 	baseEventsPagedBackward = `
 	WITH events AS (
         %s %s AND ev.id >= :cursor
-		GROUP BY ev.id, s.id
 		ORDER BY ev.id %s
 		LIMIT :limit
 	)
@@ -160,18 +157,21 @@ const (
 	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
 
 	baseCountPrevEvents = `
-	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
-	FROM convoy.events ev
-	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
-	WHERE ev.deleted_at IS NULL
+	select exists(
+		SELECT 1
+		FROM convoy.events ev
+		LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+		WHERE ev.deleted_at IS NULL
 	`
 
 	baseCountPrevEventSearch = `
-	SELECT COUNT(DISTINCT(ev.id)) AS COUNT
-	FROM convoy.events_search ev
-	LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
-	WHERE ev.deleted_at IS NULL
+	select exists(
+		SELECT 1
+		FROM convoy.events_search ev
+		LEFT JOIN convoy.events_endpoints ee ON ev.id = ee.event_id
+		WHERE ev.deleted_at IS NULL
 	`
+
 	countPrevEvents = ` AND ev.id > :cursor GROUP BY ev.id ORDER BY ev.id %s LIMIT 1`
 
 	softDeleteProjectEvents = `
@@ -200,12 +200,11 @@ const (
 )
 
 type eventRepo struct {
-	db    database.Database
-	cache cache.Cache
+	db database.Database
 }
 
-func NewEventRepo(db database.Database, cache cache.Cache) datastore.EventRepository {
-	return &eventRepo{db: db, cache: cache}
+func NewEventRepo(db database.Database) datastore.EventRepository {
+	return &eventRepo{db: db}
 }
 
 func (e *eventRepo) CreateEvent(ctx context.Context, event *datastore.Event) error {
@@ -436,7 +435,7 @@ func (e *eventRepo) CountProjectMessages(ctx context.Context, projectID string) 
 }
 
 func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *datastore.Filter) (int64, error) {
-	var count int64
+	var eventsCount int64
 	startDate, endDate := getCreatedDateFilter(filter.SearchParams.CreatedAtStart, filter.SearchParams.CreatedAtEnd)
 
 	arg := map[string]interface{}{
@@ -467,12 +466,12 @@ func (e *eventRepo) CountEvents(ctx context.Context, projectID string, filter *d
 	}
 
 	query = e.db.GetReadDB().Rebind(query)
-	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).Scan(&count)
+	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).Scan(&eventsCount)
 	if err != nil {
-		return count, err
+		return eventsCount, err
 	}
 
-	return count, nil
+	return eventsCount, nil
 }
 
 func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filter *datastore.Filter) ([]datastore.Event, datastore.PaginationData, error) {
@@ -555,7 +554,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		events = append(events, data)
 	}
 
-	var count datastore.PrevRowCount
+	var rowCount datastore.PrevRowCount
 	if len(events) > 0 {
 		first := events[0]
 		qarg := arg
@@ -569,7 +568,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		tmp := getCountDeliveriesPrevRowQuery(filter.Pageable.SortOrder())
 		tmp = fmt.Sprintf(tmp, filter.Pageable.SortOrder())
 
-		cq := baseCountEvents + filterQuery + tmp
+		cq := baseCountEvents + filterQuery + tmp + ");"
 		countQuery, qargs, err = sqlx.Named(cq, qarg)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
@@ -582,14 +581,14 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		countQuery = e.db.GetReadDB().Rebind(countQuery)
 
 		// count the row number before the first row
-		rows, err := e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
+		rows, err = e.db.GetReadDB().QueryxContext(ctx, countQuery, qargs...)
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}
 		defer closeWithError(rows)
 
 		if rows.Next() {
-			err = rows.StructScan(&count)
+			err = rows.StructScan(&rowCount)
 			if err != nil {
 				return nil, datastore.PaginationData{}, err
 			}
@@ -605,7 +604,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		events = events[:len(events)-1]
 	}
 
-	pagination := &datastore.PaginationData{PrevRowCount: count}
+	pagination := &datastore.PaginationData{PrevRowCount: rowCount}
 	pagination = pagination.Build(filter.Pageable, ids)
 
 	return events, *pagination, nil

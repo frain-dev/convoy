@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 )
@@ -55,7 +54,7 @@ type userRepo struct {
 	db database.Database
 }
 
-func NewUserRepo(db database.Database, ca cache.Cache) datastore.UserRepository {
+func NewUserRepo(db database.Database) datastore.UserRepository {
 	return &userRepo{db: db}
 }
 

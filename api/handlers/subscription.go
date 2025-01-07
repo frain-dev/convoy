@@ -78,7 +78,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
+	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("an error occurred while fetching subscriptions")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching subscriptions", http.StatusInternalServerError))
@@ -90,7 +90,7 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var org *datastore.Organisation
-	orgRepo := postgres.NewOrgRepo(h.A.DB, h.A.Cache)
+	orgRepo := postgres.NewOrgRepo(h.A.DB)
 	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -142,7 +142,7 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	subscription, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	subscription, err := postgres.NewSubscriptionRepo(h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -213,9 +213,9 @@ func (h *Handler) CreateSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cs := services.CreateSubscriptionService{
-		SubRepo:         postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
-		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
-		SourceRepo:      postgres.NewSourceRepo(h.A.DB, h.A.Cache),
+		SubRepo:         postgres.NewSubscriptionRepo(h.A.DB),
+		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB),
+		SourceRepo:      postgres.NewSourceRepo(h.A.DB),
 		Licenser:        h.A.Licenser,
 		Project:         project,
 		NewSubscription: &sub,
@@ -253,7 +253,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sub, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+	sub, err := postgres.NewSubscriptionRepo(h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -284,7 +284,7 @@ func (h *Handler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).DeleteSubscription(r.Context(), project.UID, sub)
+	err = postgres.NewSubscriptionRepo(h.A.DB).DeleteSubscription(r.Context(), project.UID, sub)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete subscription")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to delete subscription", http.StatusBadRequest))
@@ -345,7 +345,7 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		sub, err := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
+		sub, err := postgres.NewSubscriptionRepo(h.A.DB).FindSubscriptionByID(r.Context(), project.UID, chi.URLParam(r, "subscriptionID"))
 		if err != nil {
 			log.FromContext(r.Context()).WithError(err).Error("failed to find subscription")
 			if errors.Is(err, datastore.ErrSubscriptionNotFound) {
@@ -363,9 +363,9 @@ func (h *Handler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 
 	us := services.UpdateSubscriptionService{
-		SubRepo:        postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache),
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB, h.A.Cache),
-		SourceRepo:     postgres.NewSourceRepo(h.A.DB, h.A.Cache),
+		SubRepo:        postgres.NewSubscriptionRepo(h.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
+		SourceRepo:     postgres.NewSourceRepo(h.A.DB),
 		Licenser:       h.A.Licenser,
 		ProjectId:      project.UID,
 		SubscriptionId: chi.URLParam(r, "subscriptionID"),
@@ -414,7 +414,7 @@ func (h *Handler) TestSubscriptionFilter(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	subRepo := postgres.NewSubscriptionRepo(h.A.DB, h.A.Cache)
+	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
 	isBodyValid, err := subRepo.TestSubscriptionFilter(r.Context(), test.Request.Body, test.Schema.Body, false)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to validate subscription filter")

@@ -72,10 +72,10 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 }
 
 func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
-	sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
-	orgRepo := postgres.NewOrgRepo(a.DB, a.Cache)
-	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
-	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
+	orgRepo := postgres.NewOrgRepo(a.DB)
+	sourceRepo := postgres.NewSourceRepo(a.DB)
+	projectRepo := postgres.NewProjectRepo(a.DB)
+	endpointRepo := postgres.NewEndpointRepo(a.DB)
 	configRepo := postgres.NewConfigRepo(a.DB)
 
 	lo := a.Logger.(*log.Logger)

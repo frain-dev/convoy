@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -11,7 +10,6 @@ import (
 
 type UpdateSourceService struct {
 	SourceRepo   datastore.SourceRepository
-	Cache        cache.Cache
 	Project      *datastore.Project
 	SourceUpdate *models.UpdateSource
 	Source       *datastore.Source

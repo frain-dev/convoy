@@ -129,9 +129,9 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	start := time.Now()
 	lo.Info("Starting Convoy data plane")
 
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB, a.Cache)
-	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
-	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB, a.Cache)
+	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
+	userRepo := postgres.NewUserRepo(a.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache)
 	if err != nil {
 		lo.WithError(err).Fatal("failed to initialize realm chain")

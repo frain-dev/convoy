@@ -53,8 +53,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cs := services.CreateSourceService{
-		SourceRepo: postgres.NewSourceRepo(h.A.DB, h.A.Cache),
-		Cache:      h.A.Cache,
+		SourceRepo: postgres.NewSourceRepo(h.A.DB),
 		NewSource:  &newSource,
 		Project:    project,
 	}
@@ -65,7 +64,7 @@ func (h *Handler) CreateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(h.A.DB, h.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -105,7 +104,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(h.A.DB, h.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(h.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -116,7 +115,7 @@ func (h *Handler) GetSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(h.A.DB, h.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -169,7 +168,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	source, err := postgres.NewSourceRepo(h.A.DB, h.A.Cache).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
+	source, err := postgres.NewSourceRepo(h.A.DB).FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
@@ -181,8 +180,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 	}
 
 	us := services.UpdateSourceService{
-		SourceRepo:   postgres.NewSourceRepo(h.A.DB, h.A.Cache),
-		Cache:        h.A.Cache,
+		SourceRepo:   postgres.NewSourceRepo(h.A.DB),
 		Project:      project,
 		SourceUpdate: &sourceUpdate,
 		Source:       source,
@@ -194,7 +192,7 @@ func (h *Handler) UpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	org, err := postgres.NewOrgRepo(h.A.DB, h.A.Cache).FetchOrganisationByID(r.Context(), project.OrganisationID)
+	org, err := postgres.NewOrgRepo(h.A.DB).FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to find organisation by id")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -234,7 +232,7 @@ func (h *Handler) DeleteSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sourceRepo := postgres.NewSourceRepo(h.A.DB, h.A.Cache)
+	sourceRepo := postgres.NewSourceRepo(h.A.DB)
 
 	source, err := sourceRepo.FindSourceByID(r.Context(), project.UID, chi.URLParam(r, "sourceID"))
 	if err != nil {
@@ -280,7 +278,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListSource
 
 	data := q.Transform(r)
-	sources, paginationData, err := postgres.NewSourceRepo(h.A.DB, h.A.Cache).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
+	sources, paginationData, err := postgres.NewSourceRepo(h.A.DB).LoadSourcesPaged(r.Context(), project.UID, data.SourceFilter, data.Pageable)
 	if err != nil {
 		log.WithError(err).Error("an error occurred while fetching sources")
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching sources", http.StatusBadRequest))
@@ -294,7 +292,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var org *datastore.Organisation
-	orgRepo := postgres.NewOrgRepo(h.A.DB, h.A.Cache)
+	orgRepo := postgres.NewOrgRepo(h.A.DB)
 	org, err = orgRepo.FetchOrganisationByID(r.Context(), project.OrganisationID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
