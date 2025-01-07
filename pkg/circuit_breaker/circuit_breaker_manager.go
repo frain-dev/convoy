@@ -283,7 +283,7 @@ func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, brea
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	var ttlMap map[string]time.Duration
+	ttlMap := make(map[string]time.Duration)
 	for _, b := range breakers {
 		tenantConfig, ok := cb.tenantCache.GetConfig(b.TenantId)
 		if ok {
