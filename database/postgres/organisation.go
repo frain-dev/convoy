@@ -29,7 +29,7 @@ const (
 	`
 	fetchOrganisationByProjectId = `
 	SELECT * FROM convoy.organisations
-	WHERE deleted_at IS NULL AND id=(SELECT organisation_id FROM projects WHERE id=$1)
+	WHERE deleted_at IS NULL AND id=(SELECT organisation_id FROM convoy.projects WHERE id=$1)
 	`
 
 	fetchOrganisationsPaged = `
