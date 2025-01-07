@@ -82,9 +82,9 @@ func TestIngestCfg_GetInstanceRateLimit(t *testing.T) {
 	})
 
 	t.Run("Fallback to Default Rate", func(t *testing.T) {
-		_, err := db.GetDB().ExecContext(ctx, `DELETE FROM instance_overrides WHERE key = $1`, instance.KeyInstanceIngestRate)
+		_, err := db.GetDB().ExecContext(ctx, `DELETE FROM convoy.instance_overrides WHERE key = $1`, instance.KeyInstanceIngestRate)
 		assert.NoError(t, err)
-		_, err = db.GetDB().ExecContext(ctx, `DELETE FROM instance_defaults WHERE key = $1`, instance.KeyInstanceIngestRate)
+		_, err = db.GetDB().ExecContext(ctx, `DELETE FROM convoy.instance_defaults WHERE key = $1`, instance.KeyInstanceIngestRate)
 		assert.NoError(t, err)
 
 		cacheKey := fmt.Sprintf("rate_limit:%s:%s:%s", instance.KeyInstanceIngestRate, projectID, organisationID)

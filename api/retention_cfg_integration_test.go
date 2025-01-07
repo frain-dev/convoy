@@ -75,9 +75,9 @@ func TestRetentionCfg_GetRetentionPolicy(t *testing.T) {
 	})
 
 	t.Run("Fallback to Default Policy", func(t *testing.T) {
-		_, err := db.GetDB().ExecContext(ctx, `DELETE FROM instance_overrides WHERE key = $1`, instance.KeyRetentionPolicy)
+		_, err := db.GetDB().ExecContext(ctx, `DELETE FROM convoy.instance_overrides WHERE key = $1`, instance.KeyRetentionPolicy)
 		assert.NoError(t, err)
-		_, err = db.GetDB().ExecContext(ctx, `DELETE FROM instance_defaults WHERE key = $1`, instance.KeyRetentionPolicy)
+		_, err = db.GetDB().ExecContext(ctx, `DELETE FROM convoy.instance_defaults WHERE key = $1`, instance.KeyRetentionPolicy)
 		assert.NoError(t, err)
 
 		retentionPolicy, err := retentionCfg.GetRetentionPolicy(ctx)
