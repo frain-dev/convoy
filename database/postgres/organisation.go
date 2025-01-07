@@ -32,6 +32,10 @@ const (
 	SELECT * FROM convoy.organisations
 	WHERE deleted_at IS NULL
 	`
+	fetchOrganisationByProjectId = `
+	SELECT * FROM convoy.organisations
+	WHERE deleted_at IS NULL AND id=(SELECT organisation_id FROM projects WHERE id=$1)
+	`
 
 	fetchOrganisationsPaged = `
 	SELECT * FROM convoy.organisations WHERE deleted_at IS NULL
@@ -353,4 +357,24 @@ func (o *orgRepo) readFromCache(ctx context.Context, key string, readFromDB func
 	}
 
 	return fromDB, err
+}
+
+func (o *orgRepo) FetchOrganisationByProjectID(ctx context.Context, id string) (*datastore.Organisation, error) {
+	fromCache, err := o.readFromCache(ctx, id, func() (*datastore.Organisation, error) {
+		org := &datastore.Organisation{}
+		err := o.db.GetDB().QueryRowxContext(ctx, fetchOrganisationByProjectId, id).StructScan(org)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, datastore.ErrOrgNotFound
+			}
+			return nil, err
+		}
+
+		return org, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return fromCache, nil
 }

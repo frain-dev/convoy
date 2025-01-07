@@ -66,6 +66,7 @@ type ProjectRepository interface {
 	FetchProjectByID(context.Context, string) (*Project, error)
 	GetProjectsWithEventsInTheInterval(ctx context.Context, interval int) ([]ProjectEvents, error)
 	FillProjectsStatistics(ctx context.Context, project *Project) error
+	FetchCircuitBreakerConfigsFromProjects(ctx context.Context, lastChecked time.Time) (map[string]circuit_breaker.CircuitBreakerConfig, error)
 }
 
 type OrganisationRepository interface {
@@ -77,6 +78,7 @@ type OrganisationRepository interface {
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)
 	FetchOrganisationByCustomDomain(context.Context, string) (*Organisation, error)
 	FetchOrganisationByAssignedDomain(context.Context, string) (*Organisation, error)
+	FetchOrganisationByProjectID(context.Context, string) (*Organisation, error)
 }
 
 type OrganisationInviteRepository interface {
@@ -97,6 +99,8 @@ type OrganisationMemberRepository interface {
 	DeleteOrganisationMember(ctx context.Context, memberID string, orgID string) error
 	FetchOrganisationMemberByID(ctx context.Context, memberID string, organisationID string) (*OrganisationMember, error)
 	FetchOrganisationMemberByUserID(ctx context.Context, userID string, organisationID string) (*OrganisationMember, error)
+	FetchAnyInstanceAdminOrRootByUserID(ctx context.Context, userID string) (*OrganisationMember, error)
+	CountInstanceAdmins(ctx context.Context) (int64, error)
 }
 
 type EndpointRepository interface {
@@ -218,4 +222,18 @@ type EventTypesRepository interface {
 	DeprecateEventType(context.Context, string, string) (*ProjectEventType, error)
 	FetchEventTypeById(context.Context, string, string) (*ProjectEventType, error)
 	FetchAllEventTypes(context.Context, string) ([]ProjectEventType, error)
+}
+
+type InstanceDefaultsRepository interface {
+	Create(context.Context, *InstanceDefaults) (*InstanceDefaults, error)
+	Update(context.Context, string, *InstanceDefaults) (*InstanceDefaults, error)
+	FetchByID(ctx context.Context, id string) (*InstanceDefaults, error)
+	LoadPaged(ctx context.Context, pageable Pageable) ([]InstanceDefaults, PaginationData, error)
+}
+
+type InstanceOverridesRepository interface {
+	Create(ctx context.Context, record *InstanceOverrides) (*InstanceOverrides, error)
+	Update(ctx context.Context, id string, record *InstanceOverrides) (*InstanceOverrides, error)
+	FetchByID(ctx context.Context, id string) (*InstanceOverrides, error)
+	LoadPaged(ctx context.Context, pageable Pageable) ([]InstanceOverrides, PaginationData, error)
 }

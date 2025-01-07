@@ -158,7 +158,7 @@ func TestRedisStore_SetMany(t *testing.T) {
 	}
 	expiration := time.Minute
 
-	err = store.SetMany(ctx, breakers, expiration)
+	err = store.SetMany(ctx, breakers, expiration, make(map[string]time.Duration))
 	require.NoError(t, err)
 
 	// Verify the values were set
@@ -259,7 +259,7 @@ func TestTestStore_SetMany(t *testing.T) {
 		"test2": {Key: "test2", State: StateOpen},
 	}
 
-	err := store.SetMany(ctx, breakers, time.Minute)
+	err := store.SetMany(ctx, breakers, time.Minute, make(map[string]time.Duration))
 	require.NoError(t, err)
 
 	for key, cb := range breakers {

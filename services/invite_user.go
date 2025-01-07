@@ -54,7 +54,7 @@ func (iu *InviteUserService) Run(ctx context.Context) (*datastore.OrganisationIn
 	}
 
 	if !iu.Licenser.MultiPlayerMode() {
-		iu.Role.Type = auth.RoleSuperUser
+		iu.Role.Type = auth.RoleOrganisationAdmin
 	}
 
 	err = iu.InviteRepo.CreateOrganisationInvite(ctx, iv)

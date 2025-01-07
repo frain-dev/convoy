@@ -57,7 +57,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			wantAPIKey: &datastore.APIKey{
@@ -95,7 +95,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			wantErr:    true,
@@ -137,7 +137,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(ss *CreateAPIKeyService) {
@@ -165,7 +165,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(ss *CreateAPIKeyService) {
@@ -221,7 +221,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(ss *CreateAPIKeyService) {

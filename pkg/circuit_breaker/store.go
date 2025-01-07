@@ -20,7 +20,7 @@ type CircuitBreakerStore interface {
 	GetOne(context.Context, string) (string, error)
 	GetMany(context.Context, ...string) ([]interface{}, error)
 	SetOne(context.Context, string, interface{}, time.Duration) error
-	SetMany(context.Context, map[string]CircuitBreaker, time.Duration) error
+	SetMany(context.Context, map[string]CircuitBreaker, time.Duration, map[string]time.Duration) error
 }
 
 type RedisStore struct {
@@ -99,11 +99,16 @@ func (s *RedisStore) SetOne(ctx context.Context, key string, value interface{}, 
 	return s.redis.Set(ctx, key, value, expiration).Err()
 }
 
-func (s *RedisStore) SetMany(ctx context.Context, breakers map[string]CircuitBreaker, ttl time.Duration) error {
+func (s *RedisStore) SetMany(ctx context.Context, breakers map[string]CircuitBreaker, ttl time.Duration, ttlMap map[string]time.Duration) error {
 	pipe := s.redis.TxPipeline()
 	for key, breaker := range breakers {
 		val := breaker.String()
-		if innerErr := pipe.Set(ctx, key, val, ttl).Err(); innerErr != nil {
+		var ttlToUse = ttl
+		ttl2, ok := ttlMap[key]
+		if ok {
+			ttlToUse = ttl2
+		}
+		if innerErr := pipe.Set(ctx, key, val, ttlToUse).Err(); innerErr != nil {
 			return innerErr
 		}
 	}
@@ -188,7 +193,7 @@ func (t *TestStore) SetOne(_ context.Context, key string, i interface{}, _ time.
 	return nil
 }
 
-func (t *TestStore) SetMany(ctx context.Context, m map[string]CircuitBreaker, duration time.Duration) error {
+func (t *TestStore) SetMany(ctx context.Context, m map[string]CircuitBreaker, duration time.Duration, m2 map[string]time.Duration) error {
 	for k, v := range m {
 		if err := t.SetOne(ctx, k, v, duration); err != nil {
 			return err

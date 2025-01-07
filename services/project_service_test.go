@@ -75,7 +75,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -152,7 +152,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -213,7 +213,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -251,11 +251,12 @@ func TestProjectService_CreateProject(t *testing.T) {
 							},
 						},
 					},
-					SSL:           &datastore.DefaultSSLConfig,
-					Strategy:      &datastore.DefaultStrategyConfig,
-					RateLimit:     &datastore.DefaultRateLimitConfig,
-					ReplayAttacks: false,
-					MetaEvent:     &datastore.MetaEventConfiguration{IsEnabled: false},
+					SSL:                  &datastore.DefaultSSLConfig,
+					Strategy:             &datastore.DefaultStrategyConfig,
+					RateLimit:            &datastore.DefaultRateLimitConfig,
+					ReplayAttacks:        false,
+					MetaEvent:            &datastore.MetaEventConfiguration{IsEnabled: false},
+					CircuitBreakerConfig: &datastore.DefaultCircuitBreakerConfiguration,
 				},
 			},
 			wantErr: false,
@@ -274,7 +275,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -312,11 +313,12 @@ func TestProjectService_CreateProject(t *testing.T) {
 							},
 						},
 					},
-					SSL:           &datastore.DefaultSSLConfig,
-					Strategy:      &datastore.DefaultStrategyConfig,
-					RateLimit:     &datastore.DefaultRateLimitConfig,
-					ReplayAttacks: false,
-					MetaEvent:     &datastore.MetaEventConfiguration{IsEnabled: false},
+					SSL:                  &datastore.DefaultSSLConfig,
+					Strategy:             &datastore.DefaultStrategyConfig,
+					RateLimit:            &datastore.DefaultRateLimitConfig,
+					ReplayAttacks:        false,
+					MetaEvent:            &datastore.MetaEventConfiguration{IsEnabled: false},
+					CircuitBreakerConfig: &datastore.DefaultCircuitBreakerConfiguration,
 				},
 			},
 			wantErr: false,
@@ -350,7 +352,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -455,7 +457,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 		//		member: &datastore.OrganisationMember{
 		//			UID:            "abc",
 		//			OrganisationID: "1234",
-		//			Role:           auth.Role{Type: auth.RoleSuperUser},
+		//			Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 		//		},
 		//	},
 		//	dbFn: func(gs *ProjectService) {
@@ -622,6 +624,14 @@ func TestProjectService_UpdateProject(t *testing.T) {
 						},
 						RateLimit:     &datastore.DefaultRateLimitConfig,
 						ReplayAttacks: true,
+						CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
+							SampleRate:                  2,
+							ErrorTimeout:                30,
+							FailureThreshold:            10,
+							SuccessThreshold:            1,
+							ObservabilityWindow:         5,
+							ConsecutiveFailureThreshold: 10,
+						},
 					},
 				},
 				update: &models.UpdateProject{

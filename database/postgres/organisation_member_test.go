@@ -155,7 +155,7 @@ func TestUpdateOrganisationMember(t *testing.T) {
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:     auth.RoleSuperUser,
+		Type:     auth.RoleOrganisationAdmin,
 		Project:  project.UID,
 		Endpoint: "",
 	}

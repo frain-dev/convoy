@@ -400,7 +400,7 @@ func TestCircuitBreakerManager_GetCircuitBreakerError(t *testing.T) {
 	}
 
 	c := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
-	manager := &CircuitBreakerManager{config: config, clock: c}
+	manager := &CircuitBreakerManager{config: config, clock: c, tenantCache: NewTenantCache()}
 
 	t.Run("Open State", func(t *testing.T) {
 		breaker := CircuitBreaker{State: StateOpen}
@@ -818,7 +818,7 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 			}, nil
 		}
 
-		err := manager.sampleAndUpdate(ctx, pollFunc)
+		err := manager.SampleAndUpdate(ctx, pollFunc)
 		require.NoError(t, err)
 
 		// Check if circuit breakers were created and updated correctly
@@ -843,7 +843,7 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 				return map[string]PollResult{}, nil
 			}
 
-			err := manager.sampleAndUpdate(ctx, pollFunc)
+			err := manager.SampleAndUpdate(ctx, pollFunc)
 			require.NoError(t, err)
 		})
 
@@ -852,7 +852,7 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 			return nil, errors.New("poll function error")
 		}
 
-		err := manager.sampleAndUpdate(ctx, pollFunc)
+		err := manager.SampleAndUpdate(ctx, pollFunc)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "poll function failed")
 	})
@@ -890,7 +890,9 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 		}, nil
 	}
 
-	go manager.Start(ctx, pollFunc)
+	go manager.Start(ctx, 500, pollFunc, func(ctx context.Context, lastChecked time.Time) (map[string]CircuitBreakerConfig, error) {
+		return make(map[string]CircuitBreakerConfig), nil
+	})
 
 	// Wait for a few poll cycles
 	time.Sleep(2500 * time.Millisecond)

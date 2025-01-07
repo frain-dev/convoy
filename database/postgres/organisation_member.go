@@ -79,6 +79,35 @@ const (
 	WHERE o.user_id = $1 AND o.organisation_id = $2 AND o.deleted_at IS NULL;
 	`
 
+	fetchAnyInstanceAdminOrRootByUserID = `
+	SELECT
+		o.id AS id,
+		o.organisation_id AS "organisation_id",
+		o.role_type AS "role.type",
+	    COALESCE(o.role_project,'') AS "role.project",
+	    COALESCE(o.role_endpoint,'') AS "role.endpoint",
+		u.id AS "user_id",
+		u.id AS "user_metadata.user_id",
+		u.first_name AS "user_metadata.first_name",
+		u.last_name AS "user_metadata.last_name",
+		u.email AS "user_metadata.email"
+	FROM convoy.organisation_members o
+	LEFT JOIN convoy.users u
+		ON o.user_id = u.id
+	WHERE o.user_id = $1 AND (o.role_type='instance_admin' OR o.role_type='root') AND o.deleted_at IS NULL LIMIT 1;
+	`
+
+	countInstanceAdmins = `
+    SELECT COUNT(*) FROM (
+        SELECT
+            o.id AS id
+        FROM convoy.organisation_members o
+        LEFT JOIN convoy.users u
+            ON o.user_id = u.id
+        WHERE o.role_type='instance_admin' AND o.deleted_at IS NULL LIMIT 1
+    ) ou;
+	`
+
 	fetchOrganisationMembersPaged = `
 	SELECT
 		o.id AS id,
@@ -499,4 +528,27 @@ func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, use
 	}
 
 	return member, nil
+}
+
+func (o *orgMemberRepo) FetchAnyInstanceAdminOrRootByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
+	member := &datastore.OrganisationMember{}
+	err := o.db.GetDB().QueryRowxContext(ctx, fetchAnyInstanceAdminOrRootByUserID, userID).StructScan(member)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgMemberNotFound
+		}
+		return nil, err
+	}
+
+	return member, nil
+}
+
+func (o *orgMemberRepo) CountInstanceAdmins(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetReadDB().GetContext(ctx, &count, countInstanceAdmins)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

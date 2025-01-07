@@ -79,7 +79,8 @@ func SeedEndpoint(db database.Database, g *datastore.Project, uid, title, ownerI
 	return endpoint, nil
 }
 
-func SeedMultipleEndpoints(db database.Database, project *datastore.Project, count int) error {
+func SeedMultipleEndpoints(db database.Database, project *datastore.Project, count int) ([]*datastore.Endpoint, error) {
+	endpoints := make([]*datastore.Endpoint, count)
 	for i := 0; i < count; i++ {
 		uid := ulid.Make().String()
 		app := &datastore.Endpoint{
@@ -96,10 +97,11 @@ func SeedMultipleEndpoints(db database.Database, project *datastore.Project, cou
 		appRepo := postgres.NewEndpointRepo(db, nil)
 		err := appRepo.CreateEndpoint(context.TODO(), app, app.ProjectID)
 		if err != nil {
-			return err
+			return nil, err
 		}
+		endpoints[i] = app
 	}
-	return nil
+	return endpoints, nil
 }
 
 func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value string) (*datastore.Secret, error) {
@@ -198,8 +200,41 @@ func SeedDefaultUser(db database.Database) (*datastore.User, error) {
 	return defaultUser, nil
 }
 
+// seed instance admin user
+func SeedInstanceAdminUser(db database.Database) (*datastore.User, error) {
+	p := datastore.Password{Plaintext: DefaultUserPassword}
+	err := p.GenerateHash()
+	if err != nil {
+		return nil, err
+	}
+
+	user := &datastore.User{
+		UID:       ulid.Make().String(),
+		FirstName: "instance",
+		LastName:  "admin",
+		Email:     "instanceadmin@user.com",
+		Password:  string(p.Hash),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	// Seed Data.
+	userRepo := postgres.NewUserRepo(db, nil)
+	err = userRepo.CreateUser(context.TODO(), user)
+	if err != nil {
+		return &datastore.User{}, err
+	}
+
+	return user, nil
+}
+
 // seed default organisation
 func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datastore.Organisation, error) {
+	return SeedDefaultOrganisationByRoleType(db, user, auth.RoleOrganisationAdmin)
+}
+
+// seed default organisation by role type
+func SeedDefaultOrganisationByRoleType(db database.Database, user *datastore.User, roleType auth.RoleType) (*datastore.Organisation, error) {
 	defaultOrg := &datastore.Organisation{
 		UID:       ulid.Make().String(),
 		OwnerID:   user.UID,
@@ -219,7 +254,7 @@ func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datas
 		UID:            ulid.Make().String(),
 		OrganisationID: defaultOrg.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleSuperUser},
+		Role:           auth.Role{Type: roleType},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -576,12 +611,11 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 
 func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	c := &datastore.Configuration{
-		UID:                  ulid.Make().String(),
-		IsAnalyticsEnabled:   true,
-		IsSignupEnabled:      true,
-		StoragePolicy:        &datastore.DefaultStoragePolicy,
-		RetentionPolicy:      &datastore.DefaultRetentionPolicy,
-		CircuitBreakerConfig: &datastore.DefaultCircuitBreakerConfiguration,
+		UID:                ulid.Make().String(),
+		IsAnalyticsEnabled: true,
+		IsSignupEnabled:    true,
+		StoragePolicy:      &datastore.DefaultStoragePolicy,
+		RetentionPolicy:    &datastore.DefaultRetentionPolicy,
 	}
 
 	// Seed Data
@@ -687,7 +721,9 @@ func truncateTables(db database.Database) error {
 		convoy.organisation_members,
 		convoy.organisations,
 		convoy.users,
-		convoy.jobs
+		convoy.jobs,
+		convoy.instance_defaults,
+		convoy.instance_overrides
 	`
 
 	_, err := db.GetDB().ExecContext(context.Background(), fmt.Sprintf("TRUNCATE %s CASCADE;", tables))

@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"strings"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
@@ -36,18 +38,22 @@ const (
 
 	createProjectConfiguration = `
 	INSERT INTO convoy.project_configurations (
-		id, search_policy, max_payload_read_size, 
+		id, search_policy, max_payload_read_size,
 		replay_attacks_prevention_enabled, ratelimit_count,
 		ratelimit_duration, strategy_type,	strategy_duration,
 		strategy_retry_count, signature_header, signature_versions,
 		disable_endpoint, meta_events_enabled, meta_events_type,
 		meta_events_event_type, meta_events_url, meta_events_secret,
-		meta_events_pub_sub, ssl_enforce_secure_endpoints
+		meta_events_pub_sub, ssl_enforce_secure_endpoints,
+	    cb_sample_rate,cb_error_timeout,
+		cb_failure_threshold, cb_success_threshold,
+		cb_observability_window,
+		cb_consecutive_failure_threshold, cb_minimum_request_count
 	  )
 	  VALUES
 		(
 		  $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-		  $14, $15, $16, $17, $18, $19
+		  $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
 		);
 	`
 
@@ -71,6 +77,13 @@ const (
 		meta_events_pub_sub = $17,
 		search_policy = $18,
 		ssl_enforce_secure_endpoints = $19,
+		cb_sample_rate = $20,
+		cb_error_timeout = $21,
+		cb_failure_threshold = $22,
+		cb_success_threshold = $23,
+		cb_observability_window = $24,
+		cb_consecutive_failure_threshold = $25,
+		cb_minimum_request_count = $26,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -102,6 +115,13 @@ const (
 		COALESCE(c.meta_events_url, '') AS "config.meta_event.url",
 		COALESCE(c.meta_events_secret, '') AS "config.meta_event.secret",
 		c.meta_events_pub_sub AS "config.meta_event.pub_sub",
+		c.cb_sample_rate AS "config.circuit_breaker.sample_rate",
+		c.cb_error_timeout AS "config.circuit_breaker.error_timeout",
+		c.cb_failure_threshold AS "config.circuit_breaker.failure_threshold",
+		c.cb_success_threshold AS "config.circuit_breaker.success_threshold",
+		c.cb_observability_window AS "config.circuit_breaker.observability_window",
+		c.cb_minimum_request_count as "config.circuit_breaker.minimum_request_count",
+		c.cb_consecutive_failure_threshold AS "config.circuit_breaker.consecutive_failure_threshold",
 		p.created_at,
 		p.updated_at,
 		p.deleted_at
@@ -137,6 +157,13 @@ const (
 	COALESCE(c.meta_events_url, '') AS "config.meta_event.url",
 	COALESCE(c.meta_events_secret, '') AS "config.meta_event.secret",
 	c.meta_events_pub_sub AS "config.meta_event.pub_sub",
+    c.cb_sample_rate AS "config.circuit_breaker.sample_rate",
+    c.cb_error_timeout AS "config.circuit_breaker.error_timeout",
+    c.cb_failure_threshold AS "config.circuit_breaker.failure_threshold",
+    c.cb_success_threshold AS "config.circuit_breaker.success_threshold",
+    c.cb_observability_window AS "config.circuit_breaker.observability_window",
+    c.cb_minimum_request_count as "config.circuit_breaker.minimum_request_count",
+    c.cb_consecutive_failure_threshold AS "config.circuit_breaker.consecutive_failure_threshold",
 	p.created_at,
 	p.updated_at,
 	p.deleted_at
@@ -248,6 +275,7 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 	sc := project.Config.GetStrategyConfig()
 	sgc := project.Config.GetSignatureConfig()
 	me := project.Config.GetMetaEventConfig()
+	cb := project.Config.GetCircuitBreakerConfig()
 
 	configID := ulid.Make().String()
 	result, err := tx.ExecContext(ctx, createProjectConfiguration,
@@ -270,6 +298,13 @@ func (p *projectRepo) CreateProject(ctx context.Context, project *datastore.Proj
 		me.Secret,
 		me.PubSub,
 		project.Config.SSL.EnforceSecureEndpoints,
+		cb.SampleRate,
+		cb.ErrorTimeout,
+		cb.FailureThreshold,
+		cb.SuccessThreshold,
+		cb.ObservabilityWindow,
+		cb.ConsecutiveFailureThreshold,
+		cb.MinimumRequestCount,
 	)
 	if err != nil {
 		return err
@@ -369,6 +404,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	sgc := project.Config.GetSignatureConfig()
 	ssl := project.Config.GetSSLConfig()
 	me := project.Config.GetMetaEventConfig()
+	cb := project.Config.GetCircuitBreakerConfig()
 
 	cRes, err := tx.ExecContext(ctx, updateProjectConfiguration,
 		project.ProjectConfigID,
@@ -390,9 +426,16 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		me.PubSub,
 		project.Config.SearchPolicy,
 		ssl.EnforceSecureEndpoints,
+		cb.SampleRate,
+		cb.ErrorTimeout,
+		cb.FailureThreshold,
+		cb.SuccessThreshold,
+		cb.ObservabilityWindow,
+		cb.ConsecutiveFailureThreshold,
+		cb.MinimumRequestCount,
 	)
 	if err != nil {
-		return fmt.Errorf("update project config err: %v", err)
+		return fmt.Errorf("update project config err: %w", err)
 	}
 
 	rowsAffected, err = cRes.RowsAffected()
@@ -549,4 +592,56 @@ func (p *projectRepo) GetProjectsWithEventsInTheInterval(ctx context.Context, in
 	}
 
 	return projects, nil
+}
+
+func (p *projectRepo) FetchCircuitBreakerConfigsFromProjects(ctx context.Context, lastChecked time.Time) (map[string]circuit_breaker.CircuitBreakerConfig, error) {
+	query := `
+        SELECT
+            p.id as tenant_id,
+            pc.cb_sample_rate,
+            pc.cb_error_timeout,
+            pc.cb_failure_threshold,
+            pc.cb_success_threshold,
+            pc.cb_observability_window,
+            pc.cb_minimum_request_count,
+            pc.cb_consecutive_failure_threshold
+        FROM convoy.projects p
+        JOIN convoy.project_configurations pc
+            ON p.project_configuration_id = pc.id
+        WHERE pc.updated_at > $1
+    `
+
+	rows, err := p.db.GetReadDB().QueryContext(ctx, query, lastChecked)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query project configurations: %w", err)
+	}
+	defer rows.Close()
+
+	configs := make(map[string]circuit_breaker.CircuitBreakerConfig)
+
+	for rows.Next() {
+		var tenantID string
+		var breakerConfig circuit_breaker.CircuitBreakerConfig
+
+		if err := rows.Scan(
+			&tenantID,
+			&breakerConfig.SampleRate,
+			&breakerConfig.BreakerTimeout,
+			&breakerConfig.FailureThreshold,
+			&breakerConfig.SuccessThreshold,
+			&breakerConfig.ObservabilityWindow,
+			&breakerConfig.MinimumRequestCount,
+			&breakerConfig.ConsecutiveFailureThreshold,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		configs[tenantID] = breakerConfig
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
+	}
+
+	return configs, nil
 }

@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub/ingest"
 	"strings"
 	"time"
 
@@ -33,29 +36,39 @@ var ingestCtx IngestCtxKey = "IngestCtx"
 const ConvoyMessageTypeHeader = "x-convoy-message-type"
 
 type Ingest struct {
-	ctx         context.Context
-	ticker      *time.Ticker
-	queue       queue.Queuer
-	rateLimiter limiter.RateLimiter
-	sources     map[memorystore.Key]*PubSubSource
-	table       *memorystore.Table
-	log         log.StdLogger
-	instanceId  string
-	licenser    license.Licenser
+	ctx                 context.Context
+	ticker              *time.Ticker
+	db                  database.Database
+	orgRepo             datastore.OrganisationRepository
+	cache               cache.Cache
+	queue               queue.Queuer
+	rateLimiter         limiter.RateLimiter
+	sources             map[memorystore.Key]*PubSubSource
+	table               *memorystore.Table
+	log                 log.StdLogger
+	instanceId          string
+	licenser            license.Licenser
+	defaultIngestRate   int
+	cacheTimeoutSeconds int
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*Ingest, error) {
+func NewIngest(ctx context.Context, table *memorystore.Table, db database.Database, orgRepo datastore.OrganisationRepository, cache cache.Cache, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, defaultIngestRate int, timeout int) (*Ingest, error) {
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
-		ctx:         ctx,
-		log:         log,
-		table:       table,
-		queue:       queue,
-		rateLimiter: rateLimiter,
-		instanceId:  instanceId,
-		licenser:    licenser,
-		sources:     make(map[memorystore.Key]*PubSubSource),
-		ticker:      time.NewTicker(time.Duration(1) * time.Second),
+		ctx:                 ctx,
+		db:                  db,
+		orgRepo:             orgRepo,
+		cache:               cache,
+		log:                 log,
+		table:               table,
+		queue:               queue,
+		rateLimiter:         rateLimiter,
+		instanceId:          instanceId,
+		licenser:            licenser,
+		sources:             make(map[memorystore.Key]*PubSubSource),
+		ticker:              time.NewTicker(time.Duration(1) * time.Second),
+		defaultIngestRate:   defaultIngestRate,
+		cacheTimeoutSeconds: timeout,
 	}
 
 	return i, nil
@@ -120,7 +133,14 @@ func (i *Ingest) run() error {
 			return errors.New("invalid source in memory store")
 		}
 
-		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.licenser, i.instanceId)
+		org, err := i.orgRepo.FetchOrganisationByProjectID(i.ctx, ss.ProjectID)
+		if err != nil {
+			return errors.New("failed to fetch org from database for source " + ss.UID)
+		}
+
+		ingestCfg := ingest.NewIngestCfg(i.db, i.cache, i.defaultIngestRate, ss.ProjectID, org.UID, i.cacheTimeoutSeconds)
+
+		ps, err := NewPubSubSource(i.ctx, &ss, i.handler, i.log, i.rateLimiter, i.licenser, i.instanceId, ingestCfg)
 		if err != nil {
 			return err
 		}

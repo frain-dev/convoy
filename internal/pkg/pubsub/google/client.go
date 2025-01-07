@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	pubsub2 "github.com/frain-dev/convoy/internal/pkg/pubsub/ingest"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -27,9 +28,10 @@ type Google struct {
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
 	licenser    license.Licenser
+	ingestCfg   *pubsub2.IngestCfg
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser) *Google {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, ingestCfg *pubsub2.IngestCfg) *Google {
 	return &Google{
 		Cfg:         source.PubSub.Google,
 		source:      source,
@@ -38,6 +40,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		log:         log,
 		rateLimiter: rateLimiter,
 		licenser:    licenser,
+		ingestCfg:   ingestCfg,
 	}
 }
 

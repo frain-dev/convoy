@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/internal/pkg/instance"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"io"
 	"os"
@@ -161,6 +163,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Queue = q
 		app.Logger = lo
 		app.Cache = ca
+
+		err = ensureInstanceAdmin(context.Background(), app, shouldBootstrap(cmd))
+		if err != nil {
+			return err
+		}
 
 		if ok := shouldBootstrap(cmd); ok {
 			err = ensureDefaultUser(context.Background(), app)
@@ -781,6 +788,82 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 	}
 
 	return false
+}
+
+func ensureInstanceAdmin(ctx context.Context, a *cli.App, bootstrap bool) error {
+	userRepo := postgres.NewUserRepo(a.DB, a.Cache)
+	orgRepo := postgres.NewOrgRepo(a.DB, a.Cache)
+	orgMemberRepo := postgres.NewOrgMemberRepo(a.DB, a.Cache)
+
+	count, err := orgMemberRepo.CountInstanceAdmins(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to count instance admins: %w", err)
+	}
+
+	if count > 0 {
+		return nil
+	}
+
+	p := datastore.Password{Plaintext: "default"}
+	err = p.GenerateHash()
+
+	if err != nil {
+		return err
+	}
+
+	instanceAdmin := &datastore.User{
+		UID:           ulid.Make().String(),
+		FirstName:     "instance",
+		LastName:      "admin",
+		Email:         "instance-admin@default.com",
+		Password:      string(p.Hash),
+		EmailVerified: true,
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}
+
+	err = userRepo.CreateUser(ctx, instanceAdmin)
+	if err != nil {
+		return fmt.Errorf("failed to create instance admin - %w", err)
+	}
+
+	org := &datastore.Organisation{
+		UID:       ulid.Make().String(),
+		OwnerID:   instanceAdmin.UID,
+		Name:      "Instance Org",
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+
+	err = orgRepo.CreateOrganisation(ctx, org)
+	if err != nil {
+		return err
+	}
+
+	member := &datastore.OrganisationMember{
+		UID:            ulid.Make().String(),
+		OrganisationID: org.UID,
+		UserID:         instanceAdmin.UID,
+		Role:           auth.Role{Type: auth.RoleInstanceAdmin},
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+
+	err = orgMemberRepo.CreateOrganisationMember(ctx, member)
+	if err != nil {
+		return err
+	}
+
+	a.Logger.Infof("Created instance admin with username: %s and password: %s", instanceAdmin.Email, p.Plaintext)
+
+	if bootstrap {
+		err = instance.EncryptAndStoreInstanceDefaults(ctx, a.DB, a.Logger)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func ensureDefaultUser(ctx context.Context, a *cli.App) error {

@@ -703,7 +703,7 @@ func (s *EndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() {
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	err := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
+	_, err := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -1591,13 +1591,15 @@ func TestEventIntegrationTestSuite(t *testing.T) {
 
 type OrganisationIntegrationTestSuite struct {
 	suite.Suite
-	DB              database.Database
-	Router          http.Handler
-	ConvoyApp       *ApplicationHandler
-	AuthenticatorFn AuthenticatorFn
-	DefaultOrg      *datastore.Organisation
-	DefaultProject  *datastore.Project
-	DefaultUser     *datastore.User
+	DB                      database.Database
+	Router                  http.Handler
+	ConvoyApp               *ApplicationHandler
+	AuthenticatorFn         AuthenticatorFn
+	AuthenticatorInstanceFn AuthenticatorFn
+	DefaultOrg              *datastore.Organisation
+	DefaultProject          *datastore.Project
+	DefaultUser             *datastore.User
+	InstanceAdminUser       *datastore.User
 }
 
 func (s *OrganisationIntegrationTestSuite) SetupSuite() {
@@ -1626,6 +1628,17 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 		Password: testdb.DefaultUserPassword,
 	})
 
+	instanceAdmin, err := testdb.SeedInstanceAdminUser(s.ConvoyApp.A.DB)
+	require.NoError(s.T(), err)
+	s.InstanceAdminUser = instanceAdmin
+
+	s.AuthenticatorInstanceFn = authenticateRequest(&models.LoginUser{
+		Username: instanceAdmin.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+	_, err = testdb.SeedDefaultOrganisationByRoleType(s.ConvoyApp.A.DB, instanceAdmin, auth.RoleInstanceAdmin)
+	require.NoError(s.T(), err)
+
 	// Setup Config.
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
@@ -1648,7 +1661,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
 	// Arrange.
 	url := "/ui/organisations"
 	req := createRequest(http.MethodPost, url, "", body)
-	err := s.AuthenticatorFn(req, s.Router)
+	err := s.AuthenticatorInstanceFn(req, s.Router)
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
@@ -1676,7 +1689,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisa
 	// Arrange.
 	url := "/ui/organisations"
 	req := createRequest(http.MethodPost, url, "", body)
-	err := s.AuthenticatorFn(req, s.Router)
+	err := s.AuthenticatorInstanceFn(req, s.Router)
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
@@ -1695,7 +1708,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_CustomDomain(
 	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	require.NoError(s.T(), err)
 
 	body := strings.NewReader(`{"custom_domain":"https://abc.com"}`)
@@ -1728,7 +1741,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser, Project: s.DefaultProject.UID})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin, Project: s.DefaultProject.UID})
 	require.NoError(s.T(), err)
 
 	body := strings.NewReader(`{"name":"update_org"}`)
@@ -1760,7 +1773,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 	seedOrg, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -1830,7 +1843,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations_WithPersonalAPI
 	//	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, ulid.Make().String(), s.DefaultUser.UID, "test-org")
 	//	require.NoError(s.T(), err)
 	//
-	//	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
+	//	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	//	require.NoError(s.T(), err)
 	//
 	//	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -1862,13 +1875,21 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations_WithPersonalAPI
 }
 
 func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
-	expectedStatusCode := http.StatusOK
+	expectedStatusCode := http.StatusForbidden
 
 	uid := ulid.Make().String()
+	err := s.runDeleteOrganisationTest(uid, expectedStatusCode, auth.RoleOrganisationAdmin)
+
+	orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
+	_, err = orgRepo.FetchOrganisationByID(context.Background(), uid)
+	require.NotEqual(s.T(), datastore.ErrOrgNotFound, err)
+}
+
+func (s *OrganisationIntegrationTestSuite) runDeleteOrganisationTest(uid string, expectedStatusCode int, role auth.RoleType) error {
 	seedOrg, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: role})
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -1884,6 +1905,14 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
+	return err
+}
+
+func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation_InstanceAdmin() {
+	expectedStatusCode := http.StatusOK
+
+	uid := ulid.Make().String()
+	err := s.runDeleteOrganisationTest(uid, expectedStatusCode, auth.RoleInstanceAdmin)
 
 	orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB, s.ConvoyApp.A.Cache)
 	_, err = orgRepo.FetchOrganisationByID(context.Background(), uid)

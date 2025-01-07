@@ -320,7 +320,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 			lo.WithError(err).Fatal("Failed to create circuit breaker manager")
 		}
 
-		go circuitBreakerManager.Start(ctx, attemptRepo.GetFailureAndSuccessCounts)
+		go circuitBreakerManager.Start(ctx, cfg.InstanceCfgCacheTimeout, attemptRepo.GetFailureAndSuccessCounts, projectRepo.FetchCircuitBreakerConfigsFromProjects)
 	} else {
 		lo.Warn(fflag.ErrCircuitBreakerNotEnabled)
 	}
@@ -390,14 +390,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		deviceRepo, a.Licenser), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(
-		configRepo,
-		projectRepo,
-		eventRepo,
-		eventDeliveryRepo,
-		attemptRepo,
-		rd,
-	), nil)
+	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(a.DB, configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd), nil)
 
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(
 		channels,

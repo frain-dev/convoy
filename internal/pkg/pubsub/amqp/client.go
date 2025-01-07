@@ -3,6 +3,7 @@ package rqm
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub/ingest"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -26,9 +27,10 @@ type Amqp struct {
 	log         log.StdLogger
 	rateLimiter limiter.RateLimiter
 	licenser    license.Licenser
+	ingestCfg   *ingest.IngestCfg
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser) *Amqp {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, ingestCfg *ingest.IngestCfg) *Amqp {
 	return &Amqp{
 		Cfg:         source.PubSub.Amqp,
 		source:      source,
@@ -37,6 +39,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		log:         log,
 		rateLimiter: rateLimiter,
 		licenser:    licenser,
+		ingestCfg:   ingestCfg,
 	}
 }
 

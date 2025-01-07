@@ -164,7 +164,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
 						Return(&datastore.OrganisationMember{UID: "randomstring", Role: auth.Role{
-							Type:     auth.RoleSuperUser,
+							Type:     auth.RoleOrganisationAdmin,
 							Project:  "",
 							Endpoint: "",
 						}}, nil)
@@ -228,7 +228,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 						Return(&datastore.OrganisationMember{
 							UID: "randomstring",
 							Role: auth.Role{
-								Type: auth.RoleSuperUser,
+								Type: auth.RoleOrganisationAdmin,
 							},
 						}, nil)
 				},

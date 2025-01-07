@@ -168,7 +168,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints() 
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	err := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
+	_, err := testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -194,7 +194,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoints_ValidEndpoints_Wi
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
-	_ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
+	_, _ = testdb.SeedMultipleEndpoints(s.ConvoyApp.A.DB, s.DefaultProject, totalEndpoints)
 
 	// Arrange.
 	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", s.DefaultProject.UID)
@@ -2701,7 +2701,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Creates
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
 
 	// Verify event types were created
-	query := `SELECT COUNT(*) FROM convoy.event_types 
+	query := `SELECT COUNT(*) FROM convoy.event_types
               WHERE project_id = $1 AND name IN ('user.created', 'user.updated')`
 	var count int
 	err = s.ConvoyApp.A.DB.GetDB().QueryRowxContext(context.Background(), query, s.DefaultProject.UID).Scan(&count)

@@ -142,8 +142,15 @@ func (d *deliveryAttemptRepo) GetFailureAndSuccessCounts(ctx context.Context, lo
             project_id AS tenant_id,
             COUNT(CASE WHEN status = false THEN 1 END) AS failures,
             COUNT(CASE WHEN status = true THEN 1 END) AS successes
-        FROM convoy.delivery_attempts
-        WHERE created_at >= NOW() - MAKE_INTERVAL(mins := $1)
+        FROM convoy.delivery_attempts da
+        JOIN convoy.projects p
+            ON da.project_id = p.id
+        LEFT JOIN convoy.project_configurations pc
+            ON p.project_configuration_id = pc.id
+        WHERE da.created_at >= CASE
+        WHEN pc.cb_observability_window IS NOT NULL THEN NOW() - MAKE_INTERVAL(mins := pc.cb_observability_window)
+            ELSE NOW() - MAKE_INTERVAL(mins := $1)
+        END
         group by endpoint_id, project_id;
 	`
 

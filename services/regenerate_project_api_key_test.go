@@ -76,7 +76,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleSuperUser,
+						Type:     auth.RoleOrganisationAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -111,7 +111,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleSuperUser,
+						Type:     auth.RoleOrganisationAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -171,7 +171,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleSuperUser,
+						Type:     auth.RoleOrganisationAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -217,7 +217,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleSuperUser,
+						Type:     auth.RoleOrganisationAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},

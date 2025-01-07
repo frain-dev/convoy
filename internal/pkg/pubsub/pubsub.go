@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub/ingest"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
@@ -37,19 +38,21 @@ type PubSubSource struct {
 
 	licenser license.Licenser
 
+	ingestCfg *ingest.IngestCfg
+
 	// This is a hash for the source config used to
 	// track if an existing source config has been changed.
 	hash string
 }
 
-func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*PubSubSource, error) {
-	client, err := createClient(source, handler, log, rateLimiter, licenser, instanceId)
+func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, ingestCfg *ingest.IngestCfg) (*PubSubSource, error) {
+	client, err := createClient(source, handler, log, rateLimiter, licenser, instanceId, ingestCfg)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx, cancelFunc := context.WithCancel(ctx)
-	pubSubSource := &PubSubSource{ctx: ctx, cancelFunc: cancelFunc, client: client, licenser: licenser, source: source}
+	pubSubSource := &PubSubSource{ctx: ctx, cancelFunc: cancelFunc, client: client, licenser: licenser, source: source, ingestCfg: ingestCfg}
 	// pubSubSource.hash = generateSourceKey(source)
 	pubSubSource.cancelFunc = cancelFunc
 
@@ -64,21 +67,21 @@ func (p *PubSubSource) Stop() {
 	p.cancelFunc()
 }
 
-func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (PubSub, error) {
+func createClient(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, ingestCfg *ingest.IngestCfg) (PubSub, error) {
 	if source.PubSub.Type == datastore.SqsPubSub {
-		return sqs.New(source, handler, log, rateLimiter, licenser, instanceId), nil
+		return sqs.New(source, handler, log, rateLimiter, licenser, instanceId, ingestCfg), nil
 	}
 
 	if source.PubSub.Type == datastore.GooglePubSub {
-		return google.New(source, handler, log, rateLimiter, licenser), nil
+		return google.New(source, handler, log, rateLimiter, licenser, ingestCfg), nil
 	}
 
 	if source.PubSub.Type == datastore.KafkaPubSub {
-		return kafka.New(source, handler, log, rateLimiter, licenser, instanceId), nil
+		return kafka.New(source, handler, log, rateLimiter, licenser, instanceId, ingestCfg), nil
 	}
 
 	if source.PubSub.Type == datastore.AmqpPubSub {
-		return rqm.New(source, handler, log, rateLimiter, licenser), nil
+		return rqm.New(source, handler, log, rateLimiter, licenser, ingestCfg), nil
 	}
 
 	return nil, fmt.Errorf("pub sub type %s is not supported", source.PubSub.Type)

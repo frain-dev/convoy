@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub/ingest"
 	"sync"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -35,9 +35,10 @@ type Sqs struct {
 	rateLimiter limiter.RateLimiter
 	licenser    license.Licenser
 	instanceId  string
+	ingestCfg   *ingest.IngestCfg
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Sqs {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, ingestCfg *ingest.IngestCfg) *Sqs {
 	return &Sqs{
 		Cfg:         source.PubSub.Sqs,
 		source:      source,
@@ -47,6 +48,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		rateLimiter: rateLimiter,
 		licenser:    licenser,
 		instanceId:  instanceId,
+		ingestCfg:   ingestCfg,
 	}
 }
 
@@ -122,19 +124,18 @@ func (s *Sqs) consume() {
 
 	queueURL := url.QueueUrl
 
-	cfg, err := config.Get()
-	if err != nil {
-		log.WithError(err).Errorf("failed to load config.Get() in sqs source %s with id %s", s.source.Name, s.source.UID)
-		return
-	}
-
 	for {
 		select {
 		case <-s.ctx.Done():
 			return
 		default:
 			if !util.IsStringEmpty(s.instanceId) {
-				err = s.rateLimiter.Allow(s.ctx, s.instanceId, cfg.InstanceIngestRate)
+				instanceIngestRate, err := s.ingestCfg.GetInstanceRateLimitWithCache(s.ctx)
+				if err != nil {
+					log.WithError(err).Errorf("failed to determine ingest rate from sqs source %s with id %s from topic %s - sqs", s.source.Name, s.source.UID, s.Cfg.QueueName)
+					continue
+				}
+				err = s.rateLimiter.Allow(s.ctx, s.instanceId, instanceIngestRate)
 				if err != nil {
 					time.Sleep(time.Millisecond * 250)
 					continue

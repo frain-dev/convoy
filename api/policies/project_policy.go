@@ -45,7 +45,7 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		// to allow admin roles, MultiPlayerMode must be enabled
 		adminAllowed := isAdmin(member) && pp.Licenser.MultiPlayerMode()
 
-		if isSuperAdmin(member) || adminAllowed {
+		if isOrgAdmin(member) || adminAllowed {
 			return nil
 		}
 
@@ -69,9 +69,17 @@ func (pp *ProjectPolicy) GetName() string {
 }
 
 func isAdmin(m *datastore.OrganisationMember) bool {
-	return m.Role.Type == auth.RoleAdmin
+	return isRoot(m) || m.Role.Type == auth.RoleAdmin
 }
 
-func isSuperAdmin(m *datastore.OrganisationMember) bool {
-	return m.Role.Type == auth.RoleSuperUser
+func isOrgAdmin(m *datastore.OrganisationMember) bool {
+	return isInstanceAdmin(m) || m.Role.Type == auth.RoleOrganisationAdmin
+}
+
+func isInstanceAdmin(m *datastore.OrganisationMember) bool {
+	return isRoot(m) || m.Role.Type == auth.RoleInstanceAdmin
+}
+
+func isRoot(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleRoot
 }

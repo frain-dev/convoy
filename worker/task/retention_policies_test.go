@@ -85,6 +85,14 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 		SSL:           &datastore.DefaultSSLConfig,
 		RateLimit:     &datastore.DefaultRateLimitConfig,
 		ReplayAttacks: true,
+		CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
+			SampleRate:                  2,
+			ErrorTimeout:                30,
+			FailureThreshold:            10,
+			SuccessThreshold:            1,
+			ObservabilityWindow:         5,
+			ConsecutiveFailureThreshold: 10,
+		},
 	}
 	project, err := testdb.SeedProject(r.ConvoyApp.database, ulid.Make().String(), "test", r.DefaultOrg.UID, datastore.OutgoingProject, projectConfig)
 	require.NoError(r.T(), err)
@@ -134,7 +142,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	// call handler
 	task := asynq.NewTask("retention-policies", nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.deliveryRepo, r.ConvoyApp.redis)
+	fn := RetentionPolicies(r.DB, r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.deliveryRepo, r.ConvoyApp.redis)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 
@@ -216,7 +224,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Zero_Document
 	// call handler
 	task := asynq.NewTask(string(convoy.TaskName("retention-policies")), nil, asynq.Queue(string(convoy.ScheduleQueue)))
 
-	fn := RetentionPolicies(r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.deliveryRepo, r.ConvoyApp.redis)
+	fn := RetentionPolicies(r.DB, r.ConvoyApp.configRepo, r.ConvoyApp.projectRepo, r.ConvoyApp.eventRepo, r.ConvoyApp.eventDeliveryRepo, r.ConvoyApp.deliveryRepo, r.ConvoyApp.redis)
 	err = fn(context.Background(), task)
 	require.NoError(r.T(), err)
 

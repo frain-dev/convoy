@@ -2,6 +2,7 @@ package policies
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -42,6 +43,9 @@ func Test_OrganisationPolicy_Manage(t *testing.T) {
 					orgMem.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil, errors.New("Failed"))
+					orgMem.EXPECT().
+						FetchAnyInstanceAdminOrRootByUserID(gomock.Any(), gomock.Any()).
+						Return(nil, sql.ErrNoRows)
 				},
 			},
 			{
@@ -84,6 +88,7 @@ func Test_OrganisationPolicy_Manage(t *testing.T) {
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
 
+					policy.SetRule("manage.all", authz.RuleFunc(policy.ManageAll))
 					policy.SetRule("manage", authz.RuleFunc(policy.Manage))
 
 					if tc.storeFn != nil {

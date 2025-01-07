@@ -15,6 +15,7 @@ const prefix = "breaker:"
 const mutexKey = "convoy:circuit_breaker:mutex"
 
 type PollFunc func(ctx context.Context, lookBackDuration uint64, resetTimes map[string]time.Time) (map[string]PollResult, error)
+type ConfigRefreshFunc func(ctx context.Context, lastChecked time.Time) (map[string]CircuitBreakerConfig, error)
 type CircuitBreakerOption func(cb *CircuitBreakerManager) error
 
 var (
@@ -80,6 +81,7 @@ type PollResult struct {
 
 type CircuitBreakerManager struct {
 	config         *CircuitBreakerConfig
+	tenantCache    *TenantCache
 	logger         *log.Logger
 	clock          clock.Clock
 	store          CircuitBreakerStore
@@ -111,6 +113,8 @@ func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerM
 	if r.logger == nil {
 		return nil, ErrLoggerMustNotBeNil
 	}
+
+	r.tenantCache = NewTenantCache()
 
 	return r, nil
 }
@@ -234,11 +238,18 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 			breaker.SuccessRate = float64(breaker.TotalSuccesses) / float64(breaker.Requests) * 100
 		}
 
-		if breaker.State == StateHalfOpen && breaker.SuccessRate >= float64(cb.config.SuccessThreshold) {
-			breaker.Reset(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
-		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= cb.config.MinimumRequestCount {
-			if breaker.FailureRate >= float64(cb.config.FailureThreshold) {
-				breaker.trip(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
+		// Fetch tenant-specific configuration if available
+		tenantConfig, exists := cb.tenantCache.GetConfig(result.TenantId)
+		configToUse := cb.config
+		if exists {
+			configToUse = tenantConfig
+		}
+
+		if breaker.State == StateHalfOpen && breaker.SuccessRate >= float64(configToUse.SuccessThreshold) {
+			breaker.Reset(cb.clock.Now().Add(time.Duration(configToUse.BreakerTimeout) * time.Second))
+		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= configToUse.MinimumRequestCount {
+			if breaker.FailureRate >= float64(configToUse.FailureThreshold) {
+				breaker.trip(cb.clock.Now().Add(time.Duration(configToUse.BreakerTimeout) * time.Second))
 			}
 		}
 
@@ -248,8 +259,8 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 		// send notifications for each circuit breaker
 		if cb.notificationFn != nil && breaker.State != StateOpen {
-			if breaker.ConsecutiveFailures >= cb.GetConfig().ConsecutiveFailureThreshold {
-				innerErr := cb.notificationFn(TypeDisableResource, *cb.config, breaker)
+			if breaker.ConsecutiveFailures >= configToUse.ConsecutiveFailureThreshold {
+				innerErr := cb.notificationFn(TypeDisableResource, *configToUse, breaker)
 				if innerErr != nil {
 					cb.logger.WithError(innerErr).Errorf("[circuit breaker] failed to execute disable resource notification function")
 				}
@@ -269,9 +280,18 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 }
 
 func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, breakers map[string]CircuitBreaker) (err error) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	return cb.store.SetMany(ctx, breakers, time.Duration(cb.config.ObservabilityWindow)*time.Minute)
+
+	var ttlMap map[string]time.Duration
+	for _, b := range breakers {
+		tenantConfig, ok := cb.tenantCache.GetConfig(b.TenantId)
+		if ok {
+			ttlMap[b.TenantId] = time.Duration(tenantConfig.ObservabilityWindow) * time.Minute
+		}
+	}
+
+	return cb.store.SetMany(ctx, breakers, time.Duration(cb.config.ObservabilityWindow)*time.Minute, ttlMap)
 }
 
 func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]CircuitBreaker, error) {
@@ -324,7 +344,12 @@ func (cb *CircuitBreakerManager) getCircuitBreakerError(b CircuitBreaker) error 
 	case StateOpen:
 		return ErrOpenState
 	case StateHalfOpen:
-		if b.FailureRate > float64(cb.config.FailureThreshold) && b.WillResetAt.After(cb.clock.Now()) {
+		tenantConfig, exists := cb.tenantCache.GetConfig(b.TenantId)
+		configToUse := cb.config
+		if exists {
+			configToUse = tenantConfig
+		}
+		if b.FailureRate > float64(configToUse.FailureThreshold) && b.WillResetAt.After(cb.clock.Now()) {
 			return ErrTooManyRequests
 		}
 		return nil
@@ -400,12 +425,12 @@ func (cb *CircuitBreakerManager) GetCircuitBreakerWithError(ctx context.Context,
 	return c, nil
 }
 
-func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc PollFunc) error {
+func (cb *CircuitBreakerManager) SampleAndUpdate(ctx context.Context, pollFunc PollFunc) error {
 	start := time.Now()
-	stopTime := time.Now().Add(time.Duration(cb.config.SampleRate-2) * time.Second)
+	stopTime := time.Now().Add(time.Duration(cb.config.SampleRate-2) * time.Second) // global
 	isLeader := true
 
-	mu, err := cb.store.Lock(ctx, mutexKey, cb.config.SampleRate)
+	mu, err := cb.store.Lock(ctx, mutexKey, cb.config.SampleRate) // global
 	if err != nil {
 		isLeader = false
 		cb.logger.WithError(err).Debugf("[circuit breaker] failed to acquire lock")
@@ -454,7 +479,7 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 	}
 
 	// Get the failure and success counts from the last X minutes
-	pollResults, err := pollFunc(ctx, cb.config.ObservabilityWindow, resetMap)
+	pollResults, err := pollFunc(ctx, cb.config.ObservabilityWindow, resetMap) // tenant specific, defaults to global
 	if err != nil {
 		return fmt.Errorf("poll function failed: %w", err)
 	}
@@ -474,18 +499,44 @@ func (cb *CircuitBreakerManager) GetConfig() CircuitBreakerConfig {
 	return *cb.config
 }
 
-func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
-	ticker := time.NewTicker(time.Duration(cb.config.SampleRate) * time.Second)
+func (cb *CircuitBreakerManager) Start(ctx context.Context, cacheTimeOutSeconds int, pollFunc PollFunc, refreshFunc ConfigRefreshFunc) {
+	ticker := time.NewTicker(time.Duration(cb.config.SampleRate) * time.Second) // global ticker
 	defer ticker.Stop()
+
+	if cacheTimeOutSeconds < 300 {
+		cacheTimeOutSeconds = 300 // 5 minutes min.
+	}
+
+	configRefreshTicker := time.NewTicker(time.Duration(cacheTimeOutSeconds) * time.Second)
+	defer configRefreshTicker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := cb.sampleAndUpdate(ctx, pollFunc); err != nil {
+			if err := cb.SampleAndUpdate(ctx, pollFunc); err != nil {
 				cb.logger.WithError(err).Debug("[circuit breaker] failed to sample and update circuit breakers")
+			}
+		case <-configRefreshTicker.C:
+			if err := cb.RefreshCircuitBreakerConfigs(ctx, refreshFunc); err != nil {
+				cb.logger.WithError(err).Error("[circuit breaker] failed to refresh configurations")
 			}
 		}
 	}
+}
+
+func (cb *CircuitBreakerManager) RefreshCircuitBreakerConfigs(ctx context.Context, refreshFunc ConfigRefreshFunc) error {
+	configs, err := refreshFunc(ctx, cb.tenantCache.lastChecked)
+	if err != nil {
+		cb.logger.WithError(err).Error("[circuit breaker] failed to refresh configurations")
+		return err
+	}
+
+	cb.tenantCache.UpdateConfigs(configs)
+
+	if len(configs) > 0 {
+		cb.tenantCache.lastChecked = time.Now()
+	}
+	return nil
 }

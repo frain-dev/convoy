@@ -74,6 +74,8 @@ type ProjectConfig struct {
 	// MultipleEndpointSubscriptions is used to configure if multiple subscriptions
 	// can be created for the endpoint in a project
 	MultipleEndpointSubscriptions bool `json:"multiple_endpoint_subscriptions"`
+
+	CircuitBreakerConfig *datastore.CircuitBreakerConfig `json:"circuit_breaker" db:"circuit_breaker"`
 }
 
 func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {

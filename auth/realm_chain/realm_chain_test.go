@@ -86,7 +86,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username3",
 			Password: "password3",
 			Role: auth.Role{
-				Type:    auth.RoleSuperUser,
+				Type:    auth.RoleOrganisationAdmin,
 				Project: "paystack",
 			},
 		},

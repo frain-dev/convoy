@@ -4,9 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub/ingest"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -31,9 +31,10 @@ type Kafka struct {
 	rateLimiter limiter.RateLimiter
 	licenser    license.Licenser
 	instanceId  string
+	ingestCfg   *ingest.IngestCfg
 }
 
-func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) *Kafka {
+func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, ingestCfg *ingest.IngestCfg) *Kafka {
 	return &Kafka{
 		Cfg:         source.PubSub.Kafka,
 		source:      source,
@@ -43,6 +44,7 @@ func New(source *datastore.Source, handler datastore.PubSubHandler, log log.StdL
 		rateLimiter: rateLimiter,
 		licenser:    licenser,
 		instanceId:  instanceId,
+		ingestCfg:   ingestCfg,
 	}
 }
 
@@ -137,19 +139,18 @@ func (k *Kafka) consume() {
 
 	defer k.handleError(r)
 
-	cfg, err := config.Get()
-	if err != nil {
-		log.WithError(err).Errorf("failed to load config.Get() in kafka source %s with id %s", k.source.Name, k.source.UID)
-		return
-	}
-
 	for {
 		select {
 		case <-k.ctx.Done():
 			return
 		default:
 			if !util.IsStringEmpty(k.instanceId) {
-				err = k.rateLimiter.Allow(k.ctx, k.instanceId, cfg.InstanceIngestRate)
+				instanceIngestRate, err := k.ingestCfg.GetInstanceRateLimitWithCache(k.ctx)
+				if err != nil {
+					log.WithError(err).Errorf("failed to determine ingest rate from kafka source %s with id %s from topic %s - kafka", k.source.Name, k.source.UID, k.Cfg.TopicName)
+					continue
+				}
+				err = k.rateLimiter.Allow(k.ctx, k.instanceId, instanceIngestRate)
 				if err != nil {
 					time.Sleep(time.Millisecond * 250)
 					continue

@@ -114,7 +114,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:     auth.RoleSuperUser,
+		Type:     auth.RoleOrganisationAdmin,
 		Project:  seedProject(t, db).UID,
 		Endpoint: "",
 	}

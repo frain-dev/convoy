@@ -462,3 +462,21 @@ func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.
 		})
 	}
 }
+
+func RequireInstanceAdmin(a *types.APIOptions) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authUser := GetAuthUserFromContext(r.Context())
+			user, ok := authUser.Metadata.(*datastore.User)
+			if !ok {
+				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+				return
+			}
+			if err := a.Authz.Authorize(r.Context(), "user.god-mode", user); err != nil {
+				_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}

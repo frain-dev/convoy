@@ -729,6 +729,21 @@ func (mr *MockProjectRepositoryMockRecorder) DeleteProject(ctx, uid any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProject", reflect.TypeOf((*MockProjectRepository)(nil).DeleteProject), ctx, uid)
 }
 
+// FetchCircuitBreakerConfigsFromProjects mocks base method.
+func (m *MockProjectRepository) FetchCircuitBreakerConfigsFromProjects(ctx context.Context, lastChecked time.Time) (map[string]circuit_breaker.CircuitBreakerConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchCircuitBreakerConfigsFromProjects", ctx, lastChecked)
+	ret0, _ := ret[0].(map[string]circuit_breaker.CircuitBreakerConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchCircuitBreakerConfigsFromProjects indicates an expected call of FetchCircuitBreakerConfigsFromProjects.
+func (mr *MockProjectRepositoryMockRecorder) FetchCircuitBreakerConfigsFromProjects(ctx, lastChecked any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchCircuitBreakerConfigsFromProjects", reflect.TypeOf((*MockProjectRepository)(nil).FetchCircuitBreakerConfigsFromProjects), ctx, lastChecked)
+}
+
 // FetchProjectByID mocks base method.
 func (m *MockProjectRepository) FetchProjectByID(arg0 context.Context, arg1 string) (*datastore.Project, error) {
 	m.ctrl.T.Helper()
@@ -913,6 +928,21 @@ func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByID(arg0, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByID", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByID), arg0, arg1)
 }
 
+// FetchOrganisationByProjectID mocks base method.
+func (m *MockOrganisationRepository) FetchOrganisationByProjectID(arg0 context.Context, arg1 string) (*datastore.Organisation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchOrganisationByProjectID", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.Organisation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchOrganisationByProjectID indicates an expected call of FetchOrganisationByProjectID.
+func (mr *MockOrganisationRepositoryMockRecorder) FetchOrganisationByProjectID(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrganisationByProjectID", reflect.TypeOf((*MockOrganisationRepository)(nil).FetchOrganisationByProjectID), arg0, arg1)
+}
+
 // LoadOrganisationsPaged mocks base method.
 func (m *MockOrganisationRepository) LoadOrganisationsPaged(arg0 context.Context, arg1 datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
@@ -1077,6 +1107,21 @@ func (m *MockOrganisationMemberRepository) EXPECT() *MockOrganisationMemberRepos
 	return m.recorder
 }
 
+// CountInstanceAdmins mocks base method.
+func (m *MockOrganisationMemberRepository) CountInstanceAdmins(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountInstanceAdmins", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountInstanceAdmins indicates an expected call of CountInstanceAdmins.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) CountInstanceAdmins(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountInstanceAdmins", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CountInstanceAdmins), ctx)
+}
+
 // CreateOrganisationMember mocks base method.
 func (m *MockOrganisationMemberRepository) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	m.ctrl.T.Helper()
@@ -1103,6 +1148,21 @@ func (m *MockOrganisationMemberRepository) DeleteOrganisationMember(ctx context.
 func (mr *MockOrganisationMemberRepositoryMockRecorder) DeleteOrganisationMember(ctx, memberID, orgID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).DeleteOrganisationMember), ctx, memberID, orgID)
+}
+
+// FetchAnyInstanceAdminOrRootByUserID mocks base method.
+func (m *MockOrganisationMemberRepository) FetchAnyInstanceAdminOrRootByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchAnyInstanceAdminOrRootByUserID", ctx, userID)
+	ret0, _ := ret[0].(*datastore.OrganisationMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchAnyInstanceAdminOrRootByUserID indicates an expected call of FetchAnyInstanceAdminOrRootByUserID.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchAnyInstanceAdminOrRootByUserID(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchAnyInstanceAdminOrRootByUserID", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).FetchAnyInstanceAdminOrRootByUserID), ctx, userID)
 }
 
 // FetchOrganisationMemberByID mocks base method.
@@ -2733,4 +2793,172 @@ func (m *MockEventTypesRepository) UpdateEventType(arg0 context.Context, arg1 *d
 func (mr *MockEventTypesRepositoryMockRecorder) UpdateEventType(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventType", reflect.TypeOf((*MockEventTypesRepository)(nil).UpdateEventType), arg0, arg1)
+}
+
+// MockInstanceDefaultsRepository is a mock of InstanceDefaultsRepository interface.
+type MockInstanceDefaultsRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockInstanceDefaultsRepositoryMockRecorder
+}
+
+// MockInstanceDefaultsRepositoryMockRecorder is the mock recorder for MockInstanceDefaultsRepository.
+type MockInstanceDefaultsRepositoryMockRecorder struct {
+	mock *MockInstanceDefaultsRepository
+}
+
+// NewMockInstanceDefaultsRepository creates a new mock instance.
+func NewMockInstanceDefaultsRepository(ctrl *gomock.Controller) *MockInstanceDefaultsRepository {
+	mock := &MockInstanceDefaultsRepository{ctrl: ctrl}
+	mock.recorder = &MockInstanceDefaultsRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockInstanceDefaultsRepository) EXPECT() *MockInstanceDefaultsRepositoryMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockInstanceDefaultsRepository) Create(arg0 context.Context, arg1 *datastore.InstanceDefaults) (*datastore.InstanceDefaults, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", arg0, arg1)
+	ret0, _ := ret[0].(*datastore.InstanceDefaults)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockInstanceDefaultsRepositoryMockRecorder) Create(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockInstanceDefaultsRepository)(nil).Create), arg0, arg1)
+}
+
+// FetchByID mocks base method.
+func (m *MockInstanceDefaultsRepository) FetchByID(ctx context.Context, id string) (*datastore.InstanceDefaults, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchByID", ctx, id)
+	ret0, _ := ret[0].(*datastore.InstanceDefaults)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchByID indicates an expected call of FetchByID.
+func (mr *MockInstanceDefaultsRepositoryMockRecorder) FetchByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchByID", reflect.TypeOf((*MockInstanceDefaultsRepository)(nil).FetchByID), ctx, id)
+}
+
+// LoadPaged mocks base method.
+func (m *MockInstanceDefaultsRepository) LoadPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.InstanceDefaults, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadPaged", ctx, pageable)
+	ret0, _ := ret[0].([]datastore.InstanceDefaults)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadPaged indicates an expected call of LoadPaged.
+func (mr *MockInstanceDefaultsRepositoryMockRecorder) LoadPaged(ctx, pageable any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPaged", reflect.TypeOf((*MockInstanceDefaultsRepository)(nil).LoadPaged), ctx, pageable)
+}
+
+// Update mocks base method.
+func (m *MockInstanceDefaultsRepository) Update(arg0 context.Context, arg1 string, arg2 *datastore.InstanceDefaults) (*datastore.InstanceDefaults, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*datastore.InstanceDefaults)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockInstanceDefaultsRepositoryMockRecorder) Update(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockInstanceDefaultsRepository)(nil).Update), arg0, arg1, arg2)
+}
+
+// MockInstanceOverridesRepository is a mock of InstanceOverridesRepository interface.
+type MockInstanceOverridesRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockInstanceOverridesRepositoryMockRecorder
+}
+
+// MockInstanceOverridesRepositoryMockRecorder is the mock recorder for MockInstanceOverridesRepository.
+type MockInstanceOverridesRepositoryMockRecorder struct {
+	mock *MockInstanceOverridesRepository
+}
+
+// NewMockInstanceOverridesRepository creates a new mock instance.
+func NewMockInstanceOverridesRepository(ctrl *gomock.Controller) *MockInstanceOverridesRepository {
+	mock := &MockInstanceOverridesRepository{ctrl: ctrl}
+	mock.recorder = &MockInstanceOverridesRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockInstanceOverridesRepository) EXPECT() *MockInstanceOverridesRepositoryMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockInstanceOverridesRepository) Create(ctx context.Context, record *datastore.InstanceOverrides) (*datastore.InstanceOverrides, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, record)
+	ret0, _ := ret[0].(*datastore.InstanceOverrides)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockInstanceOverridesRepositoryMockRecorder) Create(ctx, record any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockInstanceOverridesRepository)(nil).Create), ctx, record)
+}
+
+// FetchByID mocks base method.
+func (m *MockInstanceOverridesRepository) FetchByID(ctx context.Context, id string) (*datastore.InstanceOverrides, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchByID", ctx, id)
+	ret0, _ := ret[0].(*datastore.InstanceOverrides)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchByID indicates an expected call of FetchByID.
+func (mr *MockInstanceOverridesRepositoryMockRecorder) FetchByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchByID", reflect.TypeOf((*MockInstanceOverridesRepository)(nil).FetchByID), ctx, id)
+}
+
+// LoadPaged mocks base method.
+func (m *MockInstanceOverridesRepository) LoadPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.InstanceOverrides, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadPaged", ctx, pageable)
+	ret0, _ := ret[0].([]datastore.InstanceOverrides)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadPaged indicates an expected call of LoadPaged.
+func (mr *MockInstanceOverridesRepositoryMockRecorder) LoadPaged(ctx, pageable any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPaged", reflect.TypeOf((*MockInstanceOverridesRepository)(nil).LoadPaged), ctx, pageable)
+}
+
+// Update mocks base method.
+func (m *MockInstanceOverridesRepository) Update(ctx context.Context, id string, record *datastore.InstanceOverrides) (*datastore.InstanceOverrides, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, id, record)
+	ret0, _ := ret[0].(*datastore.InstanceOverrides)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockInstanceOverridesRepositoryMockRecorder) Update(ctx, id, record any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockInstanceOverridesRepository)(nil).Update), ctx, id, record)
 }

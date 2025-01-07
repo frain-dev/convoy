@@ -21,7 +21,7 @@ type RegenerateProjectAPIKeyService struct {
 
 func (ss *RegenerateProjectAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, string, error) {
 	// does the organisation member have access to this project they're trying to regenerate an api key for?
-	if !ss.Member.Role.Type.Is(auth.RoleSuperUser) {
+	if !ss.Member.Role.Type.Is(auth.RoleOrganisationAdmin) {
 		return nil, "", &ServiceError{ErrMsg: "unauthorized to access project"}
 	}
 

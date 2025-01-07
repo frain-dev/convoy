@@ -135,7 +135,7 @@ func Test_UpdateAPIKey(t *testing.T) {
 
 	apiKey.Name = "Updated-Test-Api-Key"
 	apiKey.Role = auth.Role{
-		Type:    auth.RoleSuperUser,
+		Type:    auth.RoleOrganisationAdmin,
 		Project: project.UID,
 	}
 

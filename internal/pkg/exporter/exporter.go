@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/database"
 	"io"
 	"os"
 	"path/filepath"
@@ -62,13 +63,9 @@ type Exporter struct {
 	deliveryAttemptsRepo datastore.DeliveryAttemptsRepository
 }
 
-func NewExporter(projectRepo datastore.ProjectRepository,
-	eventRepo datastore.EventRepository,
-	eventDeliveryRepo datastore.EventDeliveryRepository,
-	p *datastore.Project, c *datastore.Configuration,
-	attemptsRepo datastore.DeliveryAttemptsRepository,
-) (*Exporter, error) {
-	policy, err := time.ParseDuration(c.RetentionPolicy.Policy)
+func NewExporter(ctx context.Context, db database.Database, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, p *datastore.Project, c *datastore.Configuration, attemptsRepo datastore.DeliveryAttemptsRepository) (*Exporter, error) {
+	retentionCfg := NewRetentionCfg(db, c.RetentionPolicy.Policy, p.UID, p.OrganisationID)
+	policy, err := retentionCfg.GetRetentionPolicy(ctx)
 	if err != nil {
 		return nil, err
 	}

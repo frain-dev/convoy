@@ -160,6 +160,17 @@ func TestFetchOrganisationByID(t *testing.T) {
 	require.Equal(t, org, dbOrg)
 }
 
+func TestFetchOrganisationByProjectID(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	orgRepo := NewOrgRepo(db, nil)
+
+	p := seedProject(t, db)
+	_, err := orgRepo.FetchOrganisationByProjectID(context.Background(), p.UID)
+	require.NoError(t, err)
+}
+
 func TestFetchOrganisationByAssignedDomain(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()

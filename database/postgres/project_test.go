@@ -193,6 +193,7 @@ func Test_UpdateProject(t *testing.T) {
 			MetaEvent: &datastore.MetaEventConfiguration{
 				IsEnabled: false,
 			},
+			CircuitBreakerConfig: &datastore.CircuitBreakerConfig{},
 		},
 		RetainedEvents: 300,
 	}

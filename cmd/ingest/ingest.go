@@ -73,6 +73,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 
 func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
 	sourceRepo := postgres.NewSourceRepo(a.DB, a.Cache)
+	orgRepo := postgres.NewOrgRepo(a.DB, a.Cache)
 	projectRepo := postgres.NewProjectRepo(a.DB, a.Cache)
 	endpointRepo := postgres.NewEndpointRepo(a.DB, a.Cache)
 	configRepo := postgres.NewConfigRepo(a.DB)
@@ -112,7 +113,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.Queue, lo, rateLimiter, a.Licenser, host)
+	ingest, err := pubsub.NewIngest(ctx, sourceTable, a.DB, orgRepo, a.Cache, a.Queue, lo, rateLimiter, a.Licenser, host, cfg.InstanceIngestRate, cfg.InstanceCfgCacheTimeout)
 	if err != nil {
 		return err
 	}

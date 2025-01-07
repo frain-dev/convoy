@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// Role represents the permission a user is given, if the Type is RoleSuperUser,
+// Role represents the permission a user is given, if the Type is RoleOrganisationAdmin,
 // Then the user will have access to everything regardless of the value of Project.
 type Role struct {
 	Type     RoleType `json:"type" db:"type"`
@@ -15,15 +15,17 @@ type Role struct {
 type RoleType string
 
 const (
-	RoleSuperUser = RoleType("super_user")
-	RoleAdmin     = RoleType("admin")
-	RoleMember    = RoleType("member")
-	RoleAPI       = RoleType("api")
+	RoleRoot              = RoleType("root")
+	RoleInstanceAdmin     = RoleType("instance_admin")
+	RoleOrganisationAdmin = RoleType("organisation_admin")
+	RoleAdmin             = RoleType("admin")
+	RoleMember            = RoleType("member")
+	RoleAPI               = RoleType("api")
 )
 
 func (r RoleType) IsValid() bool {
 	switch r {
-	case RoleSuperUser, RoleAdmin, RoleMember, RoleAPI:
+	case RoleRoot, RoleInstanceAdmin, RoleOrganisationAdmin, RoleAdmin, RoleMember, RoleAPI:
 		return true
 	default:
 		return false
