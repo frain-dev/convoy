@@ -361,20 +361,20 @@ func Test_FillProjectStatistics(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, datastore.ProjectStatistics{
-		MessagesSent:       0,
-		TotalEndpoints:     1,
-		TotalSources:       1,
-		TotalSubscriptions: 0,
+		EventsExist:        false,
+		EndpointsExist:     true,
+		SourcesExist:       true,
+		SubscriptionsExist: false,
 	}, *project1.Statistics)
 
 	err = projectRepo.FillProjectsStatistics(context.Background(), project2)
 	require.NoError(t, err)
 
 	require.Equal(t, datastore.ProjectStatistics{
-		MessagesSent:       0,
-		TotalEndpoints:     1,
-		TotalSources:       0,
-		TotalSubscriptions: 1,
+		EventsExist:        false,
+		EndpointsExist:     true,
+		SourcesExist:       false,
+		SubscriptionsExist: true,
 	}, *project2.Statistics)
 }
 

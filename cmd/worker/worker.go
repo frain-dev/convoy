@@ -7,8 +7,10 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -325,6 +327,24 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		lo.Warn(fflag.ErrCircuitBreakerNotEnabled)
 	}
 
+	var ret retention.Retentioner
+	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && a.Licenser.RetentionPolicy() {
+		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
+		if _err != nil {
+			lo.WithError(_err).Fatal("Failed to parse retention policy")
+			return _err
+		}
+
+		ret, err = retention.NewRetentionPolicy(a.DB, lo, policy)
+		if err != nil {
+			lo.WithError(err).Fatal("Failed to create retention policy")
+		}
+
+		ret.Start(ctx, time.Minute)
+	} else {
+		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
+	}
+
 	channels := make(map[string]task.EventChannel)
 	defaultCh, broadcastCh, dynamicCh := task.NewDefaultEventChannel(), task.NewBroadcastEventChannel(subscriptionsTable), task.NewDynamicEventChannel()
 	channels["default"] = defaultCh
@@ -390,7 +410,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		deviceRepo, a.Licenser), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(a.DB, configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd), nil)
+	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
 
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(
 		channels,

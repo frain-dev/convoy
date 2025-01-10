@@ -183,8 +183,8 @@ export class EventsComponent implements OnInit {
 	async getProjectStats() {
 		try {
 			const projectStats = await this.privateService.getProjectStat();
-			this.isProjectConfigurationComplete = projectStats.data?.total_subscriptions > 0;
-			this.hasEvents = projectStats.data?.messages_sent > 0;
+			this.isProjectConfigurationComplete = projectStats.data?.subscriptions_exist;
+			this.hasEvents = projectStats.data?.events_exist;
 			return;
 		} catch (error) {
 			return error;
