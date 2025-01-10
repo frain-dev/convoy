@@ -109,7 +109,7 @@ func (p *PaginationData) Build(pageable Pageable, items []string) *PaginationDat
 		p.HasNextPage = true
 	}
 
-	if p.PrevRowCount.Count > 0 {
+	if p.PrevRowCount.Count > 0 || p.PrevRowCount.Exists {
 		p.HasPreviousPage = true
 	}
 
@@ -633,10 +633,10 @@ type RetentionPolicyConfiguration struct {
 }
 
 type ProjectStatistics struct {
-	MessagesSent       int64 `json:"messages_sent" db:"messages_sent"`
-	TotalEndpoints     int64 `json:"total_endpoints" db:"total_endpoints"`
-	TotalSubscriptions int64 `json:"total_subscriptions" db:"total_subscriptions"`
-	TotalSources       int64 `json:"total_sources" db:"total_sources"`
+	EventsExist        bool `json:"events_exist" db:"events_exist"`
+	SourcesExist       bool `json:"sources_exist" db:"sources_exist"`
+	EndpointsExist     bool `json:"endpoints_exist" db:"endpoints_exist"`
+	SubscriptionsExist bool `json:"subscriptions_exist" db:"subscriptions_exist"`
 }
 
 type ProjectFilter struct {

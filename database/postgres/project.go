@@ -174,12 +174,12 @@ const (
 	WHERE project_id = $1 AND deleted_at IS NULL;
 	`
 
-	projectStatistics = `
+	projectStatistics = `	
 	SELECT
-	(SELECT COUNT(*) FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL) AS total_subscriptions,
-	(SELECT COUNT(*) FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL) AS total_endpoints,
-	(SELECT COUNT(*) FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL) AS total_sources,
-	(SELECT COUNT(*) FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL) AS messages_sent;
+		(select exists(SELECT 1 FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL)) AS subscriptions_exist,
+		(select exists(SELECT 1 FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL)) AS endpoints_exist,
+		(select exists(SELECT 1 FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL)) AS sources_exist,
+		(select exists(SELECT 1 FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL)) AS events_exist;
 	`
 
 	updateProjectEndpointStatus = `

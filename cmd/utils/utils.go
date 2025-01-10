@@ -15,10 +15,11 @@ var utilsCmd = &cobra.Command{
 }
 
 func AddUtilsCommand(app *cli.App) *cobra.Command {
+	utilsCmd.AddCommand(AddPartitionCommand(app))
+	utilsCmd.AddCommand(AddUnPartitionCommand(app))
 
 	utilsCmd.AddCommand(AddInitEncryptionCommand(app))
 	utilsCmd.AddCommand(AddRotateKeyCommand(app))
 	utilsCmd.AddCommand(AddRevertEncryptionCommand(app))
-
 	return utilsCmd
 }

@@ -31,8 +31,7 @@ type Licenser interface {
 	ReadReplica() bool
 	CredentialEncryption() bool
 
-	// need more fleshing out
-	AdvancedRetentionPolicy() bool
+	RetentionPolicy() bool
 	AdvancedMsgBroker() bool
 	WebhookAnalytics() bool
 	HADeployment() bool
