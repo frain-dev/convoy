@@ -27,10 +27,10 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 		const mutexName = "convoy:backup-project-data:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
 
-		ctx, cancel := context.WithTimeout(ctx, time.Second*2)
+		innerCtx, cancel := context.WithTimeout(ctx, time.Second*2)
 		defer cancel()
 
-		err := mutex.LockContext(ctx)
+		err := mutex.LockContext(innerCtx)
 		if err != nil {
 			return fmt.Errorf("failed to obtain lock: %v", err)
 		}

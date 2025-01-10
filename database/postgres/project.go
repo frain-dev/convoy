@@ -176,10 +176,10 @@ const (
 
 	projectStatistics = `	
 	SELECT
-		(select exists(SELECT 1 FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL)) AS total_subscriptions,
-		(select exists(SELECT 1 FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL)) AS total_endpoints,
-		(select exists(SELECT 1 FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL)) AS total_sources,
-		(select exists(SELECT 1 FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL)) AS messages_sent;
+		(select exists(SELECT 1 FROM convoy.subscriptions WHERE project_id = $1 AND deleted_at IS NULL)) AS subscriptions_exist,
+		(select exists(SELECT 1 FROM convoy.endpoints WHERE project_id = $1 AND deleted_at IS NULL)) AS endpoints_exist,
+		(select exists(SELECT 1 FROM convoy.sources WHERE project_id = $1 AND deleted_at IS NULL)) AS sources_exist,
+		(select exists(SELECT 1 FROM convoy.events WHERE project_id = $1 AND deleted_at IS NULL)) AS events_exist;
 	`
 
 	updateProjectEndpointStatus = `

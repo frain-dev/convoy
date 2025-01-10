@@ -1328,8 +1328,8 @@ github.com/jinzhu/inflection v0.0.0-20170102125226-1c35d901db3d/go.mod h1:h+uFLl
 github.com/jinzhu/inflection v1.0.0 h1:K317FqzuhWc8YvSVlFMCCUb36O/S9MCKRDI7QkRKD/E=
 github.com/jinzhu/inflection v1.0.0/go.mod h1:h+uFLlag+Qp1Va5pdKtLDYj+kHp5pxUVkryuEj+Srlc=
 github.com/jinzhu/now v1.1.1/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
-github.com/jirevwe/go_partman v0.3.5 h1:QKAeIRF8K3rthNFbyhbjl7krRFJOKJnPJ7UUq+vmU9s=
-github.com/jirevwe/go_partman v0.3.5/go.mod h1:sdeQ6rZMeNarW0DUUiRS/iGU7rlmxnBrmJr7sX/PlqQ=
+github.com/jirevwe/go_partman v0.3.6 h1:+ojWLHeTOhLAtMBN/lt+nCu9+jLMjqkVy8hSv6t1Jno=
+github.com/jirevwe/go_partman v0.3.6/go.mod h1:sdeQ6rZMeNarW0DUUiRS/iGU7rlmxnBrmJr7sX/PlqQ=
 github.com/jirevwe/goja_nodejs v0.0.0-20240322142733-81d2fcfb82c1 h1:SpbhN3p8Sh8R5a+OFA9iUKc368c81g5Rx/yTwg1tzfE=
 github.com/jirevwe/goja_nodejs v0.0.0-20240322142733-81d2fcfb82c1/go.mod h1:bhGPmCgCCTSRfiMYWjpS46IDo9EUZXlsuUaPXSWGbv0=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=

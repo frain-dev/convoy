@@ -633,10 +633,10 @@ type RetentionPolicyConfiguration struct {
 }
 
 type ProjectStatistics struct {
-	MessagesSent       bool `json:"messages_sent" db:"messages_sent"`
-	TotalEndpoints     bool `json:"total_endpoints" db:"total_endpoints"`
-	TotalSubscriptions bool `json:"total_subscriptions" db:"total_subscriptions"`
-	TotalSources       bool `json:"total_sources" db:"total_sources"`
+	EventsExist        bool `json:"events_exist" db:"events_exist"`
+	SourcesExist       bool `json:"sources_exist" db:"sources_exist"`
+	EndpointsExist     bool `json:"endpoints_exist" db:"endpoints_exist"`
+	SubscriptionsExist bool `json:"subscriptions_exist" db:"subscriptions_exist"`
 }
 
 type ProjectFilter struct {

@@ -3141,9 +3141,9 @@ func (s *ProjectIntegrationTestSuite) TestGetProjectStats() {
 	var stats *datastore.ProjectStatistics
 	parseResponse(s.T(), w.Result(), &stats)
 
-	require.Equal(s.T(), true, stats.TotalEndpoints)     // int64(2)
-	require.Equal(s.T(), true, stats.TotalSources)       // int64(2)
-	require.Equal(s.T(), true, stats.TotalSubscriptions) // int64(2)
+	require.Equal(s.T(), true, stats.EndpointsExist)     // int64(2)
+	require.Equal(s.T(), true, stats.SourcesExist)       // int64(2)
+	require.Equal(s.T(), true, stats.SubscriptionsExist) // int64(2)
 }
 
 func (s *ProjectIntegrationTestSuite) TearDownTest() {

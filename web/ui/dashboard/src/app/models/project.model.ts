@@ -34,8 +34,9 @@ export interface PROJECT {
         search_policy: string;
 	};
 	statistics?: {
-		messages_sent: number;
-		total_endpoints: number;
+		events_exist: boolean;
+		subscriptions_exist: boolean;
+		endpoints_exist: boolean;
 	};
 	created_at: Date;
 	updated_at: Date;

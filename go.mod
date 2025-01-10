@@ -36,7 +36,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.1
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/jaswdr/faker v1.10.2
-	github.com/jirevwe/go_partman v0.3.5
+	github.com/jirevwe/go_partman v0.3.6
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keygen-sh/keygen-go/v3 v3.2.0
