@@ -95,12 +95,14 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 
 	if len(subscription.FilterConfig.Filter.Body) == 0 && len(subscription.FilterConfig.Filter.Headers) == 0 {
 		subscription.FilterConfig.Filter = datastore.FilterSchema{
-			Headers: datastore.M{},
-			Body:    datastore.M{},
+			Headers:    datastore.M{},
+			Body:       datastore.M{},
+			RawHeaders: datastore.M{},
+			RawBody:    datastore.M{},
 		}
 	} else {
 		// validate that the filter is a json string
-		_, err := json.Marshal(subscription.FilterConfig.Filter)
+		_, err = json.Marshal(subscription.FilterConfig.Filter)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error(ErrInvalidSubscriptionFilterFormat.Error())
 			return nil, &ServiceError{ErrMsg: ErrInvalidSubscriptionFilterFormat.Error()}

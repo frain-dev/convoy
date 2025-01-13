@@ -112,6 +112,8 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 
 	for i := range subscriptions {
 		fillSourceURL(subscriptions[i].Source, baseUrl, customDomain)
+		subscriptions[i].FilterConfig.Filter.Headers = subscriptions[i].FilterConfig.Filter.RawHeaders
+		subscriptions[i].FilterConfig.Filter.Body = subscriptions[i].FilterConfig.Filter.RawBody
 	}
 
 	resp := models.NewListResponse(subscriptions, func(subscription datastore.Subscription) models.SubscriptionResponse {
@@ -152,6 +154,9 @@ func (h *Handler) GetSubscription(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
+
+	subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
+	subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
 
 	resp := &models.SubscriptionResponse{Subscription: subscription}
 	_ = render.Render(w, r, util.NewServerResponse("Subscription fetched successfully", resp, http.StatusOK))

@@ -202,8 +202,10 @@ type FS struct {
 
 func (fs *FS) Transform() datastore.FilterSchema {
 	return datastore.FilterSchema{
-		Headers: fs.Headers,
-		Body:    fs.Body,
+		Headers:    fs.Headers,
+		Body:       fs.Body,
+		RawHeaders: fs.Headers,
+		RawBody:    fs.Body,
 	}
 }
 
