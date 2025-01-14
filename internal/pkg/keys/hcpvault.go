@@ -2,9 +2,12 @@ package keys
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/cache"
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -12,6 +15,8 @@ import (
 	"net/http"
 	"time"
 )
+
+const RedisCacheKey = "HCPVaultRedisKey"
 
 var (
 	HCPAPIBaseURL                                            = "https://api.cloud.hashicorp.com"
@@ -34,11 +39,7 @@ type HCPVaultKeyManager struct {
 	expiryTime time.Time
 
 	licenser license.Licenser
-
-	// Cache for the current key
-	currentKey       string
-	currentKeyCached time.Time
-	cacheDuration    time.Duration
+	cache    cache.Cache
 
 	isSet bool
 }
@@ -112,8 +113,8 @@ func (k *HCPVaultKeyManager) IsSet() bool {
 	return k.isSet
 }
 
-// GetCurrentKey retrieves the current key from HCP Vault.
-func (k *HCPVaultKeyManager) GetCurrentKey() (string, error) {
+// GetCurrentKeyFromCache retrieves the current key from the Cache.
+func (k *HCPVaultKeyManager) GetCurrentKeyFromCache() (string, error) {
 	if !k.isSet {
 		return "", nil
 	}
@@ -122,8 +123,23 @@ func (k *HCPVaultKeyManager) GetCurrentKey() (string, error) {
 		return "", ErrCredentialEncryptionFeatureUnavailable
 	}
 
-	if time.Since(k.currentKeyCached) < k.cacheDuration {
-		return k.currentKey, nil
+	var currentKey string
+	err := k.cache.Get(context.Background(), RedisCacheKey, &currentKey)
+	if err != nil {
+		return "", err
+	}
+
+	if currentKey != "" {
+		return currentKey, nil
+	}
+
+	return k.GetCurrentKey()
+}
+
+// GetCurrentKey retrieves the current key from HCP Vault.
+func (k *HCPVaultKeyManager) GetCurrentKey() (string, error) {
+	if !k.licenser.CredentialEncryption() {
+		return "", ErrCredentialEncryptionFeatureUnavailable
 	}
 
 	retryCount := 1
@@ -145,9 +161,7 @@ func (k *HCPVaultKeyManager) GetCurrentKey() (string, error) {
 			return "", err
 		}
 
-		k.currentKey = currentKey
-		k.currentKeyCached = time.Now()
-		return currentKey, nil
+		return currentKey, k.cache.Set(context.Background(), RedisCacheKey, currentKey, -1)
 	}
 }
 
@@ -261,10 +275,7 @@ func (k *HCPVaultKeyManager) createOrUpdateSecret(newKey string) error {
 		return parseErrorResponse(resp)
 	}
 
-	k.currentKey = newKey
-	k.currentKeyCached = time.Now()
-
-	return nil
+	return k.cache.Set(context.Background(), RedisCacheKey, newKey, -1)
 }
 
 // deleteSecret deletes the existing secret to reset the versioning.
@@ -331,39 +342,40 @@ func parseErrorResponse(resp *http.Response) error {
 // NewHCPVaultKeyManager initializes a new HCPVaultKeyManager instance.
 func NewHCPVaultKeyManager(clientID, clientSecret, orgID, projectID, appName, secretName string) *HCPVaultKeyManager {
 	return &HCPVaultKeyManager{
-		ClientID:      clientID,
-		ClientSecret:  clientSecret,
-		OrgID:         orgID,
-		ProjectID:     projectID,
-		AppName:       appName,
-		SecretName:    secretName,
-		APIBaseURL:    HCPAPIBaseURL,
-		httpClient:    http.DefaultClient,
-		cacheDuration: 5 * time.Minute,
-		isSet:         true,
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		OrgID:        orgID,
+		ProjectID:    projectID,
+		AppName:      appName,
+		SecretName:   secretName,
+		APIBaseURL:   HCPAPIBaseURL,
+		httpClient:   http.DefaultClient,
+		isSet:        true,
+		cache:        mcache.NewMemoryCache(),
 	}
 }
 
-func NewHCPVaultKeyManagerFromConfig(cfg config.HCPVaultConfig, licenser license.Licenser) *HCPVaultKeyManager {
+func NewHCPVaultKeyManagerFromConfig(cfg config.HCPVaultConfig, licenser license.Licenser, cache cache.Cache) *HCPVaultKeyManager {
 	if cfg.ClientID == "" || cfg.ClientSecret == "" || cfg.OrgID == "" || cfg.ProjectID == "" || cfg.AppName == "" || cfg.SecretName == "" {
 		log.Warn("missing required HCP Vault configuration")
 		return &HCPVaultKeyManager{
+			cache:    cache,
 			licenser: licenser,
 			isSet:    false,
 		}
 	}
 
 	return &HCPVaultKeyManager{
-		ClientID:      cfg.ClientID,
-		ClientSecret:  cfg.ClientSecret,
-		OrgID:         cfg.OrgID,
-		ProjectID:     cfg.ProjectID,
-		AppName:       cfg.AppName,
-		SecretName:    cfg.SecretName,
-		APIBaseURL:    HCPAPIBaseURL,
-		httpClient:    http.DefaultClient,
-		cacheDuration: cfg.CacheDuration, // Apply cache duration,
-		licenser:      licenser,
-		isSet:         true,
+		ClientID:     cfg.ClientID,
+		ClientSecret: cfg.ClientSecret,
+		OrgID:        cfg.OrgID,
+		ProjectID:    cfg.ProjectID,
+		AppName:      cfg.AppName,
+		SecretName:   cfg.SecretName,
+		APIBaseURL:   HCPAPIBaseURL,
+		httpClient:   http.DefaultClient,
+		cache:        cache,
+		licenser:     licenser,
+		isSet:        true,
 	}
 }

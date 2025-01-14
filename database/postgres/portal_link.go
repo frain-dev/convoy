@@ -446,7 +446,7 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 			ids = append(ids, &PortalLinkEndpoint{PortalLinkID: portal.UID, EndpointID: endpointID})
 		}
 	} else if !util.IsStringEmpty(portal.OwnerID) {
-		key, err := p.km.GetCurrentKey()
+		key, err := p.km.GetCurrentKeyFromCache()
 		if err != nil {
 			return err
 		}

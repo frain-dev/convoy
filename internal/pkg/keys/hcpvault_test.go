@@ -1,7 +1,9 @@
 package keys
 
 import (
+	"context"
 	"fmt"
+	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -32,7 +34,7 @@ func TestNewHCPVaultKeyManagerEnv(t *testing.T) {
 	assert.NotNil(t, h)
 
 	// Happy path for getting the current key
-	key, err := h.GetCurrentKey()
+	key, err := h.GetCurrentKeyFromCache()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, key)
 	t.Logf("Retrieved key: %s", key)
@@ -43,7 +45,7 @@ func TestNewHCPVaultKeyManagerEnv(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Verifying if the new key was set properly
-	keyAfterSet, err := h.GetCurrentKey()
+	keyAfterSet, err := h.GetCurrentKeyFromCache()
 	assert.Nil(t, err)
 	assert.Equal(t, newKey, keyAfterSet)
 }
@@ -87,20 +89,20 @@ func TestNewHCPVaultKeyManager(t *testing.T) {
 
 	// Create a new instance of HCPVaultKeyManager with the mock server
 	h := &HCPVaultKeyManager{
-		APIBaseURL:    mockServer.URL,
-		OrgID:         "test-org-id",
-		ProjectID:     "test-project-id",
-		AppName:       "test-app-name",
-		SecretName:    "test-secret",
-		token:         "dummy-token",
-		cacheDuration: 5 * time.Minute,
-		httpClient:    http.DefaultClient,
-		licenser:      ll,
-		isSet:         true,
+		APIBaseURL: mockServer.URL,
+		OrgID:      "test-org-id",
+		ProjectID:  "test-project-id",
+		AppName:    "test-app-name",
+		SecretName: "test-secret",
+		token:      "dummy-token",
+		cache:      mcache.NewMemoryCache(),
+		httpClient: http.DefaultClient,
+		licenser:   ll,
+		isSet:      true,
 	}
 
 	// Mocked happy path for getting the current key
-	key, err := h.GetCurrentKey()
+	key, err := h.GetCurrentKeyFromCache()
 	assert.Nil(t, err)
 	assert.Equal(t, "mock-key", key)
 	t.Logf("Retrieved mocked key: %s", key)
@@ -111,8 +113,9 @@ func TestNewHCPVaultKeyManager(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Mocked verification of the new key
-	h.currentKeyCached = time.Time{} // Force cache expiration
-	keyAfterSet, err := h.GetCurrentKey()
+	err = h.cache.Delete(context.Background(), RedisCacheKey) // Force cache expiration
+	assert.Nil(t, err)
+	keyAfterSet, err := h.GetCurrentKeyFromCache()
 	assert.Nil(t, err)
 	assert.Equal(t, "mock-key", keyAfterSet)
 }
@@ -158,14 +161,14 @@ func TestHCPVaultKeyManagerEdgeCases(t *testing.T) {
 
 	// Initialize the HCPVaultKeyManager with the mock server's base URL
 	h := &HCPVaultKeyManager{
-		APIBaseURL:    server.URL,
-		OrgID:         "mock-org",
-		ProjectID:     "mock-proj",
-		AppName:       "mock-app",
-		SecretName:    "mock-secret",
-		ClientID:      "mock-client-id",
-		ClientSecret:  "mock-client-secret",
-		cacheDuration: time.Minute,
+		APIBaseURL:   server.URL,
+		OrgID:        "mock-org",
+		ProjectID:    "mock-proj",
+		AppName:      "mock-app",
+		SecretName:   "mock-secret",
+		ClientID:     "mock-client-id",
+		ClientSecret: "mock-client-secret",
+		cache:        mcache.NewMemoryCache(),
 
 		httpClient: http.DefaultClient,
 		licenser:   ll,
@@ -175,7 +178,7 @@ func TestHCPVaultKeyManagerEdgeCases(t *testing.T) {
 	// Test token refresh on 401 Unauthorized
 	t.Run("Token refresh on unauthorized", func(t *testing.T) {
 		h.token = "expired-token"
-		key, err := h.GetCurrentKey()
+		key, err := h.GetCurrentKeyFromCache()
 		assert.Nil(t, err)
 		assert.Equal(t, "mock-key", key)
 	})
@@ -189,8 +192,9 @@ func TestHCPVaultKeyManagerEdgeCases(t *testing.T) {
 	// Test error response handling
 	t.Run("Handles API error responses", func(t *testing.T) {
 		h.SecretName = "unknown-secret"
-		h.currentKeyCached = time.Time{}
-		_, err := h.GetCurrentKey()
+		err := h.cache.Delete(context.Background(), RedisCacheKey)
+		assert.Nil(t, err)
+		_, err = h.GetCurrentKeyFromCache()
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "unknown error")
 	})

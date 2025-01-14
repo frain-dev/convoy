@@ -18,6 +18,7 @@ var (
 type KeyManager interface {
 	IsSet() bool
 	GetCurrentKey() (string, error)
+	GetCurrentKeyFromCache() (string, error)
 	SetKey(newKey string) error
 }
 

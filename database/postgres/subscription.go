@@ -53,7 +53,7 @@ const (
 	rate_limit_config_duration=$16,
 	function=$17,
 	filter_config_filter_raw_headers=$18,
-	filter_config_filter_raw_body=$19,	
+	filter_config_filter_raw_body=$19,
     updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
@@ -76,13 +76,13 @@ const (
 	s.retry_config_duration AS "retry_config.duration",
 	s.retry_config_retry_count AS "retry_config.retry_count",
 	s.filter_config_event_types AS "filter_config.event_types",
-	
+
 	s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
 	s.filter_config_filter_raw_body AS "filter_config.filter.raw_body",
 	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
 	s.filter_config_filter_headers AS "filter_config.filter.headers",
 	s.filter_config_filter_body AS "filter_config.filter.body",
-	
+
 	s.rate_limit_config_count AS "rate_limit_config.count",
 	s.rate_limit_config_duration AS "rate_limit_config.duration",
 
@@ -463,7 +463,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 	if projectID != subscription.ProjectID {
 		return datastore.ErrNotAuthorisedToAccessDocument
 	}
-	key, err := s.km.GetCurrentKey()
+	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return err
 	}
@@ -574,7 +574,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 	fc := subscription.GetFilterConfig()
 	rlc := subscription.GetRateLimitConfig()
 
-	key, err := s.km.GetCurrentKey()
+	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return err
 	}
@@ -693,7 +693,7 @@ func (s *subscriptionRepo) LoadSubscriptionsPaged(ctx context.Context, projectID
 		filterQuery += ` AND s.name LIKE :name`
 	}
 
-	key, err := s.km.GetCurrentKey()
+	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -796,7 +796,7 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, projectID str
 
 func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID string, subscriptionID string) (*datastore.Subscription, error) {
 	subscription := &datastore.Subscription{}
-	key, err := s.km.GetCurrentKey()
+	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}
@@ -814,7 +814,7 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 }
 
 func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceID string) ([]datastore.Subscription, error) {
-	key, err := s.km.GetCurrentKey()
+	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}
@@ -831,7 +831,7 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 }
 
 func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]datastore.Subscription, error) {
-	key, err := s.km.GetCurrentKey()
+	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}
@@ -864,7 +864,7 @@ func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, proje
 }
 
 func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID string) ([]datastore.Subscription, error) {
-	key, err := s.km.GetCurrentKey()
+	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}

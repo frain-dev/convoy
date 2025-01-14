@@ -102,9 +102,9 @@ func startConvoyServer(a *cli.App) error {
 	start := time.Now()
 	a.Logger.Info("Starting Convoy control plane...")
 
-	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
+	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
 	if km.IsSet() {
-		if _, err = km.GetCurrentKey(); err != nil {
+		if _, err = km.GetCurrentKeyFromCache(); err != nil {
 			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
 				return err
 			}
