@@ -10,5 +10,22 @@
     "redis": {
         "port": 6379,
         "host": "redis_server"
-    }
+    },
+    "server": {
+        "http": {
+            "port": 5005,
+            "agent_port": 5008,
+            "ingest_port": 5009,
+            "worker_port": 5006
+        }
+    },
+    "metrics": {
+        "enabled": true
+    },
+    "enable_feature_flag": [
+        "prometheus",
+        "circuit-breaker",
+        "full-text-search"
+    ],
+    "license_key": "B1256E-CF1859-A54199-541542-EA9D46-V3"
 }
