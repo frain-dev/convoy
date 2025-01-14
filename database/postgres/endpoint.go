@@ -263,7 +263,7 @@ func checkEncryptionStatus(db database.Database) (bool, error) {
 
 func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return err
 	}
@@ -312,7 +312,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 
 func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{}
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +332,7 @@ func (e *endpointRepo) FindEndpointByID(ctx context.Context, id, projectID strin
 }
 
 func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, projectID string) ([]datastore.Endpoint, error) {
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +355,7 @@ func (e *endpointRepo) FindEndpointsByID(ctx context.Context, ids []string, proj
 }
 
 func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectID string) ([]datastore.Endpoint, error) {
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}
@@ -372,7 +372,7 @@ func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectI
 }
 
 func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}
@@ -391,7 +391,7 @@ func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID str
 func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, projectID string) error {
 	ac := endpoint.GetAuthConfig()
 
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return err
 	}
@@ -424,7 +424,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 
 func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID string, endpointID string, status datastore.EndpointStatus) error {
 	endpoint := datastore.Endpoint{}
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return err
 	}
@@ -484,7 +484,7 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 
 func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{}
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
 	}
@@ -509,7 +509,7 @@ func (e *endpointRepo) LoadEndpointsPaged(ctx context.Context, projectId string,
 		q = fmt.Sprintf("%%%s%%", q)
 	}
 
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
@@ -621,7 +621,7 @@ func (e *endpointRepo) isEncryptionError(err error) (bool, error) {
 
 func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
 	endpoint := datastore.Endpoint{}
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return err
 	}
@@ -642,7 +642,7 @@ func (e *endpointRepo) DeleteSecret(ctx context.Context, endpoint *datastore.End
 	sc.DeletedAt = null.NewTime(time.Now(), true)
 
 	updatedEndpoint := datastore.Endpoint{}
-	key, err := e.km.GetCurrentKey()
+	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return err
 	}

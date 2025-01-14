@@ -879,13 +879,5 @@ func loadHCPVaultConfig(cmd *cobra.Command, vaultConfig *config.HCPVaultConfig) 
 		vaultConfig.SecretName = secretName
 	}
 
-	cacheDuration, err := cmd.Flags().GetDuration("hcp-cache-duration")
-	if err != nil {
-		return err
-	}
-	if cacheDuration > 0 {
-		vaultConfig.CacheDuration = cacheDuration
-	}
-
 	return nil
 }

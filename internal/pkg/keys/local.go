@@ -32,6 +32,10 @@ func (l *LocalKeyManager) GetCurrentKey() (string, error) {
 	return l.currentKey, nil
 }
 
+func (l *LocalKeyManager) GetCurrentKeyFromCache() (string, error) {
+	return l.GetCurrentKey()
+}
+
 func (l *LocalKeyManager) SetKey(newKey string) error {
 	if newKey == "" {
 		return fmt.Errorf("new key must not be empty")
