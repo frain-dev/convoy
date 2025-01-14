@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/internal/pkg/instance"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"io"
 	"os"
@@ -164,7 +163,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Logger = lo
 		app.Cache = ca
 
-		err = ensureInstanceAdmin(context.Background(), app, shouldBootstrap(cmd))
+		err = ensureRootUser(context.Background(), app, shouldBootstrap(cmd))
 		if err != nil {
 			return err
 		}
@@ -790,7 +789,15 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 	return false
 }
 
+func ensureRootUser(ctx context.Context, a *cli.App, bootstrap bool) error {
+	return ensureUser(ctx, a, bootstrap)
+}
+
 func ensureInstanceAdmin(ctx context.Context, a *cli.App, bootstrap bool) error {
+	return nil
+}
+
+func ensureUser(ctx context.Context, a *cli.App, bootstrap bool) error {
 	userRepo := postgres.NewUserRepo(a.DB)
 	orgRepo := postgres.NewOrgRepo(a.DB)
 	orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)
@@ -855,13 +862,6 @@ func ensureInstanceAdmin(ctx context.Context, a *cli.App, bootstrap bool) error 
 	}
 
 	a.Logger.Infof("Created instance admin with username: %s and password: %s", instanceAdmin.Email, p.Plaintext)
-
-	if bootstrap {
-		err = instance.EncryptAndStoreInstanceDefaults(ctx, a.DB, a.Logger)
-		if err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
