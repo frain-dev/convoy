@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -30,8 +29,7 @@ func ValidateEndpoint(s string, enforceSecure bool) (string, error) {
 	case "https":
 		client := &http.Client{Timeout: 10 * time.Second, Transport: &http.Transport{
 			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				conn, err := tls.Dial(network, addr, &tls.Config{MinVersion: tls.VersionTLS12})
-				return conn, err
+				return tls.Dial(network, addr, &tls.Config{MinVersion: tls.VersionTLS12})
 			},
 		}}
 
@@ -41,11 +39,6 @@ func ValidateEndpoint(s string, enforceSecure bool) (string, error) {
 		}
 	default:
 		return "", errors.New("invalid endpoint scheme")
-	}
-
-	switch strings.ToLower(u.Hostname()) {
-	case "localhost", "127.0.0.1":
-		return "", errors.New("cannot use localhost or 127.0.0.1")
 	}
 
 	return u.String(), nil

@@ -71,26 +71,13 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		return nil, ErrLoggerIsRequired
 	}
 
-	if ff.CanAccessFeature(fflag.IpRules) && len(d.rules.Allow) == 0 && len(d.rules.Block) == 0 {
-		d.rules = &netjail.Rules{
-			Allow: []netip.Prefix{
-				netip.MustParsePrefix("0.0.0.0/8"),
-				netip.MustParsePrefix("::/0"),
-			},
-			Block: []netip.Prefix{
-				netip.MustParsePrefix("127.0.0.0/8"),
-				netip.MustParsePrefix("::1/128"),
-			},
-		}
-	}
-
 	netJailTransport := &netjail.Transport{
 		New: func() *http.Transport {
 			return d.transport.Clone()
 		},
 	}
 
-	if ff.CanAccessFeature(fflag.IpRules) {
+	if ff.CanAccessFeature(fflag.IpRules) && l.IpRules() {
 		d.client.Transport = netJailTransport
 	} else {
 		d.client.Transport = d.transport
@@ -124,12 +111,12 @@ func ProxyOption(httpProxy string) DispatcherOption {
 // AllowListOption sets a list of IP prefixes which will outgoing traffic will be granted access
 func AllowListOption(allowList []string) DispatcherOption {
 	return func(d *Dispatcher) error {
-		if len(allowList) == 0 {
-			return ErrAllowListIsRequired
-		}
-
 		if !d.l.IpRules() || !d.ff.CanAccessFeature(fflag.IpRules) {
 			return nil
+		}
+
+		if len(allowList) == 0 {
+			return ErrAllowListIsRequired
 		}
 
 		netAllow := make([]netip.Prefix, len(allowList))
@@ -149,12 +136,12 @@ func AllowListOption(allowList []string) DispatcherOption {
 // BlockListOption sets a list of IP prefixes which will outgoing traffic will be denied access
 func BlockListOption(blockList []string) DispatcherOption {
 	return func(d *Dispatcher) error {
-		if len(blockList) == 0 {
-			return ErrBlockListIsRequired
-		}
-
 		if !d.l.IpRules() || !d.ff.CanAccessFeature(fflag.IpRules) {
 			return nil
+		}
+
+		if len(blockList) == 0 {
+			return ErrBlockListIsRequired
 		}
 
 		netBlock := make([]netip.Prefix, len(blockList))
@@ -231,7 +218,7 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 		return r, err
 	}
 
-	if d.ff.CanAccessFeature(fflag.IpRules) {
+	if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
 		ctx = netjail.ContextWithRules(ctx, d.rules)
 	}
 
