@@ -73,6 +73,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				Method:     http.MethodPost,
 				URL:        nil,
 				RequestHeader: http.Header{
+					"Accept-Encoding":                      []string{"gzip"},
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
@@ -120,6 +121,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				Method:     http.MethodPost,
 				URL:        nil,
 				RequestHeader: http.Header{
+					"Accept-Encoding":                      []string{"gzip"},
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					"X-Test-Sig":                           []string{"abcdef"},
@@ -165,6 +167,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				Method:     http.MethodPost,
 				URL:        nil,
 				RequestHeader: http.Header{
+					"Accept-Encoding":                      []string{"gzip"},
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
@@ -208,6 +211,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				StatusCode: 0,
 				Method:     http.MethodPost,
 				RequestHeader: http.Header{
+					"Accept-Encoding":                      []string{"gzip"},
 					"Content-Type":                         []string{"application/json"},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
