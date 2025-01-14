@@ -51,7 +51,7 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 				return ErrCredentialEncryptionFeatureUnavailable
 			}
 
-			km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
+			km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
 			if !km.IsSet() {
 				return ErrMissingHCPVaultConfig
 			}

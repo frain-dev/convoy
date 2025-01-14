@@ -284,7 +284,7 @@ func getConfig() config.Configuration {
 		log.Fatal(err)
 	}
 	if km.IsSet() {
-		if _, err = km.GetCurrentKey(); err != nil {
+		if _, err = km.GetCurrentKeyFromCache(); err != nil {
 			log.Fatal(err)
 		}
 	}

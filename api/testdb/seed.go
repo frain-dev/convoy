@@ -552,8 +552,11 @@ func SeedSubscription(db database.Database,
 		filterConfig = &datastore.FilterConfiguration{
 			EventTypes: []string{"*"},
 			Filter: datastore.FilterSchema{
-				Headers: datastore.M{},
-				Body:    datastore.M{},
+				IsFlattened: false,
+				Headers:     datastore.M{},
+				Body:        datastore.M{},
+				RawHeaders:  datastore.M{},
+				RawBody:     datastore.M{},
 			},
 		}
 	}

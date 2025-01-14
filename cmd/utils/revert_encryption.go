@@ -41,7 +41,7 @@ func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 				return fflag2.ErrCredentialEncryptionNotEnabled
 			}
 
-			km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser)
+			km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
 			if !km.IsSet() {
 				return ErrMissingHCPVaultConfig
 			}

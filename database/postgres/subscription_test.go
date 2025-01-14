@@ -38,8 +38,11 @@ func generateSubscription(project *datastore.Project, source *datastore.Source, 
 		FilterConfig: &datastore.FilterConfiguration{
 			EventTypes: []string{"some.event"},
 			Filter: datastore.FilterSchema{
-				Headers: datastore.M{},
-				Body:    datastore.M{},
+				IsFlattened: false,
+				Headers:     datastore.M{},
+				Body:        datastore.M{},
+				RawHeaders:  datastore.M{},
+				RawBody:     datastore.M{},
 			},
 		},
 	}
