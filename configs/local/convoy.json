@@ -26,6 +26,5 @@
         "prometheus",
         "circuit-breaker",
         "full-text-search"
-    ],
-    "license_key": "B1256E-CF1859-A54199-541542-EA9D46-V3"
+    ]
 }
