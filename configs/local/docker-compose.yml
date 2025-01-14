@@ -2,7 +2,7 @@ version: "3"
 
 services:
     web:
-        image: rtukpe/convoy-local:v1
+        image: getconvoy/convoy:latest
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
@@ -20,7 +20,7 @@ services:
             - redis_server
             - pgbouncer
     agent:
-        image: rtukpe/convoy-local:v1
+        image: getconvoy/convoy:latest
         command: ["./cmd", "agent", "--config", "convoy.json"]
         ports:
             - "5008:5008"
