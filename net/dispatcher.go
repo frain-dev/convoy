@@ -2,6 +2,7 @@ package net
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -56,6 +57,7 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 			MaxIdleConnsPerHost:   10,
 			TLSHandshakeTimeout:   3 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
+			DisableCompression:    true,
 		},
 	}
 
@@ -241,6 +243,7 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 
 	req.Header.Set(signatureHeader, hmac)
 	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Add("User-Agent", defaultUserAgent())
 	if len(idempotencyKey) > 0 {
 		req.Header.Set("X-Convoy-Idempotency-Key", idempotencyKey)
@@ -300,16 +303,30 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	}
 	defer response.Body.Close()
 
-	updateDispatchHeaders(res, response)
-
 	// io.LimitReader will attempt to read from response.Body until maxResponseSize is reached.
 	// if response.Body's length is less than maxResponseSize. body.Read will return io.EOF,
 	// if it is greater than maxResponseSize. body.Read will return io.EOF,
 	// if it is equal to maxResponseSize. body.Read will return io.EOF,
 	// in all cases, io.ReadAll ignores io.EOF.
 	body := io.LimitReader(response.Body, maxResponseSize)
-	buf, err := io.ReadAll(body)
+
+	var reader io.Reader
+	// Check if response is gzipped
+	if response.Header.Get("Content-Encoding") == "gzip" {
+		gzReader, readErr := gzip.NewReader(body)
+		if readErr != nil {
+			return readErr
+		}
+		defer gzReader.Close()
+		reader = gzReader
+	} else {
+		reader = body
+	}
+
+	buf, err := io.ReadAll(reader)
 	res.Body = buf
+
+	updateDispatchHeaders(res, response)
 
 	if err != nil {
 		d.logger.WithError(err).Error("couldn't parse response body")

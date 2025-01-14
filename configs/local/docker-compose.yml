@@ -19,18 +19,11 @@ services:
             - postgres
             - redis_server
             - pgbouncer
-    worker:
+    agent:
         image: getconvoy/convoy:latest
-        command: ["./cmd", "worker", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: unless-stopped
-        depends_on:
-            web:
-                condition: service_healthy
-    ingest:
-        image: getconvoy/convoy:latest
-        command: ["./cmd", "ingest", "--config", "convoy.json"]
+        command: ["./cmd", "agent", "--config", "convoy.json"]
+        ports:
+            - "5008:5008"
         volumes:
             - ./convoy.json:/convoy.json
         restart: unless-stopped
