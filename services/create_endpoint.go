@@ -131,7 +131,7 @@ func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*da
 			return nil, err
 		}
 
-		if auth.Type == datastore.APIKeyAuthentication {
+		if auth == nil && auth.Type == datastore.APIKeyAuthentication {
 			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("api key field is required"))
 		}
 

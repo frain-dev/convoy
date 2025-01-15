@@ -110,7 +110,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 						RetryCount: 4,
 					},
 					SearchPolicy: "300h",
-					SSL:          &datastore.SSLConfiguration{EnforceSecureEndpoints: true},
+					SSL:          &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
 					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
 						Duration: 60,
@@ -385,7 +385,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 						RetryCount: 4,
 					},
 					SearchPolicy: "",
-					SSL:          &datastore.SSLConfiguration{EnforceSecureEndpoints: true},
+					SSL:          &datastore.SSLConfiguration{EnforceSecureEndpoints: false},
 					RateLimit: &datastore.RateLimitConfiguration{
 						Count:    1000,
 						Duration: 60,

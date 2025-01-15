@@ -1,5 +1,3 @@
-version: "3"
-
 services:
     web:
         image: getconvoy/convoy:latest
@@ -45,19 +43,17 @@ services:
         ports:
             - "6432:6432"
     postgres:
-        image: bitnami/postgresql:latest
+        image: postgres:15.2-alpine
         restart: on-failure
         ports:
             - "5432:5432"
         environment:
-            POSTGRESQL_DATABASE: convoy
-            POSTGRESQL_USERNAME: convoy
+            POSTGRES_DB: convoy
+            POSTGRES_USER: convoy
             POSTGRES_PASSWORD: pg_password
-            POSTGRESQL_MAX_CONNECTIONS: 250
-            POSTGRESQL_POSTGRES_PASSWORD: postgres
-            POSTGRESQL_SHARED_PRELOAD_LIBRARIES: pg_stat_statements
+            PGDATA: /data/postgres
         volumes:
-          - postgresql_master_data:/bitnami/postgresql
+            - postgresql_master_data:/data/postgres
         healthcheck:
             test: ["CMD-SHELL", "pg_isready -U convoy"]
             interval: 10s

@@ -331,6 +331,7 @@ func TestNewDispatcher(t *testing.T) {
 			mockFn: func(licenser license.Licenser) {
 				l := licenser.(*mocks.MockLicenser)
 				l.EXPECT().UseForwardProxy().Return(true)
+				l.EXPECT().IpRules().Return(true)
 			},
 			wantProxy:  true,
 			wantErr:    false,
@@ -345,6 +346,7 @@ func TestNewDispatcher(t *testing.T) {
 			mockFn: func(licenser license.Licenser) {
 				l := licenser.(*mocks.MockLicenser)
 				l.EXPECT().UseForwardProxy().Return(false)
+				l.EXPECT().IpRules().Return(true)
 			},
 			wantProxy:  false,
 			wantErr:    false,
@@ -402,7 +404,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 
 	licenser := mocks.NewMockLicenser(ctrl)
 	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-	licenser.EXPECT().IpRules().Times(2).Return(true)
+	licenser.EXPECT().IpRules().Times(4).Return(true)
 
 	// Create a new dispatcher
 	dispatcher, err := NewDispatcher(
@@ -455,7 +457,7 @@ func TestDispatcherWithTimeout(t *testing.T) {
 
 	licenser := mocks.NewMockLicenser(ctrl)
 	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-	licenser.EXPECT().IpRules().Times(2).Return(true)
+	licenser.EXPECT().IpRules().Times(4).Return(true)
 
 	dispatcher, err := NewDispatcher(
 		licenser,
@@ -500,9 +502,9 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 
 	licenser := mocks.NewMockLicenser(ctrl)
 	licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-	licenser.EXPECT().IpRules().Times(2).Return(true)
+	licenser.EXPECT().IpRules().Times(4).Return(true)
 
-	// Create a dispatcher with a block list that includes the test server's IP
+	// Create a dispatcher with a blocklist that includes the test server's IP
 	dispatcher, err := NewDispatcher(
 		licenser,
 		fflag.NewFFlag([]string{string(fflag.IpRules)}),
