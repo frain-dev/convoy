@@ -71,7 +71,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				licenser, _ := l.(*mocks.MockLicenser)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
 			},
 		},
 		{
@@ -111,7 +111,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				licenser, _ := l.(*mocks.MockLicenser)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
 			},
 		},
 		{
@@ -177,7 +177,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				licenser, _ := l.(*mocks.MockLicenser)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 
 				m.EXPECT().
 					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -276,7 +276,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -367,7 +367,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -458,7 +458,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -551,7 +551,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -644,7 +644,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -737,7 +737,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(false)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -827,7 +827,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -922,7 +922,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -1018,7 +1018,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				licenser.EXPECT().CircuitBreaking().Times(1).Return(false)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
-				licenser.EXPECT().IpRules().Times(1).Return(true)
+				licenser.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
 				httpmock.Activate()

@@ -291,7 +291,7 @@ var (
 		MetaEvent:              &MetaEventConfiguration{IsEnabled: false},
 	}
 
-	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
+	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: false}
 
 	DefaultStrategyConfig = StrategyConfiguration{
 		Type:       LinearStrategyProvider,
