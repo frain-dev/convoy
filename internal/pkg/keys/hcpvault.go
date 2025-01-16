@@ -123,14 +123,14 @@ func (k *HCPVaultKeyManager) GetCurrentKeyFromCache() (string, error) {
 		return "", ErrCredentialEncryptionFeatureUnavailable
 	}
 
-	var currentKey string
+	var currentKey *string
 	err := k.cache.Get(context.Background(), RedisCacheKey, &currentKey)
 	if err != nil {
 		return "", err
 	}
 
-	if currentKey != "" {
-		return currentKey, nil
+	if currentKey != nil && *currentKey != "" {
+		return *currentKey, nil
 	}
 
 	return k.GetCurrentKey()
@@ -161,7 +161,7 @@ func (k *HCPVaultKeyManager) GetCurrentKey() (string, error) {
 			return "", err
 		}
 
-		return currentKey, k.cache.Set(context.Background(), RedisCacheKey, currentKey, -1)
+		return currentKey, k.cache.Set(context.Background(), RedisCacheKey, &currentKey, -1)
 	}
 }
 
@@ -275,7 +275,7 @@ func (k *HCPVaultKeyManager) createOrUpdateSecret(newKey string) error {
 		return parseErrorResponse(resp)
 	}
 
-	return k.cache.Set(context.Background(), RedisCacheKey, newKey, -1)
+	return k.cache.Set(context.Background(), RedisCacheKey, &newKey, -1)
 }
 
 // deleteSecret deletes the existing secret to reset the versioning.

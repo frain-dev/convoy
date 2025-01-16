@@ -31,7 +31,7 @@ func TestProcessMetaEvent(t *testing.T) {
 		cfgPath       string
 		expectedError error
 		msg           *MetaEvent
-		dbFn          func(m *mocks.MockMetaEventRepository, p *mocks.MockProjectRepository)
+		dbFn          func(m *mocks.MockMetaEventRepository, p *mocks.MockProjectRepository, l *mocks.MockLicenser)
 		nFn           func() func()
 	}{
 		{
@@ -39,7 +39,10 @@ func TestProcessMetaEvent(t *testing.T) {
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg:           &MetaEvent{MetaEventID: "123", ProjectID: "1234"},
-			dbFn: func(m *mocks.MockMetaEventRepository, p *mocks.MockProjectRepository) {
+			dbFn: func(m *mocks.MockMetaEventRepository, p *mocks.MockProjectRepository, l *mocks.MockLicenser) {
+				l.EXPECT().UseForwardProxy().Times(1).Return(true)
+				l.EXPECT().IpRules().Times(1).Return(true)
+
 				m.EXPECT().FindMetaEventByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.MetaEvent{UID: "123", Status: datastore.SuccessEventStatus}, nil)
 				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
@@ -52,7 +55,10 @@ func TestProcessMetaEvent(t *testing.T) {
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: &EndpointError{Err: ErrMetaEventDeliveryFailed, delay: 20 * time.Second},
 			msg:           &MetaEvent{MetaEventID: "123", ProjectID: "1234"},
-			dbFn: func(m *mocks.MockMetaEventRepository, p *mocks.MockProjectRepository) {
+			dbFn: func(m *mocks.MockMetaEventRepository, p *mocks.MockProjectRepository, l *mocks.MockLicenser) {
+				l.EXPECT().UseForwardProxy().Times(1).Return(true)
+				l.EXPECT().IpRules().Times(2).Return(true)
+
 				m.EXPECT().FindMetaEventByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.MetaEvent{
 						UID: "123",
@@ -93,7 +99,10 @@ func TestProcessMetaEvent(t *testing.T) {
 			cfgPath:       "./testdata/Config/basic-convoy.json",
 			expectedError: nil,
 			msg:           &MetaEvent{MetaEventID: "123", ProjectID: "1234"},
-			dbFn: func(m *mocks.MockMetaEventRepository, p *mocks.MockProjectRepository) {
+			dbFn: func(m *mocks.MockMetaEventRepository, p *mocks.MockProjectRepository, l *mocks.MockLicenser) {
+				l.EXPECT().UseForwardProxy().Times(1).Return(true)
+				l.EXPECT().IpRules().Times(2).Return(true)
+
 				m.EXPECT().FindMetaEventByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.MetaEvent{
 						UID: "123",
@@ -138,7 +147,8 @@ func TestProcessMetaEvent(t *testing.T) {
 			metaEventRepo := mocks.NewMockMetaEventRepository(ctrl)
 			projectRepo := mocks.NewMockProjectRepository(ctrl)
 			licenser := mocks.NewMockLicenser(ctrl)
-			licenser.EXPECT().UseForwardProxy().Times(1).Return(true)
+
+			tc.dbFn(metaEventRepo, projectRepo, licenser)
 
 			dispatcher, err := net.NewDispatcher(
 				licenser,
@@ -156,10 +166,6 @@ func TestProcessMetaEvent(t *testing.T) {
 			if tc.nFn != nil {
 				deferFn := tc.nFn()
 				defer deferFn()
-			}
-
-			if tc.dbFn != nil {
-				tc.dbFn(metaEventRepo, projectRepo)
 			}
 
 			processFn := ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, tracer.NoOpBackend{})

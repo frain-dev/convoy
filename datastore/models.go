@@ -292,7 +292,7 @@ var (
 		CircuitBreakerConfig:   &DefaultCircuitBreakerConfiguration,
 	}
 
-	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: true}
+	DefaultSSLConfig = SSLConfiguration{EnforceSecureEndpoints: false}
 
 	DefaultStrategyConfig = StrategyConfiguration{
 		Type:       LinearStrategyProvider,

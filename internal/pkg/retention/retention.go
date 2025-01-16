@@ -2,7 +2,6 @@ package retention
 
 import (
 	"context"
-	"fmt"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -141,8 +140,6 @@ func (r *RetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 					if err != nil {
 						r.logger.WithError(err).Error("failed to add convoy.delivery_attempts to managed tables")
 					}
-
-					fmt.Printf("pro: %+v\n", len(r.partitioner.(*partman.Manager).GetConfig().Tables))
 				}
 			}
 		}
