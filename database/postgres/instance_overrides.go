@@ -336,6 +336,6 @@ func (i *instanceOverridesRepo) DeleteUnUpdatedKeys(ctx context.Context, scopeTy
 		query += fmt.Sprintf("%s)", strings.Join(keyList, ", "))
 	}
 
-	_, err := i.db.GetDB().ExecContext(ctx, query, scopeType, scopeID)
+	_, err := i.db.GetDB().ExecContext(ctx, query, args...)
 	return err
 }
