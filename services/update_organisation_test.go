@@ -15,10 +15,11 @@ import (
 
 func provideUpdateOrganisationService(ctrl *gomock.Controller, org *datastore.Organisation, update *models.Organisation) *UpdateOrganisationService {
 	return &UpdateOrganisationService{
-		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-		Org:           org,
-		Update:        update,
+		OrgRepo:               mocks.NewMockOrganisationRepository(ctrl),
+		OrgMemberRepo:         mocks.NewMockOrganisationMemberRepository(ctrl),
+		InstanceOverridesRepo: mocks.NewMockInstanceOverridesRepository(ctrl),
+		Org:                   org,
+		Update:                update,
 	}
 }
 

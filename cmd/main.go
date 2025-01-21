@@ -150,6 +150,7 @@ func main() {
 	c.AddCommand(stream.AddStreamCommand(app))
 	c.AddCommand(ingest.AddIngestCommand(app))
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
+	c.AddCommand(bootstrap.AddProvisionIACommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())
 	c.AddCommand(utils.AddUtilsCommand(app))

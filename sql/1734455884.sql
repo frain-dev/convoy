@@ -1,15 +1,4 @@
 -- +migrate Up
-CREATE TABLE IF NOT EXISTS convoy.instance_defaults (
-    id CHAR(26) PRIMARY KEY,
-    scope_type VARCHAR(50) NOT NULL,
-    key VARCHAR(255) NOT NULL ,
-    default_value_cipher TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMPTZ,
-    CONSTRAINT unique_defaults_key UNIQUE (scope_type, key)
-);
-
 CREATE TABLE IF NOT EXISTS convoy.instance_overrides (
     id CHAR(26) PRIMARY KEY,
     scope_type VARCHAR(50) NOT NULL,
@@ -24,4 +13,3 @@ CREATE TABLE IF NOT EXISTS convoy.instance_overrides (
 
 -- +migrate Down
 DROP TABLE IF EXISTS convoy.instance_overrides;
-DROP TABLE IF EXISTS convoy.instance_defaults;

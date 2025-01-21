@@ -12,10 +12,11 @@ import (
 )
 
 type UpdateOrganisationService struct {
-	OrgRepo       datastore.OrganisationRepository
-	OrgMemberRepo datastore.OrganisationMemberRepository
-	Org           *datastore.Organisation
-	Update        *models.Organisation
+	OrgRepo               datastore.OrganisationRepository
+	OrgMemberRepo         datastore.OrganisationMemberRepository
+	InstanceOverridesRepo datastore.InstanceOverridesRepository
+	Org                   *datastore.Organisation
+	Update                *models.Organisation
 }
 
 func (os *UpdateOrganisationService) Run(ctx context.Context) (*datastore.Organisation, error) {
@@ -48,6 +49,11 @@ func (os *UpdateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to to update organisation")
 		return nil, &ServiceError{ErrMsg: "failed to update organisation", Err: err}
+	}
+
+	err = UpdateInstanceConfig(ctx, os.InstanceOverridesRepo, os.Org, os.Update)
+	if err != nil {
+		return nil, err
 	}
 
 	return os.Org, nil

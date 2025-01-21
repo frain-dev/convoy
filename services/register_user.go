@@ -22,13 +22,14 @@ import (
 )
 
 type RegisterUserService struct {
-	UserRepo      datastore.UserRepository
-	OrgRepo       datastore.OrganisationRepository
-	OrgMemberRepo datastore.OrganisationMemberRepository
-	Queue         queue.Queuer
-	JWT           *jwt.Jwt
-	ConfigRepo    datastore.ConfigurationRepository
-	Licenser      license.Licenser
+	UserRepo              datastore.UserRepository
+	OrgRepo               datastore.OrganisationRepository
+	OrgMemberRepo         datastore.OrganisationMemberRepository
+	InstanceOverridesRepo datastore.InstanceOverridesRepository
+	Queue                 queue.Queuer
+	JWT                   *jwt.Jwt
+	ConfigRepo            datastore.ConfigurationRepository
+	Licenser              license.Licenser
 
 	BaseURL string
 	Data    *models.RegisterUser
@@ -87,11 +88,12 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 	}
 
 	co := CreateOrganisationService{
-		OrgRepo:       u.OrgRepo,
-		OrgMemberRepo: u.OrgMemberRepo,
-		Licenser:      u.Licenser,
-		NewOrg:        &models.Organisation{Name: u.Data.OrganisationName},
-		User:          user,
+		OrgRepo:               u.OrgRepo,
+		OrgMemberRepo:         u.OrgMemberRepo,
+		InstanceOverridesRepo: u.InstanceOverridesRepo,
+		Licenser:              u.Licenser,
+		NewOrg:                &models.Organisation{Name: u.Data.OrganisationName},
+		User:                  user,
 	}
 
 	_, err = co.Run(ctx)

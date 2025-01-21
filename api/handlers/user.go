@@ -42,13 +42,14 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rs := services.RegisterUserService{
-		UserRepo:      postgres.NewUserRepo(h.A.DB),
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
-		Queue:         h.A.Queue,
-		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
-		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
-		Licenser:      h.A.Licenser,
+		UserRepo:              postgres.NewUserRepo(h.A.DB),
+		OrgRepo:               postgres.NewOrgRepo(h.A.DB),
+		OrgMemberRepo:         postgres.NewOrgMemberRepo(h.A.DB),
+		InstanceOverridesRepo: postgres.NewInstanceOverridesRepo(h.A.DB),
+		Queue:                 h.A.Queue,
+		JWT:                   jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),
+		ConfigRepo:            postgres.NewConfigRepo(h.A.DB),
+		Licenser:              h.A.Licenser,
 
 		BaseURL: baseUrl,
 		Data:    &newUser,

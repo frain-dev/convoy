@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -229,11 +230,12 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 	}
 
 	co := CreateOrganisationService{
-		OrgRepo:       u.OrgRepo,
-		OrgMemberRepo: u.OrgMemberRepo,
-		Licenser:      u.Licenser,
-		NewOrg:        &models.Organisation{Name: t.Data.Payload.OrganizationExternalID},
-		User:          user,
+		OrgRepo:               u.OrgRepo,
+		OrgMemberRepo:         u.OrgMemberRepo,
+		InstanceOverridesRepo: postgres.NewInstanceOverridesRepo(a.DB),
+		Licenser:              u.Licenser,
+		NewOrg:                &models.Organisation{Name: t.Data.Payload.OrganizationExternalID},
+		User:                  user,
 	}
 
 	_, err = co.Run(ctx)

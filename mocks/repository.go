@@ -1178,6 +1178,36 @@ func (mr *MockOrganisationMemberRepositoryMockRecorder) CountInstanceAdmins(ctx 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountInstanceAdmins", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CountInstanceAdmins), ctx)
 }
 
+// CountRootUsers mocks base method.
+func (m *MockOrganisationMemberRepository) CountRootUsers(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountRootUsers", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountRootUsers indicates an expected call of CountRootUsers.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) CountRootUsers(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountRootUsers", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CountRootUsers), ctx)
+}
+
+// CountSuperUsers mocks base method.
+func (m *MockOrganisationMemberRepository) CountSuperUsers(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountSuperUsers", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountSuperUsers indicates an expected call of CountSuperUsers.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) CountSuperUsers(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountSuperUsers", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CountSuperUsers), ctx)
+}
+
 // CreateOrganisationMember mocks base method.
 func (m *MockOrganisationMemberRepository) CreateOrganisationMember(ctx context.Context, member *datastore.OrganisationMember) error {
 	m.ctrl.T.Helper()
@@ -3045,4 +3075,18 @@ func (m *MockInstanceOverridesRepository) Update(ctx context.Context, id string,
 func (mr *MockInstanceOverridesRepositoryMockRecorder) Update(ctx, id, record any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockInstanceOverridesRepository)(nil).Update), ctx, id, record)
+}
+
+// DeleteUnUpdatedKeys mocks base method.
+func (m *MockInstanceOverridesRepository) DeleteUnUpdatedKeys(ctx context.Context, scopeType, scopeID string, keysToUpdate map[string]bool) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUnUpdatedKeys", ctx, scopeType, scopeID, keysToUpdate)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUnUpdatedKeys indicates an expected call of DeleteUnUpdatedKeys.
+func (mr *MockInstanceOverridesRepositoryMockRecorder) DeleteUnUpdatedKeys(ctx, scopeType, scopeID, keysToUpdate interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUnUpdatedKeys", reflect.TypeOf((*MockInstanceOverridesRepository)(nil).DeleteUnUpdatedKeys), ctx, scopeType, scopeID, keysToUpdate)
 }

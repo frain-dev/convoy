@@ -41,26 +41,7 @@ func TestIngestCfg_GetInstanceRateLimit(t *testing.T) {
 
 	ctx := context.Background()
 
-	instanceDefaultsRepo := postgres.NewInstanceDefaultsRepo(db)
 	instanceOverridesRepo := postgres.NewInstanceOverridesRepo(db)
-
-	t.Run("Default Found", func(t *testing.T) {
-		_, err := instanceDefaultsRepo.Create(ctx, &datastore.InstanceDefaults{
-			UID:          "default1",
-			ScopeType:    instance.OrganisationScope,
-			Key:          instance.KeyInstanceIngestRate,
-			DefaultValue: "{\"value\": 150}",
-		})
-		assert.NoError(t, err)
-
-		cacheKey := fmt.Sprintf("rate_limit:%s:%s:%s", instance.KeyInstanceIngestRate, projectID, organisationID)
-		err = memoryCache.Delete(ctx, cacheKey)
-		require.NoError(t, err)
-
-		rateLimit, err := ingestCfg.GetInstanceRateLimitWithCache(ctx)
-		assert.NoError(t, err)
-		assert.Equal(t, 150, rateLimit)
-	})
 
 	t.Run("Override Found", func(t *testing.T) {
 		_, err := instanceOverridesRepo.Create(ctx, &datastore.InstanceOverrides{
@@ -83,8 +64,6 @@ func TestIngestCfg_GetInstanceRateLimit(t *testing.T) {
 
 	t.Run("Fallback to Default Rate", func(t *testing.T) {
 		_, err := db.GetDB().ExecContext(ctx, `DELETE FROM convoy.instance_overrides WHERE key = $1`, instance.KeyInstanceIngestRate)
-		assert.NoError(t, err)
-		_, err = db.GetDB().ExecContext(ctx, `DELETE FROM convoy.instance_defaults WHERE key = $1`, instance.KeyInstanceIngestRate)
 		assert.NoError(t, err)
 
 		cacheKey := fmt.Sprintf("rate_limit:%s:%s:%s", instance.KeyInstanceIngestRate, projectID, organisationID)

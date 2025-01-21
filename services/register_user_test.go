@@ -21,15 +21,16 @@ func provideRegisterUserService(ctrl *gomock.Controller, t *testing.T, baseUrl s
 
 	c := mocks.NewMockCache(ctrl)
 	return &RegisterUserService{
-		UserRepo:      mocks.NewMockUserRepository(ctrl),
-		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-		Queue:         mocks.NewMockQueuer(ctrl),
-		Licenser:      mocks.NewMockLicenser(ctrl),
-		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, c),
-		ConfigRepo:    mocks.NewMockConfigurationRepository(ctrl),
-		BaseURL:       baseUrl,
-		Data:          loginUser,
+		UserRepo:              mocks.NewMockUserRepository(ctrl),
+		OrgRepo:               mocks.NewMockOrganisationRepository(ctrl),
+		OrgMemberRepo:         mocks.NewMockOrganisationMemberRepository(ctrl),
+		InstanceOverridesRepo: mocks.NewMockInstanceOverridesRepository(ctrl),
+		Queue:                 mocks.NewMockQueuer(ctrl),
+		Licenser:              mocks.NewMockLicenser(ctrl),
+		JWT:                   jwt.NewJwt(&configuration.Auth.Jwt, c),
+		ConfigRepo:            mocks.NewMockConfigurationRepository(ctrl),
+		BaseURL:               baseUrl,
+		Data:                  loginUser,
 	}
 }
 

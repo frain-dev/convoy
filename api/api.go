@@ -269,15 +269,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		uiRouter.Route("/god-mode/configs", func(godModeRouter chi.Router) {
 			godModeRouter.Use(middleware.RequireInstanceAdmin(handler.A))
 
-			godModeRouter.Route("/defaults", func(defaultsRouter chi.Router) {
-				defaultsRouter.With(middleware.Pagination).Get("/", handler.GetInstanceDefaultsPaged)
-				defaultsRouter.Post("/", handler.CreateInstanceDefaults)
-				defaultsRouter.Route("/{configID}", func(configSubRouter chi.Router) {
-					configSubRouter.Get("/", handler.GetInstanceDefaults)
-					configSubRouter.Put("/", handler.UpdateInstanceDefaults)
-				})
-			})
-
 			godModeRouter.Route("/overrides", func(overridesRouter chi.Router) {
 				overridesRouter.With(middleware.Pagination).Get("/", handler.GetInstanceOverridesPaged)
 				overridesRouter.Post("/", handler.CreateInstanceOverrides)

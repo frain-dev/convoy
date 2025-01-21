@@ -58,19 +58,6 @@ func (r *RetentionCfg) fetchRetentionPolicyFromDatabase(ctx context.Context, key
 		}
 	}
 
-	if !found {
-		found, err = r.getInstanceDefault(ctx, key, "project", &retentionPolicy)
-		if err != nil {
-			return "", err
-		}
-		if !found {
-			found, err = r.getInstanceDefault(ctx, key, "organisation", &retentionPolicy)
-			if err != nil {
-				return "", err
-			}
-		}
-	}
-
 	// If no value found, fallback to default configuration
 	if !found {
 		retentionPolicy = r.defaultPolicy
@@ -81,17 +68,6 @@ func (r *RetentionCfg) fetchRetentionPolicyFromDatabase(ctx context.Context, key
 
 func (r *RetentionCfg) getInstanceOverride(ctx context.Context, key, scopeType, scopeID string, model *config.RetentionPolicyConfiguration) (bool, error) {
 	_, err := instance.FetchDecryptedOverrides(ctx, r.db, key, scopeType, scopeID, &model)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
-	}
-	return model != nil && model.Policy != "", nil
-}
-
-func (r *RetentionCfg) getInstanceDefault(ctx context.Context, key, scopeType string, model *config.RetentionPolicyConfiguration) (bool, error) {
-	_, err := instance.FetchDecryptedDefaults(ctx, r.db, key, scopeType, &model)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil

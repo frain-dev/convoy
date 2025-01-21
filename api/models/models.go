@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"github.com/frain-dev/convoy/config"
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
@@ -15,8 +16,20 @@ type PagedResponse struct {
 }
 
 type Organisation struct {
-	Name         string `json:"name" bson:"name"`
-	CustomDomain string `json:"custom_domain" bson:"custom_domain"`
+	Name         string  `json:"name" bson:"name"`
+	CustomDomain string  `json:"custom_domain" bson:"custom_domain"`
+	Config       *Config `json:"config" bson:"config"`
+}
+
+type Config struct {
+	StaticIP      *bool    `json:"static_ip" bson:"static_ip"`
+	EnterpriseSSO *bool    `json:"enterprise_sso" bson:"enterprise_sso"`
+	ProjectConfig *Project `json:"project" bson:"project"`
+}
+
+type Project struct {
+	RetentionPolicy *config.RetentionPolicyConfiguration `json:"retention_policy" bson:"retention_policy"`
+	IngestRateLimit *int                                 `json:"ingest_rate_limit" bson:"ingest_rate_limit"`
 }
 
 type OrganisationInvite struct {

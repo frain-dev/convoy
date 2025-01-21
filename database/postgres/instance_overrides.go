@@ -11,10 +11,15 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/instance"
 	"github.com/oklog/ulid/v2"
+	"strings"
 	"time"
 )
 
 var (
+	ErrKeyCannotBeEmpty         = errors.New("key cannot be empty")
+	ErrInvalidBool              = errors.New("invalid bool json value")
+	ErrInvalidIngestRate        = errors.New("invalid ingest rate json value")
+	ErrInvalidRetentionPolicy   = errors.New("invalid retention policy json value")
 	ErrValueCipherCannotBeEmpty = errors.New("value (plaintext) cannot be empty")
 	ErrScopeIDCannotBeEmpty     = errors.New("scope_id cannot be empty")
 )
@@ -39,23 +44,33 @@ func (i *instanceOverridesRepo) Create(ctx context.Context, instanceOverride *da
 
 	instanceOverride.UID = ulid.Make().String()
 
+	key := encryptionPassphrase + "-" + instanceOverride.UID
+
 	query := `
         INSERT INTO convoy.instance_overrides (id, scope_type, scope_id, key, value_cipher, created_at, updated_at)
         VALUES ($1, $2, $3, $4, pgp_sym_encrypt($5::text, $6), CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (scope_type, scope_id, key)
+        DO UPDATE SET
+            value_cipher = pgp_sym_encrypt($5::text, CONCAT($7::text, '-', convoy.instance_overrides.id)),
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING id;
     `
-	_, err = i.db.GetDB().ExecContext(ctx, query,
+
+	var uid string
+	err = i.db.GetDB().QueryRowContext(ctx, query,
 		instanceOverride.UID,
 		instanceOverride.ScopeType,
 		instanceOverride.ScopeID,
 		instanceOverride.Key,
 		instanceOverride.Value,
+		key,
 		encryptionPassphrase,
-	)
+	).Scan(&uid)
 	if err != nil {
 		return nil, err
 	}
 
-	o, err := i.FetchByID(ctx, instanceOverride.UID)
+	o, err := i.FetchByID(ctx, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +93,8 @@ func (i *instanceOverridesRepo) validateOverride(ctx context.Context, instanceOv
 	validKeys := map[string]bool{
 		instance.KeyInstanceIngestRate: true,
 		instance.KeyRetentionPolicy:    true,
+		instance.KeyStaticIP:           true,
+		instance.KeyEnterpriseSSO:      true,
 	}
 	if !validKeys[instanceOverride.Key] {
 		return fmt.Errorf("invalid key: %s", instanceOverride.Key)
@@ -97,7 +114,7 @@ func (i *instanceOverridesRepo) validateOverride(ctx context.Context, instanceOv
 		if err != nil || ingestRate.Value == 0 {
 			return ErrInvalidIngestRate
 		}
-	} else {
+	} else if instanceOverride.Key == instance.KeyRetentionPolicy {
 		var retentionPolicy config.RetentionPolicyConfiguration
 		err := json.Unmarshal([]byte(instanceOverride.Value), &retentionPolicy)
 		if err != nil {
@@ -106,6 +123,12 @@ func (i *instanceOverridesRepo) validateOverride(ctx context.Context, instanceOv
 		_, err = time.ParseDuration(retentionPolicy.Policy)
 		if err != nil {
 			return ErrInvalidRetentionPolicy
+		}
+	} else if instanceOverride.Key == instance.KeyStaticIP || instanceOverride.Key == instance.KeyEnterpriseSSO {
+		var boolean instance.Boolean
+		err := json.Unmarshal([]byte(instanceOverride.Value), &boolean)
+		if err != nil {
+			return ErrInvalidBool
 		}
 	}
 
@@ -144,7 +167,7 @@ func (i *instanceOverridesRepo) Update(ctx context.Context, id string, instanceO
         SET scope_type = $1,
             scope_id = $2,
             key = $3,
-            value_cipher = pgp_sym_encrypt($4::text, $5),
+            value_cipher = pgp_sym_encrypt($4::text, CONCAT($5::text, '-', id)),
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $6
     `
@@ -173,7 +196,7 @@ func (i *instanceOverridesRepo) FetchByID(ctx context.Context, id string) (*data
 
 	query := `
         SELECT id, scope_type, scope_id, key,
-               pgp_sym_decrypt(value_cipher::bytea, $1) AS value_cipher,
+               pgp_sym_decrypt(value_cipher::bytea, CONCAT($1::text, '-', id)) AS value_cipher,
                created_at, updated_at, deleted_at
         FROM convoy.instance_overrides
         WHERE id = $2
@@ -209,7 +232,7 @@ func (i *instanceOverridesRepo) LoadPaged(ctx context.Context, pageable datastor
 	if pageable.PrevCursor != "" {
 		query = `
             SELECT id, scope_type, scope_id, key,
-                   pgp_sym_decrypt(value_cipher::bytea, $1) AS value_cipher,
+                   pgp_sym_decrypt(value_cipher::bytea, CONCAT($1::text, '-', id)) AS value_cipher,
                    created_at, updated_at, deleted_at
             FROM convoy.instance_overrides
             WHERE id < $2
@@ -220,7 +243,7 @@ func (i *instanceOverridesRepo) LoadPaged(ctx context.Context, pageable datastor
 	} else if pageable.NextCursor != "" {
 		query = `
             SELECT id, scope_type, scope_id, key,
-                   pgp_sym_decrypt(value_cipher::bytea, $1) AS value_cipher,
+                   pgp_sym_decrypt(value_cipher::bytea, CONCAT($1::text, '-', id)) AS value_cipher,
                    created_at, updated_at, deleted_at
             FROM convoy.instance_overrides
             WHERE id > $2
@@ -231,7 +254,7 @@ func (i *instanceOverridesRepo) LoadPaged(ctx context.Context, pageable datastor
 	} else {
 		query = `
             SELECT id, scope_type, scope_id, key,
-                   pgp_sym_decrypt(value_cipher::bytea, $1) AS value_cipher,
+                   pgp_sym_decrypt(value_cipher::bytea, CONCAT($1::text, '-', id)) AS value_cipher,
                    created_at, updated_at, deleted_at
             FROM convoy.instance_overrides
             ORDER BY id
@@ -292,4 +315,27 @@ func (i *instanceOverridesRepo) LoadPaged(ctx context.Context, pageable datastor
 	}
 
 	return instanceOverrides, paginationData, nil
+}
+
+func (i *instanceOverridesRepo) DeleteUnUpdatedKeys(ctx context.Context, scopeType, scopeID string, keysToUpdate map[string]bool) error {
+	var query string
+	var args []interface{}
+
+	query = `
+        DELETE FROM convoy.instance_overrides
+        WHERE scope_type = $1
+          AND scope_id = $2`
+	args = append(args, scopeType, scopeID)
+
+	if len(keysToUpdate) > 0 {
+		query += ` AND key NOT IN (`
+		var keyList []string
+		for key := range keysToUpdate {
+			keyList = append(keyList, fmt.Sprintf("'%s'", key))
+		}
+		query += fmt.Sprintf("%s)", strings.Join(keyList, ", "))
+	}
+
+	_, err := i.db.GetDB().ExecContext(ctx, query, scopeType, scopeID)
+	return err
 }

@@ -95,14 +95,25 @@ const (
 	WHERE o.user_id = $1 AND (o.role_type='instance_admin' OR o.role_type='root') AND o.deleted_at IS NULL LIMIT 1;
 	`
 
-	countInstanceAdmins = `
+	countRootUsers = `
     SELECT COUNT(*) FROM (
         SELECT
             o.id AS id
         FROM convoy.organisation_members o
         LEFT JOIN convoy.users u
             ON o.user_id = u.id
-        WHERE o.role_type='instance_admin' AND o.deleted_at IS NULL LIMIT 1
+        WHERE o.role_type='root' AND o.deleted_at IS NULL LIMIT 1
+    ) ou;
+	`
+
+	countSuperUsers = `
+    SELECT COUNT(*) FROM (
+        SELECT
+            o.id AS id
+        FROM convoy.organisation_members o
+        LEFT JOIN convoy.users u
+            ON o.user_id = u.id
+        WHERE o.role_type='organisation_admin' AND o.deleted_at IS NULL LIMIT 1
     ) ou;
 	`
 
@@ -540,9 +551,19 @@ func (o *orgMemberRepo) FetchAnyInstanceAdminOrRootByUserID(ctx context.Context,
 	return member, nil
 }
 
-func (o *orgMemberRepo) CountInstanceAdmins(ctx context.Context) (int64, error) {
+func (o *orgMemberRepo) CountRootUsers(ctx context.Context) (int64, error) {
 	var count int64
-	err := o.db.GetReadDB().GetContext(ctx, &count, countInstanceAdmins)
+	err := o.db.GetReadDB().GetContext(ctx, &count, countRootUsers)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (o *orgMemberRepo) CountSuperUsers(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetReadDB().GetContext(ctx, &count, countSuperUsers)
 	if err != nil {
 		return 0, err
 	}

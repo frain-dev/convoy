@@ -1347,14 +1347,26 @@ type ApiKey struct {
 }
 
 type Organisation struct {
-	UID            string      `json:"uid" db:"id"`
-	OwnerID        string      `json:"" db:"owner_id"`
-	Name           string      `json:"name" db:"name"`
-	CustomDomain   null.String `json:"custom_domain" db:"custom_domain"`
-	AssignedDomain null.String `json:"assigned_domain" db:"assigned_domain"`
-	CreatedAt      time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt      time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
-	DeletedAt      null.Time   `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	UID            string          `json:"uid" db:"id"`
+	OwnerID        string          `json:"" db:"owner_id"`
+	Name           string          `json:"name" db:"name"`
+	CustomDomain   null.String     `json:"custom_domain" db:"custom_domain"`
+	AssignedDomain null.String     `json:"assigned_domain" db:"assigned_domain"`
+	CreatedAt      time.Time       `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time       `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	DeletedAt      null.Time       `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	Config         *InstanceConfig `json:"config,omitempty" db:"-"`
+}
+
+type InstanceConfig struct {
+	StaticIP      *bool                  `json:"static_ip,omitempty" bson:"static_ip"`
+	EnterpriseSSO *bool                  `json:"enterprise_sso,omitempty" bson:"enterprise_sso"`
+	ProjectConfig *ProjectInstanceConfig `json:"project,omitempty" bson:"project"`
+}
+
+type ProjectInstanceConfig struct {
+	RetentionPolicy *config.RetentionPolicyConfiguration `json:"retention_policy,omitempty" bson:"retention_policy"`
+	IngestRateLimit *int                                 `json:"ingest_rate_limit,omitempty" bson:"ingest_rate_limit"`
 }
 
 type Configuration struct {
@@ -1562,7 +1574,7 @@ type InstanceOverrides struct {
 	ScopeType string `json:"scope_type" db:"scope_type"`
 	ScopeID   string `json:"scope_id" db:"scope_id"`
 	Key       string `json:"key" db:"key"`
-	Value     string `json:"value_cipher" db:"value_cipher"`
+	Value     string `json:"valuelp" db:"value_cipher"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

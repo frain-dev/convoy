@@ -97,20 +97,7 @@ func (i *IngestCfg) fetchRateLimitFromDatabase(ctx context.Context, key, project
 		}
 	}
 
-	if !found {
-		found, err = i.getInstanceDefault(ctx, key, "project", &ingestRate)
-		if err != nil {
-			return 0, err
-		}
-		if !found {
-			found, err = i.getInstanceDefault(ctx, key, "organisation", &ingestRate)
-			if err != nil {
-				return 0, err
-			}
-		}
-	}
-
-	// Fallback to default rate if no overrides or defaults found
+	// Fallback to default rate if no overrides found
 	if !found {
 		ingestRate.Value = i.defaultRate
 	}
@@ -120,17 +107,6 @@ func (i *IngestCfg) fetchRateLimitFromDatabase(ctx context.Context, key, project
 
 func (i *IngestCfg) getInstanceOverride(ctx context.Context, key string, scopeType string, scopeId string, model *instance.IngestRate) (bool, error) {
 	_, err := instance.FetchDecryptedOverrides(ctx, i.db, key, scopeType, scopeId, &model)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
-	}
-	return model != nil && model.Value > 0, nil
-}
-
-func (i *IngestCfg) getInstanceDefault(ctx context.Context, key string, scopeType string, model *instance.IngestRate) (bool, error) {
-	_, err := instance.FetchDecryptedDefaults(ctx, i.db, key, scopeType, &model)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil

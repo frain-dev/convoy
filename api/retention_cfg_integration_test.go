@@ -37,25 +37,7 @@ func TestRetentionCfg_GetRetentionPolicy(t *testing.T) {
 
 	ctx := context.Background()
 
-	instanceDefaultsRepo := postgres.NewInstanceDefaultsRepo(db)
 	instanceOverridesRepo := postgres.NewInstanceOverridesRepo(db)
-
-	t.Run("Default Found", func(t *testing.T) {
-		_, err := instanceDefaultsRepo.Create(ctx, &datastore.InstanceDefaults{
-			UID:          "default2",
-			ScopeType:    instance.OrganisationScope,
-			Key:          instance.KeyRetentionPolicy,
-			DefaultValue: "{\"policy\": \"36h\", \"enabled\": false}",
-		})
-		assert.NoError(t, err)
-
-		// Fetch the retention policy
-		retentionPolicy, err := retentionCfg.GetRetentionPolicy(ctx)
-		assert.NoError(t, err)
-		d, err := time.ParseDuration("36h")
-		require.NoError(t, err)
-		assert.Equal(t, d, retentionPolicy)
-	})
 
 	t.Run("Override Found", func(t *testing.T) {
 		_, err := instanceOverridesRepo.Create(ctx, &datastore.InstanceOverrides{
@@ -76,8 +58,6 @@ func TestRetentionCfg_GetRetentionPolicy(t *testing.T) {
 
 	t.Run("Fallback to Default Policy", func(t *testing.T) {
 		_, err := db.GetDB().ExecContext(ctx, `DELETE FROM convoy.instance_overrides WHERE key = $1`, instance.KeyRetentionPolicy)
-		assert.NoError(t, err)
-		_, err = db.GetDB().ExecContext(ctx, `DELETE FROM convoy.instance_defaults WHERE key = $1`, instance.KeyRetentionPolicy)
 		assert.NoError(t, err)
 
 		retentionPolicy, err := retentionCfg.GetRetentionPolicy(ctx)

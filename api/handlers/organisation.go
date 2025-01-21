@@ -68,11 +68,12 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	co := services.CreateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
-		NewOrg:        &newOrg,
-		User:          user,
-		Licenser:      h.A.Licenser,
+		OrgRepo:               postgres.NewOrgRepo(h.A.DB),
+		OrgMemberRepo:         postgres.NewOrgMemberRepo(h.A.DB),
+		InstanceOverridesRepo: postgres.NewInstanceOverridesRepo(h.A.DB),
+		NewOrg:                &newOrg,
+		User:                  user,
+		Licenser:              h.A.Licenser,
 	}
 
 	organisation, err := co.Run(r.Context())
@@ -104,10 +105,11 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	us := services.UpdateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
-		Org:           org,
-		Update:        &orgUpdate,
+		OrgRepo:               postgres.NewOrgRepo(h.A.DB),
+		OrgMemberRepo:         postgres.NewOrgMemberRepo(h.A.DB),
+		InstanceOverridesRepo: postgres.NewInstanceOverridesRepo(h.A.DB),
+		Org:                   org,
+		Update:                &orgUpdate,
 	}
 
 	org, err = us.Run(r.Context())

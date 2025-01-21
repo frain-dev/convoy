@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/auth"
 	"time"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -20,11 +21,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	ErrInstanceAdminOrRootRequired = errors.New("an instance admin or a root user is required")
+)
+
 func AddBootstrapCommand(a *cli.App) *cobra.Command {
 	var firstName string
 	var lastName string
 	var format string
 	var email string
+	var token string
 
 	cmd := &cobra.Command{
 		Use:   "bootstrap",
@@ -33,7 +39,34 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			"ShouldBootstrap": "false",
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runBootstrap(a, format, email, firstName, lastName)
+
+			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)
+
+			count, err := orgMemberRepo.CountSuperUsers(context.Background())
+			if err != nil {
+				return fmt.Errorf("failed to count org admins: %w", err)
+			}
+
+			if count > 0 {
+				// org admin exists
+				if token == "" {
+					return fmt.Errorf("an access token required to proceed")
+				}
+				authUser, member, err := getInstanceAdminOrRoot(a, token)
+				if err != nil {
+					log.WithError(err).Warn("failed to get instance admin or root")
+					return fmt.Errorf("failed to get instance admin or root: %w", err)
+				}
+				if authUser == nil || member == nil {
+					return ErrInstanceAdminOrRootRequired
+				}
+
+				if member.Role.Type != auth.RoleRoot && member.Role.Type != auth.RoleInstanceAdmin {
+					return fmt.Errorf("invalid role %+v", authUser.Role.Type)
+				}
+			}
+
+			return runBootstrap(a, format, email, firstName, lastName, auth.RoleOrganisationAdmin)
 		},
 	}
 
@@ -41,11 +74,12 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&firstName, "first-name", "admin", "Email")
 	cmd.Flags().StringVar(&lastName, "last-name", "admin", "Email")
 	cmd.Flags().StringVar(&format, "format", "json", "Output Format")
+	cmd.Flags().StringVar(&token, "token", "", "Root Personal Access Token")
 
 	return cmd
 }
 
-func runBootstrap(a *cli.App, format string, email string, firstName string, lastName string) error {
+func runBootstrap(a *cli.App, format string, email string, firstName string, lastName string, roleType auth.RoleType) error {
 	ok, err := a.Licenser.CreateUser(context.Background())
 	if err != nil {
 		return err
@@ -97,10 +131,13 @@ func runBootstrap(a *cli.App, format string, email string, firstName string, las
 	}
 
 	co := services.CreateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(a.DB),
-		OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB),
-		NewOrg:        &models.Organisation{Name: "Default Organisation"},
-		User:          user,
+		OrgRepo:               postgres.NewOrgRepo(a.DB),
+		OrgMemberRepo:         postgres.NewOrgMemberRepo(a.DB),
+		InstanceOverridesRepo: postgres.NewInstanceOverridesRepo(a.DB),
+		NewOrg:                &models.Organisation{Name: "Default Organisation"},
+		User:                  user,
+		Licenser:              a.Licenser,
+		RoleType:              roleType,
 	}
 
 	_, err = co.Run(context.Background())

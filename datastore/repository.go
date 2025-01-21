@@ -104,7 +104,8 @@ type OrganisationMemberRepository interface {
 	FetchOrganisationMemberByID(ctx context.Context, memberID string, organisationID string) (*OrganisationMember, error)
 	FetchOrganisationMemberByUserID(ctx context.Context, userID string, organisationID string) (*OrganisationMember, error)
 	FetchAnyInstanceAdminOrRootByUserID(ctx context.Context, userID string) (*OrganisationMember, error)
-	CountInstanceAdmins(ctx context.Context) (int64, error)
+	CountRootUsers(ctx context.Context) (int64, error)
+	CountSuperUsers(ctx context.Context) (int64, error)
 }
 
 type EndpointRepository interface {
@@ -230,16 +231,10 @@ type EventTypesRepository interface {
 	FetchAllEventTypes(context.Context, string) ([]ProjectEventType, error)
 }
 
-type InstanceDefaultsRepository interface {
-	Create(context.Context, *InstanceDefaults) (*InstanceDefaults, error)
-	Update(context.Context, string, *InstanceDefaults) (*InstanceDefaults, error)
-	FetchByID(ctx context.Context, id string) (*InstanceDefaults, error)
-	LoadPaged(ctx context.Context, pageable Pageable) ([]InstanceDefaults, PaginationData, error)
-}
-
 type InstanceOverridesRepository interface {
 	Create(ctx context.Context, record *InstanceOverrides) (*InstanceOverrides, error)
 	Update(ctx context.Context, id string, record *InstanceOverrides) (*InstanceOverrides, error)
 	FetchByID(ctx context.Context, id string) (*InstanceOverrides, error)
 	LoadPaged(ctx context.Context, pageable Pageable) ([]InstanceOverrides, PaginationData, error)
+	DeleteUnUpdatedKeys(ctx context.Context, scopeType, scopeID string, keysToUpdate map[string]bool) error
 }

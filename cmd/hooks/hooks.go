@@ -163,7 +163,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Logger = lo
 		app.Cache = ca
 
-		err = ensureRootUser(context.Background(), app, shouldBootstrap(cmd))
+		err = ensureRootUser(context.Background(), app)
 		if err != nil {
 			return err
 		}
@@ -789,22 +789,14 @@ func shouldBootstrap(cmd *cobra.Command) bool {
 	return false
 }
 
-func ensureRootUser(ctx context.Context, a *cli.App, bootstrap bool) error {
-	return ensureUser(ctx, a, bootstrap)
-}
-
-func ensureInstanceAdmin(ctx context.Context, a *cli.App, bootstrap bool) error {
-	return nil
-}
-
-func ensureUser(ctx context.Context, a *cli.App, bootstrap bool) error {
+func ensureRootUser(ctx context.Context, a *cli.App) error {
 	userRepo := postgres.NewUserRepo(a.DB)
 	orgRepo := postgres.NewOrgRepo(a.DB)
 	orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)
 
-	count, err := orgMemberRepo.CountInstanceAdmins(ctx)
+	count, err := orgMemberRepo.CountRootUsers(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to count instance admins: %w", err)
+		return fmt.Errorf("failed to count root admins: %w", err)
 	}
 
 	if count > 0 {
@@ -818,26 +810,26 @@ func ensureUser(ctx context.Context, a *cli.App, bootstrap bool) error {
 		return err
 	}
 
-	instanceAdmin := &datastore.User{
+	root := &datastore.User{
 		UID:           ulid.Make().String(),
-		FirstName:     "instance",
-		LastName:      "admin",
-		Email:         "instance-admin@default.com",
+		FirstName:     "root",
+		LastName:      "root",
+		Email:         "root@default.com",
 		Password:      string(p.Hash),
 		EmailVerified: true,
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
 
-	err = userRepo.CreateUser(ctx, instanceAdmin)
+	err = userRepo.CreateUser(ctx, root)
 	if err != nil {
-		return fmt.Errorf("failed to create instance admin - %w", err)
+		return fmt.Errorf("failed to create root users - %w", err)
 	}
 
 	org := &datastore.Organisation{
 		UID:       ulid.Make().String(),
-		OwnerID:   instanceAdmin.UID,
-		Name:      "Instance Org",
+		OwnerID:   root.UID,
+		Name:      "Root Org",
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
@@ -850,8 +842,8 @@ func ensureUser(ctx context.Context, a *cli.App, bootstrap bool) error {
 	member := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
-		UserID:         instanceAdmin.UID,
-		Role:           auth.Role{Type: auth.RoleInstanceAdmin},
+		UserID:         root.UID,
+		Role:           auth.Role{Type: auth.RoleRoot},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}
@@ -861,7 +853,7 @@ func ensureUser(ctx context.Context, a *cli.App, bootstrap bool) error {
 		return err
 	}
 
-	a.Logger.Infof("Created instance admin with username: %s and password: %s", instanceAdmin.Email, p.Plaintext)
+	a.Logger.Infof("Created root user with username: %s and password: %s", root.Email, p.Plaintext)
 
 	return nil
 }

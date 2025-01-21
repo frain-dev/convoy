@@ -3,11 +3,14 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
-
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/instance"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -257,7 +260,82 @@ func (o *orgRepo) FetchOrganisationByID(ctx context.Context, id string) (*datast
 		return nil, err
 	}
 
+	err = EnrichOrganisationWithOverrides(ctx, o.db.GetReadDB(), org, instance.GetEncryptionPassphrase())
+	if err != nil {
+		return nil, err
+	}
+
 	return org, nil
+}
+
+func EnrichOrganisationWithOverrides(ctx context.Context, db *sqlx.DB, org *datastore.Organisation, encryptionKey string) error {
+	query := `
+		SELECT key, pgp_sym_decrypt(value_cipher::bytea, CONCAT($1::text, '-', id)) AS value
+		FROM convoy.instance_overrides
+		WHERE scope_type = 'organisation' AND scope_id = $2;
+	`
+
+	rows, err := db.QueryContext(ctx, query, encryptionKey, org.UID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch overrides: %w", err)
+	}
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+			log.Error("failed to close rows: ", err)
+		}
+	}(rows)
+
+	if org.Config == nil {
+		org.Config = &datastore.InstanceConfig{}
+	}
+	if org.Config.ProjectConfig == nil {
+		org.Config.ProjectConfig = &datastore.ProjectInstanceConfig{}
+	}
+
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			return fmt.Errorf("failed to scan override: %w", err)
+		}
+
+		switch key {
+		case instance.KeyStaticIP:
+			var v instance.Boolean
+			if err := json.Unmarshal([]byte(value), &v); err != nil {
+				return fmt.Errorf("failed to unmarshal static_ip: %w", err)
+			}
+			org.Config.StaticIP = &v.Value
+
+		case instance.KeyEnterpriseSSO:
+			var v instance.Boolean
+			if err := json.Unmarshal([]byte(value), &v); err != nil {
+				return fmt.Errorf("failed to unmarshal enterprise_sso: %w", err)
+			}
+			org.Config.EnterpriseSSO = &v.Value
+
+		case instance.KeyRetentionPolicy:
+			var v config.RetentionPolicyConfiguration
+			if err := json.Unmarshal([]byte(value), &v); err != nil {
+				return fmt.Errorf("failed to unmarshal retention_policy: %w", err)
+			}
+			org.Config.ProjectConfig.RetentionPolicy = &v
+
+		case instance.KeyInstanceIngestRate:
+			var v instance.IngestRate
+			if err := json.Unmarshal([]byte(value), &v); err != nil {
+				return fmt.Errorf("failed to unmarshal ingest_rate_limit: %w", err)
+			}
+			org.Config.ProjectConfig.IngestRateLimit = &v.Value
+		}
+	}
+
+	// Check for errors during iteration
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("error iterating over overrides: %w", err)
+	}
+
+	return nil
 }
 
 func (o *orgRepo) FetchOrganisationByAssignedDomain(ctx context.Context, domain string) (*datastore.Organisation, error) {

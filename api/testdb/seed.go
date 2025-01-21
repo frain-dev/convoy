@@ -725,7 +725,6 @@ func truncateTables(db database.Database) error {
 		convoy.organisations,
 		convoy.users,
 		convoy.jobs,
-		convoy.instance_defaults,
 		convoy.instance_overrides
 	`
 

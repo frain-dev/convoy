@@ -15,11 +15,12 @@ import (
 
 func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *models.Organisation, user *datastore.User) *CreateOrganisationService {
 	return &CreateOrganisationService{
-		OrgRepo:       mocks.NewMockOrganisationRepository(ctrl),
-		OrgMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
-		Licenser:      mocks.NewMockLicenser(ctrl),
-		NewOrg:        newOrg,
-		User:          user,
+		OrgRepo:               mocks.NewMockOrganisationRepository(ctrl),
+		OrgMemberRepo:         mocks.NewMockOrganisationMemberRepository(ctrl),
+		InstanceOverridesRepo: mocks.NewMockInstanceOverridesRepository(ctrl),
+		Licenser:              mocks.NewMockLicenser(ctrl),
+		NewOrg:                newOrg,
+		User:                  user,
 	}
 }
 

@@ -157,6 +157,8 @@ func TestFetchOrganisationByID(t *testing.T) {
 	dbOrg.CreatedAt = time.Time{}
 	dbOrg.UpdatedAt = time.Time{}
 
+	dbOrg.Config = nil
+
 	require.Equal(t, org, dbOrg)
 }
 
