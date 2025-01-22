@@ -28,6 +28,7 @@ type LoginUserSSOService struct {
 	Licenser      license.Licenser
 
 	LicenseKey string
+	Host       string
 }
 
 const ssoUrl = "https://ssoproxy.getconvoy.io"
@@ -38,6 +39,7 @@ func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
 
 	ssoReq := models.SSORequest{
 		LicenseKey: u.LicenseKey,
+		Host:       u.Host,
 	}
 
 	if ssoReq.LicenseKey == "" {

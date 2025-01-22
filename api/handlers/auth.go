@@ -37,6 +37,7 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
 		ConfigRepo:    postgres.NewConfigRepo(h.A.DB),
 		LicenseKey:    configuration.LicenseKey,
+		Host:          configuration.Host,
 		Licenser:      h.A.Licenser,
 	}
 
