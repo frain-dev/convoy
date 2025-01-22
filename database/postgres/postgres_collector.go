@@ -181,7 +181,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventQueueEndpointBacklogMetrics {
-		key := fmt.Sprintf("%s_%s_%s", metric.ProjectID, metric.SourceId, metric.EndpointId, metric.SourceId)
+		key := fmt.Sprintf("%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
 			continue
 		}
