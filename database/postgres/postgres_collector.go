@@ -134,7 +134,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	metricsMap := make(map[string]struct{})
 
 	for _, metric := range metrics.EventQueueMetrics {
-		key := fmt.Sprintf("eqm_%d_%s_%s", metric.Total, metric.ProjectID, metric.SourceId)
+		key := fmt.Sprintf("eqm_%s_%s", metric.ProjectID, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
 			continue
 		}
@@ -150,7 +150,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventQueueBacklogMetrics {
-		key := fmt.Sprintf("eqbm_%f_%s_%s", metric.AgeSeconds, metric.ProjectID, metric.SourceId)
+		key := fmt.Sprintf("eqbm_%s_%s", metric.ProjectID, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
 			continue
 		}
@@ -165,7 +165,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventDeliveryQueueMetrics {
-		key := fmt.Sprintf("edqm_%d_%s_%s_%s", metric.Total, metric.ProjectID, metric.EndpointId, metric.Status)
+		key := fmt.Sprintf("edqm_%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.Status)
 		if _, ok := metricsMap[key]; ok {
 			continue
 		}
@@ -181,7 +181,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventQueueEndpointBacklogMetrics {
-		key := fmt.Sprintf("%f_%s_%s", metric.AgeSeconds, metric.ProjectID, metric.EndpointId)
+		key := fmt.Sprintf("%s_%s", metric.ProjectID, metric.EndpointId)
 		if _, ok := metricsMap[key]; ok {
 			continue
 		}
@@ -196,7 +196,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventQueueEndpointAttemptMetrics {
-		key := fmt.Sprintf("eqeam_%d_%s_%s_%s_%s", metric.Total, metric.ProjectID, metric.EndpointId, metric.Status, metric.StatusCode)
+		key := fmt.Sprintf("eqeam_%s_%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.Status, metric.StatusCode)
 		if _, ok := metricsMap[key]; ok {
 			continue
 		}
@@ -271,6 +271,12 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 			return nil, err
 		}
 		eventQueueBacklogMetrics = append(eventQueueBacklogMetrics, e)
+		eventQueueBacklogMetrics = append(eventQueueBacklogMetrics,
+			EventQueueBacklogMetrics{
+				ProjectID:  e.ProjectID,
+				SourceId:   e.SourceId,
+				AgeSeconds: e.AgeSeconds + 0.000000001,
+			})
 	}
 	metrics.EventQueueBacklogMetrics = eventQueueBacklogMetrics
 
