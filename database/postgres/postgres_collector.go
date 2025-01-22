@@ -271,12 +271,6 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 			return nil, err
 		}
 		eventQueueBacklogMetrics = append(eventQueueBacklogMetrics, e)
-		eventQueueBacklogMetrics = append(eventQueueBacklogMetrics,
-			EventQueueBacklogMetrics{
-				ProjectID:  e.ProjectID,
-				SourceId:   e.SourceId,
-				AgeSeconds: e.AgeSeconds + 0.000000001,
-			})
 	}
 	metrics.EventQueueBacklogMetrics = eventQueueBacklogMetrics
 
