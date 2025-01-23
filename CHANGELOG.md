@@ -1,3 +1,26 @@
+# 25.1.1
+
+### Features
+- Added database read replica support #2195
+- Create event types whenever a subscription is created or updated #2201
+- Localhost endpoints can now be configured #2216
+- Added credential encryption lifecycle management #2202 #2204 #2215 #2213
+- Added Retention Policies with Partitioning #2194 #2198
+
+### Enhancements
+- Add workflow to build rolling images #2217 #2218
+- Remove cache implementation #2206
+- added host to init sso flow #2219
+
+### Bug Fixes
+- Remove multiple subscription for an endpoint setting #2197
+- Fixed a bug where some gzipped bytes couldn't be inserted into the db column #2214 #2203
+- Fixed duplicate metrics collection #2220 #2221
+- Remove acknowledged_at from the event search query #2205
+- Fixed a bug where the subscription filter form didn't persist deleted configurations #2210 #2209
+- Fixed portal link UI issues with subscriptions, endpoints, and license check #2208
+- Fixed portal link creation by owner id #2207
+
 # 24.11.1 
 
 ### Features 
