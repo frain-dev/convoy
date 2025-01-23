@@ -24,6 +24,7 @@ const (
 	CircuitBreaker       FeatureFlagKey = "circuit-breaker"
 	FullTextSearch       FeatureFlagKey = "full-text-search"
 	RetentionPolicy      FeatureFlagKey = "retention-policy"
+	ReadReplicas         FeatureFlagKey = "read-replicas"
 	CredentialEncryption FeatureFlagKey = "credential-encryption"
 )
 
@@ -42,6 +43,7 @@ var DefaultFeaturesState = map[FeatureFlagKey]FeatureFlagState{
 	FullTextSearch:       disabled,
 	CircuitBreaker:       disabled,
 	RetentionPolicy:      disabled,
+	ReadReplicas:         disabled,
 	CredentialEncryption: disabled,
 }
 
@@ -66,6 +68,8 @@ func NewFFlag(enableFeatureFlags []string) *FFlag {
 			f.Features[CircuitBreaker] = enabled
 		case string(RetentionPolicy):
 			f.Features[RetentionPolicy] = enabled
+		case string(ReadReplicas):
+			f.Features[ReadReplicas] = enabled
 		case string(CredentialEncryption):
 			f.Features[CredentialEncryption] = enabled
 		}
