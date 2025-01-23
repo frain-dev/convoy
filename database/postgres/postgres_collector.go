@@ -91,7 +91,7 @@ var (
 	eventDeliveryQueueBacklogDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_backlog_seconds"),
 		"Number of seconds the oldest pending task is waiting in pending state to be processed per endpoint",
-		[]string{"project", "endpoint"}, nil,
+		[]string{"project", "endpoint", "source"}, nil,
 	)
 
 	eventDeliveryAttemptsTotalDesc = prometheus.NewDesc(
@@ -181,7 +181,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventQueueEndpointBacklogMetrics {
-		key := fmt.Sprintf("%s_%s", metric.ProjectID, metric.EndpointId)
+		key := fmt.Sprintf("%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
 			continue
 		}
@@ -191,6 +191,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.AgeSeconds,
 			metric.ProjectID,
 			metric.EndpointId,
+			metric.SourceId,
 		)
 		metricsMap[key] = struct{}{}
 	}
