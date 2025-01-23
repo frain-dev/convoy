@@ -454,19 +454,34 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		return nil, err
 	}
 
-	replicaDSNs, err := cmd.Flags().GetStringSlice("read-replicas-dsn")
+	// CONVOY_ENABLE_FEATURE_FLAG
+	flags, err := cmd.Flags().GetStringSlice("enable-feature-flag")
 	if err != nil {
 		return nil, err
 	}
+	if len(flags) > 0 {
+		c.EnableFeatureFlag = flags
+	}
+
+	flag := fflag2.NewFFlag(c.EnableFeatureFlag)
 
 	var readReplicas []config.DatabaseConfiguration
-	for _, replicaStr := range replicaDSNs {
-		var replica config.DatabaseConfiguration
-		if len(replicaStr) == 0 || !strings.Contains(replicaStr, "://") {
-			return nil, fmt.Errorf("invalid read-replicas-dsn: %s", replicaStr)
+	replicaDSNs, err := cmd.Flags().GetStringSlice("read-replicas-dsn")
+	if flag.CanAccessFeature(fflag2.ReadReplicas) {
+		if err != nil {
+			return nil, err
 		}
-		replica.DSN = replicaStr
-		readReplicas = append(readReplicas, replica)
+
+		for _, replicaStr := range replicaDSNs {
+			var replica config.DatabaseConfiguration
+			if len(replicaStr) == 0 || !strings.Contains(replicaStr, "://") {
+				return nil, fmt.Errorf("invalid read-replicas-dsn: %s", replicaStr)
+			}
+			replica.DSN = replicaStr
+			readReplicas = append(readReplicas, replica)
+		}
+	} else if len(replicaDSNs) > 0 {
+		log.Errorln("read-replicas feature flag required before use")
 	}
 
 	c.Database = config.DatabaseConfiguration{
@@ -545,15 +560,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		}
 
 		c.RetentionPolicy.IsRetentionPolicyEnabled = retentionPolicyEnabled
-	}
-
-	// CONVOY_ENABLE_FEATURE_FLAG
-	flags, err := cmd.Flags().GetStringSlice("enable-feature-flag")
-	if err != nil {
-		return nil, err
-	}
-	if len(flags) > 0 {
-		c.EnableFeatureFlag = flags
 	}
 
 	// CONVOY_DISPATCHER_BLOCK_LIST
@@ -641,7 +647,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	}
 
-	flag := fflag2.NewFFlag(c.EnableFeatureFlag)
 	c.Metrics = config.MetricsConfiguration{
 		IsEnabled: false,
 	}
