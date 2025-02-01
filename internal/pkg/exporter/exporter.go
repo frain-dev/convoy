@@ -105,7 +105,7 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 	return ex.result, nil
 }
 
-func (ex *Exporter) Cleanup(ctx context.Context) error {
+func (ex *Exporter) Perform(ctx context.Context) error {
 	for i := range tables {
 		if ex.result[tables[i]].NumDocs > 0 {
 			switch tables[i] {
@@ -161,7 +161,6 @@ func (ex *Exporter) Cleanup(ctx context.Context) error {
 				return err
 			}
 		}
-
 	}
 
 	return nil
@@ -257,22 +256,22 @@ func getOutputWriter(out string) (io.WriteCloser, error) {
 	return file, err
 }
 
-//type compressWriter struct {
+// type compressWriter struct {
 //	gw   *gzip.Writer
 //	file *os.File
-//}
+// }
 //
-//func (c compressWriter) Write(b []byte) (int, error) {
+// func (c compressWriter) Write(b []byte) (int, error) {
 //	return c.gw.Write(b)
-//}
+// }
 //
-//func (c compressWriter) Close() error {
+// func (c compressWriter) Close() error {
 //	if err := c.gw.Close(); err != nil {
 //		return err
 //	}
 //
 //	return c.file.Close()
-//}
+// }
 
 func toUniversalPath(path string) string {
 	return filepath.FromSlash(path)

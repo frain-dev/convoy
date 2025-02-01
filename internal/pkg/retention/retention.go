@@ -13,7 +13,6 @@ import (
 
 type Retentioner interface {
 	Perform(context.Context) error
-	Start(context.Context, time.Duration)
 }
 
 type TestRetentionPolicy struct {
@@ -26,8 +25,6 @@ func (t TestRetentionPolicy) Perform(ctx context.Context) error {
 	return t.partitioner.Maintain(ctx)
 }
 
-func (t TestRetentionPolicy) Start(ctx context.Context, _ time.Duration) {}
-
 func NewTestRetentionPolicy(db database.Database, manager *partman.Manager) *TestRetentionPolicy {
 	return &TestRetentionPolicy{
 		partitioner: manager,
@@ -36,14 +33,14 @@ func NewTestRetentionPolicy(db database.Database, manager *partman.Manager) *Tes
 	}
 }
 
-type RetentionPolicy struct {
+type PartitionRetentionPolicy struct {
 	retentionPeriod time.Duration
 	partitioner     partman.Partitioner
 	logger          log.StdLogger
 	db              database.Database
 }
 
-func NewRetentionPolicy(db database.Database, logger log.StdLogger, period time.Duration) (*RetentionPolicy, error) {
+func NewPartitionRetentionPolicy(db database.Database, logger log.StdLogger, period time.Duration) (*PartitionRetentionPolicy, error) {
 	pm, err := partman.NewManager(
 		partman.WithDB(db.GetDB()),
 		partman.WithLogger(logger),
@@ -54,7 +51,7 @@ func NewRetentionPolicy(db database.Database, logger log.StdLogger, period time.
 		return nil, err
 	}
 
-	return &RetentionPolicy{
+	return &PartitionRetentionPolicy{
 		retentionPeriod: period,
 		partitioner:     pm,
 		logger:          logger,
@@ -62,8 +59,8 @@ func NewRetentionPolicy(db database.Database, logger log.StdLogger, period time.
 	}, nil
 }
 
-func (r *RetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
-	go func(r *RetentionPolicy) {
+func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
+	go func(r *PartitionRetentionPolicy) {
 		ticker := time.NewTicker(sampleRate)
 		defer ticker.Stop()
 
@@ -112,6 +109,21 @@ func (r *RetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 					}
 
 					err = r.partitioner.AddManagedTable(partman.Table{
+						Name:              "events_search",
+						Schema:            "convoy",
+						TenantId:          project.UID,
+						TenantIdColumn:    "project_id",
+						PartitionBy:       "created_at",
+						PartitionType:     partman.TypeRange,
+						RetentionPeriod:   r.retentionPeriod,
+						PartitionInterval: time.Hour * 24,
+						PartitionCount:    10,
+					})
+					if err != nil {
+						r.logger.WithError(err).Error("failed to add convoy.events to managed tables")
+					}
+
+					err = r.partitioner.AddManagedTable(partman.Table{
 						Name:              "event_deliveries",
 						Schema:            "convoy",
 						TenantId:          project.UID,
@@ -146,6 +158,6 @@ func (r *RetentionPolicy) Start(ctx context.Context, sampleRate time.Duration) {
 	}(r)
 }
 
-func (r *RetentionPolicy) Perform(ctx context.Context) error {
+func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 	return r.partitioner.Maintain(ctx)
 }

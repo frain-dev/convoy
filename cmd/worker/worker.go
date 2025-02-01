@@ -335,14 +335,17 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 			return _err
 		}
 
-		ret, err = retention.NewRetentionPolicy(a.DB, lo, policy)
+		part, err := retention.NewPartitionRetentionPolicy(a.DB, lo, policy)
 		if err != nil {
 			lo.WithError(err).Fatal("Failed to create retention policy")
 		}
 
-		ret.Start(ctx, time.Minute)
+		part.Start(ctx, time.Minute)
+		ret = part
 	} else {
 		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
+
+		// exporter, err := exporter2.NewExporter(projectRepo, eventRepo, eventDeliveryRepo)
 	}
 
 	channels := make(map[string]task.EventChannel)
