@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -13,22 +12,16 @@ import (
 
 func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "revert-encryption <encryption-key>",
-		Short: "Reverts the encryption initialization for the specified table columns with the provided encryption key",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			encryptionKey := args[0]
+		Use:   "revert-encryption",
+		Short: "Reverts the encryption initialization for the specified table columns with the encryption key fetched from HCP Vaults",
+		Args:  cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, _ []string) error {
 
-			if encryptionKey == "" {
-				return ErrEncryptionKeyCannotBeEmpty
-			}
 			timeout, err := cmd.Flags().GetInt("timeout")
 			if err != nil {
 				log.WithError(err).Errorln("failed to get timeout")
 				return err
 			}
-
-			log.Infof("Reverting encryption with the provided key...")
 
 			cfg, err := config.Get()
 			if err != nil {
@@ -46,19 +39,16 @@ func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 				return ErrMissingHCPVaultConfig
 			}
 
-			// Ensure the encryption key matches the current key
-			currentKey, err := km.GetCurrentKey()
+			currentKey, err := km.GetHCPSecretKey()
 			if err != nil {
-				if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
-					return err
-				}
+				return err
 			}
-			if encryptionKey != currentKey {
-				if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
-					return ErrEncryptionKeyMismatch
-				}
-				// allow any key if downgraded
+
+			if currentKey == "" {
+				return ErrEncryptionKeyCannotBeEmpty
 			}
+
+			log.Infof("Reverting encryption with the current encryption key...")
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
@@ -67,7 +57,7 @@ func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 			}
 			defer db.Close()
 
-			err = keys.RevertEncryption(a.Logger, db, encryptionKey, timeout)
+			err = keys.RevertEncryption(a.Logger, db, currentKey, timeout)
 			if err != nil {
 				log.WithError(err).Error("Error reverting the encryption key.")
 			}

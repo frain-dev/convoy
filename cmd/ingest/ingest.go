@@ -2,11 +2,12 @@ package ingest
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
@@ -44,6 +45,19 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 			cfg, err := config.Get()
 			if err != nil {
 				a.Logger.Errorf("Failed to retrieve config: %v", err)
+				return err
+			}
+
+			km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
+			if km.IsSet() {
+				if _, err = km.GetCurrentKeyFromCache(); err != nil {
+					if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
+						return err
+					}
+					km.Unset()
+				}
+			}
+			if err = keys.Set(km); err != nil {
 				return err
 			}
 

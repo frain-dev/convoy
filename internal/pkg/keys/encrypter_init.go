@@ -57,13 +57,6 @@ func InitEncryption(lo log.StdLogger, db database.Database, km KeyManager, encry
 		}
 	}
 
-	err = km.SetKey(encryptionKey)
-	if err != nil {
-		rollback(lo, tx)
-		lo.WithError(err).Error("failed to set encryption key")
-		return fmt.Errorf("failed to update encryption key: %w", err)
-	}
-
 	// Commit the transaction
 	if err := tx.Commit(); err != nil {
 		lo.WithError(err).Error("failed to commit transaction")

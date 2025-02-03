@@ -21,15 +21,10 @@ var (
 
 func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init-encryption <encryption-key>",
-		Short: "Initializes encryption for the specified table columns with the provided encryption key",
-		Args:  cobra.ExactArgs(1),
+		Use:   "init-encryption",
+		Short: "Initializes encryption for the specified table columns with the encryption key fetched from HCP Vault",
+		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			encryptionKey := args[0]
-
-			if encryptionKey == "" {
-				return ErrEncryptionKeyCannotBeEmpty
-			}
 			timeout, err := cmd.Flags().GetInt("timeout")
 			if err != nil {
 				log.WithError(err).Errorln("failed to get timeout")
@@ -56,7 +51,16 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 				return ErrMissingHCPVaultConfig
 			}
 
-			log.Infof("Initializing encryption with the provided key...")
+			currentKey, err := km.GetCurrentKey()
+			if err != nil {
+				return err
+			}
+
+			if currentKey == "" {
+				return ErrEncryptionKeyCannotBeEmpty
+			}
+
+			log.Infof("Initializing encryption with the current encryption key...")
 
 			db, err := postgres.NewDB(cfg)
 			if err != nil {
@@ -65,7 +69,7 @@ func AddInitEncryptionCommand(a *cli.App) *cobra.Command {
 			}
 			defer db.Close()
 
-			err = keys.InitEncryption(a.Logger, db, km, encryptionKey, timeout)
+			err = keys.InitEncryption(a.Logger, db, km, currentKey, timeout)
 			if err != nil {
 				log.WithError(err).Error("Error initializing encryption key.")
 			}
