@@ -26,6 +26,8 @@ func (t TestRetentionPolicy) Perform(ctx context.Context) error {
 	return t.partitioner.Maintain(ctx)
 }
 
+func (t TestRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
+
 func NewTestRetentionPolicy(db database.Database, manager *partman.Manager) *TestRetentionPolicy {
 	return &TestRetentionPolicy{
 		partitioner: manager,
