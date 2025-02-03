@@ -13,6 +13,7 @@ import (
 
 type Retentioner interface {
 	Perform(context.Context) error
+	Start(context.Context, time.Duration)
 }
 
 type TestRetentionPolicy struct {

@@ -100,13 +100,7 @@ const (
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
 	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
 
-	EndpointCacheKey     CacheKey = "endpoints"
-	ApiKeyCacheKey       CacheKey = "api_keys"
-	OrganisationCacheKey CacheKey = "organisations"
-	ProjectsCacheKey     CacheKey = "projects"
-	SubscriptionCacheKey CacheKey = "subscriptions"
-	TokenCacheKey        CacheKey = "tokens"
-	SourceCacheKey       CacheKey = "sources"
+	TokenCacheKey CacheKey = "tokens"
 )
 
 // queues

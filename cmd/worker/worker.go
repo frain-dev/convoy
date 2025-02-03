@@ -335,17 +335,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 			return _err
 		}
 
-		part, err := retention.NewPartitionRetentionPolicy(a.DB, lo, policy)
+		ret, err = retention.NewPartitionRetentionPolicy(a.DB, lo, policy)
 		if err != nil {
 			lo.WithError(err).Fatal("Failed to create retention policy")
 		}
 
-		part.Start(ctx, time.Minute)
-		ret = part
+		ret.Start(ctx, time.Minute)
 	} else {
 		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
-
-		// exporter, err := exporter2.NewExporter(projectRepo, eventRepo, eventDeliveryRepo)
 	}
 
 	channels := make(map[string]task.EventChannel)
@@ -413,7 +410,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		deviceRepo, a.Licenser), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
+	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && a.Licenser.RetentionPolicy() {
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
+		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd), nil)
+	}
 
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(
 		channels,

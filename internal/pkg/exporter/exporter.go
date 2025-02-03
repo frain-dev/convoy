@@ -105,7 +105,7 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 	return ex.result, nil
 }
 
-func (ex *Exporter) Perform(ctx context.Context) error {
+func (ex *Exporter) Cleanup(ctx context.Context) error {
 	for i := range tables {
 		if ex.result[tables[i]].NumDocs > 0 {
 			switch tables[i] {
