@@ -101,6 +101,7 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}-${{ matrix.arch }}
           build-args: |
             ARCH=${{ matrix.arch }}
+            IMAGE_SHA=${{ env.SHORT_SHA }}
 
       - name: Confirm Pushed Images
         run: aws ecr describe-images --repository-name convoy-rolling-updates --image-ids imageTag=${{ env.SHORT_SHA }}-${{ matrix.arch }}
