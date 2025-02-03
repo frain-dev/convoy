@@ -124,11 +124,9 @@ func RetentionPolicies(rd *rdb.Redis, ret retention.Retentioner) func(context.Co
 		}()
 
 		c := time.Now()
-		if ret != nil {
-			err = ret.Perform(ctx)
-			if err != nil {
-				return err
-			}
+		err = ret.Perform(ctx)
+		if err != nil {
+			return err
 		}
 
 		log.FromContext(ctx).Infof("Retention job took %f minutes to run", time.Since(c).Minutes())

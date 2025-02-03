@@ -2,6 +2,7 @@ package retention
 
 import (
 	"context"
+	"errors"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -22,11 +23,11 @@ type TestRetentionPolicy struct {
 	db          database.Database
 }
 
-func (t TestRetentionPolicy) Perform(ctx context.Context) error {
+func (t *TestRetentionPolicy) Perform(ctx context.Context) error {
 	return t.partitioner.Maintain(ctx)
 }
 
-func (t TestRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
+func (t *TestRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
 
 func NewTestRetentionPolicy(db database.Database, manager *partman.Manager) *TestRetentionPolicy {
 	return &TestRetentionPolicy{
@@ -163,4 +164,88 @@ func (r *PartitionRetentionPolicy) Start(ctx context.Context, sampleRate time.Du
 
 func (r *PartitionRetentionPolicy) Perform(ctx context.Context) error {
 	return r.partitioner.Maintain(ctx)
+}
+
+type DeleteRetentionPolicy struct {
+	logger log.StdLogger
+	db     database.Database
+}
+
+func (d *DeleteRetentionPolicy) Perform(ctx context.Context) error {
+	eventRepo := postgres.NewEventRepo(d.db)
+	configRepo := postgres.NewConfigRepo(d.db)
+	projectRepo := postgres.NewProjectRepo(d.db)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(d.db)
+	deliveryAttemptsRepo := postgres.NewDeliveryAttemptRepo(d.db)
+
+	c, err := configRepo.LoadConfiguration(ctx)
+	if err != nil {
+		if errors.Is(err, datastore.ErrConfigNotFound) {
+			return nil
+		}
+		return err
+	}
+
+	policy, err := time.ParseDuration(c.RetentionPolicy.Policy)
+	if err != nil {
+		return err
+	}
+
+	filter := &datastore.ProjectFilter{}
+	projects, err := projectRepo.LoadProjects(context.Background(), filter)
+	if err != nil {
+		return err
+	}
+
+	if len(projects) == 0 {
+		d.logger.Warn("no existing projects, retention policy job exiting")
+		return nil
+	}
+
+	for _, p := range projects {
+		deliveryFilter := &datastore.DeliveryAttemptsFilter{
+			CreatedAtStart: 0,
+			CreatedAtEnd:   time.Now().Add(-policy).Unix(),
+		}
+
+		err = deliveryAttemptsRepo.DeleteProjectDeliveriesAttempts(ctx, p.UID, deliveryFilter, true)
+		if err != nil {
+			d.logger.WithError(err).Error("failed to delete project delivery attempts")
+		}
+
+		eventDeliveryFilter := &datastore.EventDeliveryFilter{
+			CreatedAtStart: 0,
+			CreatedAtEnd:   time.Now().Add(-policy).Unix(),
+		}
+
+		err = eventDeliveryRepo.DeleteProjectEventDeliveries(ctx, p.UID, eventDeliveryFilter, true)
+		if err != nil {
+			d.logger.WithError(err).Error("failed to delete project event deliveries")
+		}
+
+		eventFilter := &datastore.EventFilter{
+			CreatedAtStart: 0,
+			CreatedAtEnd:   time.Now().Add(-policy).Unix(),
+		}
+		err = eventRepo.DeleteProjectEvents(ctx, p.UID, eventFilter, true)
+		if err != nil {
+			d.logger.WithError(err).Error("failed to delete project events")
+		}
+
+		err = eventRepo.DeleteProjectTokenizedEvents(ctx, p.UID, eventFilter)
+		if err != nil {
+			d.logger.WithError(err).Error("failed to delete tokenized project events")
+		}
+	}
+
+	return nil
+}
+
+func (d *DeleteRetentionPolicy) Start(_ context.Context, _ time.Duration) {}
+
+func NewDeleteRetentionPolicy(db database.Database, logger log.StdLogger) *DeleteRetentionPolicy {
+	return &DeleteRetentionPolicy{
+		logger: logger,
+		db:     db,
+	}
 }

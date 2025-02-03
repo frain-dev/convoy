@@ -343,6 +343,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		ret.Start(ctx, time.Minute)
 	} else {
 		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
+
+		ret = retention.NewDeleteRetentionPolicy(a.DB, lo)
 	}
 
 	channels := make(map[string]task.EventChannel)
@@ -410,7 +412,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		deviceRepo, a.Licenser), newTelemetry)
 
-	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && a.Licenser.RetentionPolicy() {
+	if a.Licenser.RetentionPolicy() {
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
 		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd), nil)
 	}
