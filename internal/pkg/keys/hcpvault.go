@@ -143,7 +143,11 @@ func (k *HCPVaultKeyManager) GetCurrentKey() (string, error) {
 	if !k.licenser.CredentialEncryption() {
 		return "", ErrCredentialEncryptionFeatureUnavailable
 	}
+	return k.GetHCPSecretKey()
+}
 
+// GetHCPSecretKey retrieves the current key from HCP Vault API.
+func (k *HCPVaultKeyManager) GetHCPSecretKey() (string, error) {
 	retryCount := 1
 	for {
 		if err := k.ensureValidToken(); err != nil {
