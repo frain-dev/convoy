@@ -130,7 +130,7 @@
 
 			<form [formGroup]="addOrganisationForm" (ngSubmit)="addNewOrganisation()">
 				<convoy-input-field>
-					<label for="name" required="true" convoy-label>What's your bussiness name?</label>
+					<label for="name" required="true" convoy-label>What's your business name?</label>
 					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="e.g. Kuda" />
 					<convoy-input-error *ngIf="addOrganisationForm.get('name')?.touched && addOrganisationForm.get('name')?.invalid">Organisation name is required</convoy-input-error>
 				</convoy-input-field>
