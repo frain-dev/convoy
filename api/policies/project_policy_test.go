@@ -2,6 +2,7 @@ package policies
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -71,6 +72,10 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
 						Return(nil, errors.New("rejected"))
+
+					orgMemberRepo.EXPECT().
+						FetchAnyInstanceAdminOrRootByUserID(gomock.Any(), gomock.Any()).
+						Return(nil, sql.ErrNoRows)
 				},
 			},
 			{
@@ -198,6 +203,9 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil, errors.New("rejected"))
+					orgMemberRepo.EXPECT().
+						FetchAnyInstanceAdminOrRootByUserID(gomock.Any(), gomock.Any()).
+						Return(nil, sql.ErrNoRows)
 				},
 			},
 			{
