@@ -47,7 +47,7 @@
 						</ul>
 
 						<li class="border-t border-t-neutral-a3 relative">
-							<button convoy-dropdown-option convoy-button fill="text" size="sm" class="p-16px" (click)="dialog.nativeElement.showModal()">
+							<button [disabled]="!instanceAdmin()" convoy-dropdown-option convoy-button fill="text" size="sm" class="p-16px" (click)="dialog.nativeElement.showModal()">
 								<img src="/assets/img/add-circlar-icon.svg" alt="add icon" class="mr-8px" />
 								Add {{ organisations?.length ? 'another' : 'an' }} Organization
 							</button>

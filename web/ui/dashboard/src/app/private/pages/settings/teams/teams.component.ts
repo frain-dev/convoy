@@ -43,19 +43,20 @@ export class TeamsComponent implements OnInit {
 	inviteUserForm: FormGroup = this.formBuilder.group({
 		invitee_email: ['', Validators.compose([Validators.required, Validators.email])],
 		role: this.formBuilder.group({
-			type: ['super_user', Validators.required]
+			type: ['organisation_admin', Validators.required]
 		})
 	});
 	memberForm: FormGroup = this.formBuilder.group({
 		role: this.formBuilder.group({
-			type: ['super_user', Validators.required]
+			type: ['organisation_admin', Validators.required]
 		}),
 		user_metadata: this.formBuilder.group({
 			email: ['', Validators.compose([Validators.required, Validators.email])]
 		})
 	});
 	roles = [
-		{ name: 'Super User', uid: 'super_user' },
+        { name: 'Instance Admin', uid: 'instance_admin' },
+		{ name: 'Organisation Admin', uid: 'organisation_admin' },
 		{ name: 'Admin', uid: 'admin' }
 		// { name: 'Member', uid: 'member' }
 	];
@@ -191,12 +192,12 @@ export class TeamsComponent implements OnInit {
 		this.inviteUserForm.reset();
 		this.inviteUserForm.patchValue({
 			role: {
-				type: 'super_user'
+				type: 'organisation_admin'
 			}
 		});
 		this.memberForm.patchValue({
 			role: {
-				type: 'super_user'
+				type: 'organisation_admin'
 			}
 		});
 		this.inviteLink = '';

@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { ORGANIZATION_DATA } from '../models/organisation.model';
 import { GeneralService } from '../services/general/general.service';
@@ -6,8 +6,9 @@ import { PrivateService } from './private.service';
 import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
-import { Observable, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { LicensesService } from '../services/licenses/licenses.service';
+import { RbacService } from '../services/rbac/rbac.service';
 
 @Component({
 	selector: 'app-private',
@@ -47,6 +48,8 @@ export class PrivateComponent implements OnInit {
 	];
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
+    private rbacService = inject(RbacService);
+    private role: string | null = null;
 
 	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService) {}
 
@@ -54,8 +57,13 @@ export class PrivateComponent implements OnInit {
 		this.shouldShowOrgModal();
 
 		this.checkIfTokenIsExpired();
-		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations()]);
+		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations(), this.fetchRole()]);
 	}
+
+    private async fetchRole() {
+        await new Promise(res => setTimeout(res, 100));
+        this.role = await this.rbacService.getUserRole();
+    }
 
 	ngOnDestroy() {
 		if (this.shouldShowOrgSubscription) this.shouldShowOrgSubscription.unsubscribe();
@@ -215,4 +223,8 @@ export class PrivateComponent implements OnInit {
 			this.checkIfTokenIsExpired();
 		}, time * 1000 + 1000);
 	}
+
+    instanceAdmin(): boolean {
+        return this.role === 'INSTANCE_ADMIN' || this.role === 'ROOT';
+    }
 }

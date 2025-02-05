@@ -8,8 +8,10 @@ import { PrivateService } from 'src/app/private/private.service';
 export class RbacService {
 	permissions = {
 		MEMBER: ['Event Deliveries|VIEW', 'Event Deliveries|MANAGE', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Events|MANAGE', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW'],
-		SUPER_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE'],
-		ADMIN: ['Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE']
+		ORGANISATION_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE'],
+		ADMIN: ['Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE'],
+        INSTANCE_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE'],
+        ROOT: ['Team|MANAGE', 'Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE', 'Organisations|MANAGE'],
 	};
 
 	constructor(private privateService: PrivateService, private route: ActivatedRoute) {}
@@ -19,8 +21,12 @@ export class RbacService {
 			const member = await this.privateService.getOrganizationMembership();
 			const role = member.data.content[0].role.type;
 			switch (role) {
-				case 'super_user':
-					return 'SUPER_ADMIN';
+				case 'root':
+					return 'ROOT';
+				case 'instance_admin':
+					return 'INSTANCE_ADMIN';
+				case 'organisation_admin':
+					return 'ORGANISATION_ADMIN';
 				case 'admin':
 					return 'ADMIN';
 				default:
@@ -43,7 +49,13 @@ export class RbacService {
 
 		let permissions;
 		switch (role) {
-			case 'SUPER_ADMIN':
+			case 'ROOT':
+				permissions = this.permissions[role].concat(this.permissions.ORGANISATION_ADMIN, this.permissions.ADMIN, this.permissions.MEMBER);
+				break;
+			case 'INSTANCE_ADMIN':
+				permissions = this.permissions[role].concat(this.permissions.MEMBER);
+				break;
+			case 'ORGANISATION_ADMIN':
 				permissions = this.permissions[role].concat(this.permissions.ADMIN, this.permissions.MEMBER);
 				break;
 			case 'ADMIN':
@@ -82,4 +94,4 @@ export type PERMISSION =
 	| 'Organisations|VIEW'
 	| 'Organisations|MANAGE';
 
-export type ROLE = 'MEMBER' | 'ADMIN' | 'SUPER_ADMIN';
+export type ROLE = 'MEMBER' | 'ADMIN' | 'ORGANISATION_ADMIN' | 'INSTANCE_ADMIN' | 'ROOT';

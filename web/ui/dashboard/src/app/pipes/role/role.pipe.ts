@@ -7,8 +7,12 @@ import { Pipe, PipeTransform } from '@angular/core';
 export class RolePipe implements PipeTransform {
 	transform(value: string): string {
 		switch (value) {
-			case 'super_user':
-				return 'Super User';
+            case 'root':
+                return 'Root'
+            case 'instance_admin':
+                return 'Instance Admin';
+			case 'organisation_admin':
+				return 'Organisation Admin';
 			case 'admin':
 				return 'Admin';
 			case 'member':

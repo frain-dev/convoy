@@ -39,6 +39,10 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		}
 		member, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 		if err != nil {
+			m, err := pp.OrganisationMemberRepo.FetchAnyInstanceAdminOrRootByUserID(ctx, user.UID)
+			if err == nil && isInstanceAdmin(m) {
+				return nil
+			}
 			return ErrNotAllowed
 		}
 

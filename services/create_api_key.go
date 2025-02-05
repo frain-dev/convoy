@@ -52,7 +52,7 @@ func (ss *CreateAPIKeyService) Run(ctx context.Context) (*datastore.APIKey, stri
 	}
 
 	// does the organisation member have access to this project they're trying to create an api key for?
-	if !ss.Member.Role.Type.Is(auth.RoleOrganisationAdmin) {
+	if !ss.Member.Role.Type.Is(auth.RoleOrganisationAdmin) && !ss.Member.Role.Type.Is(auth.RoleRoot) {
 		return nil, "", &ServiceError{ErrMsg: "unauthorized to access project"}
 	}
 

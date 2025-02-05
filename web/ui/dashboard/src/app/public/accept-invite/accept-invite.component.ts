@@ -27,7 +27,7 @@ export class AcceptInviteComponent implements OnInit {
 		last_name: ['', Validators.required],
 		email: ['', Validators.required],
 		role: this.formBuilder.group({
-			type: ['super_user']
+			type: ['organisation_admin']
 		}),
 		password: ['', Validators.compose([Validators.minLength(8), Validators.required])]
 	});
