@@ -48,7 +48,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set short hash
-        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "SHORT_SHA=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
 
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
@@ -101,6 +101,10 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ env.SHORT_SHA }}-${{ matrix.arch }}
           build-args: |
             ARCH=${{ matrix.arch }}
+            IMAGE_SHA=${{ env.SHORT_SHA }}
+
+      - name: Confirm Pushed Images
+        run: aws ecr describe-images --repository-name convoy-rolling-updates --image-ids imageTag=${{ env.SHORT_SHA }}-${{ matrix.arch }}
 
   build-and-push-default:
     runs-on: ubuntu-latest
@@ -109,7 +113,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set short hash
-        run: echo "SHORT_SHA=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        run: echo "SHORT_SHA=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

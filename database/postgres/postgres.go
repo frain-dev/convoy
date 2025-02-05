@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/exaring/otelpgx"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"io"
@@ -43,16 +44,22 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	primary, err := parseDBConfig(dbConfig)
 	primary.id = 0
 	replicas := make([]*Postgres, 0)
-	for i, replica := range dbConfig.ReadReplicas {
-		if replica.Scheme == "" {
-			replica.Scheme = dbConfig.Scheme
+
+	flag := fflag2.NewFFlag(cfg.EnableFeatureFlag)
+	if flag.CanAccessFeature(fflag2.ReadReplicas) {
+		for i, replica := range dbConfig.ReadReplicas {
+			if replica.Scheme == "" {
+				replica.Scheme = dbConfig.Scheme
+			}
+			r, e := parseDBConfig(replica, "replica ")
+			if e != nil {
+				return nil, e
+			}
+			r.id = i + 1
+			replicas = append(replicas, r)
 		}
-		r, e := parseDBConfig(replica, "replica ")
-		if e != nil {
-			return nil, e
-		}
-		r.id = i + 1
-		replicas = append(replicas, r)
+	} else if len(dbConfig.ReadReplicas) > 0 {
+		log.Errorln("read-replicas feature flag required before use")
 	}
 	primary.replicas = replicas
 	primary.randGen = rand.New(rand.NewSource(time.Now().UnixNano()))

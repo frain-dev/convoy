@@ -2,6 +2,7 @@ package models
 
 type SSORequest struct {
 	LicenseKey string `json:"license_key"`
+	Host       string `json:"host"`
 }
 
 type SSOResponse struct {

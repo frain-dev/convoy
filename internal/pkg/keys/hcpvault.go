@@ -18,6 +18,8 @@ import (
 
 const RedisCacheKey = "HCPVaultRedisKey"
 
+const oneYear = 24 * 365 * time.Hour
+
 var (
 	HCPAPIBaseURL                                            = "https://api.cloud.hashicorp.com"
 	ErrCredentialEncryptionFeatureUnavailable                = errors.New("credential encryption feature unavailable, please upgrade")
@@ -141,7 +143,11 @@ func (k *HCPVaultKeyManager) GetCurrentKey() (string, error) {
 	if !k.licenser.CredentialEncryption() {
 		return "", ErrCredentialEncryptionFeatureUnavailable
 	}
+	return k.GetHCPSecretKey()
+}
 
+// GetHCPSecretKey retrieves the current key from HCP Vault API.
+func (k *HCPVaultKeyManager) GetHCPSecretKey() (string, error) {
 	retryCount := 1
 	for {
 		if err := k.ensureValidToken(); err != nil {
@@ -160,8 +166,7 @@ func (k *HCPVaultKeyManager) GetCurrentKey() (string, error) {
 			}
 			return "", err
 		}
-
-		return currentKey, k.cache.Set(context.Background(), RedisCacheKey, &currentKey, -1)
+		return currentKey, k.cache.Set(context.Background(), RedisCacheKey, &currentKey, oneYear)
 	}
 }
 
@@ -275,7 +280,7 @@ func (k *HCPVaultKeyManager) createOrUpdateSecret(newKey string) error {
 		return parseErrorResponse(resp)
 	}
 
-	return k.cache.Set(context.Background(), RedisCacheKey, &newKey, -1)
+	return k.cache.Set(context.Background(), RedisCacheKey, &newKey, oneYear)
 }
 
 // deleteSecret deletes the existing secret to reset the versioning.
