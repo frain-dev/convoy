@@ -553,7 +553,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		events = append(events, data)
 	}
 
-
 	var rowCount datastore.PrevRowCount
 	if len(events) > 0 {
 		first := events[0]
@@ -709,6 +708,24 @@ func (e *eventRepo) PartitionEventsTable(ctx context.Context) error {
 
 func (e *eventRepo) UnPartitionEventsTable(ctx context.Context) error {
 	_, err := e.db.GetDB().ExecContext(ctx, unPartitionEventsTable)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *eventRepo) PartitionEventsSearchTable(ctx context.Context) error {
+	_, err := e.db.GetDB().ExecContext(ctx, partitionEventsSearchTable)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (e *eventRepo) UnPartitionEventsSearchTable(ctx context.Context) error {
+	_, err := e.db.GetDB().ExecContext(ctx, unPartitionEventsSearchTable)
 	if err != nil {
 		return err
 	}
@@ -879,4 +896,144 @@ begin
 	RAISE NOTICE 'Successfully un-partitioned events table...';
 end $$ language plpgsql;
 select convoy.un_partition_events_table()
+`
+
+var partitionEventsSearchTable = `
+CREATE OR REPLACE FUNCTION convoy.partition_events_search_table() RETURNS VOID AS $$
+DECLARE
+    r RECORD;
+BEGIN
+    RAISE NOTICE 'Creating partitioned table...';
+
+    -- Drop old partitioned table
+    DROP TABLE IF EXISTS convoy.events_search_new;
+
+    -- Create partitioned table
+    CREATE TABLE convoy.events_search_new (
+      id                 VARCHAR not null,
+      event_type         TEXT    not null,
+      endpoints          TEXT,
+      project_id         VARCHAR NOT NULL REFERENCES convoy.projects,
+      source_id          VARCHAR REFERENCES convoy.sources,
+      headers            jsonb,
+      raw                TEXT    not null,
+      data               bytea   not null,
+      url_query_params   VARCHAR,
+      idempotency_key    TEXT,
+      is_duplicate_event BOOLEAN default false,
+      search_token       tsvector generated always as (to_tsvector('simple'::regconfig, raw)) stored,
+      created_at         TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
+      updated_at         TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
+      deleted_at         TIMESTAMP WITH TIME ZONE,
+          PRIMARY KEY (id, created_at, project_id)
+    ) PARTITION BY RANGE (project_id, created_at);
+
+    RAISE NOTICE 'Creating partitions...';
+    FOR r IN
+        WITH dates AS (
+            SELECT project_id, created_at::DATE
+            FROM convoy.events_search
+            GROUP BY created_at::DATE, project_id
+        )
+        SELECT project_id,
+               created_at::TEXT AS start_date,
+               (created_at + 1)::TEXT AS stop_date,
+               'events_search_' || pg_catalog.REPLACE(project_id::TEXT, '-', '') || '_' || pg_catalog.REPLACE(created_at::TEXT, '-', '') AS partition_table_name
+        FROM dates
+        LOOP
+            EXECUTE FORMAT(
+                    'CREATE TABLE IF NOT EXISTS convoy.%s PARTITION OF convoy.events_search_new FOR VALUES FROM (%L, %L) TO (%L, %L)',
+                    r.partition_table_name, r.project_id, r.start_date, r.project_id, r.stop_date
+                    );
+        END LOOP;
+
+    RAISE NOTICE 'Migrating data...';
+    INSERT INTO convoy.events_search_new (
+        id, event_type, endpoints, project_id, source_id,
+        headers, raw, data, url_query_params, idempotency_key,
+        is_duplicate_event, created_at, updated_at, deleted_at
+    )
+    SELECT id, event_type, endpoints, project_id, source_id,
+           headers, raw, data, url_query_params, idempotency_key,
+           is_duplicate_event, created_at, updated_at, deleted_at
+    FROM convoy.events_search;
+
+    -- Manage table renaming
+    ALTER TABLE convoy.events_search RENAME TO events_search_old;
+    ALTER TABLE convoy.events_search_new RENAME TO events_search;
+    DROP TABLE IF EXISTS convoy.events_search_old;
+
+    RAISE NOTICE 'Recreating indexes...';
+    CREATE INDEX idx_events_search_id_key ON convoy.events_search (id);
+    CREATE INDEX idx_events_search_created_at_key ON convoy.events_search (created_at);
+    CREATE INDEX idx_events_search_deleted_at_key ON convoy.events_search (deleted_at);
+    CREATE INDEX idx_events_search_project_id_deleted_at_key ON convoy.events_search (project_id, deleted_at);
+    CREATE INDEX idx_events_search_project_id_key ON convoy.events_search (project_id);
+    CREATE INDEX idx_events_search_project_id_source_id ON convoy.events_search (project_id, source_id);
+    CREATE INDEX idx_events_search_source_id ON convoy.events_search (source_id);
+    CREATE INDEX idx_events_search_token_key ON convoy.events_search USING gin (search_token);
+
+    RAISE NOTICE 'Migration complete!';
+END;
+$$ LANGUAGE plpgsql;
+select convoy.partition_events_search_table();
+`
+
+var unPartitionEventsSearchTable = `
+create or replace function convoy.un_partition_events_search_table() returns VOID as $$
+begin
+    RAISE NOTICE 'Starting un-partitioning of events table...';
+
+    -- Drop old partitioned table
+    DROP TABLE IF EXISTS convoy.events_search_new;
+
+    -- Create partitioned table
+    CREATE TABLE convoy.events_search_new
+    (
+        id                 VARCHAR not null primary key,
+        event_type         TEXT    not null,
+        endpoints          TEXT,
+        project_id         VARCHAR NOT NULL REFERENCES convoy.projects,
+        source_id          VARCHAR REFERENCES convoy.sources,
+        headers            jsonb,
+        raw                TEXT    not null,
+        data               bytea   not null,
+        url_query_params   VARCHAR,
+        idempotency_key    TEXT,
+        is_duplicate_event BOOLEAN default false,
+        search_token       tsvector generated always as (to_tsvector('simple', raw)) stored,
+        created_at         TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
+        updated_at         TIMESTAMP WITH TIME ZONE default CURRENT_TIMESTAMP,
+        deleted_at         TIMESTAMP WITH TIME ZONE
+    );
+
+    RAISE NOTICE 'Migrating data...';
+    insert into convoy.events_search_new
+        (id, event_type, endpoints, project_id,
+         source_id, headers, raw, data, url_query_params,
+         idempotency_key, is_duplicate_event,
+         created_at, updated_at, deleted_at)
+    select id, event_type, endpoints, project_id,
+           source_id, headers, raw, data, url_query_params,
+           idempotency_key, is_duplicate_event,
+           created_at, updated_at, deleted_at
+    from convoy.events_search;
+
+    ALTER TABLE convoy.events_search RENAME TO events_search_old;
+    ALTER TABLE convoy.events_search_new RENAME TO events_search;
+    DROP TABLE IF EXISTS convoy.events_search_old;
+
+    RAISE NOTICE 'Recreating indexes...';
+    CREATE INDEX idx_events_search_id_key ON convoy.events_search (id);
+    CREATE INDEX idx_events_search_created_at_key ON convoy.events_search (created_at);
+    CREATE INDEX idx_events_search_deleted_at_key ON convoy.events_search (deleted_at);
+    CREATE INDEX idx_events_search_project_id_deleted_at_key ON convoy.events_search (project_id, deleted_at);
+    CREATE INDEX idx_events_search_project_id_key ON convoy.events_search (project_id);
+    CREATE INDEX idx_events_search_project_id_source_id ON convoy.events_search (project_id, source_id);
+    CREATE INDEX idx_events_search_source_id ON convoy.events_search (source_id);
+    CREATE INDEX idx_events_search_token_key ON convoy.events_search USING gin (search_token);
+
+    RAISE NOTICE 'Successfully un-partitioned events table...';
+end $$ language plpgsql;
+select convoy.un_partition_events_search_table();
 `

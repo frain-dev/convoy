@@ -663,6 +663,20 @@ func (mr *MockEventRepositoryMockRecorder) LoadEventsPaged(ctx, projectID, f any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventsPaged", reflect.TypeOf((*MockEventRepository)(nil).LoadEventsPaged), ctx, projectID, f)
 }
 
+// PartitionEventsSearchTable mocks base method.
+func (m *MockEventRepository) PartitionEventsSearchTable(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PartitionEventsSearchTable", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// PartitionEventsSearchTable indicates an expected call of PartitionEventsSearchTable.
+func (mr *MockEventRepositoryMockRecorder) PartitionEventsSearchTable(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PartitionEventsSearchTable", reflect.TypeOf((*MockEventRepository)(nil).PartitionEventsSearchTable), ctx)
+}
+
 // PartitionEventsTable mocks base method.
 func (m *MockEventRepository) PartitionEventsTable(ctx context.Context) error {
 	m.ctrl.T.Helper()
@@ -675,6 +689,20 @@ func (m *MockEventRepository) PartitionEventsTable(ctx context.Context) error {
 func (mr *MockEventRepositoryMockRecorder) PartitionEventsTable(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PartitionEventsTable", reflect.TypeOf((*MockEventRepository)(nil).PartitionEventsTable), ctx)
+}
+
+// UnPartitionEventsSearchTable mocks base method.
+func (m *MockEventRepository) UnPartitionEventsSearchTable(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnPartitionEventsSearchTable", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnPartitionEventsSearchTable indicates an expected call of UnPartitionEventsSearchTable.
+func (mr *MockEventRepositoryMockRecorder) UnPartitionEventsSearchTable(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnPartitionEventsSearchTable", reflect.TypeOf((*MockEventRepository)(nil).UnPartitionEventsSearchTable), ctx)
 }
 
 // UnPartitionEventsTable mocks base method.

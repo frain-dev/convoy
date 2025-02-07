@@ -92,7 +92,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 		}
 
-		log.Printf("Backup job took %f minutes to run", time.Since(c).Minutes())
+		log.Printf("Backup Project Data job took %f minutes to run", time.Since(c).Minutes())
 		return nil
 	}
 }
@@ -129,7 +129,7 @@ func RetentionPolicies(rd *rdb.Redis, ret retention.Retentioner) func(context.Co
 			return err
 		}
 
-		log.FromContext(ctx).Infof("Backup job took %f minutes to run", time.Since(c).Minutes())
+		log.FromContext(ctx).Infof("Retention job took %f minutes to run", time.Since(c).Minutes())
 		return nil
 	}
 }

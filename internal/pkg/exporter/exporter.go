@@ -68,16 +68,11 @@ func NewExporter(projectRepo datastore.ProjectRepository,
 	p *datastore.Project, c *datastore.Configuration,
 	attemptsRepo datastore.DeliveryAttemptsRepository,
 ) (*Exporter, error) {
-	policy, err := time.ParseDuration(c.RetentionPolicy.Policy)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Exporter{
 		config:  c,
 		project: p,
 		result:  ExportResult{},
-		expDate: time.Now().UTC().Add(-policy),
+		expDate: time.Now().Add(-time.Hour * 24),
 
 		eventRepo:            eventRepo,
 		projectRepo:          projectRepo,
@@ -103,68 +98,6 @@ func (ex *Exporter) Export(ctx context.Context) (ExportResult, error) {
 	}
 
 	return ex.result, nil
-}
-
-func (ex *Exporter) Cleanup(ctx context.Context) error {
-	for i := range tables {
-		if ex.result[tables[i]].NumDocs > 0 {
-			switch tables[i] {
-			case eventsTable:
-				eventFilter := &datastore.EventFilter{
-					CreatedAtStart: 0,
-					CreatedAtEnd:   ex.expDate.Unix(),
-				}
-				err := ex.eventRepo.DeleteProjectEvents(ctx, ex.project.UID, eventFilter, true)
-				if err != nil {
-					return err
-				}
-
-				err = ex.eventRepo.DeleteProjectTokenizedEvents(ctx, ex.project.UID, eventFilter)
-				if err != nil {
-					return err
-				}
-
-				ex.project.RetainedEvents += int(ex.result[tables[i]].NumDocs)
-				err = ex.projectRepo.UpdateProject(ctx, ex.project)
-				if err != nil {
-					return err
-				}
-			case eventDeliveriesTable:
-				eventDeliveryFilter := &datastore.EventDeliveryFilter{
-					CreatedAtStart: 0,
-					CreatedAtEnd:   ex.expDate.Unix(),
-				}
-
-				err := ex.eventDeliveryRepo.DeleteProjectEventDeliveries(ctx, ex.project.UID, eventDeliveryFilter, true)
-				if err != nil {
-					return err
-				}
-			case deliveryAttemptsTable:
-				deliveryFilter := &datastore.DeliveryAttemptsFilter{
-					CreatedAtStart: 0,
-					CreatedAtEnd:   ex.expDate.Unix(),
-				}
-
-				err := ex.deliveryAttemptsRepo.DeleteProjectDeliveriesAttempts(ctx, ex.project.UID, deliveryFilter, true)
-				if err != nil {
-					return err
-				}
-			default:
-				return ErrInvalidTable
-			}
-		}
-
-		// remove export file.
-		if ex.config.StoragePolicy.Type == datastore.S3 {
-			err := os.Remove(ex.result[tables[i]].ExportFile)
-			if err != nil {
-				return err
-			}
-		}
-
-	}
-
-	return nil
 }
 
 func (ex *Exporter) exportTable(ctx context.Context, table tablename, expDate time.Time) (*ExportTableResult, error) {
@@ -257,22 +190,22 @@ func getOutputWriter(out string) (io.WriteCloser, error) {
 	return file, err
 }
 
-//type compressWriter struct {
+// type compressWriter struct {
 //	gw   *gzip.Writer
 //	file *os.File
-//}
+// }
 //
-//func (c compressWriter) Write(b []byte) (int, error) {
+// func (c compressWriter) Write(b []byte) (int, error) {
 //	return c.gw.Write(b)
-//}
+// }
 //
-//func (c compressWriter) Close() error {
+// func (c compressWriter) Close() error {
 //	if err := c.gw.Close(); err != nil {
 //		return err
 //	}
 //
 //	return c.file.Close()
-//}
+// }
 
 func toUniversalPath(path string) string {
 	return filepath.FromSlash(path)

@@ -45,6 +45,11 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 					return err
 				}
 
+				err = eventsRepo.PartitionEventsSearchTable(cmd.Context())
+				if err != nil {
+					return err
+				}
+
 				err = eventDeliveryRepo.PartitionEventDeliveriesTable(cmd.Context())
 				if err != nil {
 					return err
@@ -58,6 +63,11 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 				switch args[0] {
 				case "events":
 					err = eventsRepo.PartitionEventsTable(cmd.Context())
+					if err != nil {
+						return err
+					}
+				case "events_search":
+					err = eventsRepo.PartitionEventsSearchTable(cmd.Context())
 					if err != nil {
 						return err
 					}
@@ -119,6 +129,11 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 					return err
 				}
 
+				err = eventsRepo.UnPartitionEventsSearchTable(cmd.Context())
+				if err != nil {
+					return err
+				}
+
 				err = eventDeliveryRepo.UnPartitionEventDeliveriesTable(cmd.Context())
 				if err != nil {
 					return err
@@ -132,6 +147,11 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 				switch args[0] {
 				case "events":
 					err = eventsRepo.UnPartitionEventsTable(cmd.Context())
+					if err != nil {
+						return err
+					}
+				case "events_search":
+					err = eventsRepo.UnPartitionEventsSearchTable(cmd.Context())
 					if err != nil {
 						return err
 					}

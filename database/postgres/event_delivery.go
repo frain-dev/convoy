@@ -84,11 +84,11 @@ const (
 	    %s
 	    %s
 	    AND ed.id <= :cursor
-	    ORDER BY ed.created_at %s
+	    ORDER BY ed.id %s
 	    LIMIT :limit
 	)
 
-	SELECT * FROM event_deliveries ORDER BY created_at %s
+	SELECT * FROM event_deliveries ORDER BY id %s
 	`
 
 	baseEventDeliveryPagedBackward = `
@@ -96,11 +96,11 @@ const (
 		%s
 		%s
 		AND ed.id >= :cursor
-		ORDER BY ed.created_at %s
+		ORDER BY ed.id %s
 		LIMIT :limit
 	)
 
-	SELECT * FROM event_deliveries ORDER BY created_at %s
+	SELECT * FROM event_deliveries ORDER BY id %s
 	`
 
 	fetchEventDeliveryByID = baseFetchEventDelivery + ` AND ed.id = $1 AND ed.project_id = $2`

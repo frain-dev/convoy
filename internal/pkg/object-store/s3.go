@@ -20,9 +20,10 @@ type S3Client struct {
 
 func NewS3Client(opts ObjectStoreOptions) (ObjectStore, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(opts.Region),
-		Endpoint:    aws.String(opts.Endpoint),
-		Credentials: credentials.NewStaticCredentials(opts.AccessKey, opts.SecretKey, opts.SessionToken),
+		S3ForcePathStyle: aws.Bool(true),
+		Region:           aws.String(opts.Region),
+		Endpoint:         aws.String(opts.Endpoint),
+		Credentials:      credentials.NewStaticCredentials(opts.AccessKey, opts.SecretKey, opts.SessionToken),
 	})
 	if err != nil {
 		return nil, err

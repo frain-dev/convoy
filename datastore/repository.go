@@ -59,6 +59,8 @@ type EventRepository interface {
 	CopyRows(ctx context.Context, projectID string, interval int) error
 	PartitionEventsTable(ctx context.Context) error
 	UnPartitionEventsTable(ctx context.Context) error
+	PartitionEventsSearchTable(ctx context.Context) error
+	UnPartitionEventsSearchTable(ctx context.Context) error
 }
 
 type ProjectRepository interface {
