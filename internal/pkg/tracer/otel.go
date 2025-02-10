@@ -3,6 +3,8 @@ package tracer
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -10,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc/credentials"
-	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
@@ -105,9 +106,35 @@ func (ot *OTelTracer) Init(componentName string) error {
 func (ot *OTelTracer) Type() config.TracerProvider {
 	return config.OTelTracerProvider
 }
-func (ot *OTelTracer) Capture(*datastore.Project, string, *net.Response, time.Duration) {
 
+func (ot *OTelTracer) Capture(project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
+	ctx := context.Background()
+
+	// Create a new span using the global tracer provider
+	_, span := otel.Tracer("").Start(ctx, "webhook_delivery")
+	defer span.End()
+
+	// Add project and URL attributes
+	span.SetAttributes(
+		attribute.String("project.id", project.UID),
+		attribute.String("target.url", targetURL),
+	)
+
+	// Add response data if available
+	if resp != nil {
+		span.SetAttributes(
+			attribute.String("response.status", resp.Status),
+			attribute.Int("response.status_code", resp.StatusCode),
+			attribute.Int("response.size_bytes", len(resp.Body)),
+		)
+	}
+
+	// Record the duration
+	span.SetAttributes(
+		attribute.Int64("duration_ms", duration.Milliseconds()),
+	)
 }
+
 func (ot *OTelTracer) Shutdown(ctx context.Context) error {
 	return ot.ShutdownFn(ctx)
 }
