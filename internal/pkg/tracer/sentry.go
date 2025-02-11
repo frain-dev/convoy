@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/net"
 	"github.com/getsentry/sentry-go"
 	sentryotel "github.com/getsentry/sentry-go/otel"
 	"go.opentelemetry.io/otel"
@@ -62,31 +60,30 @@ func (st *SentryTracer) Type() config.TracerProvider {
 	return config.SentryTracerProvider
 }
 
-func (st *SentryTracer) Capture(ctx context.Context, project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
-	// Create a new span using the global tracer provider
-	_, span := otel.Tracer("").Start(ctx, "webhook_delivery",
-		trace.WithTimestamp(time.Now().Add(-duration)))
-	defer span.End(trace.WithTimestamp(time.Now()))
+func (st *SentryTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time) {
+	_, span := otel.Tracer("").Start(ctx, name,
+		trace.WithTimestamp(startTime))
 
-	// Add project and URL attributes
-	span.SetAttributes(
-		attribute.String("project.id", project.UID),
-		attribute.String("target.url", targetURL),
-	)
+	// End span with provided end time
+	defer span.End(trace.WithTimestamp(endTime))
 
-	// Add response data if available
-	if resp != nil {
-		span.SetAttributes(
-			attribute.String("response.status", resp.Status),
-			attribute.Int("response.status_code", resp.StatusCode),
-			attribute.Int("response.size_bytes", len(resp.Body)),
-		)
+	// Convert and set attributes
+	attrs := make([]attribute.KeyValue, 0, len(attributes))
+	for k, v := range attributes {
+		switch val := v.(type) {
+		case string:
+			attrs = append(attrs, attribute.String(k, val))
+		case int:
+			attrs = append(attrs, attribute.Int(k, val))
+		case int64:
+			attrs = append(attrs, attribute.Int64(k, val))
+		case float64:
+			attrs = append(attrs, attribute.Float64(k, val))
+		case bool:
+			attrs = append(attrs, attribute.Bool(k, val))
+		}
 	}
-
-	// Record the duration
-	span.SetAttributes(
-		attribute.Int64("duration_ms", duration.Milliseconds()),
-	)
+	span.SetAttributes(attrs...)
 }
 
 func (st *SentryTracer) Shutdown(ctx context.Context) error {

@@ -3,11 +3,10 @@ package tracer
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/net"
-	"github.com/frain-dev/convoy/pkg/log"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/config"
 	"go.opentelemetry.io/otel/trace"
@@ -38,11 +37,11 @@ func FromContext(ctx context.Context) trace.Tracer {
 	return nil
 }
 
-// Backend is an abstraction for tracng backend (Datadog, Sentry, ...)
+// Backend is an abstraction for tracing backend (Datadog, Sentry, ...)
 type Backend interface {
 	Init(componentName string) error
 	Type() config.TracerProvider
-	Capture(context.Context, *datastore.Project, string, *net.Response, time.Duration)
+	Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time)
 	Shutdown(ctx context.Context) error
 }
 
@@ -52,9 +51,7 @@ func (NoOpBackend) Init(string) error { return nil }
 func (NoOpBackend) Type() config.TracerProvider {
 	return ""
 }
-func (NoOpBackend) Capture(context.Context, *datastore.Project, string, *net.Response, time.Duration) {
-
-}
+func (NoOpBackend) Capture(context.Context, string, map[string]interface{}, time.Time, time.Time) {}
 func (NoOpBackend) Shutdown(context.Context) error {
 	return nil
 }

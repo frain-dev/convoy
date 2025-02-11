@@ -3,6 +3,9 @@ package tracer
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -10,9 +13,8 @@ import (
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/log"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"strconv"
-	"time"
 
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -62,7 +64,7 @@ func (dt *DatadogTracer) Type() config.TracerProvider {
 	return config.DatadogTracerProvider
 }
 
-func (dt *DatadogTracer) Capture(ctx context.Context, project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
+func (dt *DatadogTracer) CaptureDelivery(ctx context.Context, project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
 	if !dt.Licenser.DatadogTracing() {
 		return
 	}
@@ -156,4 +158,32 @@ func byteArrToUint64(buf []byte) uint64 {
 		}
 	}
 	return x
+}
+
+func (dt *DatadogTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time) {
+	if !dt.Licenser.DatadogTracing() {
+		return
+	}
+
+	_, span := otel.Tracer("").Start(ctx, name, trace.WithTimestamp(startTime))
+	// End span with provided end time
+	defer span.End(trace.WithTimestamp(endTime))
+
+	// Convert and set attributes
+	attrs := make([]attribute.KeyValue, 0, len(attributes))
+	for k, v := range attributes {
+		switch val := v.(type) {
+		case string:
+			attrs = append(attrs, attribute.String(k, val))
+		case int:
+			attrs = append(attrs, attribute.Int(k, val))
+		case int64:
+			attrs = append(attrs, attribute.Int64(k, val))
+		case float64:
+			attrs = append(attrs, attribute.Float64(k, val))
+		case bool:
+			attrs = append(attrs, attribute.Bool(k, val))
+		}
+	}
+	span.SetAttributes(attrs...)
 }

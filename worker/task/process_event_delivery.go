@@ -226,7 +226,21 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
 				nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 		}
-		tracerBackend.Capture(ctx, project, targetURL, resp, duration)
+
+		// tracerBackend.CaptureDelivery(ctx, project, targetURL, resp, duration)
+		attributes := map[string]interface{}{
+			"project.id":           project.UID,
+			"endpoint.url":         endpoint.Url,
+			"endpoint.id":          endpoint.UID,
+			"event_delivery.id":    eventDelivery.UID,
+			"response.status":      resp.Status,
+			"response.status_code": resp.StatusCode,
+			"response.size_bytes":  len(resp.Body),
+		}
+
+		startTime := time.Now().Add(-duration)
+		endTime := time.Now()
+		tracerBackend.Capture(ctx, "webhook_delivery", attributes, startTime, endTime)
 
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {
