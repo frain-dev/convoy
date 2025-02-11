@@ -232,6 +232,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if err != nil {
 			return err
 		}
+		// todo(raymond): I don't think the check below needs to exist since we perform the check in the tracer.Init() above.
 		if cfg.Tracer.Type == config.DatadogTracerProvider && !app.Licenser.DatadogTracing() {
 			lo.Error("your instance does not have access to datadog tracing, upgrade to access this feature")
 			_ = app.TracerBackend.Shutdown(context.Background())

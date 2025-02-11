@@ -2,6 +2,7 @@ package tracer
 
 import (
 	"context"
+	"fmt"
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
@@ -9,6 +10,8 @@ import (
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/log"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
+	"strconv"
 	"time"
 
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
@@ -59,10 +62,14 @@ func (dt *DatadogTracer) Type() config.TracerProvider {
 	return config.DatadogTracerProvider
 }
 
-func (dt *DatadogTracer) Capture(project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
+func (dt *DatadogTracer) Capture(ctx context.Context, project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
 	if !dt.Licenser.DatadogTracing() {
 		return
 	}
+
+	traceId := getDatadogTraceID(ctx)
+	fmt.Printf("%s\n", traceId)
+
 	var status string
 	var statusCode int
 	if resp != nil {
@@ -125,4 +132,28 @@ func (dt *DatadogTracer) RecordThroughput(projectID string, url string, dataSize
 	if err != nil {
 		log.Errorf("Error recording throughput: %s", err)
 	}
+}
+
+func getDatadogTraceID(ctx context.Context) string {
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if spanCtx.HasTraceID() {
+		// Since datadog trace provider (ddtrace) uses big endian uint64 for the trace ID, we must first to first convert it back to uint64.
+		traceID := spanCtx.TraceID()
+		traceIDRaw := [16]byte(traceID)
+		traceIDUint64 := byteArrToUint64(traceIDRaw[8:])
+		traceIDStr := strconv.FormatUint(traceIDUint64, 10)
+		return traceIDStr
+	}
+	return ""
+}
+
+func byteArrToUint64(buf []byte) uint64 {
+	var x uint64
+	for i, b := range buf {
+		x = x<<8 + uint64(b)
+		if i == 7 {
+			return x
+		}
+	}
+	return x
 }

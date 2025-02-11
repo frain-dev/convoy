@@ -218,7 +218,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
 				nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 		}
-		tracerBackend.Capture(project, targetURL, resp, duration)
+		tracerBackend.Capture(ctx, project, targetURL, resp, duration)
 
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {

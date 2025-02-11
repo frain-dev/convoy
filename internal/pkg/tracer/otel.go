@@ -3,6 +3,7 @@ package tracer
 import (
 	"context"
 	"errors"
+	"go.opentelemetry.io/otel/trace"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -107,11 +108,9 @@ func (ot *OTelTracer) Type() config.TracerProvider {
 	return config.OTelTracerProvider
 }
 
-func (ot *OTelTracer) Capture(project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
-	ctx := context.Background()
-
+func (ot *OTelTracer) Capture(ctx context.Context, project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
 	// Create a new span using the global tracer provider
-	_, span := otel.Tracer("").Start(ctx, "webhook_delivery")
+	_, span := otel.Tracer("").Start(ctx, "webhook_delivery", trace.WithTimestamp(time.Now().Add(-duration)))
 	defer span.End()
 
 	// Add project and URL attributes

@@ -61,13 +61,9 @@ func (st *SentryTracer) Type() config.TracerProvider {
 	return config.SentryTracerProvider
 }
 
-func (st *SentryTracer) Capture(project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
+func (st *SentryTracer) Capture(ctx context.Context, project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
 	// Create a transaction
-	transaction := sentry.StartTransaction(
-		context.Background(),
-		"webhook_delivery",
-		sentry.WithTransactionName(targetURL),
-	)
+	transaction := sentry.StartTransaction(ctx, "webhook_delivery", sentry.WithTransactionName(targetURL))
 	defer transaction.Finish()
 
 	// Add project context

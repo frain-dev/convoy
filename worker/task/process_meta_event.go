@@ -173,7 +173,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		log.Infof("%s sent", metaEvent.UID)
 		return resp, nil
 	}
-	tracerBackend.Capture(project, url, resp, duration)
+	tracerBackend.Capture(ctx, project, url, resp, duration)
 
 	requestLogger.Errorf("%s", metaEvent.UID)
 	return resp, errors.New(resp.Error)

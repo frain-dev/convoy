@@ -42,24 +42,24 @@ func FromContext(ctx context.Context) trace.Tracer {
 type Backend interface {
 	Init(componentName string) error
 	Type() config.TracerProvider
-	Capture(*datastore.Project, string, *net.Response, time.Duration)
+	Capture(context.Context, *datastore.Project, string, *net.Response, time.Duration)
 	Shutdown(ctx context.Context) error
 }
 
 type NoOpBackend struct{}
 
-func (NoOpBackend) Init(componentName string) error { return nil }
+func (NoOpBackend) Init(string) error { return nil }
 func (NoOpBackend) Type() config.TracerProvider {
 	return ""
 }
-func (NoOpBackend) Capture(*datastore.Project, string, *net.Response, time.Duration) {
+func (NoOpBackend) Capture(context.Context, *datastore.Project, string, *net.Response, time.Duration) {
 
 }
 func (NoOpBackend) Shutdown(context.Context) error {
 	return nil
 }
 
-// Global tracer Init function
+// Init is a global tracer initialization function
 func Init(tCfg config.TracerConfiguration, componentName string, licenser license.Licenser) (Backend, error) {
 	switch tCfg.Type {
 	case config.SentryTracerProvider:
