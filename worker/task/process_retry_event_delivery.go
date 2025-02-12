@@ -204,7 +204,6 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 
 			eventDelivery.Status = datastore.SuccessEventStatus
 			eventDelivery.Description = ""
-			eventDelivery.LatencySeconds = time.Since(eventDelivery.CreatedAt).Seconds()
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
@@ -225,6 +224,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			"endpoint.id":          endpoint.UID,
 			"event_delivery.id":    eventDelivery.UID,
 			"response.status":      resp.Status,
+			"response.ip":          resp.IP,
 			"response.status_code": resp.StatusCode,
 			"response.size_bytes":  len(resp.Body),
 		}

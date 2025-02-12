@@ -212,7 +212,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			// register latency
 			mm := metrics.GetDPInstance(licenser)
 			mm.RecordEndToEndLatency(eventDelivery)
-
 		} else {
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
@@ -233,10 +232,10 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			"endpoint.id":          endpoint.UID,
 			"event_delivery.id":    eventDelivery.UID,
 			"response.status":      resp.Status,
+			"response.ip":          resp.IP,
 			"response.status_code": resp.StatusCode,
 			"response.size_bytes":  len(resp.Body),
 		}
-
 		startTime := time.Now()
 		endTime := time.Now()
 		tracerBackend.Capture(ctx, "delivery.info", attributes, startTime, endTime)

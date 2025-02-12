@@ -87,16 +87,21 @@ func NewVanillaTransport(transport *http.Transport) *CustomTransport {
 	}
 }
 
+type DetailedTraceConfig struct {
+	Enabled bool
+}
+
 type Dispatcher struct {
 	// gating mechanisms
 	ff *fflag.FFlag
 	l  license.Licenser
 
-	logger    *log.Logger
-	transport *http.Transport
-	client    *http.Client
-	rules     *netjail.Rules
-	tracer    tracer.Backend
+	logger        *log.Logger
+	transport     *http.Transport
+	client        *http.Client
+	rules         *netjail.Rules
+	tracer        tracer.Backend
+	detailedTrace DetailedTraceConfig
 }
 
 func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOption) (*Dispatcher, error) {
@@ -255,6 +260,13 @@ func TracerOption(tracer tracer.Backend) DispatcherOption {
 	}
 }
 
+func DetailedTraceOption(enabled bool) DispatcherOption {
+	return func(d *Dispatcher) error {
+		d.detailedTrace.Enabled = enabled
+		return nil
+	}
+}
+
 func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	if !util.IsStringEmpty(proxyURL) {
 		pUrl, err := url.Parse(proxyURL)
@@ -344,16 +356,66 @@ func defaultUserAgent() string {
 }
 
 func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64) error {
-	startTime := time.Now()
+	if d.detailedTrace.Enabled {
+		trace := &httptrace.ClientTrace{
+			DNSStart: func(info httptrace.DNSStartInfo) {
+				attrs := map[string]interface{}{
+					"dns.host": info.Host,
+					"event":    "dns_start",
+				}
+				d.tracer.Capture(ctx, "dns_lookup_start", attrs, time.Now(), time.Now())
+			},
+			DNSDone: func(info httptrace.DNSDoneInfo) {
+				attrs := map[string]interface{}{
+					"dns.addresses": fmt.Sprintf("%v", info.Addrs),
+					"dns.error":     fmt.Sprintf("%v", info.Err),
+					"event":         "dns_done",
+				}
+				d.tracer.Capture(ctx, "dns_lookup_done", attrs, time.Now(), time.Now())
+			},
+			ConnectStart: func(network, addr string) {
+				attrs := map[string]interface{}{
+					"net.network": network,
+					"net.addr":    addr,
+					"event":       "connect_start",
+				}
+				d.tracer.Capture(ctx, "connect_start", attrs, time.Now(), time.Now())
+			},
+			ConnectDone: func(network, addr string, err error) {
+				attrs := map[string]interface{}{
+					"net.network": network,
+					"net.addr":    addr,
+					"error":       fmt.Sprintf("%v", err),
+					"event":       "connect_done",
+				}
+				d.tracer.Capture(ctx, "connect_done", attrs, time.Now(), time.Now())
+			},
+			TLSHandshakeStart: func() {
+				attrs := map[string]interface{}{
+					"event": "tls_handshake_start",
+				}
+				d.tracer.Capture(ctx, "tls_handshake_start", attrs, time.Now(), time.Now())
+			},
+			TLSHandshakeDone: func(state tls.ConnectionState, err error) {
+				attrs := map[string]interface{}{
+					"tls.version":      state.Version,
+					"tls.cipher_suite": state.CipherSuite,
+					"error":            fmt.Sprintf("%v", err),
+					"event":            "tls_handshake_done",
+				}
+				d.tracer.Capture(ctx, "tls_handshake_done", attrs, time.Now(), time.Now())
+			},
+			GotFirstResponseByte: func() {
+				attrs := map[string]interface{}{
+					"event": "first_byte_received",
+				}
+				d.tracer.Capture(ctx, "first_byte", attrs, time.Now(), time.Now())
+			},
+		}
 
-	t := &httptrace.ClientTrace{
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			res.IP = connInfo.Conn.RemoteAddr().String()
-			d.logger.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
-		},
+		ctx = httptrace.WithClientTrace(ctx, trace)
+		req = req.WithContext(ctx)
 	}
-
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), t))
 
 	response, err := d.client.Do(req)
 	if err != nil {
@@ -392,15 +454,6 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 		d.logger.WithError(err).Error("couldn't parse response body")
 		return err
 	}
-
-	endTime := time.Now()
-	d.tracer.Capture(ctx, "http.dispatch", map[string]interface{}{
-		"url":        req.URL.String(),
-		"method":     req.Method,
-		"ip":         res.IP,
-		"status":     res.Status,
-		"statusCode": res.StatusCode,
-	}, startTime, endTime)
 
 	return nil
 }
