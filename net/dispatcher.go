@@ -41,6 +41,52 @@ var (
 
 type DispatcherOption func(d *Dispatcher) error
 
+// CustomTransport wraps both netjail.Transport and otelhttp.Transport
+type CustomTransport struct {
+	otelTransport    *otelhttp.Transport
+	netJailTransport *netjail.Transport
+	vanillaTransport *http.Transport
+}
+
+// RoundTrip executes a single HTTP transaction
+func (c *CustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return c.otelTransport.RoundTrip(req)
+}
+
+// NewNetJailTransport creates a new CustomTransport with a netJailTransport
+func NewNetJailTransport(netJailTransport *netjail.Transport) *CustomTransport {
+	otelTransport := otelhttp.NewTransport(
+		netJailTransport,
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return fmt.Sprintf("%s webhook.dispatch", r.Method)
+		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return true
+		}),
+	)
+	return &CustomTransport{
+		otelTransport:    otelTransport,
+		netJailTransport: netJailTransport,
+	}
+}
+
+// NewVanillaTransport creates a new CustomTransport with a default transport
+func NewVanillaTransport(transport *http.Transport) *CustomTransport {
+	otelTransport := otelhttp.NewTransport(
+		transport,
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return fmt.Sprintf("%s webhook.dispatch", r.Method)
+		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return true
+		}),
+	)
+	return &CustomTransport{
+		otelTransport:    otelTransport,
+		vanillaTransport: transport,
+	}
+}
+
 type Dispatcher struct {
 	// gating mechanisms
 	ff *fflag.FFlag
@@ -81,19 +127,6 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		return nil, ErrLoggerIsRequired
 	}
 
-	// Wrap transport with OpenTelemetry instrumentation
-	otelTransport := otelhttp.NewTransport(
-		d.client.Transport,
-		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
-			return fmt.Sprintf("%s webhook.dispatch", r.Method)
-		}),
-		otelhttp.WithFilter(func(r *http.Request) bool {
-			// we can add filtering logic here
-			return true
-		}),
-	)
-	d.client.Transport = otelTransport
-
 	netJailTransport := &netjail.Transport{
 		New: func() *http.Transport {
 			return d.transport.Clone()
@@ -101,9 +134,9 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	}
 
 	if ff.CanAccessFeature(fflag.IpRules) && l.IpRules() {
-		d.client.Transport = netJailTransport
+		d.client.Transport = NewNetJailTransport(netJailTransport)
 	} else {
-		d.client.Transport = d.transport
+		d.client.Transport = NewVanillaTransport(d.transport)
 	}
 
 	return d, nil
@@ -361,7 +394,7 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 	}
 
 	endTime := time.Now()
-	d.tracer.Capture(ctx, "do", map[string]interface{}{
+	d.tracer.Capture(ctx, "http.dispatch", map[string]interface{}{
 		"url":        req.URL.String(),
 		"method":     req.Method,
 		"ip":         res.IP,
