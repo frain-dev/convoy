@@ -10,7 +10,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -64,7 +63,7 @@ func (dt *DatadogTracer) Type() config.TracerProvider {
 	return config.DatadogTracerProvider
 }
 
-func (dt *DatadogTracer) CaptureDelivery(ctx context.Context, project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
+func (dt *DatadogTracer) CaptureDelivery(ctx context.Context, project *datastore.Project, targetURL string, status string, statusCode int, bodyLength int, duration time.Duration) {
 	if !dt.Licenser.DatadogTracing() {
 		return
 	}
@@ -72,16 +71,8 @@ func (dt *DatadogTracer) CaptureDelivery(ctx context.Context, project *datastore
 	traceId := getDatadogTraceID(ctx)
 	fmt.Printf("%s\n", traceId)
 
-	var status string
-	var statusCode int
-	if resp != nil {
-		status = resp.Status
-		statusCode = resp.StatusCode
-	}
 	dt.RecordLatency(project.UID, targetURL, status, duration)
-	if resp != nil {
-		dt.RecordThroughput(project.UID, targetURL, len(resp.Body))
-	}
+	dt.RecordThroughput(project.UID, targetURL, bodyLength)
 	dt.RecordRequestTotal(project.UID, targetURL)
 	if statusCode > 299 {
 		dt.RecordErrorRate(project.UID, targetURL, statusCode)

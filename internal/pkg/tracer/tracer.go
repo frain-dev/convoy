@@ -45,17 +45,6 @@ type Backend interface {
 	Shutdown(ctx context.Context) error
 }
 
-type NoOpBackend struct{}
-
-func (NoOpBackend) Init(string) error { return nil }
-func (NoOpBackend) Type() config.TracerProvider {
-	return ""
-}
-func (NoOpBackend) Capture(context.Context, string, map[string]interface{}, time.Time, time.Time) {}
-func (NoOpBackend) Shutdown(context.Context) error {
-	return nil
-}
-
 // Init is a global tracer initialization function
 func Init(tCfg config.TracerConfiguration, componentName string, licenser license.Licenser) (Backend, error) {
 	switch tCfg.Type {

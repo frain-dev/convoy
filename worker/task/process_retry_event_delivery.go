@@ -231,7 +231,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 
 		startTime := time.Now()
 		endTime := time.Now()
-		tracerBackend.Capture(ctx, "retry_webhook_delivery", attributes, startTime, endTime)
+		tracerBackend.Capture(ctx, "retry.delivery.info", attributes, startTime, endTime)
 
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {

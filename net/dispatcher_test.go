@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/stealthrocket/netjail"
 	"net/http"
@@ -285,7 +286,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Dispatcher{client: client, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{})}
+			d := &Dispatcher{client: client, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
 
 			if tt.nFn != nil {
 				deferFn := tt.nFn()

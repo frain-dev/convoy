@@ -239,7 +239,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		startTime := time.Now()
 		endTime := time.Now()
-		tracerBackend.Capture(ctx, "webhook_delivery", attributes, startTime, endTime)
+		tracerBackend.Capture(ctx, "delivery.info", attributes, startTime, endTime)
 
 		// Request failed but statusCode is 200 <= x <= 299
 		if err != nil {

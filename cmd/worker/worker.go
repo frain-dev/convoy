@@ -276,6 +276,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		a.Licenser,
 		featureFlag,
 		net.LoggerOption(lo),
+		net.TracerOption(a.TracerBackend),
 		net.ProxyOption(cfg.Server.HTTP.HttpProxy),
 		net.AllowListOption(cfg.Dispatcher.AllowList),
 		net.BlockListOption(cfg.Dispatcher.BlockList),
