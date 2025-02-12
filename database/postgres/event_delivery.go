@@ -555,7 +555,8 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryMetadata(ctx context.Context, pro
 		return ErrEventDeliveryAttemptsNotUpdated
 	}
 
-	go e.hook.Fire(datastore.EventDeliveryUpdated, delivery, nil)
+	// todo(raymond): we should not run this in the foreground.
+	// go e.hook.Fire(ctx, datastore.EventDeliveryUpdated, delivery, nil)
 	return nil
 }
 

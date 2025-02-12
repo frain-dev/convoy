@@ -227,7 +227,6 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 				nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
 		}
 
-		// tracerBackend.CaptureDelivery(ctx, project, targetURL, resp, duration)
 		attributes := map[string]interface{}{
 			"project.id":           project.UID,
 			"endpoint.url":         endpoint.Url,
@@ -238,7 +237,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			"response.size_bytes":  len(resp.Body),
 		}
 
-		startTime := time.Now().Add(-duration)
+		startTime := time.Now()
 		endTime := time.Now()
 		tracerBackend.Capture(ctx, "webhook_delivery", attributes, startTime, endTime)
 

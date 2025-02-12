@@ -47,7 +47,7 @@ func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectR
 	return &EventDeliveryListener{mEvent: mEvent, attemptsRepo: attemptsRepo}
 }
 
-func (e *EventDeliveryListener) AfterUpdate(data interface{}, _ interface{}) {
+func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data interface{}, _ interface{}) {
 	eventDelivery, ok := data.(*datastore.EventDelivery)
 	if !ok {
 		log.Error("invalid type for event - eventdelivery.updated")
@@ -55,7 +55,7 @@ func (e *EventDeliveryListener) AfterUpdate(data interface{}, _ interface{}) {
 	}
 
 	mEventDelivery := getMetaEventDelivery(eventDelivery)
-	attempts, err := e.attemptsRepo.FindDeliveryAttempts(context.Background(), mEventDelivery.UID)
+	attempts, err := e.attemptsRepo.FindDeliveryAttempts(ctx, mEventDelivery.UID)
 	if err != nil {
 		log.WithError(err).Error("event delivery meta event failed")
 	}
@@ -65,14 +65,14 @@ func (e *EventDeliveryListener) AfterUpdate(data interface{}, _ interface{}) {
 	}
 
 	if eventDelivery.Status == datastore.SuccessEventStatus {
-		err := e.mEvent.Run(string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)
+		err := e.mEvent.Run(ctx, string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)
 		if err != nil {
 			log.WithError(err).Error("event delivery meta event failed")
 		}
 	}
 
 	if eventDelivery.Status == datastore.FailureEventStatus {
-		err := e.mEvent.Run(string(datastore.EventDeliveryFailed), eventDelivery.ProjectID, mEventDelivery)
+		err := e.mEvent.Run(ctx, string(datastore.EventDeliveryFailed), eventDelivery.ProjectID, mEventDelivery)
 		if err != nil {
 			log.WithError(err).Error("event delivery meta event failed")
 		}

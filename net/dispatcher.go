@@ -9,7 +9,14 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	semconv "go.opentelemetry.io/otel/semconv/v1.24.0"
+	"go.opentelemetry.io/otel/trace"
+
 	"github.com/stealthrocket/netjail"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -43,6 +50,7 @@ type Dispatcher struct {
 	transport *http.Transport
 	client    *http.Client
 	rules     *netjail.Rules
+	tracer    trace.Tracer
 }
 
 func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOption) (*Dispatcher, error) {
@@ -51,6 +59,7 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		ff:     ff,
 		client: &http.Client{},
 		rules:  &netjail.Rules{},
+		tracer: otel.GetTracerProvider().Tracer("convoy/webhook-dispatcher"),
 		transport: &http.Transport{
 			MaxIdleConns:          100,
 			IdleConnTimeout:       10 * time.Second,
@@ -83,6 +92,19 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 		d.client.Transport = d.transport
 	}
 
+	// Wrap transport with OpenTelemetry instrumentation
+	otelTransport := otelhttp.NewTransport(
+		d.client.Transport,
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return fmt.Sprintf("%s webhook.dispatch", r.Method)
+		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			// we can add filtering logic here
+			return true
+		}),
+	)
+
+	d.client.Transport = otelTransport
 	return d, nil
 }
 
@@ -205,6 +227,17 @@ func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 }
 
 func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+	ctx, span := d.tracer.Start(ctx, "",
+		trace.WithAttributes(
+			semconv.HTTPMethodKey.String(method),
+			semconv.HTTPURLKey.String(endpoint),
+			attribute.String("signature.header", signatureHeader),
+			attribute.String("idempotency.key", idempotencyKey),
+			attribute.Int64("max.response.size", maxResponseSize),
+		),
+	)
+	defer span.End()
+
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -215,6 +248,7 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 		err := errors.New("signature header and hmac are required")
 		d.logger.WithError(err).Error("Dispatcher invalid arguments")
 		r.Error = err.Error()
+		span.SetStatus(codes.Error, err.Error())
 		return r, err
 	}
 
@@ -225,6 +259,7 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		d.logger.WithError(err).Error("error occurred while creating request")
+		span.SetStatus(codes.Error, err.Error())
 		return r, err
 	}
 
@@ -245,7 +280,16 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.do(req, r, maxResponseSize)
+	err = d.do(ctx, req, r, maxResponseSize)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+	} else {
+		span.SetStatus(codes.Ok, "")
+		span.SetAttributes(
+			semconv.HTTPStatusCodeKey.Int(r.StatusCode),
+			attribute.String("response.ip", r.IP),
+		)
+	}
 
 	return r, err
 }
@@ -272,20 +316,25 @@ func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }
 
-func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64) error {
-	trace := &httptrace.ClientTrace{
+func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64) error {
+	_, span := d.tracer.Start(ctx, "")
+	defer span.End()
+
+	t := &httptrace.ClientTrace{
 		GotConn: func(connInfo httptrace.GotConnInfo) {
 			res.IP = connInfo.Conn.RemoteAddr().String()
 			d.logger.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
+			span.SetAttributes(attribute.String("net.peer.ip", connInfo.Conn.RemoteAddr().String()))
 		},
 	}
 
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+	req = req.WithContext(httptrace.WithClientTrace(req.Context(), t))
 
 	response, err := d.client.Do(req)
 	if err != nil {
 		d.logger.WithError(err).Error("error sending request to API endpoint")
 		res.Error = err.Error()
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 	defer response.Body.Close()
@@ -302,6 +351,7 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 	if response.Header.Get("Content-Encoding") == "gzip" {
 		gzReader, readErr := gzip.NewReader(body)
 		if readErr != nil {
+			span.SetStatus(codes.Error, readErr.Error())
 			return readErr
 		}
 		defer gzReader.Close()
@@ -317,8 +367,10 @@ func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64)
 
 	if err != nil {
 		d.logger.WithError(err).Error("couldn't parse response body")
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }

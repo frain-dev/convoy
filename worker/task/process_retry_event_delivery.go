@@ -229,7 +229,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			"response.size_bytes":  len(resp.Body),
 		}
 
-		startTime := time.Now().Add(-duration)
+		startTime := time.Now()
 		endTime := time.Now()
 		tracerBackend.Capture(ctx, "retry_webhook_delivery", attributes, startTime, endTime)
 
