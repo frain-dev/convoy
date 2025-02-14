@@ -1,5 +1,5 @@
-@import './assets/css/fonts.css';
-@import './assets/css/forms.css';
+@import '../public//assets/css/fonts.css';
+@import '../public//assets/css/forms.css';
 
 @tailwind base;
 
