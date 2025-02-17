@@ -71,7 +71,7 @@ func getDB(t *testing.T) (database.Database, func()) {
 		var err error
 
 		dbHooks := hooks.Init()
-		dbHooks.RegisterHook(datastore.EndpointCreated, func(data interface{}, changelog interface{}) {})
+		dbHooks.RegisterHook(datastore.EndpointCreated, func(ctx context.Context, data interface{}, changelog interface{}) {})
 
 		_db, err = NewDB(getConfig())
 		require.NoError(t, err)

@@ -155,10 +155,12 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 
 	var status string
 	var statusCode int
+	var body []byte
 
 	if resp != nil {
 		status = resp.Status
 		statusCode = resp.StatusCode
+		body = resp.Body
 	}
 	duration := time.Since(start)
 	requestLogger := log.WithFields(log.Fields{
@@ -173,7 +175,18 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		log.Infof("%s sent", metaEvent.UID)
 		return resp, nil
 	}
-	tracerBackend.Capture(project, url, resp, duration)
+
+	attributes := map[string]interface{}{
+		"project.id":           project.UID,
+		"endpoint.url":         url,
+		"response.status":      status,
+		"response.status_code": statusCode,
+		"response.size_bytes":  len(body),
+	}
+
+	startTime := time.Now().Add(-duration)
+	endTime := time.Now()
+	tracerBackend.Capture(ctx, "meta_event_delivery", attributes, startTime, endTime)
 
 	requestLogger.Errorf("%s", metaEvent.UID)
 	return resp, errors.New(resp.Error)

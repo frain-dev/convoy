@@ -25,8 +25,8 @@ func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository, m
 	return &MetaEvent{queue: queue, projectRepo: projectRepo, metaEventRepo: metaEventRepo}
 }
 
-func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) error {
-	project, err := m.projectRepo.FetchProjectByID(context.Background(), projectID)
+func (m *MetaEvent) Run(ctx context.Context, eventType string, projectID string, data interface{}) error {
+	project, err := m.projectRepo.FetchProjectByID(ctx, projectID)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (m *MetaEvent) Run(eventType string, projectID string, data interface{}) er
 		UpdatedAt: time.Now(),
 	}
 
-	err = m.metaEventRepo.CreateMetaEvent(context.Background(), metaEvent)
+	err = m.metaEventRepo.CreateMetaEvent(ctx, metaEvent)
 	if err != nil {
 		log.WithError(err).Error("failed to create meta event")
 		return err

@@ -5,14 +5,16 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/stealthrocket/netjail"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/stealthrocket/netjail"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
@@ -24,6 +26,7 @@ import (
 	"github.com/jarcoal/httpmock"
 
 	"github.com/frain-dev/convoy/config"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -285,7 +288,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			d := &Dispatcher{client: client, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{})}
+			d := &Dispatcher{client: client, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
 
 			if tt.nFn != nil {
 				deferFn := tt.nFn()
@@ -378,8 +381,16 @@ func TestNewDispatcher(t *testing.T) {
 
 			require.NoError(t, err)
 
+			// Access the custom transport
+			customTransport, ok := d.client.Transport.(*CustomTransport)
+			require.True(t, ok, "Transport should be of type *CustomTransport")
+
+			// Access the netjail.Transport
+			netJailTransport := customTransport.netJailTransport
+			require.NotNil(t, netJailTransport, "Underlying transport should be of type *netjail.Transport")
+
 			if tt.wantProxy {
-				require.NotNil(t, d.client.Transport.(*netjail.Transport).New().Proxy)
+				require.NotNil(t, netJailTransport.New().Proxy)
 			}
 		})
 	}

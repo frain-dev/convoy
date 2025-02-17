@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/stealthrocket/netjail"
+
 	"io"
 	"net/http"
 	"net/http/httptrace"
@@ -17,9 +19,13 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/stealthrocket/netjail"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -30,34 +36,89 @@ var (
 	ErrBlockListIsRequired = errors.New("blocklist is required")
 	ErrLoggerIsRequired    = errors.New("logger is required")
 	ErrInvalidIPPrefix     = errors.New("invalid IP prefix")
+	ErrTracerIsRequired    = errors.New("tracer cannot be nil")
 )
 
 type DispatcherOption func(d *Dispatcher) error
+
+// CustomTransport wraps both netjail.Transport and otelhttp.Transport
+type CustomTransport struct {
+	otelTransport    *otelhttp.Transport
+	netJailTransport *netjail.Transport
+	vanillaTransport *http.Transport
+}
+
+// RoundTrip executes a single HTTP transaction
+func (c *CustomTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return c.otelTransport.RoundTrip(req)
+}
+
+// NewNetJailTransport creates a new CustomTransport with a netJailTransport
+func NewNetJailTransport(netJailTransport *netjail.Transport) *CustomTransport {
+	otelTransport := otelhttp.NewTransport(
+		netJailTransport,
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return fmt.Sprintf("%s webhook.dispatch", r.Method)
+		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return true
+		}),
+	)
+	return &CustomTransport{
+		otelTransport:    otelTransport,
+		netJailTransport: netJailTransport,
+	}
+}
+
+// NewVanillaTransport creates a new CustomTransport with a default transport
+func NewVanillaTransport(transport *http.Transport) *CustomTransport {
+	otelTransport := otelhttp.NewTransport(
+		transport,
+		otelhttp.WithSpanNameFormatter(func(operation string, r *http.Request) string {
+			return fmt.Sprintf("%s webhook.dispatch", r.Method)
+		}),
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return true
+		}),
+	)
+	return &CustomTransport{
+		otelTransport:    otelTransport,
+		vanillaTransport: transport,
+	}
+}
+
+type DetailedTraceConfig struct {
+	Enabled bool
+}
 
 type Dispatcher struct {
 	// gating mechanisms
 	ff *fflag.FFlag
 	l  license.Licenser
 
-	logger    *log.Logger
-	transport *http.Transport
-	client    *http.Client
-	rules     *netjail.Rules
+	logger        *log.Logger
+	transport     *http.Transport
+	client        *http.Client
+	rules         *netjail.Rules
+	tracer        tracer.Backend
+	detailedTrace DetailedTraceConfig
 }
 
 func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOption) (*Dispatcher, error) {
 	d := &Dispatcher{
-		l:      l,
 		ff:     ff,
+		l:      l,
+		logger: log.NewLogger(os.Stdout),
+		tracer: tracer.NoOpBackend{},
 		client: &http.Client{},
 		rules:  &netjail.Rules{},
 		transport: &http.Transport{
-			MaxIdleConns:          100,
-			IdleConnTimeout:       10 * time.Second,
-			MaxIdleConnsPerHost:   10,
-			TLSHandshakeTimeout:   3 * time.Second,
+			MaxIdleConns:          1000,
+			IdleConnTimeout:       30 * time.Second,
+			MaxIdleConnsPerHost:   100,
+			TLSHandshakeTimeout:   5 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
-			DisableCompression:    true,
+			DisableCompression:    false,
 		},
 	}
 
@@ -78,9 +139,9 @@ func NewDispatcher(l license.Licenser, ff *fflag.FFlag, options ...DispatcherOpt
 	}
 
 	if ff.CanAccessFeature(fflag.IpRules) && l.IpRules() {
-		d.client.Transport = netJailTransport
+		d.client.Transport = NewNetJailTransport(netJailTransport)
 	} else {
-		d.client.Transport = d.transport
+		d.client.Transport = NewVanillaTransport(d.transport)
 	}
 
 	return d, nil
@@ -187,6 +248,25 @@ func LoggerOption(logger *log.Logger) DispatcherOption {
 	}
 }
 
+// TracerOption sets a custom tracer backend for the Dispatcher
+func TracerOption(tracer tracer.Backend) DispatcherOption {
+	return func(d *Dispatcher) error {
+		if tracer == nil {
+			return ErrTracerIsRequired
+		}
+
+		d.tracer = tracer
+		return nil
+	}
+}
+
+func DetailedTraceOption(enabled bool) DispatcherOption {
+	return func(d *Dispatcher) error {
+		d.detailedTrace.Enabled = enabled
+		return nil
+	}
+}
+
 func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	if !util.IsStringEmpty(proxyURL) {
 		pUrl, err := url.Parse(proxyURL)
@@ -245,7 +325,10 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.do(req, r, maxResponseSize)
+	err = d.do(ctx, req, r, maxResponseSize)
+	if err != nil {
+		return r, err
+	}
 
 	return r, err
 }
@@ -272,15 +355,67 @@ func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }
 
-func (d *Dispatcher) do(req *http.Request, res *Response, maxResponseSize int64) error {
-	trace := &httptrace.ClientTrace{
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			res.IP = connInfo.Conn.RemoteAddr().String()
-			d.logger.Debugf("IP address resolved to: %s", connInfo.Conn.RemoteAddr())
-		},
-	}
+func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64) error {
+	if d.detailedTrace.Enabled {
+		trace := &httptrace.ClientTrace{
+			DNSStart: func(info httptrace.DNSStartInfo) {
+				attrs := map[string]interface{}{
+					"dns.host": info.Host,
+					"event":    "dns_start",
+				}
+				d.tracer.Capture(ctx, "dns_lookup_start", attrs, time.Now(), time.Now())
+			},
+			DNSDone: func(info httptrace.DNSDoneInfo) {
+				attrs := map[string]interface{}{
+					"dns.addresses": fmt.Sprintf("%v", info.Addrs),
+					"dns.error":     fmt.Sprintf("%v", info.Err),
+					"event":         "dns_done",
+				}
+				d.tracer.Capture(ctx, "dns_lookup_done", attrs, time.Now(), time.Now())
+			},
+			ConnectStart: func(network, addr string) {
+				attrs := map[string]interface{}{
+					"net.network": network,
+					"net.addr":    addr,
+					"event":       "connect_start",
+				}
+				d.tracer.Capture(ctx, "connect_start", attrs, time.Now(), time.Now())
+			},
+			ConnectDone: func(network, addr string, err error) {
+				attrs := map[string]interface{}{
+					"net.network": network,
+					"net.addr":    addr,
+					"error":       fmt.Sprintf("%v", err),
+					"event":       "connect_done",
+				}
+				d.tracer.Capture(ctx, "connect_done", attrs, time.Now(), time.Now())
+			},
+			TLSHandshakeStart: func() {
+				attrs := map[string]interface{}{
+					"event": "tls_handshake_start",
+				}
+				d.tracer.Capture(ctx, "tls_handshake_start", attrs, time.Now(), time.Now())
+			},
+			TLSHandshakeDone: func(state tls.ConnectionState, err error) {
+				attrs := map[string]interface{}{
+					"tls.version":      state.Version,
+					"tls.cipher_suite": state.CipherSuite,
+					"error":            fmt.Sprintf("%v", err),
+					"event":            "tls_handshake_done",
+				}
+				d.tracer.Capture(ctx, "tls_handshake_done", attrs, time.Now(), time.Now())
+			},
+			GotFirstResponseByte: func() {
+				attrs := map[string]interface{}{
+					"event": "first_byte_received",
+				}
+				d.tracer.Capture(ctx, "first_byte", attrs, time.Now(), time.Now())
+			},
+		}
 
-	req = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))
+		ctx = httptrace.WithClientTrace(ctx, trace)
+		req = req.WithContext(ctx)
+	}
 
 	response, err := d.client.Do(req)
 	if err != nil {
