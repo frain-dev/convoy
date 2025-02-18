@@ -147,7 +147,6 @@
 			h3 {
 				@apply text-h3 font-semibold mb-8px;
 			}
-
 			p {
 				@apply mb-24px text-14 text-neutral-11;
 			}
@@ -168,13 +167,5 @@
 
 	.placeholder-text-neutral-6::placeholder {
 		@apply text-neutral-6
-	}
-
-	/* hides browsers password toggles */
-	.hide-password-toggle::-ms-reveal,
-	.hide-password-toggle::-ms-clear {
-		visibility: hidden;
-		pointer-events: none;
-		display: none;
 	}
 }
