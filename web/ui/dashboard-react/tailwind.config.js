@@ -1,19 +1,5 @@
 const defaultTheme = require('tailwindcss/defaultTheme');
 
-function customSpacing() {
-	const maxSpace = 384;
-	// const minSpace = 2;
-	const spaces = {};
-
-	for (let i = 2; i <= maxSpace; ) {
-		const value = i + 'px';
-		spaces[value] = value;
-		i = i + 2;
-	}
-
-	return spaces;
-}
-
 function generateColorScale(name) {
 	let scale = Array.from({ length: 12 }, (_, i) => {
 		let id = i + 1;
@@ -32,7 +18,6 @@ module.exports = {
 	content: ['./index.html', './src/**/*.{html,js,tsx,ts}'],
 	theme: {
 		extend: {
-			spacing: customSpacing(),
 			boxShadow: {
 				xs: '0px 0px 0px -4px rgba(12, 26, 75, 0.08), 0px 0px 1px 1px rgba(50, 50, 71, 0.05)',
 				sm: '0px 2px 8px rgba(12, 26, 75, 0.08), 0px 3px 8px -1px rgba(50, 50, 71, 0.05)',
@@ -40,7 +25,8 @@ module.exports = {
 					'0px 2px 4px rgba(12, 26, 75, 0.04), 0px 4px 20px -2px rgba(50, 50, 71, 0.08)',
 				lg: '0px 4px 8px rgba(12, 26, 75, 0.1), 0px 10px 16px rgba(20, 37, 63, 0.06)',
 				xl: '0px 8px 16px rgba(12, 26, 75, 0.1), 0px 20px 24px rgba(20, 37, 63, 0.06)',
-				'2xl': '0px 16px 16px rgba(12, 26, 75, 0.05), 0px 30px 40px rgba(20, 37, 63, 0.08)',
+				'2xl':
+					'0px 16px 16px rgba(12, 26, 75, 0.05), 0px 30px 40px rgba(20, 37, 63, 0.08)',
 				'focus--primary-25': '0px 0px 0px 4px #EDF2F7',
 				'focus--success': '0px 0px 0px 4px #F6FEF9',
 				'focus--warning': '0px 0px 0px 4px #FFFCF5',
@@ -262,5 +248,8 @@ module.exports = {
 			'spin-slow': 'spin 3s linear infinite',
 		},
 	},
-	plugins: [require('tailwindcss-animate'), require('@tailwindcss/container-queries')],
+	plugins: [
+		require('tailwindcss-animate'),
+		require('@tailwindcss/container-queries'),
+	],
 };

@@ -113,12 +113,15 @@
 	h1 {
 		@apply text-h1;
 	}
+
 	h2 {
 		@apply text-h2;
 	}
+
 	h3 {
 		@apply text-h3;
 	}
+
 	h4 {
 		@apply text-h4;
 	}
@@ -130,9 +133,11 @@
 	.no-scrollbar::-webkit-scrollbar {
 		@apply hidden;
 	}
+
 	.no-scrollbar {
 		scrollbar-width: none;
 	}
+
 	.no-scrollbar {
 		-ms-overflow-style: none;
 	}
@@ -142,6 +147,7 @@
 			h3 {
 				@apply text-h3 font-semibold mb-8px;
 			}
+
 			p {
 				@apply mb-24px text-14 text-neutral-11;
 			}
@@ -158,5 +164,17 @@
 
 	.disabled {
 		@apply opacity-50 pointer-events-none;
+	}
+
+	.placeholder-text-neutral-6::placeholder {
+		@apply text-neutral-6
+	}
+
+	/* hides browsers password toggles */
+	.hide-password-toggle::-ms-reveal,
+	.hide-password-toggle::-ms-clear {
+		visibility: hidden;
+		pointer-events: none;
+		display: none;
 	}
 }
