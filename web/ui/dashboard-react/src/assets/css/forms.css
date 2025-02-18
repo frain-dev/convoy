@@ -1,0 +1,32 @@
+/* select.ng-invalid.ng-touched,
+input.ng-invalid.ng-touched,
+textarea.ng-invalid.ng-touched {
+	@apply border-danger-100;
+} */
+
+.active {
+	@apply transition-all duration-300 relative after:bottom-0 after:h-[3px] after:w-full after:left-0 after:right-0 after:bg-primary-100 after:absolute after:rounded-tl-16px after:rounded-tr-16px;
+
+	span {
+		@apply font-semibold text-primary-100 transition-all duration-300;
+	}
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button,
+input[type='checkbox'] {
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+input[type='number'] {
+	-moz-appearance: textfield;
+}
+
+input[type='search']::-webkit-search-decoration,
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-results-button,
+input[type='search']::-webkit-search-results-decoration,
+input[type='time']::-webkit-calendar-picker-indicator {
+	display: none;
+	-webkit-appearance: none;
+}
