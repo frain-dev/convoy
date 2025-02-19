@@ -33,8 +33,7 @@ ALTER TABLE convoy.sources
             ON DELETE SET NULL;
 
 -- +migrate Up
-DROP INDEX IF EXISTS convoy.idx_sources_source_verifier_id;
-CREATE INDEX idx_sources_source_verifier_id ON convoy.sources (source_verifier_id);
+REINDEX INDEX convoy.idx_sources_source_verifier_id;
 
 -- +migrate Up
 REINDEX TABLE convoy.projects;
@@ -74,8 +73,7 @@ ALTER TABLE convoy.sources
             ON DELETE SET NULL;
 
 -- +migrate Down
-DROP INDEX IF EXISTS convoy.idx_sources_source_verifier_id;
-CREATE INDEX idx_sources_source_verifier_id ON convoy.sources (source_verifier_id);
+REINDEX INDEX convoy.idx_sources_source_verifier_id;
 
 -- +migrate Down
 REINDEX TABLE convoy.projects;
