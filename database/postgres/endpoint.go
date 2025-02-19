@@ -305,8 +305,7 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotCreated
 	}
 
-	// todo(raymond): we should not run this in the foreground.
-	// go e.hook.Fire(ctx, datastore.EndpointCreated, endpoint, nil)
+	go e.hook.Fire(context.Background(), datastore.EndpointCreated, endpoint, nil)
 
 	return nil
 }
@@ -419,8 +418,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 		return ErrEndpointNotUpdated
 	}
 
-	// todo(raymond): we should not run this in the foreground.
-	// go e.hook.Fire(ctx, datastore.EndpointUpdated, endpoint, nil)
+	go e.hook.Fire(context.Background(), datastore.EndpointUpdated, endpoint, nil)
 	return nil
 }
 
@@ -469,8 +467,7 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	// todo(raymond): we should not run this in the foreground.
-	// go e.hook.Fire(ctx, datastore.EndpointDeleted, endpoint, nil)
+	go e.hook.Fire(context.Background(), datastore.EndpointDeleted, endpoint, nil)
 	return nil
 }
 

@@ -423,7 +423,8 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 		return err
 	}
 
-	go p.hook.Fire(ctx, datastore.ProjectUpdated, project, changelog)
+	go p.hook.Fire(context.Background(), datastore.ProjectUpdated, project, changelog)
+
 	return nil
 }
 
