@@ -18,11 +18,11 @@ import { z } from 'zod';
 import type { UseFormReturn } from 'react-hook-form';
 
 const formSchema = z.object({
-	username: z.string().min(1, 'Please enter your username'),
+	email: z.string().email('Please enter your email'),
 	password: z.string().min(1, 'Please enter your password'),
 });
 
-type UsernameInputFieldProps = {
+type EmailInputFieldProps = {
 	form: UseFormReturn<z.infer<typeof formSchema>>;
 };
 
@@ -32,20 +32,20 @@ type PasswordInputFieldProps = {
 	setShowPassword: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
-function UsernameInputField({ form }: UsernameInputFieldProps) {
+function EmailInputField({ form }: EmailInputFieldProps) {
 	return (
 		<FormField
 			control={form.control}
-			name="username"
+			name="email"
 			render={({ field, fieldState }) => (
 				<FormItem className="w-full relative mb-6 block">
 					<div className="w-full mb-2 flex items-center justify-between">
-						<FormLabel className="text-xs/5 text-neutral-9">Username</FormLabel>
+						<FormLabel className="text-xs/5 text-neutral-9">Email</FormLabel>
 					</div>
 					<FormControl>
 						<Input
-							autoComplete="username"
-							type="text"
+							autoComplete="email"
+							type="email"
 							className={cn(
 								'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-full transition-all duration-300 bg-white-100 py-[14.5px] px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
 								fieldState.error
@@ -194,7 +194,7 @@ export function LoginPage() {
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {
-			username: '',
+			email: '',
 			password: '',
 		},
 		mode: 'onTouched',
@@ -214,13 +214,13 @@ export function LoginPage() {
 						alt="convoy logo"
 						className="mb-7 w-[130px]"
 					/>
-          
+
 					<section className="max-w-[445px] mx-auto my-0 p-6 w-full bg-white-100 shadow-default rounded-[8px]">
 						<Form {...form}>
 							<form
 								onSubmit={(...args) => void form.handleSubmit(login)(...args)}
 							>
-								<UsernameInputField form={form} />
+								<EmailInputField form={form} />
 
 								<PasswordInputField
 									form={form}
