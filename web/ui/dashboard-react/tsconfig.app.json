@@ -21,13 +21,14 @@
     "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
 		"sourceMap": true,
-
+    
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "strictNullChecks": true,
 		"noImplicitReturns": true,
 		"forceConsistentCasingInFileNames": true,
   },
