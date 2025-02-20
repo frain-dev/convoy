@@ -23,7 +23,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 	tests := []struct {
 		name         string
 		dynamicEvent *models.DynamicEvent
-		dbFn         func(args *args)
+		dbFn         func(args *testArgs)
 		wantErr      bool
 		wantErrMsg   string
 		wantDelay    time.Duration
@@ -39,7 +39,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				EventType:      "*",
 				IdempotencyKey: "idem-key-1",
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -76,7 +76,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				ProjectID: "project-id-1",
 				EventType: "*",
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -124,7 +124,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessDynamicEventCreation(NewDynamicEventChannel(), args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.licenser)
+			fn := ProcessDynamicEventCreation(NewDynamicEventChannel(), args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.licenser, args.tracer)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

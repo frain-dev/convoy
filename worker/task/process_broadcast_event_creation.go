@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"gopkg.in/guregu/null.v4"
-	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -41,14 +43,26 @@ func (b *BroadcastEventChannel) GetConfig() *EventChannelConfig {
 }
 
 func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, channel EventChannel, args EventChannelArgs) (*datastore.Event, error) {
+	// Start a new trace span for event creation
+	startTime := time.Now()
+	attributes := map[string]interface{}{
+		"event.type": "broadcast.event.creation",
+		"channel":    channel,
+	}
+
 	var broadcastEvent models.BroadcastEvent
 	err := msgpack.DecodeMsgPack(t.Payload(), &broadcastEvent)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.event.creation.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1001, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 
+	attributes["project.id"] = broadcastEvent.ProjectID
+	attributes["event.id"] = broadcastEvent.EventID
+
 	project, err := args.projectRepo.FetchProjectByID(ctx, broadcastEvent.ProjectID)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.event.creation.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1002, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 
@@ -56,6 +70,7 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 	if len(broadcastEvent.IdempotencyKey) > 0 {
 		events, err := args.eventRepo.FindEventsByIdempotencyKey(ctx, broadcastEvent.ProjectID, broadcastEvent.IdempotencyKey)
 		if err != nil {
+			args.tracerBackend.Capture(ctx, "broadcast.event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: fmt.Errorf("CODE: 1004, err: %s", err.Error()), delay: defaultBroadcastDelay}
 		}
 
@@ -75,33 +90,51 @@ func (b *BroadcastEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, 
 		Status:           datastore.PendingStatus,
 		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
+
 	err = updateEventMetadata(channel, event, false)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.event.creation.error", attributes, startTime, time.Now())
 		return nil, err
 	}
 
 	err = args.eventRepo.CreateEvent(ctx, event)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.event.creation.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1005, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 
+	args.tracerBackend.Capture(ctx, "broadcast.event.creation.success", attributes, startTime, time.Now())
 	return event, nil
 }
 
 func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata EventChannelMetadata, args EventChannelArgs) (*EventChannelSubResponse, error) {
+	// Start a new trace span for subscription matching
+	startTime := time.Now()
+	attributes := map[string]interface{}{
+		"event.type": "broadcast.subscription.matching",
+		"event.id":   metadata.Event.UID,
+		"channel":    metadata.Config.Channel,
+	}
+
 	response := EventChannelSubResponse{}
 
 	project, err := args.projectRepo.FetchProjectByID(ctx, metadata.Event.ProjectID)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.subscription.matching.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
+
+	attributes["project.id"] = project.UID
+
 	broadcastEvent, err := args.eventRepo.FindEventByID(ctx, project.UID, metadata.Event.UID)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.subscription.matching.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: err, delay: defaultDelay}
 	}
 
 	err = args.eventRepo.UpdateEventStatus(ctx, broadcastEvent, datastore.ProcessingStatus)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.subscription.matching.error", attributes, startTime, time.Now())
 		return nil, err
 	}
 
@@ -116,10 +149,9 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	subscriptions = append(subscriptions, eventTypeSubs...)
 	subscriptions = append(subscriptions, matchAllSubs...)
 
-	// subscriptions := joinSubscriptions(matchAllSubs, eventTypeSubs)
-
 	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, args.subRepo, args.licenser, subscriptions, true)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.subscription.matching.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 
@@ -128,6 +160,7 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 
 	err = args.eventRepo.UpdateEventEndpoints(ctx, broadcastEvent, es)
 	if err != nil {
+		args.tracerBackend.Capture(ctx, "broadcast.subscription.matching.error", attributes, startTime, time.Now())
 		return nil, &EndpointError{Err: fmt.Errorf("CODE: 1011, err: %s", err.Error()), delay: defaultBroadcastDelay}
 	}
 	response.Event = broadcastEvent
@@ -135,12 +168,12 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	response.Subscriptions = ss
 	response.IsDuplicateEvent = broadcastEvent.IsDuplicateEvent
 
+	args.tracerBackend.Capture(ctx, "broadcast.subscription.matching.success", attributes, startTime, time.Now())
 	return &response, nil
 }
 
-func ProcessBroadcastEventCreation(ch *BroadcastEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser) func(context.Context, *asynq.Task) error {
-
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, licenser)
+func ProcessBroadcastEventCreation(ch *BroadcastEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, licenser, tracerBackend)
 }
 
 func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscription) {

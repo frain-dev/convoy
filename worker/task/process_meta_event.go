@@ -182,6 +182,7 @@ func sendUrlRequest(ctx context.Context, project *datastore.Project, metaEvent *
 		"response.status":      status,
 		"response.status_code": statusCode,
 		"response.size_bytes":  len(body),
+		"meta_event.id":        metaEvent.UID,
 	}
 
 	startTime := time.Now().Add(-duration)

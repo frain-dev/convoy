@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"testing"
 	"time"
 
@@ -22,7 +23,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-type args struct {
+type testArgs struct {
 	endpointRepo      datastore.EndpointRepository
 	eventRepo         datastore.EventRepository
 	projectRepo       datastore.ProjectRepository
@@ -34,9 +35,10 @@ type args struct {
 	deviceRepo        datastore.DeviceRepository
 	subTable          memorystore.ITable
 	licenser          license.Licenser
+	tracer            tracer.Backend
 }
 
-func provideArgs(ctrl *gomock.Controller) *args {
+func provideArgs(ctrl *gomock.Controller) *testArgs {
 	mockCache := mocks.NewMockCache(ctrl)
 	mockQueuer := mocks.NewMockQueuer(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
@@ -47,8 +49,9 @@ func provideArgs(ctrl *gomock.Controller) *args {
 	subRepo := mocks.NewMockSubscriptionRepository(ctrl)
 	db := mocks.NewMockDatabase(ctrl)
 	subTable := mocks.NewMockITable(ctrl)
+	mockTracer := mocks.NewMockBackend(ctrl)
 
-	return &args{
+	return &testArgs{
 		endpointRepo:      endpointRepo,
 		deviceRepo:        deviceRepo,
 		eventRepo:         eventRepo,
@@ -60,6 +63,7 @@ func provideArgs(ctrl *gomock.Controller) *args {
 		subRepo:           subRepo,
 		subTable:          subTable,
 		licenser:          mocks.NewMockLicenser(ctrl),
+		tracer:            mockTracer,
 	}
 }
 
@@ -67,7 +71,7 @@ func TestProcessEventCreated(t *testing.T) {
 	tests := []struct {
 		name       string
 		event      *CreateEvent
-		dbFn       func(args *args)
+		dbFn       func(args *testArgs)
 		wantErr    bool
 		wantErrMsg string
 		wantDelay  time.Duration
@@ -84,7 +88,7 @@ func TestProcessEventCreated(t *testing.T) {
 					Data:       []byte(`{}`),
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -133,7 +137,7 @@ func TestProcessEventCreated(t *testing.T) {
 				},
 				CreateSubscription: true,
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -176,7 +180,7 @@ func TestProcessEventCreated(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.IncomingProject,
@@ -219,7 +223,7 @@ func TestProcessEventCreated(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.IncomingProject,
@@ -262,7 +266,7 @@ func TestProcessEventCreated(t *testing.T) {
 					UpdatedAt: time.Now(),
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.IncomingProject,
@@ -310,7 +314,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessEventCreation(NewDefaultEventChannel(), args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.licenser)
+			fn := ProcessEventCreation(NewDefaultEventChannel(), args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.licenser, args.tracer)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)
@@ -328,7 +332,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 	tests := []struct {
 		name       string
 		payload    map[string]interface{}
-		dbFn       func(args *args)
+		dbFn       func(args *testArgs)
 		inputSubs  []datastore.Subscription
 		wantSubs   []datastore.Subscription
 		wantErr    bool
@@ -341,7 +345,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"age": 10,
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 
@@ -382,7 +386,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"age": 10,
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				licenser, _ := args.licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedSubscriptions().Times(1).Return(false)
 			},
@@ -420,7 +424,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"age": 10,
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
@@ -455,7 +459,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"age": 10,
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
@@ -496,7 +500,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"age": 100,
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
@@ -537,7 +541,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"age": 10,
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
@@ -584,7 +588,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"age": 9,
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(4).Return(true, nil)
 
@@ -633,7 +637,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"age": 10,
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(4).Return(false, nil)
@@ -692,7 +696,7 @@ func TestMatchSubscriptionsUsingFilter(t *testing.T) {
 					"action": "update",
 				},
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				s, _ := args.subRepo.(*mocks.MockSubscriptionRepository)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(false, nil)
 				s.EXPECT().CompareFlattenedPayload(gomock.Any(), gomock.Any(), gomock.Any(), false).Times(2).Return(true, nil)
