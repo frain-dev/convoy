@@ -65,14 +65,14 @@ func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data interface{
 	}
 
 	if eventDelivery.Status == datastore.SuccessEventStatus {
-		err := e.mEvent.Run(ctx, string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)
+		err = e.mEvent.Run(ctx, string(datastore.EventDeliverySuccess), eventDelivery.ProjectID, mEventDelivery)
 		if err != nil {
 			log.WithError(err).Error("event delivery meta event failed")
 		}
 	}
 
 	if eventDelivery.Status == datastore.FailureEventStatus {
-		err := e.mEvent.Run(ctx, string(datastore.EventDeliveryFailed), eventDelivery.ProjectID, mEventDelivery)
+		err = e.mEvent.Run(ctx, string(datastore.EventDeliveryFailed), eventDelivery.ProjectID, mEventDelivery)
 		if err != nil {
 			log.WithError(err).Error("event delivery meta event failed")
 		}
