@@ -71,11 +71,11 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 		endpoint.SlackWebhookURL = *e.SlackWebhookURL
 	}
 
-	if e.RateLimit != 0 {
+	if e.RateLimit >= 0 {
 		endpoint.RateLimit = e.RateLimit
 	}
 
-	if e.RateLimitDuration != 0 {
+	if e.RateLimitDuration >= 0 {
 		endpoint.RateLimitDuration = e.RateLimitDuration
 	}
 

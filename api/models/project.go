@@ -117,7 +117,7 @@ type RateLimitConfiguration struct {
 
 func (rc *RateLimitConfiguration) Transform() *datastore.RateLimitConfiguration {
 	if rc == nil {
-		return nil
+		return &datastore.RateLimitConfiguration{}
 	}
 
 	return &datastore.RateLimitConfiguration{Count: rc.Count, Duration: rc.Duration}

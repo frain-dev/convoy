@@ -36,7 +36,7 @@
 								position="top-right"
 							></convoy-tooltip>
 						</label>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('owner_id')">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('owner_id', true)">
 							<svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
@@ -53,7 +53,7 @@
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
 						<p class="text-12 text-neutral-11 font-medium flex items-center">Rate Limit</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('rate_limit')">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('rate_limit', true)">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
@@ -90,7 +90,7 @@
 								Business
 							</div>
 						</div>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('alert_config')">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('alert_config', true)">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
@@ -120,7 +120,7 @@
 							Endpoint Authentication
 							<convoy-tooltip size="sm" position="top-right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
 						</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('auth')">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('auth', true)">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
@@ -152,7 +152,7 @@
 							Signature Format
 							<convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
 						</p>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('signature')">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('signature', true)">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
@@ -180,7 +180,7 @@
 								Business
 							</div>
 						</div>
-						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('http_timeout')">
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('http_timeout', true)">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 								<use xlink:href="#delete-icon2"></use>
 							</svg>
