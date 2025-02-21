@@ -2,29 +2,16 @@
 
 ### Features
 
--   Re-enable Meta-Events (#2244)
--   Add manual instrumentation (#2240)
--   Copy migration files to container (#2238)
+-   Improve Tracing: Add Event ID To Workflow Stages #2245 #2240 #2244
 
 ### Enhancements
 
--   Improve Tracing: Add Event ID To Workflow Stages (#2245)
--   Updated credential encryption (#2233)
--   Updated Redis cache encryption TTL (#2231)
--   Updated read-replicas to rely on feature flags (#2226)
+-   Updated credential encryption #2233 #2231
+-   Updated read-replicas to rely on feature flags #2226
 
 ### Bug Fixes
 
--   Fix panic in backup project data handler (#2232)
--   Fix: add image SHA to Dockerfile (#2234)
--   Fix: fixed hash length for rolling updates image tag (#2225)
--   Fix: fixed publishing manifest file (#2224)
--   Fix: fixed bug building rolling updates manifest (#2223)
-
-### Chores
-
--   Chore(deps): Bump posthog-js from 1.36.0 to 1.127.0 in /web/ui/dashboard (#2228)
--   Chore(deps): bump github.com/docker/docker (#2229)
+-   Fix panic in backup project data handler #2232
 
 # 25.1.1
 
