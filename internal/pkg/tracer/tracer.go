@@ -79,12 +79,3 @@ func Init(tCfg config.TracerConfiguration, componentName string, licenser licens
 
 	return &NoOpBackend{}, nil
 }
-
-func getTraceID(ctx context.Context) string {
-	spanCtx := trace.SpanContextFromContext(ctx)
-	if spanCtx.HasTraceID() {
-		traceID := spanCtx.TraceID()
-		return traceID.String()
-	}
-	return ""
-}

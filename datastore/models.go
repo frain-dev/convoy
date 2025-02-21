@@ -743,11 +743,6 @@ type Event struct {
 	IdempotencyKey   string                `json:"idempotency_key" db:"idempotency_key"`
 	IsDuplicateEvent bool                  `json:"is_duplicate_event" db:"is_duplicate_event"`
 
-	// Trace context for distributed tracing
-	TraceID      string `json:"trace_id,omitempty" db:"trace_id"`
-	SpanID       string `json:"span_id,omitempty" db:"span_id"`
-	ParentSpanID string `json:"parent_span_id,omitempty" db:"parent_span_id"`
-
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
 	Data json.RawMessage `json:"data,omitempty" db:"data"`
@@ -969,11 +964,6 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
-
-	// Trace context for distributed tracing
-	TraceID      string `json:"trace_id,omitempty" db:"trace_id"`
-	SpanID       string `json:"span_id,omitempty" db:"span_id"`
-	ParentSpanID string `json:"parent_span_id,omitempty" db:"parent_span_id"`
 
 	// Deprecated: Latency is deprecated.
 	Latency        string    `json:"latency" db:"latency"`
