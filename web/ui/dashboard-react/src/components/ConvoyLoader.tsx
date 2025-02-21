@@ -2,10 +2,14 @@ import { cn } from '@/lib/utils';
 
 type ConvoyLoaderProps = {
 	isTransparent: boolean;
-	position: 'absolute' | 'fixed' | 'relative';
+	position?: 'absolute' | 'fixed' | 'relative';
+	isVisible: boolean;
 };
+
 export function ConvoyLoader(props: ConvoyLoaderProps) {
-	const { isTransparent, position = 'absolute' } = props;
+	const { isTransparent, position = 'absolute', isVisible } = props;
+
+	if (isVisible == false) return null;
 
 	return (
 		<div
@@ -18,7 +22,7 @@ export function ConvoyLoader(props: ConvoyLoaderProps) {
 			<img
 				src="/assets/img/page-loader.gif"
 				alt="loader"
-				className="w-150px min-h-150px"
+				className="w-[150px] min-h-[150px]"
 			/>
 		</div>
 	);
