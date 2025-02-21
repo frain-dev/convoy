@@ -65,7 +65,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
 
 				mockTracer, _ := args.tracer.(*mocks.MockBackend)
-				mockTracer.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+				mockTracer.EXPECT().Capture(gomock.Any(), "broadcast.event.creation.success", gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			wantErr: false,
 		},

@@ -266,7 +266,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 
 		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !licenser.CircuitBreaking() {
 			endpointStatus := datastore.ActiveEndpointStatus
-			err := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
+			err = endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
 			if err != nil {
 				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
 			}
@@ -335,7 +335,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to update message ", eventDelivery.UID)
 			tracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
-			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error()), delay: defaultEventDelay}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
@@ -344,7 +344,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 				errS = err.Error()
 			}
 			tracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
-			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS)}
+			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS), delay: delayDuration}
 		}
 
 		return nil

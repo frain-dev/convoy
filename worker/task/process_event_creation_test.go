@@ -3,9 +3,12 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/oklog/ulid/v2"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
@@ -18,7 +21,6 @@ import (
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
-	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -69,23 +71,27 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 
 func TestProcessEventCreated(t *testing.T) {
 	tests := []struct {
-		name       string
-		event      *CreateEvent
-		dbFn       func(args *testArgs)
-		wantErr    bool
-		wantErrMsg string
-		wantDelay  time.Duration
+		name        string
+		createEvent *CreateEvent
+		dbFn        func(args *testArgs)
+		wantErr     bool
+		wantErrMsg  string
+		wantDelay   time.Duration
 	}{
 		{
 			name: "should_process_event_for_outgoing_project",
-			event: &CreateEvent{
+			createEvent: &CreateEvent{
+				JobID: "123",
 				Params: CreateEventTaskParams{
-					UID:        ulid.Make().String(),
-					EventType:  "*",
-					SourceID:   "source-id-1",
-					ProjectID:  "project-id-1",
-					EndpointID: "endpoint-id-1",
-					Data:       []byte(`{}`),
+					UID:            "01JMJ3WTZGP411PY39KSY8AFQF",
+					ProjectID:      "project-id-1",
+					OwnerID:        "owner-id-1",
+					AppID:          "app-id-1",
+					EndpointID:     "endpoint-id-1",
+					SourceID:       "source-id-1",
+					Data:           []byte(`{"name":"daniel"}`),
+					EventType:      "*",
+					IdempotencyKey: "idem-key-1",
 				},
 			},
 			dbFn: func(args *testArgs) {
@@ -113,27 +119,32 @@ func TestProcessEventCreated(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), "endpoint-id-1", gomock.Any()).Times(1).Return(endpoint, nil)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(2).Return(nil, nil)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
+
+				mockTracer, _ := args.tracer.(*mocks.MockBackend)
+				mockTracer.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "should_process_event_for_outgoing_project_without_subscription",
-			event: &CreateEvent{
+			createEvent: &CreateEvent{
+				JobID: "123",
 				Event: &datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					UID:            ulid.Make().String(),
+					EventType:      "*",
+					SourceID:       "source-id-1",
+					ProjectID:      "project-id-1",
+					Endpoints:      []string{"endpoint-id-1"},
+					Data:           []byte(`{}`),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					IdempotencyKey: "idem-key-1",
 				},
 				CreateSubscription: true,
 			},
@@ -157,27 +168,32 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
+
+				mockTracer, _ := args.tracer.(*mocks.MockBackend)
+				mockTracer.EXPECT().Capture(gomock.Any(), "event.creation.success", gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "should_process_event_for_incoming_project_api_event",
-			event: &CreateEvent{
+			createEvent: &CreateEvent{
+				JobID: "123",
 				Event: &datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					UID:            ulid.Make().String(),
+					EventType:      "*",
+					SourceID:       "source-id-1",
+					ProjectID:      "project-id-1",
+					Endpoints:      []string{"endpoint-id-1"},
+					Data:           []byte(`{}`),
+					IdempotencyKey: "idem-key-1",
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
 				},
 			},
 			dbFn: func(args *testArgs) {
@@ -200,27 +216,32 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
+
+				mockTracer, _ := args.tracer.(*mocks.MockBackend)
+				mockTracer.EXPECT().Capture(gomock.Any(), "event.creation.success", gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "should_process_event_for_incoming_project_cli_event",
-			event: &CreateEvent{
+			createEvent: &CreateEvent{
+				JobID: "123",
 				Event: &datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					UID:            ulid.Make().String(),
+					EventType:      "*",
+					SourceID:       "source-id-1",
+					ProjectID:      "project-id-1",
+					Endpoints:      []string{"endpoint-id-1"},
+					Data:           []byte(`{}`),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					IdempotencyKey: "idem-key-1",
 				},
 			},
 			dbFn: func(args *testArgs) {
@@ -243,27 +264,32 @@ func TestProcessEventCreated(t *testing.T) {
 				)
 
 				e, _ := args.eventRepo.(*mocks.MockEventRepository)
+				e.EXPECT().FindEventsByIdempotencyKey(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, nil)
 				e.EXPECT().FindEventByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil, datastore.ErrEventNotFound)
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
+
+				mockTracer, _ := args.tracer.(*mocks.MockBackend)
+				mockTracer.EXPECT().Capture(gomock.Any(), "event.creation.success", gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			wantErr: false,
 		},
-
 		{
 			name: "should_process_replayed_event",
-			event: &CreateEvent{
+			createEvent: &CreateEvent{
+				JobID: "123",
 				Event: &datastore.Event{
-					UID:       ulid.Make().String(),
-					EventType: "*",
-					SourceID:  "source-id-1",
-					ProjectID: "project-id-1",
-					Endpoints: []string{"endpoint-id-1"},
-					Data:      []byte(`{}`),
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
+					UID:            ulid.Make().String(),
+					EventType:      "*",
+					SourceID:       "source-id-1",
+					ProjectID:      "project-id-1",
+					Endpoints:      []string{"endpoint-id-1"},
+					Data:           []byte(`{}`),
+					CreatedAt:      time.Now(),
+					UpdatedAt:      time.Now(),
+					IdempotencyKey: "idem-key-1",
 				},
 			},
 			dbFn: func(args *testArgs) {
@@ -290,6 +316,9 @@ func TestProcessEventCreated(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
+
+				mockTracer, _ := args.tracer.(*mocks.MockBackend)
+				mockTracer.EXPECT().Capture(gomock.Any(), "event.creation.success", gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			wantErr: false,
 		},
@@ -305,7 +334,7 @@ func TestProcessEventCreated(t *testing.T) {
 				tt.dbFn(args)
 			}
 
-			payload, err := json.Marshal(tt.event)
+			payload, err := msgpack.EncodeMsgPack(tt.createEvent)
 			require.NoError(t, err)
 
 			job := queue.Job{
