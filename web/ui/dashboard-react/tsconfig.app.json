@@ -1,4 +1,5 @@
 {
+  "compileOnSave": true,
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
@@ -21,6 +22,7 @@
     "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
 		"sourceMap": true,
+    "allowJs": true,
     
     /* Linting */
     "strict": true,
