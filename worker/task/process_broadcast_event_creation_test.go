@@ -24,7 +24,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 	tests := []struct {
 		name         string
 		dynamicEvent *models.BroadcastEvent
-		dbFn         func(args *args)
+		dbFn         func(args *testArgs)
 		wantErr      bool
 		wantErrMsg   string
 		wantDelay    time.Duration
@@ -38,7 +38,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 				CustomHeaders:  nil,
 				IdempotencyKey: "idem-key-1",
 			},
-			dbFn: func(args *args) {
+			dbFn: func(args *testArgs) {
 				project := &datastore.Project{
 					UID:  "project-id-1",
 					Type: datastore.OutgoingProject,
@@ -63,6 +63,9 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
 				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
+
+				mockTracer, _ := args.tracer.(*mocks.MockBackend)
+				mockTracer.EXPECT().Capture(gomock.Any(), "broadcast.event.creation.success", gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 			},
 			wantErr: false,
 		},
@@ -87,7 +90,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessBroadcastEventCreation(NewBroadcastEventChannel(args.subTable), args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.licenser)
+			fn := ProcessBroadcastEventCreation(NewBroadcastEventChannel(args.subTable), args.endpointRepo, args.eventRepo, args.projectRepo, args.eventDeliveryRepo, args.eventQueue, args.subRepo, args.deviceRepo, args.licenser, args.tracer)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

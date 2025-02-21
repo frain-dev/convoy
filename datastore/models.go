@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
 
@@ -963,6 +964,7 @@ type EventDelivery struct {
 	Headers        httpheader.HTTPHeader `json:"headers" db:"headers"`
 	URLQueryParams string                `json:"url_query_params" db:"url_query_params"`
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
+
 	// Deprecated: Latency is deprecated.
 	Latency        string    `json:"latency" db:"latency"`
 	LatencySeconds float64   `json:"latency_seconds" db:"latency_seconds"`

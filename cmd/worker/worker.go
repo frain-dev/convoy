@@ -366,8 +366,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
-		a.TracerBackend,
-	), newTelemetry)
+		a.TracerBackend),
+		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 		defaultCh,
@@ -377,7 +377,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo, a.Licenser), newTelemetry)
+		deviceRepo,
+		a.Licenser,
+		a.TracerBackend),
+		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,
@@ -390,8 +393,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
-		a.TracerBackend,
-	), newTelemetry)
+		a.TracerBackend),
+		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
 		broadcastCh,
@@ -402,7 +405,9 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		a.Queue,
 		subRepo,
 		deviceRepo,
-		a.Licenser), newTelemetry)
+		a.Licenser,
+		a.TracerBackend),
+		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 		dynamicCh,
@@ -412,7 +417,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo, a.Licenser), newTelemetry)
+		deviceRepo,
+		a.Licenser,
+		a.TracerBackend),
+		newTelemetry)
 
 	if a.Licenser.RetentionPolicy() {
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
@@ -427,7 +435,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		eventDeliveryRepo,
 		a.Queue,
 		subRepo,
-		deviceRepo, a.Licenser), newTelemetry)
+		deviceRepo,
+		a.Licenser,
+		a.TracerBackend),
+		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd), nil)
 
