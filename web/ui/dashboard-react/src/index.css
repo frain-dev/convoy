@@ -1,5 +1,21 @@
-@import './assets/css/fonts.css';
-@import './assets/css/forms.css';
+@import '../assets/css/fonts.css';
+@import '../assets/css/forms.css';
+@import '@radix-ui/colors/gray.css';
+@import '@radix-ui/colors/gray-alpha.css';
+@import '@radix-ui/colors/gray-dark.css';
+@import '@radix-ui/colors/gray-dark-alpha.css';
+@import '@radix-ui/colors/green.css';
+@import '@radix-ui/colors/green-alpha.css';
+@import '@radix-ui/colors/green-dark.css';
+@import '@radix-ui/colors/green-dark-alpha.css';
+@import '@radix-ui/colors/red.css';
+@import '@radix-ui/colors/red-alpha.css';
+@import '@radix-ui/colors/red-dark.css';
+@import '@radix-ui/colors/red-dark-alpha.css';
+@import '@radix-ui/colors/amber.css';
+@import '@radix-ui/colors/amber-alpha.css';
+@import '@radix-ui/colors/amber-dark.css';
+@import '@radix-ui/colors/amber-dark-alpha.css';
 
 @tailwind base;
 
@@ -97,12 +113,15 @@
 	h1 {
 		@apply text-h1;
 	}
+
 	h2 {
 		@apply text-h2;
 	}
+
 	h3 {
 		@apply text-h3;
 	}
+
 	h4 {
 		@apply text-h4;
 	}
@@ -114,9 +133,11 @@
 	.no-scrollbar::-webkit-scrollbar {
 		@apply hidden;
 	}
+
 	.no-scrollbar {
 		scrollbar-width: none;
 	}
+
 	.no-scrollbar {
 		-ms-overflow-style: none;
 	}
@@ -142,5 +163,9 @@
 
 	.disabled {
 		@apply opacity-50 pointer-events-none;
+	}
+
+	.placeholder-text-neutral-6::placeholder {
+		@apply text-neutral-6;
 	}
 }
