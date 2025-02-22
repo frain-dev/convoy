@@ -1,7 +1,5 @@
 import { request } from './http.service';
 
-import type { HttpResponse } from '@/models/global.model';
-
 type SignUpParams = {
 	email: string;
 	password: string;
@@ -20,6 +18,11 @@ export async function signUp(
 		method: 'post',
 	});
 
+	localStorage.setItem('CONVOY_AUTH', JSON.stringify(res.data));
+	// TODO set type for res.data
+	// @ts-expect-error coming to this soonest TODO
+	localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(res.data.token));
+
 	return res;
 }
 
@@ -37,7 +40,10 @@ export async function getSignUpConfig(
 export async function signUpWithSAML(
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
-	const res = await deps.httpReq({ url: '/auth/sso', method: 'get' });
+	const res = await deps.httpReq<{ redirectUrl: string }>({
+		url: '/auth/sso',
+		method: 'get',
+	});
 
 	return res;
 }

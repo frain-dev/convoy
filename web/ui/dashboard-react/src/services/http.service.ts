@@ -182,7 +182,7 @@ export async function request<TData>(requestDetails: {
 
 	const requestHeader = {
 		Authorization: `Bearer ${getToken() || authDetails().access_token || ''}`,
-		...(isProductionMode && { 'X-Convoy-Version': '2024-04-01' }),
+		...(isProductionMode && { 'X-Convoy-Version': '2024-04-01' }), // TODO confirm from @RT if this is permitted on the server
 	};
 
 	try {
