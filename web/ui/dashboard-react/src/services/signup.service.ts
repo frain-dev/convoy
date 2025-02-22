@@ -23,14 +23,15 @@ export async function signUp(
 	return res;
 }
 
-export async function getSignUpConfig(): Promise<HttpResponse<boolean>> {
-	// deps: { httpReq: typeof request } = { httpReq: request },
-	// const res = await deps.httpReq({
-	// 	url: '/configuration/is_sign_up_enabled',
-	// 	method: 'get',
-	// });
+export async function getSignUpConfig(
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<boolean>({
+		url: '/configuration/is_signup_enabled',
+		method: 'get',
+	});
 
-	return { data: true, message: '', status: true };
+	return res;
 }
 
 export async function signUpWithSAML(
