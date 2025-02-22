@@ -3,11 +3,11 @@ import { cn } from '@/lib/utils';
 type ConvoyLoaderProps = {
 	isTransparent: boolean;
 	position?: 'absolute' | 'fixed' | 'relative';
-	isVisible: boolean;
+	isVisible?: boolean;
 };
 
 export function ConvoyLoader(props: ConvoyLoaderProps) {
-	const { isTransparent, position = 'absolute', isVisible } = props;
+	const { isTransparent, position = 'absolute', isVisible = false } = props;
 
 	if (isVisible == false) return null;
 
