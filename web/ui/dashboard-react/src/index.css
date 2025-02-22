@@ -166,6 +166,6 @@
 	}
 
 	.placeholder-text-neutral-6::placeholder {
-		@apply text-neutral-6
+		@apply text-neutral-6;
 	}
 }
