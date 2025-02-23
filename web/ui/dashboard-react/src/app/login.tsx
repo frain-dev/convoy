@@ -328,13 +328,9 @@ function LoginPage() {
 									onSubmit={(...args) => void form.handleSubmit(login)(...args)}
 								>
 									<EmailInputField form={form} />
-
 									<PasswordInputField form={form} />
-
 									<ForgotPasswordSection />
-
 									<LoginButton isButtonEnabled={state.isLoginButtonEnabled} />
-
 									<LoginWithSAMLButton />
 								</form>
 							</Form>
