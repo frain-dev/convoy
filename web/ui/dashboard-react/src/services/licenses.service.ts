@@ -1,4 +1,5 @@
 import { request } from './http.service';
+import { CONVOY_LICENSES_KEY } from '@/lib/constants';
 
 type License = Record<string, { allowed: boolean }>;
 
@@ -32,14 +33,14 @@ export async function setLicenses(
 			},
 			[],
 		);
-		localStorage.setItem('licenses', JSON.stringify(allowedLicenses));
+		localStorage.setItem(CONVOY_LICENSES_KEY, JSON.stringify(allowedLicenses));
 	}
 }
 
 type LicenseKey = 'CREATE_USER' | 'CREATE_PROJECT' | 'CREATE_ORG';
 
 export function hasLicense(license: LicenseKey): boolean {
-	const savedLicenses = localStorage.getItem('licenses');
+	const savedLicenses = localStorage.getItem(CONVOY_LICENSES_KEY);
 
 	if (savedLicenses) {
 		const licenses: Array<string> = JSON.parse(savedLicenses);
