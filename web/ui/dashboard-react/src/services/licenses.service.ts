@@ -1,4 +1,5 @@
 import { request } from './http.service';
+import { isProductionMode } from '@/lib/env';
 import { CONVOY_LICENSES_KEY } from '@/lib/constants';
 
 type License = Record<string, { allowed: boolean }>;
@@ -27,6 +28,7 @@ export async function setLicenses(
 	if (res) {
 		const allowedLicenses = Object.entries(res.data).reduce<Array<string>>(
 			(acc, [key, { allowed }]) => {
+				if (!isProductionMode) return acc.concat(key);
 				if (allowed) return acc.concat(key);
 
 				return acc;
