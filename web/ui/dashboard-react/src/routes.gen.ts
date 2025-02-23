@@ -13,6 +13,7 @@
 import { Route as rootRoute } from './app/__root'
 import { Route as SignupImport } from './app/signup'
 import { Route as LoginImport } from './app/login'
+import { Route as GetStartedImport } from './app/get-started'
 import { Route as ForgotPasswordImport } from './app/forgot-password'
 import { Route as IndexImport } from './app/index'
 import { Route as ProjectsIndexImport } from './app/projects/index'
@@ -28,6 +29,12 @@ const SignupRoute = SignupImport.update({
 const LoginRoute = LoginImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const GetStartedRoute = GetStartedImport.update({
+  id: '/get-started',
+  path: '/get-started',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -67,6 +74,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordImport
       parentRoute: typeof rootRoute
     }
+    '/get-started': {
+      id: '/get-started'
+      path: '/get-started'
+      fullPath: '/get-started'
+      preLoaderRoute: typeof GetStartedImport
+      parentRoute: typeof rootRoute
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -96,6 +110,7 @@ declare module '@tanstack/react-router' {
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/get-started': typeof GetStartedRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/projects': typeof ProjectsIndexRoute
@@ -104,6 +119,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/get-started': typeof GetStartedRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/projects': typeof ProjectsIndexRoute
@@ -113,6 +129,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/get-started': typeof GetStartedRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -120,13 +137,26 @@ export interface FileRoutesById {
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/forgot-password' | '/login' | '/signup' | '/projects'
+  fullPaths:
+    | '/'
+    | '/forgot-password'
+    | '/get-started'
+    | '/login'
+    | '/signup'
+    | '/projects'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/login' | '/signup' | '/projects'
+  to:
+    | '/'
+    | '/forgot-password'
+    | '/get-started'
+    | '/login'
+    | '/signup'
+    | '/projects'
   id:
     | '__root__'
     | '/'
     | '/forgot-password'
+    | '/get-started'
     | '/login'
     | '/signup'
     | '/projects/'
@@ -136,6 +166,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  GetStartedRoute: typeof GetStartedRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
@@ -144,6 +175,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  GetStartedRoute: GetStartedRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
@@ -161,6 +193,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/forgot-password",
+        "/get-started",
         "/login",
         "/signup",
         "/projects/"
@@ -171,6 +204,9 @@ export const routeTree = rootRoute
     },
     "/forgot-password": {
       "filePath": "forgot-password.tsx"
+    },
+    "/get-started": {
+      "filePath": "get-started.tsx"
     },
     "/login": {
       "filePath": "login.tsx"

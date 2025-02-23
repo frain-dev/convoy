@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { router } from '../lib/router';
 import { isProductionMode } from '@/lib/env';
-import { CONVOY_LAST_AUTH_LOCATION } from '@/lib/constants';
+import { CONVOY_LAST_AUTH_LOCATION_KEY } from '@/lib/constants';
 
 import type { HttpResponse } from '@/models/global.model';
 
@@ -182,7 +182,7 @@ export async function request<TData>(requestDetails: {
 
 	const requestHeader = {
 		Authorization: `Bearer ${getToken() || authDetails().access_token || ''}`,
-		...(isProductionMode && { 'X-Convoy-Version': '2024-04-01' }),
+		...(isProductionMode && { 'X-Convoy-Version': '2024-04-01' }), // TODO confirm from @RT if this is permitted on the server
 	};
 
 	try {
@@ -208,7 +208,7 @@ export async function request<TData>(requestDetails: {
 export function logUserOut() {
 	// save previous location before session timeout
 	if (!router.state.location.pathname.startsWith('/login')) {
-		localStorage.setItem(CONVOY_LAST_AUTH_LOCATION, location.href);
+		localStorage.setItem(CONVOY_LAST_AUTH_LOCATION_KEY, location.href);
 	}
 
 	// then move user to login page
