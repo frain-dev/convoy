@@ -355,30 +355,30 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 				return subscriptions, &EndpointError{Err: err, delay: defaultDelay}
 			}
 
-			subs, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
-			if err != nil {
-				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
+			subs, innerErr := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
+			if innerErr != nil {
+				return subscriptions, &EndpointError{Err: fmt.Errorf("error fetching subscriptions for event type"), delay: defaultDelay}
 			}
 
 			if len(subs) == 0 && shouldCreateSubscription {
-				subs := generateSubscription(project, endpoint)
-				err := subRepo.CreateSubscription(ctx, project.UID, subs)
-				if err != nil {
-					return subscriptions, &EndpointError{Err: errors.New("error creating subscription for endpoint"), delay: defaultDelay}
+				genSubs := generateSubscription(project, endpoint)
+				createSubErr := subRepo.CreateSubscription(ctx, project.UID, genSubs)
+				if createSubErr != nil {
+					return subscriptions, &EndpointError{Err: fmt.Errorf("error creating subscription for endpoint: %v", createSubErr), delay: defaultDelay}
 				}
 
-				subscriptions = append(subscriptions, *subs)
+				subscriptions = append(subscriptions, *genSubs)
 				return subscriptions, nil
 			}
 
-			matchedSubs, err := matchSubscriptions(ctx, string(event.EventType), subs, filterRepo)
-			if err != nil {
-				return subscriptions, &EndpointError{Err: errors.New("error matching subscriptions for event type"), delay: defaultDelay}
+			matchedSubs, innerErr := matchSubscriptions(ctx, string(event.EventType), subs, filterRepo)
+			if innerErr != nil {
+				return subscriptions, &EndpointError{Err: fmt.Errorf("error matching subscriptions for event type: %v", innerErr), delay: defaultDelay}
 			}
 
-			matchedSubs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, matchedSubs, false)
-			if err != nil {
-				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
+			matchedSubs, innerErr = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, matchedSubs, false)
+			if innerErr != nil {
+				return subscriptions, &EndpointError{Err: fmt.Errorf("error fetching subscriptions for event type: %v", innerErr), delay: defaultDelay}
 			}
 
 			subscriptions = append(subscriptions, matchedSubs...)
@@ -390,14 +390,14 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 		}
 
 		if len(subscriptions) > 0 {
-			matchedSubs, err := matchSubscriptions(ctx, string(event.EventType), subscriptions, filterRepo)
-			if err != nil {
-				return subscriptions, &EndpointError{Err: errors.New("error matching subscriptions for event type"), delay: defaultDelay}
+			matchedSubs, innerErr := matchSubscriptions(ctx, string(event.EventType), subscriptions, filterRepo)
+			if innerErr != nil {
+				return subscriptions, &EndpointError{Err: fmt.Errorf("error matching subscriptions for event type: %v", innerErr), delay: defaultDelay}
 			}
 
-			matchedSubs, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, matchedSubs, false)
-			if err != nil {
-				return subscriptions, &EndpointError{Err: errors.New("error fetching subscriptions for event type"), delay: defaultDelay}
+			matchedSubs, innerErr = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, matchedSubs, false)
+			if innerErr != nil {
+				return subscriptions, &EndpointError{Err: fmt.Errorf("error fetching subscriptions for event type: %v", innerErr), delay: defaultDelay}
 			}
 
 			subscriptions = matchedSubs
@@ -406,7 +406,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 		subscriptions, err = matchSubscriptionsUsingFilter(ctx, event, subRepo, filterRepo, licenser, subscriptions, false)
 		if err != nil {
 			log.WithError(err).Error("error find a matching subscription for this source")
-			return subscriptions, &EndpointError{Err: errors.New("error find a matching subscription for this source"), delay: defaultDelay}
+			return subscriptions, &EndpointError{Err: fmt.Errorf("error find a matching subscription for this source: %v", err), delay: defaultDelay}
 		}
 	}
 
@@ -417,6 +417,8 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	if !licenser.AdvancedSubscriptions() {
 		return subscriptions, nil
 	}
+
+	// fmt.Printf("matched %+v\n", subscriptions)
 
 	var matched []datastore.Subscription
 
@@ -449,17 +451,17 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 
 		// First check if there's a specific filter for this event type
 		filter, innerErr := filterRepo.FindFilterBySubscriptionAndEventType(ctx, s.UID, string(e.EventType))
-		if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) && soft {
+		if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
 			log.WithError(innerErr).Errorf("failed to find filter for subscription (%s) and event type (%s)", s.UID, e.EventType)
 			continue
-		} else if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) {
+		} else if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() {
 			return nil, innerErr
 		}
 
 		// If no specific filter found, try to find a catch-all filter
 		if filter == nil {
 			filter, innerErr = filterRepo.FindFilterBySubscriptionAndEventType(ctx, s.UID, "*")
-			if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) && soft {
+			if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
 				log.WithError(innerErr).Errorf("failed to find catch-all filter for subscription (%s)", s.UID)
 				continue
 			} else if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) {
@@ -470,6 +472,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		// If no filter found at all, or filter has no conditions, match the subscription
 		if filter == nil || (len(filter.Body) == 0 && len(filter.Headers) == 0) {
 			matched = append(matched, *s)
+			fmt.Printf("empty match: %+v %s\n", filter.EventType, s.UID)
 			continue
 		}
 
@@ -492,8 +495,10 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		isMatched := isHeaderMatched && isBodyMatched
 
 		if isMatched {
+			fmt.Printf("m_bool: %v ?? b_bool: %v, h_bool: %v ?? h: %v hh: %v\n", isMatched, isBodyMatched, isHeaderMatched, headers, filter.Headers)
 			matched = append(matched, *s)
 		}
+
 	}
 
 	return matched, nil
@@ -504,7 +509,7 @@ func matchSubscriptions(ctx context.Context, eventType string, subscriptions []d
 	for _, sub := range subscriptions {
 		// Check if there's a specific filter for this event type
 		filter, err := filterRepo.FindFilterBySubscriptionAndEventType(ctx, sub.UID, eventType)
-		if err != nil && !errors.Is(err, datastore.ErrFilterNotFound) {
+		if err != nil && err.Error() != datastore.ErrFilterNotFound.Error() {
 			return nil, err
 		}
 
@@ -516,7 +521,7 @@ func matchSubscriptions(ctx context.Context, eventType string, subscriptions []d
 
 		// Check for a catch-all filter
 		filter, err = filterRepo.FindFilterBySubscriptionAndEventType(ctx, sub.UID, "*")
-		if err != nil && !errors.Is(err, datastore.ErrFilterNotFound) {
+		if err != nil && err.Error() != datastore.ErrFilterNotFound.Error() {
 			return nil, err
 		}
 

@@ -48,6 +48,7 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 
 	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
 	filterRepo := postgres.NewFilterRepo(h.A.DB)
+	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 
 	// Check if subscription exists
 	_, err = subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
@@ -60,7 +61,19 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if filter with same event type already exists
+	// check if the event type exists in the project
+	exists, err := eventTypeRepo.CheckEventTypeExists(r.Context(), newFilter.EventType, projectID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+		return
+	}
+
+	if !exists {
+		_ = render.Render(w, r, util.NewErrorResponse("event type does not exist", http.StatusNotFound))
+		return
+	}
+
+	// Check if a filter with the same event type already exists
 	existingFilter, err := filterRepo.FindFilterBySubscriptionAndEventType(r.Context(), subscriptionID, newFilter.EventType)
 	if err != nil && err.Error() != datastore.ErrFilterNotFound.Error() {
 		_ = render.Render(w, r, util.NewErrorResponse("failed to check for existing filter", http.StatusBadRequest))
@@ -141,7 +154,7 @@ func (h *Handler) GetFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if filter belongs to the subscription
+	// Check if the filter belongs to the subscription
 	if filter.SubscriptionID != subscriptionID {
 		_ = render.Render(w, r, util.NewErrorResponse("filter does not belong to this subscription", http.StatusNotFound))
 		return
@@ -244,6 +257,7 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
 	filterRepo := postgres.NewFilterRepo(h.A.DB)
 
@@ -255,6 +269,18 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = render.Render(w, r, util.NewErrorResponse("failed to find subscription", http.StatusNotFound))
+		return
+	}
+
+	// check if the event-type exists in the project
+	exists, err := eventTypeRepo.CheckEventTypeExists(r.Context(), updateFilter.EventType, projectID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+		return
+	}
+
+	if !exists {
+		_ = render.Render(w, r, util.NewErrorResponse("event type does not exist", http.StatusNotFound))
 		return
 	}
 
@@ -357,7 +383,7 @@ func (h *Handler) DeleteFilter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if filter belongs to the subscription
+	// Check if the filter belongs to the subscription
 	if filter.SubscriptionID != subscriptionID {
 		_ = render.Render(w, r, util.NewErrorResponse("filter does not belong to this subscription", http.StatusNotFound))
 		return
@@ -381,9 +407,9 @@ func (h *Handler) DeleteFilter(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Filters
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID		path		string					true	"Project ID"
-//	@Param			subscriptionID	path		string					true	"Subscription ID"
-//	@Param			eventType		path		string					true	"Event Type"
+//	@Param			projectID		path		string						true	"Project ID"
+//	@Param			subscriptionID	path		string						true	"Subscription ID"
+//	@Param			eventType		path		string						true	"Event Type"
 //	@Param			payload			body		models.TestFilterRequest	true	"Payload to test"
 //	@Success		200				{object}	util.ServerResponse{data=models.TestFilterResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}

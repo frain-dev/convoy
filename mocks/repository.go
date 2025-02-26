@@ -1739,6 +1739,145 @@ func (mr *MockSubscriptionRepositoryMockRecorder) UpdateSubscription(ctx, projec
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSubscription", reflect.TypeOf((*MockSubscriptionRepository)(nil).UpdateSubscription), ctx, projectID, subscription)
 }
 
+// MockFilterRepository is a mock of FilterRepository interface.
+type MockFilterRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockFilterRepositoryMockRecorder
+}
+
+// MockFilterRepositoryMockRecorder is the mock recorder for MockFilterRepository.
+type MockFilterRepositoryMockRecorder struct {
+	mock *MockFilterRepository
+}
+
+// NewMockFilterRepository creates a new mock instance.
+func NewMockFilterRepository(ctrl *gomock.Controller) *MockFilterRepository {
+	mock := &MockFilterRepository{ctrl: ctrl}
+	mock.recorder = &MockFilterRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockFilterRepository) EXPECT() *MockFilterRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateFilter mocks base method.
+func (m *MockFilterRepository) CreateFilter(ctx context.Context, filter *datastore.EventTypeFilter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateFilter", ctx, filter)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateFilter indicates an expected call of CreateFilter.
+func (mr *MockFilterRepositoryMockRecorder) CreateFilter(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFilter", reflect.TypeOf((*MockFilterRepository)(nil).CreateFilter), ctx, filter)
+}
+
+// CreateFilters mocks base method.
+func (m *MockFilterRepository) CreateFilters(ctx context.Context, filters []datastore.EventTypeFilter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateFilters", ctx, filters)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateFilters indicates an expected call of CreateFilters.
+func (mr *MockFilterRepositoryMockRecorder) CreateFilters(ctx, filters any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFilters", reflect.TypeOf((*MockFilterRepository)(nil).CreateFilters), ctx, filters)
+}
+
+// DeleteFilter mocks base method.
+func (m *MockFilterRepository) DeleteFilter(ctx context.Context, filterID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFilter", ctx, filterID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteFilter indicates an expected call of DeleteFilter.
+func (mr *MockFilterRepositoryMockRecorder) DeleteFilter(ctx, filterID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFilter", reflect.TypeOf((*MockFilterRepository)(nil).DeleteFilter), ctx, filterID)
+}
+
+// FindFilterByID mocks base method.
+func (m *MockFilterRepository) FindFilterByID(ctx context.Context, filterID string) (*datastore.EventTypeFilter, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindFilterByID", ctx, filterID)
+	ret0, _ := ret[0].(*datastore.EventTypeFilter)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindFilterByID indicates an expected call of FindFilterByID.
+func (mr *MockFilterRepositoryMockRecorder) FindFilterByID(ctx, filterID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFilterByID", reflect.TypeOf((*MockFilterRepository)(nil).FindFilterByID), ctx, filterID)
+}
+
+// FindFilterBySubscriptionAndEventType mocks base method.
+func (m *MockFilterRepository) FindFilterBySubscriptionAndEventType(ctx context.Context, subscriptionID, eventType string) (*datastore.EventTypeFilter, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindFilterBySubscriptionAndEventType", ctx, subscriptionID, eventType)
+	ret0, _ := ret[0].(*datastore.EventTypeFilter)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindFilterBySubscriptionAndEventType indicates an expected call of FindFilterBySubscriptionAndEventType.
+func (mr *MockFilterRepositoryMockRecorder) FindFilterBySubscriptionAndEventType(ctx, subscriptionID, eventType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFilterBySubscriptionAndEventType", reflect.TypeOf((*MockFilterRepository)(nil).FindFilterBySubscriptionAndEventType), ctx, subscriptionID, eventType)
+}
+
+// FindFiltersBySubscriptionID mocks base method.
+func (m *MockFilterRepository) FindFiltersBySubscriptionID(ctx context.Context, subscriptionID string) ([]datastore.EventTypeFilter, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindFiltersBySubscriptionID", ctx, subscriptionID)
+	ret0, _ := ret[0].([]datastore.EventTypeFilter)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindFiltersBySubscriptionID indicates an expected call of FindFiltersBySubscriptionID.
+func (mr *MockFilterRepositoryMockRecorder) FindFiltersBySubscriptionID(ctx, subscriptionID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindFiltersBySubscriptionID", reflect.TypeOf((*MockFilterRepository)(nil).FindFiltersBySubscriptionID), ctx, subscriptionID)
+}
+
+// TestFilter mocks base method.
+func (m *MockFilterRepository) TestFilter(ctx context.Context, subscriptionID, eventType string, payload any) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TestFilter", ctx, subscriptionID, eventType, payload)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TestFilter indicates an expected call of TestFilter.
+func (mr *MockFilterRepositoryMockRecorder) TestFilter(ctx, subscriptionID, eventType, payload any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TestFilter", reflect.TypeOf((*MockFilterRepository)(nil).TestFilter), ctx, subscriptionID, eventType, payload)
+}
+
+// UpdateFilter mocks base method.
+func (m *MockFilterRepository) UpdateFilter(ctx context.Context, filter *datastore.EventTypeFilter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateFilter", ctx, filter)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateFilter indicates an expected call of UpdateFilter.
+func (mr *MockFilterRepositoryMockRecorder) UpdateFilter(ctx, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFilter", reflect.TypeOf((*MockFilterRepository)(nil).UpdateFilter), ctx, filter)
+}
+
 // MockSourceRepository is a mock of SourceRepository interface.
 type MockSourceRepository struct {
 	ctrl     *gomock.Controller
@@ -2758,6 +2897,21 @@ func NewMockEventTypesRepository(ctrl *gomock.Controller) *MockEventTypesReposit
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockEventTypesRepository) EXPECT() *MockEventTypesRepositoryMockRecorder {
 	return m.recorder
+}
+
+// CheckEventTypeExists mocks base method.
+func (m *MockEventTypesRepository) CheckEventTypeExists(ctx context.Context, name, projectId string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckEventTypeExists", ctx, name, projectId)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckEventTypeExists indicates an expected call of CheckEventTypeExists.
+func (mr *MockEventTypesRepositoryMockRecorder) CheckEventTypeExists(ctx, name, projectId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckEventTypeExists", reflect.TypeOf((*MockEventTypesRepository)(nil).CheckEventTypeExists), ctx, name, projectId)
 }
 
 // CreateDefaultEventType mocks base method.
