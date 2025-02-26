@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	"errors"
 	"github.com/frain-dev/convoy/pkg/flatten"
 )
 
@@ -120,6 +121,7 @@ type EndpointRepository interface {
 	UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets Secrets) error
 	DeleteSecret(ctx context.Context, endpoint *Endpoint, secretID string, projectID string) error
 }
+
 type SubscriptionRepository interface {
 	CreateSubscription(context.Context, string, *Subscription) error
 	UpdateSubscription(ctx context.Context, projectID string, subscription *Subscription) error
@@ -136,6 +138,17 @@ type SubscriptionRepository interface {
 	LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]Subscription, error)
 	FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]Subscription, error)
 	FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]Subscription, error)
+}
+
+type FilterRepository interface {
+	CreateFilter(ctx context.Context, filter *EventTypeFilter) error
+	CreateFilters(ctx context.Context, filters []EventTypeFilter) error
+	UpdateFilter(ctx context.Context, filter *EventTypeFilter) error
+	DeleteFilter(ctx context.Context, filterID string) error
+	FindFilterByID(ctx context.Context, filterID string) (*EventTypeFilter, error)
+	FindFiltersBySubscriptionID(ctx context.Context, subscriptionID string) ([]EventTypeFilter, error)
+	FindFilterBySubscriptionAndEventType(ctx context.Context, subscriptionID, eventType string) (*EventTypeFilter, error)
+	TestFilter(ctx context.Context, subscriptionID, eventType string, payload interface{}) (bool, error)
 }
 
 type SourceRepository interface {
@@ -227,3 +240,9 @@ type EventTypesRepository interface {
 	FetchEventTypeById(context.Context, string, string) (*ProjectEventType, error)
 	FetchAllEventTypes(context.Context, string) ([]ProjectEventType, error)
 }
+
+// Filter errors
+var (
+	ErrFilterNotFound  = errors.New("filter not found")
+	ErrDuplicateFilter = errors.New("duplicate filter")
+)

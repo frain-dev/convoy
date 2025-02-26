@@ -34,6 +34,7 @@ type EventChannelArgs struct {
 	projectRepo   datastore.ProjectRepository
 	endpointRepo  datastore.EndpointRepository
 	subRepo       datastore.SubscriptionRepository
+	filterRepo    datastore.FilterRepository
 	licenser      license.Licenser
 	tracerBackend tracer.Backend
 }
@@ -51,7 +52,7 @@ type EventChannel interface {
 	MatchSubscriptions(context.Context, EventChannelMetadata, EventChannelArgs) (*EventChannelSubResponse, error)
 }
 
-func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
@@ -71,6 +72,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 				projectRepo:   projectRepo,
 				endpointRepo:  endpointRepo,
 				subRepo:       subRepo,
+				filterRepo:    filterRepo,
 				licenser:      licenser,
 				tracerBackend: tracerBackend,
 			})
@@ -119,7 +121,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 	}
 }
 
-func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, deviceRepo datastore.DeviceRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		// Start a new trace span for subscription matching and event delivery creation
 		startTime := time.Now()
@@ -152,6 +154,7 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 			projectRepo:   projectRepo,
 			endpointRepo:  endpointRepo,
 			subRepo:       subRepo,
+			filterRepo:    filterRepo,
 			licenser:      licenser,
 			tracerBackend: tracerBackend,
 		})

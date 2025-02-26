@@ -3,13 +3,14 @@ package api
 import (
 	"embed"
 	"fmt"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/render"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/render"
 
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/handlers"
@@ -217,6 +218,16 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
 						subscriptionRouter.With(handler.RequireEnabledProject()).Put("/{subscriptionID}", handler.UpdateSubscription)
 						subscriptionRouter.Put("/{subscriptionID}/toggle_status", handler.ToggleSubscriptionStatus)
+
+						// Filter routes
+						subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
+							filterRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateFilter)
+							filterRouter.Get("/", handler.GetFilters)
+							filterRouter.Get("/{filterID}", handler.GetFilter)
+							filterRouter.With(handler.RequireEnabledProject()).Put("/{filterID}", handler.UpdateFilter)
+							filterRouter.With(handler.RequireEnabledProject()).Delete("/{filterID}", handler.DeleteFilter)
+							filterRouter.With(handler.RequireEnabledProject()).Post("/test/{eventType}", handler.TestFilter)
+						})
 					})
 
 					projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
@@ -398,6 +409,16 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							subscriptionRouter.With(handler.RequireEnabledProject()).Delete("/{subscriptionID}", handler.DeleteSubscription)
 							subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
 							subscriptionRouter.With(handler.RequireEnabledProject()).Put("/{subscriptionID}", handler.UpdateSubscription)
+
+							// Filter routes
+							subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
+								filterRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateFilter)
+								filterRouter.Get("/", handler.GetFilters)
+								filterRouter.Get("/{filterID}", handler.GetFilter)
+								filterRouter.With(handler.RequireEnabledProject()).Put("/{filterID}", handler.UpdateFilter)
+								filterRouter.With(handler.RequireEnabledProject()).Delete("/{filterID}", handler.DeleteFilter)
+								filterRouter.With(handler.RequireEnabledProject()).Post("/test/{eventType}", handler.TestFilter)
+							})
 						})
 
 						projectSubRouter.Route("/sources", func(sourceRouter chi.Router) {
@@ -506,6 +527,16 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
 			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
 			subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
+
+			// Filter routes
+			subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
+				filterRouter.Post("/", handler.CreateFilter)
+				filterRouter.Get("/", handler.GetFilters)
+				filterRouter.Get("/{filterID}", handler.GetFilter)
+				filterRouter.Put("/{filterID}", handler.UpdateFilter)
+				filterRouter.Delete("/{filterID}", handler.DeleteFilter)
+				filterRouter.Post("/test/{eventType}", handler.TestFilter)
+			})
 		})
 	})
 
