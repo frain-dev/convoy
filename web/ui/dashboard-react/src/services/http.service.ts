@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { router } from '../lib/router';
 import { isProductionMode } from '@/lib/env';
-import { CONVOY_LAST_AUTH_LOCATION_KEY } from '@/lib/constants';
+import { CONVOY_LAST_AUTH_LOCATION_KEY, CONVOY_ORG_KEY } from '@/lib/constants';
 
 import type { HttpResponse } from '@/models/global.model';
 
@@ -77,7 +77,7 @@ export function buildRequestQuery(
 }
 
 export function getOrganisation() {
-	const org = localStorage.getItem('CONVOY_ORG');
+	const org = localStorage.getItem(CONVOY_ORG_KEY);
 	return org ? (JSON.parse(org) as { name: string; uid: string }) : null;
 }
 

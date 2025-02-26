@@ -15,10 +15,10 @@ import { useEffect, useReducer, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
-import { ConvoyLoader } from '@/components/ConvoyLoader';
+import { ConvoyLoader } from '@/components/convoy-loader';
 import * as loginService from '@/services/login.service';
 import * as signUpService from '@/services/signup.service';
-import * as privateService from '@/services/private.service';
+import * as organisationService from '@/services/organisation.service';
 import * as licensesService from '@/services/licenses.service';
 
 import type { UseFormReturn } from 'react-hook-form';
@@ -304,7 +304,7 @@ function LoginPage() {
 
 	async function getOrganisations() {
 		try {
-			await privateService.getOrganisations({ refresh: true });
+			await organisationService.getOrganisations({ refresh: true });
 		} catch (err) {
 			console.error(getOrganisations.name, err);
 		}

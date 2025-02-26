@@ -1,16 +1,17 @@
 import { request } from './http.service';
+import { CONVOY_ORG_KEY } from '@/lib/constants';
 
-import type { ORGANIZATION_DATA } from '@/models/organisation.model';
+import type { Organisation } from '@/models/organisation.model';
 
-let organisations: Array<ORGANIZATION_DATA> = [];
-let organisationDetails: ORGANIZATION_DATA | undefined = undefined;
+let organisations: Array<Organisation> = [];
+let organisationDetails: Organisation | undefined = undefined;
 
-function getCachedOrganisation(): ORGANIZATION_DATA | null {
-	let org = localStorage.getItem('CONVOY_ORG');
+function getCachedOrganisation(): Organisation | null {
+	let org = localStorage.getItem(CONVOY_ORG_KEY);
 	return org ? JSON.parse(org) : null;
 }
 
-function setOrganisationConfig(organisations: ORGANIZATION_DATA[]) {
+function setOrganisationConfig(organisations: Organisation[]) {
 	if (!organisations?.length) return;
 
 	const existingOrg = organisations.find(
@@ -18,11 +19,11 @@ function setOrganisationConfig(organisations: ORGANIZATION_DATA[]) {
 	);
 
 	if (existingOrg)
-		return localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+		return localStorage.setItem(CONVOY_ORG_KEY, JSON.stringify(existingOrg));
 
 	organisationDetails = organisations[0];
-	console.log(organisationDetails) // TODO remove this line when you read this variable
-	localStorage.setItem('CONVOY_ORG', JSON.stringify(organisations[0]));
+	console.log(organisationDetails); // TODO remove this line when you read this variable
+	localStorage.setItem(CONVOY_ORG_KEY, JSON.stringify(organisations[0]));
 }
 
 export async function getOrganisations(
@@ -31,7 +32,7 @@ export async function getOrganisations(
 ) {
 	if (organisations?.length && !refresh) return organisations;
 
-	const res = await deps.httpReq<{ content: Array<ORGANIZATION_DATA> }>({
+	const res = await deps.httpReq<{ content: Array<Organisation> }>({
 		url: '/organisations',
 		method: 'get',
 	});
