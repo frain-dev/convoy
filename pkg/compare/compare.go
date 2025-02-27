@@ -376,7 +376,7 @@ func exist(payload, filter interface{}) (bool, error) {
 	return b == want, nil
 }
 
-// toFloat64 converts interface{} value to float64 if value is numeric else return false
+// toFloat64 converts interface{} value to float64 if the value is numeric, else return false
 func toFloat64(v interface{}) (float64, bool) {
 	var f float64
 	flag := true
@@ -397,7 +397,14 @@ func toFloat64(v interface{}) (float64, bool) {
 	case float64:
 		f = u
 	default:
-		flag = false
+		// finally, try to convert it to a numeric type
+		ff, err := strconv.ParseFloat(fmt.Sprintf("%+v", v), 64)
+		if err != nil {
+			flag = false
+			return 0, flag
+		}
+
+		return ff, true
 	}
 	return f, flag
 }
@@ -463,9 +470,10 @@ func genCombos(payload map[string]interface{}, s string) ([]string, error) {
 }
 
 // generateCombinations takes an array of strings representing a combination of
-// non-replaced segments and "$" characters, a current index, and a maximum integer value n,
-// generates all possible combinations of integers from 0 to n for each "$" character,
-// and returns a slice of strings representing all possible combinations.
+// non-replaced segments and "$" characters, a current index, and a maximum
+// integer value n, generates all possible combinations of integers from 0 to n
+// for each "$" character, and returns a slice of strings representing all
+// possible combinations.
 func generateCombinations(combinations []string, index int, n int) []string {
 	if index >= len(combinations) {
 		return []string{strings.Join(combinations, "")}
