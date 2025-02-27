@@ -80,7 +80,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 	err := msgpack.DecodeMsgPack(t.Payload(), &createEvent)
 	if err != nil {
-		err := json.Unmarshal(t.Payload(), &createEvent)
+		err = json.Unmarshal(t.Payload(), &createEvent)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
@@ -115,7 +115,7 @@ func (d *DefaultEventChannel) CreateEvent(ctx context.Context, t *asynq.Task, ch
 
 	_, err = args.eventRepo.FindEventByID(ctx, project.UID, event.UID)
 	if err != nil { // 404
-		err := updateEventMetadata(channel, event, createEvent.CreateSubscription)
+		err = updateEventMetadata(channel, event, createEvent.CreateSubscription)
 		if err != nil {
 			args.tracerBackend.Capture(ctx, "event.creation.error", attributes, startTime, time.Now())
 			return nil, err
@@ -472,7 +472,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		// If no filter found at all, or filter has no conditions, match the subscription
 		if filter == nil || (len(filter.Body) == 0 && len(filter.Headers) == 0) {
 			matched = append(matched, *s)
-			fmt.Printf("empty match: %+v %s\n", filter.EventType, s.UID)
 			continue
 		}
 
@@ -495,7 +494,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		isMatched := isHeaderMatched && isBodyMatched
 
 		if isMatched {
-			fmt.Printf("m_bool: %v ?? b_bool: %v, h_bool: %v ?? h: %v hh: %v\n", isMatched, isBodyMatched, isHeaderMatched, headers, filter.Headers)
 			matched = append(matched, *s)
 		}
 
