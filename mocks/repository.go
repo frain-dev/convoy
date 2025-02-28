@@ -2900,18 +2900,18 @@ func (m *MockEventTypesRepository) EXPECT() *MockEventTypesRepositoryMockRecorde
 }
 
 // CheckEventTypeExists mocks base method.
-func (m *MockEventTypesRepository) CheckEventTypeExists(ctx context.Context, name, projectId string) (bool, error) {
+func (m *MockEventTypesRepository) CheckEventTypeExists(arg0 context.Context, arg1, arg2 string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckEventTypeExists", ctx, name, projectId)
+	ret := m.ctrl.Call(m, "CheckEventTypeExists", arg0, arg1, arg2)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckEventTypeExists indicates an expected call of CheckEventTypeExists.
-func (mr *MockEventTypesRepositoryMockRecorder) CheckEventTypeExists(ctx, name, projectId any) *gomock.Call {
+func (mr *MockEventTypesRepositoryMockRecorder) CheckEventTypeExists(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckEventTypeExists", reflect.TypeOf((*MockEventTypesRepository)(nil).CheckEventTypeExists), ctx, name, projectId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckEventTypeExists", reflect.TypeOf((*MockEventTypesRepository)(nil).CheckEventTypeExists), arg0, arg1, arg2)
 }
 
 // CreateDefaultEventType mocks base method.
