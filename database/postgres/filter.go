@@ -133,7 +133,12 @@ func (f *filterRepo) CreateFilters(ctx context.Context, filters []datastore.Even
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func(tx *sqlx.Tx) {
+		innerErr := tx.Rollback()
+		if innerErr != nil {
+			err = innerErr
+		}
+	}(tx)
 
 	for i := range filters {
 		filter := &filters[i]
