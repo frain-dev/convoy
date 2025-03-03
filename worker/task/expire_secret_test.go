@@ -19,7 +19,7 @@ import (
 func TestExpireSecret(t *testing.T) {
 	tests := []struct {
 		name    string
-		args    args
+		args    testArgs
 		wantErr error
 		payload *Payload
 		dbFn    func(*mocks.MockEndpointRepository)

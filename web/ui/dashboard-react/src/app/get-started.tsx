@@ -5,5 +5,5 @@ export const Route = createFileRoute('/get-started')({
 });
 
 function RouteComponent() {
-	return <h2 className="text-4xl font-semibold p-4">Get started!</h2>;
+	return <h2 className="text-3xl font-semibold p-4">Get started!</h2>;
 }

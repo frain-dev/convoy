@@ -3,11 +3,10 @@ package tracer
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/net"
-	"github.com/frain-dev/convoy/pkg/log"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/config"
 	"go.opentelemetry.io/otel/trace"
@@ -38,28 +37,15 @@ func FromContext(ctx context.Context) trace.Tracer {
 	return nil
 }
 
-// Backend is an abstraction for tracng backend (Datadog, Sentry, ...)
+// Backend is an abstraction for tracing backend (Datadog, Sentry, ...)
 type Backend interface {
 	Init(componentName string) error
 	Type() config.TracerProvider
-	Capture(*datastore.Project, string, *net.Response, time.Duration)
+	Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time)
 	Shutdown(ctx context.Context) error
 }
 
-type NoOpBackend struct{}
-
-func (NoOpBackend) Init(componentName string) error { return nil }
-func (NoOpBackend) Type() config.TracerProvider {
-	return ""
-}
-func (NoOpBackend) Capture(*datastore.Project, string, *net.Response, time.Duration) {
-
-}
-func (NoOpBackend) Shutdown(context.Context) error {
-	return nil
-}
-
-// Global tracer Init function
+// Init is a global tracer initialization function
 func Init(tCfg config.TracerConfiguration, componentName string, licenser license.Licenser) (Backend, error) {
 	switch tCfg.Type {
 	case config.SentryTracerProvider:

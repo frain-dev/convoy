@@ -37,7 +37,6 @@ func TestNewHCPVaultKeyManagerEnv(t *testing.T) {
 	key, err := h.GetCurrentKeyFromCache()
 	assert.Nil(t, err)
 	assert.NotEmpty(t, key)
-	t.Logf("Retrieved key: %s", key)
 
 	// Happy path for setting a key
 	newKey := "from-test-" + time.Now().String()

@@ -78,7 +78,7 @@ export class CreateEndpointComponent implements OnInit {
 	token: string = this.route.snapshot.params.token;
 	@Input('endpointId') endpointUid = this.route.snapshot.params.id;
 	enableMoreConfig = false;
-	configurations = [{ uid: 'http_timeout', name: 'Timeout ', show: false }];
+	configurations = [{ uid: 'http_timeout', name: 'Timeout ', show: false, deleted: false }];
 	endpointCreated: boolean = false;
 	endpointSecret?: SECRET;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
@@ -98,11 +98,11 @@ export class CreateEndpointComponent implements OnInit {
 	async ngOnInit() {
 		if (this.type !== 'portal')
 			this.configurations.push(
-				{ uid: 'owner_id', name: 'Owner ID ', show: false },
-				{ uid: 'rate_limit', name: 'Rate Limit ', show: false },
-				{ uid: 'auth', name: 'Auth', show: false },
-				{ uid: 'alert_config', name: 'Notifications', show: false },
-				{ uid: 'signature', name: 'Signature Format', show: false }
+				{ uid: 'owner_id', name: 'Owner ID ', show: false, deleted: false },
+				{ uid: 'rate_limit', name: 'Rate Limit ', show: false, deleted: false },
+				{ uid: 'auth', name: 'Auth', show: false, deleted: false },
+				{ uid: 'alert_config', name: 'Notifications', show: false, deleted: false },
+				{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
 			);
 
 		if (!this.endpointUid) this.endpointUid = this.route.snapshot.params.id;
@@ -142,6 +142,18 @@ export class CreateEndpointComponent implements OnInit {
 			this.savingEndpoint = false;
 			return this.addNewEndpointForm.markAllAsTouched();
 		}
+
+
+        let rateLimitDeleted = !this.showConfig('rate_limit') && this.configDeleted('rate_limit');
+        if (rateLimitDeleted) {
+            const configKeys = ['rate_limit', 'rate_limit_duration'];
+            configKeys.forEach((key) => {
+                this.addNewEndpointForm.value[key] = 0; // element type = number
+                this.addNewEndpointForm.get(`${key}`)?.patchValue(0);
+            });
+            this.setConfigFormDeleted('rate_limit', false);
+        }
+
 
 		this.savingEndpoint = true;
 		const endpointValue = structuredClone(this.addNewEndpointForm.value);
@@ -215,15 +227,30 @@ export class CreateEndpointComponent implements OnInit {
 		return totalSeconds;
 	}
 
-	toggleConfigForm(configValue: string) {
+	toggleConfigForm(configValue: string, deleted?: boolean) {
 		this.configurations.forEach(config => {
-			if (config.uid === configValue) config.show = !config.show;
+			if (config.uid === configValue) {
+                config.show = !config.show;
+                config.deleted = deleted ?? false;
+            }
 		});
 	}
+
+    setConfigFormDeleted(configValue: string, deleted: boolean) {
+        this.configurations.forEach(config => {
+            if (config.uid === configValue) {
+                config.deleted = deleted;
+            }
+        });
+    }
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
+
+    configDeleted(configValue: string): boolean {
+        return this.configurations.find(config => config.uid === configValue)?.deleted || false;
+    }
 
 	get shouldShowBorder(): number {
 		return this.configurations.filter(config => config.show).length;

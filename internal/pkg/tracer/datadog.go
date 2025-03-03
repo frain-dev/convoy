@@ -2,14 +2,18 @@ package tracer
 
 import (
 	"context"
+	"fmt"
+	"strconv"
+	"time"
+
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/log"
 	"go.opentelemetry.io/otel"
-	"time"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 
 	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
@@ -59,20 +63,16 @@ func (dt *DatadogTracer) Type() config.TracerProvider {
 	return config.DatadogTracerProvider
 }
 
-func (dt *DatadogTracer) Capture(project *datastore.Project, targetURL string, resp *net.Response, duration time.Duration) {
+func (dt *DatadogTracer) CaptureDelivery(ctx context.Context, project *datastore.Project, targetURL string, status string, statusCode int, bodyLength int, duration time.Duration) {
 	if !dt.Licenser.DatadogTracing() {
 		return
 	}
-	var status string
-	var statusCode int
-	if resp != nil {
-		status = resp.Status
-		statusCode = resp.StatusCode
-	}
+
+	traceId := getDatadogTraceID(ctx)
+	fmt.Printf("%s\n", traceId)
+
 	dt.RecordLatency(project.UID, targetURL, status, duration)
-	if resp != nil {
-		dt.RecordThroughput(project.UID, targetURL, len(resp.Body))
-	}
+	dt.RecordThroughput(project.UID, targetURL, bodyLength)
 	dt.RecordRequestTotal(project.UID, targetURL)
 	if statusCode > 299 {
 		dt.RecordErrorRate(project.UID, targetURL, statusCode)
@@ -125,4 +125,56 @@ func (dt *DatadogTracer) RecordThroughput(projectID string, url string, dataSize
 	if err != nil {
 		log.Errorf("Error recording throughput: %s", err)
 	}
+}
+
+func getDatadogTraceID(ctx context.Context) string {
+	spanCtx := trace.SpanContextFromContext(ctx)
+	if spanCtx.HasTraceID() {
+		// Since datadog trace provider (ddtrace) uses big endian uint64 for the trace ID, we must first to first convert it back to uint64.
+		traceID := spanCtx.TraceID()
+		traceIDRaw := [16]byte(traceID)
+		traceIDUint64 := byteArrToUint64(traceIDRaw[8:])
+		traceIDStr := strconv.FormatUint(traceIDUint64, 10)
+		return traceIDStr
+	}
+	return ""
+}
+
+func byteArrToUint64(buf []byte) uint64 {
+	var x uint64
+	for i, b := range buf {
+		x = x<<8 + uint64(b)
+		if i == 7 {
+			return x
+		}
+	}
+	return x
+}
+
+func (dt *DatadogTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time) {
+	if !dt.Licenser.DatadogTracing() {
+		return
+	}
+
+	_, span := otel.Tracer("").Start(ctx, name, trace.WithTimestamp(startTime))
+	// End span with provided end time
+	defer span.End(trace.WithTimestamp(endTime))
+
+	// Convert and set attributes
+	attrs := make([]attribute.KeyValue, 0, len(attributes))
+	for k, v := range attributes {
+		switch val := v.(type) {
+		case string:
+			attrs = append(attrs, attribute.String(k, val))
+		case int:
+			attrs = append(attrs, attribute.Int(k, val))
+		case int64:
+			attrs = append(attrs, attribute.Int64(k, val))
+		case float64:
+			attrs = append(attrs, attribute.Float64(k, val))
+		case bool:
+			attrs = append(attrs, attribute.Bool(k, val))
+		}
+	}
+	span.SetAttributes(attrs...)
 }

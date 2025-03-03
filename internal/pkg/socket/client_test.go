@@ -16,10 +16,9 @@ import (
 
 func provideClient(r *Repo, c WebSocketConnection) *Client {
 	return &Client{
-		conn:       c,
-		deviceID:   "1234",
-		deviceRepo: r.DeviceRepo,
-		// EventTypes:        []string{"*"},
+		conn:              c,
+		deviceID:          "1234",
+		deviceRepo:        r.DeviceRepo,
 		eventDeliveryRepo: r.EventDeliveryRepo,
 		Device: &datastore.Device{
 			UID:        "1234",
@@ -349,7 +348,6 @@ func TestParseTime(t *testing.T) {
 			client := provideClient(r, c)
 
 			since, err := client.parseTime(tt.args.message)
-			t.Log(since)
 
 			if tt.args.wantErr {
 				require.Error(t, tt.args.err, err)

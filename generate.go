@@ -11,3 +11,4 @@ package convoy
 //go:generate mockgen --source internal/pkg/dedup/dedup.go --destination mocks/dedup.go -package mocks
 //go:generate mockgen --source internal/pkg/memorystore/table.go --destination mocks/table.go -package mocks
 //go:generate mockgen --source internal/pkg/license/license.go --destination mocks/license.go -package mocks
+//go:generate mockgen --source internal/pkg/tracer/tracer.go --destination mocks/tracer.go -package mocks
