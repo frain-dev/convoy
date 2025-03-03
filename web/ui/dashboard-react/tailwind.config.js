@@ -39,6 +39,18 @@ module.exports = {
 			backgroundImage: {
 				'gradient-radial': 'radial-gradient(white 10%, #fafafe78)',
 			},
+			colors: {
+				sidebar: {
+					DEFAULT: 'hsl(var(--sidebar-background))',
+					foreground: 'hsl(var(--sidebar-foreground))',
+					primary: 'hsl(var(--sidebar-primary))',
+					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
+					accent: 'hsl(var(--sidebar-accent))',
+					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
+					border: 'hsl(var(--sidebar-border))',
+					ring: 'hsl(var(--sidebar-ring))',
+				},
+			},
 		},
 		fontWeight: {
 			thin: '100',
@@ -51,8 +63,12 @@ module.exports = {
 			extrabold: '700',
 		},
 		screens: {
-			desktop: { max: '1050px' },
-			md: { min: '850px' },
+			desktop: {
+				max: '1050px',
+			},
+			md: {
+				min: '850px',
+			},
 		},
 		borderRadius: {
 			'4px': '4px',
@@ -103,13 +119,13 @@ module.exports = {
 				foreground: 'hsl(var(--popover-foreground))',
 			},
 			primary: {
-				DEFAULT: 'hsl(var(--primary))',
-				foreground: 'hsl(var(--primary-foreground))',
 				100: '#477DB3',
 				200: '#7EA4CA',
 				300: '#A3BED9',
 				400: '#C8D8E8',
 				500: '#EDF2F7',
+				DEFAULT: 'hsl(var(--primary))',
+				foreground: 'hsl(var(--primary-foreground))',
 			},
 			secondary: {
 				DEFAULT: 'hsl(var(--secondary))',
@@ -206,16 +222,15 @@ module.exports = {
 			neutral: generateColorScale('gray'),
 			error: generateColorScale('red'),
 			white: {
-				100: 'rgba(var(--color-white), 1)',
-				64: 'rgba(var(--color-white), 0.64)',
-				40: 'rgba(var(--color-white), 0.40)',
-				24: 'rgba(var(--color-white), 0.24)',
-				16: 'rgba(var(--color-white), 0.16)',
-				8: 'rgba(var(--color-white), 0.08)',
 				4: 'rgba(var(--color-white), 0.04)',
+				8: 'rgba(var(--color-white), 0.08)',
+				16: 'rgba(var(--color-white), 0.16)',
+				24: 'rgba(var(--color-white), 0.24)',
+				40: 'rgba(var(--color-white), 0.40)',
+				64: 'rgba(var(--color-white), 0.64)',
+				100: 'rgba(var(--color-white), 1)',
 			},
 			success: {
-				...generateColorScale('green'),
 				100: '#25C26E',
 				200: '#66D49A',
 				300: '#92E1B7',
@@ -230,7 +245,6 @@ module.exports = {
 				500: '#FFEEED',
 			},
 			warning: {
-				...generateColorScale('amber'),
 				100: '#F0AD4E',
 				200: '#F3BD71',
 				300: '#F6CE95',
