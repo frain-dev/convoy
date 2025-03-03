@@ -796,7 +796,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint_InvalidRequest() {
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
 
-	// Arrange Request.
+	// Arrange Request
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
 	plainBody := ""
 	body := strings.NewReader(plainBody)
@@ -823,7 +823,7 @@ func (s *EndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
-	// Arrange Request.
+	// Arrange Request
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/endpoints/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpointID)
 	plainBody := fmt.Sprintf(`{
 		"name": "%s",
@@ -2654,6 +2654,45 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.Equal(s.T(), resp.UID, pl.UID)
 	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
+}
+
+func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithOwnerID() {
+	expectedStatusCode := http.StatusCreated
+	ownerID := "test-owner-id"
+
+	// Arrange Request
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/portal-links",
+		s.DefaultProject.OrganisationID,
+		s.DefaultProject.UID)
+	plainBody := fmt.Sprintf(`{
+		"name": "test_portal_link_with_owner_id",
+		"owner_id": "%s"
+	}`, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, "", body)
+	err := s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var resp models.PortalLinkResponse
+	parseResponse(s.T(), w.Result(), &resp)
+
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	require.NoError(s.T(), err)
+
+	require.Equal(s.T(), resp.UID, pl.UID)
+	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s&owner_id=%s", pl.Token, ownerID))
+	require.Equal(s.T(), resp.Name, pl.Name)
+	require.Equal(s.T(), resp.OwnerID, ownerID)
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_PortalLinkNotFound() {
