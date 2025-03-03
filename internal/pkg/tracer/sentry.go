@@ -2,15 +2,16 @@ package tracer
 
 import (
 	"context"
+	"time"
+
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/net"
 	"github.com/getsentry/sentry-go"
 	sentryotel "github.com/getsentry/sentry-go/otel"
 	"go.opentelemetry.io/otel"
-	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type SentryTracer struct {
@@ -58,9 +59,33 @@ func (st *SentryTracer) Init(componentName string) error {
 func (st *SentryTracer) Type() config.TracerProvider {
 	return config.SentryTracerProvider
 }
-func (st *SentryTracer) Capture(*datastore.Project, string, *net.Response, time.Duration) {
 
+func (st *SentryTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time) {
+	_, span := otel.Tracer("").Start(ctx, name,
+		trace.WithTimestamp(startTime))
+
+	// End span with provided end time
+	defer span.End(trace.WithTimestamp(endTime))
+
+	// Convert and set attributes
+	attrs := make([]attribute.KeyValue, 0, len(attributes))
+	for k, v := range attributes {
+		switch val := v.(type) {
+		case string:
+			attrs = append(attrs, attribute.String(k, val))
+		case int:
+			attrs = append(attrs, attribute.Int(k, val))
+		case int64:
+			attrs = append(attrs, attribute.Int64(k, val))
+		case float64:
+			attrs = append(attrs, attribute.Float64(k, val))
+		case bool:
+			attrs = append(attrs, attribute.Bool(k, val))
+		}
+	}
+	span.SetAttributes(attrs...)
 }
+
 func (st *SentryTracer) Shutdown(ctx context.Context) error {
 	return st.ShutdownFn(ctx)
 }

@@ -88,10 +88,10 @@ export class CreateProjectComponent implements OnInit {
 	projectDetails!: PROJECT;
 	signatureVersions!: { date: string; content: VERSIONS[] }[];
 	configurations = [
-		{ uid: 'strategy', name: 'Retry Config', show: false },
-		{ uid: 'ratelimit', name: 'Rate Limit', show: false },
-		{ uid: 'search_policy', name: 'Search Policy', show: false },
-		{ uid: 'signature', name: 'Signature Format', show: false }
+		{ uid: 'strategy', name: 'Retry Config', show: false, deleted: false },
+		{ uid: 'ratelimit', name: 'Rate Limit', show: false, deleted: false },
+		{ uid: 'search_policy', name: 'Search Policy', show: false, deleted: false },
+		{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
 	];
 	public rbacService = inject(RbacService);
 	tabs: TAB[] = [
@@ -106,6 +106,7 @@ export class CreateProjectComponent implements OnInit {
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
 	eventTypes: EVENT_TYPE[] = [];
 	selectedEventType!: EVENT_TYPE;
+    rateLimitDeleted = false;
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -143,15 +144,29 @@ export class CreateProjectComponent implements OnInit {
 		this.versions.push(this.newVersion());
 	}
 
-	toggleConfigForm(configValue: string) {
+	toggleConfigForm(configValue: string, deleted?: boolean) {
 		this.configurations.forEach(config => {
-			if (config.uid === configValue) config.show = !config.show;
+			if (config.uid === configValue) {
+                config.show = !config.show;
+                config.deleted = deleted ?? false;
+            }
+		});
+	}
+	setConfigFormDeleted(configValue: string, deleted: boolean) {
+		this.configurations.forEach(config => {
+			if (config.uid === configValue) {
+                config.deleted = deleted;
+            }
 		});
 	}
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
 	}
+
+    configDeleted(configValue: string): boolean {
+        return this.configurations.find(config => config.uid === configValue)?.deleted || false;
+    }
 
 	async getProjectDetails() {
 		try {
@@ -234,6 +249,17 @@ export class CreateProjectComponent implements OnInit {
 		if (typeof this.projectForm.value.config.strategy.retry_count === 'string') this.projectForm.value.config.strategy.retry_count = parseInt(this.projectForm.value.config.strategy.retry_count);
 		if (typeof this.projectForm.value.config.ratelimit.count === 'string') this.projectForm.value.config.ratelimit.count = parseInt(this.projectForm.value.config.ratelimit.count);
 		if (typeof this.projectForm.value.config.search_policy === 'number') this.projectForm.value.config.search_policy = `${this.projectForm.value.config.search_policy}h`;
+
+
+        if (!this.showConfig('ratelimit') && this.configDeleted('ratelimit')) {
+            this.projectForm.value.config.ratelimit.count = 0;
+            this.projectForm.value.config.ratelimit.duration = 0;
+            this.projectForm.value.config.ratelimit = null;
+
+            this.projectForm.get('config.ratelimit')?.patchValue({ count: 0, duration: 0 });
+
+            this.setConfigFormDeleted('ratelimit', false);
+        }
 
 		this.isCreatingProject = true;
 

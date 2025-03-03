@@ -1,6 +1,7 @@
 package listener
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -19,11 +20,11 @@ func NewProjectListener(queue queue.Queuer) *ProjectListener {
 	return &ProjectListener{queue: queue}
 }
 
-func (e *ProjectListener) AfterUpdate(data interface{}, changelog interface{}) {
-	e.run(string(datastore.ProjectUpdated), data, changelog)
+func (e *ProjectListener) AfterUpdate(ctx context.Context, data interface{}, changelog interface{}) {
+	e.run(ctx, datastore.ProjectUpdated, data, changelog)
 }
 
-func (e *ProjectListener) run(eventType string, data interface{}, changelog interface{}) {
+func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventType, data interface{}, changelog interface{}) {
 	project, ok := data.(*datastore.Project)
 	if !ok {
 		log.Errorf("invalid type for project - %s", eventType)

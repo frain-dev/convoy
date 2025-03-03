@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -122,7 +123,7 @@ func Test_MetaEvent_Run(t *testing.T) {
 				tt.qFn(mE)
 			}
 
-			err := mE.Run(tt.args.eventType, tt.args.projectID, tt.args.data)
+			err := mE.Run(context.Background(), tt.args.eventType, tt.args.projectID, tt.args.data)
 			require.Nil(t, err)
 		})
 	}
