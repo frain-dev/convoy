@@ -42,6 +42,11 @@ const (
 	WHERE id = $1 and project_id = $2;
 	`
 
+	checkEventTypeExists = `
+	SELECT exists(SELECT 1 FROM convoy.event_types
+	WHERE name = $1 and project_id = $2);
+	`
+
 	fetchAllEventTypes = `
 	SELECT * FROM convoy.event_types where project_id = $1;
 	`
@@ -147,7 +152,6 @@ func (e *eventTypesRepo) DeprecateEventType(ctx context.Context, id, projectId s
 	return eventType, nil
 }
 
-// FetchEventTypeById to update
 func (e *eventTypesRepo) FetchEventTypeById(ctx context.Context, id, projectId string) (*datastore.ProjectEventType, error) {
 	eventType := &datastore.ProjectEventType{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventTypeById, id, projectId).StructScan(eventType)
@@ -159,6 +163,19 @@ func (e *eventTypesRepo) FetchEventTypeById(ctx context.Context, id, projectId s
 	}
 
 	return eventType, nil
+}
+
+func (e *eventTypesRepo) CheckEventTypeExists(ctx context.Context, name, projectId string) (bool, error) {
+	var exists bool
+	err := e.db.GetDB().QueryRowxContext(ctx, checkEventTypeExists, name, projectId).Scan(&exists)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return exists, nil
 }
 
 func (e *eventTypesRepo) FetchAllEventTypes(ctx context.Context, projectId string) ([]datastore.ProjectEventType, error) {

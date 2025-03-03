@@ -274,7 +274,31 @@ const (
 	`
 
 	upsertSubscriptionEventTypes = `
-	INSERT INTO convoy.event_types (id, name, project_id, description, category) VALUES (:id, :name, :project_id, :description, :category) on conflict do nothing;`
+	INSERT INTO convoy.event_types (id, name, project_id, description, category) 
+	VALUES (:id, :name, :project_id, :description, :category) 
+	on conflict do nothing;`
+
+	insertSubscriptionEventTypeFilters = `
+	INSERT INTO convoy.filters (
+		id,
+		subscription_id,
+		event_type,
+		headers,
+		body,
+		raw_headers,
+		raw_body
+	)
+	SELECT
+		$1,
+		id,
+		unnest(filter_config_event_types),
+		filter_config_filter_headers,
+		filter_config_filter_body,
+		filter_config_filter_raw_headers,
+		filter_config_filter_raw_body
+	FROM convoy.subscriptions
+	WHERE deleted_at IS NULL ON CONFLICT DO NOTHING;
+	`
 )
 
 var (
@@ -560,6 +584,12 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
+	// create filters for each event type
+	_, err = tx.ExecContext(ctx, insertSubscriptionEventTypeFilters, ulid.Make().String())
+	if err != nil {
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
@@ -653,6 +683,13 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 
 	// create event types for each subscription
 	_, err = tx.NamedExecContext(ctx, upsertSubscriptionEventTypes, eventTypesSlice)
+	if err != nil {
+		return err
+	}
+
+	// todo(raymond): handle deletion case
+	// create filters for each event type
+	_, err = tx.ExecContext(ctx, insertSubscriptionEventTypeFilters, ulid.Make().String())
 	if err != nil {
 		return err
 	}
