@@ -151,6 +151,13 @@ func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.Porta
 		return nil, err
 	}
 
+	// Check if owner_id is provided in the context (set by PortalLinkOwnerIDMiddleware)
+	if ownerID, ok := r.Context().Value("owner_id").(string); ok && ownerID != "" && pLink.OwnerID == "" {
+		// If owner_id is provided in the context and the portal link doesn't have an owner_id set,
+		// update the portal link with the provided owner_id
+		pLink.OwnerID = ownerID
+	}
+
 	return pLink, nil
 }
 

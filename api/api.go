@@ -3,13 +3,14 @@ package api
 import (
 	"embed"
 	"fmt"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/render"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/render"
 
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/handlers"
@@ -447,6 +448,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		portalLinkRouter.Use(middleware.SetupCORS)
 		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
 		portalLinkRouter.Use(middleware.RequireAuth())
+		portalLinkRouter.Use(middleware.PortalLinkOwnerIDMiddleware)
 
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
 

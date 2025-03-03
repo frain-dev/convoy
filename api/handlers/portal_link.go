@@ -97,6 +97,8 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 			_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
 			return
 		}
+
+		// The owner_id is already handled in retrievePortalLinkFromToken via the PortalLinkOwnerIDMiddleware
 	} else {
 		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
 		pLink, err = portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
@@ -276,11 +278,18 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 }
 
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {
+	url := fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token)
+
+	// Add owner_id to URL if it exists
+	if pl.OwnerID != "" {
+		url = fmt.Sprintf("%s&owner_id=%s", url, pl.OwnerID)
+	}
+
 	return &models.PortalLinkResponse{
 		UID:               pl.UID,
 		ProjectID:         pl.ProjectID,
 		Name:              pl.Name,
-		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
+		URL:               url,
 		Token:             pl.Token,
 		OwnerID:           pl.OwnerID,
 		Endpoints:         pl.Endpoints,

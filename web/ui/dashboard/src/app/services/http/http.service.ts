@@ -13,6 +13,7 @@ export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
 	token = this.route.snapshot.queryParams?.token;
+	ownerId = this.route.snapshot.queryParams?.owner_id;
 	checkTokenTimeout: any;
 
 	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService) {}
@@ -28,27 +29,44 @@ export class HttpService {
 	}
 
 	buildRequestQuery(query?: { [k: string]: any }) {
-		if (!query || (query && Object.getOwnPropertyNames(query).length == 0)) return '';
+		// Create a new object if query is undefined
+		const safeQuery: { [k: string]: any } = query || {};
 
 		// add portal link query if available
-		if (this.token) query.token = this.token;
+		if (this.token) safeQuery.token = this.token;
+
+		// add owner_id if available
+		if (this.ownerId) safeQuery.owner_id = this.ownerId;
 
 		// remove empty data and objects in object
-		const cleanedQuery = Object.fromEntries(Object.entries(query).filter(([_, q]) => q !== '' && q !== undefined && q !== null && typeof q !== 'object'));
+		const cleanedQuery = Object.fromEntries(Object.entries(safeQuery).filter(([_, q]) => q !== '' && q !== undefined && q !== null && typeof q !== 'object'));
+
 		// convert object to query param
 		let cleanedQueryString: string = '';
+
 		Object.keys(cleanedQuery).forEach((q, i) => {
 			try {
-				const queryItem = JSON.parse(query[q]);
-				queryItem.forEach((item: any) => (cleanedQueryString += `${q}=${item}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`));
+				const queryValue = safeQuery[q];
+				if (queryValue !== undefined) {
+					const queryItem = JSON.parse(queryValue);
+					queryItem.forEach((item: any) => (cleanedQueryString += `${q}=${item}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`));
+				}
 			} catch (error) {
-				cleanedQueryString += `${q}=${query[q]}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`;
+				const queryValue = safeQuery[q];
+				if (queryValue !== undefined) {
+					cleanedQueryString += `${q}=${queryValue}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`;
+				}
 			}
 		});
 
 		// for query items with arrays, process them into a string
 		let queryString = '';
-		Object.keys(query).forEach((key: any) => (typeof query[key] === 'object' ? query[key]?.forEach((item: any) => (queryString += `&${key}=${item}`)) : false));
+		Object.keys(safeQuery).forEach((key: any) => {
+			const queryValue = safeQuery[key];
+			if (queryValue !== undefined && typeof queryValue === 'object') {
+				queryValue?.forEach((item: any) => (queryString += `&${key}=${item}`));
+			}
+		});
 
 		return cleanedQueryString + queryString;
 	}
@@ -84,7 +102,16 @@ export class HttpService {
 	buildURL(requestDetails: any): string {
 		if (requestDetails.isOut) return requestDetails.url;
 
-		if (this.token) return `${this.token ? this.APP_PORTAL_APIURL : this.APIURL}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
+		if (this.token) {
+			// Ensure query object exists
+			if (!requestDetails.query) requestDetails.query = {};
+
+			// Add token and owner_id to query if they exist
+			if (this.token) requestDetails.query.token = this.token;
+			if (this.ownerId) requestDetails.query.owner_id = this.ownerId;
+
+			return `${this.APP_PORTAL_APIURL}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
+		}
 
 		if (!requestDetails.level) return `${this.APIURL}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
 

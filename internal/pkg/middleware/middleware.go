@@ -6,11 +6,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/license"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
@@ -461,4 +462,18 @@ func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// PortalLinkOwnerIDMiddleware checks for owner_id in query parameters and adds it to the context
+func PortalLinkOwnerIDMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if owner_id is provided in the query parameters
+		ownerID := r.URL.Query().Get("owner_id")
+		if ownerID != "" {
+			// Add owner_id to the context
+			ctx := context.WithValue(r.Context(), "owner_id", ownerID)
+			r = r.WithContext(ctx)
+		}
+		next.ServeHTTP(w, r)
+	})
 }
