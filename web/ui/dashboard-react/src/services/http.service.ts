@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { router } from '../lib/router';
 import { isProductionMode } from '@/lib/env';
-import { CONVOY_LAST_AUTH_LOCATION_KEY, CONVOY_ORG_KEY } from '@/lib/constants';
+
+import * as authService from '@/services/auth.service';
+import * as projectsService from '@/services/projects.service';
+import * as organisationService from '@/services/organisations.service';
 
 import type { HttpResponse } from '@/models/global.model';
 
@@ -9,29 +12,9 @@ const APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/
 const APP_PORTAL_APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/portal-api`;
 
 function getToken() {
-	// @ts-expect-error with the ?. operator, we're fine here
+	// @ts-expect-error `token` is already marked as probably undefined
 	const token = router.state.location.search?.token as string | undefined;
 	return token ? token : '';
-}
-
-type AuthDetailsTokenJson = {
-	access_token: string;
-	refresh_token: string;
-};
-
-export function authDetails() {
-	const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
-
-	if (authDetails && authDetails !== 'undefined') {
-		const token = JSON.parse(authDetails) as AuthDetailsTokenJson;
-		return {
-			access_token: token.access_token,
-			refresh_token: token.refresh_token,
-			authState: true,
-		};
-	}
-
-	return { authState: false };
 }
 
 export function buildRequestQuery(
@@ -76,20 +59,19 @@ export function buildRequestQuery(
 	return cleanedQueryString + queryString;
 }
 
-export function getOrganisation() {
-	const org = localStorage.getItem(CONVOY_ORG_KEY);
-	return org ? (JSON.parse(org) as { name: string; uid: string }) : null;
-}
-
-export function getProject() {
-	const project = localStorage.getItem('CONVOY_PROJECT');
-	return project ? (JSON.parse(project) as { uid: string }) : null;
-}
-
-export function buildRequestPath(level?: 'org' | 'org_project'): string {
+export function buildRequestPath(
+	level?: 'org' | 'org_project',
+	deps: {
+		getCachedProject: typeof projectsService.getCachedProject;
+		getCachedOrganisation: typeof organisationService.getCachedOrganisation;
+	} = {
+		getCachedProject: projectsService.getCachedProject,
+		getCachedOrganisation: organisationService.getCachedOrganisation,
+	},
+): string {
 	if (!level) return '';
-	const orgId = getOrganisation()?.uid;
-	const projectId = getProject()?.uid;
+	const orgId = deps.getCachedOrganisation()?.uid;
+	const projectId = deps.getCachedProject()?.uid;
 
 	if (level == 'org' && orgId) return `/organisations/${orgId}`;
 
@@ -121,7 +103,12 @@ export function buildURL(requestDetails: any): string {
 	return `${APIURL}${requestPath}${requestDetails.url}${requestDetails.query ? '?' + buildRequestQuery(requestDetails.query) : ''}`;
 }
 
-export function setupAxios(requestDetails: { hideNotification?: boolean }) {
+export function setupAxios(
+	requestDetails: { hideNotification?: boolean },
+	deps: {
+		logUserOut: typeof authService.logUserOut;
+	} = { logUserOut: authService.logUserOut },
+) {
 	const http = axios.create();
 
 	http.interceptors.response.use(
@@ -137,7 +124,7 @@ export function setupAxios(requestDetails: { hideNotification?: boolean }) {
 					error.response?.status == 401 &&
 					!router.state.location.pathname.startsWith('/portal')
 				) {
-					logUserOut();
+					deps.logUserOut();
 					return Promise.reject(error);
 				}
 
@@ -165,15 +152,20 @@ export function setupAxios(requestDetails: { hideNotification?: boolean }) {
 	return http;
 }
 
-export async function request<TData>(requestDetails: {
-	url: string;
-	body?: any;
-	method: 'get' | 'post' | 'delete' | 'put';
-	hideNotification?: boolean;
-	query?: Record<string, any>;
-	level?: 'org' | 'org_project';
-	isOut?: boolean;
-}): Promise<HttpResponse<TData>> {
+export async function request<TData>(
+	requestDetails: {
+		url: string;
+		body?: any;
+		method: 'get' | 'post' | 'delete' | 'put';
+		hideNotification?: boolean;
+		query?: Record<string, any>;
+		level?: 'org' | 'org_project';
+		isOut?: boolean;
+	},
+	deps: { getAuthDetails: typeof authService.getCachedAuthTokens } = {
+		getAuthDetails: authService.getCachedAuthTokens,
+	},
+): Promise<HttpResponse<TData>> {
 	const url = buildURL(requestDetails);
 	if (url == 'error') throw new Error('Error constructing URL');
 
@@ -181,7 +173,7 @@ export async function request<TData>(requestDetails: {
 	const http = setupAxios({ hideNotification: !!hideNotification });
 
 	const requestHeader = {
-		Authorization: `Bearer ${getToken() || authDetails().access_token || ''}`,
+		Authorization: `Bearer ${getToken() || deps.getAuthDetails().access_token || ''}`,
 		...(isProductionMode && { 'X-Convoy-Version': '2024-04-01' }), // TODO confirm from @RT if this is permitted on the server
 	};
 
@@ -203,18 +195,4 @@ export async function request<TData>(requestDetails: {
 
 		throw new Error('An unexpected error occured');
 	}
-}
-
-export function logUserOut() {
-	// save previous location before session timeout
-	if (!router.state.location.pathname.startsWith('/login')) {
-		localStorage.setItem(CONVOY_LAST_AUTH_LOCATION_KEY, location.href);
-	}
-
-	// then move user to login page
-	router.navigate({
-		// @ts-expect-error `pathname` is definitely a route
-		from: router.state.location.pathname,
-		to: '/',
-	});
 }
