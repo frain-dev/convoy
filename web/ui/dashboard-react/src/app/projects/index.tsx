@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
+import { Dashboard } from '@/components/layout/dashboard';
 
 export const Route = createFileRoute('/projects/')({
 	beforeLoad() {
@@ -9,5 +10,9 @@ export const Route = createFileRoute('/projects/')({
 });
 
 function RouteComponent() {
-	return <h2 className="text-4xl font-semibold p-4">Projects</h2>;
+	return (
+		<Dashboard>
+			{/* <div>Page</div> */}
+		</Dashboard>
+	);
 }

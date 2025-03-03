@@ -5,5 +5,5 @@ export const Route = createFileRoute('/forgot-password')({
 });
 
 function RouteComponent() {
-	return <h2 className="text-4xl font-semibold p-4">Forgot Password</h2>;
+	return <h2 className="text-3xl font-semibold p-4">Forgot Password</h2>;
 }

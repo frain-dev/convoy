@@ -5,11 +5,7 @@ import { ensureCanAccessPrivatePages } from '@/lib/auth';
 export const Route = createFileRoute('/')({
 	beforeLoad() {
 		ensureCanAccessPrivatePages();
-		router.navigate({
-			to: '/projects',
-			// @ts-expect-error `pathname` is a defined route
-			from: router.state.location.pathname,
-		});
+		router.navigate({ to: '/projects' });
 	},
 	component: Index,
 });
