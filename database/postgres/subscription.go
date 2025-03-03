@@ -289,7 +289,7 @@ const (
 		raw_body
 	)
 	SELECT
-		$1,
+		convoy.generate_ulid()::VARCHAR,
 		id,
 		unnest(filter_config_event_types),
 		filter_config_filter_headers,
@@ -298,6 +298,16 @@ const (
 		filter_config_filter_raw_body
 	FROM convoy.subscriptions
 	WHERE deleted_at IS NULL ON CONFLICT DO NOTHING;
+	`
+
+	deleteSubscriptionEventTypes = `
+	delete from convoy.filters where id in (
+		select f.id as filter_id
+		from convoy.filters f
+		join convoy.subscriptions s on
+		s.id = f.subscription_id where s.id = $1
+		and f.event_type <> all(s.filter_config_event_types)
+	);
 	`
 )
 
@@ -585,7 +595,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 	}
 
 	// create filters for each event type
-	_, err = tx.ExecContext(ctx, insertSubscriptionEventTypeFilters, ulid.Make().String())
+	_, err = tx.ExecContext(ctx, insertSubscriptionEventTypeFilters)
 	if err != nil {
 		return err
 	}
@@ -687,9 +697,14 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
-	// todo(raymond): handle deletion case
+	// delete filters when they are removed from the subscription
+	_, err = tx.ExecContext(ctx, deleteSubscriptionEventTypes, subscription.UID)
+	if err != nil {
+		return err
+	}
+
 	// create filters for each event type
-	_, err = tx.ExecContext(ctx, insertSubscriptionEventTypeFilters, ulid.Make().String())
+	_, err = tx.ExecContext(ctx, insertSubscriptionEventTypeFilters)
 	if err != nil {
 		return err
 	}
