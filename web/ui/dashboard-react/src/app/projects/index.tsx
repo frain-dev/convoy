@@ -3,8 +3,8 @@ import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import { DashboardLayout } from '@/components/dashboard';
 
 export const Route = createFileRoute('/projects/')({
-	beforeLoad() {
-		ensureCanAccessPrivatePages();
+	beforeLoad({ context }) {
+		ensureCanAccessPrivatePages(context.auth?.isLoggedIn);
 	},
 	component: RouteComponent,
 });
@@ -12,7 +12,12 @@ export const Route = createFileRoute('/projects/')({
 function RouteComponent() {
 	return (
 		<DashboardLayout>
-			<div className='text-lg'>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dicta, blanditiis placeat repellendus, corrupti numquam accusantium ipsam culpa voluptas consectetur dolor obcaecati. Eius laboriosam eligendi necessitatibus veniam et, nihil consequuntur magnam?</div>
+			<div className="text-lg">
+				Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dicta,
+				blanditiis placeat repellendus, corrupti numquam accusantium ipsam culpa
+				voluptas consectetur dolor obcaecati. Eius laboriosam eligendi
+				necessitatibus veniam et, nihil consequuntur magnam?
+			</div>
 		</DashboardLayout>
 	);
 }

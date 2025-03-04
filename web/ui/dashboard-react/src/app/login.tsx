@@ -281,7 +281,7 @@ function LoginPage() {
 			dispatchState({ isLoadingProject: true });
 			await organisationService.getOrganisations({ refresh: true });
 			dispatchState({ isLoginButtonEnabled: true, isLoadingProject: false });
-			navigate({ to: '/', from: '/login' });
+			navigate({ to: '/projects', from: '/login' });
 		} catch (err) {
 			// TODO notify user using the UI
 			console.error(login.name, err);

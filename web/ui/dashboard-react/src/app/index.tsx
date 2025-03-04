@@ -3,8 +3,8 @@ import { router } from '@/lib/router';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 
 export const Route = createFileRoute('/')({
-	beforeLoad() {
-		ensureCanAccessPrivatePages();
+	beforeLoad({context}) {
+		ensureCanAccessPrivatePages(context.auth?.isLoggedIn);
 		router.navigate({ to: '/projects' });
 	},
 	component: Index,
