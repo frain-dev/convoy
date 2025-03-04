@@ -308,7 +308,7 @@ function HeaderRight() {
 export function DashboardHeader() {
 	return (
 		<header className="sticky top-0 z-50 border-b bg-background">
-			<div className="max-w-[1440px] flex w-full px-6 items-center justify-between mx-auto">
+			<div className="flex w-full px-6 items-center justify-between mx-auto">
 				<HeaderLeftLogo />
 				<HeaderRight />
 			</div>
@@ -615,21 +615,18 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 	);
 }
 
-const dashboardHeaderWidth = '1440px';
-const dashboardHeaderTotalWidth = '1488px';
-
 export function DashboardLayout(props: { children: ReactNode }) {
 	return (
 		<div className="[--header-height:calc(theme(spacing.14))]">
 			<SidebarProvider className="flex flex-col">
 				<DashboardHeader />
 				<div className="@container">
-					<div className={`flex max-w-[${dashboardHeaderTotalWidth}] mx-auto`}>
+					<div className={`flex mx-auto`}>
 						<DashboardSidebar />
 						<SidebarInset
-							className={`max-w-[${dashboardHeaderWidth}] p-2 mx-auto`}
+							className={`p-2 mx-auto`}
 						>
-							{props.children}
+{props.children}
 						</SidebarInset>
 					</div>
 				</div>

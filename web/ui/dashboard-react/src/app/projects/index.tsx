@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
-import { Dashboard } from '@/components/layout/dashboard';
+import { DashboardLayout } from '@/components/dashboard';
 
 export const Route = createFileRoute('/projects/')({
 	beforeLoad() {
@@ -11,8 +11,8 @@ export const Route = createFileRoute('/projects/')({
 
 function RouteComponent() {
 	return (
-		<Dashboard>
-			{/* <div>Page</div> */}
-		</Dashboard>
+		<DashboardLayout>
+			<div className='text-lg'>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Dicta, blanditiis placeat repellendus, corrupti numquam accusantium ipsam culpa voluptas consectetur dolor obcaecati. Eius laboriosam eligendi necessitatibus veniam et, nihil consequuntur magnam?</div>
+		</DashboardLayout>
 	);
 }
