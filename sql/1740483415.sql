@@ -18,7 +18,10 @@ CREATE TABLE IF NOT EXISTS convoy.filters (
 CREATE INDEX idx_filters_subscription_id ON convoy.filters(subscription_id);
 CREATE INDEX idx_filters_event_type ON convoy.filters(event_type);
 CREATE UNIQUE INDEX idx_filters_subscription_event_type ON convoy.filters(subscription_id, event_type);
+
 CREATE EXTENSION IF NOT EXISTS pgcrypto with schema public;
+CREATE EXTENSION IF NOT EXISTS pgcrypto with schema convoy;
+
 
 -- Migrate existing subscription filters to the new filters table. For each subscription event type, create a filter.
 INSERT INTO convoy.filters (
