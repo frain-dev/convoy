@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { createRootRoute, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { isProductionMode } from '@/lib/env';
 
 const TanStackRouterDevTools = isProductionMode
@@ -10,13 +10,13 @@ const TanStackRouterDevTools = isProductionMode
 			})),
 		);
 
-export const Route = createRootRoute({
+type RouterContext = {};
+
+export const Route = createRootRouteWithContext<RouterContext>()({
 	component: () => (
 		<>
 			<Outlet />
-			<Suspense>
-				{/* <TanStackRouterDevTools /> */}
-			</Suspense>
+			<Suspense>{/* <TanStackRouterDevTools /> */}</Suspense>
 		</>
 	),
 });

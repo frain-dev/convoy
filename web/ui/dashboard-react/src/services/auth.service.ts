@@ -47,6 +47,7 @@ type LoginDependencies = {
 	httpReq: typeof request;
 };
 
+/** As a side effect, it sets the cached auth profile and the cached auth tokens */
 export async function login(
 	requestDetails: LoginRequestDetails,
 	deps: LoginDependencies = { httpReq: request },
@@ -76,10 +77,11 @@ export async function loginWithSAML(
 	return res;
 }
 
+/** As a side effect, it clears all cached items */
 export function logUserOut() {
 	// save previous location before session timeout
 	if (!router.state.location.pathname.startsWith('/login')) {
-		localStorage.removeItem(CONVOY_AUTH_TOKENS_KEY);
+		localStorage.clear();
 		localStorage.setItem(CONVOY_LAST_AUTH_LOCATION_KEY, location.href);
 	}
 

@@ -12,6 +12,7 @@ type LoginDependencies = {
 	httpReq: typeof request;
 };
 
+/** As a side effect, it caches the auth profile and the auth tokens */
 export async function login(
 	requestDetails: LoginRequestDetails,
 	deps: LoginDependencies = { httpReq: request },

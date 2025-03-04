@@ -18,7 +18,7 @@ export function getCachedOrganisation(): Organisation | null {
 	return org ? JSON.parse(org) : null;
 }
 
-function setDefaultCachedOrganisation(organisations: Organisation[]) {
+export function setDefaultCachedOrganisation(organisations: Organisation[]) {
 	if (!organisations?.length) return;
 
 	const existingOrg = organisations.find(
@@ -44,10 +44,16 @@ type PaginatedOrganisationResult = {
 	pagination: Pagination;
 };
 
+/**
+ * As a side effect, it sets the default cached organisation
+ */
 export function getOrganisations(reqDetails: {
 	refresh: true;
 }): Promise<PaginatedOrganisationResult>;
 
+/**
+ * As a side effect, it sets the default cached organisation
+ */
 export function getOrganisations(reqDetails: {
 	refresh: false | undefined;
 }): Promise<Array<Organisation>>;
