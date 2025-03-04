@@ -11,6 +11,7 @@ export TEST_DB_PORT=5432
 export TEST_REDIS_SCHEME=redis
 export TEST_REDIS_HOST=localhost
 export TEST_REDIS_PORT=6379
+export TEST_LICENSE_KEY=1D5F41-CD114E-3FBC6B-3843A7-CC0D67-V3
 
 make integration_tests
 

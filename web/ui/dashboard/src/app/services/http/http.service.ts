@@ -102,7 +102,7 @@ export class HttpService {
 	buildURL(requestDetails: any): string {
 		if (requestDetails.isOut) return requestDetails.url;
 
-		if (this.token) {
+		if (this.token || this.ownerId) {
 			// Ensure query object exists
 			if (!requestDetails.query) requestDetails.query = {};
 
@@ -129,7 +129,7 @@ export class HttpService {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
 				const requestHeader = {
-					Authorization: `Bearer ${this.token || this.authDetails()?.access_token}`,
+					Authorization: `Bearer ${this.token || this.ownerId || this.authDetails()?.access_token}`,
 					'X-Convoy-Version': '2024-04-01'
 				};
 

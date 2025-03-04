@@ -29,6 +29,64 @@ func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
 
 func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
 	if cred.Type == auth.CredentialTypeToken {
+		// Check if the token is actually an owner_id (this happens when we're authenticating with owner_id only)
+		if ownerID, ok := ctx.Value("owner_id").(string); ok && ownerID != "" {
+			// If owner_id is provided in the context, try to find the portal link by owner_id
+			// First, try to get project_id from context
+			projectID, ok := ctx.Value("project_id").(string)
+			if !ok || projectID == "" {
+				// If no project_id in context, try to find portal links by owner_id across all projects
+				pLinks, err := n.portalLinkRepo.FindPortalLinksByOwnerID(ctx, ownerID)
+				if err == nil && len(pLinks) > 0 {
+					// Use the first portal link found
+					return &auth.AuthenticatedUser{
+						AuthenticatedByRealm: n.GetName(),
+						Credential:           *cred,
+						PortalLink:           &pLinks[0],
+					}, nil
+				}
+
+				// If we couldn't find by owner_id and the token is different, try by token
+				if cred.Token != "" && cred.Token != ownerID {
+					pLink, err := n.portalLinkRepo.FindPortalLinkByToken(ctx, cred.Token)
+					if err == nil {
+						return &auth.AuthenticatedUser{
+							AuthenticatedByRealm: n.GetName(),
+							Credential:           *cred,
+							PortalLink:           pLink,
+						}, nil
+					}
+				}
+
+				return nil, errors.New("could not find portal link by owner_id")
+			}
+
+			// Try to find portal link by owner_id and project_id
+			pLink, err := n.portalLinkRepo.FindPortalLinkByOwnerID(ctx, projectID, ownerID)
+			if err == nil {
+				return &auth.AuthenticatedUser{
+					AuthenticatedByRealm: n.GetName(),
+					Credential:           *cred,
+					PortalLink:           pLink,
+				}, nil
+			}
+
+			// If we couldn't find by owner_id and the token is different, try by token
+			if cred.Token != "" && cred.Token != ownerID {
+				pLink, err := n.portalLinkRepo.FindPortalLinkByToken(ctx, cred.Token)
+				if err == nil {
+					return &auth.AuthenticatedUser{
+						AuthenticatedByRealm: n.GetName(),
+						Credential:           *cred,
+						PortalLink:           pLink,
+					}, nil
+				}
+			}
+
+			return nil, errors.New("invalid portal link owner_id")
+		}
+
+		// Regular token authentication
 		pLink, err := n.portalLinkRepo.FindPortalLinkByToken(ctx, cred.Token)
 		if err != nil {
 			return nil, errors.New("invalid portal link token")

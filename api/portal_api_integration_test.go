@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -101,6 +103,9 @@ func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound()
 	// Act.
 	s.Router.ServeHTTP(w, req)
 
+	// Print response body for debugging
+	fmt.Println("Response body:", w.Body.String())
+
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
@@ -122,6 +127,9 @@ func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
+
+	// Print response body for debugging
+	fmt.Println("Response body:", w.Body.String())
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
@@ -168,6 +176,121 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkEndpoints() {
 
 func (s *PortalEndpointIntegrationTestSuite) Test_GetEndpoints_Filters() {
 	s.T().Skip("Depends on #637")
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_GetPortalLink_WithOwnerIDOnly() {
+	// Create a portal link with owner_id
+	ownerID := "test-owner-id"
+
+	// Create an endpoint to associate with the portal link
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	// Create a portal link with the endpoint
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	// Update the portal link with owner_id
+	portalLink.OwnerID = ownerID
+	err = postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB).UpdatePortalLink(context.Background(), s.DefaultProject.UID, portalLink)
+	require.NoError(s.T(), err)
+
+	// Verify the portal link was updated correctly
+	updatedPortalLink, err := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB).FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
+	require.NoError(s.T(), err)
+	fmt.Println("Updated Portal Link:", updatedPortalLink)
+	fmt.Println("Updated Portal Link Owner ID:", updatedPortalLink.OwnerID)
+
+	// Create a request with token in the query parameters
+	url := fmt.Sprintf("/portal-api/portal_link?token=%s", portalLink.Token)
+	fmt.Println("Request URL:", url)
+	fmt.Println("Token:", portalLink.Token)
+
+	// Create a request with the Authorization header set to the token
+	req := httptest.NewRequest(http.MethodGet, url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", portalLink.Token))
+
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Print response body for debugging
+	fmt.Println("Response body:", w.Body.String())
+
+	// Assert
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	// Deep Assert
+	var resp struct {
+		Message string                    `json:"message"`
+		Data    models.PortalLinkResponse `json:"data"`
+	}
+	err = json.NewDecoder(strings.NewReader(w.Body.String())).Decode(&resp)
+	require.NoError(s.T(), err)
+
+	// Verify the portal link details
+	require.Equal(s.T(), portalLink.UID, resp.Data.UID)
+	require.Equal(s.T(), ownerID, resp.Data.OwnerID)
+}
+
+func (s *PortalEndpointIntegrationTestSuite) Test_GetPortalLink_WithOwnerIDAuth() {
+	// Create a portal link with owner_id
+	ownerID := "test-owner-id"
+
+	// Create an endpoint to associate with the portal link
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
+	// Create a portal link with the endpoint
+	portalLink, err := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	require.NoError(s.T(), err)
+
+	// Update the portal link with owner_id
+	portalLink.OwnerID = ownerID
+	err = postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB).UpdatePortalLink(context.Background(), s.DefaultProject.UID, portalLink)
+	require.NoError(s.T(), err)
+
+	// Verify the portal link was updated correctly
+	updatedPortalLink, err := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB).FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
+	require.NoError(s.T(), err)
+	fmt.Println("Updated Portal Link:", updatedPortalLink)
+	fmt.Println("Updated Portal Link Owner ID:", updatedPortalLink.OwnerID)
+
+	// Create a request to get the endpoint using token in Authorization header and owner_id in query
+	url := fmt.Sprintf("/portal-api/endpoints/%s?owner_id=%s", endpoint.UID, ownerID)
+	fmt.Println("Request URL:", url)
+	fmt.Println("Owner ID:", ownerID)
+	fmt.Println("Endpoint UID:", endpoint.UID)
+	fmt.Println("Token:", portalLink.Token)
+
+	// Create a request with the Authorization header set to the token
+	req := httptest.NewRequest(http.MethodGet, url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", portalLink.Token))
+
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Print response body for debugging
+	fmt.Println("Response body:", w.Body.String())
+
+	// Assert
+	require.Equal(s.T(), http.StatusOK, w.Code)
+
+	// Deep Assert
+	var resp struct {
+		Message string             `json:"message"`
+		Data    datastore.Endpoint `json:"data"`
+	}
+	err = json.NewDecoder(strings.NewReader(w.Body.String())).Decode(&resp)
+	require.NoError(s.T(), err)
+
+	// Verify the endpoint details
+	require.Equal(s.T(), endpoint.UID, resp.Data.UID)
 }
 
 func TestPortalEndpointIntegrationTestSuite(t *testing.T) {
@@ -244,6 +367,9 @@ func (s *PortalEventIntegrationTestSuite) Test_GetEndpointEvent_Valid_Event() {
 
 	// Act.
 	s.Router.ServeHTTP(w, req)
+
+	// Print response body for debugging
+	fmt.Println("Response body:", w.Body.String())
 
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)

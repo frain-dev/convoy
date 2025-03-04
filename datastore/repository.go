@@ -2,9 +2,10 @@ package datastore
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"io"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 
 	"github.com/frain-dev/convoy/pkg/flatten"
 )
@@ -193,6 +194,7 @@ type PortalLinkRepository interface {
 	FindPortalLinkByID(ctx context.Context, projectID string, id string) (*PortalLink, error)
 	FindPortalLinkByOwnerID(ctx context.Context, projectID string, id string) (*PortalLink, error)
 	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
+	FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]PortalLink, error)
 	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
 	RevokePortalLink(ctx context.Context, projectID string, id string) error
 }

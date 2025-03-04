@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
 
@@ -184,6 +185,31 @@ const (
 	UPDATE convoy.portal_links SET
 	deleted_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
+	`
+
+	fetchPortalLinksByOwnerID = `
+	SELECT
+	p.id,
+	p.project_id,
+	p.name,
+	p.token,
+	p.endpoints,
+	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
+	COALESCE(p.owner_id, '') AS "owner_id",
+	CASE
+		WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
+		ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
+	END AS endpoint_count,
+	p.created_at,
+	p.updated_at,
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
+	FROM convoy.portal_links p
+	LEFT JOIN convoy.portal_links_endpoints pe
+		ON p.id = pe.portal_link_id
+	LEFT JOIN convoy.endpoints e
+		ON e.id = pe.endpoint_id
+	WHERE p.owner_id = $1 AND p.deleted_at IS NULL
+	GROUP BY p.id;
 	`
 )
 
@@ -484,6 +510,19 @@ func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.
 	}
 
 	return nil
+}
+
+func (p *portalLinkRepo) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]datastore.PortalLink, error) {
+	var portalLinks []datastore.PortalLink
+	err := p.db.GetDB().SelectContext(ctx, &portalLinks, fetchPortalLinksByOwnerID, ownerID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrPortalLinkNotFound
+		}
+		return nil, err
+	}
+
+	return portalLinks, nil
 }
 
 type PortalLinkEndpoint struct {

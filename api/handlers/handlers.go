@@ -78,6 +78,28 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 			return nil, err
 		}
 	case h.IsReqWithPortalLinkToken(authUser):
+		// Check if the portal link is already set in the auth user (from owner_id authentication)
+		if authUser.PortalLink != nil {
+			pLink, ok := authUser.PortalLink.(*datastore.PortalLink)
+			if ok {
+				project, err = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
+				if err != nil {
+					return nil, err
+				}
+				return project, nil
+			}
+		}
+
+		// Check if project_id is provided in the context (set by PortalLinkOwnerIDMiddleware)
+		if projectID, ok := r.Context().Value("project_id").(string); ok && projectID != "" {
+			project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+			if err != nil {
+				return nil, err
+			}
+			return project, nil
+		}
+
+		// Otherwise, try to find the portal link by token
 		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
 		pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
 		if err != nil {
@@ -146,7 +168,33 @@ func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.Porta
 	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
 
 	authUser := middleware.GetAuthUserFromContext(r.Context())
-	pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
+
+	// Check if the portal link was authenticated using owner_id
+	if ownerID, ok := r.Context().Value("owner_id").(string); ok && ownerID != "" {
+		// If the portal link in the auth user is already set (from owner_id authentication),
+		// use that portal link
+		if authUser.PortalLink != nil {
+			pLink, ok = authUser.PortalLink.(*datastore.PortalLink)
+			if ok {
+				return pLink, nil
+			}
+		}
+
+		// Otherwise, try to find the portal link by owner_id
+		project, err := h.retrieveProject(r)
+		if err != nil {
+			return nil, err
+		}
+
+		pLink, err = portalLinkRepo.FindPortalLinkByOwnerID(r.Context(), project.UID, ownerID)
+		if err == nil {
+			return pLink, nil
+		}
+	}
+
+	// If we couldn't find a portal link by owner_id, try to find it by token
+	var err error
+	pLink, err = portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
 	if err != nil {
 		return nil, err
 	}

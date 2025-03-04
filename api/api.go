@@ -2,6 +2,7 @@ package api
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -435,20 +436,28 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 				})
 			})
 		})
+	})
 
-		uiRouter.Route("/configuration", func(configRouter chi.Router) {
-			configRouter.Get("/", handler.GetConfiguration)
-			configRouter.Get("/is_signup_enabled", handler.IsSignUpEnabled)
-		})
+	// Test endpoint that doesn't require authentication
+	router.Get("/portal-api-test", func(w http.ResponseWriter, r *http.Request) {
+		ownerID := r.URL.Query().Get("owner_id")
+		response := map[string]interface{}{
+			"status":   true,
+			"message":  "Portal API test endpoint successful",
+			"owner_id": ownerID,
+		}
+		responseJSON, _ := json.Marshal(response)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(responseJSON)
 	})
 
 	// Portal Link API.
 	router.Route("/portal-api", func(portalLinkRouter chi.Router) {
-		portalLinkRouter.Use(middleware.JsonResponse)
-		portalLinkRouter.Use(middleware.SetupCORS)
-		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
-		portalLinkRouter.Use(middleware.RequireAuth())
-		portalLinkRouter.Use(middleware.PortalLinkOwnerIDMiddleware)
+		// Use the middleware stack from GetPortalAPIMiddleware
+		for _, mw := range GetPortalAPIMiddleware(handler) {
+			portalLinkRouter.Use(mw)
+		}
 
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
 
@@ -499,15 +508,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 					deliveryRouter.Get("/{deliveryAttemptID}", handler.GetDeliveryAttempt)
 				})
 			})
-		})
-
-		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
-			subscriptionRouter.Post("/", handler.CreateSubscription)
-			subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
-			subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
-			subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
-			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)
-			subscriptionRouter.Put("/{subscriptionID}", handler.UpdateSubscription)
 		})
 	})
 
@@ -658,14 +658,42 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 	})
 
 	// Portal Link API.
+	// Test endpoint that doesn't require authentication
+	router.Get("/portal-api/test", func(w http.ResponseWriter, r *http.Request) {
+		ownerID := r.URL.Query().Get("owner_id")
+		response := map[string]interface{}{
+			"status":   true,
+			"message":  "Test endpoint successful",
+			"owner_id": ownerID,
+		}
+		responseJSON, _ := json.Marshal(response)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(responseJSON)
+	})
+
 	router.Route("/portal-api", func(portalLinkRouter chi.Router) {
 		portalLinkRouter.Use(middleware.JsonResponse)
 		portalLinkRouter.Use(middleware.SetupCORS)
+		portalLinkRouter.Use(middleware.PortalLinkOwnerIDMiddleware)
 		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
 		portalLinkRouter.Use(middleware.RequireAuth())
 
+		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
+
 		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)
 
+		portalLinkRouter.Route("/endpoints", func(endpointRouter chi.Router) {
+			endpointRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+			endpointRouter.Get("/{endpointID}", handler.GetEndpoint)
+			endpointRouter.With(handler.CanManageEndpoint()).Post("/", handler.CreateEndpoint)
+			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}", handler.UpdateEndpoint)
+			endpointRouter.With(handler.CanManageEndpoint()).Delete("/{endpointID}", handler.DeleteEndpoint)
+			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}/pause", handler.PauseEndpoint)
+			endpointRouter.With(handler.CanManageEndpoint()).Put("/{endpointID}/expire_secret", handler.ExpireSecret)
+		})
+
+		// TODO(subomi): left this here temporarily till the data plane is stable.
 		portalLinkRouter.Route("/events", func(eventRouter chi.Router) {
 			eventRouter.Post("/", handler.CreateEndpointEvent)
 			eventRouter.With(middleware.Pagination).Get("/", handler.GetEventsPaged)
@@ -676,6 +704,13 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 				eventSubRouter.Get("/", handler.GetEndpointEvent)
 				eventSubRouter.Put("/replay", handler.ReplayEndpointEvent)
 			})
+		})
+
+		portalLinkRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
+			eventTypesRouter.Get("/", handler.GetEventTypes)
+			eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
+			eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
+			eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
 		})
 
 		portalLinkRouter.Route("/eventdeliveries", func(eventDeliveryRouter chi.Router) {

@@ -33,6 +33,7 @@ interface PORTAL_ENDPOINT extends ENDPOINT {
 export class EndpointsComponent implements OnInit {
 	@ViewChild('subscriptionDropdown') dropdownComponent!: DropdownComponent;
 	token: string = this.route.snapshot.queryParams.token;
+	ownerId: string = this.route.snapshot.queryParams.owner_id;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 	activeEndpoint?: PORTAL_ENDPOINT;
 	eventDeliveryFilteredByEventId!: string;
@@ -64,13 +65,13 @@ export class EndpointsComponent implements OnInit {
 	}
 
 	async getEndpoints(requestDetails?: CURSOR & { q?: string }) {
-        console.log(requestDetails)
+		console.log(requestDetails);
 		this.isloadingSubscriptions = true;
 		try {
 			const endpoints = await this.privateService.getEndpoints(requestDetails);
 			this.fetchedEndpoints = endpoints.data;
 			this.endpoints = endpoints.data.content;
-            this.displayedEndpoints = this.generalService.setContentDisplayed(endpoints.data.content, 'desc');
+			this.displayedEndpoints = this.generalService.setContentDisplayed(endpoints.data.content, 'desc');
 
 			this.isloadingSubscriptions = false;
 		} catch (_error) {
@@ -116,7 +117,11 @@ export class EndpointsComponent implements OnInit {
 	goToSubscriptionsPage(endpoint: ENDPOINT) {
 		this.activeEndpoint = endpoint;
 		this.showSubscriptionsList = true;
-		this.router.navigate(['/portal/subscriptions'], { queryParams: { token: this.token, endpointId: this.activeEndpoint?.uid } });
+		const queryParams: any = { endpointId: this.activeEndpoint?.uid };
+		if (this.token) queryParams.token = this.token;
+		if (this.ownerId) queryParams.owner_id = this.ownerId;
+
+		this.router.navigate(['/portal/subscriptions'], { queryParams });
 	}
 
 	hideSubscriptionDropdown() {
@@ -126,7 +131,11 @@ export class EndpointsComponent implements OnInit {
 	openEndpointForm(action: 'create' | 'update') {
 		this.action = action;
 		this.showCreateEndpoint = true;
-		this.location.go(`/portal/endpoints/${action === 'create' ? 'new' : this.activeEndpoint?.uid}?token=${this.token}`);
+		const queryParams = new URLSearchParams();
+		if (this.token) queryParams.append('token', this.token);
+		if (this.route.snapshot.queryParams.owner_id) queryParams.append('owner_id', this.route.snapshot.queryParams.owner_id);
+
+		this.location.go(`/portal/endpoints/${action === 'create' ? 'new' : this.activeEndpoint?.uid}?${queryParams.toString()}`);
 		document.getElementsByTagName('body')[0].classList.add('overflow-hidden');
 	}
 
@@ -134,7 +143,12 @@ export class EndpointsComponent implements OnInit {
 		this.activeEndpoint = undefined;
 		this.getEndpoints();
 		this.showCreateEndpoint = false;
-		this.location.go('/portal/endpoints?token=' + this.token);
+
+		const queryParams = new URLSearchParams();
+		if (this.token) queryParams.append('token', this.token);
+		if (this.route.snapshot.queryParams.owner_id) queryParams.append('owner_id', this.route.snapshot.queryParams.owner_id);
+
+		this.location.go(`/portal/endpoints?${queryParams.toString()}`);
 	}
 
 	goBack(isForm?: boolean) {

@@ -153,25 +153,37 @@ func JsonResponse(next http.Handler) http.Handler {
 func RequireAuth() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Debug logging
+			fmt.Printf("RequireAuth: Authorization=%s\n", r.Header.Get("Authorization"))
+
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
 				log.FromContext(r.Context()).WithError(err).Error("failed to get auth from request")
+				fmt.Printf("RequireAuth Error: %v\n", err)
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
 				return
 			}
 
+			// Debug logging
+			fmt.Printf("RequireAuth: Got credentials type=%s\n", creds.Type)
+
 			rc, err := realm_chain.Get()
 			if err != nil {
 				log.FromContext(r.Context()).WithError(err).Error("failed to get realm chain")
+				fmt.Printf("RequireAuth Error: failed to get realm chain: %v\n", err)
 				_ = render.Render(w, r, util.NewErrorResponse("internal server error", http.StatusInternalServerError))
 				return
 			}
 
 			authUser, err := rc.Authenticate(r.Context(), creds)
 			if err != nil {
+				fmt.Printf("RequireAuth Error: authentication failed: %v\n", err)
 				_ = render.Render(w, r, util.NewErrorResponse("authorization failed", http.StatusUnauthorized))
 				return
 			}
+
+			// Debug logging
+			fmt.Printf("RequireAuth: Authentication successful, realm=%s\n", authUser.AuthenticatedByRealm)
 
 			authCtx := context.WithValue(r.Context(), AuthUserCtx, authUser)
 
@@ -199,6 +211,28 @@ func RequirePersonalAccessToken() func(next http.Handler) http.Handler {
 
 func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 	val := r.Header.Get("Authorization")
+
+	// Special case for portal links with only owner_id
+	if ownerID := r.URL.Query().Get("owner_id"); ownerID != "" {
+		// If owner_id is provided in the query parameters, create a credential with the owner_id as the token
+		// Note: The Authorization header might have been set by PortalLinkOwnerIDMiddleware
+		if val == "" {
+			val = fmt.Sprintf("Bearer %s", ownerID)
+		}
+
+		// If the Authorization header is set and we have an owner_id, use the owner_id as the token
+		// This ensures that even if the Authorization header was set by the middleware, we still use the owner_id
+		return &auth.Credential{
+			Type:  auth.CredentialTypeToken,
+			Token: ownerID,
+		}, nil
+	}
+
+	// If no Authorization header, return an error
+	if val == "" {
+		return nil, errors.New("no authorization header provided")
+	}
+
 	authInfo := strings.Split(val, " ")
 
 	if len(authInfo) != 2 {
@@ -472,6 +506,22 @@ func PortalLinkOwnerIDMiddleware(next http.Handler) http.Handler {
 		if ownerID != "" {
 			// Add owner_id to the context
 			ctx := context.WithValue(r.Context(), "owner_id", ownerID)
+
+			// Try to extract project_id from the URL path if available
+			// This is needed for owner_id-only authentication
+			projectID := chi.URLParam(r, "projectID")
+			if projectID != "" {
+				ctx = context.WithValue(ctx, "project_id", projectID)
+			}
+
+			// Always set the Authorization header to use the owner_id
+			// This ensures the RequireAuth middleware can properly authenticate
+			r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", ownerID))
+
+			// Debug logging
+			fmt.Printf("PortalLinkOwnerIDMiddleware: owner_id=%s, project_id=%s, Authorization=%s\n",
+				ownerID, projectID, r.Header.Get("Authorization"))
+
 			r = r.WithContext(ctx)
 		}
 		next.ServeHTTP(w, r)

@@ -19,6 +19,7 @@ import (
 func TestNativeRealm_Authenticate(t *testing.T) {
 	type args struct {
 		cred *auth.Credential
+		ctx  context.Context
 	}
 	tests := []struct {
 		name       string
@@ -35,6 +36,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Type:  auth.CredentialTypeToken,
 					Token: "C8oU2G7dA75BWrHfFYYvrash",
 				},
+				ctx: context.Background(),
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				pR.EXPECT().
@@ -60,12 +62,50 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_authenticate_portal_link_with_owner_id_successfully",
+			args: args{
+				cred: &auth.Credential{
+					Type:  auth.CredentialTypeToken,
+					Token: "test-owner-id",
+				},
+				ctx: context.WithValue(
+					context.WithValue(context.Background(), "owner_id", "test-owner-id"),
+					"project_id", "test-project-id",
+				),
+			},
+			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
+				pR.EXPECT().
+					FindPortalLinkByOwnerID(gomock.Any(), "test-project-id", "test-owner-id").
+					Times(1).Return(&datastore.PortalLink{
+					UID:       "abcd",
+					Token:     "C8oU2G7dA75BWrHfFYYvrash",
+					OwnerID:   "test-owner-id",
+					CreatedAt: time.Time{},
+				}, nil)
+			},
+			want: &auth.AuthenticatedUser{
+				AuthenticatedByRealm: "native_realm",
+				Credential: auth.Credential{
+					Type:  auth.CredentialTypeToken,
+					Token: "test-owner-id",
+				},
+				PortalLink: &datastore.PortalLink{
+					UID:       "abcd",
+					Token:     "C8oU2G7dA75BWrHfFYYvrash",
+					OwnerID:   "test-owner-id",
+					CreatedAt: time.Time{},
+				},
+			},
+			wantErr: false,
+		},
+		{
 			name: "should_authenticate_apikey_successfully",
 			args: args{
 				cred: &auth.Credential{
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
+				ctx: context.Background(),
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
@@ -115,6 +155,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
+				ctx: context.Background(),
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
@@ -172,6 +213,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
+				ctx: context.Background(),
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
@@ -202,6 +244,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				cred: &auth.Credential{
 					Type: auth.CredentialTypeBasic,
 				},
+				ctx: context.Background(),
 			},
 			nFn:        nil,
 			want:       nil,
@@ -215,6 +258,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
+				ctx: context.Background(),
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
@@ -244,6 +288,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "abcd",
 				},
+				ctx: context.Background(),
 			},
 			want:       nil,
 			wantErr:    true,
@@ -256,6 +301,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
+				ctx: context.Background(),
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
@@ -285,6 +331,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					Type:   auth.CredentialTypeAPIKey,
 					APIKey: "CO.DkwB9HnZxy4DqZMi.0JUxUfnQJ7NHqvD2ikHsHFx4Wd5nnlTMgsOfUs4eW8oU2G7dA75BWrHfFYYvrash",
 				},
+				ctx: context.Background(),
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
 				aR.EXPECT().
@@ -310,7 +357,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				tt.nFn(mockApiKeyRepo, mockUserRepo, mockPortalLinkRepo)
 			}
 
-			got, err := nr.Authenticate(context.Background(), tt.args.cred)
+			got, err := nr.Authenticate(tt.args.ctx, tt.args.cred)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return
