@@ -1,6 +1,6 @@
-import { CONVOY_AUTH_TOKENS_KEY, CONVOY_AUTH_KEY } from "@/lib/constants";
+import { CONVOY_AUTH_TOKENS_KEY, CONVOY_AUTH_KEY } from '@/lib/constants';
 
-import type { CachedAuth } from "@/models/auth.model";
+import type { CachedAuth } from '@/models/auth.model';
 
 type AuthDetailsTokenJson = {
 	access_token: string;
@@ -8,33 +8,36 @@ type AuthDetailsTokenJson = {
 };
 
 export const useAuth = () => {
-function getCachedAuthTokens() {
-  const authDetails = localStorage.getItem(CONVOY_AUTH_TOKENS_KEY);
+	function getCachedAuthTokens() {
+		const authDetails = localStorage.getItem(CONVOY_AUTH_TOKENS_KEY);
 
-  if (authDetails && authDetails !== 'undefined') {
-    const token = JSON.parse(authDetails) as AuthDetailsTokenJson;
+		if (authDetails && authDetails !== 'undefined') {
+			const token = JSON.parse(authDetails) as AuthDetailsTokenJson;
 
-    return {
-      access_token: token.access_token,
-      refresh_token: token.refresh_token,
-      isLoggedIn: true,
-    };
-  }
+			return {
+				access_token: token.access_token,
+				refresh_token: token.refresh_token,
+				isLoggedIn: true,
+			};
+		}
 
-  return { isLoggedIn: false };
-}
+		return { isLoggedIn: false };
+	}
 
-function getCachedAuthProfile(): null | CachedAuth {
-  console.log('getting auth profile')
-  const authProfile = localStorage.getItem(CONVOY_AUTH_KEY);
+	function getCachedAuthProfile(): null | CachedAuth {
+		console.log('getting auth profile');
+		const authProfile = localStorage.getItem(CONVOY_AUTH_KEY);
 
-  if (authProfile && authProfile !== 'undefined')
-    return JSON.parse(authProfile);
+		if (authProfile && authProfile !== 'undefined')
+			return JSON.parse(authProfile);
 
-  return null;
-}
+		return null;
+	}
 
-  return { ...getCachedAuthTokens(), currentUser: getCachedAuthProfile() };
+	return {
+		getTokens: getCachedAuthTokens,
+		getCurrentUser: getCachedAuthProfile,
+	};
 };
 
 export type AuthContext = ReturnType<typeof useAuth>;

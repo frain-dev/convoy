@@ -4,7 +4,7 @@ import { ensureCanAccessPrivatePages } from '@/lib/auth';
 
 export const Route = createFileRoute('/')({
 	beforeLoad({context}) {
-		ensureCanAccessPrivatePages(context.auth?.isLoggedIn);
+		ensureCanAccessPrivatePages(context.auth?.getTokens()?.isLoggedIn);
 		router.navigate({ to: '/projects' });
 	},
 	component: Index,

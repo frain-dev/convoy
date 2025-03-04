@@ -4,7 +4,7 @@ import { DashboardLayout } from '@/components/dashboard';
 
 export const Route = createFileRoute('/projects/')({
 	beforeLoad({ context }) {
-		ensureCanAccessPrivatePages(context.auth?.isLoggedIn);
+		ensureCanAccessPrivatePages(context.auth?.getTokens()?.isLoggedIn);
 	},
 	component: RouteComponent,
 });
