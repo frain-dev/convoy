@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import * as signUpService from '@/services/signup.service';
+
+import * as authService from '@/services/auth.service';
 import * as hubSpotService from '@/services/hubspot.service';
 import * as licensesService from '@/services/licenses.service';
+
 import { router } from '@/lib/router';
 import { CONVOY_DASHBOARD_DOMAIN } from '@/lib/constants';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -253,7 +255,7 @@ function SignUpWithSAMLButton() {
 		localStorage.setItem('AUTH_TYPE', 'signup');
 
 		try {
-			const { data } = await signUpService.signUpWithSAML();
+			const { data } = await authService.signUpWithSAML();
 			window.open(data.redirectUrl, '_blank');
 		} catch (err) {
 			// TODO show user on the UI
@@ -303,7 +305,7 @@ function SignUpPage() {
 		const { email, firstName, lastName, orgName, password } = values;
 
 		try {
-			await signUpService.signUp({
+			await authService.signUp({
 				email,
 				password,
 				org_name: orgName,

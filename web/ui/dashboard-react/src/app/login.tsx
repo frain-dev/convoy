@@ -19,8 +19,7 @@ import { ConvoyLoader } from '@/components/convoy-loader';
 
 import { cn } from '@/lib/utils';
 
-import * as loginService from '@/services/login.service';
-import * as signUpService from '@/services/signup.service';
+import * as authService from '@/services/auth.service';
 import * as licensesService from '@/services/licenses.service';
 import * as organisationService from '@/services/organisations.service';
 
@@ -185,7 +184,7 @@ function LoginWithSAMLButton() {
 		localStorage.setItem('AUTH_TYPE', 'login');
 
 		try {
-			const res = await loginService.loginWithSAML();
+			const res = await authService.loginWithSAML();
 			const { redirectUrl } = res.data;
 			window.open(redirectUrl);
 		} catch (error) {
@@ -277,7 +276,7 @@ function LoginPage() {
 		dispatchState({ isLoginButtonEnabled: false });
 
 		try {
-			await loginService.login(values);
+			await authService.login(values);
 			dispatchState({ isLoadingProject: true });
 			await organisationService.getOrganisations({ refresh: true });
 			dispatchState({ isLoginButtonEnabled: true, isLoadingProject: false });
@@ -292,7 +291,7 @@ function LoginPage() {
 		dispatchState({ isFetchingSignUpConfig: true });
 
 		try {
-			const { data } = await signUpService.getSignUpConfig();
+			const { data } = await authService.getSignUpConfig();
 			dispatchState({ isSignUpEnabled: data });
 		} catch (err) {
 			// TODO notify user using the UI
@@ -347,5 +346,5 @@ export const Route = createFileRoute('/login')({
 	component: LoginPage,
 });
 
-// TODO loginService and other impure extraneous deps should be injected as a
+// TODO authService and other impure extraneous deps should be injected as a
 // dependency for testing and flexibility/maintainability
