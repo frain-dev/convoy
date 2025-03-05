@@ -79,14 +79,24 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 		}
 	case h.IsReqWithPortalLinkToken(authUser):
 		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
-		pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
-		if err != nil {
-			return nil, err
+		pLink, err2 := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
+		if err2 != nil {
+			//  authUser.Credential.Token should be the owner id at this point
+			pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
+			if innerErr != nil {
+				return nil, innerErr
+			}
+
+			if len(pLinks) == 0 {
+				return nil, err2
+			}
+
+			pLink = &pLinks[0]
 		}
 
-		project, err = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
-		if err != nil {
-			return nil, err
+		project, err2 = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
+		if err2 != nil {
+			return nil, err2
 		}
 
 	default: // No auth, this is an impossible scenario, but fail anyways.
@@ -148,7 +158,17 @@ func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.Porta
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
 	if err != nil {
-		return nil, err
+		//  authUser.Credential.Token should be the owner id at this point
+		pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
+		if innerErr != nil {
+			return nil, innerErr
+		}
+
+		if len(pLinks) == 0 {
+			return nil, err
+		}
+
+		pLink = &pLinks[0]
 	}
 
 	return pLink, nil

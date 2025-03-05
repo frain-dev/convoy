@@ -31,7 +31,17 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	if cred.Type == auth.CredentialTypeToken {
 		pLink, err := n.portalLinkRepo.FindPortalLinkByToken(ctx, cred.Token)
 		if err != nil {
-			return nil, errors.New("invalid portal link token")
+			// cred.Token should be the owner id at this point
+			pLinks, innerErr := n.portalLinkRepo.FindPortalLinksByOwnerID(ctx, cred.Token)
+			if innerErr != nil {
+				return nil, innerErr
+			}
+
+			if len(pLinks) == 0 {
+				return nil, err
+			}
+
+			pLink = &pLinks[0]
 		}
 
 		return &auth.AuthenticatedUser{

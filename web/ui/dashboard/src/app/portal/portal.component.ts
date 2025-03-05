@@ -26,6 +26,7 @@ export class PortalComponent implements OnInit {
 	];
 	activeNavTab: any;
 	token: string = this.route.snapshot.queryParams.token;
+	ownerId: string = this.route.snapshot.queryParams.owner_id;
 
 	constructor(private route: ActivatedRoute) {}
 
