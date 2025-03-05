@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
-import { createRootRoute, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
 import { isProductionMode } from '@/lib/env';
+
+import type { AuthContext } from '@/hooks/use-auth';
 
 const TanStackRouterDevTools = isProductionMode
 	? () => null
@@ -10,13 +12,15 @@ const TanStackRouterDevTools = isProductionMode
 			})),
 		);
 
-export const Route = createRootRoute({
+type RouterContext = {
+	auth: AuthContext | null
+};
+
+export const Route = createRootRouteWithContext<RouterContext>()({
 	component: () => (
 		<>
 			<Outlet />
-			<Suspense>
-				{/* <TanStackRouterDevTools /> */}
-			</Suspense>
+			<Suspense>{/* <TanStackRouterDevTools /> */}</Suspense>
 		</>
 	),
 });

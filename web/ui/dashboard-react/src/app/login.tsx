@@ -1,3 +1,12 @@
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect, useReducer, useState } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+
+import { Form } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
 	FormField,
@@ -6,20 +15,13 @@ import {
 	FormControl,
 	FormMessageWithErrorIcon,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Form } from '@/components/ui/form';
-import { cn } from '@/lib/utils';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
-import { useEffect, useReducer, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { z } from 'zod';
 import { ConvoyLoader } from '@/components/convoy-loader';
-import * as loginService from '@/services/login.service';
-import * as signUpService from '@/services/signup.service';
-import * as organisationService from '@/services/organisations.service';
+
+import { cn } from '@/lib/utils';
+
+import * as authService from '@/services/auth.service';
 import * as licensesService from '@/services/licenses.service';
+import * as organisationService from '@/services/organisations.service';
 
 import type { UseFormReturn } from 'react-hook-form';
 
@@ -182,7 +184,7 @@ function LoginWithSAMLButton() {
 		localStorage.setItem('AUTH_TYPE', 'login');
 
 		try {
-			const res = await loginService.loginWithSAML();
+			const res = await authService.loginWithSAML();
 			const { redirectUrl } = res.data;
 			window.open(redirectUrl);
 		} catch (error) {
@@ -229,18 +231,18 @@ function SignUpButton() {
 
 type ReducerPayload = Partial<{
 	isSignUpEnabled: boolean;
-	isFetchingConfig: boolean;
 	isLoadingProject: boolean;
 	hasCreateUserLicense: boolean;
 	isLoginButtonEnabled: boolean;
+	isFetchingSignUpConfig: boolean;
 }>;
 
 const initialReducerState = {
 	isSignUpEnabled: false,
-	isFetchingConfig: false,
 	isLoadingProject: false,
 	isLoginButtonEnabled: true,
 	hasCreateUserLicense: false,
+	isFetchingSignUpConfig: false,
 };
 
 function reducer(state: ReducerPayload, payload: ReducerPayload) {
@@ -255,8 +257,8 @@ function LoginPage() {
 	const [state, dispatchState] = useReducer(reducer, initialReducerState);
 
 	useEffect(function () {
-		getSignUpConfig();
-		licensesService.setLicenses();
+		getSignUpConfig().then();
+		licensesService.setLicenses().then();
 		const hasCreateUserLicense = licensesService.hasLicense('CREATE_USER');
 		dispatchState({ hasCreateUserLicense });
 	}, []);
@@ -274,39 +276,29 @@ function LoginPage() {
 		dispatchState({ isLoginButtonEnabled: false });
 
 		try {
-			await loginService.login(values);
+			await authService.login(values);
 			dispatchState({ isLoadingProject: true });
-			await getOrganisations();
+			await organisationService.getOrganisations({ refresh: true });
 			dispatchState({ isLoginButtonEnabled: true, isLoadingProject: false });
-
-			navigate({
-				to: '/',
-				from: '/login',
-			});
+			navigate({ to: '/projects', from: '/login' });
 		} catch (err) {
 			// TODO notify user using the UI
 			console.error(login.name, err);
+			dispatchState({ isLoginButtonEnabled: true, isLoadingProject: false });
 		}
 	}
 
 	async function getSignUpConfig() {
-		dispatchState({ isFetchingConfig: true });
+		dispatchState({ isFetchingSignUpConfig: true });
+
 		try {
-			const { data } = await signUpService.getSignUpConfig();
+			const { data } = await authService.getSignUpConfig();
 			dispatchState({ isSignUpEnabled: data });
 		} catch (err) {
 			// TODO notify user using the UI
 			console.error(getSignUpConfig.name, err);
 		} finally {
-			dispatchState({ isFetchingConfig: false });
-		}
-	}
-
-	async function getOrganisations() {
-		try {
-			await organisationService.getOrganisations({ refresh: true });
-		} catch (err) {
-			console.error(getOrganisations.name, err);
+			dispatchState({ isFetchingSignUpConfig: false });
 		}
 	}
 
@@ -345,7 +337,7 @@ function LoginPage() {
 
 			<ConvoyLoader
 				isTransparent={false}
-				isVisible={state.isLoadingProject || state.isFetchingConfig}
+				isVisible={state.isLoadingProject || state.isFetchingSignUpConfig}
 			/>
 		</>
 	);
@@ -355,5 +347,5 @@ export const Route = createFileRoute('/login')({
 	component: LoginPage,
 });
 
-// TODO loginService and other impure extraneous deps should be injected as a
+// TODO authService and other impure extraneous deps should be injected as a
 // dependency for testing and flexibility/maintainability

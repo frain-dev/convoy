@@ -3,6 +3,8 @@ import { CONVOY_ORG_KEY } from '@/lib/constants';
 
 import type { Organisation } from '@/models/organisation.model';
 
+// TODO move some of htese to a use-organisation hook
+
 type Pagination = {
 	per_page: number;
 	has_next_page: boolean;
@@ -18,17 +20,18 @@ export function getCachedOrganisation(): Organisation | null {
 	return org ? JSON.parse(org) : null;
 }
 
-function setDefaultCachedOrganisation(organisations: Organisation[]) {
-	if (!organisations?.length) return;
+export function setDefaultCachedOrganisation(organisations: Organisation[]) {
+	if (!organisations.length) return localStorage.removeItem(CONVOY_ORG_KEY);
 
 	const existingOrg = organisations.find(
 		org => org.uid == getCachedOrganisation()?.uid,
 	);
 
-	if (existingOrg)
-		return localStorage.setItem(CONVOY_ORG_KEY, JSON.stringify(existingOrg));
-
-	localStorage.setItem(CONVOY_ORG_KEY, JSON.stringify(organisations[0]));
+	if (!existingOrg)
+		return localStorage.setItem(
+			CONVOY_ORG_KEY,
+			JSON.stringify(organisations[0]),
+		);
 }
 
 export function getDefaultCachedOrganisation() {
@@ -44,10 +47,16 @@ type PaginatedOrganisationResult = {
 	pagination: Pagination;
 };
 
+/**
+ * As a side effect, it sets the default cached organisation
+ */
 export function getOrganisations(reqDetails: {
 	refresh: true;
 }): Promise<PaginatedOrganisationResult>;
 
+/**
+ * As a side effect, it sets the default cached organisation
+ */
 export function getOrganisations(reqDetails: {
 	refresh: false | undefined;
 }): Promise<Array<Organisation>>;
@@ -58,14 +67,33 @@ export async function getOrganisations(
 ) {
 	if (!reqDetails.refresh) return organisations;
 
-	const res = await deps.httpReq({
+	const res = await deps.httpReq<PaginatedOrganisationResult>({
 		url: '/organisations',
 		method: 'get',
 	});
 
-	setDefaultCachedOrganisation(
-		(res.data as PaginatedOrganisationResult).content,
-	);
+	setDefaultCachedOrganisation(res.data.content);
+
+	return res.data;
+}
+
+type AddOrganisationParams = {
+	name: string;
+};
+export async function addOrganisation(
+	reqDetails: AddOrganisationParams,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq({
+		method: 'post',
+		url: '/organisations',
+		body: reqDetails,
+	});
+
+	const cachedOrg = getDefaultCachedOrganisation();
+	if (!cachedOrg) {
+		// TODO set as cached org when data shcema is determined
+	}
 
 	return res.data;
 }

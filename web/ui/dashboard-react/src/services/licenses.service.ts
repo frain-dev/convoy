@@ -19,6 +19,7 @@ type SetLicensesDeps = {
 	getLicenses: typeof getLicenses;
 };
 
+/** As a side effect, it caches the licenses */
 export async function setLicenses(
 	deps: SetLicensesDeps = { httpReq: request, getLicenses },
 ) {

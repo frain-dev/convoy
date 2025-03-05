@@ -34,7 +34,6 @@ export async function getProject(
 		level: 'org',
 	});
 
-	localStorage.setItem(CONVOY_CURRENT_PROJECT, JSON.stringify(res.data));
 	projectDetails = res.data;
 
 	return res;
@@ -48,5 +47,4 @@ export function getCachedProject(): Project | null {
 
 export function setCachedProject(project:Project|null) {
 	localStorage.setItem(CONVOY_CURRENT_PROJECT, JSON.stringify(project));
-	
 }
