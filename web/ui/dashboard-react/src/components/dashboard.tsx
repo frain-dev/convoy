@@ -162,7 +162,7 @@ function HeaderRightOrganisation() {
 		setIsLoadingOrganisations(true);
 		organisationsService
 			.getOrganisations({ refresh: true })
-			.then(res => setOrganisations(res.content))
+			.then(({ content }) => setOrganisations(content))
 			.catch(console.error)
 			.finally(() => {
 				setIsLoadingOrganisations(false);
@@ -206,6 +206,7 @@ function HeaderRightOrganisation() {
 						<DropdownMenuItem className="focus:bg-transparent text-xs font-semibold focus:text-neutral-11 text-neutral-11 truncate py-1 hover:bg-transparent hover:cursor-default">
 							Your organisations ({organisations.length})
 						</DropdownMenuItem>
+						{/* TODO there is a 'padlockicon Business' overlay here. Check and create */}
 					</DropdownMenuGroup>
 
 					<DropdownMenuSeparator />
@@ -620,15 +621,9 @@ export function DashboardLayout(props: { children: ReactNode }) {
 		<div className="[--header-height:calc(theme(spacing.14))]">
 			<SidebarProvider className="flex flex-col">
 				<DashboardHeader />
-				<div className="@container">
-					<div className={`flex mx-auto`}>
-						<DashboardSidebar />
-						<SidebarInset
-							className={`p-2 mx-auto`}
-						>
-{props.children}
-						</SidebarInset>
-					</div>
+				<div className="flex items-center h-full">
+					<DashboardSidebar />
+					<SidebarInset className="flex h-full">{props.children}</SidebarInset>
 				</div>
 			</SidebarProvider>
 		</div>

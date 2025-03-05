@@ -8,6 +8,8 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 // Import Routes
 
 import { Route as rootRoute } from './app/__root'
@@ -17,12 +19,23 @@ import { Route as LoginImport } from './app/login'
 import { Route as GetStartedImport } from './app/get-started'
 import { Route as ForgotPasswordImport } from './app/forgot-password'
 import { Route as IndexImport } from './app/index'
-import { Route as ProjectsIndexImport } from './app/projects/index'
 import { Route as OrganisationsIndexImport } from './app/organisations/index'
+import { Route as ProjectsLayoutImport } from './app/projects/_layout'
+import { Route as ProjectsLayoutIndexImport } from './app/projects/_layout/index'
 import { Route as OrganisationsOrganisationIdIndexImport } from './app/organisations/$organisationId/index'
 import { Route as OrganisationsOrganisationIdSettingsImport } from './app/organisations/$organisationId/settings'
 
+// Create Virtual Routes
+
+const ProjectsImport = createFileRoute('/projects')()
+
 // Create/Update Routes
+
+const ProjectsRoute = ProjectsImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const UserSettingsRoute = UserSettingsImport.update({
   id: '/user-settings',
@@ -60,16 +73,21 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const ProjectsIndexRoute = ProjectsIndexImport.update({
-  id: '/projects/',
-  path: '/projects/',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const OrganisationsIndexRoute = OrganisationsIndexImport.update({
   id: '/organisations/',
   path: '/organisations/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const ProjectsLayoutRoute = ProjectsLayoutImport.update({
+  id: '/_layout',
+  getParentRoute: () => ProjectsRoute,
+} as any)
+
+const ProjectsLayoutIndexRoute = ProjectsLayoutIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProjectsLayoutRoute,
 } as any)
 
 const OrganisationsOrganisationIdIndexRoute =
@@ -132,18 +150,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserSettingsImport
       parentRoute: typeof rootRoute
     }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsImport
+      parentRoute: typeof rootRoute
+    }
+    '/projects/_layout': {
+      id: '/projects/_layout'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsLayoutImport
+      parentRoute: typeof ProjectsRoute
+    }
     '/organisations/': {
       id: '/organisations/'
       path: '/organisations'
       fullPath: '/organisations'
       preLoaderRoute: typeof OrganisationsIndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/projects/': {
-      id: '/projects/'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsIndexImport
       parentRoute: typeof rootRoute
     }
     '/organisations/$organisationId/settings': {
@@ -160,10 +185,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganisationsOrganisationIdIndexImport
       parentRoute: typeof rootRoute
     }
+    '/projects/_layout/': {
+      id: '/projects/_layout/'
+      path: '/'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsLayoutIndexImport
+      parentRoute: typeof ProjectsLayoutImport
+    }
   }
 }
 
 // Create and export the route tree
+
+interface ProjectsLayoutRouteChildren {
+  ProjectsLayoutIndexRoute: typeof ProjectsLayoutIndexRoute
+}
+
+const ProjectsLayoutRouteChildren: ProjectsLayoutRouteChildren = {
+  ProjectsLayoutIndexRoute: ProjectsLayoutIndexRoute,
+}
+
+const ProjectsLayoutRouteWithChildren = ProjectsLayoutRoute._addFileChildren(
+  ProjectsLayoutRouteChildren,
+)
+
+interface ProjectsRouteChildren {
+  ProjectsLayoutRoute: typeof ProjectsLayoutRouteWithChildren
+}
+
+const ProjectsRouteChildren: ProjectsRouteChildren = {
+  ProjectsLayoutRoute: ProjectsLayoutRouteWithChildren,
+}
+
+const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
+  ProjectsRouteChildren,
+)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -172,10 +228,11 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
+  '/projects': typeof ProjectsLayoutRouteWithChildren
   '/organisations': typeof OrganisationsIndexRoute
-  '/projects': typeof ProjectsIndexRoute
   '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdIndexRoute
+  '/projects/': typeof ProjectsLayoutIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -185,8 +242,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
+  '/projects': typeof ProjectsLayoutIndexRoute
   '/organisations': typeof OrganisationsIndexRoute
-  '/projects': typeof ProjectsIndexRoute
   '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdIndexRoute
 }
@@ -199,10 +256,12 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
+  '/projects': typeof ProjectsRouteWithChildren
+  '/projects/_layout': typeof ProjectsLayoutRouteWithChildren
   '/organisations/': typeof OrganisationsIndexRoute
-  '/projects/': typeof ProjectsIndexRoute
   '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
   '/organisations/$organisationId/': typeof OrganisationsOrganisationIdIndexRoute
+  '/projects/_layout/': typeof ProjectsLayoutIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -214,10 +273,11 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/user-settings'
-    | '/organisations'
     | '/projects'
+    | '/organisations'
     | '/organisations/$organisationId/settings'
     | '/organisations/$organisationId'
+    | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -226,8 +286,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/user-settings'
-    | '/organisations'
     | '/projects'
+    | '/organisations'
     | '/organisations/$organisationId/settings'
     | '/organisations/$organisationId'
   id:
@@ -238,10 +298,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/user-settings'
+    | '/projects'
+    | '/projects/_layout'
     | '/organisations/'
-    | '/projects/'
     | '/organisations/$organisationId/settings'
     | '/organisations/$organisationId/'
+    | '/projects/_layout/'
   fileRoutesById: FileRoutesById
 }
 
@@ -252,8 +314,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
   UserSettingsRoute: typeof UserSettingsRoute
+  ProjectsRoute: typeof ProjectsRouteWithChildren
   OrganisationsIndexRoute: typeof OrganisationsIndexRoute
-  ProjectsIndexRoute: typeof ProjectsIndexRoute
   OrganisationsOrganisationIdSettingsRoute: typeof OrganisationsOrganisationIdSettingsRoute
   OrganisationsOrganisationIdIndexRoute: typeof OrganisationsOrganisationIdIndexRoute
 }
@@ -265,8 +327,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
   UserSettingsRoute: UserSettingsRoute,
+  ProjectsRoute: ProjectsRouteWithChildren,
   OrganisationsIndexRoute: OrganisationsIndexRoute,
-  ProjectsIndexRoute: ProjectsIndexRoute,
   OrganisationsOrganisationIdSettingsRoute:
     OrganisationsOrganisationIdSettingsRoute,
   OrganisationsOrganisationIdIndexRoute: OrganisationsOrganisationIdIndexRoute,
@@ -288,8 +350,8 @@ export const routeTree = rootRoute
         "/login",
         "/signup",
         "/user-settings",
+        "/projects",
         "/organisations/",
-        "/projects/",
         "/organisations/$organisationId/settings",
         "/organisations/$organisationId/"
       ]
@@ -312,17 +374,31 @@ export const routeTree = rootRoute
     "/user-settings": {
       "filePath": "user-settings.tsx"
     },
+    "/projects": {
+      "filePath": "projects",
+      "children": [
+        "/projects/_layout"
+      ]
+    },
+    "/projects/_layout": {
+      "filePath": "projects/_layout.tsx",
+      "parent": "/projects",
+      "children": [
+        "/projects/_layout/"
+      ]
+    },
     "/organisations/": {
       "filePath": "organisations/index.tsx"
-    },
-    "/projects/": {
-      "filePath": "projects/index.tsx"
     },
     "/organisations/$organisationId/settings": {
       "filePath": "organisations/$organisationId/settings.tsx"
     },
     "/organisations/$organisationId/": {
       "filePath": "organisations/$organisationId/index.tsx"
+    },
+    "/projects/_layout/": {
+      "filePath": "projects/_layout/index.tsx",
+      "parent": "/projects/_layout"
     }
   }
 }
