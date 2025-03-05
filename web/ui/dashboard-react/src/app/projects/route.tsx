@@ -13,6 +13,7 @@ export const Route = createFileRoute('/projects')({
 
 function ProjectsLayout() {
 	return (
+		// TODO use Zustand instead because this provider here will cause the whole nodes to rerender and that's not performant
 		<OrganisationProvider>
 			<DashboardLayout>
 				<Outlet />
