@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 
 import { ConvoyLoader } from '@/components/convoy-loader';
 import { CreateOrganisation } from '@/components/create-organisation';
+
+import { useOrganisationContext } from '@/contexts/organisation';
 
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as projectsService from '@/services/projects.service';
 import * as orgsService from '@/services/organisations.service';
 
 import type { Project } from '@/models/project.model';
-import type { Organisation } from '@/models/organisation.model';
 
-export const Route = createFileRoute('/projects/_layout/')({
+export const Route = createFileRoute('/projects/')({
 	beforeLoad({ context }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
 	},
@@ -20,26 +21,20 @@ export const Route = createFileRoute('/projects/_layout/')({
 
 function RouteComponent() {
 	const [isLoadingOrganisations, setIsLoadingOrganisations] = useState(false);
-	const [organisations, setOrganisations] = useState<Organisation[]>([]);
+	const { setOrganisations, organisations } = useOrganisationContext();
 
 	// TODO use a hook for organisations and projects
 	const [currentProject /* setCurrentProject */] = useState<Project | null>(
 		projectsService.getCachedProject(),
 	);
 
-	useEffect(() => {
-		getOrganisations();
-
-		return () => {
-			// clear all requests on unmount component
-		};
-	}, []);
-
 	function getOrganisations() {
 		setIsLoadingOrganisations(true);
 		orgsService
 			.getOrganisations({ refresh: true })
-			.then(({ content }) => setOrganisations(content))
+			.then(({ content }) => {
+				setOrganisations(content);
+			})
 			// TODO use toast component to show UI error on all catch(error) where necessary
 			.catch(console.error)
 			.finally(() => {
@@ -53,7 +48,6 @@ function RouteComponent() {
 		return (
 			<CreateOrganisation
 				onOrgCreated={() => {
-					console.log('org created');
 					getOrganisations();
 				}}
 			/>

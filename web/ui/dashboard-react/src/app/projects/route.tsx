@@ -3,7 +3,7 @@ import { Outlet, createFileRoute } from '@tanstack/react-router';
 
 import { DashboardLayout } from '@/components/dashboard';
 
-export const Route = createFileRoute('/projects/_layout')({
+export const Route = createFileRoute('/projects')({
 	beforeLoad({ context }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
 	},

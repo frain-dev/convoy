@@ -56,25 +56,29 @@ import {
 } from '@/components/ui/command';
 import { FormField, FormItem, FormControl, Form } from '@/components/ui/form';
 
+import { useOrganisationContext } from '@/contexts/organisation';
+
 import { cn } from '@/lib/utils';
 import { Route } from '@/app/__root';
 import * as transform from '@/lib/pipes';
+import { useAuth } from '@/hooks/use-auth';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
-import * as organisationsService from '@/services/organisations.service';
+import * as licensesService from '@/services/licenses.service';
+import * as orgsService from '@/services/organisations.service';
 
 import convoyLogo from '../../assets/svg/logo.svg';
 import userProfileIcon from '../../assets/svg/user-icon.svg';
 
 import type { Project } from '@/models/project.model';
 import type { ComponentProps, ReactNode } from 'react';
-import type { Organisation } from '@/models/organisation.model';
+import { OrganisationProvider } from '@/contexts/organisation';
 
 function HeaderLeftLogo() {
 	const { toggleSidebar } = useSidebar();
 
 	return (
-		<div className="flex items-center justify-between py-3 h-[60px] w-[16rem]">
+		<div className="flex items-center justify-between py-3 h-[60px] w-[17rem]">
 			<a href="/" className="inline-block" rel="noreferrer">
 				<img src={convoyLogo} alt="Convoy" className="w-[100px]" />
 			</a>
@@ -94,7 +98,8 @@ function HeaderLeftLogo() {
 }
 
 function HeaderRightProfile() {
-	const [currentUser] = useState(authService.getCachedAuthProfile());
+	const { getCurrentUser } = useAuth();
+	const [currentUser] = useState(getCurrentUser());
 
 	if (!currentUser)
 		return (
@@ -151,35 +156,35 @@ function HeaderRightProfile() {
 
 function HeaderRightOrganisation() {
 	const navigate = useNavigate({ from: Route.fullPath });
+	const {
+		setCurrentOrganisation,
+		currentOrganisation,
+		organisations,
+		setOrganisations,
+	} = useOrganisationContext();
 
-	// TODO move this to a hook for organisations - useOrganisation
-	const [organisations, setOrganisations] = useState<Array<Organisation>>([]);
-	const [selectedOrganisation, setSelectedOrganisation] =
-		useState<Organisation | null>(null);
 	const [isLoadingOrganisations, setIsLoadingOrganisations] = useState(false);
 
 	useEffect(() => {
 		setIsLoadingOrganisations(true);
-		organisationsService
+		orgsService
 			.getOrganisations({ refresh: true })
-			.then(({ content }) => setOrganisations(content))
+			.then(({ content }) => {
+				console.log('setting orgs');
+				setOrganisations(content);
+				console.log('done setting orgs');
+			})
 			.catch(console.error)
 			.finally(() => {
 				setIsLoadingOrganisations(false);
-				setSelectedOrganisation(organisationsService.getCachedOrganisation());
 			});
 
 		return () => {};
 	}, []);
 
-	function setCurrentOrganisation(org: Organisation) {
-		console.log(
-			`todo: set ${org.name} with id = ${org.uid} as current organisation`,
-		);
-	}
-
+	// TODO run this skeleton part
 	if (isLoadingOrganisations) return <p>skeleton</p>;
-	if (!selectedOrganisation) return null;
+	if (!currentOrganisation) return null;
 
 	return (
 		<li className="mr-3">
@@ -191,11 +196,11 @@ function HeaderRightOrganisation() {
 					>
 						<Avatar className="rounded-[100%] w-6 h-6">
 							<AvatarFallback className="bg-new.primary-600 text-white-100 text-[10px]">
-								{transform.getInitials(selectedOrganisation.name.split(' '))}
+								{transform.getInitials(currentOrganisation.name.split(' '))}
 							</AvatarFallback>
 						</Avatar>
 						<span className="text-xs block px-1">
-							{selectedOrganisation?.name}
+							{currentOrganisation?.name}
 						</span>
 						<ChevronDown />
 					</Button>
@@ -222,17 +227,15 @@ function HeaderRightOrganisation() {
 							>
 								<Avatar className="rounded-[100%] w-6 h-6 text-xs mr-2">
 									<AvatarFallback className="bg-new.primary-600 text-white-100 text-[10px]">
-										{transform.getInitials(
-											selectedOrganisation.name.split(' '),
-										)}
+										{transform.getInitials(currentOrganisation.name.split(' '))}
 									</AvatarFallback>
 								</Avatar>
 								<span className="text-xs text-start block truncate w-3/4">
-									{selectedOrganisation.name}
+									{currentOrganisation.name}
 								</span>
 							</Button>
 							<a
-								href={`/organisations/${selectedOrganisation.uid}/settings`}
+								href={`/organisations/${currentOrganisation.uid}/settings`}
 								className="block p-2 bg-new.primary-25 rounded-8px transition-colors"
 							>
 								<SettingsIcon size={18} className="stroke-neutral-9" />
@@ -245,7 +248,7 @@ function HeaderRightOrganisation() {
 					<DropdownMenuGroup>
 						<ul>
 							{organisations
-								.filter(org => org.uid != selectedOrganisation.uid)
+								.filter(org => org.uid != currentOrganisation.uid)
 								.toSorted((oA, oB) => {
 									if (oA.name < oB.name) return -1;
 									if (oA.name > oB.name) return 1;
@@ -299,8 +302,10 @@ function HeaderRight() {
 	return (
 		<nav>
 			<ul className="flex items-center justify-end">
-				<HeaderRightOrganisation />
-				<HeaderRightProfile />
+				<OrganisationProvider>
+					<HeaderRightOrganisation />
+					<HeaderRightProfile />
+				</OrganisationProvider>
 			</ul>
 		</nav>
 	);
@@ -554,9 +559,18 @@ function FooterLinks() {
 }
 
 export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
-	const [cachedOrganisation] = useState(
-		organisationsService.getCachedOrganisation(),
+	const { currentOrganisation, setOrganisations } = useOrganisationContext();
+
+	const [canCreateProject] = useState<boolean>(
+		licensesService.hasLicense('CREATE_PROJECT'),
 	);
+
+	useEffect(() => {
+		orgsService.getOrganisations({ refresh: false }).then(setOrganisations);
+
+		return () => {};
+	}, []);
+
 	return (
 		<aside>
 			<Sidebar
@@ -570,11 +584,13 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 								<SidebarGroup>
 									<SidebarGroupContent className="flex flex-col justify-center items-center">
 										<Button
-											disabled={!cachedOrganisation}
+											disabled={
+												!currentOrganisation /*  || !canCreateProject */
+											}
 											variant={'ghost'}
 											className={cn(
 												'w-full hover:bg-neutral-3 ',
-												cachedOrganisation ? '' : 'blur-[1px]',
+												currentOrganisation ? '' : 'blur-[1px]',
 											)}
 										>
 											Create a new project
@@ -582,14 +598,16 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 									</SidebarGroupContent>
 								</SidebarGroup>
 							</TooltipTrigger>
-							{!cachedOrganisation ? (
+							{!currentOrganisation || !canCreateProject ? (
 								<TooltipContent
 									side="right"
 									sideOffset={-48}
 									className="bg-primary-100"
 								>
 									<p className="text-white-100 text-xs">
-										An organization is required to create projects on Convoy.
+										{!currentOrganisation
+											? 'An organisation is required to create projects on Convoy.'
+											: 'You are not licensed to create a project'}
 									</p>
 								</TooltipContent>
 							) : null}
@@ -617,12 +635,22 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 }
 
 export function DashboardLayout(props: { children: ReactNode }) {
+	useEffect(() => {
+		licensesService.setLicenses().then();
+
+		return () => {
+			// abort request
+		};
+	}, []);
+
 	return (
 		<div className="[--header-height:calc(theme(spacing.14))]">
 			<SidebarProvider className="flex flex-col">
 				<DashboardHeader />
 				<div className="flex items-center h-full">
-					<DashboardSidebar />
+					<OrganisationProvider>
+						<DashboardSidebar />
+					</OrganisationProvider>
 					<SidebarInset className="flex h-full">{props.children}</SidebarInset>
 				</div>
 			</SidebarProvider>
