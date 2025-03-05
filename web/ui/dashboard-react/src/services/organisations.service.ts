@@ -1,5 +1,4 @@
 import { request } from './http.service';
-import { CONVOY_ORG_KEY } from '@/lib/constants';
 
 import type { Organisation } from '@/models/organisation.model';
 
@@ -15,32 +14,24 @@ type Pagination = {
 
 let organisations: Array<Organisation> = [];
 
-export function getCachedOrganisation(): Organisation | null {
-	let org = localStorage.getItem(CONVOY_ORG_KEY);
-	return org ? JSON.parse(org) : null;
-}
+// export function getCachedOrganisation(): Organisation | null {
+// 	let org = localStorage.getItem(CONVOY_ORG_KEY);
+// 	return org ? JSON.parse(org) : null;
+// }
 
-export function setDefaultCachedOrganisation(organisations: Organisation[]) {
-	if (!organisations.length) return localStorage.removeItem(CONVOY_ORG_KEY);
+// export function setDefaultCachedOrganisation(organisations: Organisation[]) {
+// 	if (!organisations.length) return localStorage.removeItem(CONVOY_ORG_KEY);
 
-	const existingOrg = organisations.find(
-		org => org.uid == getCachedOrganisation()?.uid,
-	);
+// 	return localStorage.setItem(CONVOY_ORG_KEY, JSON.stringify(organisations[0]));
+// }
 
-	if (!existingOrg)
-		return localStorage.setItem(
-			CONVOY_ORG_KEY,
-			JSON.stringify(organisations[0]),
-		);
-}
+// export function getDefaultCachedOrganisation() {
+// 	const cached = localStorage.getItem(CONVOY_ORG_KEY);
+// 	if (!cached) return null;
 
-export function getDefaultCachedOrganisation() {
-	const cached = localStorage.getItem(CONVOY_ORG_KEY);
-	if (!cached) return null;
-
-	const cachedOrg = JSON.parse(cached);
-	return cachedOrg as Organisation;
-}
+// 	const cachedOrg = JSON.parse(cached);
+// 	return cachedOrg as Organisation;
+// }
 
 type PaginatedOrganisationResult = {
 	content: Array<Organisation>;
@@ -72,7 +63,7 @@ export async function getOrganisations(
 		method: 'get',
 	});
 
-	setDefaultCachedOrganisation(res.data.content);
+	organisations = res.data.content
 
 	return res.data;
 }
@@ -89,11 +80,6 @@ export async function addOrganisation(
 		url: '/organisations',
 		body: reqDetails,
 	});
-
-	const cachedOrg = getDefaultCachedOrganisation();
-	if (!cachedOrg) {
-		// TODO set as cached org when data shcema is determined
-	}
 
 	return res.data;
 }

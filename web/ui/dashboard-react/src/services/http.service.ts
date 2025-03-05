@@ -2,9 +2,9 @@ import axios from 'axios';
 import { router } from '../lib/router';
 import { isProductionMode } from '@/lib/env';
 
+import { CONVOY_ORG_KEY } from '@/lib/constants';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
-import * as organisationService from '@/services/organisations.service';
 
 import type { HttpResponse } from '@/models/global.model';
 
@@ -63,14 +63,18 @@ export function buildRequestPath(
 	level?: 'org' | 'org_project',
 	deps: {
 		getCachedProject: typeof projectsService.getCachedProject;
-		getCachedOrganisation: typeof organisationService.getCachedOrganisation;
+		getCachedOrganisationId: () => string
 	} = {
 		getCachedProject: projectsService.getCachedProject,
-		getCachedOrganisation: organisationService.getCachedOrganisation,
+		getCachedOrganisationId: () => {
+			const org = localStorage.getItem(CONVOY_ORG_KEY)
+			if(!org) return ''
+			return JSON.parse(org).uid as string
+		},
 	},
 ): string {
 	if (!level) return '';
-	const orgId = deps.getCachedOrganisation()?.uid;
+	const orgId = deps.getCachedOrganisationId();
 	const projectId = deps.getCachedProject()?.uid;
 
 	if (level == 'org' && orgId) return `/organisations/${orgId}`;
@@ -191,7 +195,7 @@ export async function request<TData>(
 			throw new Error(error.message);
 		}
 
-		console.log('unexpected error:', error);
+		console.error('unexpected error:', error);
 
 		throw new Error('An unexpected error occured');
 	}

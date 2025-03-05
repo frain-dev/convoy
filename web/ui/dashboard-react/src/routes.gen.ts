@@ -8,8 +8,6 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from '@tanstack/react-router'
-
 // Import Routes
 
 import { Route as rootRoute } from './app/__root'
@@ -18,24 +16,14 @@ import { Route as SignupImport } from './app/signup'
 import { Route as LoginImport } from './app/login'
 import { Route as GetStartedImport } from './app/get-started'
 import { Route as ForgotPasswordImport } from './app/forgot-password'
+import { Route as ProjectsRouteImport } from './app/projects/route'
 import { Route as IndexImport } from './app/index'
+import { Route as ProjectsIndexImport } from './app/projects/index'
 import { Route as OrganisationsIndexImport } from './app/organisations/index'
-import { Route as ProjectsLayoutImport } from './app/projects/_layout'
-import { Route as ProjectsLayoutIndexImport } from './app/projects/_layout/index'
 import { Route as OrganisationsOrganisationIdIndexImport } from './app/organisations/$organisationId/index'
 import { Route as OrganisationsOrganisationIdSettingsImport } from './app/organisations/$organisationId/settings'
 
-// Create Virtual Routes
-
-const ProjectsImport = createFileRoute('/projects')()
-
 // Create/Update Routes
-
-const ProjectsRoute = ProjectsImport.update({
-  id: '/projects',
-  path: '/projects',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const UserSettingsRoute = UserSettingsImport.update({
   id: '/user-settings',
@@ -67,27 +55,28 @@ const ForgotPasswordRoute = ForgotPasswordImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ProjectsRouteRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
 } as any)
 
+const ProjectsIndexRoute = ProjectsIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProjectsRouteRoute,
+} as any)
+
 const OrganisationsIndexRoute = OrganisationsIndexImport.update({
   id: '/organisations/',
   path: '/organisations/',
   getParentRoute: () => rootRoute,
-} as any)
-
-const ProjectsLayoutRoute = ProjectsLayoutImport.update({
-  id: '/_layout',
-  getParentRoute: () => ProjectsRoute,
-} as any)
-
-const ProjectsLayoutIndexRoute = ProjectsLayoutIndexImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ProjectsLayoutRoute,
 } as any)
 
 const OrganisationsOrganisationIdIndexRoute =
@@ -113,6 +102,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRoute
     }
     '/forgot-password': {
@@ -150,26 +146,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserSettingsImport
       parentRoute: typeof rootRoute
     }
-    '/projects': {
-      id: '/projects'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsImport
-      parentRoute: typeof rootRoute
-    }
-    '/projects/_layout': {
-      id: '/projects/_layout'
-      path: '/projects'
-      fullPath: '/projects'
-      preLoaderRoute: typeof ProjectsLayoutImport
-      parentRoute: typeof ProjectsRoute
-    }
     '/organisations/': {
       id: '/organisations/'
       path: '/organisations'
       fullPath: '/organisations'
       preLoaderRoute: typeof OrganisationsIndexImport
       parentRoute: typeof rootRoute
+    }
+    '/projects/': {
+      id: '/projects/'
+      path: '/'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof ProjectsIndexImport
+      parentRoute: typeof ProjectsRouteImport
     }
     '/organisations/$organisationId/settings': {
       id: '/organisations/$organisationId/settings'
@@ -185,54 +174,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganisationsOrganisationIdIndexImport
       parentRoute: typeof rootRoute
     }
-    '/projects/_layout/': {
-      id: '/projects/_layout/'
-      path: '/'
-      fullPath: '/projects/'
-      preLoaderRoute: typeof ProjectsLayoutIndexImport
-      parentRoute: typeof ProjectsLayoutImport
-    }
   }
 }
 
 // Create and export the route tree
 
-interface ProjectsLayoutRouteChildren {
-  ProjectsLayoutIndexRoute: typeof ProjectsLayoutIndexRoute
+interface ProjectsRouteRouteChildren {
+  ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
-const ProjectsLayoutRouteChildren: ProjectsLayoutRouteChildren = {
-  ProjectsLayoutIndexRoute: ProjectsLayoutIndexRoute,
+const ProjectsRouteRouteChildren: ProjectsRouteRouteChildren = {
+  ProjectsIndexRoute: ProjectsIndexRoute,
 }
 
-const ProjectsLayoutRouteWithChildren = ProjectsLayoutRoute._addFileChildren(
-  ProjectsLayoutRouteChildren,
-)
-
-interface ProjectsRouteChildren {
-  ProjectsLayoutRoute: typeof ProjectsLayoutRouteWithChildren
-}
-
-const ProjectsRouteChildren: ProjectsRouteChildren = {
-  ProjectsLayoutRoute: ProjectsLayoutRouteWithChildren,
-}
-
-const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
-  ProjectsRouteChildren,
+const ProjectsRouteRouteWithChildren = ProjectsRouteRoute._addFileChildren(
+  ProjectsRouteRouteChildren,
 )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/projects': typeof ProjectsRouteRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/get-started': typeof GetStartedRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
-  '/projects': typeof ProjectsLayoutRouteWithChildren
   '/organisations': typeof OrganisationsIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdIndexRoute
-  '/projects/': typeof ProjectsLayoutIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -242,8 +212,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
-  '/projects': typeof ProjectsLayoutIndexRoute
   '/organisations': typeof OrganisationsIndexRoute
+  '/projects': typeof ProjectsIndexRoute
   '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdIndexRoute
 }
@@ -251,33 +221,32 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/projects': typeof ProjectsRouteRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/get-started': typeof GetStartedRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
-  '/projects': typeof ProjectsRouteWithChildren
-  '/projects/_layout': typeof ProjectsLayoutRouteWithChildren
   '/organisations/': typeof OrganisationsIndexRoute
+  '/projects/': typeof ProjectsIndexRoute
   '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
   '/organisations/$organisationId/': typeof OrganisationsOrganisationIdIndexRoute
-  '/projects/_layout/': typeof ProjectsLayoutIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/projects'
     | '/forgot-password'
     | '/get-started'
     | '/login'
     | '/signup'
     | '/user-settings'
-    | '/projects'
     | '/organisations'
+    | '/projects/'
     | '/organisations/$organisationId/settings'
     | '/organisations/$organisationId'
-    | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -286,35 +255,34 @@ export interface FileRouteTypes {
     | '/login'
     | '/signup'
     | '/user-settings'
-    | '/projects'
     | '/organisations'
+    | '/projects'
     | '/organisations/$organisationId/settings'
     | '/organisations/$organisationId'
   id:
     | '__root__'
     | '/'
+    | '/projects'
     | '/forgot-password'
     | '/get-started'
     | '/login'
     | '/signup'
     | '/user-settings'
-    | '/projects'
-    | '/projects/_layout'
     | '/organisations/'
+    | '/projects/'
     | '/organisations/$organisationId/settings'
     | '/organisations/$organisationId/'
-    | '/projects/_layout/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ProjectsRouteRoute: typeof ProjectsRouteRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   GetStartedRoute: typeof GetStartedRoute
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
   UserSettingsRoute: typeof UserSettingsRoute
-  ProjectsRoute: typeof ProjectsRouteWithChildren
   OrganisationsIndexRoute: typeof OrganisationsIndexRoute
   OrganisationsOrganisationIdSettingsRoute: typeof OrganisationsOrganisationIdSettingsRoute
   OrganisationsOrganisationIdIndexRoute: typeof OrganisationsOrganisationIdIndexRoute
@@ -322,12 +290,12 @@ export interface RootRouteChildren {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ProjectsRouteRoute: ProjectsRouteRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   GetStartedRoute: GetStartedRoute,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
   UserSettingsRoute: UserSettingsRoute,
-  ProjectsRoute: ProjectsRouteWithChildren,
   OrganisationsIndexRoute: OrganisationsIndexRoute,
   OrganisationsOrganisationIdSettingsRoute:
     OrganisationsOrganisationIdSettingsRoute,
@@ -345,12 +313,12 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/projects",
         "/forgot-password",
         "/get-started",
         "/login",
         "/signup",
         "/user-settings",
-        "/projects",
         "/organisations/",
         "/organisations/$organisationId/settings",
         "/organisations/$organisationId/"
@@ -358,6 +326,12 @@ export const routeTree = rootRoute
     },
     "/": {
       "filePath": "index.tsx"
+    },
+    "/projects": {
+      "filePath": "projects/route.tsx",
+      "children": [
+        "/projects/"
+      ]
     },
     "/forgot-password": {
       "filePath": "forgot-password.tsx"
@@ -374,31 +348,18 @@ export const routeTree = rootRoute
     "/user-settings": {
       "filePath": "user-settings.tsx"
     },
-    "/projects": {
-      "filePath": "projects",
-      "children": [
-        "/projects/_layout"
-      ]
-    },
-    "/projects/_layout": {
-      "filePath": "projects/_layout.tsx",
-      "parent": "/projects",
-      "children": [
-        "/projects/_layout/"
-      ]
-    },
     "/organisations/": {
       "filePath": "organisations/index.tsx"
+    },
+    "/projects/": {
+      "filePath": "projects/index.tsx",
+      "parent": "/projects"
     },
     "/organisations/$organisationId/settings": {
       "filePath": "organisations/$organisationId/settings.tsx"
     },
     "/organisations/$organisationId/": {
       "filePath": "organisations/$organisationId/index.tsx"
-    },
-    "/projects/_layout/": {
-      "filePath": "projects/_layout/index.tsx",
-      "parent": "/projects/_layout"
     }
   }
 }
