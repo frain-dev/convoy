@@ -7,7 +7,7 @@ type AuthDetailsTokenJson = {
 	refresh_token: string;
 };
 
-export const useAuth = () => {
+export function useAuth() {
 	function getCachedAuthTokens() {
 		const authDetails = localStorage.getItem(CONVOY_AUTH_TOKENS_KEY);
 
@@ -25,7 +25,6 @@ export const useAuth = () => {
 	}
 
 	function getCachedAuthProfile(): null | CachedAuth {
-		console.log('getting auth profile');
 		const authProfile = localStorage.getItem(CONVOY_AUTH_KEY);
 
 		if (authProfile && authProfile !== 'undefined')
@@ -38,6 +37,6 @@ export const useAuth = () => {
 		getTokens: getCachedAuthTokens,
 		getCurrentUser: getCachedAuthProfile,
 	};
-};
+}
 
 export type AuthContext = ReturnType<typeof useAuth>;

@@ -21,11 +21,11 @@ export async function sendWelcomeEmail(
 		return data;
 	} catch (err) {
 		if (axios.isAxiosError(err)) {
-			console.log('hubspot error message: ', err.message);
+			console.error('hubspot error message: ', err.message);
 			return err.message;
 		}
 
-		console.log('hubspot unexpected error: ', err);
+		console.error('hubspot unexpected error: ', err);
 		throw new Error('An hubspot unexpected error occurred');
 	}
 }
