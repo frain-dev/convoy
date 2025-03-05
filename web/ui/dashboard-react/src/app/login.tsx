@@ -284,6 +284,7 @@ function LoginPage() {
 		} catch (err) {
 			// TODO notify user using the UI
 			console.error(login.name, err);
+			dispatchState({ isLoginButtonEnabled: true, isLoadingProject: false });
 		}
 	}
 
