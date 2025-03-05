@@ -72,7 +72,6 @@ import userProfileIcon from '../../assets/svg/user-icon.svg';
 
 import type { Project } from '@/models/project.model';
 import type { ComponentProps, ReactNode } from 'react';
-import { OrganisationProvider } from '@/contexts/organisation';
 
 function HeaderLeftLogo() {
 	const { toggleSidebar } = useSidebar();
@@ -170,9 +169,7 @@ function HeaderRightOrganisation() {
 		orgsService
 			.getOrganisations({ refresh: true })
 			.then(({ content }) => {
-				console.log('setting orgs');
 				setOrganisations(content);
-				console.log('done setting orgs');
 			})
 			.catch(console.error)
 			.finally(() => {
@@ -302,10 +299,8 @@ function HeaderRight() {
 	return (
 		<nav>
 			<ul className="flex items-center justify-end">
-				<OrganisationProvider>
-					<HeaderRightOrganisation />
-					<HeaderRightProfile />
-				</OrganisationProvider>
+				<HeaderRightOrganisation />
+				<HeaderRightProfile />
 			</ul>
 		</nav>
 	);
@@ -584,9 +579,7 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 								<SidebarGroup>
 									<SidebarGroupContent className="flex flex-col justify-center items-center">
 										<Button
-											disabled={
-												!currentOrganisation /*  || !canCreateProject */
-											}
+											disabled={!currentOrganisation || !canCreateProject}
 											variant={'ghost'}
 											className={cn(
 												'w-full hover:bg-neutral-3 ',
@@ -648,9 +641,7 @@ export function DashboardLayout(props: { children: ReactNode }) {
 			<SidebarProvider className="flex flex-col">
 				<DashboardHeader />
 				<div className="flex items-center h-full">
-					<OrganisationProvider>
-						<DashboardSidebar />
-					</OrganisationProvider>
+					<DashboardSidebar />
 					<SidebarInset className="flex h-full">{props.children}</SidebarInset>
 				</div>
 			</SidebarProvider>

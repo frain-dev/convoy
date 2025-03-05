@@ -35,13 +35,11 @@ export function OrganisationProvider({ children }: { children: ReactNode }) {
 
 	useEffect(() => {
 		if (!organisations.length) {
-			console.log('no orgs', children)
 			setCurrentOrganisation(null);
 			return localStorage.removeItem(CONVOY_ORG_KEY);
 		}
 
-			console.log('orgs exist', children)
-			setCurrentOrganisation(organisations[0]);
+		setCurrentOrganisation(organisations[0]);
 		localStorage.setItem(CONVOY_ORG_KEY, JSON.stringify(organisations[0]));
 	}, [organisations]);
 
