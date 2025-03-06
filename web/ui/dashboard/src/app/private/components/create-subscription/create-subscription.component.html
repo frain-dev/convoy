@@ -77,8 +77,7 @@
 					<p class="text-12 font-medium text-neutral-9 flex items-center">
 						Event Types
 						<convoy-tooltip size="sm" position="top-right" class="ml-4px">
-							These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time
-							before the next retry attempt.
+							These are the event types that this subscription will receive. You can add filters to each event type to control which events are delivered.
 						</convoy-tooltip>
 					</p>
 					<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
@@ -88,18 +87,42 @@
 					</button>
 				</div>
 
-				<ng-container formGroupName="filter_config">
-					<convoy-select
-						name="event_types"
-                        selectionType="eventTypes"
-						formControlName="event_types"
-						[selectedValues]="eventTags"
-						[options]="eventTypes"
-						[multiple]="true"
-						className="mb-24px"
-						(selectedOption)="subscriptionForm.patchValue({ filter_config: { event_types: $event } })"
-					></convoy-select>
-				</ng-container>
+				<div class="mt-16px">
+					<div *ngFor="let eventType of selectedEventTypes; let i = index" class="flex items-center justify-between mb-12px">
+						<div class="flex-grow mr-12px">
+							<div class="mb-8px">
+								<select 
+									[id]="'event_type_' + i"
+									class="w-full p-3 border border-neutral-4 rounded-md"
+									[value]="eventType"
+									(change)="updateEventType(i, $any($event.target).value)"
+									[disabled]="action === 'view'">
+									<option value="" disabled>Select event type</option>
+									<option *ngFor="let type of eventTypes" [value]="type.name" [selected]="type.name === eventType">
+										{{type.name}}
+									</option>
+								</select>
+							</div>
+						</div>
+						<div class="flex items-center">
+							<button convoy-button type="button" size="xs" fill="soft-outline" color="primary" class="mr-8px" (click)="openFilterDialog(eventType)" [disabled]="!eventType || action === 'view'">
+								Add Filter
+							</button>
+							<button convoy-button type="button" size="xs" fill="soft-outline" color="error" (click)="removeEventType(i)" *ngIf="action !== 'view'">
+								<svg width="14" height="14" class="fill-transparent stroke-error-9">
+									<use xlink:href="#delete-icon2"></use>
+								</svg>
+							</button>
+						</div>
+					</div>
+
+					<button convoy-button type="button" size="sm" fill="outline" class="mt-16px" (click)="addEventType()" *ngIf="action !== 'view'">
+						<svg width="16" height="16" class="fill-transparent stroke-neutral-9 mr-8px">
+							<use xlink:href="#plus-icon"></use>
+						</svg>
+						Add Event Type
+					</button>
+				</div>
 			</div>
 		</ng-container>
 
@@ -199,4 +222,17 @@
 <!-- source url modal  -->
 <dialog #sourceURLDialog convoy-dialog position="center">
 	<convoy-source-url [url]="sourceURL" (close)="sourceURLDialog.close(); onAction.emit({ data: subscription, action: this.action == 'update' ? 'update' : 'create' })"></convoy-source-url>
+</dialog>
+
+<!-- subscription event type filter dialog -->
+<dialog #filterDialog class="w-full h-full bg-transparent" [class.open]="showFilterDialog">
+	<convoy-subscription-event-type-filter
+		[action]="action"
+		[subscriptionId]="subscriptionId"
+		[eventTypes]="eventTypes"
+		[selectedEventType]="selectedEventType"
+		[filters]="filters"
+		(close)="showFilterDialog = false"
+		(save)="onSaveFilter($event)"
+	></convoy-subscription-event-type-filter>
 </dialog>

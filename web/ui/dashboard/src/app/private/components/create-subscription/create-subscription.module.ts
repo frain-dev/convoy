@@ -23,6 +23,7 @@ import { CreateTransformFunctionComponent } from '../create-transform-function/c
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { SourceURLComponent } from '../create-source/source-url/source-url.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
+import { SubscriptionEventTypeFilterModule } from '../subscription-event-type-filter/subscription-event-type-filter.module';
 
 @NgModule({
 	declarations: [CreateSubscriptionComponent],
@@ -41,6 +42,7 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		RadioComponent,
 		FormatSecondsPipe,
 		CreateSubscriptionFilterComponent,
+		SubscriptionEventTypeFilterModule,
 		InputFieldDirective,
 		InputErrorComponent,
 		InputDirective,
@@ -53,7 +55,7 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		CreateTransformFunctionComponent,
 		ConfigButtonComponent,
 		SourceURLComponent,
-        TagComponent
+		TagComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })

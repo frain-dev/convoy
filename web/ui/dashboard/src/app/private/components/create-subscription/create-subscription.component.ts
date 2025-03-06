@@ -1,4 +1,4 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
@@ -11,6 +11,8 @@ import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { EVENT_TYPE } from 'src/app/models/event.model';
+import { FILTER, FILTER_CREATE_REQUEST } from 'src/app/models/filter.model';
+import { FilterService } from './filter.service';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -29,6 +31,7 @@ export class CreateSubscriptionComponent implements OnInit {
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
+	@ViewChild('filterDialog', { static: true }) filterDialog!: ElementRef<HTMLDialogElement>;
 
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
@@ -71,14 +74,26 @@ export class CreateSubscriptionComponent implements OnInit {
 	sourceURL!: string;
 	subscription!: SUBSCRIPTION;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
-	eventTypes: EVENT_TYPE[] = []
+	eventTypes: EVENT_TYPE[] = [];
+	selectedEventTypes: string[] = [];
+	filters: FILTER[] = [];
+	selectedEventType: string = '';
 
-	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private createSubscriptionService: CreateSubscriptionService, private route: ActivatedRoute, private router: Router, public licenseService: LicensesService) {}
+	constructor(
+		private formBuilder: FormBuilder,
+		private privateService: PrivateService,
+		private createSubscriptionService: CreateSubscriptionService,
+		private route: ActivatedRoute,
+		private router: Router,
+		public licenseService: LicensesService,
+		private filterService: FilterService,
+		private cdr: ChangeDetectorRef
+	) {}
 
 	async ngOnInit() {
 		this.isLoadingForm = true;
 
-		this.getEventTypes();
+		await this.getEventTypes();
 
 		this.projectType = this.token ? 'outgoing' : this.privateService.getProjectDetails?.type;
 
@@ -94,6 +109,13 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
 
 		if (this.action === 'update' || this.isUpdateAction) await this.getSubscriptionDetails();
+		else {
+			// Initialize selectedEventTypes with valid event types if empty
+			if (this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
+				this.selectedEventTypes = [this.eventTypes[0].name];
+				console.log('Initialized selectedEventTypes with:', this.selectedEventTypes);
+			}
+		}
 
 		this.isLoadingForm = false;
 
@@ -109,7 +131,12 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (this.configSetting) this.toggleConfigForm(this.configSetting, true);
 		if (!(await this.rbacService.userCanAccess('Subscriptions|MANAGE'))) this.subscriptionForm.disable();
 
-        this.toggleConfigForm('filter_config', true)
+		this.toggleConfigForm('events', true);
+
+		// Add logging to verify eventTypes array
+		console.log('Event types available for selection:', this.eventTypes);
+		// Add logging to verify selectedEventTypes
+		console.log('Selected event types:', this.selectedEventTypes);
 	}
 
 	toggleConfig(configValue: string) {
@@ -117,9 +144,9 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	deleteFilterAndToggleConfigForm(configValue: string, value?: boolean) {
-        // other cleanup ops
+		// other cleanup ops
 
-        this.toggleConfigForm(configValue, value);
+		this.toggleConfigForm(configValue, value);
 	}
 
 	toggleConfigForm(configValue: string, value?: boolean) {
@@ -139,8 +166,13 @@ export class CreateSubscriptionComponent implements OnInit {
 			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
 			if (response.data.filter_config?.event_types) {
 				this.eventTags = response.data.filter_config?.event_types;
+				this.selectedEventTypes = [...this.eventTags];
+				console.log('Loaded event types for existing subscription:', this.selectedEventTypes);
 				if (this.eventTags.length > 1 || this.eventTags[0] !== '*') this.toggleConfigForm('events');
-			} else this.eventTags = [];
+			} else {
+				this.eventTags = [];
+				console.log('No event types found for existing subscription.');
+			}
 			const filterConfig = response.data.filter_config?.filter;
 
 			if (this.action === 'update' && (Object.keys(filterConfig.body).length > 0 || Object.keys(filterConfig.headers).length > 0)) {
@@ -153,8 +185,17 @@ export class CreateSubscriptionComponent implements OnInit {
 
 			if (response.data?.function) this.toggleConfigForm('tranform_config');
 
+			// Get filters for this subscription
+			if (this.subscriptionId) {
+				await this.getFilters();
+			}
+
+			// Manually trigger change detection
+			this.cdr.detectChanges();
+
 			return;
 		} catch (error) {
+			console.error('Error loading subscription details:', error);
 			return error;
 		}
 	}
@@ -188,9 +229,14 @@ export class CreateSubscriptionComponent implements OnInit {
 			const response = await this.privateService.getEventTypes();
 
 			const { event_types } = response.data;
-			this.eventTypes = event_types.filter((type: EVENT_TYPE) => !type.deprecated_at)
+			this.eventTypes = event_types.filter((type: EVENT_TYPE) => !type.deprecated_at);
+
+			// Log event types to debug
+			console.log('Event types loaded:', this.eventTypes);
+
 			return;
 		} catch (error) {
+			console.error('Error loading event types:', error);
 			return;
 		}
 	}
@@ -236,7 +282,17 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	async saveSubscription(setup?: boolean) {
 		this.toggleFormsLoaders(true);
-		if (this.subscriptionForm.get('filter_config.event_types')?.value?.length === 0) this.subscriptionForm.patchValue({ filter_config: { event_types: ['*'] } });
+
+		// If no event types are selected, use the wildcard
+		if (this.selectedEventTypes.length === 0) {
+			this.selectedEventTypes = ['*'];
+		}
+
+		this.subscriptionForm.patchValue({
+			filter_config: {
+				event_types: this.selectedEventTypes
+			}
+		});
 
 		await this.runSubscriptionValidation();
 
@@ -257,32 +313,53 @@ export class CreateSubscriptionComponent implements OnInit {
 			return this.subscriptionForm.markAllAsTouched();
 		}
 
-        let deletedFormFilter = false;
-        if (!this.showConfig('filter_config')) {
-            const filterGroup = this.subscriptionForm.get('filter_config.filter') as FormGroup;
-            if (filterGroup) {
-                filterGroup.patchValue({
-                    headers: {},
-                    body: {}
-                });
-                deletedFormFilter = true;
-            }
-        }
+		let deletedFormFilter = false;
+		if (!this.showConfig('filter_config')) {
+			const filterGroup = this.subscriptionForm.get('filter_config.filter') as FormGroup;
+			if (filterGroup) {
+				filterGroup.patchValue({
+					headers: {},
+					body: {}
+				});
+				deletedFormFilter = true;
+			}
+		}
 
 		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
 
 		// create subscription
 		try {
-			const response = this.action == 'update' || this.isUpdateAction ? await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId }) : await this.createSubscriptionService.createSubscription(subscriptionData);
+			let response;
+			if (this.action === 'update' || this.isUpdateAction) {
+				response = await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId });
+			} else {
+				response = await this.createSubscriptionService.createSubscription(this.subscriptionForm.value);
+				this.subscriptionId = response.data.uid;
+			}
+
+			// Save filters after subscription is created/updated
+			if (this.filters.length > 0) {
+				const filterRequests: FILTER_CREATE_REQUEST[] = this.filters.map(filter => ({
+					subscription_id: this.subscriptionId,
+					event_type: filter.event_type,
+					headers: filter.headers,
+					body: filter.body,
+					raw_headers: filter.raw_headers,
+					raw_body: filter.raw_body
+				}));
+
+				await this.filterService.createFilters(this.subscriptionId, filterRequests);
+			}
+
 			this.subscription = response.data;
 			if (setup) await this.privateService.getProjectStat({ refresh: true });
 			this.privateService.getSubscriptions();
 			localStorage.removeItem('FUNCTION');
 			this.createdSubscription = true;
-            if (deletedFormFilter) {
-                localStorage.setItem('DELETE_FILTER_SETUP', 'true');
-            }
+			if (deletedFormFilter) {
+				localStorage.setItem('DELETE_FILTER_SETUP', 'true');
+			}
 			if (this.sourceURL) return this.sourceURLDialog.nativeElement.showModal();
 			this.onAction.emit({ data: this.subscription, action: this.action == 'update' ? 'update' : 'create' });
 		} catch (error) {
@@ -296,12 +373,12 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	setupFilter() {
-        let deleteFilter = localStorage.getItem('DELETE_FILTER_SETUP')
-        if (deleteFilter) {
-            this.subscriptionForm.get('filter_config.filter.headers')?.patchValue({})
-            this.subscriptionForm.get('filter_config.filter.body')?.patchValue({});
-            localStorage.removeItem('DELETE_FILTER_SETUP');
-        }
+		let deleteFilter = localStorage.getItem('DELETE_FILTER_SETUP');
+		if (deleteFilter) {
+			this.subscriptionForm.get('filter_config.filter.headers')?.patchValue({});
+			this.subscriptionForm.get('filter_config.filter.body')?.patchValue({});
+			localStorage.removeItem('DELETE_FILTER_SETUP');
+		}
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.showFilterDialog = true;
 	}
@@ -328,5 +405,70 @@ export class CreateSubscriptionComponent implements OnInit {
 
 	get isUpdateAction(): boolean {
 		return this.subscriptionId && this.subscriptionId !== 'new' && this.currentRoute !== 'setup';
+	}
+
+	async getFilters() {
+		try {
+			const response = await this.filterService.getFilters(this.subscriptionId);
+			this.filters = response.data.content || [];
+			return;
+		} catch (error) {
+			return error;
+		}
+	}
+
+	openFilterDialog(eventType?: string) {
+		this.selectedEventType = eventType || '';
+		this.showFilterDialog = true;
+	}
+
+	onSaveFilter(filters: FILTER[]) {
+		this.filters = filters;
+	}
+
+	addEventType() {
+		// Check if there are available event types
+		if (this.eventTypes.length > 0) {
+			// Add the first available event type by default
+			this.selectedEventTypes.push(this.eventTypes[0].name);
+			console.log('Added new event type, current list:', this.selectedEventTypes);
+
+			// Manually trigger change detection
+			this.cdr.detectChanges();
+		} else {
+			console.warn('No event types available to add.');
+		}
+	}
+
+	removeEventType(index: number) {
+		// Remove the event type at the specified index
+		const eventType = this.selectedEventTypes[index];
+		this.selectedEventTypes.splice(index, 1);
+
+		// Also remove any filters for this event type
+		this.filters = this.filters.filter(filter => filter.event_type !== eventType);
+	}
+
+	updateEventType(index: number, eventType: string | EVENT_TYPE) {
+		// Update the event type at the specified index
+		const oldEventType = this.selectedEventTypes[index];
+
+		// Handle the new event type value (which is always a string from the standard select)
+		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
+		this.selectedEventTypes[index] = String(newEventType);
+		console.log(`Updated event type at index ${index} from ${oldEventType} to ${newEventType}`);
+
+		// Update any filters for this event type
+		const filterIndex = this.filters.findIndex(filter => filter.event_type === oldEventType);
+		if (filterIndex >= 0) {
+			this.filters[filterIndex].event_type = String(newEventType);
+		}
+	}
+
+	updateSelectedEventType(index: number, eventType: string | EVENT_TYPE) {
+		// Handle both string and EVENT_TYPE objects
+		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
+		this.selectedEventTypes[index] = newEventType;
+		console.log(`Updated event type at index ${index}:`, newEventType);
 	}
 }

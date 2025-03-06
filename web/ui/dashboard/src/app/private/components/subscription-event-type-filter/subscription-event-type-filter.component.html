@@ -1,0 +1,50 @@
+<div class="w-full h-full bg-white-100 flex flex-col">
+  <div class="flex items-center justify-between p-24px border-b border-neutral-4">
+    <h3 class="text-16 font-semibold">Event Type Filter</h3>
+    <button convoy-button type="button" fill="text" (click)="onClose()">
+      <svg width="16" height="16" class="fill-transparent stroke-neutral-9">
+        <use xlink:href="#close-icon"></use>
+      </svg>
+    </button>
+  </div>
+
+  <div class="p-24px flex-grow overflow-auto">
+    <form [formGroup]="filterForm" (ngSubmit)="onSave()">
+      <div class="mb-24px">
+        <convoy-select
+          name="event_type"
+          formControlName="event_type"
+          [options]="eventTypes"
+          label="Select Event Type"
+          placeholder="Select event type"
+          [required]="true"
+          [disabled]="!!selectedEventType"
+          (selectedOption)="onEventTypeChange()"
+        ></convoy-select>
+      </div>
+
+      <div *ngIf="showFilterEditor" class="mt-24px">
+        <div class="flex items-center gap-8px mb-16px">
+          <h4 class="text-neutral-10 font-medium text-14">Filter Configuration</h4>
+        </div>
+        <p class="text-12 text-neutral-10 mb-24px">Configure filter for this event type</p>
+
+        <convoy-create-subscription-filter 
+          [schema]="{ 
+            headers: filterForm.get('headers')?.value, 
+            body: filterForm.get('body')?.value 
+          }"
+          [action]="action"
+          (filterSchema)="getFilterSchema($event)"
+        ></convoy-create-subscription-filter>
+      </div>
+    </form>
+  </div>
+
+  <div class="p-24px border-t border-neutral-4 flex justify-end">
+    <button convoy-button type="button" fill="outline" class="mr-16px" (click)="onClose()">Cancel</button>
+    <button convoy-button type="button" [disabled]="filterForm.invalid" (click)="onSave()">
+      Save Filter
+    </button>
+  </div>
+</div> 

@@ -45,6 +45,8 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	selectedOptions: any = [];
 
 	control: any;
+	private onChange: (value: any) => void = () => {};
+	private onTouched: () => void = () => {};
 
 	constructor(private controlContainer: ControlContainer) {}
 
@@ -52,20 +54,12 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 		if (this.controlContainer.control?.get(this.formControlName)) this.control = this.controlContainer.control.get(this.formControlName);
 	}
 
-	selectOption(option?: any) {
-		if (this.multiple) {
-			const selectedOption =
-				this.selectedOptions?.find((item: any) => item === option) ||
-				this.selectedOptions?.find((item: any) => item.uid === option) ||
-				this.selectedOptions?.find((item: any) => item.uid === option.uid) ||
-				this.selectedOptions?.find((item: any) => item.name === option.name && item.uid === option.uid);
-			if (!selectedOption) this.selectedOptions?.push(option);
-
-			this.updateSelectedOptions();
-		} else {
-			this.selectedValue = option;
-			this.selectedOption.emit(option?.uid || option);
-		}
+	selectOption(option: any) {
+		console.log('Option selected:', option);
+		this.selectedValue = option;
+		this.onChange(option);
+		this.onTouched();
+		this.selectedOption.emit(option);
 	}
 
 	removeOption(option: any) {
@@ -91,9 +85,13 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 		return this.options?.find(item => item.uid === this.value)?.name || this.options?.find(item => item.uid === this.value)?.title || this.options?.find(item => item === this.value) || '';
 	}
 
-	registerOnChange() {}
+	registerOnChange(fn: (value: any) => void): void {
+		this.onChange = fn;
+	}
 
-	registerOnTouched() {}
+	registerOnTouched(fn: () => void): void {
+		this.onTouched = fn;
+	}
 
 	writeValue(value: string | Array<any>) {
 		if (value) {
