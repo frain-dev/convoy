@@ -88,31 +88,32 @@
 				</div>
 
 				<div class="mt-16px">
-					<div *ngFor="let eventType of selectedEventTypes; let i = index" class="flex items-center justify-between mb-12px">
-						<div class="flex-grow mr-12px">
-							<div class="mb-8px">
-								<select 
-									[id]="'event_type_' + i"
-									class="w-full p-3 border border-neutral-4 rounded-md"
-									[value]="eventType"
-									(change)="updateEventType(i, $any($event.target).value)"
-									[disabled]="action === 'view'">
-									<option value="" disabled>Select event type</option>
-									<option *ngFor="let type of eventTypes" [value]="type.name" [selected]="type.name === eventType">
-										{{type.name}}
-									</option>
-								</select>
+					<div formGroupName="eventTypes">
+						<div *ngFor="let eventType of selectedEventTypes; let i = index" class="flex items-center justify-between mb-12px">
+							<div class="flex-grow mr-12px">
+								<convoy-select
+									#eventTypeSelect
+									[formControlName]="i.toString()"
+									[options]="eventTypes"
+									[placeholder]="'Select event type'"
+									[value]="selectedEventTypes[i]"
+									(selectedOption)="updateEventType(i, $event)"
+									[attr.disabled]="action === 'view' ? true : null"
+									[name]="'event_type_' + i"
+									[label]="''"
+									[errorMessage]="'Please select an event type'"
+								></convoy-select>
 							</div>
-						</div>
-						<div class="flex items-center">
-							<button convoy-button type="button" size="xs" fill="soft-outline" color="primary" class="mr-8px" (click)="openFilterDialog(eventType)" [disabled]="!eventType || action === 'view'">
-								Add Filter
-							</button>
-							<button convoy-button type="button" size="xs" fill="soft-outline" color="error" (click)="removeEventType(i)" *ngIf="action !== 'view'">
-								<svg width="14" height="14" class="fill-transparent stroke-error-9">
-									<use xlink:href="#delete-icon2"></use>
-								</svg>
-							</button>
+							<div class="flex items-center">
+								<button convoy-button type="button" size="xs" fill="soft-outline" color="primary" class="mr-8px" (click)="openFilterDialog(selectedEventTypes[i])" [disabled]="!selectedEventTypes[i] || action === 'view'">
+									Add Filter
+								</button>
+								<button convoy-button type="button" size="xs" fill="soft-outline" color="error" (click)="removeEventType(i)" *ngIf="action !== 'view'">
+									<svg width="14" height="14" class="fill-transparent stroke-error-9">
+										<use xlink:href="#delete-icon2"></use>
+									</svg>
+								</button>
+							</div>
 						</div>
 					</div>
 

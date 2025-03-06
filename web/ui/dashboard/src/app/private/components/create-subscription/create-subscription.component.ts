@@ -1,5 +1,5 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject, ChangeDetectorRef } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, ViewChildren, QueryList, AfterViewInit, ChangeDetectorRef, inject } from '@angular/core';
+import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
 import { SOURCE } from 'src/app/models/source.model';
@@ -20,7 +20,7 @@ import { FilterService } from './filter.service';
 	styleUrls: ['./create-subscription.component.scss'],
 	providers: []
 })
-export class CreateSubscriptionComponent implements OnInit {
+export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	@Output() onAction = new EventEmitter();
 	@Input('action') action: 'update' | 'create' | 'view' = 'create';
 	@Input('isPortal') isPortal: 'true' | 'false' = 'false';
@@ -33,6 +33,8 @@ export class CreateSubscriptionComponent implements OnInit {
 	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
 	@ViewChild('filterDialog', { static: true }) filterDialog!: ElementRef<HTMLDialogElement>;
 
+	@ViewChildren('eventTypeSelect') eventTypeSelects!: QueryList<any>;
+
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		source_id: [''],
@@ -44,7 +46,8 @@ export class CreateSubscriptionComponent implements OnInit {
 				headers: [null],
 				body: [null]
 			})
-		})
+		}),
+		eventTypes: this.formBuilder.group({})
 	});
 	endpoints!: ENDPOINT[];
 	eventTags: string[] = [];
@@ -90,6 +93,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		private cdr: ChangeDetectorRef
 	) {}
 
+	// Getter for the eventTypes FormGroup
+	get eventTypesFormGroup(): FormGroup {
+		return this.subscriptionForm.get('eventTypes') as FormGroup;
+	}
+
 	async ngOnInit() {
 		this.isLoadingForm = true;
 
@@ -113,8 +121,34 @@ export class CreateSubscriptionComponent implements OnInit {
 			// Initialize selectedEventTypes with valid event types if empty
 			if (this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
 				this.selectedEventTypes = [this.eventTypes[0].name];
-				console.log('Initialized selectedEventTypes with:', this.selectedEventTypes);
 			}
+		}
+
+		// Initialize eventTypes form group if we have selectedEventTypes
+		if (this.selectedEventTypes.length > 0) {
+			// Create a form group with string keys
+			const eventTypesControls: Record<string, any> = {};
+			this.selectedEventTypes.forEach((eventType, index) => {
+				eventTypesControls[index.toString()] = this.formBuilder.control(eventType);
+			});
+
+			// Set the form group values
+			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+		}
+
+		// For new subscriptions with outgoing project type, initialize with at least one event type
+		if (this.action === 'create' && this.projectType === 'outgoing' && this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
+			this.selectedEventTypes = [this.eventTypes[0].name];
+			const eventTypesControls: Record<string, any> = {
+				'0': this.formBuilder.control(this.eventTypes[0].name)
+			};
+			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+			this.toggleConfigForm('events', true);
+		}
+
+		// If we have selected event types, make sure to show the event types section
+		if (this.selectedEventTypes.length > 0) {
+			this.toggleConfigForm('events', true);
 		}
 
 		this.isLoadingForm = false;
@@ -132,11 +166,64 @@ export class CreateSubscriptionComponent implements OnInit {
 		if (!(await this.rbacService.userCanAccess('Subscriptions|MANAGE'))) this.subscriptionForm.disable();
 
 		this.toggleConfigForm('events', true);
+	}
 
-		// Add logging to verify eventTypes array
-		console.log('Event types available for selection:', this.eventTypes);
-		// Add logging to verify selectedEventTypes
-		console.log('Selected event types:', this.selectedEventTypes);
+	ngAfterViewInit() {
+		// Set up a listener for when the component view is stable
+		setTimeout(() => {
+			this.initializeSelectComponents();
+		}, 300);
+	}
+
+	// Initialize all convoy-select components manually
+	initializeSelectComponents() {
+		if (!this.eventTypeSelects || this.eventTypeSelects.length === 0) {
+			// Try again after a longer delay if components haven't rendered yet
+			setTimeout(() => this.initializeSelectComponents(), 500);
+			return;
+		}
+
+		this.eventTypeSelects.forEach((select, index) => {
+			if (index < this.selectedEventTypes.length) {
+				// Get the event type value from the array
+				const eventTypeValue = this.selectedEventTypes[index];
+
+				// Handle string values by default
+				let selectedValue: string | EVENT_TYPE = eventTypeValue;
+
+				// If it's a string, try to find the corresponding object
+				if (typeof eventTypeValue === 'string') {
+					const matchingObj = this.eventTypes.find(et => et.name === eventTypeValue);
+					if (matchingObj) {
+						selectedValue = matchingObj;
+					}
+				}
+
+				// Update the select component
+				if (select) {
+					// Set the form control value
+					const control = this.eventTypesFormGroup.get(index.toString());
+					if (control) {
+						const formValue = typeof selectedValue === 'string' ? selectedValue : (selectedValue as EVENT_TYPE).name;
+						control.setValue(formValue);
+					}
+
+					// Directly set the value and selected value on the component
+					if (typeof selectedValue === 'string') {
+						select.value = selectedValue;
+						select.selectedValue = selectedValue;
+						select.writeValue(selectedValue);
+					} else {
+						select.value = (selectedValue as EVENT_TYPE).name;
+						select.selectedValue = selectedValue;
+						select.writeValue((selectedValue as EVENT_TYPE).name);
+					}
+				}
+			}
+		});
+
+		// Force change detection
+		this.cdr.detectChanges();
 	}
 
 	toggleConfig(configValue: string) {
@@ -167,11 +254,25 @@ export class CreateSubscriptionComponent implements OnInit {
 			if (response.data.filter_config?.event_types) {
 				this.eventTags = response.data.filter_config?.event_types;
 				this.selectedEventTypes = [...this.eventTags];
-				console.log('Loaded event types for existing subscription:', this.selectedEventTypes);
-				if (this.eventTags.length > 1 || this.eventTags[0] !== '*') this.toggleConfigForm('events');
+
+				// Create a form group with string keys
+				const eventTypesControls: Record<string, any> = {};
+				this.selectedEventTypes.forEach((eventType, index) => {
+					eventTypesControls[index.toString()] = this.formBuilder.control(eventType);
+				});
+
+				// Set the form group values
+				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+
+				// Show the event types section
+				this.toggleConfigForm('events', true);
+
+				// Initialize select components after a short delay
+				setTimeout(() => {
+					this.initializeSelectComponents();
+				}, 300);
 			} else {
 				this.eventTags = [];
-				console.log('No event types found for existing subscription.');
 			}
 			const filterConfig = response.data.filter_config?.filter;
 
@@ -231,9 +332,6 @@ export class CreateSubscriptionComponent implements OnInit {
 			const { event_types } = response.data;
 			this.eventTypes = event_types.filter((type: EVENT_TYPE) => !type.deprecated_at);
 
-			// Log event types to debug
-			console.log('Event types loaded:', this.eventTypes);
-
 			return;
 		} catch (error) {
 			console.error('Error loading event types:', error);
@@ -281,6 +379,18 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async saveSubscription(setup?: boolean) {
+		// Validate form before submitting
+		if (this.subscriptionForm.invalid) {
+			console.error('Form is invalid:', this.subscriptionForm.errors);
+			return;
+		}
+
+		// Check if event types are required and set
+		if (this.projectType === 'outgoing' && this.showConfig('events') && Object.keys(this.eventTypesFormGroup.controls).length === 0) {
+			console.error('Event types are required for outgoing projects');
+			return;
+		}
+
 		this.toggleFormsLoaders(true);
 
 		// If no event types are selected, use the wildcard
@@ -328,13 +438,27 @@ export class CreateSubscriptionComponent implements OnInit {
 		// check if configs are added, else delete the properties
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
 
+		// If we have event types, include them in the request
+		if (this.selectedEventTypes.length > 0) {
+			// Extract values from the form group
+			const eventTypesValues = Object.values(this.eventTypesFormGroup.value);
+
+			// Update payload with event types
+			if (this.projectType === 'outgoing') {
+				subscriptionData.filter_config = {
+					...(subscriptionData.filter_config || {}),
+					event_types: this.selectedEventTypes // Use the selectedEventTypes array directly
+				};
+			}
+		}
+
 		// create subscription
 		try {
 			let response;
 			if (this.action === 'update' || this.isUpdateAction) {
-				response = await this.createSubscriptionService.updateSubscription({ data: this.subscriptionForm.value, id: this.subscriptionId });
+				response = await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId });
 			} else {
-				response = await this.createSubscriptionService.createSubscription(this.subscriptionForm.value);
+				response = await this.createSubscriptionService.createSubscription(subscriptionData);
 				this.subscriptionId = response.data.uid;
 			}
 
@@ -429,46 +553,92 @@ export class CreateSubscriptionComponent implements OnInit {
 	addEventType() {
 		// Check if there are available event types
 		if (this.eventTypes.length > 0) {
-			// Add the first available event type by default
+			// Get current index
+			const index = this.selectedEventTypes.length;
+			const indexStr = index.toString();
+
+			// Create an updated controls object
+			const updatedControls: Record<string, any> = { ...this.eventTypesFormGroup.value };
+			updatedControls[indexStr] = this.eventTypes[0].name;
+
+			// Update the form group
+			this.eventTypesFormGroup.addControl(indexStr, this.formBuilder.control(this.eventTypes[0].name));
+
+			// Update the selectedEventTypes array to stay in sync
 			this.selectedEventTypes.push(this.eventTypes[0].name);
-			console.log('Added new event type, current list:', this.selectedEventTypes);
 
 			// Manually trigger change detection
 			this.cdr.detectChanges();
+
+			// Initialize the new select component
+			setTimeout(() => {
+				this.initializeSelectComponents();
+			}, 50);
 		} else {
 			console.warn('No event types available to add.');
 		}
 	}
 
 	removeEventType(index: number) {
-		// Remove the event type at the specified index
+		// Get the event type being removed
 		const eventType = this.selectedEventTypes[index];
+		const indexStr = index.toString();
+
+		// Remove from form group
+		this.eventTypesFormGroup.removeControl(indexStr);
+
+		// Remove from selectedEventTypes array to keep them in sync
 		this.selectedEventTypes.splice(index, 1);
+
+		// Reindex the remaining controls
+		const updatedControls: Record<string, any> = {};
+		this.selectedEventTypes.forEach((evType, i) => {
+			updatedControls[i.toString()] = this.formBuilder.control(evType);
+		});
+
+		// Recreate the form group with the updated controls
+		this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(updatedControls));
 
 		// Also remove any filters for this event type
 		this.filters = this.filters.filter(filter => filter.event_type !== eventType);
+
+		// Initialize the remaining select components
+		setTimeout(() => {
+			this.initializeSelectComponents();
+		}, 50);
 	}
 
 	updateEventType(index: number, eventType: string | EVENT_TYPE) {
-		// Update the event type at the specified index
-		const oldEventType = this.selectedEventTypes[index];
-
-		// Handle the new event type value (which is always a string from the standard select)
+		// Update the event type in the form group
 		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
+
+		// Update the form control
+		this.eventTypesFormGroup.get(index.toString())?.setValue(newEventType);
+
+		// Update the selectedEventTypes array to stay in sync
+		const oldEventType = this.selectedEventTypes[index];
 		this.selectedEventTypes[index] = String(newEventType);
-		console.log(`Updated event type at index ${index} from ${oldEventType} to ${newEventType}`);
 
 		// Update any filters for this event type
 		const filterIndex = this.filters.findIndex(filter => filter.event_type === oldEventType);
 		if (filterIndex >= 0) {
 			this.filters[filterIndex].event_type = String(newEventType);
 		}
+
+		// Force UI update with change detection
+		this.cdr.detectChanges();
+
+		// Re-initialize select components after a short delay
+		setTimeout(() => {
+			// Force a component redraw by recreating the event types array
+			this.selectedEventTypes = [...this.selectedEventTypes];
+			this.initializeSelectComponents();
+		}, 50);
 	}
 
 	updateSelectedEventType(index: number, eventType: string | EVENT_TYPE) {
 		// Handle both string and EVENT_TYPE objects
 		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
 		this.selectedEventTypes[index] = newEventType;
-		console.log(`Updated event type at index ${index}:`, newEventType);
 	}
 }

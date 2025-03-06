@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, EventEmitter, forwardRef, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, forwardRef, Input, OnInit, Output, ViewChild, AfterViewInit, OnChanges, SimpleChanges } from '@angular/core';
 import { ControlContainer, ControlValueAccessor, NG_VALUE_ACCESSOR, ReactiveFormsModule } from '@angular/forms';
 import { fromEvent } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
@@ -22,7 +22,7 @@ import { InputDirective, LabelComponent } from '../input/input.component';
 		}
 	]
 })
-export class SelectComponent implements OnInit, ControlValueAccessor {
+export class SelectComponent implements OnInit, OnChanges, AfterViewInit, ControlValueAccessor {
 	@Input('options') options?: Array<any> = [];
 	@Input('name') name!: string;
 	@Input('errorMessage') errorMessage!: string;
@@ -51,11 +51,60 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	constructor(private controlContainer: ControlContainer) {}
 
 	ngOnInit(): void {
-		if (this.controlContainer.control?.get(this.formControlName)) this.control = this.controlContainer.control.get(this.formControlName);
+		if (this.controlContainer.control?.get(this.formControlName)) {
+			this.control = this.controlContainer.control.get(this.formControlName);
+
+			// Initialize the selected value from control value if available
+			if (this.control.value) {
+				this.updateSelectedValueFromOptions(this.control.value);
+			}
+		}
+	}
+
+	ngOnChanges(changes: SimpleChanges): void {
+		// Handle changes to the value input
+		if (changes['value'] && changes['value'].currentValue) {
+			this.updateSelectedValueFromOptions(changes['value'].currentValue);
+		}
+
+		// Handle changes to the options input
+		if (changes['options'] && changes['options'].currentValue && this.value) {
+			this.updateSelectedValueFromOptions(this.value);
+		}
+	}
+
+	updateSelectedValueFromOptions(value: any): void {
+		if (!this.options || this.options.length === 0) {
+			return;
+		}
+
+		// For objects with name property (like event types)
+		if (typeof this.options[0] === 'object' && 'name' in this.options[0]) {
+			const option = this.options.find((opt: any) => opt.name === value || (typeof value === 'object' && value?.name === opt.name));
+
+			if (option) {
+				this.selectedValue = option;
+			}
+		}
+		// For objects with uid property
+		else if (typeof this.options[0] === 'object' && 'uid' in this.options[0]) {
+			const option = this.options.find((opt: any) => opt.uid === value || (typeof value === 'object' && value?.uid === opt.uid));
+
+			if (option) {
+				this.selectedValue = option;
+			}
+		}
+		// For simple string options
+		else if (typeof this.options[0] === 'string') {
+			const option = this.options.find((opt: string) => opt === value);
+
+			if (option) {
+				this.selectedValue = option;
+			}
+		}
 	}
 
 	selectOption(option: any) {
-		console.log('Option selected:', option);
 		this.selectedValue = option;
 		this.onChange(option);
 		this.onTouched();
@@ -82,7 +131,29 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	get option(): string {
-		return this.options?.find(item => item.uid === this.value)?.name || this.options?.find(item => item.uid === this.value)?.title || this.options?.find(item => item === this.value) || '';
+		if (this.selectedValue) {
+			if (typeof this.selectedValue === 'string') {
+				return this.selectedValue;
+			} else if (typeof this.selectedValue === 'object') {
+				return this.selectedValue.name || this.selectedValue.title || '';
+			}
+		}
+
+		// Fall back to searching in options array
+		if (this.options && this.value) {
+			const found = this.options.find((item: any) => {
+				if (typeof item === 'string') return item === this.value;
+				if (typeof item === 'object' && 'uid' in item) return item.uid === this.value;
+				if (typeof item === 'object' && 'name' in item) return item.name === this.value;
+				return false;
+			});
+
+			if (found) {
+				return typeof found === 'string' ? found : found.name || found.title || '';
+			}
+		}
+
+		return '';
 	}
 
 	registerOnChange(fn: (value: any) => void): void {
@@ -94,30 +165,34 @@ export class SelectComponent implements OnInit, ControlValueAccessor {
 	}
 
 	writeValue(value: string | Array<any>) {
-		if (value) {
-			if (this.options?.length && typeof this.options[0] !== 'string' && !this.multiple) return (this.selectedValue = this.options?.find(option => option.uid === value));
-			if (this.multiple && typeof value !== 'string' && this.selectedValues?.length) this.selectedOptions = this.selectedValues;
-			if (this.multiple && typeof value !== 'string' && this.selectedOptions?.length === 0 && this.selectedValues?.length === 0) {
+		if (!value) return;
+
+		if (this.multiple) {
+			if (typeof value !== 'string' && this.selectedValues?.length) {
+				this.selectedOptions = this.selectedValues;
+			} else if (typeof value !== 'string' && this.selectedOptions?.length === 0 && this.selectedValues?.length === 0) {
 				setTimeout(() => {
-					value.forEach((item: any) => {
-						this.selectedOptions.push({
-							uid: item,
-							name: this.options?.find(option => option.uid === item)?.name || this.options?.find(option => option === item)
+					if (Array.isArray(value)) {
+						value.forEach((item: any) => {
+							this.selectedOptions.push({
+								uid: item,
+								name: this.options?.find((option: any) => option.uid === item)?.name || this.options?.find((option: any) => option === item)
+							});
 						});
-					});
+					}
 				}, 100);
 			}
-			if (!this.multiple) return (this.selectedValue = value);
-
-			this.selectedValues = [];
+		} else {
+			// Update the selected value for single selection
+			this.updateSelectedValueFromOptions(value);
 		}
 	}
 
 	setDisabledState() {}
 
 	ngAfterViewInit() {
-		if (this.searchable) {
-			fromEvent<any>(this.searchFilter?.nativeElement, 'keyup')
+		if (this.searchable && this.searchFilter) {
+			fromEvent<any>(this.searchFilter.nativeElement, 'keyup')
 				.pipe(
 					map(event => event.target.value),
 					startWith(''),

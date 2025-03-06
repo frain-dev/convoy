@@ -20,7 +20,17 @@
 				flex-wrap
 			"
 		>
-			<span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
+			<ng-container *ngIf="!multiple">
+				<span *ngIf="selectedValue">
+					{{ selectedValue?.name || selectedValue?.title || selectedValue }}
+				</span>
+				<span *ngIf="!selectedValue && option" class="text-neutral-9">
+					{{ option }}
+				</span>
+				<span *ngIf="!selectedValue && !option" class="text-neutral-5">
+					{{ placeholder || 'Select' }}
+				</span>
+			</ng-container>
 			<ng-container *ngIf="multiple">
 				<div *ngFor="let option of selectedOptions" class="border border-neutral-5 py-4px px-8px font-medium text-12 text-neutral-10 mr-1 mb-1 rounded-22px flex items-center">
 					{{ option.name || option.title || option }}
