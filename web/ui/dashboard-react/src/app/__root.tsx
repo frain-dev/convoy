@@ -13,14 +13,14 @@ const TanStackRouterDevTools = isProductionMode
 		);
 
 type RouterContext = {
-	auth: AuthContext | null
+	auth: AuthContext | null;
 };
 
 export const Route = createRootRouteWithContext<RouterContext>()({
 	component: () => (
 		<>
 			<Outlet />
-			<Suspense>{/* <TanStackRouterDevTools /> */}</Suspense>
+			<Suspense>{<TanStackRouterDevTools />}</Suspense>
 		</>
 	),
 });
