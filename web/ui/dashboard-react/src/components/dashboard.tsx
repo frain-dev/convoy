@@ -17,6 +17,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { CreateOrganisationDialog } from './create-organisation';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -156,15 +157,22 @@ function HeaderRightProfile() {
 function HeaderRightOrganisation() {
 	const navigate = useNavigate({ from: Route.fullPath });
 	const {
-		setCurrentOrganisation,
-		currentOrganisation,
 		organisations,
 		setOrganisations,
+		currentOrganisation,
+		setCurrentOrganisation,
 	} = useOrganisationContext();
 
+	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const [canCreateOrg] = useState(licensesService.hasLicense('CREATE_ORG'));
 	const [isLoadingOrganisations, setIsLoadingOrganisations] = useState(false);
 
 	useEffect(() => {
+		getOrganisations();
+		return () => {};
+	}, []);
+
+	function getOrganisations() {
 		setIsLoadingOrganisations(true);
 		orgsService
 			.getOrganisations({ refresh: true })
@@ -175,11 +183,9 @@ function HeaderRightOrganisation() {
 			.finally(() => {
 				setIsLoadingOrganisations(false);
 			});
+	}
 
-		return () => {};
-	}, []);
-
-	// TODO run this skeleton part
+	// TODO code out this skeleton part
 	if (isLoadingOrganisations) return <p>skeleton</p>;
 	if (!currentOrganisation) return null;
 
@@ -278,17 +284,33 @@ function HeaderRightOrganisation() {
 					</DropdownMenuGroup>
 
 					<DropdownMenuSeparator />
-					<DropdownMenuItem className="flex justify-center items-center hover:cursor-pointer hover:bg-neutral-3 py-3">
-						<div className="flex items-center justify-center">
-							<CirclePlusIcon
-								className="stroke-new.primary-400 mr-2"
-								size={20}
-							/>
-							<span className="block text-new.primary-400 text-xs ">
-								Add {organisations.length == 0 ? 'an' : 'another'} organisation
-							</span>
-						</div>
-					</DropdownMenuItem>
+
+					<CreateOrganisationDialog
+						trigger={
+							<DropdownMenuItem
+								disabled={!canCreateOrg}
+								onClick={e => {
+									e.preventDefault();
+									setIsDialogOpen(isOpen => !isOpen);
+								}}
+								className="flex justify-center items-center hover:cursor-pointer hover:bg-neutral-3 py-3"
+							>
+								<div className="flex items-center justify-center">
+									<CirclePlusIcon
+										className="stroke-new.primary-400 mr-2"
+										size={20}
+									/>
+									<span className="block text-new.primary-400 text-xs ">
+										Add {organisations.length == 0 ? 'an' : 'another'}{' '}
+										organisation
+									</span>
+								</div>
+							</DropdownMenuItem>
+						}
+						isDialogOpen={isDialogOpen}
+						onOrgCreated={getOrganisations}
+						setIsDialogOpen={setIsDialogOpen}
+					/>
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</li>
