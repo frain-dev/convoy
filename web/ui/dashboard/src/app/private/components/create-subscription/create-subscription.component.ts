@@ -169,10 +169,42 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	}
 
 	ngAfterViewInit() {
-		// Set up a listener for when the component view is stable
-		setTimeout(() => {
-			this.initializeSelectComponents();
-		}, 300);
+		// Only for update mode - initialize select components
+		if (this.action === 'update' || this.isUpdateAction) {
+			// Wait for endpoint data to be loaded
+			setTimeout(async () => {
+				// Check if we have a subscription with endpoint metadata
+				const endpointId = this.subscription?.endpoint_metadata?.uid;
+
+				// If we don't have endpoints yet but we have an endpoint ID
+				if ((!this.endpoints || this.endpoints.length === 0) && endpointId) {
+					await this.getEndpoints();
+
+					// Find matching endpoint and set it
+					if (this.endpoints && this.endpoints.length > 0 && endpointId) {
+						const matchingEndpoint = this.endpoints.find(endpoint => endpoint.uid === endpointId);
+
+						if (matchingEndpoint) {
+							console.log('Setting endpoint from ngAfterViewInit:', matchingEndpoint);
+							this.subscriptionForm.patchValue({ endpoint_id: matchingEndpoint });
+
+							// Force change detection
+							this.cdr.detectChanges();
+						}
+					}
+				}
+
+				// Initialize event type selects
+				setTimeout(() => {
+					this.initializeSelectComponents();
+				}, 300);
+			}, 500);
+		} else {
+			// For create mode, just initialize event type selects
+			setTimeout(() => {
+				this.initializeSelectComponents();
+			}, 300);
+		}
 	}
 
 	// Initialize all convoy-select components manually
@@ -254,8 +286,52 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	async getSubscriptionDetails() {
 		try {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId);
-			this.subscriptionForm.patchValue(response.data);
-			this.subscriptionForm.patchValue({ source_id: response.data?.source_metadata?.uid, endpoint_id: response.data?.endpoint_metadata?.uid });
+			console.log('Loaded subscription details:', response.data);
+
+			// Store the subscription data
+			this.subscription = response.data;
+
+			// First, load the endpoints if not already loaded
+			if (!this.endpoints || this.endpoints.length === 0) {
+				await this.getEndpoints();
+				console.log('Loaded endpoints:', this.endpoints);
+			}
+
+			// Similarly, load sources if not already loaded and if it's an incoming project
+			if ((!this.sources || this.sources.length === 0) && this.projectType === 'incoming' && !this.token) {
+				await this.getSources();
+				console.log('Loaded sources:', this.sources);
+			}
+
+			// Find the matching endpoint from options directly
+			const endpointId = response.data?.endpoint_metadata?.uid;
+			let matchingEndpoint = null;
+
+			if (endpointId && this.endpoints && this.endpoints.length > 0) {
+				matchingEndpoint = this.endpoints.find(e => e.uid === endpointId);
+				console.log('Found matching endpoint:', matchingEndpoint);
+			}
+
+			// Find the matching source from options directly
+			const sourceId = response.data?.source_metadata?.uid;
+			let matchingSource = null;
+
+			if (sourceId && this.sources && this.sources.length > 0) {
+				matchingSource = this.sources.find(s => s.uid === sourceId);
+				console.log('Found matching source:', matchingSource);
+			}
+
+			// Set the form values
+			this.subscriptionForm.patchValue({
+				...response.data,
+				// For sources and endpoints, use the full object if found or just the ID
+				source_id: matchingSource || sourceId,
+				endpoint_id: matchingEndpoint || endpointId
+			});
+
+			console.log('Updated form values:', this.subscriptionForm.value);
+
+			// Handle event types
 			if (response.data.filter_config?.event_types) {
 				this.eventTags = response.data.filter_config?.event_types;
 				this.selectedEventTypes = [...this.eventTags];
@@ -271,37 +347,23 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 				// Show the event types section
 				this.toggleConfigForm('events', true);
-
-				// Initialize select components after a short delay
-				setTimeout(() => {
-					this.initializeSelectComponents();
-				}, 300);
 			} else {
 				this.eventTags = [];
 			}
-			const filterConfig = response.data.filter_config?.filter;
 
-			if (this.action === 'update' && (Object.keys(filterConfig.body).length > 0 || Object.keys(filterConfig.headers).length > 0)) {
-				this.configurations.forEach(config => {
-					if (config.uid === 'filter_config') config.show = true;
-				});
-			}
+			// Get filter data
+			await this.getFilters();
 
 			if (this.token) this.projectType = 'outgoing';
 
 			if (response.data?.function) this.toggleConfigForm('tranform_config');
-
-			// Get filters for this subscription
-			if (this.subscriptionId) {
-				await this.getFilters();
-			}
 
 			// Manually trigger change detection
 			this.cdr.detectChanges();
 
 			return;
 		} catch (error) {
-			console.error('Error loading subscription details:', error);
+			console.error('Error getting subscription details:', error);
 			return error;
 		}
 	}
@@ -438,8 +500,44 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 			});
 		}
 
-		// check if configs are added, else delete the properties
+		// Get the current form values
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
+
+		// Log the form data before processing
+		console.log('Subscription form raw data:', this.subscriptionForm.value);
+		console.log('Endpoint_id before processing:', subscriptionData.endpoint_id, 'Type:', typeof subscriptionData.endpoint_id);
+
+		// ALWAYS convert endpoint_id to UID string
+		// This is essential both for the API call and to prevent objects being sent
+		if (subscriptionData.endpoint_id) {
+			if (typeof subscriptionData.endpoint_id === 'object') {
+				if (subscriptionData.endpoint_id.uid) {
+					console.log('Converting endpoint_id from object to UID string:', subscriptionData.endpoint_id);
+					subscriptionData.endpoint_id = subscriptionData.endpoint_id.uid;
+				} else {
+					// Try other possible properties that might contain the ID
+					const possibleIdFields = ['id', '_id', 'ID', 'value'];
+					for (const field of possibleIdFields) {
+						if (subscriptionData.endpoint_id[field]) {
+							console.log(`Found ID in ${field} property:`, subscriptionData.endpoint_id[field]);
+							subscriptionData.endpoint_id = subscriptionData.endpoint_id[field];
+							break;
+						}
+					}
+				}
+			} else if (typeof subscriptionData.endpoint_id !== 'string') {
+				console.error('Unexpected endpoint_id type:', typeof subscriptionData.endpoint_id);
+				// Convert to string as a fallback
+				subscriptionData.endpoint_id = String(subscriptionData.endpoint_id);
+			}
+		}
+
+		console.log('Endpoint_id after processing:', subscriptionData.endpoint_id, 'Type:', typeof subscriptionData.endpoint_id);
+
+		// Similarly, ensure source_id is a string if present
+		if (subscriptionData.source_id && typeof subscriptionData.source_id === 'object' && subscriptionData.source_id.uid) {
+			subscriptionData.source_id = subscriptionData.source_id.uid;
+		}
 
 		// If we have event types, include them in the request
 		if (this.selectedEventTypes.length > 0) {
@@ -454,6 +552,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 		// create subscription
 		try {
+			console.log('Final subscription data to send:', subscriptionData);
 			let response;
 			if (this.action === 'update' || this.isUpdateAction) {
 				response = await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId });
