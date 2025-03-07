@@ -1,6 +1,6 @@
 import { request } from './http.service';
 
-import type { Organisation } from '@/models/organisation.model';
+import type { Member, Organisation } from '@/models/organisation.model';
 
 // TODO move some of htese to a use-organisation hook
 
@@ -13,25 +13,6 @@ type Pagination = {
 };
 
 let organisations: Array<Organisation> = [];
-
-// export function getCachedOrganisation(): Organisation | null {
-// 	let org = localStorage.getItem(CONVOY_ORG_KEY);
-// 	return org ? JSON.parse(org) : null;
-// }
-
-// export function setDefaultCachedOrganisation(organisations: Organisation[]) {
-// 	if (!organisations.length) return localStorage.removeItem(CONVOY_ORG_KEY);
-
-// 	return localStorage.setItem(CONVOY_ORG_KEY, JSON.stringify(organisations[0]));
-// }
-
-// export function getDefaultCachedOrganisation() {
-// 	const cached = localStorage.getItem(CONVOY_ORG_KEY);
-// 	if (!cached) return null;
-
-// 	const cachedOrg = JSON.parse(cached);
-// 	return cachedOrg as Organisation;
-// }
 
 type PaginatedOrganisationResult = {
 	content: Array<Organisation>;
@@ -110,6 +91,25 @@ export async function deleteOrganisation(
 		url: `/organisations/${orgId}`,
 		method: 'delete',
 		body: null,
+	});
+
+	return res.data;
+}
+
+type PaginatedMembersResult = {
+	content: Array<Member>;
+	pagination: Pagination;
+};
+
+export async function getTeamMembers(
+	reqDetails: { q?: string; page?: number; userID?: string },
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<PaginatedMembersResult>({
+		url: `/members`,
+		method: 'get',
+		level: 'org',
+		query: reqDetails,
 	});
 
 	return res.data;

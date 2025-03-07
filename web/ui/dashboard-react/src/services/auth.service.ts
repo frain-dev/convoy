@@ -5,6 +5,7 @@ import {
 	CONVOY_LAST_AUTH_LOCATION_KEY,
 } from '@/lib/constants';
 import { router } from '@/lib/router';
+import * as orgsService from '@/services/organisations.service';
 
 import type { CachedAuth } from '@/models/auth.model';
 
@@ -135,4 +136,104 @@ export async function signUpWithSAML(
 	});
 
 	return res;
+}
+
+const permissions = {
+	MEMBER: [
+		'Event Deliveries|VIEW',
+		'Event Deliveries|MANAGE',
+		'Sources|VIEW',
+		'Subscriptions|VIEW',
+		'Endpoints|VIEW',
+		'Portal Links|VIEW',
+		'Events|VIEW',
+		'Events|MANAGE',
+		'Meta Events|VIEW',
+		'Project Settings|VIEW',
+		'Projects|VIEW',
+		'Team|VIEW',
+		'Organisations|VIEW',
+	],
+	SUPER_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE'],
+	ADMIN: [
+		'Sources|MANAGE',
+		'Subscriptions|MANAGE',
+		'Endpoints|MANAGE',
+		'Portal Links|MANAGE',
+		'Meta Events|MANAGE',
+		'Project Settings|MANAGE',
+		'Projects|MANAGE',
+	],
+};
+
+type Permission =
+	| 'Event Deliveries|VIEW'
+	| 'Event Deliveries|MANAGE'
+	| 'Sources|VIEW'
+	| 'Sources|MANAGE'
+	| 'Subscriptions|VIEW'
+	| 'Subscriptions|MANAGE'
+	| 'Endpoints|VIEW'
+	| 'Endpoints|MANAGE'
+	| 'Portal Links|VIEW'
+	| 'Portal Links|MANAGE'
+	| 'Events|VIEW'
+	| 'Events|MANAGE'
+	| 'Meta Events|VIEW'
+	| 'Meta Events|MANAGE'
+	| 'Project Settings|VIEW'
+	| 'Project Settings|MANAGE'
+	| 'Projects|VIEW'
+	| 'Projects|MANAGE'
+	| 'Team|VIEW'
+	| 'Team|MANAGE'
+	| 'Organisations|VIEW'
+	| 'Organisations|MANAGE';
+
+export async function getUserRole(
+	reqDetails: Parameters<typeof orgsService.getTeamMembers>[0],
+	deps: {
+		httpReq: typeof request;
+		getTeamMembers: typeof orgsService.getTeamMembers;
+	} = { httpReq: request, getTeamMembers: orgsService.getTeamMembers },
+) {
+	try {
+		const { content } = await deps.getTeamMembers(reqDetails, deps);
+		const role = content[0].role.type;
+
+		switch (role) {
+			case 'super_user':
+				return 'SUPER_ADMIN';
+			case 'admin':
+				return 'ADMIN';
+			default:
+				return 'MEMBER';
+		}
+	} catch (error) {
+		return 'MEMBER';
+	}
+}
+
+async function getUserPermissions() {
+	const role = await getUserRole({ userID: getCachedAuthProfile()?.uid });
+
+	switch (role) {
+		case 'SUPER_ADMIN':
+			return permissions[role].concat(permissions.ADMIN, permissions.MEMBER);
+		case 'ADMIN':
+			return permissions[role].concat(permissions.MEMBER);
+		default:
+			return permissions.MEMBER;
+	}
+}
+
+export async function ensureUserCanAccess(
+	reqPermission: Permission,
+	token?: string,
+) {
+	const permissions = await getUserPermissions();
+	const portalPermissions = ['Subscriptions|MANAGE', 'Endpoints|MANAGE'];
+
+	if (token) return portalPermissions.includes(reqPermission);
+	return permissions.includes(reqPermission);
 }

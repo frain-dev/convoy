@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 
 import { CopyIcon } from 'lucide-react';
 
@@ -25,11 +25,32 @@ import {
 	useOrganisationContext,
 	WithOrganisationContext,
 } from '@/contexts/organisation';
+import * as authService from '@/services/auth.service';
 import * as orgsService from '@/services/organisations.service';
+
+type SettingsSearch = {
+	token: string;
+};
 
 export const Route = createFileRoute('/settings')({
 	beforeLoad({ context }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
+	},
+	validateSearch: (search: Record<string, unknown>): SettingsSearch => {
+		return {
+			token: (search.token as string) || '',
+		};
+	},
+	loaderDeps: ({ search: { token } }) => ({ token }),
+	async loader({ deps }) {
+		const canManageOrganisation = await authService.ensureUserCanAccess(
+			'Organisations|MANAGE',
+			deps.token,
+		);
+
+		return {
+			canManageOrganisation,
+		};
 	},
 	component: WithOrganisationContext(RouteComponent),
 });
@@ -40,8 +61,10 @@ const OrganisationFormSchema = z.object({
 });
 
 function RouteComponent() {
+	const { canManageOrganisation } = Route.useLoaderData();
 	const [isUpdatingOrg, setIsUpdatingOrg] = useState(false);
 	const [isDeletingOrg, setIsDeletingOrg] = useState(false);
+
 	const { currentOrganisation, setOrganisations } = useOrganisationContext();
 
 	const organisationForm = useForm<z.infer<typeof OrganisationFormSchema>>({
@@ -90,14 +113,14 @@ function RouteComponent() {
 	return (
 		<DashboardLayout showSidebar={false}>
 			<div className="flex justify-start items-center gap-2">
-				<a
-					href="/projects"
+				<Link
+					to="/projects"
 					className="block p-[2px] rounded-[100%] border border-new.primary-5"
 				>
 					<svg width="24" height="24" className="fill-neutral-10 scale-75">
 						<use xlinkHref="#arrow-left-icon"></use>
 					</svg>
-				</a>
+				</Link>
 				<h1 className="font-semibold text-xs text-neutral-12">
 					Organisation Settings
 				</h1>
@@ -105,7 +128,7 @@ function RouteComponent() {
 			<Tabs
 				defaultValue="organisation"
 				activationMode="manual"
-				orientation='vertical'
+				orientation="vertical"
 				className="flex w-full"
 			>
 				<TabsList className="">
@@ -127,7 +150,7 @@ function RouteComponent() {
 								<div className="flex justify-between items-center mb-7">
 									<h2 className="text-base font-semibold">Organisation Info</h2>
 									<Button
-										disabled={isUpdatingOrg}
+										disabled={isUpdatingOrg || !canManageOrganisation}
 										size="sm"
 										variant="ghost"
 										className="px-4 py-2 text-xs bg-new.primary-400 text-white-100 hover:bg-new.primary-400 hover:text-white-100"
@@ -148,6 +171,7 @@ function RouteComponent() {
 											</div>
 											<FormControl>
 												<Input
+												disabled={!canManageOrganisation}
 													autoComplete="organization"
 													type="text"
 													className={cn(
@@ -214,29 +238,28 @@ function RouteComponent() {
 								/>
 							</form>
 						</Form>
-						<hr className="my-10" />
-						<div className="bg-destructive/5 border-destructive/30 border p-6 rounded-8px flex flex-col items-start justify-center">
-							<h2 className="text-destructive font-semibold text-lg mb-5">
-								Danger Zone
-							</h2>
-							<p className="text-sm mb-8">
-								Deleting your organisation means you will lose all workspaces
-								created by you and all your every other organisation
-								information.
-							</p>
-							<Button
-								disabled={isDeletingOrg}
-								size="sm"
-								variant="ghost"
-								className="px-4 py-2 text-xs bg-destructive  hover:bg-destructive hover:text-white-100 flex items-center"
-								onClick={deleteOrganisation}
-							>
-								<svg width="18" height="18" className="fill-white-100">
-									<use xlinkHref="#delete-icon"></use>
-								</svg>
-								<p className="text-white-100">Delete Organisation</p>
-							</Button>
-						</div>
+					</section>
+					<hr className="my-10" />
+					<section className="bg-destructive/5 border-destructive/30 border p-6 rounded-8px flex flex-col items-start justify-center">
+						<h2 className="text-destructive font-semibold text-lg mb-5">
+							Danger Zone
+						</h2>
+						<p className="text-sm mb-8">
+							Deleting your organisation means you will lose all workspaces
+							created by you and all your every other organisation information.
+						</p>
+						<Button
+							disabled={isDeletingOrg || !canManageOrganisation}
+							size="sm"
+							variant="ghost"
+							className="px-4 py-2 text-xs bg-destructive  hover:bg-destructive hover:text-white-100 flex items-center"
+							onClick={deleteOrganisation}
+						>
+							<svg width="18" height="18" className="fill-white-100">
+								<use xlinkHref="#delete-icon"></use>
+							</svg>
+							<p className="text-white-100">Delete Organisation</p>
+						</Button>
 					</section>
 				</TabsContent>
 				<TabsContent value="team">
