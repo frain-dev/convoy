@@ -39,12 +39,6 @@ function BusinessNameInputField({ form }: FormFieldInputComponentProps) {
 							<span className="text-xs/5 text-neutral-9 block">
 								Business Name
 							</span>
-							{/* <Badge
-															variant={'outline'}
-															className="text-[11px] font-normal px-1 ml-2 bg-new.gray-200"
-														>
-															required
-														</Badge> */}
 						</FormLabel>
 					</div>
 					<FormControl>

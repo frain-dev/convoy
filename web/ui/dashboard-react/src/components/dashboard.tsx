@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { useEffect, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, Link } from '@tanstack/react-router';
 
 import {
 	SidebarIcon,
@@ -110,12 +110,12 @@ function HeaderRightProfile() {
 					</DropdownMenuGroup>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem className="hover:cursor-pointer hover:bg-neutral-3 pl-3">
-						<a
-							href="/user-settings"
+						<Link
+							to="/user-settings"
 							className="block w-full text-xs text-neutral-11"
 						>
 							My account
-						</a>
+						</Link>
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
@@ -525,12 +525,12 @@ function ProjectLinks() {
 							return (
 								<li key={link.name}>
 									{/* TODO change to link route */}
-									<a
-										href={link.route}
+									<Link
+										to={link.route}
 										className="flex hover:bg-neutral-3 py-2 pr-3 pl-2 rounded-sm"
 									>
 										{link.name}
-									</a>
+									</Link>
 								</li>
 							);
 						})}

@@ -12,7 +12,6 @@ const APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/
 const APP_PORTAL_APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/portal-api`;
 
 function getToken() {
-	// @ts-expect-error `token` is already marked as probably undefined
 	const token = router.state.location.search?.token as string | undefined;
 	return token ? token : '';
 }
