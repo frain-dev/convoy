@@ -65,9 +65,7 @@ export function CreateOrganisationDialog(props: CreateOrganisationDialogProps) {
 	return (
 		// TODO remove the X button
 		<Dialog open={props.isDialogOpen}>
-			<DialogTrigger asChild>
-				{props.trigger}
-			</DialogTrigger>
+			<DialogTrigger asChild>{props.trigger}</DialogTrigger>
 			<DialogContent className="sm:max-w-[432px] rounded-lg">
 				<DialogHeader>
 					<DialogTitle className="text-left py-3">
@@ -97,7 +95,7 @@ export function CreateOrganisationDialog(props: CreateOrganisationDialogProps) {
 										</div>
 										<FormControl>
 											<Input
-												autoComplete="name"
+												autoComplete="organization"
 												type="text"
 												className={cn(
 													'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
@@ -116,7 +114,10 @@ export function CreateOrganisationDialog(props: CreateOrganisationDialogProps) {
 							<div className="flex items-center justify-end gap-4">
 								<DialogClose asChild>
 									<Button
-										onClick={() => props.setIsDialogOpen(isOpen => !isOpen)}
+										onClick={() => {
+											form.reset();
+											props.setIsDialogOpen(isOpen => !isOpen);
+										}}
 										type="button"
 										variant="outline"
 										size={'sm'}
@@ -164,7 +165,7 @@ export function CreateOrganisation(props: CreateOrganisationProps) {
 				An organization is required to create projects on Convoy.
 			</p>
 
-			<CreateOrganisationDialog {...props} trigger={props.children}/>
+			<CreateOrganisationDialog {...props} trigger={props.children} />
 		</div>
 	);
 }

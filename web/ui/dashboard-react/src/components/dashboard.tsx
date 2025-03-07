@@ -74,29 +74,6 @@ import userProfileIcon from '../../assets/svg/user-icon.svg';
 import type { Project } from '@/models/project.model';
 import type { ComponentProps, ReactNode } from 'react';
 
-function HeaderLeftLogo() {
-	const { toggleSidebar } = useSidebar();
-
-	return (
-		<div className="flex items-center justify-between py-3 h-[60px] w-[17rem]">
-			<a href="/" className="inline-block" rel="noreferrer">
-				<img src={convoyLogo} alt="Convoy" className="w-[100px]" />
-			</a>
-			<div className="flex items-center ">
-				<Button
-					className="h-8 w-8"
-					variant="ghost"
-					size="icon"
-					onClick={toggleSidebar}
-					title="CTRL + B"
-				>
-					<SidebarIcon />
-				</Button>
-			</div>
-		</div>
-	);
-}
-
 function HeaderRightProfile() {
 	const { getCurrentUser } = useAuth();
 	const [currentUser] = useState(getCurrentUser());
@@ -104,6 +81,7 @@ function HeaderRightProfile() {
 	if (!currentUser)
 		return (
 			<li>
+				{/* TODO code this out */}
 				<span>skeleton</span>
 			</li>
 		);
@@ -328,11 +306,30 @@ function HeaderRight() {
 	);
 }
 
-export function DashboardHeader() {
+export function DashboardHeader(props: { showToggleSidebarButton: boolean }) {
+	const { toggleSidebar } = useSidebar();
+
 	return (
 		<header className="sticky top-0 z-50 border-b bg-background">
 			<div className="flex w-full px-6 items-center justify-between mx-auto">
-				<HeaderLeftLogo />
+				<div className="flex items-center justify-between py-3 h-[60px] w-[17rem]">
+					<a href="/" className="inline-block" rel="noreferrer">
+						<img src={convoyLogo} alt="Convoy" className="w-[100px]" />
+					</a>
+					{props.showToggleSidebarButton ? (
+						<div className="flex items-center ">
+							<Button
+								className="h-8 w-8"
+								variant="ghost"
+								size="icon"
+								onClick={toggleSidebar}
+								title="CTRL + B"
+							>
+								<SidebarIcon />
+							</Button>
+						</div>
+					) : null}
+				</div>
 				<HeaderRight />
 			</div>
 		</header>
@@ -649,7 +646,10 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 	);
 }
 
-export function DashboardLayout(props: { children: ReactNode }) {
+export function DashboardLayout(props: {
+	children: ReactNode;
+	showSidebar: boolean;
+}) {
 	useEffect(() => {
 		licensesService.setLicenses().then();
 
@@ -661,9 +661,9 @@ export function DashboardLayout(props: { children: ReactNode }) {
 	return (
 		<div className="[--header-height:calc(theme(spacing.14))]">
 			<SidebarProvider className="flex flex-col">
-				<DashboardHeader />
+				<DashboardHeader showToggleSidebarButton={props.showSidebar} />
 				<div className="flex items-center h-full">
-					<DashboardSidebar />
+					{props.showSidebar ? <DashboardSidebar /> : null}
 					<SidebarInset className="flex h-full">{props.children}</SidebarInset>
 				</div>
 			</SidebarProvider>
