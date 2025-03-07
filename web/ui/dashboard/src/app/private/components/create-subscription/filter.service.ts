@@ -76,6 +76,24 @@ export class FilterService {
 		});
 	}
 
+	bulkUpdateFilters(subscriptionId: string, filters: Array<{ uid: string } & Partial<FILTER_CREATE_REQUEST>>): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				console.log('bulkUpdateFilters called with method: POST, data:', filters);
+				const response = await this.http.request({
+					url: `/subscriptions/${subscriptionId}/filters/bulk_update`,
+					method: 'post',
+					body: filters,
+					level: 'org_project'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	deleteFilter(subscriptionId: string, filterId: string): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {

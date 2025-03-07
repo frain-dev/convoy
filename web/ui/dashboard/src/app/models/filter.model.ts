@@ -1,5 +1,5 @@
 export interface FILTER {
-	id: string;
+	uid: string;
 	subscription_id: string;
 	event_type: string;
 	headers: any;

@@ -222,6 +222,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						// Filter routes
 						subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
 							filterRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateFilter)
+							filterRouter.With(handler.RequireEnabledProject()).Post("/bulk", handler.BulkCreateFilters)
+							filterRouter.With(handler.RequireEnabledProject()).Post("/bulk_update", handler.BulkUpdateFilters)
 							filterRouter.Get("/", handler.GetFilters)
 							filterRouter.Get("/{filterID}", handler.GetFilter)
 							filterRouter.With(handler.RequireEnabledProject()).Put("/{filterID}", handler.UpdateFilter)
@@ -413,6 +415,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							// Filter routes
 							subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
 								filterRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateFilter)
+								filterRouter.With(handler.RequireEnabledProject()).Post("/bulk", handler.BulkCreateFilters)
+								filterRouter.With(handler.RequireEnabledProject()).Post("/bulk_update", handler.BulkUpdateFilters)
 								filterRouter.Get("/", handler.GetFilters)
 								filterRouter.Get("/{filterID}", handler.GetFilter)
 								filterRouter.With(handler.RequireEnabledProject()).Put("/{filterID}", handler.UpdateFilter)
@@ -531,11 +535,13 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			// Filter routes
 			subscriptionRouter.Route("/{subscriptionID}/filters", func(filterRouter chi.Router) {
 				filterRouter.Post("/", handler.CreateFilter)
+				filterRouter.With(handler.RequireEnabledProject()).Post("/bulk", handler.BulkCreateFilters)
+				filterRouter.With(handler.RequireEnabledProject()).Post("/bulk_update", handler.BulkUpdateFilters)
 				filterRouter.Get("/", handler.GetFilters)
 				filterRouter.Get("/{filterID}", handler.GetFilter)
-				filterRouter.Put("/{filterID}", handler.UpdateFilter)
-				filterRouter.Delete("/{filterID}", handler.DeleteFilter)
-				filterRouter.Post("/test/{eventType}", handler.TestFilter)
+				filterRouter.With(handler.RequireEnabledProject()).Put("/{filterID}", handler.UpdateFilter)
+				filterRouter.With(handler.RequireEnabledProject()).Delete("/{filterID}", handler.DeleteFilter)
+				filterRouter.With(handler.RequireEnabledProject()).Post("/test/{eventType}", handler.TestFilter)
 			})
 		})
 	})

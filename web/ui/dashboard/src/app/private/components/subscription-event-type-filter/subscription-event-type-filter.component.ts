@@ -78,7 +78,7 @@ export class SubscriptionEventTypeFilterComponent implements OnInit {
 			};
 		} else {
 			this.filters.push({
-				id: '', // Will be assigned by backend
+				uid: '', // Will be assigned by backend
 				subscription_id: this.subscriptionId,
 				event_type: filterData.event_type,
 				headers: filterData.headers || {},

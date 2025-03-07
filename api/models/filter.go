@@ -70,3 +70,11 @@ type TestFilterResponse struct {
 	// Whether the payload matches the filter criteria
 	IsMatch bool `json:"is_match"`
 }
+
+// BulkUpdateFilterRequest is a request to update a filter in bulk
+type BulkUpdateFilterRequest struct {
+	UID       string                 `json:"uid" validate:"required"`
+	EventType string                 `json:"event_type,omitempty"`
+	Headers   map[string]interface{} `json:"headers,omitempty"`
+	Body      map[string]interface{} `json:"body,omitempty"`
+}

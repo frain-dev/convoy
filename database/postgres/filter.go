@@ -337,3 +337,64 @@ func scanFilters(rows *sqlx.Rows) ([]datastore.EventTypeFilter, error) {
 
 	return filters, nil
 }
+
+func (f *filterRepo) UpdateFilters(ctx context.Context, filters []datastore.EventTypeFilter) error {
+	tx, err := f.db.GetDB().BeginTxx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func(tx *sqlx.Tx) {
+		innerErr := tx.Rollback()
+		if innerErr != nil {
+			err = innerErr
+		}
+	}(tx)
+
+	for i := range filters {
+		filter := &filters[i]
+
+		err := filter.Body.Flatten()
+		if err != nil {
+			return fmt.Errorf("failed to flatten body filter: %v", err)
+		}
+
+		err = filter.Headers.Flatten()
+		if err != nil {
+			return fmt.Errorf("failed to flatten header filter: %v", err)
+		}
+
+		filter.UpdatedAt = time.Now()
+
+		result, err := tx.ExecContext(
+			ctx,
+			updateFilter,
+			filter.UID,
+			filter.Headers,
+			filter.Body,
+			filter.RawHeaders,
+			filter.RawBody,
+		)
+
+		if err != nil {
+			log.FromContext(ctx).WithError(err).Errorf("failed to update filter %s", filter.UID)
+			return fmt.Errorf("failed to update filter %s: %w", filter.UID, ErrFilterNotUpdated)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			log.FromContext(ctx).WithError(err).Errorf("failed to get rows affected for filter %s", filter.UID)
+			return fmt.Errorf("failed to get rows affected for filter %s: %w", filter.UID, ErrFilterNotUpdated)
+		}
+
+		if rowsAffected == 0 {
+			return fmt.Errorf("filter %s not found: %w", filter.UID, ErrFilterNotFound)
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

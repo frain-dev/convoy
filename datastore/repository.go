@@ -2,11 +2,13 @@ package datastore
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"io"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+
 	"errors"
+
 	"github.com/frain-dev/convoy/pkg/flatten"
 )
 
@@ -144,6 +146,7 @@ type FilterRepository interface {
 	CreateFilter(ctx context.Context, filter *EventTypeFilter) error
 	CreateFilters(ctx context.Context, filters []EventTypeFilter) error
 	UpdateFilter(ctx context.Context, filter *EventTypeFilter) error
+	UpdateFilters(ctx context.Context, filters []EventTypeFilter) error
 	DeleteFilter(ctx context.Context, filterID string) error
 	FindFilterByID(ctx context.Context, filterID string) (*EventTypeFilter, error)
 	FindFiltersBySubscriptionID(ctx context.Context, subscriptionID string) ([]EventTypeFilter, error)
