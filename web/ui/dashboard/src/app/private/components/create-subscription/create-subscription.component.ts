@@ -8,7 +8,7 @@ import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.comp
 import { CreateSourceComponent } from '../create-source/create-source.component';
 import { CreateSubscriptionService } from './create-subscription.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { SUBSCRIPTION } from 'src/app/models/subscription';
+import {SUBSCRIPTION, SUBSCRIPTION_CONFIG} from 'src/app/models/subscription';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { EVENT_TYPE } from 'src/app/models/event.model';
 import { FILTER, FILTER_CREATE_REQUEST } from 'src/app/models/filter.model';
@@ -69,7 +69,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	isLoadingPortalProject = false;
 	token: string = this.route.snapshot.queryParams.token;
 
-	configurations = [{ uid: 'tranform_config', name: 'Transform', show: false }];
+	configurations: SUBSCRIPTION_CONFIG[] = [];
 	createdSubscription = false;
 	private rbacService = inject(RbacService);
 	showFilterDialog = false;
@@ -262,25 +262,14 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
 	}
 
-	deleteFilterAndToggleConfigForm(configValue: string, value?: boolean) {
-		// This method is now a no-op since we're using per-event-type filters
-		// Left here for backward compatibility
-		console.warn('The global filter configuration is deprecated. Use per-event-type filters instead.');
-
-		// Still toggle the config if it's not the filter_config
-		if (configValue !== 'filter_config') {
-			this.toggleConfigForm(configValue, value);
-		}
-	}
-
 	toggleConfigForm(configValue: string, value?: boolean) {
-		this.configurations.forEach(config => {
+		this.configurations?.forEach(config => {
 			if (config.uid === configValue) config.show = value ? value : !config.show;
 		});
 	}
 
 	showConfig(configValue: string): boolean {
-		return this.configurations.find(config => config.uid === configValue)?.show || false;
+		return this.configurations.find(config => config?.uid === configValue)?.show || false;
 	}
 
 	async getSubscriptionDetails() {
@@ -429,7 +418,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		};
 
 		this.configurations.forEach(config => {
-			const fields = configFields[config.uid];
+			const fields = configFields[config?.uid];
 			if (this.showConfig(config.uid)) {
 				fields?.forEach((item: string) => {
 					this.subscriptionForm.get(item)?.addValidators(Validators.required);
@@ -508,7 +497,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		console.log('Endpoint_id before processing:', subscriptionData.endpoint_id, 'Type:', typeof subscriptionData.endpoint_id);
 
 		// ALWAYS convert endpoint_id to UID string
-		// This is essential both for the API call and to prevent objects being sent
+		// This is essential for both for the API call and to prevent objects being sent
 		if (subscriptionData.endpoint_id) {
 			if (typeof subscriptionData.endpoint_id === 'object') {
 				if (subscriptionData.endpoint_id.uid) {
@@ -673,7 +662,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 	getFilterSchema(schema: any) {
 		// This is called when a filter is created or updated for a specific event type
-		// It updates the filter in the filters array
+		// It updates the filter in the filter array
 		if (!this.selectedEventType) {
 			console.error('No event type selected for filter');
 			return;
@@ -714,7 +703,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	}
 
 	get shouldShowBorder(): number {
-		return this.configurations.filter(config => config.show).length;
+		return this.configurations.filter(config => config?.show).length;
 	}
 
 	get isUpdateAction(): boolean {
