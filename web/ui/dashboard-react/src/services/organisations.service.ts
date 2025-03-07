@@ -63,7 +63,7 @@ export async function getOrganisations(
 		method: 'get',
 	});
 
-	organisations = res.data.content
+	organisations = res.data.content;
 
 	return res.data;
 }
@@ -79,6 +79,37 @@ export async function addOrganisation(
 		method: 'post',
 		url: '/organisations',
 		body: reqDetails,
+	});
+
+	return res.data;
+}
+
+type UpdateOrganisationParams = {
+	name: string;
+	orgId: string;
+};
+
+export async function updateOrganisation(
+	reqDetails: UpdateOrganisationParams,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<Organisation>({
+		url: `/organisations/${reqDetails.orgId}`,
+		method: 'put',
+		body: { name: reqDetails.name },
+	});
+
+	return res.data;
+}
+
+export async function deleteOrganisation(
+	orgId: string,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<null>({
+		url: `/organisations/${orgId}`,
+		method: 'delete',
+		body: null,
 	});
 
 	return res.data;

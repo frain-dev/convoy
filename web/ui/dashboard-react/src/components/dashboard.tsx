@@ -216,7 +216,7 @@ function HeaderRightOrganisation() {
 								</span>
 							</Button>
 							<a
-								href={`/organisations/${currentOrganisation.uid}/settings`}
+								href={`/settings`}
 								className="block p-2 bg-new.primary-25 rounded-8px transition-colors"
 							>
 								<SettingsIcon size={18} className="stroke-neutral-9" />
