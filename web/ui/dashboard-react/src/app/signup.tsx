@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormReturn } from 'react-hook-form';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
@@ -18,8 +18,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
-import { router } from '@/lib/router';
-import { useLicenseStore } from '@/store';
 import * as authService from '@/services/auth.service';
 import { CONVOY_DASHBOARD_DOMAIN } from '@/lib/constants';
 import * as hubSpotService from '@/services/hubspot.service';
@@ -32,14 +30,12 @@ export const Route = createFileRoute('/signup')({
 			if (!licenses.includes('CREATE_USER')) {
 				throw new Error('beforeLoad: client is not licensed to create user');
 			}
-
-			const { setLicenses } = useLicenseStore();
-			setLicenses(licenses);
 		} catch (err) {
 			console.error('SignUpPage.beforeLoad:', err);
-			router.navigate({ to: '/' });
+			redirect({ to: '/', throw: true });
 		}
 	},
+
 	component: SignUpPage,
 });
 

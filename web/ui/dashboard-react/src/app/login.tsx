@@ -283,7 +283,7 @@ function LoginPage() {
 		try {
 			await authService.login(values);
 			dispatchState({ isLoadingProject: true });
-			await organisationService.getOrganisations({ refresh: true });
+			await organisationService.getOrganisations();
 			dispatchState({ isLoginButtonEnabled: true, isLoadingProject: false });
 			navigate({ to: '/projects', from: '/login' });
 		} catch (err) {
