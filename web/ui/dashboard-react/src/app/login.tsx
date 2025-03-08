@@ -18,7 +18,7 @@ import {
 import { ConvoyLoader } from '@/components/convoy-loader';
 
 import { cn } from '@/lib/utils';
-
+import { useLicenseStore } from '@/store';
 import * as authService from '@/services/auth.service';
 import * as licensesService from '@/services/licenses.service';
 import * as organisationService from '@/services/organisations.service';
@@ -254,13 +254,18 @@ function reducer(state: ReducerPayload, payload: ReducerPayload) {
 
 function LoginPage() {
 	const navigate = useNavigate();
+	const { setLicenses } = useLicenseStore();
 	const [state, dispatchState] = useReducer(reducer, initialReducerState);
 
 	useEffect(function () {
-		getSignUpConfig().then();
-		licensesService.setLicenses().then();
-		const hasCreateUserLicense = licensesService.hasLicense('CREATE_USER');
-		dispatchState({ hasCreateUserLicense });
+		bootstrap();
+
+		async function bootstrap() {
+			await getSignUpConfig();
+			const licenses = await licensesService.getLicenses();
+			setLicenses(licenses);
+			dispatchState({ hasCreateUserLicense: licenses.includes('CREATE_ORG') });
+		}
 	}, []);
 
 	const form = useForm<z.infer<typeof formSchema>>({
@@ -349,3 +354,5 @@ export const Route = createFileRoute('/login')({
 
 // TODO authService and other impure extraneous deps should be injected as a
 // dependency for testing and flexibility/maintainability
+// I noticed that I can do this with context
+// see https://tanstack.com/router/latest/docs/framework/react/guide/router-context

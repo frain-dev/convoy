@@ -1,16 +1,11 @@
-import { useState } from 'react';
 import { z } from 'zod';
-import { cn } from '@/lib/utils';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-
-import * as authService from '@/services/auth.service';
-import * as hubSpotService from '@/services/hubspot.service';
-import * as licensesService from '@/services/licenses.service';
-
-import { router } from '@/lib/router';
-import { CONVOY_DASHBOARD_DOMAIN } from '@/lib/constants';
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormReturn } from 'react-hook-form';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
+
 import {
 	Form,
 	FormControl,
@@ -21,7 +16,32 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
+import { router } from '@/lib/router';
+import { useLicenseStore } from '@/store';
+import * as authService from '@/services/auth.service';
+import { CONVOY_DASHBOARD_DOMAIN } from '@/lib/constants';
+import * as hubSpotService from '@/services/hubspot.service';
+import * as licensesService from '@/services/licenses.service';
+
+export const Route = createFileRoute('/signup')({
+	async beforeLoad() {
+		try {
+			const licenses = await licensesService.getLicenses();
+			if (!licenses.includes('CREATE_USER')) {
+				throw new Error('beforeLoad: client is not licensed to create user');
+			}
+
+			const { setLicenses } = useLicenseStore();
+			setLicenses(licenses);
+		} catch (err) {
+			console.error('SignUpPage.beforeLoad:', err);
+			router.navigate({ to: '/' });
+		}
+	},
+	component: SignUpPage,
+});
 
 type FormFieldInputComponentProps = {
 	form: UseFormReturn<z.infer<typeof formSchema>>;
@@ -246,7 +266,7 @@ function SignUpButton(props: { isButtonEnabled?: boolean }) {
 
 function SignUpWithSAMLButton() {
 	async function signUp() {
-		localStorage.setItem('AUTH_TYPE', 'signup');
+		localStorage.setItem('AUTH_TYPE', 'signup'); // I don't know why we're doing this
 
 		try {
 			const { data } = await authService.signUpWithSAML();
@@ -374,18 +394,3 @@ function SignUpPage() {
 		</div>
 	);
 }
-
-export const Route = createFileRoute('/signup')({
-	async beforeLoad() {
-		try {
-			await licensesService.setLicenses();
-			const hasCreateUserLicense = licensesService.hasLicense('CREATE_USER');
-			if (!hasCreateUserLicense)
-				throw new Error('beforeLoad: client is not licensed to create user');
-		} catch (err) {
-			console.error('beforeLoad:', err);
-			router.navigate({ to: '/' });
-		}
-	},
-	component: SignUpPage,
-});
