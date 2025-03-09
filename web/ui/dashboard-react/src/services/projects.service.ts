@@ -4,7 +4,7 @@ import { CONVOY_CURRENT_PROJECT } from '@/lib/constants';
 import type { Project } from '@/models/project.model';
 
 // TODO use state management
-let projects: Array<Project> = []; 
+let projects: Array<Project> = [];
 let projectDetails: Project | null = null;
 
 export async function getProjects(
@@ -41,10 +41,11 @@ export async function getProject(
 
 export function getCachedProject(): Project | null {
 	const cachedProject = localStorage.getItem(CONVOY_CURRENT_PROJECT);
-	if (cachedProject) return JSON.parse(cachedProject);
-	return null;
+	return cachedProject && cachedProject != 'undefined'
+		? JSON.parse(cachedProject)
+		: null;
 }
 
-export function setCachedProject(project:Project|null) {
+export function setCachedProject(project: Project | null) {
 	localStorage.setItem(CONVOY_CURRENT_PROJECT, JSON.stringify(project));
 }

@@ -1,7 +1,6 @@
 import { request } from './http.service';
-import { CONVOY_LICENSES_KEY } from '@/lib/constants';
 
-type License = Record<string, { allowed: boolean }>;
+export type License = Record<string, { allowed: boolean }>;
 
 export async function getLicenses(
 	deps: { httpReq: typeof request } = { httpReq: request },
@@ -11,31 +10,17 @@ export async function getLicenses(
 		method: 'get',
 	});
 
-	return res;
-}
-
-type SetLicensesDeps = {
-	httpReq: typeof request;
-	getLicenses: typeof getLicenses;
-};
-
-/** As a side effect, it caches the licenses */
-export async function setLicenses(
-	deps: SetLicensesDeps = { httpReq: request, getLicenses },
-) {
-	const res = await deps.getLicenses();
-
+	let allowedLicenses: Array<LicenseKey> = [];
 	if (res) {
-		const allowedLicenses = Object.entries(res.data).reduce<Array<string>>(
+		allowedLicenses = Object.entries(res.data).reduce<Array<LicenseKey>>(
 			(acc, [key, { allowed }]) => {
-				if (allowed) return acc.concat(key);
-				return acc;
+				if (allowed) return acc.concat(key as LicenseKey);
+				return acc as Array<LicenseKey>;
 			},
 			[],
 		);
-
-		localStorage.setItem(CONVOY_LICENSES_KEY, JSON.stringify(allowedLicenses));
 	}
+	return allowedLicenses;
 }
 
 const LICENSES = [
@@ -67,16 +52,4 @@ const LICENSES = [
 	'WEBHOOK_TRANSFORMATIONS',
 ] as const;
 
-type LicenseKey = (typeof LICENSES)[number];
-
-export function hasLicense(license: LicenseKey): boolean {
-	const savedLicenses = localStorage.getItem(CONVOY_LICENSES_KEY);
-
-	if (savedLicenses) {
-		const licenses: Array<string> = JSON.parse(savedLicenses);
-		const userHasLicense = licenses.includes(license);
-		return userHasLicense;
-	}
-
-	return false;
-}
+export type LicenseKey = (typeof LICENSES)[number];

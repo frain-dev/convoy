@@ -1,16 +1,11 @@
-import { useState } from 'react';
 import { z } from 'zod';
-import { cn } from '@/lib/utils';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-
-import * as authService from '@/services/auth.service';
-import * as hubSpotService from '@/services/hubspot.service';
-import * as licensesService from '@/services/licenses.service';
-
-import { router } from '@/lib/router';
-import { CONVOY_DASHBOARD_DOMAIN } from '@/lib/constants';
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormReturn } from 'react-hook-form';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
+
 import {
 	Form,
 	FormControl,
@@ -21,7 +16,28 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { EyeIcon, EyeOffIcon } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
+import * as authService from '@/services/auth.service';
+import { CONVOY_DASHBOARD_DOMAIN } from '@/lib/constants';
+import * as hubSpotService from '@/services/hubspot.service';
+import * as licensesService from '@/services/licenses.service';
+
+export const Route = createFileRoute('/signup')({
+	async beforeLoad() {
+		try {
+			const licenses = await licensesService.getLicenses();
+			if (!licenses.includes('CREATE_USER')) {
+				throw new Error('beforeLoad: client is not licensed to create user');
+			}
+		} catch (err) {
+			console.error('SignUpPage.beforeLoad:', err);
+			redirect({ to: '/', throw: true });
+		}
+	},
+
+	component: SignUpPage,
+});
 
 type FormFieldInputComponentProps = {
 	form: UseFormReturn<z.infer<typeof formSchema>>;
@@ -39,12 +55,6 @@ function BusinessNameInputField({ form }: FormFieldInputComponentProps) {
 							<span className="text-xs/5 text-neutral-9 block">
 								Business Name
 							</span>
-							{/* <Badge
-															variant={'outline'}
-															className="text-[11px] font-normal px-1 ml-2 bg-new.gray-200"
-														>
-															required
-														</Badge> */}
 						</FormLabel>
 					</div>
 					<FormControl>
@@ -54,7 +64,7 @@ function BusinessNameInputField({ form }: FormFieldInputComponentProps) {
 							className={cn(
 								'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
 								fieldState.error
-									? 'border-new.error-500 focus-visible:ring-0 hover:border-new.error-500'
+									? 'border-destructive focus-visible:ring-0 hover:border-destructive'
 									: ' hover:border-new.primary-100 focus:border-new.primary-300',
 							)}
 							placeholder="Convoy"
@@ -87,7 +97,7 @@ function EmailInputField({ form }: FormFieldInputComponentProps) {
 							className={cn(
 								'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
 								fieldState.error
-									? 'border-new.error-500 focus-visible:ring-0 hover:border-new.error-500'
+									? 'border-destructive focus-visible:ring-0 hover:border-destructive'
 									: ' hover:border-new.primary-100 focus:border-new.primary-300',
 							)}
 							placeholder="super@default.com"
@@ -120,7 +130,7 @@ function FirstNameInputField({ form }: FormFieldInputComponentProps) {
 							className={cn(
 								'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
 								fieldState.error
-									? 'border-new.error-500 focus-visible:ring-0 hover:border-new.error-500'
+									? 'border-destructive focus-visible:ring-0 hover:border-destructive'
 									: ' hover:border-new.primary-100 focus:border-new.primary-300',
 							)}
 							placeholder="John"
@@ -153,7 +163,7 @@ function LastNameInputField({ form }: FormFieldInputComponentProps) {
 							className={cn(
 								'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
 								fieldState.error
-									? 'border-new.error-500 focus-visible:ring-0 hover:border-new.error-500'
+									? 'border-destructive focus-visible:ring-0 hover:border-destructive'
 									: ' hover:border-new.primary-100 focus:border-new.primary-300',
 							)}
 							placeholder="Doe"
@@ -193,7 +203,7 @@ function PasswordInputField({ form }: FormFieldInputComponentProps) {
 								className={cn(
 									'hide-password-toggle mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
 									fieldState.error
-										? 'border-new.error-500 focus-visible:ring-0 hover:border-new.error-500'
+										? 'border-destructive focus-visible:ring-0 hover:border-destructive'
 										: 'hover:border-new.primary-100 focus:border-new.primary-300',
 								)}
 								{...field}
@@ -252,7 +262,7 @@ function SignUpButton(props: { isButtonEnabled?: boolean }) {
 
 function SignUpWithSAMLButton() {
 	async function signUp() {
-		localStorage.setItem('AUTH_TYPE', 'signup');
+		localStorage.setItem('AUTH_TYPE', 'signup'); // I don't know why we're doing this
 
 		try {
 			const { data } = await authService.signUpWithSAML();
@@ -380,18 +390,3 @@ function SignUpPage() {
 		</div>
 	);
 }
-
-export const Route = createFileRoute('/signup')({
-	async beforeLoad() {
-		try {
-			await licensesService.setLicenses();
-			const hasCreateUserLicense = licensesService.hasLicense('CREATE_USER');
-			if (!hasCreateUserLicense)
-				throw new Error('beforeLoad: client is not licensed to create user');
-		} catch (err) {
-			console.error('beforeLoad:', err);
-			router.navigate({ to: '/' });
-		}
-	},
-	component: SignUpPage,
-});

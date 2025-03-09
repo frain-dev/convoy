@@ -12,7 +12,6 @@ const APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/
 const APP_PORTAL_APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/portal-api`;
 
 function getToken() {
-	// @ts-expect-error `token` is already marked as probably undefined
 	const token = router.state.location.search?.token as string | undefined;
 	return token ? token : '';
 }
@@ -63,13 +62,13 @@ export function buildRequestPath(
 	level?: 'org' | 'org_project',
 	deps: {
 		getCachedProject: typeof projectsService.getCachedProject;
-		getCachedOrganisationId: () => string
+		getCachedOrganisationId: () => string;
 	} = {
 		getCachedProject: projectsService.getCachedProject,
 		getCachedOrganisationId: () => {
-			const org = localStorage.getItem(CONVOY_ORG_KEY)
-			if(!org) return ''
-			return JSON.parse(org).uid as string
+			const data = localStorage.getItem(CONVOY_ORG_KEY);
+
+			return data && data != 'undefined' ? JSON.parse(data).state.org.uid : '';
 		},
 	},
 ): string {

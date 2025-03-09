@@ -13,15 +13,13 @@
 import { Route as rootRoute } from './app/__root'
 import { Route as UserSettingsImport } from './app/user-settings'
 import { Route as SignupImport } from './app/signup'
+import { Route as SettingsImport } from './app/settings'
 import { Route as LoginImport } from './app/login'
 import { Route as GetStartedImport } from './app/get-started'
 import { Route as ForgotPasswordImport } from './app/forgot-password'
 import { Route as ProjectsRouteImport } from './app/projects/route'
 import { Route as IndexImport } from './app/index'
 import { Route as ProjectsIndexImport } from './app/projects/index'
-import { Route as OrganisationsIndexImport } from './app/organisations/index'
-import { Route as OrganisationsOrganisationIdIndexImport } from './app/organisations/$organisationId/index'
-import { Route as OrganisationsOrganisationIdSettingsImport } from './app/organisations/$organisationId/settings'
 
 // Create/Update Routes
 
@@ -34,6 +32,12 @@ const UserSettingsRoute = UserSettingsImport.update({
 const SignupRoute = SignupImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SettingsRoute = SettingsImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -72,26 +76,6 @@ const ProjectsIndexRoute = ProjectsIndexImport.update({
   path: '/',
   getParentRoute: () => ProjectsRouteRoute,
 } as any)
-
-const OrganisationsIndexRoute = OrganisationsIndexImport.update({
-  id: '/organisations/',
-  path: '/organisations/',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const OrganisationsOrganisationIdIndexRoute =
-  OrganisationsOrganisationIdIndexImport.update({
-    id: '/organisations/$organisationId/',
-    path: '/organisations/$organisationId/',
-    getParentRoute: () => rootRoute,
-  } as any)
-
-const OrganisationsOrganisationIdSettingsRoute =
-  OrganisationsOrganisationIdSettingsImport.update({
-    id: '/organisations/$organisationId/settings',
-    path: '/organisations/$organisationId/settings',
-    getParentRoute: () => rootRoute,
-  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -132,6 +116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsImport
+      parentRoute: typeof rootRoute
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -146,33 +137,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UserSettingsImport
       parentRoute: typeof rootRoute
     }
-    '/organisations/': {
-      id: '/organisations/'
-      path: '/organisations'
-      fullPath: '/organisations'
-      preLoaderRoute: typeof OrganisationsIndexImport
-      parentRoute: typeof rootRoute
-    }
     '/projects/': {
       id: '/projects/'
       path: '/'
       fullPath: '/projects/'
       preLoaderRoute: typeof ProjectsIndexImport
       parentRoute: typeof ProjectsRouteImport
-    }
-    '/organisations/$organisationId/settings': {
-      id: '/organisations/$organisationId/settings'
-      path: '/organisations/$organisationId/settings'
-      fullPath: '/organisations/$organisationId/settings'
-      preLoaderRoute: typeof OrganisationsOrganisationIdSettingsImport
-      parentRoute: typeof rootRoute
-    }
-    '/organisations/$organisationId/': {
-      id: '/organisations/$organisationId/'
-      path: '/organisations/$organisationId'
-      fullPath: '/organisations/$organisationId'
-      preLoaderRoute: typeof OrganisationsOrganisationIdIndexImport
-      parentRoute: typeof rootRoute
     }
   }
 }
@@ -197,12 +167,10 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/get-started': typeof GetStartedRoute
   '/login': typeof LoginRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
-  '/organisations': typeof OrganisationsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
-  '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
-  '/organisations/$organisationId': typeof OrganisationsOrganisationIdIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -210,12 +178,10 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/get-started': typeof GetStartedRoute
   '/login': typeof LoginRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
-  '/organisations': typeof OrganisationsIndexRoute
   '/projects': typeof ProjectsIndexRoute
-  '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
-  '/organisations/$organisationId': typeof OrganisationsOrganisationIdIndexRoute
 }
 
 export interface FileRoutesById {
@@ -225,12 +191,10 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/get-started': typeof GetStartedRoute
   '/login': typeof LoginRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/user-settings': typeof UserSettingsRoute
-  '/organisations/': typeof OrganisationsIndexRoute
   '/projects/': typeof ProjectsIndexRoute
-  '/organisations/$organisationId/settings': typeof OrganisationsOrganisationIdSettingsRoute
-  '/organisations/$organisationId/': typeof OrganisationsOrganisationIdIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -241,24 +205,20 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/get-started'
     | '/login'
+    | '/settings'
     | '/signup'
     | '/user-settings'
-    | '/organisations'
     | '/projects/'
-    | '/organisations/$organisationId/settings'
-    | '/organisations/$organisationId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/forgot-password'
     | '/get-started'
     | '/login'
+    | '/settings'
     | '/signup'
     | '/user-settings'
-    | '/organisations'
     | '/projects'
-    | '/organisations/$organisationId/settings'
-    | '/organisations/$organisationId'
   id:
     | '__root__'
     | '/'
@@ -266,12 +226,10 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/get-started'
     | '/login'
+    | '/settings'
     | '/signup'
     | '/user-settings'
-    | '/organisations/'
     | '/projects/'
-    | '/organisations/$organisationId/settings'
-    | '/organisations/$organisationId/'
   fileRoutesById: FileRoutesById
 }
 
@@ -281,11 +239,9 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   GetStartedRoute: typeof GetStartedRoute
   LoginRoute: typeof LoginRoute
+  SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   UserSettingsRoute: typeof UserSettingsRoute
-  OrganisationsIndexRoute: typeof OrganisationsIndexRoute
-  OrganisationsOrganisationIdSettingsRoute: typeof OrganisationsOrganisationIdSettingsRoute
-  OrganisationsOrganisationIdIndexRoute: typeof OrganisationsOrganisationIdIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -294,12 +250,9 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   GetStartedRoute: GetStartedRoute,
   LoginRoute: LoginRoute,
+  SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   UserSettingsRoute: UserSettingsRoute,
-  OrganisationsIndexRoute: OrganisationsIndexRoute,
-  OrganisationsOrganisationIdSettingsRoute:
-    OrganisationsOrganisationIdSettingsRoute,
-  OrganisationsOrganisationIdIndexRoute: OrganisationsOrganisationIdIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -317,11 +270,9 @@ export const routeTree = rootRoute
         "/forgot-password",
         "/get-started",
         "/login",
+        "/settings",
         "/signup",
-        "/user-settings",
-        "/organisations/",
-        "/organisations/$organisationId/settings",
-        "/organisations/$organisationId/"
+        "/user-settings"
       ]
     },
     "/": {
@@ -342,24 +293,18 @@ export const routeTree = rootRoute
     "/login": {
       "filePath": "login.tsx"
     },
+    "/settings": {
+      "filePath": "settings.tsx"
+    },
     "/signup": {
       "filePath": "signup.tsx"
     },
     "/user-settings": {
       "filePath": "user-settings.tsx"
     },
-    "/organisations/": {
-      "filePath": "organisations/index.tsx"
-    },
     "/projects/": {
       "filePath": "projects/index.tsx",
       "parent": "/projects"
-    },
-    "/organisations/$organisationId/settings": {
-      "filePath": "organisations/$organisationId/settings.tsx"
-    },
-    "/organisations/$organisationId/": {
-      "filePath": "organisations/$organisationId/index.tsx"
     }
   }
 }

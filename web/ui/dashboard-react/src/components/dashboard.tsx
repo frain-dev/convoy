@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { useEffect, useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate, Link } from '@tanstack/react-router';
 
 import {
 	SidebarIcon,
@@ -57,16 +57,13 @@ import {
 } from '@/components/ui/command';
 import { FormField, FormItem, FormControl, Form } from '@/components/ui/form';
 
-import { useOrganisationContext } from '@/contexts/organisation';
-
 import { cn } from '@/lib/utils';
 import { Route } from '@/app/__root';
 import * as transform from '@/lib/pipes';
-import { useAuth } from '@/hooks/use-auth';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
-import * as licensesService from '@/services/licenses.service';
 import * as orgsService from '@/services/organisations.service';
+import { useLicenseStore, useOrganisationStore } from '@/store';
 
 import convoyLogo from '../../assets/svg/logo.svg';
 import userProfileIcon from '../../assets/svg/user-icon.svg';
@@ -74,36 +71,14 @@ import userProfileIcon from '../../assets/svg/user-icon.svg';
 import type { Project } from '@/models/project.model';
 import type { ComponentProps, ReactNode } from 'react';
 
-function HeaderLeftLogo() {
-	const { toggleSidebar } = useSidebar();
-
-	return (
-		<div className="flex items-center justify-between py-3 h-[60px] w-[17rem]">
-			<a href="/" className="inline-block" rel="noreferrer">
-				<img src={convoyLogo} alt="Convoy" className="w-[100px]" />
-			</a>
-			<div className="flex items-center ">
-				<Button
-					className="h-8 w-8"
-					variant="ghost"
-					size="icon"
-					onClick={toggleSidebar}
-					title="CTRL + B"
-				>
-					<SidebarIcon />
-				</Button>
-			</div>
-		</div>
-	);
-}
-
 function HeaderRightProfile() {
-	const { getCurrentUser } = useAuth();
-	const [currentUser] = useState(getCurrentUser());
+	const { auth } = Route.useRouteContext();
+	const currentUser = auth?.getCurrentUser() || null;
 
 	if (!currentUser)
 		return (
 			<li>
+				{/* TODO code this out */}
 				<span>skeleton</span>
 			</li>
 		);
@@ -123,21 +98,21 @@ function HeaderRightProfile() {
 					<DropdownMenuGroup className="pt-2 pb-2 px-3">
 						<div className="flex flex-col">
 							<p className="capitalize text-sm font-medium truncate p-0 hover:bg-transparent hover:cursor-default">
-								{currentUser.first_name || ''} {currentUser.last_name || ''}
+								{currentUser?.first_name || ''} {currentUser?.last_name || ''}
 							</p>
 							<p className="text-neutral-11 text-xs p-0 mt-1 hover:bg-transparent hover:cursor-default">
-								{currentUser.email}
+								{currentUser?.email}
 							</p>
 						</div>
 					</DropdownMenuGroup>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem className="hover:cursor-pointer hover:bg-neutral-3 pl-3">
-						<a
-							href="/user-settings"
+						<Link
+							to="/user-settings"
 							className="block w-full text-xs text-neutral-11"
 						>
 							My account
-						</a>
+						</Link>
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem
@@ -155,39 +130,25 @@ function HeaderRightProfile() {
 }
 
 function HeaderRightOrganisation() {
+	const { licenses } = useLicenseStore();
 	const navigate = useNavigate({ from: Route.fullPath });
-	const {
-		organisations,
-		setOrganisations,
-		currentOrganisation,
-		setCurrentOrganisation,
-	} = useOrganisationContext();
-
+	const { org, paginatedOrgs, setOrg, setPaginatedOrgs } =
+		useOrganisationStore();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const [canCreateOrg] = useState(licensesService.hasLicense('CREATE_ORG'));
-	const [isLoadingOrganisations, setIsLoadingOrganisations] = useState(false);
+	const [canCreateOrg] = useState(licenses.includes('CREATE_ORG'));
 
-	useEffect(() => {
-		getOrganisations();
-		return () => {};
-	}, []);
-
-	function getOrganisations() {
-		setIsLoadingOrganisations(true);
+	async function reloadOrganisations() {
 		orgsService
-			.getOrganisations({ refresh: true })
-			.then(({ content }) => {
-				setOrganisations(content);
+			.getOrganisations()
+			.then(pgOrgs => {
+				setPaginatedOrgs(pgOrgs);
+				setOrg(pgOrgs.content.at(0) || null);
 			})
-			.catch(console.error)
-			.finally(() => {
-				setIsLoadingOrganisations(false);
-			});
+			// TODO use toast component to show UI error on all catch(error) where necessary
+			.catch(console.error);
 	}
 
-	// TODO code out this skeleton part
-	if (isLoadingOrganisations) return <p>skeleton</p>;
-	if (!currentOrganisation) return null;
+	if (!org) return null;
 
 	return (
 		<li className="mr-3">
@@ -199,12 +160,10 @@ function HeaderRightOrganisation() {
 					>
 						<Avatar className="rounded-[100%] w-6 h-6">
 							<AvatarFallback className="bg-new.primary-600 text-white-100 text-[10px]">
-								{transform.getInitials(currentOrganisation.name.split(' '))}
+								{transform.getInitials(org.name.split(' '))}
 							</AvatarFallback>
 						</Avatar>
-						<span className="text-xs block px-1">
-							{currentOrganisation?.name}
-						</span>
+						<span className="text-xs block px-1">{org?.name}</span>
 						<ChevronDown />
 					</Button>
 				</DropdownMenuTrigger>
@@ -212,7 +171,7 @@ function HeaderRightOrganisation() {
 				<DropdownMenuContent align="end" className="w-64">
 					<DropdownMenuGroup className="py-1">
 						<DropdownMenuItem className="focus:bg-transparent text-xs font-semibold focus:text-neutral-11 text-neutral-11 truncate py-1 hover:bg-transparent hover:cursor-default">
-							Your organisations ({organisations.length})
+							Your organisations ({paginatedOrgs.content.length})
 						</DropdownMenuItem>
 						{/* TODO there is a 'padlockicon Business' overlay here. Check and create */}
 					</DropdownMenuGroup>
@@ -230,15 +189,15 @@ function HeaderRightOrganisation() {
 							>
 								<Avatar className="rounded-[100%] w-6 h-6 text-xs mr-2">
 									<AvatarFallback className="bg-new.primary-600 text-white-100 text-[10px]">
-										{transform.getInitials(currentOrganisation.name.split(' '))}
+										{transform.getInitials(org.name.split(' '))}
 									</AvatarFallback>
 								</Avatar>
 								<span className="text-xs text-start block truncate w-3/4">
-									{currentOrganisation.name}
+									{org.name}
 								</span>
 							</Button>
 							<a
-								href={`/organisations/${currentOrganisation.uid}/settings`}
+								href={`/settings`}
 								className="block p-2 bg-new.primary-25 rounded-8px transition-colors"
 							>
 								<SettingsIcon size={18} className="stroke-neutral-9" />
@@ -250,19 +209,19 @@ function HeaderRightOrganisation() {
 
 					<DropdownMenuGroup>
 						<ul>
-							{organisations
-								.filter(org => org.uid != currentOrganisation.uid)
-								.toSorted((oA, oB) => {
-									if (oA.name < oB.name) return -1;
-									if (oA.name > oB.name) return 1;
+							{paginatedOrgs.content
+								.filter(_ => _.uid != org.uid)
+								.toSorted((orgA, orgB) => {
+									if (orgA.name < orgB.name) return -1;
+									if (orgA.name > orgB.name) return 1;
 									return 0;
 								})
-								.map(org => {
+								.map(_org => {
 									return (
 										<DropdownMenuItem
-											key={org.uid}
+											key={_org.uid}
 											className="gap-0 text-xs text-neutral-11 p-3 py-1 hover:cursor-pointer flex justify-start items-center hover:bg-neutral-3"
-											onClick={() => setCurrentOrganisation(org)}
+											onClick={() => setOrg(_org)}
 										>
 											<Button
 												variant={'ghost'}
@@ -270,11 +229,11 @@ function HeaderRightOrganisation() {
 											>
 												<Avatar className="rounded-[100%] w-6 h-6 mr-2">
 													<AvatarFallback className="bg-new.primary-600 text-white-100 text-[10px]">
-														{transform.getInitials(org.name.split(' '))}
+														{transform.getInitials(_org.name.split(' '))}
 													</AvatarFallback>
 												</Avatar>
 												<span className="text-xs text-start block truncate w-3/4">
-													{org.name}
+													{_org.name}
 												</span>
 											</Button>
 										</DropdownMenuItem>
@@ -301,14 +260,14 @@ function HeaderRightOrganisation() {
 										size={20}
 									/>
 									<span className="block text-new.primary-400 text-xs ">
-										Add {organisations.length == 0 ? 'an' : 'another'}{' '}
+										Add {paginatedOrgs.content.length == 0 ? 'an' : 'another'}{' '}
 										organisation
 									</span>
 								</div>
 							</DropdownMenuItem>
 						}
 						isDialogOpen={isDialogOpen}
-						onOrgCreated={getOrganisations}
+						onOrgCreated={reloadOrganisations}
 						setIsDialogOpen={setIsDialogOpen}
 					/>
 				</DropdownMenuContent>
@@ -328,11 +287,30 @@ function HeaderRight() {
 	);
 }
 
-export function DashboardHeader() {
+export function DashboardHeader(props: { showToggleSidebarButton: boolean }) {
+	const { toggleSidebar } = useSidebar();
+
 	return (
 		<header className="sticky top-0 z-50 border-b bg-background">
 			<div className="flex w-full px-6 items-center justify-between mx-auto">
-				<HeaderLeftLogo />
+				<div className="flex items-center justify-between py-3 h-[60px] w-[17rem]">
+					<a href="/" className="inline-block" rel="noreferrer">
+						<img src={convoyLogo} alt="Convoy" className="w-[100px]" />
+					</a>
+					{props.showToggleSidebarButton ? (
+						<div className="flex items-center ">
+							<Button
+								className="h-8 w-8"
+								variant="ghost"
+								size="icon"
+								onClick={toggleSidebar}
+								title="CTRL + B"
+							>
+								<SidebarIcon />
+							</Button>
+						</div>
+					) : null}
+				</div>
 				<HeaderRight />
 			</div>
 		</header>
@@ -528,12 +506,12 @@ function ProjectLinks() {
 							return (
 								<li key={link.name}>
 									{/* TODO change to link route */}
-									<a
-										href={link.route}
+									<Link
+										to={link.route}
 										className="flex hover:bg-neutral-3 py-2 pr-3 pl-2 rounded-sm"
 									>
 										{link.name}
-									</a>
+									</Link>
 								</li>
 							);
 						})}
@@ -576,17 +554,12 @@ function FooterLinks() {
 }
 
 export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
-	const { currentOrganisation, setOrganisations } = useOrganisationContext();
+	const { org } = useOrganisationStore();
+	const { licenses } = useLicenseStore();
 
 	const [canCreateProject] = useState<boolean>(
-		licensesService.hasLicense('CREATE_PROJECT'),
+		licenses.includes('CREATE_PROJECT'),
 	);
-
-	useEffect(() => {
-		orgsService.getOrganisations({ refresh: false }).then(setOrganisations);
-
-		return () => {};
-	}, []);
 
 	return (
 		<aside>
@@ -601,11 +574,11 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 								<SidebarGroup>
 									<SidebarGroupContent className="flex flex-col justify-center items-center">
 										<Button
-											disabled={!currentOrganisation || !canCreateProject}
+											disabled={!org || !canCreateProject}
 											variant={'ghost'}
 											className={cn(
 												'w-full hover:bg-neutral-3 ',
-												currentOrganisation ? '' : 'blur-[1px]',
+												org ? '' : 'blur-[1px]',
 											)}
 										>
 											Create a new project
@@ -613,14 +586,14 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 									</SidebarGroupContent>
 								</SidebarGroup>
 							</TooltipTrigger>
-							{!currentOrganisation || !canCreateProject ? (
+							{!org || !canCreateProject ? (
 								<TooltipContent
 									side="right"
 									sideOffset={-48}
 									className="bg-primary-100"
 								>
 									<p className="text-white-100 text-xs">
-										{!currentOrganisation
+										{!org
 											? 'An organisation is required to create projects on Convoy.'
 											: 'You are not licensed to create a project'}
 									</p>
@@ -649,21 +622,16 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 	);
 }
 
-export function DashboardLayout(props: { children: ReactNode }) {
-	useEffect(() => {
-		licensesService.setLicenses().then();
-
-		return () => {
-			// abort request
-		};
-	}, []);
-
+export function DashboardLayout(props: {
+	children: ReactNode;
+	showSidebar: boolean;
+}) {
 	return (
 		<div className="[--header-height:calc(theme(spacing.14))]">
 			<SidebarProvider className="flex flex-col">
-				<DashboardHeader />
+				<DashboardHeader showToggleSidebarButton={props.showSidebar} />
 				<div className="flex items-center h-full">
-					<DashboardSidebar />
+					{props.showSidebar ? <DashboardSidebar /> : null}
 					<SidebarInset className="flex h-full">{props.children}</SidebarInset>
 				</div>
 			</SidebarProvider>
