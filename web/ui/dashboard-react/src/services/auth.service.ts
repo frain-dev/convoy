@@ -83,6 +83,7 @@ export function logUserOut() {
 	// save previous location before session timeout
 	if (!router.state.location.pathname.startsWith('/login')) {
 		sessionStorage.clear();
+		localStorage.clear();
 		localStorage.setItem(CONVOY_LAST_AUTH_LOCATION_KEY, location.href);
 	}
 
