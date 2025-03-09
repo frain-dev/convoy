@@ -4,10 +4,11 @@ export interface FILTER {
 	event_type: string;
 	headers: any;
 	body: any;
-	raw_headers: any;
-	raw_body: any;
-	created_at: string;
-	updated_at: string;
+	is_new?: boolean;
+	raw_headers?: any;
+	raw_body?: any;
+	created_at?: string;
+	updated_at?: string;
 }
 
 export interface FILTER_CREATE_REQUEST {

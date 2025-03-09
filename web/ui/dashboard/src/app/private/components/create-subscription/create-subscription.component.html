@@ -113,7 +113,9 @@
 								></convoy-select>
 							</div>
 							<div class="flex items-center">
-								<button convoy-button type="button" size="xs" fill="soft-outline" color="primary" class="mr-8px" (click)="openFilterDialog(selectedEventTypes[i])" [disabled]="!selectedEventTypes[i] || action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" >
+								<button convoy-button type="button" size="xs" fill="soft-outline" color="primary" class="mr-8px"
+                                        (click)="openFilterDialog(selectedEventTypes[i])"
+                                        [disabled]="!selectedEventTypes[i] || action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" >
 									Edit Filter
 								</button>
 								<button convoy-button type="button" size="xs" fill="soft-outline" color="error" (click)="removeEventType(i)" *ngIf="action !== 'view'" [disabled]="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
@@ -187,7 +189,13 @@
 <!-- subscription filters form   -->
 <dialog open convoy-dialog position="full" *ngIf="showFilterDialog">
 	<div class="w-full h-full">
-		<convoy-create-subscription-filter (close)="showFilterDialog = false" [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
+		<convoy-create-subscription-filter
+                [action]="action"
+                [selectedEventType]="selectedEventType"
+                [schema]="filters[selectedIndex]"
+                (filterSchema)="onSaveFilter($event)"
+                (close)="showFilterDialog = false">
+        </convoy-create-subscription-filter>
 	</div>
 </dialog>
 
@@ -203,17 +211,4 @@
 <!-- source url modal  -->
 <dialog #sourceURLDialog convoy-dialog position="center">
 	<convoy-source-url [url]="sourceURL" (close)="sourceURLDialog.close(); onAction.emit({ data: subscription, action: this.action == 'update' ? 'update' : 'create' })"></convoy-source-url>
-</dialog>
-
-<!-- subscription event type filter dialog -->
-<dialog #filterDialog class="w-full h-full bg-transparent" [class.open]="showFilterDialog">
-	<convoy-subscription-event-type-filter
-		[action]="action"
-		[subscriptionId]="subscriptionId"
-		[eventTypes]="eventTypes"
-		[selectedEventType]="selectedEventType"
-		[filters]="filters"
-		(close)="showFilterDialog = false"
-		(save)="onSaveFilter($event)"
-	></convoy-subscription-event-type-filter>
 </dialog>

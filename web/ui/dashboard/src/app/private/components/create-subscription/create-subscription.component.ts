@@ -1,5 +1,5 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, ViewChildren, QueryList, AfterViewInit, ChangeDetectorRef, inject } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, QueryList, ViewChild, ViewChildren } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
 import { SOURCE } from 'src/app/models/source.model';
@@ -8,10 +8,10 @@ import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.comp
 import { CreateSourceComponent } from '../create-source/create-source.component';
 import { CreateSubscriptionService } from './create-subscription.service';
 import { RbacService } from 'src/app/services/rbac/rbac.service';
-import {SUBSCRIPTION, SUBSCRIPTION_CONFIG} from 'src/app/models/subscription';
+import { SUBSCRIPTION, SUBSCRIPTION_CONFIG } from 'src/app/models/subscription';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { EVENT_TYPE } from 'src/app/models/event.model';
-import { FILTER, FILTER_CREATE_REQUEST } from 'src/app/models/filter.model';
+import { FILTER } from 'src/app/models/filter.model';
 import { FilterService } from './filter.service';
 
 @Component({
@@ -31,7 +31,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	@ViewChild(CreateEndpointComponent) createEndpointForm!: CreateEndpointComponent;
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
-	@ViewChild('filterDialog', { static: true }) filterDialog!: ElementRef<HTMLDialogElement>;
 
 	@ViewChildren('eventTypeSelect') eventTypeSelects!: QueryList<any>;
 
@@ -49,6 +48,15 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		}),
 		eventTypes: this.formBuilder.group({})
 	});
+	// filtersForm: FormArray = this.formBuilder.array([
+	// 	{
+	// 		subscription_id: ['', Validators.required],
+	// 		event_type: ['', Validators.required],
+	// 		headers: [null],
+	// 		body: [null]
+	// 	}
+	// ]);
+
 	endpoints!: ENDPOINT[];
 	eventTags: string[] = [];
 	apps!: APP[];
@@ -81,6 +89,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	selectedEventTypes: string[] = [];
 	filters: FILTER[] = [];
 	selectedEventType: string = '';
+	selectedIndex: number = 0;
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -185,7 +194,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 						const matchingEndpoint = this.endpoints.find(endpoint => endpoint.uid === endpointId);
 
 						if (matchingEndpoint) {
-							console.log('Setting endpoint from ngAfterViewInit:', matchingEndpoint);
 							this.subscriptionForm.patchValue({ endpoint_id: matchingEndpoint });
 
 							// Force change detection
@@ -275,7 +283,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	async getSubscriptionDetails() {
 		try {
 			const response = await this.createSubscriptionService.getSubscriptionDetail(this.subscriptionId);
-			console.log('Loaded subscription details:', response.data);
 
 			// Store the subscription data
 			this.subscription = response.data;
@@ -283,13 +290,11 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 			// First, load the endpoints if not already loaded
 			if (!this.endpoints || this.endpoints.length === 0) {
 				await this.getEndpoints();
-				console.log('Loaded endpoints:', this.endpoints);
 			}
 
 			// Similarly, load sources if not already loaded and if it's an incoming project
 			if ((!this.sources || this.sources.length === 0) && this.projectType === 'incoming' && !this.token) {
 				await this.getSources();
-				console.log('Loaded sources:', this.sources);
 			}
 
 			// Find the matching endpoint from options directly
@@ -298,7 +303,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 			if (endpointId && this.endpoints && this.endpoints.length > 0) {
 				matchingEndpoint = this.endpoints.find(e => e.uid === endpointId);
-				console.log('Found matching endpoint:', matchingEndpoint);
 			}
 
 			// Find the matching source from options directly
@@ -307,7 +311,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 			if (sourceId && this.sources && this.sources.length > 0) {
 				matchingSource = this.sources.find(s => s.uid === sourceId);
-				console.log('Found matching source:', matchingSource);
 			}
 
 			// Set the form values
@@ -317,8 +320,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				source_id: matchingSource || sourceId,
 				endpoint_id: matchingEndpoint || endpointId
 			});
-
-			console.log('Updated form values:', this.subscriptionForm.value);
 
 			// Handle event types
 			if (response.data.filter_config?.event_types) {
@@ -492,23 +493,17 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		// Get the current form values
 		const subscriptionData = structuredClone(this.subscriptionForm.value);
 
-		// Log the form data before processing
-		console.log('Subscription form raw data:', this.subscriptionForm.value);
-		console.log('Endpoint_id before processing:', subscriptionData.endpoint_id, 'Type:', typeof subscriptionData.endpoint_id);
-
 		// ALWAYS convert endpoint_id to UID string
 		// This is essential for both for the API call and to prevent objects being sent
 		if (subscriptionData.endpoint_id) {
 			if (typeof subscriptionData.endpoint_id === 'object') {
 				if (subscriptionData.endpoint_id.uid) {
-					console.log('Converting endpoint_id from object to UID string:', subscriptionData.endpoint_id);
 					subscriptionData.endpoint_id = subscriptionData.endpoint_id.uid;
 				} else {
 					// Try other possible properties that might contain the ID
 					const possibleIdFields = ['id', '_id', 'ID', 'value'];
 					for (const field of possibleIdFields) {
 						if (subscriptionData.endpoint_id[field]) {
-							console.log(`Found ID in ${field} property:`, subscriptionData.endpoint_id[field]);
 							subscriptionData.endpoint_id = subscriptionData.endpoint_id[field];
 							break;
 						}
@@ -520,8 +515,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				subscriptionData.endpoint_id = String(subscriptionData.endpoint_id);
 			}
 		}
-
-		console.log('Endpoint_id after processing:', subscriptionData.endpoint_id, 'Type:', typeof subscriptionData.endpoint_id);
 
 		// Similarly, ensure source_id is a string if present
 		if (subscriptionData.source_id && typeof subscriptionData.source_id === 'object' && subscriptionData.source_id.uid) {
@@ -541,7 +534,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 		// create subscription
 		try {
-			console.log('Final subscription data to send:', subscriptionData);
 			let response;
 			if (this.action === 'update' || this.isUpdateAction) {
 				response = await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId });
@@ -551,20 +543,17 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 			}
 
 			// Save filters after subscription is created/updated
-			console.log('Processing filters:', this.filters);
 			if (this.filters.length > 0) {
 				try {
 					// Get the existing filters once to avoid multiple API calls
 					const existingFiltersResponse = await this.filterService.getFilters(this.subscriptionId);
 					const existingFiltersContent = existingFiltersResponse.data || [];
-					console.log('Existing filters from API:', existingFiltersContent);
 
 					// Create a map of existing filters by event type for easy lookup
 					const existingFiltersByEventType: { [key: string]: any } = {};
 					existingFiltersContent.forEach((filter: any) => {
 						existingFiltersByEventType[filter.event_type] = filter;
 					});
-					console.log('Existing filters by event type:', existingFiltersByEventType);
 
 					// Process filters to update - filters with UIDs
 					const filtersToUpdate = this.filters
@@ -575,8 +564,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 						.map(filter => {
 							// If filter has no UID but there's a matching event type, use that existing filter's UID
 							const matchingFilter = filter.uid ? existingFiltersContent.find((f: any) => f.uid === filter.uid) : existingFiltersByEventType[filter.event_type];
-
-							console.log('Matching filter found:', matchingFilter);
 
 							// Only include event_type if it's actually changed
 							const updatePayload: any = {
@@ -618,10 +605,8 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 					// Update existing filters in bulk if needed
 					if (filtersToUpdate.length > 0) {
-						console.log('Calling bulkUpdateFilters with:', filtersToUpdate);
 						try {
 							const updateResponse = await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
-							console.log('Bulk update response:', updateResponse);
 						} catch (error) {
 							console.error('Error calling bulkUpdateFilters:', error);
 						}
@@ -649,18 +634,12 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		this.router.navigateByUrl('/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions');
 	}
 
-	setupFilter() {
-		// This method is now a no-op since we're using per-event-type filters
-		// Left here for backward compatibility
-		console.warn('The global filter setup is deprecated. Use per-event-type filters instead.');
-	}
-
 	setupTransformDialog() {
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.showTransformDialog = true;
 	}
 
-	getFilterSchema(schema: any) {
+	onSaveFilter(schema: any) {
 		// This is called when a filter is created or updated for a specific event type
 		// It updates the filter in the filter array
 		if (!this.selectedEventType) {
@@ -670,6 +649,8 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 		// Find or create a filter for this event type
 		const existingFilterIndex = this.filters.findIndex(filter => filter.event_type === this.selectedEventType);
+		console.log('onSaveFilter:', this.selectedEventType);
+		console.log('existingFilterIndex:', existingFilterIndex);
 
 		if (existingFilterIndex >= 0) {
 			// Update existing filter
@@ -678,7 +659,9 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				headers: schema.headerSchema || {},
 				body: schema.bodySchema || {}
 			};
+			console.log('updated existing filters');
 		} else {
+			console.log('created new filter');
 			// Create new filter
 			this.filters.push({
 				uid: '', // Will be assigned by backend
@@ -710,45 +693,20 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		return this.subscriptionId && this.subscriptionId !== 'new' && this.currentRoute !== 'setup';
 	}
 
-	async getFilters() {
+	async getFilters(): Promise<any> {
 		try {
 			const response = await this.filterService.getFilters(this.subscriptionId);
-			this.filters = response.data.content || [];
-			console.log('Filters loaded:', this.filters);
-			return;
+			this.filters = response.data;
 		} catch (error) {
-			return error;
+			throw error;
 		}
 	}
 
-	openFilterDialog(eventType?: string) {
+	openFilterDialog(eventType: string) {
+		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.selectedEventType = eventType || '';
+		this.selectedIndex = this.filters.findIndex(item => item.event_type === eventType);
 		this.showFilterDialog = true;
-	}
-
-	onSaveFilter(filters: FILTER[]) {
-		// Update or add filters for the selected event type
-		if (filters && filters.length > 0) {
-			// For each filter in the returned filters array
-			filters.forEach(newFilter => {
-				// Check if we already have this filter in our filters array
-				// Match by uid or event_type
-				const existingFilterIndex = this.filters.findIndex(f => f.event_type === newFilter.event_type || (f.uid && f.uid === newFilter.uid));
-
-				if (existingFilterIndex >= 0) {
-					// Update existing filter
-					this.filters[existingFilterIndex] = {
-						...this.filters[existingFilterIndex],
-						...newFilter
-					};
-				} else {
-					// Add new filter
-					this.filters.push(newFilter);
-				}
-			});
-
-			console.log('Updated filters:', this.filters);
-		}
 	}
 
 	addEventType() {
@@ -767,6 +725,17 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 			// Update the selectedEventTypes array to stay in sync
 			this.selectedEventTypes.push(this.eventTypes[0].name);
+
+			this.filters.push({
+				uid: '', // Will be assigned by backend
+				subscription_id: this.subscriptionId,
+				event_type: this.eventTypes[0].name,
+				headers: {},
+				is_new: true,
+				body: {}
+			});
+
+			console.log('updated eventType:', JSON.stringify(this.filters));
 
 			// Manually trigger change detection
 			this.cdr.detectChanges();
@@ -810,6 +779,8 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	}
 
 	updateEventType(index: number, eventType: string | EVENT_TYPE) {
+		console.log('eventType:', eventType);
+
 		// Update the event type in the form group
 		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
 
@@ -819,12 +790,44 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		// Update the selectedEventTypes array to stay in sync
 		const oldEventType = this.selectedEventTypes[index];
 		this.selectedEventTypes[index] = String(newEventType);
+		console.log('eventType:', oldEventType);
 
-		// Update any filters for this event type
-		const filterIndex = this.filters.findIndex(filter => filter.event_type === oldEventType);
-		if (filterIndex >= 0) {
-			this.filters[filterIndex].event_type = String(newEventType);
-		}
+		// First check if a filter for the new event type already exists
+		const newEventTypeFilterExists = this.filters.some(filter => filter.event_type === newEventType);
+
+		// Find the index of the filter for the old event type
+		const newFilterIndex = this.filters.findIndex(filter => {
+			if (filter.event_type === '*' && filter.is_new) {
+				return filter.event_type === oldEventType;
+			}
+			return filter.event_type === newEventType;
+		});
+
+		const oldFilterIndex = this.filters.findIndex(filter => filter.event_type === oldEventType);
+
+		console.log('selected filter:', newFilterIndex >= 0 ? this.filters[newFilterIndex] : null);
+
+
+		const indexToUse = newFilterIndex >= 0 ? newFilterIndex : oldFilterIndex;
+
+		// Create a copy of the filter with the new event type
+		const originalFilter = this.filters[indexToUse];
+
+		// Clone the filter and update its event type
+		const newFilter = {
+			...originalFilter,
+			uid: '', // New filter won't have a UID until saved
+			event_type: String(newEventType),
+			is_new: false
+		};
+
+		// remove the item before adding the new one
+		this.filters.splice(indexToUse, 1);
+
+		// Add the new filter to the filters array
+		this.filters.push(newFilter);
+
+		console.log('updated eventType:', JSON.stringify(this.filters));
 
 		// Force UI update with change detection
 		this.cdr.detectChanges();
@@ -842,4 +845,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
 		this.selectedEventTypes[index] = newEventType;
 	}
+
+	protected readonly Number = Number;
 }
