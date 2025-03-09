@@ -2,11 +2,11 @@ import axios from 'axios';
 import { router } from '../lib/router';
 import { isProductionMode } from '@/lib/env';
 
-import { CONVOY_ORG_KEY } from '@/lib/constants';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
 
 import type { HttpResponse } from '@/models/global.model';
+import { useOrganisationStore } from '@/store';
 
 const APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/ui`;
 const APP_PORTAL_APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/portal-api`;
@@ -66,9 +66,8 @@ export function buildRequestPath(
 	} = {
 		getCachedProject: projectsService.getCachedProject,
 		getCachedOrganisationId: () => {
-			const data = localStorage.getItem(CONVOY_ORG_KEY);
-
-			return data && data != 'undefined' ? JSON.parse(data).state.org.uid : '';
+			const {org} = useOrganisationStore.getState()
+			return org?.uid || ''
 		},
 	},
 ): string {

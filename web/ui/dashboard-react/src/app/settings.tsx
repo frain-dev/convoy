@@ -63,7 +63,7 @@ export const Route = createFileRoute('/settings')({
 			canManageOrganisation,
 		};
 	},
-	component: RouteComponent,
+	component: SettingsPage,
 });
 
 const OrganisationFormSchema = z.object({
@@ -71,7 +71,7 @@ const OrganisationFormSchema = z.object({
 	orgId: z.string(),
 });
 
-function RouteComponent() {
+function SettingsPage() {
 	const { canManageOrganisation } = Route.useLoaderData();
 	const [isUpdatingOrg, setIsUpdatingOrg] = useState(false);
 	const [isDeletingOrg, setIsDeletingOrg] = useState(false);
