@@ -5,11 +5,9 @@ import { Button } from '@/components/ui/button';
 import { ConvoyLoader } from '@/components/convoy-loader';
 import { CreateOrganisation } from '@/components/create-organisation';
 
-import { useOrganisationContext } from '@/contexts/organisation';
-
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as projectsService from '@/services/projects.service';
-import * as licensesService from '@/services/licenses.service';
+import { useLicenseStore, useOrganisationStore } from '@/store';
 import * as orgsService from '@/services/organisations.service';
 
 import plusCircularIcon from '../../../assets/svg/add-circlar-icon.svg';
@@ -20,26 +18,39 @@ export const Route = createFileRoute('/projects/')({
 	beforeLoad({ context }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
 	},
+	async loader() {
+		const { org, paginatedOrgs } = useOrganisationStore.getState();
+
+		if (!org || !paginatedOrgs.content.length) {
+			const pgOrgs = await orgsService.getOrganisations();
+
+			useOrganisationStore.setState({
+				paginatedOrgs: pgOrgs,
+				org: pgOrgs.content.at(0) || null,
+			});
+		}
+	},
 	component: RouteComponent,
 });
 
 function RouteComponent() {
+	const { licenses } = useLicenseStore();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
-	const { setOrganisations, organisations } = useOrganisationContext();
-	const [canCreateOrg] = useState(licensesService.hasLicense('CREATE_ORG'));
+	const { org, setOrg, setPaginatedOrgs } = useOrganisationStore();
+	const [canCreateOrg] = useState(licenses.includes('CREATE_ORG'));
 	const [isLoadingOrganisations, setIsLoadingOrganisations] = useState(false);
-
-	// TODO use a state management lib for projects
+	// TODO use a state management lib for projects like zustand
 	const [currentProject] = useState<Project | null>(
 		projectsService.getCachedProject(),
 	);
 
-	function getOrganisations() {
+	async function reloadOrganisations() {
 		setIsLoadingOrganisations(true);
 		orgsService
-			.getOrganisations({ refresh: true })
-			.then(({ content }) => {
-				setOrganisations(content);
+			.getOrganisations()
+			.then(pgOrgs => {
+				setPaginatedOrgs(pgOrgs);
+				setOrg(pgOrgs.content.at(0) || null);
 			})
 			// TODO use toast component to show UI error on all catch(error) where necessary
 			.catch(console.error)
@@ -51,12 +62,10 @@ function RouteComponent() {
 	if (isLoadingOrganisations)
 		return <ConvoyLoader isTransparent={true} isVisible={true} />;
 
-	if (organisations.length == 0)
+	if (!org)
 		return (
 			<CreateOrganisation
-				onOrgCreated={() => {
-					getOrganisations();
-				}}
+				onOrgCreated={reloadOrganisations}
 				isDialogOpen={isDialogOpen}
 				setIsDialogOpen={setIsDialogOpen}
 				children={
