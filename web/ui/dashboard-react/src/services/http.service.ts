@@ -62,13 +62,13 @@ export function buildRequestPath(
 	level?: 'org' | 'org_project',
 	deps: {
 		getCachedProject: typeof projectsService.getCachedProject;
-		getCachedOrganisationId: () => string
+		getCachedOrganisationId: () => string;
 	} = {
 		getCachedProject: projectsService.getCachedProject,
 		getCachedOrganisationId: () => {
-			const org = localStorage.getItem(CONVOY_ORG_KEY)
-			if(!org) return ''
-			return JSON.parse(org).uid as string
+			const data = localStorage.getItem(CONVOY_ORG_KEY);
+
+			return data && data != 'undefined' ? JSON.parse(data).state.org.uid : '';
 		},
 	},
 ): string {

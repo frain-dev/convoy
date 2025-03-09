@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, Link } from '@tanstack/react-router';
@@ -18,18 +18,29 @@ import {
 } from '@/components/ui/form';
 import { DashboardLayout } from '@/components/dashboard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from '@/components/ui/dialog';
 
 import { cn } from '@/lib/utils';
+import { useOrganisationStore } from '@/store';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
-import {
-	useOrganisationContext,
-	WithOrganisationContext,
-} from '@/contexts/organisation';
 import * as authService from '@/services/auth.service';
 import * as orgsService from '@/services/organisations.service';
 
+import warningAnimation from '../../assets/img/warning-animation.gif';
+
+import type { Organisation } from '@/models/organisation.model';
+
 type SettingsSearch = {
-	token: string;
+	token: string | undefined;
 };
 
 export const Route = createFileRoute('/settings')({
@@ -38,7 +49,7 @@ export const Route = createFileRoute('/settings')({
 	},
 	validateSearch: (search: Record<string, unknown>): SettingsSearch => {
 		return {
-			token: (search.token as string) || '',
+			token: (search.token as string) || undefined,
 		};
 	},
 	loaderDeps: ({ search: { token } }) => ({ token }),
@@ -52,7 +63,7 @@ export const Route = createFileRoute('/settings')({
 			canManageOrganisation,
 		};
 	},
-	component: WithOrganisationContext(RouteComponent),
+	component: RouteComponent,
 });
 
 const OrganisationFormSchema = z.object({
@@ -64,31 +75,46 @@ function RouteComponent() {
 	const { canManageOrganisation } = Route.useLoaderData();
 	const [isUpdatingOrg, setIsUpdatingOrg] = useState(false);
 	const [isDeletingOrg, setIsDeletingOrg] = useState(false);
-
-	const { currentOrganisation, setOrganisations } = useOrganisationContext();
+	const { org, setPaginatedOrgs, setOrg, paginatedOrgs } =
+		useOrganisationStore();
 
 	const organisationForm = useForm<z.infer<typeof OrganisationFormSchema>>({
 		resolver: zodResolver(OrganisationFormSchema),
 		defaultValues: {
-			orgName: currentOrganisation?.name,
-			orgId: currentOrganisation?.uid,
+			orgId: org?.uid,
+			orgName: org?.name,
 		},
 		mode: 'onTouched',
 	});
 
+	useEffect(() => {
+		organisationForm.setValue('orgId', org?.uid || '');
+		organisationForm.setValue('orgName', org?.name || '');
+	}, [org]);
+
 	async function updateOrganisation(
 		values: z.infer<typeof OrganisationFormSchema>,
 	) {
-		if (currentOrganisation?.name == values.orgName) return;
+		if (org?.name == values.orgName) return;
 
 		setIsUpdatingOrg(true);
 		try {
-			await orgsService.updateOrganisation({
+			const org = await orgsService.updateOrganisation({
 				name: values.orgName.trim(),
 				orgId: values.orgId,
 			});
-			const { content } = await orgsService.getOrganisations({ refresh: true });
-			setOrganisations(content);
+			setOrg(org);
+			setPaginatedOrgs({
+				pagination: paginatedOrgs.pagination,
+				content: paginatedOrgs.content.reduce(
+					(acc: Array<Organisation>, _org) => {
+						if (org.uid != _org.uid) return acc.concat(_org);
+						_org.name = org.name;
+						return acc.concat(_org);
+					},
+					[],
+				),
+			});
 			// TODO toast message telling user is successful
 		} catch (error) {
 			console.error(error);
@@ -100,9 +126,14 @@ function RouteComponent() {
 	async function deleteOrganisation() {
 		setIsDeletingOrg(true);
 		try {
-			await orgsService.deleteOrganisation(currentOrganisation?.uid || '');
-			const { content } = await orgsService.getOrganisations({ refresh: true });
-			setOrganisations(content);
+			await orgsService.deleteOrganisation(org?.uid || '');
+
+			setPaginatedOrgs({
+				pagination: paginatedOrgs.pagination,
+				content: paginatedOrgs.content.filter((_org) => org?.uid != _org.uid),
+			});
+
+			setOrg(paginatedOrgs.content.filter((_org) => org?.uid != _org.uid)[0] || null);
 		} catch (error) {
 			console.error(error);
 		} finally {
@@ -148,9 +179,9 @@ function RouteComponent() {
 								}
 							>
 								<div className="flex justify-between items-center mb-7">
-									<h2 className="text-base font-semibold">Organisation Info</h2>
+									<h2 className="text-base font-semibold">Organisation</h2>
 									<Button
-										disabled={isUpdatingOrg || !canManageOrganisation}
+										disabled={isUpdatingOrg || !canManageOrganisation || !org}
 										size="sm"
 										variant="ghost"
 										className="px-4 py-2 text-xs bg-new.primary-400 text-white-100 hover:bg-new.primary-400 hover:text-white-100"
@@ -171,7 +202,7 @@ function RouteComponent() {
 											</div>
 											<FormControl>
 												<Input
-												disabled={!canManageOrganisation}
+													disabled={!canManageOrganisation}
 													autoComplete="organization"
 													type="text"
 													className={cn(
@@ -217,7 +248,7 @@ function RouteComponent() {
 														className="absolute right-[1%] top-0 h-full px-3 py-2 hover:bg-transparent"
 														onClick={() => {
 															window.navigator.clipboard
-																.writeText(currentOrganisation?.uid || '')
+																.writeText(org?.uid || '')
 																.then();
 															// TODO show toast message on copy successful
 														}}
@@ -248,18 +279,61 @@ function RouteComponent() {
 							Deleting your organisation means you will lose all workspaces
 							created by you and all your every other organisation information.
 						</p>
-						<Button
-							disabled={isDeletingOrg || !canManageOrganisation}
-							size="sm"
-							variant="ghost"
-							className="px-4 py-2 text-xs bg-destructive  hover:bg-destructive hover:text-white-100 flex items-center"
-							onClick={deleteOrganisation}
-						>
-							<svg width="18" height="18" className="fill-white-100">
-								<use xlinkHref="#delete-icon"></use>
-							</svg>
-							<p className="text-white-100">Delete Organisation</p>
-						</Button>
+						<Dialog>
+							<DialogTrigger asChild>
+								<Button
+									disabled={isDeletingOrg || !canManageOrganisation || !org}
+									size="sm"
+									variant="ghost"
+									className="px-4 py-2 text-xs bg-destructive  hover:bg-destructive hover:text-white-100 flex items-center"
+								>
+									<svg width="18" height="18" className="fill-white-100">
+										<use xlinkHref="#delete-icon"></use>
+									</svg>
+									<p className="text-white-100">Delete Organisation</p>
+								</Button>
+							</DialogTrigger>
+							<DialogContent className="sm:max-w-[432px] rounded-lg">
+								<DialogHeader>
+									<DialogTitle className="flex justify-center items-center">
+										<img
+											src={warningAnimation}
+											alt="warning"
+											className="w-24"
+										/>
+									</DialogTitle>
+									<DialogDescription className="flex justify-center items-center font-medium text-new.black text-sm">
+										Are you sure you want to deactivate “{org?.name}”?
+									</DialogDescription>
+								</DialogHeader>
+								<div className="flex flex-col items-center space-y-4">
+									<p className="text-xs text-neutral-11">
+										This action is irreversible.
+									</p>
+									<DialogClose asChild>
+										<Button
+											onClick={deleteOrganisation}
+											type="submit"
+											size="sm"
+											className="bg-destructive text-white-100 hover:bg-destructive hover:text-white-100"
+										>
+											Yes. Deactivate
+										</Button>
+									</DialogClose>
+								</div>
+								<DialogFooter className="flex justify-center items-center">
+									<DialogClose asChild>
+										<Button
+											type="button"
+											variant="ghost"
+											className="bg-transparent hover:bg-transparent text-xs text-neutral-11 hover:text-neutral-11 font-semibold"
+										>
+											No. Cancel
+										</Button>
+									</DialogClose>
+								</DialogFooter>
+							</DialogContent>
+						</Dialog>
 					</section>
 				</TabsContent>
 				<TabsContent value="team">
@@ -271,5 +345,3 @@ function RouteComponent() {
 		</DashboardLayout>
 	);
 }
-
-// TODO RBAC service to determine is user can delete/update org
