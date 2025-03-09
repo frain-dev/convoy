@@ -7,6 +7,8 @@ import type { PaginatedResult } from '@/models/global.model';
 import type { LicenseKey } from '@/services/licenses.service';
 import type { Organisation } from '@/models/organisation.model';
 
+// window.sessionStorage is used so that if the page is refreshed, app will use new data from server
+
 type LicenseStore = {
 	licenses: Array<LicenseKey>;
 	setLicenses: (keys: Array<LicenseKey>) => void;
@@ -20,7 +22,7 @@ export const useLicenseStore = create<LicenseStore>()(
 		}),
 		{
 			name: CONVOY_LICENSES_KEY,
-			storage: createJSONStorage(() => localStorage), // just to be explicit
+			storage: createJSONStorage(() => sessionStorage),
 		},
 	),
 );
@@ -53,6 +55,7 @@ export const useOrganisationStore = create<OrganisationStore>()(
 		}),
 		{
 			name: CONVOY_ORG_KEY,
+			storage: createJSONStorage(() => sessionStorage),
 		},
 	),
 );
