@@ -1,12 +1,12 @@
 <div convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control">
-	<div class="w-full" [ngClass]="{ 'pointer-events-none': readonly }" dropdownTrigger>
-		<label convoy-label [required]="required ? 'true' : 'false'" [for]="name" [tooltip]="tooltipContent">{{ label }}</label>
+    <div class="w-full" [ngClass]="{ 'pointer-events-none': readonly }" dropdownTrigger>
+        <label convoy-label [required]="required ? 'true' : 'false'" [for]="name" [tooltip]="tooltipContent">{{ label }}</label>
 
-		<input type="text" [formControl]="control" [id]="name" class="peer" [value]="option" hidden readonly />
+        <input type="text" [formControl]="control" [id]="name" class="peer" [value]="option" hidden readonly />
 
-		<div
-			convoy-input
-			class="
+        <div
+                convoy-input
+                class="
 				peer-disabled:text-neutral-4 peer-disabled:border-new.primary-25 peer-disabled:bg-white-100 peer-[ng-invalid]:border-danger-100
 				py-12px
 				px-16px
@@ -19,59 +19,49 @@
 				items-center
 				flex-wrap
 			"
-		>
-			<ng-container *ngIf="!multiple">
-				<span *ngIf="selectedValue">
-					{{ selectedValue?.name || selectedValue?.title || selectedValue }}
-				</span>
-				<span *ngIf="!selectedValue && option" class="text-neutral-9">
-					{{ option }}
-				</span>
-				<span *ngIf="!selectedValue && !option" class="text-neutral-5">
-					{{ placeholder || 'Select' }}
-				</span>
-			</ng-container>
-			<ng-container *ngIf="multiple">
-				<div *ngFor="let option of selectedOptions" class="border border-neutral-5 py-4px px-8px font-medium text-12 text-neutral-10 mr-1 mb-1 rounded-22px flex items-center">
-					{{ option.name || option.title || option }}
-					<button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
-						<svg width="14" height="14" class="fill-neutral-10">
-							<use xlink:href="#close-icon-2"></use>
-						</svg>
-					</button>
-				</div>
-			</ng-container>
-		</div>
+        >
+            <span *ngIf="!multiple">{{ selectedValue?.name || selectedValue?.title || selectedValue }}</span>
+            <ng-container *ngIf="multiple">
+                <div *ngFor="let option of selectedOptions" class="border border-neutral-5 py-4px px-8px font-medium text-12 text-neutral-10 mr-1 mb-1 rounded-22px flex items-center">
+                    {{ option.name || option.title || option }}
+                    <button convoy-button (click)="removeOption(option)" fill="text" type="button" class="py-0 px-0 ml-4px">
+                        <svg width="14" height="14" class="fill-neutral-10">
+                            <use xlink:href="#close-icon-2"></use>
+                        </svg>
+                    </button>
+                </div>
+            </ng-container>
+        </div>
 
-		<div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="control.touched && control.invalid">
-			<img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
-			<span>{{ errorMessage }}</span>
-		</div>
-	</div>
+        <div class="flex items-center text-12 text-danger-100 mt-8px" *ngIf="control.touched && control.invalid">
+            <img src="assets/img/input-error-icon.svg" class="mr-8px w-16px" alt="input error icon" />
+            <span>{{ errorMessage }}</span>
+        </div>
+    </div>
 
-	<div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto overflow-y-auto">
-		<ul>
-			<ng-container *ngIf="searchable">
-				<li>
-					<div class="my-10px mr-20px border border-new.primary-50 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
-						<img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
-						<input type="search" placeholder="Search here" class="w-full outline-none text-12" #searchFilter />
-					</div>
-				</li>
-			</ng-container>
-			<li class="text-14 text-neutral-4">Select</li>
+    <div dropdownOptions class="py-20px pl-20px w-full max-h-[300px] scroll-m-0 scroll-auto overflow-y-auto">
+        <ul>
+            <ng-container *ngIf="searchable">
+                <li>
+                    <div class="my-10px mr-20px border border-new.primary-50 h-36px px-14px rounded-[10px] flex items-center bg-white-100">
+                        <img src="/assets/img/search-icon.svg" alt="search icon" class="mr-10px w-14px" />
+                        <input type="search" placeholder="Search here" class="w-full outline-none text-12" #searchFilter />
+                    </div>
+                </li>
+            </ng-container>
+            <li class="text-14 text-neutral-4">Select</li>
 
-			<ng-container *ngIf="multiple">
-				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25">
-					<button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
-				</li>
-			</ng-container>
+            <ng-container *ngIf="multiple">
+                <li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25">
+                    <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+                </li>
+            </ng-container>
 
-			<ng-container *ngIf="!multiple">
-				<li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option>
-					<button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
-				</li>
-			</ng-container>
-		</ul>
-	</div>
+            <ng-container *ngIf="!multiple">
+                <li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option>
+                    <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+                </li>
+            </ng-container>
+        </ul>
+    </div>
 </div>
