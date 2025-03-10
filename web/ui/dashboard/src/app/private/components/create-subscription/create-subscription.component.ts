@@ -32,8 +32,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	@ViewChild(CreateSourceComponent) createSourceForm!: CreateSourceComponent;
 	@ViewChild('sourceURLDialog', { static: true }) sourceURLDialog!: ElementRef<HTMLDialogElement>;
 
-	@ViewChildren('eventTypeSelect') eventTypeSelects!: QueryList<any>;
-
 	subscriptionForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		source_id: [''],
@@ -48,14 +46,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		}),
 		eventTypes: this.formBuilder.group({})
 	});
-	// filtersForm: FormArray = this.formBuilder.array([
-	// 	{
-	// 		subscription_id: ['', Validators.required],
-	// 		event_type: ['', Validators.required],
-	// 		headers: [null],
-	// 		body: [null]
-	// 	}
-	// ]);
 
 	endpoints!: ENDPOINT[];
 	eventTags: string[] = [];
@@ -201,69 +191,8 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 						}
 					}
 				}
-
-				// Initialize event type selects
-				setTimeout(() => {
-					this.initializeSelectComponents();
-				}, 300);
 			}, 500);
-		} else {
-			// For create mode, just initialize event type selects
-			setTimeout(() => {
-				this.initializeSelectComponents();
-			}, 300);
 		}
-	}
-
-	// Initialize all convoy-select components manually
-	initializeSelectComponents() {
-		if (!this.eventTypeSelects || this.eventTypeSelects.length === 0) {
-			// Try again after a longer delay if components haven't rendered yet
-			setTimeout(() => this.initializeSelectComponents(), 500);
-			return;
-		}
-
-		this.eventTypeSelects.forEach((select, index) => {
-			if (index < this.selectedEventTypes.length) {
-				// Get the event type value from the array
-				const eventTypeValue = this.selectedEventTypes[index];
-
-				// Handle string values by default
-				let selectedValue: string | EVENT_TYPE = eventTypeValue;
-
-				// If it's a string, try to find the corresponding object
-				if (typeof eventTypeValue === 'string') {
-					const matchingObj = this.eventTypes.find(et => et.name === eventTypeValue);
-					if (matchingObj) {
-						selectedValue = matchingObj;
-					}
-				}
-
-				// Update the select component
-				if (select) {
-					// Set the form control value
-					const control = this.eventTypesFormGroup.get(index.toString());
-					if (control) {
-						const formValue = typeof selectedValue === 'string' ? selectedValue : (selectedValue as EVENT_TYPE).name;
-						control.setValue(formValue);
-					}
-
-					// Directly set the value and selected value on the component
-					if (typeof selectedValue === 'string') {
-						select.value = selectedValue;
-						select.selectedValue = selectedValue;
-						select.writeValue(selectedValue);
-					} else {
-						select.value = (selectedValue as EVENT_TYPE).name;
-						select.selectedValue = selectedValue;
-						select.writeValue((selectedValue as EVENT_TYPE).name);
-					}
-				}
-			}
-		});
-
-		// Force change detection
-		this.cdr.detectChanges();
 	}
 
 	toggleConfig(configValue: string) {
@@ -702,80 +631,25 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		}
 	}
 
-	openFilterDialog(eventType: string) {
+	openFilterDialog(eventType: string, index: number) {
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.selectedEventType = eventType || '';
 		this.selectedIndex = this.filters.findIndex(item => item.event_type === eventType);
 		this.showFilterDialog = true;
 	}
 
-	addEventType() {
-		// Check if there are available event types
-		if (this.eventTypes.length > 0) {
-			// Get current index
-			const index = this.selectedEventTypes.length;
-			const indexStr = index.toString();
-
-			// Create an updated controls object
-			const updatedControls: Record<string, any> = { ...this.eventTypesFormGroup.value };
-			updatedControls[indexStr] = this.eventTypes[0].name;
-
-			// Update the form group
-			this.eventTypesFormGroup.addControl(indexStr, this.formBuilder.control(this.eventTypes[0].name));
-
-			// Update the selectedEventTypes array to stay in sync
-			this.selectedEventTypes.push(this.eventTypes[0].name);
-
-			this.filters.push({
-				uid: '', // Will be assigned by backend
-				subscription_id: this.subscriptionId,
-				event_type: this.eventTypes[0].name,
-				headers: {},
-				is_new: true,
-				body: {}
-			});
-
-			console.log('updated eventType:', JSON.stringify(this.filters));
-
-			// Manually trigger change detection
-			this.cdr.detectChanges();
-
-			// Initialize the new select component
-			setTimeout(() => {
-				this.initializeSelectComponents();
-			}, 50);
-		} else {
-			console.warn('No event types available to add.');
-		}
-	}
-
 	removeEventType(index: number) {
 		// Get the event type being removed
 		const eventType = this.selectedEventTypes[index];
-		const indexStr = index.toString();
 
-		// Remove from form group
-		this.eventTypesFormGroup.removeControl(indexStr);
-
-		// Remove from selectedEventTypes array to keep them in sync
+		// Remove from selectedEventTypes array
 		this.selectedEventTypes.splice(index, 1);
-
-		// Reindex the remaining controls
-		const updatedControls: Record<string, any> = {};
-		this.selectedEventTypes.forEach((evType, i) => {
-			updatedControls[i.toString()] = this.formBuilder.control(evType);
-		});
-
-		// Recreate the form group with the updated controls
-		this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(updatedControls));
 
 		// Also remove any filters for this event type
 		this.filters = this.filters.filter(filter => filter.event_type !== eventType);
 
-		// Initialize the remaining select components
-		setTimeout(() => {
-			this.initializeSelectComponents();
-		}, 50);
+		// Force UI update
+		this.cdr.detectChanges();
 	}
 
 	updateEventType(index: number, eventType: string | EVENT_TYPE) {
@@ -807,7 +681,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 		console.log('selected filter:', newFilterIndex >= 0 ? this.filters[newFilterIndex] : null);
 
-
 		const indexToUse = newFilterIndex >= 0 ? newFilterIndex : oldFilterIndex;
 
 		// Create a copy of the filter with the new event type
@@ -831,19 +704,43 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 		// Force UI update with change detection
 		this.cdr.detectChanges();
-
-		// Re-initialize select components after a short delay
-		setTimeout(() => {
-			// Force a component redraw by recreating the event types array
-			this.selectedEventTypes = [...this.selectedEventTypes];
-			this.initializeSelectComponents();
-		}, 50);
 	}
 
 	updateSelectedEventType(index: number, eventType: string | EVENT_TYPE) {
 		// Handle both string and EVENT_TYPE objects
 		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
 		this.selectedEventTypes[index] = newEventType;
+	}
+
+	// Check if an event type is selected
+	isEventTypeSelected(eventTypeName: string): boolean {
+		return this.selectedEventTypes.includes(eventTypeName);
+	}
+
+	// Toggle an event type on/off
+	toggleEventType(eventTypeName: string): void {
+		const index = this.selectedEventTypes.indexOf(eventTypeName);
+
+		if (index !== -1) {
+			// If already selected, remove it
+			this.removeEventType(index);
+		} else {
+			// If not selected, add it
+			this.selectedEventTypes.push(eventTypeName);
+
+			// Add a filter for this event type
+			this.filters.push({
+				uid: '', // Will be assigned by backend
+				subscription_id: this.subscriptionId,
+				event_type: eventTypeName,
+				headers: {},
+				is_new: true,
+				body: {}
+			});
+
+			// Force UI update
+			this.cdr.detectChanges();
+		}
 	}
 
 	protected readonly Number = Number;
