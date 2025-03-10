@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"gopkg.in/guregu/null.v4"
@@ -15,8 +16,9 @@ import (
 )
 
 var (
-	ErrUpdateSubscriptionError   = errors.New("failed to update subscription")
+	ErrCantUseEndpointForTwoSubs = errors.New("can't use an endpoint for two subscriptions")
 	ErrValidateSubscriptionError = errors.New("failed to validate subscription")
+	ErrUpdateSubscriptionError   = errors.New("failed to update subscription")
 )
 
 type UpdateSubscriptionService struct {
@@ -141,6 +143,9 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 	err = s.SubRepo.UpdateSubscription(ctx, s.ProjectId, subscription)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrUpdateSubscriptionError.Error())
+		if strings.Contains(err.Error(), "key value violates unique constraint") {
+			return nil, &ServiceError{ErrMsg: ErrCantUseEndpointForTwoSubs.Error(), Err: err}
+		}
 		return nil, &ServiceError{ErrMsg: ErrUpdateSubscriptionError.Error(), Err: err}
 	}
 

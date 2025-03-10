@@ -53,7 +53,7 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 		CreateTransformFunctionComponent,
 		ConfigButtonComponent,
 		SourceURLComponent,
-        TagComponent
+		TagComponent
 	],
 	exports: [CreateSubscriptionComponent]
 })

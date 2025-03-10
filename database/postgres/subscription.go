@@ -274,7 +274,41 @@ const (
 	`
 
 	upsertSubscriptionEventTypes = `
-	INSERT INTO convoy.event_types (id, name, project_id, description, category) VALUES (:id, :name, :project_id, :description, :category) on conflict do nothing;`
+	INSERT INTO convoy.event_types (id, name, project_id, description, category) 
+	VALUES (:id, :name, :project_id, :description, :category) 
+	on conflict do nothing;`
+
+	insertSubscriptionEventTypeFilters = `
+	INSERT INTO convoy.filters (
+		id,
+		subscription_id,
+		event_type,
+		headers,
+		body,
+		raw_headers,
+		raw_body
+	)
+	SELECT
+		convoy.generate_ulid()::VARCHAR,
+		id,
+		unnest(filter_config_event_types),
+		filter_config_filter_headers,
+		filter_config_filter_body,
+		filter_config_filter_raw_headers,
+		filter_config_filter_raw_body
+	FROM convoy.subscriptions
+	WHERE deleted_at IS NULL ON CONFLICT DO NOTHING;
+	`
+
+	deleteSubscriptionEventTypes = `
+	delete from convoy.filters where id in (
+		select f.id as filter_id
+		from convoy.filters f
+		join convoy.subscriptions s on
+		s.id = f.subscription_id where s.id = $1
+		and f.event_type <> all(s.filter_config_event_types)
+	);
+	`
 )
 
 var (
@@ -560,6 +594,12 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
+	// create filters for each event type
+	_, err = tx.ExecContext(ctx, insertSubscriptionEventTypeFilters)
+	if err != nil {
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
@@ -653,6 +693,18 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 
 	// create event types for each subscription
 	_, err = tx.NamedExecContext(ctx, upsertSubscriptionEventTypes, eventTypesSlice)
+	if err != nil {
+		return err
+	}
+
+	// delete filters when they are removed from the subscription
+	_, err = tx.ExecContext(ctx, deleteSubscriptionEventTypes, subscription.UID)
+	if err != nil {
+		return err
+	}
+
+	// create filters for each event type
+	_, err = tx.ExecContext(ctx, insertSubscriptionEventTypeFilters)
 	if err != nil {
 		return err
 	}

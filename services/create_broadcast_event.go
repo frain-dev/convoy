@@ -17,13 +17,9 @@ import (
 )
 
 type CreateBroadcastEventService struct {
-	EndpointRepo   datastore.EndpointRepository
-	EventRepo      datastore.EventRepository
-	PortalLinkRepo datastore.PortalLinkRepository
-	Queue          queue.Queuer
-
 	BroadcastEvent *models.BroadcastEvent
 	Project        *datastore.Project
+	Queue          queue.Queuer
 }
 
 func (e *CreateBroadcastEventService) Run(ctx context.Context) error {

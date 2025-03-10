@@ -21,3 +21,5 @@ export interface SUBSCRIPTION {
 	active_menu?: boolean;
 	device_metadata: DEVICE;
 }
+
+export interface SUBSCRIPTION_CONFIG { uid: string, name: string, show: boolean }

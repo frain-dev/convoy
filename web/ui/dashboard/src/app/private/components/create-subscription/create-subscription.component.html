@@ -11,6 +11,7 @@
 						[options]="sources"
 						name="source"
 						formControlName="source_id"
+						[value]="subscriptionForm.get('source_id')?.value"
 						errorMessage="Select or create a source"
 						label="Select from existing sources"
 						placeholder="Select source"
@@ -39,6 +40,7 @@
 				[options]="endpoints"
 				name="endpoint"
 				formControlName="endpoint_id"
+				[value]="subscriptionForm.get('endpoint_id')?.value"
 				errorMessage="Select or create an endpoint"
 				label="Select from existing endpoints"
 				placeholder="Select endpoint"
@@ -74,11 +76,10 @@
 		<ng-container *ngIf="showConfig('events')">
 			<div *ngIf="projectType === 'outgoing' || token" class="border-l-2 border-neutral-3 pl-16px mb-40px">
 				<div class="flex justify-between items-end mb-8px">
-					<p class="text-12 font-medium text-neutral-9 flex items-center">
+					<p class="text-12 font-medium text-neutral-9 flex items-center" >
 						Event Types
 						<convoy-tooltip size="sm" position="top-right" class="ml-4px">
-							These are the specifications for the retry mechanism for your endpoints under this subscription. In Linear time retry, event retries are done in linear time, while in Exponential back off retry, events are retried progressively increasing the time
-							before the next retry attempt.
+							These are the event types that this subscription will receive. You can add filters to each event type to control which events are delivered.
 						</convoy-tooltip>
 					</p>
 					<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
@@ -88,45 +89,52 @@
 					</button>
 				</div>
 
-				<ng-container formGroupName="filter_config">
-					<convoy-select
-						name="event_types"
-                        selectionType="eventTypes"
-						formControlName="event_types"
-						[selectedValues]="eventTags"
-						[options]="eventTypes"
-						[multiple]="true"
-						className="mb-24px"
-						(selectedOption)="subscriptionForm.patchValue({ filter_config: { event_types: $event } })"
-					></convoy-select>
-				</ng-container>
-			</div>
-		</ng-container>
-
-		<ng-container *ngIf="showConfig('filter_config')">
-			<div class="border-l-2 border-neutral-3 pl-16px mb-40px flex justify-between items-center">
-				<div>
-					<div class="flex items-center gap-8px">
-						<h4 class="text-neutral-10 font-medium text-12">Events Filter</h4>
-						<div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-							<svg width="10" height="10" class="fill-new.primary-400 scale-150">
-								<use xlink:href="#lock-icon"></use>
-							</svg>
-							Business
+				<div class="mt-16px">
+                    <div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                        <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                            <use xlink:href="#lock-icon"></use>
+                        </svg>
+                        Business
+                    </div>
+					<div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+						<div *ngFor="let eventType of eventTypes" class="flex items-center justify-between mb-12px border border-neutral-4 p-12px rounded-6px">
+							<div class="flex items-center">
+								<div class="relative mr-12px">
+									<div 
+										class="border border-neutral-5 w-16px h-16px flex items-center justify-center rounded-sm"
+										[class.border-primary-600]="isEventTypeSelected(eventType.name)"
+										[class.bg-primary-50]="isEventTypeSelected(eventType.name)"
+									>
+										<span *ngIf="isEventTypeSelected(eventType.name)" class="text-primary-600 text-12 font-bold leading-none">✓</span>
+									</div>
+									<input 
+										type="checkbox" 
+										[id]="'event_type_' + eventType.name + '_box'"
+										[checked]="isEventTypeSelected(eventType.name)"
+										(change)="toggleEventType(eventType.name)"
+										[disabled]="action === 'view'"
+										class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0" 
+									/>
+								</div>
+								<label [for]="'event_type_' + eventType.name + '_box'" class="text-12 cursor-pointer">
+									{{ eventType.name }}
+								</label>
+							</div>
+							<div class="flex items-center">
+								<button convoy-button 
+									type="button" 
+									size="xs" 
+									fill="soft-outline" 
+									color="primary" 
+									class="mr-8px"
+									(click)="openFilterDialog(eventType.name)"
+									[disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" >
+									Edit Filter
+								</button>
+							</div>
 						</div>
+						<p *ngIf="eventTypes.length === 0" class="text-12 text-neutral-7 italic">No event types available</p>
 					</div>
-					<p class="text-10 text-neutral-10 mt-4px">Filter events received by request body and header.</p>
-				</div>
-				<div class="flex items-center">
-					<button convoy-button fill="soft-outline" color="neutral" class="py-2px px-6px" size="xs" type="button" (click)="setupFilter()" [disabled]="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">Open Editor</button>
-
-					<div class="mx-10px h-16px w-[1px] bg-neutral-5"></div>
-
-					<button convoy-button type="button" size="xs" *ngIf="action !== 'view'" fill="soft-outline" color="neutral" (click)="deleteFilterAndToggleConfigForm('filter_config')">
-						<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-							<use xlink:href="#delete-icon2"></use>
-						</svg>
-					</button>
 				</div>
 			</div>
 		</ng-container>
@@ -183,7 +191,13 @@
 <!-- subscription filters form   -->
 <dialog open convoy-dialog position="full" *ngIf="showFilterDialog">
 	<div class="w-full h-full">
-		<convoy-create-subscription-filter (close)="showFilterDialog = false" [schema]="subscriptionForm.get('filter_config.filter')?.value" [action]="action" (filterSchema)="getFilterSchema($event)"></convoy-create-subscription-filter>
+		<convoy-create-subscription-filter
+                [action]="action"
+                [selectedEventType]="selectedEventType"
+                [schema]="filters[selectedIndex]"
+                (filterSchema)="onSaveFilter($event)"
+                (close)="showFilterDialog = false">
+        </convoy-create-subscription-filter>
 	</div>
 </dialog>
 

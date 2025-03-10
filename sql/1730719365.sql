@@ -19,7 +19,8 @@
 
 -- +migrate Up
 -- +migrate StatementBegin
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pgcrypto with schema public;
+CREATE EXTENSION IF NOT EXISTS pgcrypto with schema convoy;
 
 CREATE OR REPLACE FUNCTION convoy.generate_ulid() RETURNS TEXT
 AS $$
@@ -42,7 +43,7 @@ BEGIN
     timestamp = SET_BYTE(timestamp, 5, unix_time::BIT(8)::INTEGER);
 
     -- 10 entropy bytes
-    ulid = timestamp || public.gen_random_bytes(10);
+    ulid = timestamp || gen_random_bytes(10);
 
     -- Encode the timestamp
     output = output || CHR(GET_BYTE(encoding, (GET_BYTE(ulid, 0) & 224) >> 5));

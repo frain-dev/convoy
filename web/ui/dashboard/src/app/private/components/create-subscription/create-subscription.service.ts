@@ -58,7 +58,7 @@ export class CreateSubscriptionService {
 		});
 	}
 
-	async getPortalProject(): Promise<HTTP_RESPONSE> {
+	async getPortalProject() {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const response = await this.http.request({
@@ -73,7 +73,7 @@ export class CreateSubscriptionService {
 		});
 	}
 
-	testSubsriptionFilter(requestDetails: { schema: any; request: any }): Promise<HTTP_RESPONSE> {
+	testSubscriptionFilter(requestDetails: { schema: any; request: any }): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const projectResponse = await this.http.request({
