@@ -1878,6 +1878,20 @@ func (mr *MockFilterRepositoryMockRecorder) UpdateFilter(ctx, filter any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFilter", reflect.TypeOf((*MockFilterRepository)(nil).UpdateFilter), ctx, filter)
 }
 
+// UpdateFilters mocks base method.
+func (m *MockFilterRepository) UpdateFilters(ctx context.Context, filters []datastore.EventTypeFilter) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateFilters", ctx, filters)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateFilters indicates an expected call of UpdateFilters.
+func (mr *MockFilterRepositoryMockRecorder) UpdateFilters(ctx, filters any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateFilters", reflect.TypeOf((*MockFilterRepository)(nil).UpdateFilters), ctx, filters)
+}
+
 // MockSourceRepository is a mock of SourceRepository interface.
 type MockSourceRepository struct {
 	ctrl     *gomock.Controller
