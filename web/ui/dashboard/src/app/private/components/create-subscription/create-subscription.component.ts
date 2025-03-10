@@ -78,6 +78,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	eventTypes: EVENT_TYPE[] = [];
 	selectedEventTypes: string[] = [];
 	filters: FILTER[] = [];
+	filtersMap: Map<string, FILTER> = new Map<string, FILTER>();
 	selectedEventType: string = '';
 	selectedIndex: number = 0;
 
@@ -545,6 +546,85 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				}
 			}
 
+			// Save filters after subscription is created/updated (using Map implementation)
+			try {
+				// Get the existing filters once to avoid multiple API calls
+				const existingFiltersResponse = await this.filterService.getFilters(this.subscriptionId);
+				const existingFiltersContent = existingFiltersResponse.data || [];
+
+				// Create a map of existing filters by event type for easy lookup
+				const existingFiltersByEventType: { [key: string]: any } = {};
+				existingFiltersContent.forEach((filter: any) => {
+					existingFiltersByEventType[filter.event_type] = filter;
+				});
+
+				// Process filters in the map
+				const filtersToUpdate: any[] = [];
+				const filtersToCreate: any[] = [];
+
+				// Process each filter in the map
+				this.filtersMap.forEach((filter, eventType) => {
+					// Check if this filter needs to be updated or created
+					const existingFilter = existingFiltersByEventType[eventType];
+
+					if (existingFilter) {
+						// This is an existing filter that needs to be updated
+						const updatePayload: any = {
+							uid: existingFilter.uid,
+							headers: filter.headers || {},
+							body: filter.body || {}
+						};
+
+						// Only include event_type if it's different from the existing one
+						if (eventType !== existingFilter.event_type) {
+							updatePayload.event_type = eventType;
+						}
+
+						filtersToUpdate.push(updatePayload);
+					} else {
+						// This is a new filter that needs to be created
+						filtersToCreate.push({
+							subscription_id: this.subscriptionId,
+							event_type: eventType,
+							headers: filter.headers || {},
+							body: filter.body || {},
+							raw_headers: filter.raw_headers || {},
+							raw_body: filter.raw_body || {}
+						});
+					}
+				});
+
+				console.log('Filters to create:', filtersToCreate);
+				console.log('Filters to update:', filtersToUpdate);
+
+				// Create new filters in bulk if needed
+				if (filtersToCreate.length > 0) {
+					await this.filterService.createFilters(this.subscriptionId, filtersToCreate);
+				}
+
+				// Update existing filters in bulk if needed
+				if (filtersToUpdate.length > 0) {
+					try {
+						const updateResponse = await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
+					} catch (error) {
+						console.error('Error calling bulkUpdateFilters:', error);
+					}
+				}
+
+				// Handle filters that need to be deleted
+				// Find event types in the existing filters that are not in the current filtersMap
+				const filtersToDelete = existingFiltersContent.filter((existingFilter: any) => !this.filtersMap.has(existingFilter.event_type)).map((filter: any) => filter.uid);
+
+				if (filtersToDelete.length > 0) {
+					console.log('Filters to delete:', filtersToDelete);
+					// Delete filters that are no longer needed
+					// Note: You would need to implement a method in your filterService to handle deletion
+					// await this.filterService.deleteFilters(this.subscriptionId, filtersToDelete);
+				}
+			} catch (error) {
+				console.error('Error saving filters:', error);
+			}
+
 			this.subscription = response.data;
 			if (setup) await this.privateService.getProjectStat({ refresh: true });
 			this.privateService.getSubscriptions();
@@ -570,40 +650,39 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 	onSaveFilter(schema: any) {
 		// This is called when a filter is created or updated for a specific event type
-		// It updates the filter in the filter array
 		if (!this.selectedEventType) {
 			console.error('No event type selected for filter');
 			return;
 		}
 
-		// Find or create a filter for this event type
-		const existingFilterIndex = this.filters.findIndex(filter => filter.event_type === this.selectedEventType);
-		console.log('onSaveFilter:', this.selectedEventType);
-		console.log('existingFilterIndex:', existingFilterIndex);
+		// Get the existing filter from the map or create a default object
+		const existingFilter = this.filtersMap.get(this.selectedEventType) || {
+			uid: '', // Will be assigned by backend
+			subscription_id: this.subscriptionId,
+			event_type: this.selectedEventType,
+			raw_headers: {},
+			raw_body: {},
+			created_at: new Date().toISOString(),
+			updated_at: new Date().toISOString(),
+			is_new: true
+		};
 
-		if (existingFilterIndex >= 0) {
-			// Update existing filter
-			this.filters[existingFilterIndex] = {
-				...this.filters[existingFilterIndex],
-				headers: schema.headerSchema || {},
-				body: schema.bodySchema || {}
-			};
-			console.log('updated existing filters');
-		} else {
-			console.log('created new filter');
-			// Create new filter
-			this.filters.push({
-				uid: '', // Will be assigned by backend
-				subscription_id: this.subscriptionId,
-				event_type: this.selectedEventType,
-				headers: schema.headerSchema || {},
-				body: schema.bodySchema || {},
-				raw_headers: {},
-				raw_body: {},
-				created_at: new Date().toISOString(),
-				updated_at: new Date().toISOString()
-			});
-		}
+		// Update the filter with the new schema data
+		const updatedFilter = {
+			...existingFilter,
+			headers: schema.headerSchema || {},
+			body: schema.bodySchema || {},
+			// Mark as modified to help with syncing to the backend
+			is_modified: true
+		};
+
+		// Save the updated filter to the map
+		this.filtersMap.set(this.selectedEventType, updatedFilter);
+
+		// Sync with filters array for compatibility
+		this._syncFiltersArrayWithMap();
+
+		console.log(`Filter for "${this.selectedEventType}" updated:`, updatedFilter);
 
 		// Close the filter dialog
 		this.showFilterDialog = false;
@@ -625,16 +704,46 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	async getFilters(): Promise<any> {
 		try {
 			const response = await this.filterService.getFilters(this.subscriptionId);
-			this.filters = response.data;
+			this.filters = response.data; // Keep the array for backward compatibility
+
+			// Clear the map and populate it with the filter data from the response
+			this.filtersMap.clear();
+			response.data.forEach((filter: FILTER) => {
+				// Use event_type as the key for the map
+				this.filtersMap.set(filter.event_type, { ...filter });
+			});
+
+			console.log('Filters loaded:', this.filtersMap);
+			return response;
 		} catch (error) {
+			console.error('Error fetching filters:', error);
 			throw error;
 		}
 	}
 
-	openFilterDialog(eventType: string, index: number) {
+	openFilterDialog(eventType: string) {
 		document.getElementById(this.showAction === 'true' ? 'subscriptionForm' : 'configureProjectForm')?.scroll({ top: 0, behavior: 'smooth' });
 		this.selectedEventType = eventType || '';
+
+		// For backward compatibility
 		this.selectedIndex = this.filters.findIndex(item => item.event_type === eventType);
+
+		// Ensure we have a filter entry for this event type in the map
+		if (!this.filtersMap.has(eventType) && eventType) {
+			// Create a new filter entry if it doesn't exist
+			this.filtersMap.set(eventType, {
+				uid: '', // Will be assigned by backend
+				subscription_id: this.subscriptionId,
+				event_type: eventType,
+				headers: {},
+				body: {},
+				is_new: true
+			});
+
+			// Sync with filters array for compatibility
+			this._syncFiltersArrayWithMap();
+		}
+
 		this.showFilterDialog = true;
 	}
 
@@ -645,64 +754,84 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		// Remove from selectedEventTypes array
 		this.selectedEventTypes.splice(index, 1);
 
-		// Also remove any filters for this event type
-		this.filters = this.filters.filter(filter => filter.event_type !== eventType);
+		// Remove from the filtersMap
+		this.filtersMap.delete(eventType);
+
+		// Sync with filters array for compatibility
+		this._syncFiltersArrayWithMap();
 
 		// Force UI update
 		this.cdr.detectChanges();
 	}
 
 	updateEventType(index: number, eventType: string | EVENT_TYPE) {
-		console.log('eventType:', eventType);
-
 		// Update the event type in the form group
 		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
 
 		// Update the form control
 		this.eventTypesFormGroup.get(index.toString())?.setValue(newEventType);
 
-		// Update the selectedEventTypes array to stay in sync
+		// Get the old event type from the array
 		const oldEventType = this.selectedEventTypes[index];
-		this.selectedEventTypes[index] = String(newEventType);
-		console.log('eventType:', oldEventType);
 
-		// First check if a filter for the new event type already exists
-		const newEventTypeFilterExists = this.filters.some(filter => filter.event_type === newEventType);
+		// Skip if they're the same
+		if (oldEventType === newEventType) {
+			return;
+		}
 
-		// Find the index of the filter for the old event type
-		const newFilterIndex = this.filters.findIndex(filter => {
-			if (filter.event_type === '*' && filter.is_new) {
-				return filter.event_type === oldEventType;
-			}
-			return filter.event_type === newEventType;
-		});
+		console.log(`Updating event type from "${oldEventType}" to "${newEventType}"`);
 
-		const oldFilterIndex = this.filters.findIndex(filter => filter.event_type === oldEventType);
+		// Get the filter for the old event type
+		const oldFilter = this.filtersMap.get(oldEventType);
 
-		console.log('selected filter:', newFilterIndex >= 0 ? this.filters[newFilterIndex] : null);
+		// Check if there's already a filter for the new event type
+		const hasNewTypeFilter = this.filtersMap.has(newEventType);
 
-		const indexToUse = newFilterIndex >= 0 ? newFilterIndex : oldFilterIndex;
+		// If we have an old filter, update its event type
+		if (oldFilter && !hasNewTypeFilter) {
+			// Clone the filter and update its event type
+			const updatedFilter = {
+				...oldFilter,
+				event_type: newEventType,
+				// Mark as new if it doesn't have a UID
+				is_new: !oldFilter.uid,
+				// Mark as modified to help with syncing to the backend
+				is_modified: true
+			};
 
-		// Create a copy of the filter with the new event type
-		const originalFilter = this.filters[indexToUse];
+			// Remove the old filter and add the updated one
+			this.filtersMap.delete(oldEventType);
+			this.filtersMap.set(newEventType, updatedFilter);
 
-		// Clone the filter and update its event type
-		const newFilter = {
-			...originalFilter,
-			uid: '', // New filter won't have a UID until saved
-			event_type: String(newEventType),
-			is_new: false
-		};
+			console.log(`Filter updated from "${oldEventType}" to "${newEventType}"`, updatedFilter);
+		} else if (!hasNewTypeFilter) {
+			// If there's no filter for either the old or new event type, create a new one
+			this.filtersMap.set(newEventType, {
+				uid: '', // Will be assigned by backend
+				subscription_id: this.subscriptionId,
+				event_type: newEventType,
+				headers: {},
+				body: {},
+				is_new: true
+			});
 
-		// remove the item before adding the new one
-		this.filters.splice(indexToUse, 1);
+			console.log(`New filter created for "${newEventType}"`);
+		}
 
-		// Add the new filter to the filters array
-		this.filters.push(newFilter);
+		// If the old filter exists but there's also already a filter for the new type,
+		// just delete the old one as we'll use the existing new one
+		if (oldFilter && hasNewTypeFilter) {
+			this.filtersMap.delete(oldEventType);
+			console.log(`Old filter for "${oldEventType}" deleted as "${newEventType}" already has a filter`);
+		}
 
-		console.log('updated eventType:', JSON.stringify(this.filters));
+		// Update the selectedEventTypes array
+		this.selectedEventTypes[index] = newEventType;
 
-		// Force UI update with change detection
+		// Sync with filters array for compatibility
+		this._syncFiltersArrayWithMap();
+
+		// Force UI update
 		this.cdr.detectChanges();
 	}
 
@@ -728,8 +857,8 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 			// If not selected, add it
 			this.selectedEventTypes.push(eventTypeName);
 
-			// Add a filter for this event type
-			this.filters.push({
+			// Add a filter for this event type to the map
+			this.filtersMap.set(eventTypeName, {
 				uid: '', // Will be assigned by backend
 				subscription_id: this.subscriptionId,
 				event_type: eventTypeName,
@@ -738,9 +867,18 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				body: {}
 			});
 
+			// Sync with filters array for compatibility
+			this._syncFiltersArrayWithMap();
+
 			// Force UI update
 			this.cdr.detectChanges();
 		}
+	}
+
+	// Helper method to sync filters array with filtersMap
+	private _syncFiltersArrayWithMap(): void {
+		// Convert the map values to an array and assign to filters
+		this.filters = Array.from(this.filtersMap.values());
 	}
 
 	protected readonly Number = Number;
