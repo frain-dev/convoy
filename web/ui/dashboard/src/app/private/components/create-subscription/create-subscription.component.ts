@@ -82,6 +82,9 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 	selectedEventType: string = '';
 	selectedIndex: number = 0;
 
+	// Flag to prevent infinite recursion in toggleEventType
+	private _isTogglingEventType = false;
+
 	constructor(
 		private formBuilder: FormBuilder,
 		private privateService: PrivateService,
@@ -143,6 +146,31 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				'0': this.formBuilder.control(this.eventTypes[0].name)
 			};
 			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+			this.toggleConfigForm('events', true);
+		}
+
+		// For new subscriptions with outgoing project type, initialize with at least one event type
+		if (this.action === 'create' && this.projectType === 'outgoing' && this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
+			// Default to the '*' (wildcard) event type for new subscriptions if available
+			const wildcardExists = this.eventTypes.some(type => type.name === '*');
+
+			if (wildcardExists) {
+				console.log('Initializing new subscription with wildcard (*) event type');
+				this.selectedEventTypes = ['*'];
+				const eventTypesControls: Record<string, any> = {
+					'0': this.formBuilder.control('*')
+				};
+				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+			} else {
+				// Fall back to first event type if wildcard doesn't exist
+				console.log(`Initializing new subscription with first available event type: ${this.eventTypes[0].name}`);
+				this.selectedEventTypes = [this.eventTypes[0].name];
+				const eventTypesControls: Record<string, any> = {
+					'0': this.formBuilder.control(this.eventTypes[0].name)
+				};
+				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+			}
+
 			this.toggleConfigForm('events', true);
 		}
 
@@ -271,6 +299,47 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				this.eventTags = [];
 			}
 
+			// Handle event types with wildcard support
+			if (response.data.filter_config?.event_types) {
+				this.eventTags = response.data.filter_config?.event_types;
+
+				// Check if wildcard is present
+				const hasWildcard = this.eventTags.includes('*');
+
+				// If wildcard is present, only use the wildcard and ignore other event types
+				if (hasWildcard) {
+					console.log('Wildcard (*) event type detected in subscription, ignoring other event types');
+					this.selectedEventTypes = ['*'];
+				} else {
+					// Otherwise, use all the event types
+					this.selectedEventTypes = [...this.eventTags];
+				}
+
+				// Create a form group with string keys
+				const eventTypesControls: Record<string, any> = {};
+				this.selectedEventTypes.forEach((eventType, index) => {
+					eventTypesControls[index.toString()] = this.formBuilder.control(eventType);
+				});
+
+				// Set the form group values
+				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+
+				// Also update the filters to match the selected event types
+				// Remove any filters for event types that are no longer selected
+				this.filters = this.filters.filter(filter => this.selectedEventTypes.includes(filter.event_type));
+
+				// Sync with the filtersMap
+				this.filtersMap.clear();
+				this.filters.forEach(filter => {
+					this.filtersMap.set(filter.event_type, { ...filter });
+				});
+
+				// Show the event types section
+				this.toggleConfigForm('events', true);
+			} else {
+				this.eventTags = [];
+			}
+
 			// Get filter data
 			await this.getFilters();
 
@@ -380,18 +449,53 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 		this.toggleFormsLoaders(true);
 
+		// STEP 1: Handle event type selection and ensure mutual exclusivity with wildcard (*)
+
 		// If no event types are selected, use the wildcard
 		if (this.selectedEventTypes.length === 0) {
+			console.log('No event types selected, using wildcard (*)');
 			this.selectedEventTypes = ['*'];
 		}
 
+		// Enforce mutual exclusivity between wildcard (*) and specific event types
+		const hasWildcard = this.selectedEventTypes.includes('*');
+		if (hasWildcard && this.selectedEventTypes.length > 1) {
+			console.log('Both wildcard (*) and specific event types selected. Using only wildcard.');
+			// If wildcard is selected, ignore other event types
+			this.selectedEventTypes = ['*'];
+
+			// Also update the filtersMap to include only the wildcard
+			const wildcardFilter = this.filtersMap.get('*');
+			this.filtersMap.clear();
+			if (wildcardFilter) {
+				this.filtersMap.set('*', wildcardFilter);
+			} else {
+				this.filtersMap.set('*', {
+					uid: '', // Will be assigned by backend
+					subscription_id: this.subscriptionId,
+					event_type: '*',
+					headers: {},
+					body: {},
+					is_new: true
+				});
+			}
+
+			// Sync with filters array
+			this._syncFiltersArrayWithMap();
+		}
+
+		// STEP 2: Update the form with the final event types selection
 		this.subscriptionForm.patchValue({
 			filter_config: {
 				event_types: this.selectedEventTypes
 			}
 		});
 
+		// STEP 3: Validate the subscription
 		await this.runSubscriptionValidation();
+
+		// Clean up the duplicate code above and consolidate event type handling
+		this.toggleFormsLoaders(true);
 
 		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
 			this.toggleFormsLoaders(false);
@@ -747,15 +851,26 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		this.showFilterDialog = true;
 	}
 
-	removeEventType(index: number) {
+	removeEventType(index: number, isAutoSelect = false) {
 		// Get the event type being removed
 		const eventType = this.selectedEventTypes[index];
+		const isWildcard = eventType === '*';
+
+		// Log the action for debugging
+		console.log(`Removing event type: ${eventType}`);
 
 		// Remove from selectedEventTypes array
 		this.selectedEventTypes.splice(index, 1);
 
 		// Remove from the filtersMap
 		this.filtersMap.delete(eventType);
+
+		// If we just removed the last event type, and it wasn't a wildcard removal
+		// as part of selecting another event type, add the wildcard as default
+		if (this.selectedEventTypes.length === 0 && !isWildcard && !isAutoSelect) {
+			console.log('No event types selected, adding wildcard (*) as default');
+			this.toggleEventType('*');
+		}
 
 		// Sync with filters array for compatibility
 		this._syncFiltersArrayWithMap();
@@ -846,15 +961,55 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		return this.selectedEventTypes.includes(eventTypeName);
 	}
 
-	// Toggle an event type on/off
-	toggleEventType(eventTypeName: string): void {
-		const index = this.selectedEventTypes.indexOf(eventTypeName);
+	// Toggle an event type on/off with special handling for wildcard (*)
+	toggleEventType(eventTypeName: string, isAutoSelect = false): void {
+		// Prevent toggling if subscription is being created/updated
+		if (this.isCreatingSubscription) {
+			console.warn('Cannot toggle event type while subscription is being saved');
+			return;
+		}
 
-		if (index !== -1) {
-			// If already selected, remove it
-			this.removeEventType(index);
-		} else {
-			// If not selected, add it
+		// Prevent recursive calls
+		if (this._isTogglingEventType) {
+			console.warn('Already toggling an event type, skipping');
+			return;
+		}
+
+		try {
+			this._isTogglingEventType = true;
+
+			const index = this.selectedEventTypes.indexOf(eventTypeName);
+			const isWildcard = eventTypeName === '*';
+
+			if (index !== -1) {
+				// If already selected, just remove it
+				this.removeEventType(index, isAutoSelect);
+				return;
+			}
+
+			// If selecting the wildcard (*) event type, remove all other event types
+			if (isWildcard) {
+				console.log('Selecting wildcard (*) event type - removing all other event types');
+
+				// Store all event types that need to be removed
+				const eventTypesToRemove = [...this.selectedEventTypes];
+
+				// Clear all selected event types and their filters
+				eventTypesToRemove.forEach(type => {
+					const typeIndex = this.selectedEventTypes.indexOf(type);
+					if (typeIndex !== -1) {
+						this.removeEventType(typeIndex, true);
+					}
+				});
+			}
+			// If selecting a specific event type, remove the wildcard (*) if it's selected
+			else if (this.selectedEventTypes.includes('*')) {
+				console.log(`Selecting specific event type '${eventTypeName}' - removing wildcard (*) event type`);
+				const wildcardIndex = this.selectedEventTypes.indexOf('*');
+				this.removeEventType(wildcardIndex, true);
+			}
+
+			// Add the newly selected event type
 			this.selectedEventTypes.push(eventTypeName);
 
 			// Add a filter for this event type to the map
@@ -872,6 +1027,8 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 
 			// Force UI update
 			this.cdr.detectChanges();
+		} finally {
+			this._isTogglingEventType = false;
 		}
 	}
 
