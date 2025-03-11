@@ -1,16 +1,18 @@
-import { useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 import { Button } from '@/components/ui/button';
 import { ConvoyLoader } from '@/components/convoy-loader';
 import { CreateOrganisation } from '@/components/create-organisation';
 
+import * as authService from '@/services/auth.service';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as projectsService from '@/services/projects.service';
 import { useLicenseStore, useOrganisationStore } from '@/store';
 import * as orgsService from '@/services/organisations.service';
 
 import plusCircularIcon from '../../../assets/svg/add-circlar-icon.svg';
+import projectsEmptyImg from '../../../assets/svg/events-empty-state-image.svg';
 
 import type { Project } from '@/models/project.model';
 
@@ -30,11 +32,13 @@ export const Route = createFileRoute('/projects/')({
 			});
 		}
 	},
-	component: RouteComponent,
+	component: ProjectIndexPage,
 });
 
-function RouteComponent() {
+function ProjectIndexPage() {
+	const navigate = useNavigate();
 	const { licenses } = useLicenseStore();
+	const [canCreateProject, setCanCreateProject] = useState(false);
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const { org, setOrg, setPaginatedOrgs } = useOrganisationStore();
 	const [canCreateOrg] = useState(licenses.includes('CREATE_ORG'));
@@ -43,6 +47,13 @@ function RouteComponent() {
 	const [currentProject] = useState<Project | null>(
 		projectsService.getCachedProject(),
 	);
+
+	useEffect(function () {
+		(async function () {
+			const userPerms = await authService.getUserPermissions();
+			setCanCreateProject(userPerms.includes('Project Settings|MANAGE'));
+		})();
+	}, []);
 
 	async function reloadOrganisations() {
 		setIsLoadingOrganisations(true);
@@ -90,9 +101,34 @@ function RouteComponent() {
 
 	if (!currentProject) {
 		return (
-			<p className="font-semibold text-xl">
-				TODO: create create project component
-			</p>
+			<div className="flex flex-col items-center">
+				<img
+					src={projectsEmptyImg}
+					alt={'no projects created for ' + org.name}
+					className="h-40 mb-12"
+				/>
+				<h2 className="mb-4 font-bold text-base text-neutral-12">
+					Create a project to get started
+				</h2>
+				<p className="text-sm text-neutral-10">
+					Your incoming and outgoing projects appear here.
+				</p>
+				<Button
+					disabled={!canCreateProject}
+					onClick={() => {
+						navigate({ to: '/projects/new' });
+					}}
+					variant="ghost"
+					className="flex justify-center items-center hover:bg-new.primary-400 hover:text-white-100 bg-new.primary-400 px-3 py-4 mt-9"
+				>
+					<img
+						className="w-[20px] h-[20px]"
+						src={plusCircularIcon}
+						alt="create project"
+					/>
+					<p className="text-white-100 text-xs">Create a Project</p>
+				</Button>
+			</div>
 		);
 	}
 

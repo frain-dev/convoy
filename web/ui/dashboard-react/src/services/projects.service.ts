@@ -7,6 +7,44 @@ import type { Project } from '@/models/project.model';
 let projects: Array<Project> = [];
 let projectDetails: Project | null = null;
 
+type CreateProjectParams = {
+	name: string;
+	type: 'incoming' | 'outgoing';
+	config: {
+		strategy?: {
+			duration: number;
+			retry_count: number;
+			type: 'linear' | 'exponential';
+		};
+		signature?: {
+			header: string;
+			versions: Array<{
+				hash: 'SHA256' | 'SHA512';
+				encoding: 'base64' | 'hex';
+			}>;
+		};
+		ratelimit?: {
+			count: number;
+			duration: number;
+		};
+		search_policy?: `${string}h`;
+	};
+};
+
+export async function createProject(
+	reqDetails: CreateProjectParams,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const response = await deps.httpReq({
+		url: `/projects`,
+		body: reqDetails,
+		method: 'post',
+		level: 'org',
+	});
+
+	return response.data;
+}
+
 export async function getProjects(
 	reqDetails: { refresh?: boolean },
 	deps: { httpReq: typeof request } = { httpReq: request },
