@@ -32,7 +32,12 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters [post]
 func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 
 	var newFilter models.CreateFilterRequest
@@ -42,7 +47,7 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate the request
-	err := util.Validate(newFilter)
+	err = util.Validate(newFilter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -53,7 +58,7 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 
 	// Check if subscription exists
-	_, err = subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
+	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("subscription not found", http.StatusNotFound))
@@ -64,7 +69,7 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if the event type exists in the project
-	exists, err := eventTypeRepo.CheckEventTypeExists(r.Context(), newFilter.EventType, projectID)
+	exists, err := eventTypeRepo.CheckEventTypeExists(r.Context(), newFilter.EventType, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
@@ -127,7 +132,12 @@ func (h *Handler) CreateFilter(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/{filterID} [get]
 func (h *Handler) GetFilter(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 	filterID := chi.URLParam(r, "filterID")
 
@@ -135,7 +145,7 @@ func (h *Handler) GetFilter(w http.ResponseWriter, r *http.Request) {
 	filterRepo := postgres.NewFilterRepo(h.A.DB)
 
 	// Check if subscription exists
-	_, err := subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
+	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("subscription not found", http.StatusNotFound))
@@ -181,14 +191,19 @@ func (h *Handler) GetFilter(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters [get]
 func (h *Handler) GetFilters(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 
 	subRepo := postgres.NewSubscriptionRepo(h.A.DB)
 	filterRepo := postgres.NewFilterRepo(h.A.DB)
 
 	// Check if subscription exists
-	_, err := subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
+	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("subscription not found", http.StatusNotFound))
@@ -242,7 +257,12 @@ func (h *Handler) GetFilters(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/{filterID} [put]
 func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 	filterID := chi.URLParam(r, "filterID")
 
@@ -253,7 +273,7 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate the request
-	err := util.Validate(updateFilter)
+	err = util.Validate(updateFilter)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
@@ -264,7 +284,7 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 	filterRepo := postgres.NewFilterRepo(h.A.DB)
 
 	// Check if subscription exists
-	_, err = subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
+	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("subscription not found", http.StatusNotFound))
@@ -275,7 +295,7 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if the event-type exists in the project
-	exists, err := eventTypeRepo.CheckEventTypeExists(r.Context(), updateFilter.EventType, projectID)
+	exists, err := eventTypeRepo.CheckEventTypeExists(r.Context(), updateFilter.EventType, project.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 		return
@@ -356,7 +376,12 @@ func (h *Handler) UpdateFilter(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/{filterID} [delete]
 func (h *Handler) DeleteFilter(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 	filterID := chi.URLParam(r, "filterID")
 
@@ -364,7 +389,7 @@ func (h *Handler) DeleteFilter(w http.ResponseWriter, r *http.Request) {
 	filterRepo := postgres.NewFilterRepo(h.A.DB)
 
 	// Check if subscription exists
-	_, err := subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
+	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("subscription not found", http.StatusNotFound))
@@ -418,7 +443,12 @@ func (h *Handler) DeleteFilter(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/test/{eventType} [post]
 func (h *Handler) TestFilter(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 	eventType := chi.URLParam(r, "eventType")
 
@@ -432,7 +462,7 @@ func (h *Handler) TestFilter(w http.ResponseWriter, r *http.Request) {
 	filterRepo := postgres.NewFilterRepo(h.A.DB)
 
 	// Check if subscription exists
-	_, err := subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
+	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("subscription not found", http.StatusNotFound))
@@ -470,7 +500,12 @@ func (h *Handler) TestFilter(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk [post]
 func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 
 	var newFilters []models.CreateFilterRequest
@@ -493,7 +528,7 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 
 	// Check if subscription exists
-	_, err := subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
+	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("subscription not found", http.StatusNotFound))
@@ -510,7 +545,7 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 	// First check if all event types exist
 	for _, filter := range newFilters {
 		// Check if event type exists
-		exists, err2 := eventTypeRepo.CheckEventTypeExists(r.Context(), filter.EventType, projectID)
+		exists, err2 := eventTypeRepo.CheckEventTypeExists(r.Context(), filter.EventType, project.UID)
 		if err2 != nil {
 			_ = render.Render(w, r, util.NewErrorResponse(err2.Error(), http.StatusNotFound))
 			return
@@ -589,7 +624,12 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk_update [put]
 func (h *Handler) BulkUpdateFilters(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	subscriptionID := chi.URLParam(r, "subscriptionID")
 
 	var updateFilters []models.BulkUpdateFilterRequest
@@ -612,7 +652,7 @@ func (h *Handler) BulkUpdateFilters(w http.ResponseWriter, r *http.Request) {
 	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 
 	// Check if subscription exists
-	_, err := subRepo.FindSubscriptionByID(r.Context(), projectID, subscriptionID)
+	_, err = subRepo.FindSubscriptionByID(r.Context(), project.UID, subscriptionID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSubscriptionNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse("subscription not found", http.StatusNotFound))
@@ -653,7 +693,7 @@ func (h *Handler) BulkUpdateFilters(w http.ResponseWriter, r *http.Request) {
 		// If event type is being changed
 		if filterUpdate.EventType != "" && filterUpdate.EventType != existingFilter.EventType {
 			// Check if the new event type exists
-			exists, err = eventTypeRepo.CheckEventTypeExists(r.Context(), filterUpdate.EventType, projectID)
+			exists, err = eventTypeRepo.CheckEventTypeExists(r.Context(), filterUpdate.EventType, project.UID)
 			if err != nil {
 				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 				return

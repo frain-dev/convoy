@@ -84,14 +84,31 @@ export class HttpService {
 	buildURL(requestDetails: any): string {
 		if (requestDetails.isOut) return requestDetails.url;
 
-		if (this.token) return `${this.token ? this.APP_PORTAL_APIURL : this.APIURL}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
+		// Make sure we have a query object
+		const query = requestDetails.query || {};
 
-		if (!requestDetails.level) return `${this.APIURL}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
+		// Always add token to query params if available
+		if (this.token) {
+			query.token = this.token;
+		}
+
+		// Format query string if we have any query params
+		const queryString = Object.keys(query).length > 0 ? '?' + this.buildRequestQuery(query) : '';
+
+		// When token is present, use the Portal API URL regardless of other parameters
+		if (this.token) {
+			return `${this.APP_PORTAL_APIURL}${requestDetails.url}${queryString}`;
+		}
+
+		// Handle regular UI paths
+		if (!requestDetails.level) {
+			return `${this.APIURL}${requestDetails.url}${queryString}`;
+		}
 
 		const requestPath = this.buildRequestPath(requestDetails.level);
 		if (requestPath === 'error') return 'error';
 
-		return `${this.APIURL}${requestPath}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
+		return `${this.APIURL}${requestPath}${requestDetails.url}${queryString}`;
 	}
 
 	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
@@ -101,8 +118,11 @@ export class HttpService {
 			try {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
+				// Use token for authorization if available, otherwise use access_token
+				const authToken = this.token || this.authDetails()?.access_token;
+
 				const requestHeader = {
-					Authorization: `Bearer ${this.token || this.authDetails()?.access_token}`,
+					Authorization: `Bearer ${authToken}`,
 					'X-Convoy-Version': '2024-04-01'
 				};
 
