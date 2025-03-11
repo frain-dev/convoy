@@ -632,7 +632,7 @@ export function DashboardLayout(props: {
 				<DashboardHeader showToggleSidebarButton={props.showSidebar} />
 				<div className="flex items-center h-full">
 					{props.showSidebar ? <DashboardSidebar /> : null}
-					<SidebarInset className="flex h-full">{props.children}</SidebarInset>
+					<SidebarInset className="min-h-full">{props.children}</SidebarInset>
 				</div>
 			</SidebarProvider>
 		</div>

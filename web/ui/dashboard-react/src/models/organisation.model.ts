@@ -22,7 +22,6 @@ export interface Organisation {
 	name: string;
 	custom_domain: null | string;
 	assigned_domain: null | String;
-	members: Member[] | null;
 	/**
 	 * Date string
 	 */

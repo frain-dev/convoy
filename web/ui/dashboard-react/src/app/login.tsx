@@ -351,7 +351,7 @@ function LoginPage() {
 export const Route = createFileRoute('/login')({
 	component: LoginPage,
 });
-
+// TODO you should move some items in `useEffect` to a loader in the route
 // TODO authService and other impure extraneous deps should be injected as a
 // dependency for testing and flexibility/maintainability
 // I noticed that I can do this with context

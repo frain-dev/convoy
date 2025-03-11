@@ -98,3 +98,7 @@ function RouteComponent() {
 
 	return <p className="text-3xl-font-bold">TODO: create project default UI</p>;
 }
+
+// FIX Semantic HTML says anchors shoudld be anchors and buttons, buttons.
+// Style an anchor tag like a button if you want it to look like one.
+// See https://stackoverflow.com/q/64443645
