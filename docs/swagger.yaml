@@ -710,6 +710,21 @@ definitions:
         description: Specify a key for event deduplication
         type: string
     type: object
+  models.BulkUpdateFilterRequest:
+    properties:
+      body:
+        additionalProperties: true
+        type: object
+      event_type:
+        type: string
+      headers:
+        additionalProperties: true
+        type: object
+      uid:
+        type: string
+    required:
+    - uid
+    type: object
   models.CreateEndpoint:
     properties:
       advanced_signatures:
@@ -812,6 +827,22 @@ definitions:
         description: Name is the event type name. E.g., invoice.created
         type: string
     type: object
+  models.CreateFilterRequest:
+    properties:
+      body:
+        allOf:
+        - $ref: '#/definitions/datastore.M'
+        description: Body matching criteria (optional)
+      event_type:
+        description: Type of event this filter applies to (required)
+        type: string
+      headers:
+        allOf:
+        - $ref: '#/definitions/datastore.M'
+        description: Header matching criteria (optional)
+    required:
+    - event_type
+    type: object
   models.CreateSource:
     properties:
       body_function:
@@ -890,10 +921,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/models.RateLimitConfiguration'
         description: Rate limit configuration
-      retry_config:
-        allOf:
-        - $ref: '#/definitions/models.RetryConfiguration'
-        description: Retry configuration
       source_id:
         description: Source Id
         type: string
@@ -1164,6 +1191,23 @@ definitions:
         allOf:
         - $ref: '#/definitions/models.FS'
         description: Body & Header filters
+    type: object
+  models.FilterResponse:
+    properties:
+      body:
+        $ref: '#/definitions/datastore.M'
+      event_type:
+        type: string
+      headers:
+        $ref: '#/definitions/datastore.M'
+      raw_body:
+        $ref: '#/definitions/datastore.M'
+      raw_headers:
+        $ref: '#/definitions/datastore.M'
+      subscription_id:
+        type: string
+      uid:
+        type: string
     type: object
   models.FilterSchema:
     properties:
@@ -1444,6 +1488,8 @@ definitions:
         type: string
       name:
         type: string
+      project_id:
+        type: string
       rate_limit_config:
         $ref: '#/definitions/datastore.RateLimitConfiguration'
       retry_config:
@@ -1467,6 +1513,19 @@ definitions:
         allOf:
         - $ref: '#/definitions/models.FilterSchema'
         description: Sample test schema
+    type: object
+  models.TestFilterRequest:
+    properties:
+      payload:
+        description: Sample payload to test against the filter (required)
+    required:
+    - payload
+    type: object
+  models.TestFilterResponse:
+    properties:
+      is_match:
+        description: Whether the payload matches the filter criteria
+        type: boolean
     type: object
   models.UpdateCustomResponse:
     properties:
@@ -1543,6 +1602,23 @@ definitions:
       description:
         description: Description is used to describe what the event type does
         type: string
+    type: object
+  models.UpdateFilterRequest:
+    properties:
+      body:
+        allOf:
+        - $ref: '#/definitions/datastore.M'
+        description: Body matching criteria (optional)
+      event_type:
+        description: Type of event this filter applies to (optional)
+        type: string
+      headers:
+        allOf:
+        - $ref: '#/definitions/datastore.M'
+        description: Header matching criteria (optional)
+      is_flattened:
+        description: Whether the filter uses flattened JSON paths (optional)
+        type: boolean
     type: object
   models.UpdateSource:
     properties:
@@ -4971,6 +5047,553 @@ paths:
       summary: Update a subscription
       tags:
       - Subscriptions
+  /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters:
+    get:
+      consumes:
+      - application/json
+      description: This endpoint fetches all filters for a subscription
+      operationId: GetFilters
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Subscription ID
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.FilterResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List all filters
+      tags:
+      - Filters
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates a new filter for a subscription
+      operationId: CreateFilter
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Subscription ID
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      - description: Filter to create
+        in: body
+        name: filter
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateFilterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.FilterResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new filter
+      tags:
+      - Filters
+  /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/{filterID}:
+    delete:
+      consumes:
+      - application/json
+      description: This endpoint deletes a filter
+      operationId: DeleteFilter
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Subscription ID
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      - description: Filter ID
+        in: path
+        name: filterID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete a filter
+      tags:
+      - Filters
+    get:
+      consumes:
+      - application/json
+      description: This endpoint retrieves a single filter
+      operationId: GetFilter
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Subscription ID
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      - description: Filter ID
+        in: path
+        name: filterID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.FilterResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get a filter
+      tags:
+      - Filters
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates an existing filter
+      operationId: UpdateFilter
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Subscription ID
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      - description: Filter ID
+        in: path
+        name: filterID
+        required: true
+        type: string
+      - description: Updated filter
+        in: body
+        name: filter
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateFilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.FilterResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update a filter
+      tags:
+      - Filters
+  /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint creates multiple filters for a subscription in a
+        single request
+      operationId: BulkCreateFilters
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Subscription ID
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      - description: Filters to create
+        in: body
+        name: filters
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.CreateFilterRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.FilterResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create multiple filters at once
+      tags:
+      - Filters
+  /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk_update:
+    put:
+      consumes:
+      - application/json
+      description: This endpoint updates multiple filters for a subscription in a
+        single request
+      operationId: BulkUpdateFilters
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Subscription ID
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      - description: Filters to update
+        in: body
+        name: filters
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/models.BulkUpdateFilterRequest'
+          type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.FilterResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update multiple filters at once
+      tags:
+      - Filters
+  /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/test/{eventType}:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint tests a filter against a payload
+      operationId: TestFilter
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: Subscription ID
+        in: path
+        name: subscriptionID
+        required: true
+        type: string
+      - description: Event Type
+        in: path
+        name: eventType
+        required: true
+        type: string
+      - description: Payload to test
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/models.TestFilterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.TestFilterResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Test a filter
+      tags:
+      - Filters
   /v1/projects/{projectID}/subscriptions/test_filter:
     post:
       consumes:

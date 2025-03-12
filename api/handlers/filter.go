@@ -186,7 +186,7 @@ func (h *Handler) GetFilter(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID		path		string	true	"Project ID"
 //	@Param			subscriptionID	path		string	true	"Subscription ID"
-//	@Success		200				{object}	util.ServerResponse{data=models.FiltersResponse}
+//	@Success		200				{object}	util.ServerResponse{data=[]models.FilterResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters [get]
@@ -616,9 +616,9 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Filters
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID		path		string									true	"Project ID"
-//	@Param			subscriptionID	path		string									true	"Subscription ID"
-//	@Param			filters			body		[]models.BulkUpdateFilterRequest		true	"Filters to update"
+//	@Param			projectID		path		string								true	"Project ID"
+//	@Param			subscriptionID	path		string								true	"Subscription ID"
+//	@Param			filters			body		[]models.BulkUpdateFilterRequest	true	"Filters to update"
 //	@Success		200				{object}	util.ServerResponse{data=[]models.FilterResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
