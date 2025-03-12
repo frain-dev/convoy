@@ -215,16 +215,19 @@ export async function getUserRole(
 	}
 }
 
-async function getUserPermissions() {
+export async function getUserPermissions(): Promise<Array<Permission>> {
 	const role = await getUserRole({ userID: getCachedAuthProfile()?.uid });
 
 	switch (role) {
 		case 'SUPER_ADMIN':
-			return permissions[role].concat(permissions.ADMIN, permissions.MEMBER);
+			return permissions[role].concat(
+				permissions.ADMIN,
+				permissions.MEMBER,
+			) as Permission[];
 		case 'ADMIN':
-			return permissions[role].concat(permissions.MEMBER);
+			return permissions[role].concat(permissions.MEMBER) as Permission[];
 		default:
-			return permissions.MEMBER;
+			return permissions.MEMBER as Permission[];
 	}
 }
 
