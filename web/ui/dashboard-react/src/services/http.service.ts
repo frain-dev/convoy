@@ -3,10 +3,9 @@ import { router } from '../lib/router';
 import { isProductionMode } from '@/lib/env';
 
 import * as authService from '@/services/auth.service';
-import * as projectsService from '@/services/projects.service';
 
 import type { HttpResponse } from '@/models/global.model';
-import { useOrganisationStore } from '@/store';
+import { useOrganisationStore, useProjectStore } from '@/store';
 
 const APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/ui`;
 const APP_PORTAL_APIURL = `${isProductionMode ? location.origin : 'http://localhost:5005'}/portal-api`;
@@ -61,19 +60,22 @@ export function buildRequestQuery(
 export function buildRequestPath(
 	level?: 'org' | 'org_project',
 	deps: {
-		getCachedProject: typeof projectsService.getCachedProject;
+		getCachedProjectId: () => string;
 		getCachedOrganisationId: () => string;
 	} = {
-		getCachedProject: projectsService.getCachedProject,
+		getCachedProjectId: () => {
+			const { project } = useProjectStore.getState();
+			return project?.uid || '';
+		},
 		getCachedOrganisationId: () => {
-			const {org} = useOrganisationStore.getState()
-			return org?.uid || ''
+			const { org } = useOrganisationStore.getState();
+			return org?.uid || '';
 		},
 	},
 ): string {
 	if (!level) return '';
 	const orgId = deps.getCachedOrganisationId();
-	const projectId = deps.getCachedProject()?.uid;
+	const projectId = deps.getCachedProjectId();
 
 	if (level == 'org' && orgId) return `/organisations/${orgId}`;
 

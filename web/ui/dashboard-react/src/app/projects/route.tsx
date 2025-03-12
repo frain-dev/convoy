@@ -7,7 +7,6 @@ export const Route = createFileRoute('/projects')({
 	beforeLoad({ context }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
 	},
-	// TODO use Zustand instead because this provider here will cause the whole nodes to rerender and that's not performant
 	component: ProjectsLayout,
 });
 
