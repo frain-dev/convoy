@@ -77,7 +77,6 @@ function SettingsPage() {
 	const [isDeletingOrg, setIsDeletingOrg] = useState(false);
 	const { org, setPaginatedOrgs, setOrg, paginatedOrgs } =
 		useOrganisationStore();
-
 	const organisationForm = useForm<z.infer<typeof OrganisationFormSchema>>({
 		resolver: zodResolver(OrganisationFormSchema),
 		defaultValues: {
@@ -90,7 +89,7 @@ function SettingsPage() {
 	useEffect(() => {
 		organisationForm.setValue('orgId', org?.uid || '');
 		organisationForm.setValue('orgName', org?.name || '');
-	}, [org]);
+	}, [org?.uid]);
 
 	async function updateOrganisation(
 		values: z.infer<typeof OrganisationFormSchema>,

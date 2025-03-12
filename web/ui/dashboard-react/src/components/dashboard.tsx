@@ -1,6 +1,6 @@
 import { z } from 'zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, Link } from '@tanstack/react-router';
 
@@ -63,13 +63,17 @@ import * as transform from '@/lib/pipes';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
 import * as orgsService from '@/services/organisations.service';
-import { useLicenseStore, useOrganisationStore } from '@/store';
+import {
+	useLicenseStore,
+	useOrganisationStore,
+	useProjectStore,
+} from '@/store';
 
 import convoyLogo from '../../assets/svg/logo.svg';
 import userProfileIcon from '../../assets/svg/user-icon.svg';
 
-import type { Project } from '@/models/project.model';
 import type { ComponentProps, ReactNode } from 'react';
+import type { Organisation } from '@/models/organisation.model';
 
 function HeaderRightProfile() {
 	const { auth } = Route.useRouteContext();
@@ -134,8 +138,16 @@ function HeaderRightOrganisation() {
 	const navigate = useNavigate({ from: Route.fullPath });
 	const { org, paginatedOrgs, setOrg, setPaginatedOrgs } =
 		useOrganisationStore();
+	const { setProjects, setProject } = useProjectStore();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [canCreateOrg] = useState(licenses.includes('CREATE_ORG'));
+
+	async function reloadProjects(org: Organisation | null) {
+		setOrg(org);
+		const projects = await projectsService.getProjects();
+		setProjects(projects);
+		setProject(projects.at(0) || null);
+	}
 
 	async function reloadOrganisations() {
 		orgsService
@@ -221,7 +233,7 @@ function HeaderRightOrganisation() {
 										<DropdownMenuItem
 											key={_org.uid}
 											className="gap-0 text-xs text-neutral-11 p-3 py-1 hover:cursor-pointer flex justify-start items-center hover:bg-neutral-3"
-											onClick={() => setOrg(_org)}
+											onClick={() => reloadProjects(_org)}
 										>
 											<Button
 												variant={'ghost'}
@@ -325,19 +337,7 @@ const FormSchema = z.object({
 
 function ProjectsList() {
 	const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-	const [projects, setProjects] = useState<Array<Project>>([]);
-	const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-
-	useEffect(() => {
-		projectsService
-			.getProjects({ refresh: true })
-			.then(data => {
-				setProjects(data);
-				setSelectedProject(data?.at(0) || null);
-				projectsService.setCachedProject(data?.at(0) || null);
-			})
-			.catch(console.error);
-	}, []);
+	const { project, projects, setProject } = useProjectStore();
 
 	const form = useForm<z.infer<typeof FormSchema>>({
 		resolver: zodResolver(FormSchema),
@@ -345,7 +345,7 @@ function ProjectsList() {
 
 	return (
 		<>
-			{selectedProject ? (
+			{project ? (
 				<Form {...form}>
 					<form>
 						<FormField
@@ -362,23 +362,21 @@ function ProjectsList() {
 													aria-expanded={isPopoverOpen}
 													className="px-2 flex justify-stretch items-center hover:bg-neutral-3"
 												>
-													{selectedProject ? (
-														<div className="flex items-center grow font-bold">
+													{project ? (
+														<div className="flex items-center grow font-semibold">
 															<svg
 																width="16"
 																height="16"
 																className={cn(
 																	'fill-primary-100 stroke-primary-100 mr-1',
-																	selectedProject.type == 'incoming'
+																	project.type == 'incoming'
 																		? 'rotate-180'
 																		: '',
 																)}
 															>
 																<use xlinkHref="#top-right-icon"></use>
 															</svg>
-															{transform.truncateProjectName(
-																selectedProject.name,
-															)}
+															{transform.truncateProjectName(project.name)}
 														</div>
 													) : (
 														<div className="flex items-center grow">
@@ -417,8 +415,7 @@ function ProjectsList() {
 																	key={p.uid}
 																	value={p.name}
 																	onSelect={() => {
-																		setSelectedProject(p);
-																		projectsService.setCachedProject(p);
+																		setProject(p);
 																		setIsPopoverOpen(false);
 																	}}
 																>
@@ -441,7 +438,7 @@ function ProjectsList() {
 																	<Check
 																		className={cn(
 																			'ml-auto',
-																			selectedProject?.name === p.name
+																			project?.name === p.name
 																				? 'opacity-100'
 																				: 'opacity-0',
 																		)}
@@ -464,6 +461,7 @@ function ProjectsList() {
 }
 
 function ProjectLinks() {
+	const { project } = useProjectStore();
 	const links = [
 		{
 			name: 'Event Deliveries',
@@ -495,11 +493,9 @@ function ProjectLinks() {
 		},
 	];
 
-	const [currentProject] = useState(projectsService.getCachedProject());
-
 	return (
 		<>
-			{currentProject ? (
+			{project ? (
 				<nav>
 					<ul className="ml-5">
 						{links.map(link => {
@@ -579,7 +575,7 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 											disabled={!org || !canCreateProject}
 											variant={'ghost'}
 											className={cn(
-												'w-full hover:bg-neutral-3 ',
+												'w-full hover:bg-neutral-3 justify-start pl-7',
 												org ? '' : 'blur-[1px]',
 											)}
 										>

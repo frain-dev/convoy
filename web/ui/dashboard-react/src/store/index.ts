@@ -1,8 +1,13 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-import { CONVOY_LICENSES_KEY, CONVOY_ORG_KEY } from '@/lib/constants';
+import {
+	CONVOY_LICENSES_KEY,
+	CONVOY_ORG_KEY,
+	CONVOY_CURRENT_PROJECT,
+} from '@/lib/constants';
 
+import type { Project } from '@/models/project.model';
 import type { PaginatedResult } from '@/models/global.model';
 import type { LicenseKey } from '@/services/licenses.service';
 import type { Organisation } from '@/models/organisation.model';
@@ -55,6 +60,30 @@ export const useOrganisationStore = create<OrganisationStore>()(
 		}),
 		{
 			name: CONVOY_ORG_KEY,
+			storage: createJSONStorage(() => sessionStorage),
+		},
+	),
+);
+
+type ProjectStore = {
+	/** The current project in use */
+	project: Project | null;
+	projects: Array<Project>;
+	/** Set the current project in use */
+	setProject: (p: Project | null) => void;
+	setProjects: (projects: Array<Project>) => void;
+};
+
+export const useProjectStore = create<ProjectStore>()(
+	persist(
+		set => ({
+			project: null,
+			projects: [],
+			setProject: project => set({ project }),
+			setProjects: projects => set({ projects }),
+		}),
+		{
+			name: CONVOY_CURRENT_PROJECT,
 			storage: createJSONStorage(() => sessionStorage),
 		},
 	),

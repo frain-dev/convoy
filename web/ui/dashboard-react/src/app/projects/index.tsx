@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 import { Button } from '@/components/ui/button';
 import { ConvoyLoader } from '@/components/convoy-loader';
 import { CreateOrganisation } from '@/components/create-organisation';
 
+import {
+	useLicenseStore,
+	useOrganisationStore,
+	useProjectStore,
+} from '@/store';
 import * as authService from '@/services/auth.service';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as projectsService from '@/services/projects.service';
-import { useLicenseStore, useOrganisationStore } from '@/store';
 import * as orgsService from '@/services/organisations.service';
 
 import plusCircularIcon from '../../../assets/svg/add-circlar-icon.svg';
 import projectsEmptyImg from '../../../assets/svg/events-empty-state-image.svg';
-
-import type { Project } from '@/models/project.model';
 
 export const Route = createFileRoute('/projects/')({
 	beforeLoad({ context }) {
@@ -22,34 +24,30 @@ export const Route = createFileRoute('/projects/')({
 	},
 	async loader() {
 		const pgOrgs = await orgsService.getOrganisations();
-
 		useOrganisationStore.setState({
 			paginatedOrgs: pgOrgs,
-			org: pgOrgs.content.at(0) || null,
 		});
+
+		const projects = await projectsService.getProjects();
+		useProjectStore.setState({ projects });
+
+		const userPerms = await authService.getUserPermissions();
+
+		return {
+			canCreateProject: userPerms.includes('Project Settings|MANAGE'),
+			canCreateOrg: useLicenseStore.getState().licenses.includes('CREATE_ORG'),
+		};
 	},
 	component: ProjectIndexPage,
 });
 
 function ProjectIndexPage() {
 	const navigate = useNavigate();
-	const { licenses } = useLicenseStore();
-	const [canCreateProject, setCanCreateProject] = useState(false);
+	const { project } = useProjectStore();
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
+	const { canCreateOrg, canCreateProject } = Route.useLoaderData();
 	const { org, setOrg, setPaginatedOrgs } = useOrganisationStore();
-	const [canCreateOrg] = useState(licenses.includes('CREATE_ORG'));
 	const [isLoadingOrganisations, setIsLoadingOrganisations] = useState(false);
-	// TODO use a state management lib for projects like zustand
-	const [currentProject] = useState<Project | null>(
-		projectsService.getCachedProject(),
-	);
-
-	useEffect(function () {
-		(async function () {
-			const userPerms = await authService.getUserPermissions();
-			setCanCreateProject(userPerms.includes('Project Settings|MANAGE'));
-		})();
-	}, []);
 
 	async function reloadOrganisations() {
 		setIsLoadingOrganisations(true);
@@ -95,7 +93,7 @@ function ProjectIndexPage() {
 			/>
 		);
 
-	if (!currentProject) {
+	if (!project) {
 		return (
 			<div className="flex flex-col items-center">
 				<img
