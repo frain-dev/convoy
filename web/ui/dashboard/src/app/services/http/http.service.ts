@@ -139,13 +139,13 @@ buildURL(requestDetails: any): string {
 			try {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
-        // Use token for authorization if available, otherwise use ownerId or access_token
-        const authToken = this.token || this.ownerId || this.authDetails()?.access_token;
+				// Use token for authorization if available, otherwise use ownerId or access_token
+				const authToken = this.token || this.ownerId || this.authDetails()?.access_token;
 
-        const requestHeader = {
-            Authorization: `Bearer ${authToken}`,
-            'X-Convoy-Version': '2024-04-01'
-        };
+				const requestHeader = {
+					Authorization: `Bearer ${authToken}`,
+					'X-Convoy-Version': '2024-04-01'
+				};
 
 				// process URL
 				const url = this.buildURL(requestDetails);
