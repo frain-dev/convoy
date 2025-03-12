@@ -21,6 +21,7 @@ export const Route = createFileRoute('/projects/')({
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
 	},
 	async loader() {
+		// TODO fix the bug where projects don't show up quickly
 		const { org, paginatedOrgs } = useOrganisationStore.getState();
 
 		if (!org || !paginatedOrgs.content.length) {

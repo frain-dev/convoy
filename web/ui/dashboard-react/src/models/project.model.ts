@@ -49,13 +49,6 @@ export interface Project {
 	} | null;
 }
 
-export interface Version {
-	created_at: Date;
-	encoding: string;
-	hash: string;
-	uid: string;
-}
-
 export interface MetaEvent {
 	attempt: {
 		request_http_header: object;
@@ -77,4 +70,80 @@ export interface MetaEvent {
 	status: string;
 	uid: string;
 	updated_at: string;
+}
+
+export interface CreateProjectResponse {
+	api_key: ApiKey;
+	project: {
+		uid: string;
+		name: string;
+		logo_url: string;
+		organisation_id: string;
+		type: string;
+		config: Config;
+		statistics: any;
+		retained_events: number;
+		created_at: string;
+		updated_at: string;
+		deleted_at: null | string;
+	};
+}
+
+interface ApiKey {
+	name: string;
+	role: Role;
+	key_type: string;
+	expires_at: null | string;
+	/**
+	 * Shown only once on the UI
+	 */
+	key: string;
+	uid: string;
+	created_at: string;
+}
+
+interface Role {
+	type: 'admin' | 'super_admin' | 'member';
+	project: string;
+}
+
+interface Config {
+	max_payload_read_size: number;
+	replay_attacks_prevention_enabled: boolean;
+	add_event_id_trace_headers: boolean;
+	disable_endpoint: boolean;
+	multiple_endpoint_subscriptions: boolean;
+	search_policy: string;
+	ssl: Ssl;
+	ratelimit: Ratelimit;
+	strategy: Strategy;
+	signature: Signature;
+	meta_event: any;
+}
+
+interface Ssl {
+	enforce_secure_endpoints: boolean;
+}
+
+interface Ratelimit {
+	count: number;
+	duration: number;
+}
+
+interface Strategy {
+	type: string;
+	duration: number;
+	retry_count: number;
+}
+
+interface Signature {
+	header: string;
+	versions: Version[];
+}
+
+interface Version {
+	uid: string;
+	hash: string;
+	encoding: string;
+	created_at: string;
 }

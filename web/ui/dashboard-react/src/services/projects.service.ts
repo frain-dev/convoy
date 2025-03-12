@@ -1,7 +1,7 @@
 import { request } from '@/services/http.service';
 import { CONVOY_CURRENT_PROJECT } from '@/lib/constants';
 
-import type { Project } from '@/models/project.model';
+import type { Project, CreateProjectResponse } from '@/models/project.model';
 
 // TODO use state management
 let projects: Array<Project> = [];
@@ -35,7 +35,7 @@ export async function createProject(
 	reqDetails: CreateProjectParams,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
-	const response = await deps.httpReq({
+	const response = await deps.httpReq<CreateProjectResponse>({
 		url: `/projects`,
 		body: reqDetails,
 		method: 'post',

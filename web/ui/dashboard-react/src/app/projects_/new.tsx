@@ -1,9 +1,21 @@
 import { z } from 'zod';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, Link } from '@tanstack/react-router';
 
+import { CopyIcon } from 'lucide-react';
+
+import {
+	Dialog,
+	DialogTrigger,
+	DialogContent,
+	DialogTitle,
+	DialogDescription,
+	DialogClose,
+	DialogHeader,
+	DialogFooter,
+} from '@/components/ui/dialog';
 import {
 	Accordion,
 	AccordionContent,
@@ -34,6 +46,7 @@ import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as projectsService from '@/services/projects.service';
 
 import modalCloseIcon from '../../../assets/svg/modal-close-icon.svg';
+import successAnimation from '../../../assets/img/success.gif';
 
 export const Route = createFileRoute('/projects_/new')({
 	component: CreateNewProject,
@@ -208,6 +221,8 @@ const CreateProjectFormSchema = z.object({
 });
 
 function CreateNewProject() {
+	const [hasCreatedProject, setHasCreatedProject] = useState(false);
+	const [projectkey, setProjectkey] = useState('');
 	const form = useForm<z.infer<typeof CreateProjectFormSchema>>({
 		resolver: zodResolver(CreateProjectFormSchema),
 		defaultValues: {
@@ -288,29 +303,37 @@ function CreateNewProject() {
 			};
 		}, payload);
 
-		await projectsService.createProject({
-			name: payload.name,
-			type: payload.type,
-			// @ts-expect-error it works. source: track/debug the code
-			config: {
-				...payload.config,
-				...(payload.config?.search_policy?.search_policy && {
-					search_policy: payload.config?.search_policy
-						?.search_policy as `${string}h`,
-				}),
-				...(payload.config?.signature && {
-					signature: {
-						header: payload.config.signature.header,
-						versions: [
-							{
-								hash: payload.config.signature.hash,
-								encoding: payload.config.signature.encoding,
-							},
-						],
-					},
-				}),
-			},
-		});
+		try {
+			const { api_key } = await projectsService.createProject({
+				name: payload.name,
+				type: payload.type,
+				// @ts-expect-error it works. source: track/debug the code
+				config: {
+					...payload.config,
+					...(payload.config?.search_policy?.search_policy && {
+						search_policy: payload.config?.search_policy
+							?.search_policy as `${string}h`,
+					}),
+					...(payload.config?.signature && {
+						signature: {
+							header: payload.config.signature.header,
+							versions: [
+								{
+									hash: payload.config.signature.hash,
+									encoding: payload.config.signature.encoding,
+								},
+							],
+						},
+					}),
+				},
+			});
+			setProjectkey(api_key.key);
+			setHasCreatedProject(true);
+			form.reset();
+		} catch (error) {
+			// TODO: notify UI of error
+			console.error(error);
+		}
 	}
 
 	const webhookTypeOptions = [
@@ -988,6 +1011,59 @@ function CreateNewProject() {
 					</form>
 				</Form>
 			</section>
+			<Dialog open={hasCreatedProject}>
+				<DialogTrigger></DialogTrigger>
+				<DialogContent className="sm:max-w-[432px] rounded-lg">
+					<DialogHeader>
+						<DialogTitle className="flex flex-col justify-center items-center">
+							<img src={successAnimation} alt="warning" className="w-28" />
+							<h3 className="text-sm font-semibold">
+								Project Created Successfully
+							</h3>
+						</DialogTitle>
+						<DialogDescription className="flex flex-col items-center gap-y-3">
+							<div className="flex flex-col justify-center items-center font-normal text-neutral-11 text-xs/5">
+								<p>Your API Key has also been created.</p>
+								<p>Please copy this key and save it somewhere safe.</p>
+							</div>
+
+							<div className="flex items-center justify-between w-[400px] h-[50px] border border-neutral-a3 bg-[#F7F9FC] px-4 rounded-md">
+								<span className="text-xs text-neutral-11 font-normal truncate">
+									{projectkey}
+								</span>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="asbolute right-[1%] top-0 h-full py-2 hover:bg-transparent"
+									onClick={() => {
+										window.navigator.clipboard.writeText(projectkey).then();
+										// TODO show toast message on copy successful
+									}}
+								>
+									<CopyIcon className="opacity-50" aria-hidden="true" />
+									<span className="sr-only">copy projectkey</span>
+								</Button>
+							</div>
+						</DialogDescription>
+					</DialogHeader>
+					<div className="flex flex-col items-center"></div>
+					<DialogFooter className="flex justify-center items-center">
+						<DialogClose asChild>
+							<Button
+								onClick={() => {
+									setHasCreatedProject(false);
+								}}
+								type="button"
+								variant="ghost"
+								className="hover:bg-new.primary-400 text-white-100 hover:text-white-100 bg-new.primary-400 px-3 py-4 text-xs"
+							>
+								Done
+							</Button>
+						</DialogClose>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</DashboardLayout>
 	);
 }

@@ -554,6 +554,7 @@ function FooterLinks() {
 }
 
 export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
+	const navigate = useNavigate();
 	const { org } = useOrganisationStore();
 	const { licenses } = useLicenseStore();
 
@@ -574,6 +575,7 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 								<SidebarGroup>
 									<SidebarGroupContent className="flex flex-col justify-center items-center">
 										<Button
+											onClick={() => navigate({ to: '/projects/new' })}
 											disabled={!org || !canCreateProject}
 											variant={'ghost'}
 											className={cn(
