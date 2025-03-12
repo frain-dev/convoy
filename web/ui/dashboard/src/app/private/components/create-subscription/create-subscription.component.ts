@@ -20,7 +20,7 @@ import { FilterService } from './filter.service';
 	styleUrls: ['./create-subscription.component.scss'],
 	providers: []
 })
-export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
+export class CreateSubscriptionComponent implements OnInit {
 	@Output() onAction = new EventEmitter();
 	@Input('action') action: 'update' | 'create' | 'view' = 'create';
 	@Input('isPortal') isPortal: 'true' | 'false' = 'false';
@@ -115,7 +115,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				endpoint_id: this.endpointId
 			});
 
-		if (this.isPortal === 'true' && !this.endpointId) this.getEndpoints();
+		if (this.isPortal === 'true' && !this.endpointId) await this.getEndpoints();
 
 		if (this.isPortal !== 'true' && this.showAction === 'true') await Promise.all([this.getEndpoints(), this.getSources()]);
 
@@ -196,34 +196,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		this.toggleConfigForm('events', true);
 	}
 
-	ngAfterViewInit() {
-		// Only for update mode - initialize select components
-		if (this.action === 'update' || this.isUpdateAction) {
-			// Wait for endpoint data to be loaded
-			setTimeout(async () => {
-				// Check if we have a subscription with endpoint metadata
-				const endpointId = this.subscription?.endpoint_metadata?.uid;
-
-				// If we don't have endpoints yet but we have an endpoint ID
-				if ((!this.endpoints || this.endpoints.length === 0) && endpointId) {
-					await this.getEndpoints();
-
-					// Find matching endpoint and set it
-					if (this.endpoints && this.endpoints.length > 0 && endpointId) {
-						const matchingEndpoint = this.endpoints.find(endpoint => endpoint.uid === endpointId);
-
-						if (matchingEndpoint) {
-							this.subscriptionForm.patchValue({ endpoint_id: matchingEndpoint });
-
-							// Force change detection
-							this.cdr.detectChanges();
-						}
-					}
-				}
-			}, 500);
-		}
-	}
-
 	toggleConfig(configValue: string) {
 		this.action === 'view' ? this.router.navigate(['/projects/' + this.privateService.getProjectDetails?.uid + '/subscriptions/' + this.subscriptionId], { queryParams: { configSetting: configValue } }) : this.toggleConfigForm(configValue);
 	}
@@ -276,7 +248,7 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				...response.data,
 				// For sources and endpoints, use the full object if found or just the ID
 				source_id: matchingSource || sourceId,
-				endpoint_id: matchingEndpoint || endpointId
+				endpoint_id: matchingEndpoint?.uid || endpointId
 			});
 
 			// Handle event types
@@ -816,8 +788,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 				// Use event_type as the key for the map
 				this.filtersMap.set(filter.event_type, { ...filter });
 			});
-
-			console.log('Filters loaded:', this.filtersMap);
 			return response;
 		} catch (error) {
 			console.error('Error fetching filters:', error);
@@ -868,7 +838,6 @@ export class CreateSubscriptionComponent implements OnInit, AfterViewInit {
 		// If we just removed the last event type, and it wasn't a wildcard removal
 		// as part of selecting another event type, add the wildcard as default
 		if (this.selectedEventTypes.length === 0 && !isWildcard && !isAutoSelect) {
-			console.log('No event types selected, adding wildcard (*) as default');
 			this.toggleEventType('*');
 		}
 
