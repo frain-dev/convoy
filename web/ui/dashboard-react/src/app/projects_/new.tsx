@@ -1013,21 +1013,24 @@ function CreateNewProject() {
 			</section>
 			<Dialog open={hasCreatedProject}>
 				<DialogTrigger></DialogTrigger>
-				<DialogContent className="sm:max-w-[432px] rounded-lg">
+				<DialogContent
+					className="sm:max-w-[432px] rounded-lg"
+					aria-describedby={undefined}
+				>
 					<DialogHeader>
 						<DialogTitle className="flex flex-col justify-center items-center">
 							<img src={successAnimation} alt="warning" className="w-28" />
-							<h3 className="text-sm font-semibold">
+							<span className="text-sm font-semibold">
 								Project Created Successfully
-							</h3>
+							</span>
 						</DialogTitle>
-						<DialogDescription className="flex flex-col items-center gap-y-3">
+						<div className="flex flex-col items-center gap-y-3">
 							<div className="flex flex-col justify-center items-center font-normal text-neutral-11 text-xs/5">
-								<p>Your API Key has also been created.</p>
-								<p>Please copy this key and save it somewhere safe.</p>
+								<span>Your API Key has also been created.</span>
+								<span>Please copy this key and save it somewhere safe.</span>
 							</div>
 
-							<div className="flex items-center justify-between w-[400px] h-[50px] border border-neutral-a3 bg-[#F7F9FC] px-4 rounded-md">
+							<div className="flex items-center justify-between w-[400px] h-[50px] border border-neutral-a3 bg-[#F7F9FC] pr-2 pl-3 rounded-md">
 								<span className="text-xs text-neutral-11 font-normal truncate">
 									{projectkey}
 								</span>
@@ -1035,19 +1038,18 @@ function CreateNewProject() {
 									type="button"
 									variant="ghost"
 									size="sm"
-									className="asbolute right-[1%] top-0 h-full py-2 hover:bg-transparent"
+									className="asbolute right-[1%] top-0 h-full py-2 hover:bg-transparent pr-1 pl-0"
 									onClick={() => {
 										window.navigator.clipboard.writeText(projectkey).then();
 										// TODO show toast message on copy successful
 									}}
 								>
 									<CopyIcon className="opacity-50" aria-hidden="true" />
-									<span className="sr-only">copy projectkey</span>
+									<span className="sr-only">copy project key</span>
 								</Button>
 							</div>
-						</DialogDescription>
+						</div>
 					</DialogHeader>
-					<div className="flex flex-col items-center"></div>
 					<DialogFooter className="flex justify-center items-center">
 						<DialogClose asChild>
 							<Button
