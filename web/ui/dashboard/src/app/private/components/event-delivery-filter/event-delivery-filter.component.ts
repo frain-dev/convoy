@@ -75,11 +75,11 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 		if (this.portalToken) this.filterOptions = this.filterOptions.filter(key => key.id !== 'endpoint');
 
-		if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();
+		// if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();
 
 		if (this.eventDeliveriesEndpoint) this.eventDeliveriesEndpointData = await this.getSelectedEndpointData();
 
-		if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
+		// if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
 
         this.getEventTypesForFilter();
 	}
@@ -253,8 +253,11 @@ export class EventDeliveryFilterComponent implements OnInit {
 		return await (await this.privateService.getEndpoints()).data.content.find((item: ENDPOINT) => item.uid === this.eventDeliveriesEndpoint);
 	}
 
-	async getSelectedSourceData(): Promise<SOURCE> {
-		return await (await this.privateService.getSources()).data.content.find((item: SOURCE) => item.uid === this.eventDeliveriesSource);
+	async getSelectedSourceData(){
+		try {
+			const response = await this.privateService.getSources();
+			return response.data.content.find((item: SOURCE) => item.uid === this.eventDeliveriesSource);
+		} catch (error) {}
 	}
 
 	async getSourcesForFilter() {

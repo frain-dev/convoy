@@ -13,6 +13,7 @@ export class HttpService {
 	APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/ui`;
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
 	token = this.route.snapshot.queryParams?.token;
+	ownerId = this.route.snapshot.queryParams?.owner_id;
 	checkTokenTimeout: any;
 
 	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService) {}
@@ -28,27 +29,44 @@ export class HttpService {
 	}
 
 	buildRequestQuery(query?: { [k: string]: any }) {
-		if (!query || (query && Object.getOwnPropertyNames(query).length == 0)) return '';
+		// Create a new object if query is undefined
+		const safeQuery: { [k: string]: any } = query || {};
 
 		// add portal link query if available
-		if (this.token) query.token = this.token;
+		if (this.token) safeQuery.token = this.token;
+
+		// add owner_id if available
+		if (this.ownerId) safeQuery.owner_id = this.ownerId;
 
 		// remove empty data and objects in object
-		const cleanedQuery = Object.fromEntries(Object.entries(query).filter(([_, q]) => q !== '' && q !== undefined && q !== null && typeof q !== 'object'));
+		const cleanedQuery = Object.fromEntries(Object.entries(safeQuery).filter(([_, q]) => q !== '' && q !== undefined && q !== null && typeof q !== 'object'));
+
 		// convert object to query param
 		let cleanedQueryString: string = '';
+
 		Object.keys(cleanedQuery).forEach((q, i) => {
 			try {
-				const queryItem = JSON.parse(query[q]);
-				queryItem.forEach((item: any) => (cleanedQueryString += `${q}=${item}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`));
+				const queryValue = safeQuery[q];
+				if (queryValue !== undefined) {
+					const queryItem = JSON.parse(queryValue);
+					queryItem.forEach((item: any) => (cleanedQueryString += `${q}=${item}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`));
+				}
 			} catch (error) {
-				cleanedQueryString += `${q}=${query[q]}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`;
+				const queryValue = safeQuery[q];
+				if (queryValue !== undefined) {
+					cleanedQueryString += `${q}=${queryValue}${Object.keys(cleanedQuery).length - 1 !== i ? '&' : ''}`;
+				}
 			}
 		});
 
 		// for query items with arrays, process them into a string
 		let queryString = '';
-		Object.keys(query).forEach((key: any) => (typeof query[key] === 'object' ? query[key]?.forEach((item: any) => (queryString += `&${key}=${item}`)) : false));
+		Object.keys(safeQuery).forEach((key: any) => {
+			const queryValue = safeQuery[key];
+			if (queryValue !== undefined && typeof queryValue === 'object') {
+				queryValue?.forEach((item: any) => (queryString += `&${key}=${item}`));
+			}
+		});
 
 		return cleanedQueryString + queryString;
 	}
@@ -81,36 +99,39 @@ export class HttpService {
 		}
 	}
 
-	buildURL(requestDetails: any): string {
-		if (requestDetails.isOut) return requestDetails.url;
+buildURL(requestDetails: any): string {
+	if (requestDetails.isOut) return requestDetails.url;
 
-		// Make sure we have a query object
-		const query = requestDetails.query || {};
+	// Make sure we have a query object
+	const query = requestDetails.query || {};
 
-		// Always add token to query params if available
-		if (this.token) {
-			query.token = this.token;
-		}
-
-		// Format query string if we have any query params
-		const queryString = Object.keys(query).length > 0 ? '?' + this.buildRequestQuery(query) : '';
-
-		// When token is present, use the Portal API URL regardless of other parameters
-		if (this.token) {
-			return `${this.APP_PORTAL_APIURL}${requestDetails.url}${queryString}`;
-		}
-
-		// Handle regular UI paths
-		if (!requestDetails.level) {
-			return `${this.APIURL}${requestDetails.url}${queryString}`;
-		}
-
-		const requestPath = this.buildRequestPath(requestDetails.level);
-		if (requestPath === 'error') return 'error';
-
-		return `${this.APIURL}${requestPath}${requestDetails.url}${queryString}`;
+	// Add token and owner_id to query if they exist
+	if (this.token) {
+		query.token = this.token;
+	}
+	if (this.ownerId) {
+		query.owner_id = this.ownerId;
 	}
 
+	// Format query string if we have any query params
+	const queryString = Object.keys(query).length > 0 ? '?' + this.buildRequestQuery(query) : '';
+
+	// When token or ownerId is present, use the Portal API URL regardless of other parameters
+	if (this.token || this.ownerId) {
+		return `${this.APP_PORTAL_APIURL}${requestDetails.url}${queryString}`;
+	}
+
+	// Handle regular UI paths
+	if (!requestDetails.level) {
+		return `${this.APIURL}${requestDetails.url}${queryString}`;
+	}
+
+	const requestPath = this.buildRequestPath(requestDetails.level);
+	if (requestPath === 'error') return 'error';
+
+	return `${this.APIURL}${requestPath}${requestDetails.url}${queryString}`;
+}
+  
 	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
 
@@ -118,13 +139,13 @@ export class HttpService {
 			try {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
-				// Use token for authorization if available, otherwise use access_token
-				const authToken = this.token || this.authDetails()?.access_token;
+        // Use token for authorization if available, otherwise use ownerId or access_token
+        const authToken = this.token || this.ownerId || this.authDetails()?.access_token;
 
-				const requestHeader = {
-					Authorization: `Bearer ${authToken}`,
-					'X-Convoy-Version': '2024-04-01'
-				};
+        const requestHeader = {
+            Authorization: `Bearer ${authToken}`,
+            'X-Convoy-Version': '2024-04-01'
+        };
 
 				// process URL
 				const url = this.buildURL(requestDetails);

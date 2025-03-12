@@ -6,7 +6,7 @@
                     <li *ngFor="let nav of sideBarItems" class="transition-all duration-200 z-[1]">
                         <a
                             [routerLink]="'.' + nav.route"
-                            [queryParams]="{ token }"
+                            [queryParams]="{ token: token, owner_id: ownerId }"
                             routerLinkActive="!text-new.primary-400 on hover:bg-transparent"
                             #route="routerLinkActive"
                             [routerLinkActiveOptions]="{ exact: true }"
