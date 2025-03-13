@@ -28,8 +28,16 @@ export const Route = createFileRoute('/projects/')({
 			paginatedOrgs: pgOrgs,
 		});
 
+		if (!useOrganisationStore.getState().org) {
+			useOrganisationStore.setState({ org: pgOrgs.content.at(0) || null });
+		}
+
 		const projects = await projectsService.getProjects();
 		useProjectStore.setState({ projects });
+
+		if (!useProjectStore.getState().project) {
+			useProjectStore.setState({ project: projects.at(0) || null });
+		}
 
 		const userPerms = await authService.getUserPermissions();
 
