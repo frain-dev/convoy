@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, Link } from '@tanstack/react-router';
 
@@ -11,7 +11,6 @@ import {
 	DialogTrigger,
 	DialogContent,
 	DialogTitle,
-	DialogDescription,
 	DialogClose,
 	DialogHeader,
 	DialogFooter,
@@ -42,6 +41,7 @@ import {
 import { DashboardLayout } from '@/components/dashboard';
 
 import { cn } from '@/lib/utils';
+import * as authService from '@/services/auth.service';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as projectsService from '@/services/projects.service';
 
@@ -49,10 +49,17 @@ import modalCloseIcon from '../../../assets/svg/modal-close-icon.svg';
 import successAnimation from '../../../assets/img/success.gif';
 
 export const Route = createFileRoute('/projects_/new')({
-	component: CreateNewProject,
 	beforeLoad({ context }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
 	},
+	async loader() {
+		const userPerms = await authService.getUserPermissions();
+
+		return {
+			canCreateProject: userPerms.includes('Project Settings|MANAGE'),
+		};
+	},
+	component: CreateNewProject,
 });
 
 const CreateProjectFormSchema = z.object({
@@ -223,6 +230,7 @@ const CreateProjectFormSchema = z.object({
 function CreateNewProject() {
 	const [hasCreatedProject, setHasCreatedProject] = useState(false);
 	const [projectkey, setProjectkey] = useState('');
+	const { canCreateProject } = Route.useLoaderData();
 	const form = useForm<z.infer<typeof CreateProjectFormSchema>>({
 		resolver: zodResolver(CreateProjectFormSchema),
 		defaultValues: {
@@ -470,7 +478,7 @@ function CreateNewProject() {
 														/>
 														<svg
 															className="
-      absolute 
+      absolute
       w-3 h-3 mt-1
       hidden peer-checked:block top-[0.5px] right-[1px]"
 															xmlns="http://www.w3.org/2000/svg"
@@ -512,7 +520,7 @@ function CreateNewProject() {
 														/>
 														<svg
 															className="
-      absolute 
+      absolute
       w-3 h-3 mt-1
       hidden peer-checked:block top-[0.5px] right-[1px]"
 															xmlns="http://www.w3.org/2000/svg"
@@ -554,7 +562,7 @@ function CreateNewProject() {
 														/>
 														<svg
 															className="
-      absolute 
+      absolute
       w-3 h-3 mt-1
       hidden peer-checked:block top-[0.5px] right-[1px]"
 															xmlns="http://www.w3.org/2000/svg"
@@ -597,7 +605,7 @@ function CreateNewProject() {
 														/>
 														<svg
 															className="
-      absolute 
+      absolute
       w-3 h-3 mt-1
       hidden peer-checked:block top-[0.5px] right-[1px]"
 															xmlns="http://www.w3.org/2000/svg"
@@ -1001,7 +1009,7 @@ function CreateNewProject() {
 
 						<div className="flex justify-end">
 							<Button
-								disabled={!form.formState.isValid}
+								disabled={!canCreateProject || !form.formState.isValid}
 								variant="ghost"
 								className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
 							>
