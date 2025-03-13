@@ -229,6 +229,7 @@ const CreateProjectFormSchema = z.object({
 
 function CreateNewProject() {
 	const [hasCreatedProject, setHasCreatedProject] = useState(false);
+	const [isCreatingProject, setIsCreatingProject] = useState(false);
 	const [projectkey, setProjectkey] = useState('');
 	const { canCreateProject } = Route.useLoaderData();
 	const form = useForm<z.infer<typeof CreateProjectFormSchema>>({
@@ -282,6 +283,7 @@ function CreateNewProject() {
 	async function createProject(
 		values: z.infer<typeof CreateProjectFormSchema>,
 	) {
+		setIsCreatingProject(true);
 		let payload = {
 			name: values.name,
 			type: values.type as Exclude<
@@ -341,6 +343,8 @@ function CreateNewProject() {
 		} catch (error) {
 			// TODO: notify UI of error
 			console.error(error);
+		} finally {
+			setIsCreatingProject(false);
 		}
 	}
 
@@ -1009,7 +1013,11 @@ function CreateNewProject() {
 
 						<div className="flex justify-end">
 							<Button
-								disabled={!canCreateProject || !form.formState.isValid}
+								disabled={
+									!canCreateProject ||
+									!form.formState.isValid ||
+									isCreatingProject
+								}
 								variant="ghost"
 								className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
 							>
