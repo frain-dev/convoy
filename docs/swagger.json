@@ -8390,9 +8390,6 @@
         "models.DynamicEvent": {
             "type": "object",
             "properties": {
-                "acknowledged_at": {
-                    "type": "string"
-                },
                 "custom_headers": {
                     "description": "Specifies custom headers you want convoy to add when the event is dispatched to your endpoint",
                     "type": "object",

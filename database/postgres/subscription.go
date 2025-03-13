@@ -580,11 +580,9 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 	eventTypesSlice := make([]*datastore.ProjectEventType, len(subscription.FilterConfig.EventTypes))
 	for i := range subscription.FilterConfig.EventTypes {
 		eventTypesSlice[i] = &datastore.ProjectEventType{
-			UID:         ulid.Make().String(),
-			Name:        subscription.FilterConfig.EventTypes[i],
-			ProjectId:   subscription.ProjectID,
-			Description: "",
-			Category:    "",
+			UID:       ulid.Make().String(),
+			Name:      subscription.FilterConfig.EventTypes[i],
+			ProjectId: subscription.ProjectID,
 		}
 	}
 

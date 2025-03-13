@@ -934,8 +934,6 @@ definitions:
     type: object
   models.DynamicEvent:
     properties:
-      acknowledged_at:
-        type: string
       custom_headers:
         additionalProperties:
           type: string
