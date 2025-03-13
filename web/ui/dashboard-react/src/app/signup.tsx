@@ -189,7 +189,7 @@ function PasswordInputField({ form }: FormFieldInputComponentProps) {
 					<div className="w-full mb-[8px] flex items-center justify-between">
 						<FormLabel
 							className="text-xs/5 text-neutral-9"
-							htmlFor="password_input"
+							htmlFor="signup_password_input"
 						>
 							Password
 						</FormLabel>
@@ -197,7 +197,7 @@ function PasswordInputField({ form }: FormFieldInputComponentProps) {
 					<FormControl className="w-full relative">
 						<div className="relative">
 							<Input
-								id="password_input"
+								id="signup_password_input"
 								autoComplete="current-password"
 								type={isPasswordVisible ? 'text' : 'password'}
 								className={cn(
