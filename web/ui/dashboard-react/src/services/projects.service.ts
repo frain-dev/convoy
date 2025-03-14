@@ -114,3 +114,16 @@ export async function updateProject(
 
 	return res.data;
 }
+
+export async function deleteProject(
+	_uid: string,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<null>({
+		url: '',
+		method: 'delete',
+		level: 'org_project',
+	});
+
+	return res.data;
+}

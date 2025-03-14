@@ -62,6 +62,8 @@ type ReqLevel = 'org' | 'org_project';
 export function buildRequestPath(
 	level?: ReqLevel,
 	deps: {
+		// FIX: these values should be passed in, not gotten from cache because of
+		// inconsistencies
 		getCachedProjectId: () => string;
 		getCachedOrganisationId: () => string;
 	} = {
@@ -168,7 +170,12 @@ export async function request<TData>(
 		url: string;
 		body?: Record<
 			string,
-			Record<string, string | number | object | undefined | null>
+			| string
+			| number
+			| object
+			| undefined
+			| null
+			| Record<string, string | number | object | undefined | null>
 		>;
 		method: 'get' | 'post' | 'delete' | 'put';
 		hideNotification?: boolean;
