@@ -17,6 +17,7 @@ func provideUpdateSubscriptionService(ctrl *gomock.Controller, projectID string,
 	return &UpdateSubscriptionService{
 		SubRepo:        mocks.NewMockSubscriptionRepository(ctrl),
 		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
+		ProjectRepo:    mocks.NewMockProjectRepository(ctrl),
 		SourceRepo:     mocks.NewMockSourceRepository(ctrl),
 		Licenser:       mocks.NewMockLicenser(ctrl),
 		ProjectId:      projectID,
@@ -71,6 +72,22 @@ func TestUpdateSubscriptionService_Run(t *testing.T) {
 				s.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(nil)
+
+				ss.ProjectRepo.(*mocks.MockProjectRepository).EXPECT().
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
+						UID:  "12345",
+						Type: datastore.OutgoingProject,
+					}, nil)
+
+				ss.EndpointRepo.(*mocks.MockEndpointRepository).EXPECT().
+					FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Endpoint{
+						UID: "endpoint-id-1",
+					}, nil)
+
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(0), nil)
 			},
 		},
 		{
@@ -94,6 +111,22 @@ func TestUpdateSubscriptionService_Run(t *testing.T) {
 				s.EXPECT().UpdateSubscription(gomock.Any(), gomock.Any(), gomock.Any()).
 					Times(1).
 					Return(errors.New("failed"))
+
+				ss.ProjectRepo.(*mocks.MockProjectRepository).EXPECT().
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
+						UID:  "12345",
+						Type: datastore.OutgoingProject,
+					}, nil)
+
+				ss.EndpointRepo.(*mocks.MockEndpointRepository).EXPECT().
+					FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Endpoint{
+						UID: "endpoint-id-1",
+					}, nil)
+
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(0), nil)
 			},
 			wantErr:    true,
 			wantErrMsg: "failed to update subscription",

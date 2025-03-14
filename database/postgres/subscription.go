@@ -158,7 +158,7 @@ const (
     filter_config_event_types AS "filter_config.event_types",
     filter_config_filter_headers AS "filter_config.filter.headers",
 	filter_config_filter_body AS "filter_config.filter.body",
-	 filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+	filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
 	filter_config_filter_raw_body AS "filter_config.filter.raw_body",
 	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
     from convoy.subscriptions
