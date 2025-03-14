@@ -2857,19 +2857,7 @@
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "allOf": [
-                                                {
-                                                    "$ref": "#/definitions/datastore.Event"
-                                                },
-                                                {
-                                                    "type": "object",
-                                                    "properties": {
-                                                        "data": {
-                                                            "$ref": "#/definitions/handlers.Stub"
-                                                        }
-                                                    }
-                                                }
-                                            ]
+                                            "type": "string"
                                         }
                                     }
                                 }
@@ -6328,7 +6316,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint creates multiple filters for a subscription in a single request",
+                "description": "This endpoint creates multiple filters for a subscription",
                 "consumes": [
                     "application/json"
                 ],
@@ -6338,7 +6326,7 @@
                 "tags": [
                     "Filters"
                 ],
-                "summary": "Create multiple filters at once",
+                "summary": "Create multiple subscription filters",
                 "operationId": "BulkCreateFilters",
                 "parameters": [
                     {
@@ -6454,7 +6442,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "This endpoint updates multiple filters for a subscription in a single request",
+                "description": "This endpoint updates multiple filters for a subscription",
                 "consumes": [
                     "application/json"
                 ],
@@ -6464,7 +6452,7 @@
                 "tags": [
                     "Filters"
                 ],
-                "summary": "Update multiple filters at once",
+                "summary": "Update multiple subscription filters",
                 "operationId": "BulkUpdateFilters",
                 "parameters": [
                     {

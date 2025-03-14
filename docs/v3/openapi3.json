@@ -5615,19 +5615,7 @@
 										{
 											"properties": {
 												"data": {
-													"allOf": [
-														{
-															"$ref": "#/components/schemas/datastore.Event"
-														},
-														{
-															"properties": {
-																"data": {
-																	"$ref": "#/components/schemas/handlers.Stub"
-																}
-															},
-															"type": "object"
-														}
-													]
+													"type": "string"
 												}
 											},
 											"type": "object"
@@ -9544,7 +9532,7 @@
 		},
 		"/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk": {
 			"post": {
-				"description": "This endpoint creates multiple filters for a subscription in a single request",
+				"description": "This endpoint creates multiple filters for a subscription",
 				"operationId": "BulkCreateFilters",
 				"parameters": [
 					{
@@ -9679,7 +9667,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Create multiple filters at once",
+				"summary": "Create multiple subscription filters",
 				"tags": [
 					"Filters"
 				]
@@ -9687,7 +9675,7 @@
 		},
 		"/v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk_update": {
 			"put": {
-				"description": "This endpoint updates multiple filters for a subscription in a single request",
+				"description": "This endpoint updates multiple filters for a subscription",
 				"operationId": "BulkUpdateFilters",
 				"parameters": [
 					{
@@ -9822,7 +9810,7 @@
 						"ApiKeyAuth": []
 					}
 				],
-				"summary": "Update multiple filters at once",
+				"summary": "Update multiple subscription filters",
 				"tags": [
 					"Filters"
 				]

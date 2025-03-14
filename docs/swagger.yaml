@@ -3483,12 +3483,7 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  allOf:
-                  - $ref: '#/definitions/datastore.Event'
-                  - properties:
-                      data:
-                        $ref: '#/definitions/handlers.Stub'
-                    type: object
+                  type: string
               type: object
         "400":
           description: Bad Request
@@ -5380,8 +5375,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: This endpoint creates multiple filters for a subscription in a
-        single request
+      description: This endpoint creates multiple filters for a subscription
       operationId: BulkCreateFilters
       parameters:
       - description: Project ID
@@ -5445,15 +5439,14 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Create multiple filters at once
+      summary: Create multiple subscription filters
       tags:
       - Filters
   /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk_update:
     put:
       consumes:
       - application/json
-      description: This endpoint updates multiple filters for a subscription in a
-        single request
+      description: This endpoint updates multiple filters for a subscription
       operationId: BulkUpdateFilters
       parameters:
       - description: Project ID
@@ -5517,7 +5510,7 @@ paths:
               type: object
       security:
       - ApiKeyAuth: []
-      summary: Update multiple filters at once
+      summary: Update multiple subscription filters
       tags:
       - Filters
   /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/test/{eventType}:

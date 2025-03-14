@@ -3591,12 +3591,7 @@ paths:
                 - $ref: '#/components/schemas/util.ServerResponse'
                 - properties:
                     data:
-                      allOf:
-                      - $ref: '#/components/schemas/datastore.Event'
-                      - properties:
-                          data:
-                            $ref: '#/components/schemas/handlers.Stub'
-                        type: object
+                      type: string
                   type: object
           description: OK
         "400":
@@ -5676,8 +5671,7 @@ paths:
       - Filters
   /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk:
     post:
-      description: This endpoint creates multiple filters for a subscription in a
-        single request
+      description: This endpoint creates multiple filters for a subscription
       operationId: BulkCreateFilters
       parameters:
       - description: Project ID
@@ -5751,13 +5745,12 @@ paths:
           description: Not Found
       security:
       - ApiKeyAuth: []
-      summary: Create multiple filters at once
+      summary: Create multiple subscription filters
       tags:
       - Filters
   /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/bulk_update:
     put:
-      description: This endpoint updates multiple filters for a subscription in a
-        single request
+      description: This endpoint updates multiple filters for a subscription
       operationId: BulkUpdateFilters
       parameters:
       - description: Project ID
@@ -5831,7 +5824,7 @@ paths:
           description: Not Found
       security:
       - ApiKeyAuth: []
-      summary: Update multiple filters at once
+      summary: Update multiple subscription filters
       tags:
       - Filters
   /v1/projects/{projectID}/subscriptions/{subscriptionID}/filters/test/{eventType}:

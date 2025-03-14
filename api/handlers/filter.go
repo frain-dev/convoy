@@ -486,8 +486,8 @@ func (h *Handler) TestFilter(w http.ResponseWriter, r *http.Request) {
 
 // BulkCreateFilters
 //
-//	@Summary		Create multiple filters at once
-//	@Description	This endpoint creates multiple filters for a subscription in a single request
+//	@Summary		Create multiple subscription filters
+//	@Description	This endpoint creates multiple filters for a subscription
 //	@Id				BulkCreateFilters
 //	@Tags			Filters
 //	@Accept			json
@@ -610,8 +610,8 @@ func (h *Handler) BulkCreateFilters(w http.ResponseWriter, r *http.Request) {
 
 // BulkUpdateFilters
 //
-//	@Summary		Update multiple filters at once
-//	@Description	This endpoint updates multiple filters for a subscription in a single request
+//	@Summary		Update multiple subscription filters
+//	@Description	This endpoint updates multiple filters for a subscription
 //	@Id				BulkUpdateFilters
 //	@Tags			Filters
 //	@Accept			json
