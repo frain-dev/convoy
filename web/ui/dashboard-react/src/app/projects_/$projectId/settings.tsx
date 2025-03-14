@@ -216,7 +216,7 @@ const ProjectConfigFormSchema = z.object({
 
 function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 	const [_project, set_Project] = useState(props.project);
-	const { setProject, setProjects } = useProjectStore();
+	const { setProject, setProjects, projects } = useProjectStore();
 	const [isUpdatingProject, setIsUpdatingProject] = useState(false);
 	const [isDeletingProject, setIsDeletingProject] = useState(false);
 	const navigate = useNavigate();
@@ -342,9 +342,8 @@ function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 		setIsDeletingProject(true);
 		try {
 			await projectsService.deleteProject(_project.uid);
-			const projects = await projectsService.getProjects();
-			setProjects(projects);
-			setProject(projects.at(0) || null);
+			setProjects(projects.filter(p => p.uid != _project.uid));
+			setProject(projects.at(1) || null);
 			navigate({ to: '/projects' });
 		} catch (error) {
 			// TODO notify UI
