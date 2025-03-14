@@ -57,9 +57,13 @@ export function buildRequestQuery(
 	return cleanedQueryString + queryString;
 }
 
+type ReqLevel = 'org' | 'org_project';
+
 export function buildRequestPath(
-	level?: 'org' | 'org_project',
+	level?: ReqLevel,
 	deps: {
+		// FIX: these values should be passed in, not gotten from cache because of
+		// inconsistencies
 		getCachedProjectId: () => string;
 		getCachedOrganisationId: () => string;
 	} = {
@@ -92,7 +96,13 @@ export function buildRequestPath(
 	return '';
 }
 
-export function buildURL(requestDetails: any): string {
+type ReqDetails = {
+	isOut?: boolean;
+	url: string;
+	level?: ReqLevel;
+	query?: Record<string, string | number | object | undefined | null>;
+};
+export function buildURL(requestDetails: ReqDetails): string {
 	if (requestDetails.isOut) return requestDetails.url;
 
 	if (getToken())
@@ -120,7 +130,7 @@ export function setupAxios(
 		error => {
 			if (axios.isAxiosError(error)) {
 				const errorResponse = error.response;
-				let errorMessage = errorResponse?.data
+				const errorMessage = errorResponse?.data
 					? errorResponse.data.message
 					: error.message;
 
@@ -141,10 +151,9 @@ export function setupAxios(
 			}
 
 			if (!requestDetails.hideNotification) {
-				let errorMessage: string;
-				error.error?.message
-					? (errorMessage = error.error?.message)
-					: (errorMessage = 'An error occured, please try again');
+				const errorMessage = error.error?.message
+					? error.error?.message
+					: 'An error occured, please try again';
 				// TODO GeneralService.showNotification; for now
 				console.error(errorMessage);
 			}
@@ -159,10 +168,21 @@ export function setupAxios(
 export async function request<TData>(
 	requestDetails: {
 		url: string;
-		body?: any;
+		body?: Record<
+			string,
+			| string
+			| number
+			| object
+			| undefined
+			| null
+			| Record<string, string | number | object | undefined | null>
+		>;
 		method: 'get' | 'post' | 'delete' | 'put';
 		hideNotification?: boolean;
-		query?: Record<string, any>;
+		query?: Record<
+			string,
+			Record<string, string | number | object | undefined | null>
+		>;
 		level?: 'org' | 'org_project';
 		isOut?: boolean;
 	},

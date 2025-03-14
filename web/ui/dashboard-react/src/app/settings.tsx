@@ -89,7 +89,7 @@ function SettingsPage() {
 	useEffect(() => {
 		organisationForm.setValue('orgId', org?.uid || '');
 		organisationForm.setValue('orgName', org?.name || '');
-	}, [org?.uid]);
+	}, [org, organisationForm]);
 
 	async function updateOrganisation(
 		values: z.infer<typeof OrganisationFormSchema>,
@@ -129,10 +129,12 @@ function SettingsPage() {
 
 			setPaginatedOrgs({
 				pagination: paginatedOrgs.pagination,
-				content: paginatedOrgs.content.filter((_org) => org?.uid != _org.uid),
+				content: paginatedOrgs.content.filter(_org => org?.uid != _org.uid),
 			});
 
-			setOrg(paginatedOrgs.content.filter((_org) => org?.uid != _org.uid)[0] || null);
+			setOrg(
+				paginatedOrgs.content.filter(_org => org?.uid != _org.uid)[0] || null,
+			);
 		} catch (error) {
 			console.error(error);
 		} finally {

@@ -1,7 +1,7 @@
 export interface HttpResponse<T> {
 	data: T;
 	message: string;
-	error?: any;
+	error?: unknown;
 	status: boolean;
 }
 
@@ -13,7 +13,7 @@ type Pagination = {
 	next_page_cursor: string;
 };
 
-export interface PaginatedResult<T>{
-	content: Array<T>
-	pagination: Pagination
+export interface PaginatedResult<T> {
+	content: Array<T>;
+	pagination: Pagination;
 }

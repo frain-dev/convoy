@@ -1,3 +1,9 @@
+type Statistics = {
+	events_exist: boolean;
+	subscriptions_exist: boolean;
+	endpoints_exist: boolean;
+} | null;
+
 export interface Project {
 	uid: string;
 	name: string;
@@ -40,11 +46,7 @@ export interface Project {
 		// 	search_policy: string;
 		// };
 	};
-	statistics: {
-		events_exist: boolean;
-		subscriptions_exist: boolean;
-		endpoints_exist: boolean;
-	} | null;
+	statistics: Statistics;
 }
 
 export interface MetaEvent {
@@ -79,7 +81,7 @@ export interface CreateProjectResponse {
 		organisation_id: string;
 		type: string;
 		config: Config;
-		statistics: any;
+		statistics: Statistics;
 		retained_events: number;
 		created_at: string;
 		updated_at: string;

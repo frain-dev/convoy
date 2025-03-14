@@ -14,7 +14,7 @@ if (!root) {
 	root = document.getElementById('root') as HTMLElement;
 }
 
-function App() {
+export function App() {
 	const auth = useAuth();
 	return <RouterProvider router={router} context={{ auth }} />;
 }

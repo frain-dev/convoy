@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 import { Bot, Home, Settings, User } from 'lucide-react';
 
@@ -14,6 +14,16 @@ import {
 	FormControl,
 	FormMessageWithErrorIcon,
 } from '@/components/ui/form';
+import {
+	Dialog,
+	DialogClose,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+	DialogTrigger,
+} from '@/components/ui/dialog';
 import {
 	Accordion,
 	AccordionContent,
@@ -35,9 +45,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useProjectStore } from '@/store/index';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
+import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
 
 import type { Project } from '@/models/project.model';
+
+import warningAnimation from '../../../../assets/img/warning-animation.gif';
 
 const ProjectConfigFormSchema = z.object({
 	name: z
@@ -201,10 +214,13 @@ const ProjectConfigFormSchema = z.object({
 		.optional(),
 });
 
-function ProjectConfig(props: { project: Project }) {
+function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 	const [_project, set_Project] = useState(props.project);
 	const { setProject, setProjects } = useProjectStore();
 	const [isUpdatingProject, setIsUpdatingProject] = useState(false);
+	const [isDeletingProject, setIsDeletingProject] = useState(false);
+	const navigate = useNavigate();
+
 	const form = useForm<z.infer<typeof ProjectConfigFormSchema>>({
 		resolver: zodResolver(ProjectConfigFormSchema),
 		defaultValues: {
@@ -317,9 +333,25 @@ function ProjectConfig(props: { project: Project }) {
 		} catch (error) {
 			// TODO: notify UI of error
 			console.error(error);
-			debugger;
 		} finally {
 			setIsUpdatingProject(false);
+		}
+	}
+
+	async function deleteProject() {
+		setIsDeletingProject(true);
+		try {
+			await projectsService.deleteProject(_project.uid);
+			const projects = await projectsService.getProjects();
+			setProjects(projects);
+			setProject(projects.at(0) || null);
+			navigate({ to: '/projects' });
+		} catch (error) {
+			// TODO notify UI
+			console.error(error);
+		} finally {
+			setIsDeletingProject(false);
+			// TODO notify UI
 		}
 	}
 
@@ -925,7 +957,11 @@ function ProjectConfig(props: { project: Project }) {
 
 						<div className="flex justify-end">
 							<Button
-								disabled={!form.formState.isValid || isUpdatingProject}
+								disabled={
+									!props.canManageProject ||
+									!form.formState.isValid ||
+									isUpdatingProject
+								}
 								variant="ghost"
 								className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
 							>
@@ -935,6 +971,74 @@ function ProjectConfig(props: { project: Project }) {
 					</form>
 				</Form>
 			</div>
+
+			<hr className="my-12 border-neutral-5" />
+
+			<section className="bg-destructive/5 border-destructive/30 border p-6 rounded-8px flex flex-col items-start justify-center">
+				<h2 className="text-destructive font-semibold text-lg mb-5">
+					Danger Zone
+				</h2>
+				<div className="text-sm mb-8">
+					<p className="mb-3">
+						Deleting this project will delete all of it&apos;s data including
+						events, apps, subscriptions and configurations.
+					</p>
+					<b className="font-semibold ">
+						Are you sure you want to delete this project?
+					</b>
+				</div>
+				<Dialog>
+					<DialogTrigger asChild>
+						<Button
+							disabled={isDeletingProject || !props.canManageProject}
+							size="sm"
+							variant="ghost"
+							className="px-4 py-2 text-xs bg-destructive  hover:bg-destructive hover:text-white-100 flex items-center"
+						>
+							<svg width="18" height="18" className="fill-white-100">
+								<use xlinkHref="#delete-icon"></use>
+							</svg>
+							<p className="text-white-100">Delete Project</p>
+						</Button>
+					</DialogTrigger>
+					<DialogContent className="sm:max-w-[432px] rounded-lg">
+						<DialogHeader>
+							<DialogTitle className="flex justify-center items-center">
+								<img src={warningAnimation} alt="warning" className="w-24" />
+							</DialogTitle>
+							<DialogDescription className="flex justify-center items-center font-medium text-new.black text-sm">
+								Are you sure you want to deactivate “{_project?.name}”?
+							</DialogDescription>
+						</DialogHeader>
+						<div className="flex flex-col items-center space-y-4">
+							<p className="text-xs text-neutral-11">
+								This action is irreversible.
+							</p>
+							<DialogClose asChild>
+								<Button
+									onClick={deleteProject}
+									type="submit"
+									size="sm"
+									className="bg-destructive text-white-100 hover:bg-destructive hover:text-white-100"
+								>
+									Yes. Deactivate
+								</Button>
+							</DialogClose>
+						</div>
+						<DialogFooter className="flex justify-center items-center">
+							<DialogClose asChild>
+								<Button
+									type="button"
+									variant="ghost"
+									className="bg-transparent hover:bg-transparent text-xs text-neutral-11 hover:text-neutral-11 font-semibold"
+								>
+									No. Cancel
+								</Button>
+							</DialogClose>
+						</DialogFooter>
+					</DialogContent>
+				</Dialog>
+			</section>
 		</section>
 	);
 }
@@ -945,8 +1049,11 @@ export const Route = createFileRoute('/projects_/$projectId/settings')({
 	},
 	async loader({ params }) {
 		const project = await projectsService.getProject(params.projectId);
-		// TODO handle error, and in other places too
-		return { project };
+		// TODO handle error, and in other loaders too
+		const canManageProject = await authService.ensureUserCanAccess(
+			'Project Settings|MANAGE',
+		);
+		return { project, canManageProject };
 	},
 	component: ProjectSettings,
 });
@@ -979,7 +1086,7 @@ const tabs = [
 ];
 
 function ProjectSettings() {
-	const { project } = Route.useLoaderData();
+	const { project, canManageProject } = Route.useLoaderData();
 
 	return (
 		<DashboardLayout showSidebar={true}>
@@ -1004,10 +1111,13 @@ function ProjectSettings() {
 								))}
 							</TabsList>
 
-							<div className="w-full border">
+							<div className="w-full">
 								{tabs.map(tab => (
 									<TabsContent key={tab.value} value={tab.value}>
-										<tab.component project={project} />
+										<tab.component
+											project={project}
+											canManageProject={canManageProject}
+										/>
 									</TabsContent>
 								))}
 							</div>
