@@ -64,3 +64,53 @@ export async function getProject(
 
 	return res.data;
 }
+
+type UpdateProjectParams = {
+	name: string;
+	type: 'incoming' | 'outgoing';
+	config: {
+		strategy?: {
+			duration: number;
+			retry_count: number;
+			type: 'linear' | 'exponential';
+		};
+		signature?: {
+			header: string;
+			versions: Array<{
+				hash: 'SHA256' | 'SHA512';
+				encoding: 'base64' | 'hex';
+			}>;
+		};
+		ratelimit?: {
+			count: number;
+			duration: number;
+		};
+		search_policy?: `${string}h`;
+		disable_endpoint: boolean;
+		multiple_endpoint_subscriptions: boolean;
+		ssl?: {
+			enforce_secure_endpoints: boolean;
+		};
+		meta_event?: {
+			event_type: string[] | null;
+			is_enabled: boolean;
+			secret: string;
+			type: string;
+			url: string;
+		};
+	};
+};
+
+export async function updateProject(
+	update: UpdateProjectParams,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<Project>({
+		method: 'put',
+		url: '',
+		body: update,
+		level: 'org_project',
+	});
+
+	return res.data;
+}

@@ -11,7 +11,6 @@ export interface Project {
 	config: {
 		disable_endpoint: boolean;
 		retention_policy_enabled: boolean;
-		DisableEndpoint: boolean;
 		replay_attacks: boolean;
 		search_policy: string;
 		ratelimit: {
@@ -19,7 +18,7 @@ export interface Project {
 			duration: number;
 		};
 		strategy: {
-			type: string;
+			type: 'linear' | 'exponential';
 			retry_count: number;
 			duration: number;
 		};
@@ -27,9 +26,7 @@ export interface Project {
 			header: string;
 			versions: Version[];
 		};
-		ssl: {
-			enforce_secure_endpoints: boolean;
-		};
+		ssl: Ssl;
 		meta_event: {
 			event_type: string[] | null;
 			is_enabled: boolean;
@@ -37,6 +34,7 @@ export interface Project {
 			type: string;
 			url: string;
 		};
+		multiple_endpoint_subscriptions: boolean;
 		// retention_policy: {
 		// 	policy: string;
 		// 	search_policy: string;
@@ -118,7 +116,7 @@ interface Config {
 	ratelimit: Ratelimit;
 	strategy: Strategy;
 	signature: Signature;
-	meta_event: any;
+	meta_event: MetaEvent;
 }
 
 interface Ssl {

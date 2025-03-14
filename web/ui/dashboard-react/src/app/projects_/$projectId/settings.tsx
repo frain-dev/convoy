@@ -1,20 +1,19 @@
 import { z } from 'zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { CopyIcon } from 'lucide-react';
+import { Bot, Home, Settings, User } from 'lucide-react';
 
 import {
-	Dialog,
-	DialogTrigger,
-	DialogContent,
-	DialogTitle,
-	DialogClose,
-	DialogHeader,
-	DialogFooter,
-} from '@/components/ui/dialog';
+	Form,
+	FormField,
+	FormItem,
+	FormLabel,
+	FormControl,
+	FormMessageWithErrorIcon,
+} from '@/components/ui/form';
 import {
 	Accordion,
 	AccordionContent,
@@ -28,53 +27,24 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
-import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-	FormField,
-	FormItem,
-	FormLabel,
-	FormControl,
-	FormMessageWithErrorIcon,
-} from '@/components/ui/form';
 import { DashboardLayout } from '@/components/dashboard';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import { cn } from '@/lib/utils';
-import * as authService from '@/services/auth.service';
+import { useProjectStore } from '@/store/index';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as projectsService from '@/services/projects.service';
 
-import modalCloseIcon from '../../../assets/svg/modal-close-icon.svg';
-import successAnimation from '../../../assets/img/success.gif';
+import type { Project } from '@/models/project.model';
 
-export const Route = createFileRoute('/projects_/new')({
-	beforeLoad({ context }) {
-		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
-	},
-	async loader() {
-		const userPerms = await authService.getUserPermissions();
-
-		return {
-			canCreateProject: userPerms.includes('Project Settings|MANAGE'),
-		};
-	},
-	component: CreateNewProject,
-});
-
-const CreateProjectFormSchema = z.object({
+const ProjectConfigFormSchema = z.object({
 	name: z
 		.string({
 			required_error: 'Project name is required',
 		})
 		.min(1, 'Project name is required'),
-	type: z
-		.enum(['incoming', 'outgoing', ''], {
-			required_error: 'Please select a project type',
-		})
-		.refine(v => v.length != 0, {
-			message: 'Choose a project webhook type',
-		}),
 	config: z
 		.object({
 			search_policy: z
@@ -83,7 +53,11 @@ const CreateProjectFormSchema = z.object({
 					search_policy: z
 						.string()
 						.optional()
-						.transform(v => (!v?.length ? undefined : `${v}h`)),
+						.transform(v => {
+							if (!v?.length) return undefined;
+							if (v.endsWith('h')) return v;
+							return `${v}h`;
+						}),
 				})
 				.transform(search => (search?.isEnabled ? search : undefined))
 				.refine(
@@ -227,70 +201,65 @@ const CreateProjectFormSchema = z.object({
 		.optional(),
 });
 
-function CreateNewProject() {
-	const [hasCreatedProject, setHasCreatedProject] = useState(false);
-	const [isCreatingProject, setIsCreatingProject] = useState(false);
-	const [projectkey, setProjectkey] = useState('');
-	const { canCreateProject } = Route.useLoaderData();
-	const form = useForm<z.infer<typeof CreateProjectFormSchema>>({
-		resolver: zodResolver(CreateProjectFormSchema),
+function ProjectConfig(props: { project: Project }) {
+	const [_project, set_Project] = useState(props.project);
+	const { setProject, setProjects } = useProjectStore();
+	const [isUpdatingProject, setIsUpdatingProject] = useState(false);
+	const form = useForm<z.infer<typeof ProjectConfigFormSchema>>({
+		resolver: zodResolver(ProjectConfigFormSchema),
 		defaultValues: {
-			name: '',
-			type: '',
+			name: _project.name,
 			config: {
 				search_policy: {
-					isEnabled: false,
-					search_policy: '',
+					isEnabled: !!_project.config.search_policy.length,
+					search_policy: _project.config.search_policy,
 				},
 				ratelimit: {
-					isEnabled: false,
-					// @ts-expect-error the input values are strings, so this is correct. There is transform that converts this to a number
-					count: '',
-					// @ts-expect-error the input values are strings, so this is correct. There is transform that converts this to a number
-					duration: '',
+					isEnabled: true,
+					// @ts-expect-error this works as the input elements require this type
+					count: `${_project.config.ratelimit.count}`,
+					// @ts-expect-error this works as the input elements require this type
+					duration: `${_project.config.ratelimit.duration}`,
 				},
 				strategy: {
-					isEnabled: false,
-					// @ts-expect-error the input values are strings, so this is correct. There is transform that converts this to a number
-					duration: '',
-					// @ts-expect-error the input values are strings, so this is correct. There is transform that converts this to a number
-					retry_count: '',
-					type: 'linear',
+					isEnabled: true,
+					// @ts-expect-error this works as the input elements require this type
+					duration: `${_project.config.strategy.duration}`,
+					// @ts-expect-error this works as the input elements require this type
+					retry_count: `${_project.config.strategy.retry_count}`,
+					type: _project.config.strategy.type,
 				},
 				signature: {
-					isEnabled: false,
-					header: '',
-					encoding: '',
-					hash: '',
+					isEnabled: _project.type == 'outgoing',
+					header: _project.config.signature.header,
+					// @ts-expect-error a default value exists, even for incoming projects
+					encoding: _project.config.signature.versions.at(0)?.encoding,
+					// @ts-expect-error a default value exists, even for incoming projects
+					hash: _project.config.signature.versions.at(0)?.hash,
 				},
 			},
 		},
 		mode: 'onTouched',
 	});
-
-	const selectedWebhookType = form.watch('type');
 	const shouldShowRetryConfig = form.watch('config.strategy.isEnabled');
 	const shouldShowRateLimit = form.watch('config.ratelimit.isEnabled');
 	const shouldShowSearchPolicy = form.watch('config.search_policy.isEnabled');
 	const shouldShowSigFormat = form.watch('config.signature.isEnabled');
 
-	useEffect(() => {
-		if (selectedWebhookType != 'outgoing') {
-			form.setValue('config.signature.isEnabled', false);
-		}
-	}, [selectedWebhookType]);
+	async function reloadProjects(p: Project) {
+		const projects = await projectsService.getProjects();
+		setProjects(projects);
+		setProject(p);
+		set_Project(p);
+	}
 
-	async function createProject(
-		values: z.infer<typeof CreateProjectFormSchema>,
+	async function updateProject(
+		values: z.infer<typeof ProjectConfigFormSchema>,
 	) {
-		setIsCreatingProject(true);
+		setIsUpdatingProject(true);
 		let payload = {
 			name: values.name,
-			type: values.type as Exclude<
-				z.infer<typeof CreateProjectFormSchema>['type'],
-				''
-			>,
-			config: {} as z.infer<typeof CreateProjectFormSchema>['config'],
+			config: {} as z.infer<typeof ProjectConfigFormSchema>['config'],
 		};
 
 		// @ts-expect-error it works. source: trust the code
@@ -314,81 +283,57 @@ function CreateNewProject() {
 		}, payload);
 
 		try {
-			const { api_key } = await projectsService.createProject({
+			const updated = await projectsService.updateProject({
 				name: payload.name,
-				type: payload.type,
-				// @ts-expect-error it works. source: track/debug the code
+				type: _project.type,
 				config: {
 					...payload.config,
-					...(payload.config?.search_policy?.search_policy && {
-						search_policy: payload.config?.search_policy
-							?.search_policy as `${string}h`,
-					}),
-					...(payload.config?.signature && {
-						signature: {
-							header: payload.config.signature.header,
-							versions: [
-								{
-									hash: payload.config.signature.hash,
-									encoding: payload.config.signature.encoding,
+					search_policy: (payload.config?.search_policy?.isEnabled
+						? payload.config.search_policy.search_policy
+						: _project.config.search_policy) as `${string}h`,
+					// @ts-expect-error it has to be this way for the API
+					signature: payload.config?.signature
+						? {
+								signature: {
+									header: payload.config.signature.header,
+									versions: [
+										{
+											hash: payload.config.signature.hash,
+											encoding: payload.config.signature.encoding,
+										},
+									],
 								},
-							],
-						},
-					}),
+							}
+						: _project.config.signature,
+					disable_endpoint: _project.config.disable_endpoint,
+					multiple_endpoint_subscriptions:
+						_project.config.multiple_endpoint_subscriptions,
+					ssl: _project.config.ssl,
+					meta_event: _project.config.meta_event,
 				},
 			});
-			setProjectkey(api_key.key);
-			setHasCreatedProject(true);
-			form.reset();
+
+			await reloadProjects(updated);
 		} catch (error) {
 			// TODO: notify UI of error
 			console.error(error);
+			debugger;
 		} finally {
-			setIsCreatingProject(false);
+			setIsUpdatingProject(false);
 		}
 	}
 
-	const webhookTypeOptions = [
-		{
-			type: 'incoming',
-			desc: 'Create an incoming webhooks project to proxy events from third-party providers to your endpoints.',
-		},
-		{
-			type: 'outgoing',
-			desc: 'Create an outgoing webhooks project to publish events to your customer-provided endpoints.',
-		},
-	];
-
 	return (
-		<DashboardLayout showSidebar={false}>
-			<section className="flex flex-col p-2 max-w-[770px] m-auto my-4">
-				<div className="flex justify-start items-center gap-2">
-					<Link
-						to="/projects"
-						className="flex justify-center items-center p-2 bg-new.primary-25 rounded-8px"
-						activeProps={{}}
-					>
-						<img
-							src={modalCloseIcon}
-							alt="go to projects page"
-							className="h-3 w-3 "
-						/>
-					</Link>
-					<h1 className="font-semibold text-sm">Create Project</h1>
-				</div>
-
-				<p className="text-xs/5 text-neutral-11 my-3">
-					A project represents the top level namespace for grouping event
-					sources, applications, endpoints and events.
-				</p>
-
+		<section className="flex flex-col">
+			<h1>Project Configuration</h1>
+			<div className="w-full">
 				<Form {...form}>
 					<form
 						onSubmit={(...args) =>
-							void form.handleSubmit(createProject)(...args)
+							void form.handleSubmit(updateProject)(...args)
 						}
 					>
-						<div className="p-6 mb-6 border border-new.primary-50 rounded-8px">
+						<div className="flex flex-col w-full">
 							<FormField
 								control={form.control}
 								name="name"
@@ -417,53 +362,9 @@ function CreateNewProject() {
 								)}
 							/>
 
-							<FormField
-								control={form.control}
-								name="type"
-								render={({ field }) => (
-									<FormItem className="w-full relative mb-6 block">
-										<p className="text-xs/5 text-neutral-9 mb-2">
-											Project type
-										</p>
-										<div className="flex w-full gap-x-6">
-											{webhookTypeOptions.map(({ type, desc }) => {
-												return (
-													<FormControl className="w-full " key={type}>
-														<label
-															className={cn(
-																'cursor-pointer border border-primary-100 transition-all ease-in duration-200 flex items-start gap-x-2 p-4 rounded-sm',
-																field.value == type
-																	? 'border-new.primary-300 bg-[#FAFAFE]'
-																	: 'border-neutral-5',
-															)}
-														>
-															<Input
-																type="radio"
-																{...field}
-																value={type}
-																className="shadow-none h-4 w-fit"
-															/>
-															<div className="flex flex-col gap-y-1">
-																<h4 className="w-full text-xs text-neutral-10 font-semibold capitalize">
-																	{type} webhooks
-																</h4>
-																<p className="text-neutral-11 text-xs/5 font-normal">
-																	{desc}
-																</p>
-															</div>
-														</label>
-													</FormControl>
-												);
-											})}
-										</div>
-										<FormMessageWithErrorIcon />
-									</FormItem>
-								)}
-							/>
-
 							<div className="flex justify-between gap-4 my-2 w-[90%]">
 								<label className="flex items-center gap-2 cursor-pointer">
-									{/* TODO you may want to make this into a component */}
+									{/* TODO you may want to make this label into a component */}
 									<FormField
 										control={form.control}
 										name="config.strategy.isEnabled"
@@ -598,7 +499,7 @@ function CreateNewProject() {
 												<FormControl>
 													<div className="relative">
 														<input
-															disabled={selectedWebhookType !== 'outgoing'}
+															disabled={_project.type !== 'outgoing'}
 															type="checkbox"
 															className=" peer
     appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
@@ -630,17 +531,19 @@ function CreateNewProject() {
 									<span
 										className={cn(
 											'block text-neutral-9 text-xs',
-											selectedWebhookType != 'outgoing' ? 'opacity-50' : '',
+											_project.type != 'outgoing' ? 'opacity-50' : '',
 										)}
 									>
 										Signature Format
 									</span>
 								</label>
 							</div>
+						</div>
 
+						<div>
 							<Accordion
 								type="multiple"
-								className="w-full transition-all duration-300 "
+								className="w-full transition-all duration-300 mb-6"
 							>
 								{shouldShowRetryConfig ? (
 									<AccordionItem value="retry-config">
@@ -662,10 +565,13 @@ function CreateNewProject() {
 																	Mechanism
 																</FormLabel>
 															</div>
-															<Select onValueChange={field.onChange}>
+															<Select
+																onValueChange={field.onChange}
+																defaultValue={field.value}
+															>
 																<FormControl>
 																	<SelectTrigger>
-																		<SelectValue />
+																		<SelectValue defaultValue={field.value} />
 																	</SelectTrigger>
 																</FormControl>
 																<SelectContent>
@@ -895,7 +801,7 @@ function CreateNewProject() {
 									</AccordionItem>
 								) : null}
 
-								{selectedWebhookType == 'outgoing' && shouldShowSigFormat ? (
+								{_project.type == 'outgoing' && shouldShowSigFormat ? (
 									<AccordionItem value="signature-format">
 										<AccordionTrigger className="py-2 text-xs text-neutral-9 hover:no-underline">
 											Signature Format
@@ -943,7 +849,10 @@ function CreateNewProject() {
 																	Encoding
 																</FormLabel>
 															</div>
-															<Select onValueChange={field.onChange}>
+															<Select
+																onValueChange={field.onChange}
+																defaultValue={field.value}
+															>
 																<FormControl>
 																	<SelectTrigger>
 																		<SelectValue />
@@ -979,7 +888,10 @@ function CreateNewProject() {
 																	Hash
 																</FormLabel>
 															</div>
-															<Select onValueChange={field.onChange}>
+															<Select
+																onValueChange={field.onChange}
+																defaultValue={field.value}
+															>
 																<FormControl>
 																	<SelectTrigger>
 																		<SelectValue />
@@ -1013,75 +925,96 @@ function CreateNewProject() {
 
 						<div className="flex justify-end">
 							<Button
-								disabled={
-									!canCreateProject ||
-									!form.formState.isValid ||
-									isCreatingProject
-								}
+								disabled={!form.formState.isValid || isUpdatingProject}
 								variant="ghost"
 								className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
 							>
-								Create Project
+								Save Changes
 							</Button>
 						</div>
 					</form>
 				</Form>
-			</section>
-			<Dialog open={hasCreatedProject}>
-				<DialogTrigger></DialogTrigger>
-				<DialogContent
-					className="sm:max-w-[432px] rounded-lg"
-					aria-describedby={undefined}
-				>
-					<DialogHeader>
-						<DialogTitle className="flex flex-col justify-center items-center">
-							<img src={successAnimation} alt="warning" className="w-28" />
-							<span className="text-sm font-semibold">
-								Project Created Successfully
-							</span>
-						</DialogTitle>
-						<div className="flex flex-col items-center gap-y-3">
-							<div className="flex flex-col justify-center items-center font-normal text-neutral-11 text-xs/5">
-								<span>Your API Key has also been created.</span>
-								<span>Please copy this key and save it somewhere safe.</span>
-							</div>
+			</div>
+		</section>
+	);
+}
 
-							<div className="flex items-center justify-between w-[400px] h-[50px] border border-neutral-a3 bg-[#F7F9FC] pr-2 pl-3 rounded-md">
-								<span className="text-xs text-neutral-11 font-normal truncate">
-									{projectkey}
-								</span>
-								<Button
-									type="button"
-									variant="ghost"
-									size="sm"
-									className="asbolute right-[1%] top-0 h-full py-2 hover:bg-transparent pr-1 pl-0"
-									onClick={() => {
-										window.navigator.clipboard.writeText(projectkey).then();
-										// TODO show toast message on copy successful
-									}}
-								>
-									<CopyIcon className="opacity-50" aria-hidden="true" />
-									<span className="sr-only">copy project key</span>
-								</Button>
+export const Route = createFileRoute('/projects_/$projectId/settings')({
+	beforeLoad({ context }) {
+		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
+	},
+	async loader({ params }) {
+		const project = await projectsService.getProject(params.projectId);
+		// TODO handle error, and in other places too
+		return { project };
+	},
+	component: ProjectSettings,
+});
+
+const tabs = [
+	{
+		name: 'Projects',
+		value: 'projects',
+		icon: Home,
+		component: ProjectConfig,
+	},
+	{
+		name: 'Endpoints',
+		value: 'endpoints',
+		icon: User,
+		component: ProjectConfig,
+	},
+	{
+		name: 'Meta Events',
+		value: 'meta-events',
+		icon: Bot,
+		component: ProjectConfig,
+	},
+	{
+		name: 'Secrets',
+		value: 'secrets',
+		icon: Settings,
+		component: ProjectConfig,
+	},
+];
+
+function ProjectSettings() {
+	const { project } = Route.useLoaderData();
+
+	return (
+		<DashboardLayout showSidebar={true}>
+			<div className="">
+				<section className="flex flex-col mx-4 ">
+					<h1 className="">Project Settings</h1>
+					<div>
+						<Tabs
+							orientation="vertical"
+							defaultValue={tabs[0].value}
+							className="w-full flex items-start gap-4 justify-center"
+						>
+							<TabsList className="shrink-0 grid grid-cols-1 min-w-[20%] p-0 gap-y-2 bg-background">
+								{tabs.map(tab => (
+									<TabsTrigger
+										key={tab.value}
+										value={tab.value}
+										className="border-l-2 border-transparent justify-start rounded-none data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:bg-primary/5 py-1.5"
+									>
+										<tab.icon className="h-5 w-5 me-2" /> {tab.name}
+									</TabsTrigger>
+								))}
+							</TabsList>
+
+							<div className="w-full border">
+								{tabs.map(tab => (
+									<TabsContent key={tab.value} value={tab.value}>
+										<tab.component project={project} />
+									</TabsContent>
+								))}
 							</div>
-						</div>
-					</DialogHeader>
-					<DialogFooter className="flex justify-center items-center">
-						<DialogClose asChild>
-							<Button
-								onClick={() => {
-									setHasCreatedProject(false);
-								}}
-								type="button"
-								variant="ghost"
-								className="hover:bg-new.primary-400 text-white-100 hover:text-white-100 bg-new.primary-400 px-3 py-4 text-xs"
-							>
-								Done
-							</Button>
-						</DialogClose>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+						</Tabs>
+					</div>
+				</section>
+			</div>
 		</DashboardLayout>
 	);
 }
