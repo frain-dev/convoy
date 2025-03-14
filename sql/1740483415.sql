@@ -44,31 +44,5 @@ SELECT
 FROM convoy.subscriptions
 WHERE deleted_at IS NULL;
 
-create unique index if not exists idx_subscriptions_endpoint_id_project_id
-    on convoy.subscriptions (project_id, endpoint_id)
-    where deleted_at is null;
-
--- +migrate Down
-WITH catch_all_filters AS (
-    SELECT
-        subscription_id,
-        headers,
-        body,
-        raw_headers,
-        raw_body
-    FROM convoy.filters
-    WHERE event_type = '*'
-)
-UPDATE convoy.subscriptions s
-SET
-    filter_config_filter_headers = c.headers,
-    filter_config_filter_body = c.body,
-    filter_config_filter_raw_headers = c.raw_headers,
-    filter_config_filter_raw_body = c.raw_body
-FROM catch_all_filters c
-WHERE s.id = c.subscription_id
-  AND s.deleted_at IS NULL;
-
 -- +migrate Down
 DROP TABLE IF EXISTS convoy.filters;
-drop index if exists convoy.idx_subscriptions_endpoint_id_project_id;
