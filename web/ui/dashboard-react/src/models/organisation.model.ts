@@ -21,7 +21,7 @@ export interface Organisation {
 	OwnerID: string;
 	name: string;
 	custom_domain: null | string;
-	assigned_domain: null | String;
+	assigned_domain: null | string;
 	/**
 	 * Date string
 	 */

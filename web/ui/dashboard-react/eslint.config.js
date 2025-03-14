@@ -16,7 +16,7 @@ export default tseslint.config(
 			tseslint.configs.recommended,
 			// ...tseslint.configs.strictTypeChecked
 		],
-		parser: '@typescript-eslint/parser',
+		// parser: '@typescript-eslint/parser',
 		files: ['**/*.{ts,tsx}'],
 		languageOptions: {
 			ecmaVersion: 'latest',

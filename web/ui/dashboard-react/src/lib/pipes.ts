@@ -7,9 +7,8 @@ export function getInitials(names: Array<string>) {
 	return initials[0] + initials[initials.length - 1];
 }
 
-
 export function truncateProjectName(name: string) {
-	let formattedName = name.substring(0, 27);
+	const formattedName = name.substring(0, 27);
 	if (name > formattedName) return formattedName + '...';
 	return formattedName;
 }

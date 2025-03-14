@@ -81,24 +81,23 @@ function ProjectIndexPage() {
 				onOrgCreated={reloadOrganisations}
 				isDialogOpen={isDialogOpen}
 				setIsDialogOpen={setIsDialogOpen}
-				children={
-					<Button
-						disabled={!canCreateOrg}
-						onClick={() => {
-							setIsDialogOpen(isOpen => !isOpen);
-						}}
-						variant="ghost"
-						className="flex justify-center items-center hover:bg-new.primary-400 hover:text-white-100 bg-new.primary-400 mt-10"
-					>
-						<img
-							className="w-[20px] h-[20px]"
-							src={plusCircularIcon}
-							alt="create organisation"
-						/>
-						<p className="text-white-100 text-xs">Create Organisation</p>
-					</Button>
-				}
-			/>
+			>
+				<Button
+					disabled={!canCreateOrg}
+					onClick={() => {
+						setIsDialogOpen(isOpen => !isOpen);
+					}}
+					variant="ghost"
+					className="flex justify-center items-center hover:bg-new.primary-400 hover:text-white-100 bg-new.primary-400 mt-10"
+				>
+					<img
+						className="w-[20px] h-[20px]"
+						src={plusCircularIcon}
+						alt="create organisation"
+					/>
+					<p className="text-white-100 text-xs">Create Organisation</p>
+				</Button>
+			</CreateOrganisation>
 		);
 
 	if (!project) {

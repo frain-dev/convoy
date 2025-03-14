@@ -90,7 +90,7 @@ export function CreateOrganisationDialog(props: CreateOrganisationDialogProps) {
 									<FormItem className="w-full relative mb-6 block">
 										<div className="w-full mb-2 flex items-center justify-between">
 											<FormLabel className="text-xs/5 text-neutral-9">
-												What is your business's name?
+												What is your business&apos;s name?
 											</FormLabel>
 										</div>
 										<FormControl>

@@ -269,6 +269,7 @@ function SignUpWithSAMLButton() {
 			window.open(data.redirectUrl, '_blank');
 		} catch (err) {
 			// TODO show user on the UI
+			console.error(err);
 			throw err;
 		}
 	}

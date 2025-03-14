@@ -317,7 +317,6 @@ function ProjectConfig(props: { project: Project }) {
 		} catch (error) {
 			// TODO: notify UI of error
 			console.error(error);
-			debugger;
 		} finally {
 			setIsUpdatingProject(false);
 		}

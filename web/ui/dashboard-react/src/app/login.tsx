@@ -189,6 +189,7 @@ function LoginWithSAMLButton() {
 			window.open(redirectUrl);
 		} catch (error) {
 			// TODO should notify user here with UI
+			console.error(error);
 			throw error;
 		}
 	}
