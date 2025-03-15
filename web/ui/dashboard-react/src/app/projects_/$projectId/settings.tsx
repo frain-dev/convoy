@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
-import { Bot, Home, Settings, User } from 'lucide-react';
+import { Bot, Home, Settings, User, Plus } from 'lucide-react';
 
 import {
 	Form,
@@ -14,6 +14,15 @@ import {
 	FormControl,
 	FormMessageWithErrorIcon,
 } from '@/components/ui/form';
+import {
+	Table,
+	TableBody,
+	TableCaption,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@/components/ui/table';
 import {
 	Dialog,
 	DialogClose,
@@ -43,6 +52,7 @@ import { DashboardLayout } from '@/components/dashboard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import { cn } from '@/lib/utils';
+import { toMMMDDYYYY } from '@/lib/pipes';
 import { useProjectStore } from '@/store/index';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as authService from '@/services/auth.service';
@@ -228,7 +238,12 @@ function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 			config: {
 				search_policy: {
 					isEnabled: !!_project.config.search_policy.length,
-					search_policy: _project.config.search_policy,
+					search_policy: _project.config.search_policy.length
+						? _project.config.search_policy.substring(
+								0,
+								_project.config.search_policy.length - 1,
+							)
+						: '',
 				},
 				ratelimit: {
 					isEnabled: true,
@@ -304,9 +319,8 @@ function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 				type: _project.type,
 				config: {
 					...payload.config,
-					search_policy: (payload.config?.search_policy?.isEnabled
-						? payload.config.search_policy.search_policy
-						: _project.config.search_policy) as `${string}h`,
+					search_policy: payload.config?.search_policy
+						?.search_policy as `{string}h`,
 					// @ts-expect-error it has to be this way for the API
 					signature: payload.config?.signature
 						? {
@@ -1040,6 +1054,154 @@ function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 	);
 }
 
+function groupItemsByDate<T>(
+	items: Array<T & { created_at: string }>,
+	sortOrder: 'desc' | 'asc' = 'desc',
+) {
+	const groupsObj = Object.groupBy(items, ({ created_at }) =>
+		toMMMDDYYYY(created_at),
+	);
+
+	const sortedGroup = new Map<string, typeof items>();
+
+	Object.keys(groupsObj)
+		.sort((dateA, dateB) => {
+			if (sortOrder == 'desc') {
+				return Number(new Date(dateB)) - Number(new Date(dateA));
+			}
+			return Number(new Date(dateA)) - Number(new Date(dateB));
+		})
+		.reduce((acc, dateKey) => {
+			return acc.set(dateKey, groupsObj[dateKey] as typeof items);
+		}, sortedGroup);
+
+	return sortedGroup;
+}
+
+function SignatureHistoryConfig(props: {
+	project: Project;
+	canManageProject: boolean;
+}) {
+	const { project } = props;
+
+	if (project.type == 'incoming') return null;
+
+	return (
+		<section>
+			<div className="flex justify-between items-center mb-6">
+				<h1 className="font-bold">Project Signature History</h1>
+				<Button
+					disabled={!props.canManageProject}
+					size={'sm'}
+					variant="ghost"
+					className="hover:bg-new.primary-400 px-3 text-xs hover:text-white-100 bg-new.primary-400 flex justify-between items-center"
+				>
+					<Plus className="stroke-white-100" />
+					<p className=" text-white-100">Signature</p>
+				</Button>
+			</div>
+
+			<div>
+				<Table>
+					<TableCaption className="sr-only">
+						{project.name} signature history
+					</TableCaption>
+					<TableHeader>
+						<TableRow className="">
+							<TableHead className=" uppercase text-new.black font-medium text-xs">
+								header
+							</TableHead>
+							<TableHead className="uppercase text-new.black font-medium text-xs">
+								version
+							</TableHead>
+							<TableHead className="uppercase text-new.black font-medium text-xs">
+								hash
+							</TableHead>
+							<TableHead className="uppercase text-new.black font-medium text-xs">
+								encoding
+							</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
+						{Array.from(
+							groupItemsByDate(
+								project.config.signature.versions,
+								// FOR DEMO
+								// .concat([
+								// 	{
+								// 		uid: 'mar13EZKT29P9T6FYWPVS0KFY',
+								// 		hash: 'SHA256',
+								// 		encoding: 'hex',
+								// 		created_at: '2025-03-13T09:13:13.595060439Z',
+								// 	},
+								// 	{
+								// 		uid: 'mar13EZKT29P9T6FYWPVS0KFp',
+								// 		hash: 'SHA512',
+								// 		encoding: 'hex',
+								// 		created_at: '2025-03-13T08:13:13.595060439Z',
+								// 	},
+								// 	{
+								// 		uid: 'feb130ZKT29P9T6FYWPVS0KFY',
+								// 		hash: 'SHA256',
+								// 		encoding: 'hex',
+								// 		created_at: '2025-02-13T06:13:13.595060439Z',
+								// 	},
+								// 	{
+								// 		uid: 'feb13EZKT29P9T6FYWPVS0KFY',
+								// 		hash: 'SHA512',
+								// 		encoding: 'hex',
+								// 		created_at: '2025-02-13T08:13:13.595060439Z',
+								// 	},
+								// 	{
+								// 		uid: 'jan13EZKT29P9T6FYWPVS0KFY',
+								// 		hash: 'SHA256',
+								// 		encoding: 'hex',
+								// 		created_at: '2025-01-13T06:13:13.595060439Z',
+								// 	},
+								// ]),
+							),
+						).map(([dateKey, sigs], i, arr) => {
+							const val = [
+								<TableRow
+									key={dateKey}
+									className="border-new.primary-25 border-t border-b-0 hover:bg-transparent"
+								>
+									<TableCell className="font-medium text-neutral-8">
+										{dateKey}
+									</TableCell>
+									<TableCell className="font-medium"></TableCell>
+									<TableCell className="font-medium"></TableCell>
+									<TableCell className="font-medium"></TableCell>
+								</TableRow>,
+							].concat(
+								sigs.map(sig => (
+									<TableRow
+										key={sig.uid}
+										className="duration-300 hover:bg-new.primary-25 transition-all py-3"
+									>
+										<TableCell className="font-medium">
+											{project.config.signature.header}
+										</TableCell>
+										<TableCell className="font-medium">
+											v{arr.length - i}
+										</TableCell>
+										<TableCell className="font-medium">{sig.hash}</TableCell>
+										<TableCell className="font-medium">
+											{sig.encoding}
+										</TableCell>
+									</TableRow>
+								)),
+							);
+
+							return val;
+						})}
+					</TableBody>
+				</Table>
+			</div>
+		</section>
+	);
+}
+
 export const Route = createFileRoute('/projects_/$projectId/settings')({
 	beforeLoad({ context }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
@@ -1057,28 +1219,46 @@ export const Route = createFileRoute('/projects_/$projectId/settings')({
 
 const tabs = [
 	{
-		name: 'Projects',
+		name: 'Project',
 		value: 'projects',
 		icon: Home,
 		component: ProjectConfig,
+		projectTypes: ['incoming', 'outgoing'],
+	},
+	{
+		name: 'Signature History',
+		value: 'signature-history',
+		icon: Home,
+		component: SignatureHistoryConfig,
+		projectTypes: ['outgoing'],
 	},
 	{
 		name: 'Endpoints',
 		value: 'endpoints',
 		icon: User,
 		component: ProjectConfig,
+		projectTypes: ['incoming', 'outgoing'],
 	},
 	{
 		name: 'Meta Events',
 		value: 'meta-events',
 		icon: Bot,
 		component: ProjectConfig,
+		projectTypes: ['incoming', 'outgoing'],
+	},
+	{
+		name: 'Event Types',
+		value: 'event-types',
+		icon: Home,
+		component: ProjectConfig,
+		projectTypes: ['outgoing'],
 	},
 	{
 		name: 'Secrets',
 		value: 'secrets',
 		icon: Settings,
 		component: ProjectConfig,
+		projectTypes: ['incoming', 'outgoing'],
 	},
 ];
 
@@ -1097,15 +1277,17 @@ function ProjectSettings() {
 							className="w-full flex items-start gap-4 justify-center"
 						>
 							<TabsList className="shrink-0 grid grid-cols-1 min-w-[20%] p-0 gap-y-2 bg-background">
-								{tabs.map(tab => (
-									<TabsTrigger
-										key={tab.value}
-										value={tab.value}
-										className="border-l-2 border-transparent justify-start rounded-none data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:bg-primary/5 py-1.5"
-									>
-										<tab.icon className="h-5 w-5 me-2" /> {tab.name}
-									</TabsTrigger>
-								))}
+								{tabs
+									.filter(tab => tab.projectTypes.includes(project.type))
+									.map(tab => (
+										<TabsTrigger
+											key={tab.value}
+											value={tab.value}
+											className="border-l-2 border-transparent justify-start rounded-none data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:bg-primary/5 py-1.5"
+										>
+											<tab.icon className="h-5 w-5 me-2" /> {tab.name}
+										</TabsTrigger>
+									))}
 							</TabsList>
 
 							<div className="w-full">
