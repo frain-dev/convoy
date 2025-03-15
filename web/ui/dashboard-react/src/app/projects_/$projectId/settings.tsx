@@ -310,15 +310,13 @@ function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 					// @ts-expect-error it has to be this way for the API
 					signature: payload.config?.signature
 						? {
-								signature: {
-									header: payload.config.signature.header,
-									versions: [
-										{
-											hash: payload.config.signature.hash,
-											encoding: payload.config.signature.encoding,
-										},
-									],
-								},
+								header: payload.config.signature.header,
+								versions: [
+									{
+										hash: payload.config.signature.hash,
+										encoding: payload.config.signature.encoding,
+									},
+								],
 							}
 						: _project.config.signature,
 					disable_endpoint: _project.config.disable_endpoint,
