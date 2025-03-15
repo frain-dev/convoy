@@ -38,7 +38,9 @@ func (h *Handler) GetEventTypes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &models.EventTypeListResponse{EventTypes: eventTypes}
+	resp := models.NewListResponse(eventTypes, func(eventType datastore.ProjectEventType) models.EventTypeResponse {
+		return models.EventTypeResponse{ProjectEventType: &eventType}
+	})
 	_ = render.Render(w, r, util.NewServerResponse("Event types fetched successfully", resp, http.StatusOK))
 }
 
@@ -91,7 +93,7 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &models.EventTypeResponse{EventType: pe}
+	resp := &models.EventTypeResponse{ProjectEventType: pe}
 	_ = render.Render(w, r, util.NewServerResponse("Event type created successfully", resp, http.StatusCreated))
 }
 
@@ -146,7 +148,7 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &models.EventTypeResponse{EventType: pe}
+	resp := &models.EventTypeResponse{ProjectEventType: pe}
 	_ = render.Render(w, r, util.NewServerResponse("Event type created successfully", resp, http.StatusAccepted))
 }
 
@@ -179,6 +181,6 @@ func (h *Handler) DeprecateEventType(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &models.EventTypeResponse{EventType: pe}
+	resp := &models.EventTypeResponse{ProjectEventType: pe}
 	_ = render.Render(w, r, util.NewServerResponse("Event type deprecated successfully", resp, http.StatusOK))
 }

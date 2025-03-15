@@ -347,10 +347,9 @@ export class CreateProjectComponent implements OnInit {
 		document.getElementById('projectForm')?.scroll({ top: 0, behavior: 'smooth' });
 	}
 
-	async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints' | 'multiEndpoints') {
+	async confirmToggleAction(event: any, actionType?: 'metaEvents' | 'endpoints') {
 		const disableValue = event.target.checked;
 		if (actionType === 'endpoints') disableValue ? await this.updateProject() : this.disableEndpointsDialog.nativeElement.showModal();
-		else if (actionType === 'multiEndpoints') disableValue ? this.mutliSubEndpointsDialog.nativeElement.showModal() : await this.updateProject();
 		else if (!disableValue && actionType === 'metaEvents') this.metaEventsDialog.nativeElement.showModal();
 	}
 
@@ -409,7 +408,7 @@ export class CreateProjectComponent implements OnInit {
 
 		try {
 			const response = await this.privateService.getEventTypes();
-			this.eventTypes = response.data.event_types ? response.data.event_types : [];
+			this.eventTypes = response.data;
 			return;
 		} catch (error) {
 			return;
