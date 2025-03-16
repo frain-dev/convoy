@@ -278,7 +278,7 @@ function CreateNewProject() {
 		if (selectedWebhookType != 'outgoing') {
 			form.setValue('config.signature.isEnabled', false);
 		}
-	}, [selectedWebhookType]);
+	}, [selectedWebhookType, form]);
 
 	async function createProject(
 		values: z.infer<typeof CreateProjectFormSchema>,
