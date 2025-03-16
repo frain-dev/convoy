@@ -339,6 +339,7 @@ const FormSchema = z.object({
 function ProjectsList() {
 	const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 	const { project, projects, setProject } = useProjectStore();
+	const navigate = useNavigate();
 
 	const form = useForm<z.infer<typeof FormSchema>>({
 		resolver: zodResolver(FormSchema),
@@ -394,7 +395,6 @@ function ProjectsList() {
 											<Command>
 												<CommandInput
 													placeholder={'Filter projects'}
-													className=""
 													onInput={e => {
 														form.setValue(
 															'project',
@@ -418,6 +418,7 @@ function ProjectsList() {
 																	onSelect={() => {
 																		setProject(p);
 																		setIsPopoverOpen(false);
+																		navigate({ to: '/projects' });
 																	}}
 																>
 																	<div className="flex items-center grow">
