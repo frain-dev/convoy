@@ -264,9 +264,13 @@ function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 					isEnabled: _project.type == 'outgoing',
 					header: _project.config.signature.header,
 					// @ts-expect-error a default value exists, even for incoming projects
-					encoding: _project.config.signature.versions.at(0)?.encoding,
+					encoding: _project.config.signature.versions.at(
+						_project.config.signature.versions.length - 1,
+					)?.encoding,
 					// @ts-expect-error a default value exists, even for incoming projects
-					hash: _project.config.signature.versions.at(0)?.hash,
+					hash: _project.config.signature.versions.at(
+						_project.config.signature.versions.length - 1,
+					)?.hash,
 				},
 			},
 		},
