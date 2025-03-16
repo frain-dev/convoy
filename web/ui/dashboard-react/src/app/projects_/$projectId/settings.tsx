@@ -12,6 +12,7 @@ import {
 	FormItem,
 	FormLabel,
 	FormControl,
+	FormDescription,
 	FormMessageWithErrorIcon,
 } from '@/components/ui/form';
 import {
@@ -55,6 +56,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/dashboard';
@@ -70,6 +72,21 @@ import * as projectsService from '@/services/projects.service';
 import type { Project } from '@/models/project.model';
 
 import warningAnimation from '../../../../assets/img/warning-animation.gif';
+
+export const Route = createFileRoute('/projects_/$projectId/settings')({
+	beforeLoad({ context }) {
+		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
+	},
+	async loader({ params }) {
+		const project = await projectsService.getProject(params.projectId);
+		// TODO handle error, and in other loaders too
+		const canManageProject = await authService.ensureUserCanAccess(
+			'Project Settings|MANAGE',
+		);
+		return { project, canManageProject };
+	},
+	component: ProjectSettings,
+});
 
 const ProjectConfigFormSchema = z.object({
 	name: z
@@ -1372,20 +1389,127 @@ function SignatureHistoryConfig(props: {
 	);
 }
 
-export const Route = createFileRoute('/projects_/$projectId/settings')({
-	beforeLoad({ context }) {
-		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
-	},
-	async loader({ params }) {
-		const project = await projectsService.getProject(params.projectId);
-		// TODO handle error, and in other loaders too
-		const canManageProject = await authService.ensureUserCanAccess(
-			'Project Settings|MANAGE',
-		);
-		return { project, canManageProject };
-	},
-	component: ProjectSettings,
+const EndpointsConfigFormSchema = z.object({
+	disable_endpoint: z.boolean(),
+	enforce_secure_endpoints: z.boolean(),
 });
+
+function EndpointsConfig(props: {
+	project: Project;
+	canManageProject: boolean;
+}) {
+	const { project, canManageProject } = props;
+	const [isUpdating, setIsUpdating] = useState(false);
+	const { setProject, setProjects, projects } = useProjectStore();
+
+	const form = useForm<z.infer<typeof EndpointsConfigFormSchema>>({
+		resolver: zodResolver(EndpointsConfigFormSchema),
+		defaultValues: {
+			disable_endpoint: project.config.disable_endpoint,
+			enforce_secure_endpoints: project.config.ssl.enforce_secure_endpoints,
+		},
+	});
+
+	async function updateDisableEndpoint(value: boolean) {
+		setIsUpdating(true);
+		try {
+			project.config.disable_endpoint = value;
+			// @ts-expect-error this works
+			const updated = await projectsService.updateProject(project);
+			setProjects(projects.map(p => (p.uid == updated.uid ? updated : p)));
+			setProject(updated);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsUpdating(false);
+		}
+	}
+
+	async function updateEnforceSecureEndpoints(value: boolean) {
+		setIsUpdating(true);
+		try {
+			project.config.ssl.enforce_secure_endpoints = value;
+			// @ts-expect-error this works
+			const updated = await projectsService.updateProject(project);
+			setProjects(projects.map(p => (p.uid == updated.uid ? updated : p)));
+			setProject(updated);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsUpdating(false);
+		}
+	}
+
+	return (
+		<section className="flex flex-col gap-4">
+			<h1 className="font-bold">Endpoint Configurations</h1>
+
+			<Form {...form}>
+				<form>
+					<div>
+						<div className="space-y-4">
+							<FormField
+								control={form.control}
+								name="disable_endpoint"
+								render={({ field }) => (
+									<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+										<div className="space-y-0.5">
+											<FormLabel className="font-semibold text-xs">
+												Disable Failing Endpoint
+											</FormLabel>
+											<FormDescription className="max-w-prose text-xs">
+												Toggling this configuration on will automatically
+												disable all endpoints in this project with failure
+												response until requests to them are manually retried
+											</FormDescription>
+										</div>
+										<FormControl>
+											<Switch
+												disabled={!canManageProject || isUpdating}
+												checked={field.value}
+												onCheckedChange={async e => {
+													field.onChange(e);
+													await updateDisableEndpoint(!field.value);
+												}}
+											/>
+										</FormControl>
+									</FormItem>
+								)}
+							/>
+							<FormField
+								control={form.control}
+								name="enforce_secure_endpoints"
+								render={({ field }) => (
+									<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+										<div className="space-y-0.5">
+											<FormLabel className="font-semibold text-xs">
+												Allow Only HTTPS Secure Endpoints
+											</FormLabel>
+											<FormDescription className="max-w-prose text-xs">
+												Toggling this will allow only HTTPS secure endpoints,
+												this allows only TLS connections to your endpoints.
+											</FormDescription>
+										</div>
+										<FormControl>
+											<Switch
+												disabled={!canManageProject || isUpdating}
+												checked={field.value}
+												onCheckedChange={async e => {
+													field.onChange(e);
+													await updateEnforceSecureEndpoints(!field.value);
+												}}
+											/>
+										</FormControl>
+									</FormItem>
+								)}
+							/>
+						</div>
+					</div>
+				</form>
+			</Form>
+		</section>
+	);
+}
 
 const tabs = [
 	{
@@ -1406,7 +1530,7 @@ const tabs = [
 		name: 'Endpoints',
 		value: 'endpoints',
 		icon: User,
-		component: ProjectConfig,
+		component: EndpointsConfig,
 		projectTypes: ['incoming', 'outgoing'],
 	},
 	{
