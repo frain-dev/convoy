@@ -1160,7 +1160,7 @@ function SignatureHistoryConfig(props: {
 								// 	},
 								// ]),
 							),
-						).map(([dateKey, sigs], i, arr) => {
+						).map(([dateKey, sigs]) => {
 							const val = [
 								<TableRow
 									key={dateKey}
@@ -1174,7 +1174,7 @@ function SignatureHistoryConfig(props: {
 									<TableCell className="font-medium"></TableCell>
 								</TableRow>,
 							].concat(
-								sigs.map(sig => (
+								sigs.map((sig, i) => (
 									<TableRow
 										key={sig.uid}
 										className="duration-300 hover:bg-new.primary-25 transition-all py-3"
@@ -1182,9 +1182,7 @@ function SignatureHistoryConfig(props: {
 										<TableCell className="font-medium">
 											{project.config.signature.header}
 										</TableCell>
-										<TableCell className="font-medium">
-											v{arr.length - i}
-										</TableCell>
+										<TableCell className="font-medium">v{i + 1}</TableCell>
 										<TableCell className="font-medium">{sig.hash}</TableCell>
 										<TableCell className="font-medium">
 											{sig.encoding}
