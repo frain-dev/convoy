@@ -124,7 +124,10 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				socketPort = cfg.Server.HTTP.SocketPort
 			}
 
-			srv := server.NewServer(socketPort, func() { h.Stop() })
+			srv, err := server.NewServer(socketPort, cfg.Dispatcher.CACertPath, func() { h.Stop() })
+			if err != nil {
+				return err
+			}
 
 			srv.SetHandler(handler)
 

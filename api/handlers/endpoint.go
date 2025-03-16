@@ -78,12 +78,13 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.CreateEndpointService{
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:    postgres.NewProjectRepo(h.A.DB),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
-		Licenser:       h.A.Licenser,
-		E:              e,
-		ProjectID:      project.UID,
+		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:     postgres.NewProjectRepo(h.A.DB),
+		PortalLinkRepo:  postgres.NewPortalLinkRepo(h.A.DB),
+		Licenser:        h.A.Licenser,
+		CACertTLSConfig: h.A.CACertTLSConfig,
+		E:               e,
+		ProjectID:       project.UID,
 	}
 
 	endpoint, err := ce.Run(r.Context())
@@ -315,13 +316,14 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.UpdateEndpointService{
-		Cache:        h.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(h.A.DB),
-		Licenser:     h.A.Licenser,
-		E:            e,
-		Endpoint:     endpoint,
-		Project:      project,
+		Cache:           h.A.Cache,
+		EndpointRepo:    postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:     postgres.NewProjectRepo(h.A.DB),
+		Licenser:        h.A.Licenser,
+		CACertTLSConfig: h.A.CACertTLSConfig,
+		E:               e,
+		Endpoint:        endpoint,
+		Project:         project,
 	}
 
 	endpoint, err = ce.Run(r.Context())

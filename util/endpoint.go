@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func ValidateEndpoint(s string, enforceSecure bool) (string, error) {
+func ValidateEndpoint(s string, enforceSecure bool, caCertTLSConfig *tls.Config) (string, error) {
 	if IsStringEmpty(s) {
 		return "", errors.New("please provide the endpoint url")
 	}
@@ -27,11 +27,21 @@ func ValidateEndpoint(s string, enforceSecure bool) (string, error) {
 			return "", errors.New("only https endpoints allowed")
 		}
 	case "https":
-		client := &http.Client{Timeout: 10 * time.Second, Transport: &http.Transport{
-			DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return tls.Dial(network, addr, &tls.Config{MinVersion: tls.VersionTLS12})
+		var tlsConfig = caCertTLSConfig
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+		}
+		client := &http.Client{
+			Timeout: 10 * time.Second,
+			Transport: &http.Transport{
+				DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+					dialer := &net.Dialer{}
+					return tls.DialWithDialer(dialer, network, addr, tlsConfig)
+				},
 			},
-		}}
+		}
 
 		_, err = client.Get(s)
 		if err != nil {

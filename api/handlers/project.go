@@ -23,7 +23,7 @@ func createProjectService(h *Handler) (*services.ProjectService, error) {
 	projectService, err := services.NewProjectService(
 		apiKeyRepo, projectRepo, eventRepo,
 		eventDeliveryRepo, h.A.Licenser,
-		eventTypesRepo,
+		eventTypesRepo, h.A.CACertTLSConfig,
 	)
 	if err != nil {
 		return nil, err

@@ -138,19 +138,23 @@ func startConvoyServer(a *cli.App) error {
 	}
 	lo.SetLevel(lvl)
 
-	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
+	srv, err := server.NewServer(cfg.Server.HTTP.Port, cfg.Dispatcher.CACertPath, func() {})
+	if err != nil {
+		return err
+	}
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:    flag,
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Logger:   lo,
-			Redis:    a.Redis,
-			Cache:    a.Cache,
-			Rate:     a.Rate,
-			Licenser: a.Licenser,
-			Cfg:      cfg,
+			FFlag:           flag,
+			DB:              a.DB,
+			Queue:           a.Queue,
+			Logger:          lo,
+			Redis:           a.Redis,
+			Cache:           a.Cache,
+			Rate:            a.Rate,
+			Licenser:        a.Licenser,
+			Cfg:             cfg,
+			CACertTLSConfig: srv.CACertTLSCfg,
 		})
 	if err != nil {
 		return err

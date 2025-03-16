@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"net/http"
@@ -19,10 +20,11 @@ import (
 )
 
 type CreateEndpointService struct {
-	PortalLinkRepo datastore.PortalLinkRepository
-	EndpointRepo   datastore.EndpointRepository
-	ProjectRepo    datastore.ProjectRepository
-	Licenser       license.Licenser
+	PortalLinkRepo  datastore.PortalLinkRepository
+	EndpointRepo    datastore.EndpointRepository
+	ProjectRepo     datastore.ProjectRepository
+	Licenser        license.Licenser
+	CACertTLSConfig *tls.Config
 
 	E         models.CreateEndpoint
 	ProjectID string
@@ -34,7 +36,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
 	}
 
-	url, err := util.ValidateEndpoint(a.E.URL, project.Config.SSL.EnforceSecureEndpoints)
+	url, err := util.ValidateEndpoint(a.E.URL, project.Config.SSL.EnforceSecureEndpoints, a.CACertTLSConfig)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}

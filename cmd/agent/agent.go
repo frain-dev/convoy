@@ -146,7 +146,10 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	lo.SetLevel(lvl)
 
 	// start events handler
-	srv := server.NewServer(cfg.Server.HTTP.AgentPort, func() {})
+	srv, err := server.NewServer(cfg.Server.HTTP.AgentPort, cfg.Dispatcher.CACertPath, func() {})
+	if err != nil {
+		return err
+	}
 
 	evHandler, err := api.NewApplicationHandler(
 		&types.APIOptions{
