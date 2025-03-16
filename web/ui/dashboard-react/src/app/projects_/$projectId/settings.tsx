@@ -15,6 +15,15 @@ import {
 	FormMessageWithErrorIcon,
 } from '@/components/ui/form';
 import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTrigger,
+	SheetTitle,
+	SheetClose,
+} from '@/components/ui/sheet';
+import {
 	Table,
 	TableBody,
 	TableCaption,
@@ -1082,27 +1091,221 @@ function groupItemsByDate<T>(
 	return sortedGroup;
 }
 
+const NewSignatureFormSchema = z.object({
+	encoding: z
+		.enum(['hex', 'base64', ''])
+		.optional()
+		.transform(v => (v?.length == 0 ? undefined : v))
+		.refine(
+			v => {
+				if (!v) return false;
+				return true;
+			},
+			{
+				message: 'Select encoding type',
+			},
+		),
+	hash: z
+		.enum(['SHA256', 'SHA512', ''])
+		.optional()
+		.transform(v => (v?.length == 0 ? undefined : v))
+		.refine(
+			v => {
+				if (!v) return false;
+				return true;
+			},
+			{
+				message: 'Please select hash',
+			},
+		),
+});
+
 function SignatureHistoryConfig(props: {
 	project: Project;
 	canManageProject: boolean;
 }) {
 	const { project } = props;
+	const [isAddingVersion, setIsAddingVersion] = useState(false);
+	const { setProjects, projects, setProject } = useProjectStore();
+	// TODO update UI on new project added
+
+	const form = useForm<z.infer<typeof NewSignatureFormSchema>>({
+		resolver: zodResolver(NewSignatureFormSchema),
+		defaultValues: {
+			encoding: '',
+			hash: '',
+		},
+		mode: 'onTouched',
+	});
+
+	async function addSignatureVersion(
+		version: z.infer<typeof NewSignatureFormSchema>,
+	) {
+		try {
+			setIsAddingVersion(true);
+			const updated = await projectsService.updateProject({
+				...project,
+				config: {
+					...project.config,
+					signature: {
+						...project.config.signature,
+						versions: [
+							// @ts-expect-error this works
+							...project.config.signature.versions.map(v => ({
+								encoding: v.encoding,
+								hash: v.hash,
+							})),
+							// @ts-expect-error this works
+							version,
+						],
+					},
+				},
+			});
+			setProjects(projects.map(p => (p.uid == updated.uid ? updated : p)));
+			setProject(updated);
+		} catch (err) {
+			console.error(err);
+		} finally {
+			setIsAddingVersion(false);
+		}
+	}
 
 	if (project.type == 'incoming') return null;
 
 	return (
 		<section>
 			<div className="flex justify-between items-center mb-6">
-				<h1 className="font-bold">Project Signature History</h1>
-				<Button
-					disabled={!props.canManageProject}
-					size={'sm'}
-					variant="ghost"
-					className="hover:bg-new.primary-400 px-3 text-xs hover:text-white-100 bg-new.primary-400 flex justify-between items-center"
-				>
-					<Plus className="stroke-white-100" />
-					<p className=" text-white-100">Signature</p>
-				</Button>
+				<h1 className="font-bold py-2">Project Signature History</h1>
+				<Sheet>
+					<SheetTrigger asChild>
+						<Button
+							disabled={!props.canManageProject}
+							size={'sm'}
+							variant="ghost"
+							className="hover:bg-new.primary-400 px-3 text-xs hover:text-white-100 bg-new.primary-400 flex justify-between items-center"
+						>
+							<Plus className="stroke-white-100" />
+							<p className=" text-white-100">Signature</p>
+						</Button>
+					</SheetTrigger>
+					<SheetContent className="w-[400px] px-0">
+						<SheetHeader className="text-start px-4">
+							<SheetTitle>New Signature</SheetTitle>
+							<SheetDescription className="sr-only">
+								Add a new signature
+							</SheetDescription>
+						</SheetHeader>
+						<hr className="my-6 border-neutral-5" />
+						<div className="px-4">
+							<Form {...form}>
+								<form
+									onSubmit={(...args) =>
+										void form.handleSubmit(addSignatureVersion)(...args)
+									}
+								>
+									<FormField
+										control={form.control}
+										name="encoding"
+										render={({ field }) => (
+											<FormItem className="w-full relative mb-6 block">
+												<div className="w-full mb-2 flex items-center justify-between">
+													<FormLabel className="text-xs/5 text-neutral-9">
+														Encoding
+													</FormLabel>
+												</div>
+												<Select
+													onValueChange={field.onChange}
+													defaultValue={field.value}
+												>
+													<FormControl>
+														<SelectTrigger>
+															<SelectValue />
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														<SelectItem
+															value="base64"
+															className="cursor-pointer"
+														>
+															base64
+														</SelectItem>
+														<SelectItem value="hex" className="cursor-pointer">
+															hex
+														</SelectItem>
+													</SelectContent>
+												</Select>
+												<FormMessageWithErrorIcon />
+											</FormItem>
+										)}
+									/>
+
+									<FormField
+										control={form.control}
+										name="hash"
+										render={({ field }) => (
+											<FormItem className="w-full relative mb-6 block">
+												<div className="w-full mb-2 flex items-center justify-between">
+													<FormLabel className="text-xs/5 text-neutral-9">
+														Hash
+													</FormLabel>
+												</div>
+												<Select
+													onValueChange={field.onChange}
+													defaultValue={field.value}
+												>
+													<FormControl>
+														<SelectTrigger>
+															<SelectValue />
+														</SelectTrigger>
+													</FormControl>
+													<SelectContent>
+														<SelectItem
+															value="SHA256"
+															className="cursor-pointer"
+														>
+															SHA256
+														</SelectItem>
+														<SelectItem
+															value="SHA512"
+															className="cursor-pointer"
+														>
+															SHA512
+														</SelectItem>
+													</SelectContent>
+												</Select>
+												<FormMessageWithErrorIcon />
+											</FormItem>
+										)}
+									/>
+
+									<div className="flex justify-end items-center gap-x-4">
+										<SheetClose asChild>
+											<Button
+												variant="ghost"
+												className="hover:bg-white-100 text-destructive hover:text-destructive border border-destructive text-xs hover:destructive"
+											>
+												Discard
+											</Button>
+										</SheetClose>
+
+										<Button
+											type="submit"
+											disabled={
+												!props.canManageProject ||
+												!form.formState.isValid ||
+												isAddingVersion
+											}
+											variant="ghost"
+											className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
+										>
+											Create
+										</Button>
+									</div>
+								</form>
+							</Form>
+						</div>
+					</SheetContent>
+				</Sheet>
 			</div>
 
 			<div>
@@ -1128,42 +1331,7 @@ function SignatureHistoryConfig(props: {
 					</TableHeader>
 					<TableBody>
 						{Array.from(
-							groupItemsByDate(
-								project.config.signature.versions,
-								// FOR DEMO
-								// .concat([
-								// 	{
-								// 		uid: 'mar13EZKT29P9T6FYWPVS0KFY',
-								// 		hash: 'SHA256',
-								// 		encoding: 'hex',
-								// 		created_at: '2025-03-13T09:13:13.595060439Z',
-								// 	},
-								// 	{
-								// 		uid: 'mar13EZKT29P9T6FYWPVS0KFp',
-								// 		hash: 'SHA512',
-								// 		encoding: 'hex',
-								// 		created_at: '2025-03-13T08:13:13.595060439Z',
-								// 	},
-								// 	{
-								// 		uid: 'feb130ZKT29P9T6FYWPVS0KFY',
-								// 		hash: 'SHA256',
-								// 		encoding: 'hex',
-								// 		created_at: '2025-02-13T06:13:13.595060439Z',
-								// 	},
-								// 	{
-								// 		uid: 'feb13EZKT29P9T6FYWPVS0KFY',
-								// 		hash: 'SHA512',
-								// 		encoding: 'hex',
-								// 		created_at: '2025-02-13T08:13:13.595060439Z',
-								// 	},
-								// 	{
-								// 		uid: 'jan13EZKT29P9T6FYWPVS0KFY',
-								// 		hash: 'SHA256',
-								// 		encoding: 'hex',
-								// 		created_at: '2025-01-13T06:13:13.595060439Z',
-								// 	},
-								// ]),
-							),
+							groupItemsByDate(project.config.signature.versions),
 						).map(([dateKey, sigs]) => {
 							const val = [
 								<TableRow
