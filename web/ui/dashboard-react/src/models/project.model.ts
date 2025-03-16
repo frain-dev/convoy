@@ -141,7 +141,7 @@ interface Signature {
 	versions: Version[];
 }
 
-interface Version {
+export interface Version {
 	uid: string;
 	hash: string;
 	encoding: string;

@@ -15,7 +15,12 @@ export class HttpService {
 	token = this.route.snapshot.queryParams?.token;
 	checkTokenTimeout: any;
 
-	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService) {}
+	constructor(
+		private router: Router,
+		private generalService: GeneralService,
+		private route: ActivatedRoute,
+		private projectService: ProjectService
+	) {}
 
 	authDetails() {
 		const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
@@ -102,8 +107,8 @@ export class HttpService {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
 				const requestHeader = {
-					Authorization: `Bearer ${this.token || this.authDetails()?.access_token}`,
-					'X-Convoy-Version': '2024-04-01'
+					Authorization: `Bearer ${this.token || this.authDetails()?.access_token}`
+					// 'X-Convoy-Version': '2024-04-01'
 				};
 
 				// process URL
