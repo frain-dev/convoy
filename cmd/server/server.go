@@ -138,7 +138,7 @@ func startConvoyServer(a *cli.App) error {
 	}
 	lo.SetLevel(lvl)
 
-	srv, err := server.NewServer(cfg.Server.HTTP.Port, cfg.Dispatcher.CACertPath, func() {})
+	srv, err := server.NewServer(cfg.Server.HTTP.Port, cfg.Dispatcher.CACertPath, a.Licenser, func() {})
 	if err != nil {
 		return err
 	}

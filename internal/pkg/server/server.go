@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -27,10 +28,14 @@ type Server struct {
 	StopFn       func()
 }
 
-func NewServer(port uint32, caCertPath string, stopFn func()) (*Server, error) {
-	caCertTLSCfg, err := GetCACertTLSCfg(caCertPath)
-	if err != nil {
-		return nil, err
+func NewServer(port uint32, caCertPath string, licenser license.Licenser, stopFn func()) (*Server, error) {
+	var caCertTLSCfg *tls.Config
+	var err error
+	if licenser.CustomCertificateAuthority() {
+		caCertTLSCfg, err = GetCACertTLSCfg(caCertPath)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	srv := &Server{

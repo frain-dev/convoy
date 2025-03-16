@@ -370,7 +370,7 @@ func TestNewDispatcher(t *testing.T) {
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
 				LoggerOption(log.NewLogger(os.Stdout)),
-				InsecureSkipVerifyOption(tt.args.enforceSecure, nil),
+				InsecureSkipVerifyOption(tt.args.enforceSecure, licenser, nil),
 				ProxyOption(tt.args.httpProxy),
 			)
 			if tt.wantErr {
