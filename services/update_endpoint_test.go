@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy/config"
 	"testing"
 
 	"github.com/frain-dev/convoy"
@@ -28,6 +29,7 @@ func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoi
 }
 
 func TestUpdateEndpointService_Run(t *testing.T) {
+	_ = config.LoadCaCert("", "")
 	ctx := context.Background()
 	project := &datastore.Project{UID: "1234567890", Config: &datastore.DefaultProjectConfig}
 	type args struct {
@@ -77,6 +79,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,
 		},
@@ -105,6 +108,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while updating endpoints",
@@ -144,6 +148,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(false)
 			},
 			wantErr: false,
 		},
@@ -166,6 +171,8 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(nil, datastore.ErrEndpointNotFound)
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(false)
 			},
 			wantErr:    true,
 			wantErrMsg: "endpoint not found",

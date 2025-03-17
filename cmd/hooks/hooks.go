@@ -83,6 +83,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
+		err = config.LoadCaCert(cfg.Dispatcher.CACertString, cfg.Dispatcher.CACertPath)
+		if err != nil {
+			return err
+		}
+
 		var ca cache.Cache
 		var q queue.Queuer
 

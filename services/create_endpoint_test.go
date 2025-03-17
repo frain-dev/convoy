@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"github.com/frain-dev/convoy/config"
 	"testing"
 
 	"github.com/frain-dev/convoy"
@@ -26,6 +27,7 @@ func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoi
 }
 
 func TestCreateEndpointService_Run(t *testing.T) {
+	_ = config.LoadCaCert("", "")
 	projectID := "1234567890"
 	project := &datastore.Project{UID: projectID, Type: datastore.OutgoingProject, Config: &datastore.DefaultProjectConfig}
 
@@ -73,6 +75,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Name:            "endpoint",
@@ -122,6 +125,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(false)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Name:            "endpoint",
@@ -173,6 +177,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				ProjectID: project.UID,
@@ -221,6 +226,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "an error occurred while adding endpoint",

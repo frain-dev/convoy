@@ -635,6 +635,8 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
 
+	_ = config.LoadCaCert("", "")
+
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
@@ -1078,6 +1080,8 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 	// Setup Config.
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-jwt-realm.json")
 	require.NoError(s.T(), err)
+
+	_ = config.LoadCaCert("", "")
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)

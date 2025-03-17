@@ -91,7 +91,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				render.JSON(w, r, "Convoy")
 			})
 
-			srv, err := server.NewServer(cfg.Server.HTTP.WorkerPort, cfg.Dispatcher.CACertPath, a.Licenser, func() {})
+			srv, err := server.NewServer(cfg.Server.HTTP.WorkerPort, func() {})
 			if err != nil {
 				return err
 			}
@@ -275,7 +275,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
-	caCertTLSCfg, err := server.GetCACertTLSCfg(cfg.Dispatcher.CACertPath)
+	caCertTLSCfg, err := config.GetCaCert()
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		net.ProxyOption(cfg.Server.HTTP.HttpProxy),
 		net.AllowListOption(cfg.Dispatcher.AllowList),
 		net.BlockListOption(cfg.Dispatcher.BlockList),
-		net.InsecureSkipVerifyOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
+		net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
 	)
 	if err != nil {
 		lo.WithError(err).Fatal("Failed to create new net dispatcher")

@@ -2,11 +2,8 @@ package server
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/license"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -23,29 +20,18 @@ import (
 )
 
 type Server struct {
-	s            *http.Server
-	CACertTLSCfg *tls.Config
-	StopFn       func()
+	s      *http.Server
+	StopFn func()
 }
 
-func NewServer(port uint32, caCertPath string, licenser license.Licenser, stopFn func()) (*Server, error) {
-	var caCertTLSCfg *tls.Config
-	var err error
-	if licenser.CustomCertificateAuthority() {
-		caCertTLSCfg, err = GetCACertTLSCfg(caCertPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-
+func NewServer(port uint32, stopFn func()) (*Server, error) {
 	srv := &Server{
 		s: &http.Server{
 			ReadTimeout:  time.Second * 30,
 			WriteTimeout: time.Second * 30,
 			Addr:         fmt.Sprintf(":%d", port),
 		},
-		CACertTLSCfg: caCertTLSCfg,
-		StopFn:       stopFn,
+		StopFn: stopFn,
 	}
 
 	return srv, nil
@@ -124,24 +110,4 @@ func (s *Server) gracefulShutdown() {
 	log.Info("Server exiting")
 
 	time.Sleep(2 * time.Second) // allow all pending connections to close themselves
-}
-
-func GetCACertTLSCfg(caCertPath string) (*tls.Config, error) {
-	var tlsCfg *tls.Config
-	if caCertPath != "" {
-		caCert, err := os.ReadFile(caCertPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read CA certificate: %w", err)
-		}
-
-		caCertPool := x509.NewCertPool()
-		if !caCertPool.AppendCertsFromPEM(caCert) {
-			return nil, fmt.Errorf("failed to append CA certificate")
-		}
-		tlsCfg = &tls.Config{
-			RootCAs:    caCertPool,
-			MinVersion: tls.VersionTLS12,
-		}
-	}
-	return tlsCfg, nil
 }

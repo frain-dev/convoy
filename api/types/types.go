@@ -1,7 +1,6 @@
 package types
 
 import (
-	"crypto/tls"
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
@@ -17,15 +16,14 @@ import (
 type ContextKey string
 
 type APIOptions struct {
-	FFlag           *fflag.FFlag
-	DB              database.Database
-	Redis           redis.UniversalClient
-	Queue           queue.Queuer
-	Logger          log.StdLogger
-	Cache           cache.Cache
-	Authz           *authz.Authz
-	Rate            limiter.RateLimiter
-	Licenser        license.Licenser
-	Cfg             config.Configuration
-	CACertTLSConfig *tls.Config
+	FFlag    *fflag.FFlag
+	DB       database.Database
+	Redis    redis.UniversalClient
+	Queue    queue.Queuer
+	Logger   log.StdLogger
+	Cache    cache.Cache
+	Authz    *authz.Authz
+	Rate     limiter.RateLimiter
+	Licenser license.Licenser
+	Cfg      config.Configuration
 }

@@ -415,6 +415,7 @@ type DispatcherConfiguration struct {
 	AllowList          []string `json:"allow_list" envconfig:"CONVOY_DISPATCHER_ALLOW_LIST"`
 	BlockList          []string `json:"block_list" envconfig:"CONVOY_DISPATCHER_BLOCK_LIST"`
 	CACertPath         string   `json:"ca_cert_path" envconfig:"CONVOY_DISPATCHER_CACERT_PATH"`
+	CACertString       string   `json:"ca_cert_string" envconfig:"CONVOY_DISPATCHER_CACERT_STRING"`
 }
 
 type PyroscopeConfiguration struct {

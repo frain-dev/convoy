@@ -30,7 +30,7 @@ type UpdateEndpointService struct {
 }
 
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	url, err := util.ValidateEndpoint(a.E.URL, a.Project.Config.SSL.EnforceSecureEndpoints, a.CACertTLSConfig)
+	url, err := util.ValidateEndpoint(a.E.URL, a.Project.Config.SSL.EnforceSecureEndpoints, a.Licenser.CustomCertificateAuthority())
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}

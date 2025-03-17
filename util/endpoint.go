@@ -5,13 +5,14 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/config"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 )
 
-func ValidateEndpoint(s string, enforceSecure bool, caCertTLSConfig *tls.Config) (string, error) {
+func ValidateEndpoint(s string, enforceSecure bool, customCA bool) (string, error) {
 	if IsStringEmpty(s) {
 		return "", errors.New("please provide the endpoint url")
 	}
@@ -27,7 +28,13 @@ func ValidateEndpoint(s string, enforceSecure bool, caCertTLSConfig *tls.Config)
 			return "", errors.New("only https endpoints allowed")
 		}
 	case "https":
-		var tlsConfig = caCertTLSConfig
+		var tlsConfig *tls.Config
+		if customCA {
+			tlsConfig, err = config.GetCaCert()
+			if err != nil {
+				return "", fmt.Errorf("could not get tls config: %w", err)
+			}
+		}
 		if tlsConfig == nil {
 			tlsConfig = &tls.Config{
 				MinVersion: tls.VersionTLS12,

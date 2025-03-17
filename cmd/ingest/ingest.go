@@ -66,7 +66,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			srv, err := server.NewServer(cfg.Server.HTTP.IngestPort, cfg.Dispatcher.CACertPath, a.Licenser, func() {})
+			srv, err := server.NewServer(cfg.Server.HTTP.IngestPort, func() {})
 			if err != nil {
 				return err
 			}

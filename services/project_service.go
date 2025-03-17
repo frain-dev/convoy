@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -26,10 +25,9 @@ type ProjectService struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	eventTypesRepo    datastore.EventTypesRepository
 	Licenser          license.Licenser
-	CACertTLSConfig   *tls.Config
 }
 
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository, caCertTLSConfig *tls.Config) (*ProjectService, error) {
+func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
@@ -37,7 +35,6 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 		eventDeliveryRepo: eventDeliveryRepo,
 		eventTypesRepo:    eventTypesRepo,
 		Licenser:          licenser,
-		CACertTLSConfig:   caCertTLSConfig,
 	}, nil
 }
 
@@ -77,7 +74,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			projectConfig.SSL = &datastore.DefaultSSLConfig
 		}
 
-		err := validateMetaEvent(projectConfig, ps.CACertTLSConfig)
+		err := validateMetaEvent(projectConfig, ps.Licenser)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -178,7 +175,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 
 		project.Config = update.Config.Transform()
 		checkSignatureVersions(project.Config.Signature.Versions)
-		err := validateMetaEvent(project.Config, ps.CACertTLSConfig)
+		err := validateMetaEvent(project.Config, ps.Licenser)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -214,7 +211,7 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	}
 }
 
-func validateMetaEvent(c *datastore.ProjectConfig, caCertTLSConfig *tls.Config) error {
+func validateMetaEvent(c *datastore.ProjectConfig, licenser license.Licenser) error {
 	metaEvent := c.MetaEvent
 	if metaEvent == nil {
 		return nil
@@ -225,7 +222,7 @@ func validateMetaEvent(c *datastore.ProjectConfig, caCertTLSConfig *tls.Config) 
 	}
 
 	if metaEvent.Type == datastore.HTTPMetaEvent {
-		url, err := util.ValidateEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints, caCertTLSConfig)
+		url, err := util.ValidateEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints, licenser.CustomCertificateAuthority())
 		if err != nil {
 			return err
 		}
