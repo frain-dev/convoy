@@ -40,40 +40,40 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		return nil, &ServiceError{ErrMsg: "failed to find subscription", Err: err}
 	}
 
-	if !util.IsStringEmpty(s.Update.EndpointID) {
-		subscription.EndpointID = s.Update.EndpointID
-	}
-
 	project, err := s.findProject(ctx, s.ProjectId)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find project by id")
 		return nil, &ServiceError{ErrMsg: "failed to find project by id", Err: err}
 	}
 
-	endpoint, err := s.findEndpoint(ctx, s.Update.EndpointID, s.ProjectId)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to find endpoint by id")
-		return nil, &ServiceError{ErrMsg: "failed to find endpoint by id: the endpoint may not belong to project", Err: err}
-	}
-
-	if project.Type == datastore.IncomingProject {
-		_, err = s.SourceRepo.FindSourceByID(ctx, project.UID, s.Update.SourceID)
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to find source by id")
-			return nil, &ServiceError{ErrMsg: "failed to find source by id"}
-		}
-	}
-
-	if project.Type == datastore.OutgoingProject {
-		count, err2 := s.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpoint.UID)
+	if !util.IsStringEmpty(s.Update.EndpointID) {
+		endpoint, err2 := s.findEndpoint(ctx, s.Update.EndpointID, s.ProjectId)
 		if err2 != nil {
-			log.FromContext(ctx).WithError(err2).Error("failed to count endpoint subscriptions")
-			return nil, &ServiceError{ErrMsg: "failed to count endpoint subscriptions", Err: err2}
+			log.FromContext(ctx).WithError(err2).Error("failed to find endpoint by id")
+			return nil, &ServiceError{ErrMsg: "failed to find endpoint by id: the endpoint may not belong to project", Err: err2}
 		}
 
-		if count > 0 {
-			return nil, &ServiceError{ErrMsg: "a subscription for this endpoint already exists"}
+		if project.Type == datastore.IncomingProject {
+			_, err2 = s.SourceRepo.FindSourceByID(ctx, project.UID, s.Update.SourceID)
+			if err2 != nil {
+				log.FromContext(ctx).WithError(err2).Error("failed to find source by id")
+				return nil, &ServiceError{ErrMsg: "failed to find source by id"}
+			}
 		}
+
+		if project.Type == datastore.OutgoingProject {
+			count, err3 := s.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpoint.UID)
+			if err3 != nil {
+				log.FromContext(ctx).WithError(err3).Error("failed to count endpoint subscriptions")
+				return nil, &ServiceError{ErrMsg: "failed to count endpoint subscriptions", Err: err3}
+			}
+
+			if count > 0 {
+				return nil, &ServiceError{ErrMsg: "a subscription for this endpoint already exists"}
+			}
+		}
+
+		subscription.EndpointID = s.Update.EndpointID
 	}
 
 	retryConfig, err := s.Update.RetryConfig.Transform()
