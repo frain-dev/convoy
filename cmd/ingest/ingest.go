@@ -66,10 +66,7 @@ func AddIngestCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			srv, err := server.NewServer(cfg.Server.HTTP.IngestPort, func() {})
-			if err != nil {
-				return err
-			}
+			srv := server.NewServer(cfg.Server.HTTP.IngestPort, func() {})
 			mux := chi.NewMux()
 			mux.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}))
 			srv.SetHandler(mux)

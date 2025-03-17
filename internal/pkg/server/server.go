@@ -24,7 +24,7 @@ type Server struct {
 	StopFn func()
 }
 
-func NewServer(port uint32, stopFn func()) (*Server, error) {
+func NewServer(port uint32, stopFn func()) *Server {
 	srv := &Server{
 		s: &http.Server{
 			ReadTimeout:  time.Second * 30,
@@ -34,7 +34,7 @@ func NewServer(port uint32, stopFn func()) (*Server, error) {
 		StopFn: stopFn,
 	}
 
-	return srv, nil
+	return srv
 }
 
 func (s *Server) SetHandler(handler http.Handler) {

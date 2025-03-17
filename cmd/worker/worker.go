@@ -91,10 +91,7 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 				render.JSON(w, r, "Convoy")
 			})
 
-			srv, err := server.NewServer(cfg.Server.HTTP.WorkerPort, func() {})
-			if err != nil {
-				return err
-			}
+			srv := server.NewServer(cfg.Server.HTTP.WorkerPort, func() {})
 			srv.SetHandler(router)
 
 			httpConfig := cfg.Server.HTTP

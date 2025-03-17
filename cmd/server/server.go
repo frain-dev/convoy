@@ -138,10 +138,7 @@ func startConvoyServer(a *cli.App) error {
 	}
 	lo.SetLevel(lvl)
 
-	srv, err := server.NewServer(cfg.Server.HTTP.Port, func() {})
-	if err != nil {
-		return err
-	}
+	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{

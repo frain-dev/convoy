@@ -146,10 +146,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	lo.SetLevel(lvl)
 
 	// start events handler
-	srv, err := server.NewServer(cfg.Server.HTTP.AgentPort, func() {})
-	if err != nil {
-		return err
-	}
+	srv := server.NewServer(cfg.Server.HTTP.AgentPort, func() {})
 
 	evHandler, err := api.NewApplicationHandler(
 		&types.APIOptions{
