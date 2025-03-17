@@ -99,30 +99,39 @@ export class HttpService {
 		}
 	}
 
-	buildURL(requestDetails: any): string {
-		if (requestDetails.isOut) return requestDetails.url;
+buildURL(requestDetails: any): string {
+	if (requestDetails.isOut) return requestDetails.url;
 
-		if (this.token || this.ownerId) {
-			// Ensure query object exists
-			if (!requestDetails.query) requestDetails.query = {};
+	// Make sure we have a query object
+	const query = requestDetails.query || {};
 
-			// Add token and owner_id to query if they exist
-			if (this.token) requestDetails.query.token = this.token;
-			if (this.ownerId) requestDetails.query.owner_id = this.ownerId;
-
-			// Use APP_PORTAL_APIURL when token is present, otherwise use APIURL
-			const baseUrl = (this.token || this.ownerId) ? this.APP_PORTAL_APIURL : this.APIURL;
-			return `${baseUrl}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
-		}
-
-		if (!requestDetails.level) return `${this.APIURL}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
-
-		const requestPath = this.buildRequestPath(requestDetails.level);
-		if (requestPath === 'error') return 'error';
-
-		return `${this.APIURL}${requestPath}${requestDetails.url}${requestDetails.query ? '?' + this.buildRequestQuery(requestDetails.query) : ''}`;
+	// Add token and owner_id to query if they exist
+	if (this.token) {
+		query.token = this.token;
+	}
+	if (this.ownerId) {
+		query.owner_id = this.ownerId;
 	}
 
+	// Format query string if we have any query params
+	const queryString = Object.keys(query).length > 0 ? '?' + this.buildRequestQuery(query) : '';
+
+	// When token or ownerId is present, use the Portal API URL regardless of other parameters
+	if (this.token || this.ownerId) {
+		return `${this.APP_PORTAL_APIURL}${requestDetails.url}${queryString}`;
+	}
+
+	// Handle regular UI paths
+	if (!requestDetails.level) {
+		return `${this.APIURL}${requestDetails.url}${queryString}`;
+	}
+
+	const requestPath = this.buildRequestPath(requestDetails.level);
+	if (requestPath === 'error') return 'error';
+
+	return `${this.APIURL}${requestPath}${requestDetails.url}${queryString}`;
+}
+  
 	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
 
@@ -130,8 +139,11 @@ export class HttpService {
 			try {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
+				// Use token for authorization if available, otherwise use ownerId or access_token
+				const authToken = this.token || this.ownerId || this.authDetails()?.access_token;
+
 				const requestHeader = {
-					Authorization: `Bearer ${this.token || this.ownerId || this.authDetails()?.access_token}`,
+					Authorization: `Bearer ${authToken}`,
 					'X-Convoy-Version': '2024-04-01'
 				};
 

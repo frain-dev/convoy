@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"gopkg.in/guregu/null.v4"
@@ -15,13 +16,15 @@ import (
 )
 
 var (
-	ErrUpdateSubscriptionError   = errors.New("failed to update subscription")
+	ErrCantUseEndpointForTwoSubs = errors.New("can't use an endpoint for two subscriptions")
 	ErrValidateSubscriptionError = errors.New("failed to validate subscription")
+	ErrUpdateSubscriptionError   = errors.New("failed to update subscription")
 )
 
 type UpdateSubscriptionService struct {
 	SubRepo      datastore.SubscriptionRepository
 	EndpointRepo datastore.EndpointRepository
+	ProjectRepo  datastore.ProjectRepository
 	SourceRepo   datastore.SourceRepository
 	Licenser     license.Licenser
 
@@ -35,6 +38,42 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to find subscription")
 		return nil, &ServiceError{ErrMsg: "failed to find subscription", Err: err}
+	}
+
+	project, err := s.findProject(ctx, s.ProjectId)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to find project by id")
+		return nil, &ServiceError{ErrMsg: "failed to find project by id", Err: err}
+	}
+
+	if !util.IsStringEmpty(s.Update.EndpointID) {
+		endpoint, err2 := s.findEndpoint(ctx, s.Update.EndpointID, s.ProjectId)
+		if err2 != nil {
+			log.FromContext(ctx).WithError(err2).Error("failed to find endpoint by id")
+			return nil, &ServiceError{ErrMsg: "failed to find endpoint by id: the endpoint may not belong to project", Err: err2}
+		}
+
+		if project.Type == datastore.IncomingProject {
+			_, err2 = s.SourceRepo.FindSourceByID(ctx, project.UID, s.Update.SourceID)
+			if err2 != nil {
+				log.FromContext(ctx).WithError(err2).Error("failed to find source by id")
+				return nil, &ServiceError{ErrMsg: "failed to find source by id"}
+			}
+		}
+
+		if project.Type == datastore.OutgoingProject {
+			count, err3 := s.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpoint.UID)
+			if err3 != nil {
+				log.FromContext(ctx).WithError(err3).Error("failed to count endpoint subscriptions")
+				return nil, &ServiceError{ErrMsg: "failed to count endpoint subscriptions", Err: err3}
+			}
+
+			if count > 0 {
+				return nil, &ServiceError{ErrMsg: "a subscription for this endpoint already exists"}
+			}
+		}
+
+		subscription.EndpointID = s.Update.EndpointID
 	}
 
 	retryConfig, err := s.Update.RetryConfig.Transform()
@@ -52,10 +91,6 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 
 	if !util.IsStringEmpty(s.Update.Function) && s.Licenser.Transformations() {
 		subscription.Function = null.StringFrom(s.Update.Function)
-	}
-
-	if !util.IsStringEmpty(s.Update.EndpointID) {
-		subscription.EndpointID = s.Update.EndpointID
 	}
 
 	if s.Update.AlertConfig != nil && s.Update.AlertConfig.Count > 0 {
@@ -113,7 +148,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 
 		if len(s.Update.FilterConfig.Filter.Body) > 0 || len(s.Update.FilterConfig.Filter.Headers) > 0 {
 			// validate that the filter is a json string
-			_, err := json.Marshal(s.Update.FilterConfig.Filter)
+			_, err = json.Marshal(s.Update.FilterConfig.Filter)
 			if err != nil {
 				log.FromContext(ctx).WithError(err).Error(ErrInvalidSubscriptionFilterFormat.Error())
 				return nil, &ServiceError{ErrMsg: ErrInvalidSubscriptionFilterFormat.Error(), Err: err}
@@ -141,8 +176,29 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 	err = s.SubRepo.UpdateSubscription(ctx, s.ProjectId, subscription)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error(ErrUpdateSubscriptionError.Error())
+		if strings.Contains(err.Error(), "key value violates unique constraint") {
+			return nil, &ServiceError{ErrMsg: ErrCantUseEndpointForTwoSubs.Error(), Err: err}
+		}
 		return nil, &ServiceError{ErrMsg: ErrUpdateSubscriptionError.Error(), Err: err}
 	}
 
 	return subscription, nil
+}
+
+func (s *UpdateSubscriptionService) findProject(ctx context.Context, projectId string) (*datastore.Project, error) {
+	project, err := s.ProjectRepo.FetchProjectByID(ctx, projectId)
+	if err != nil {
+		return nil, err
+	}
+
+	return project, nil
+}
+
+func (s *UpdateSubscriptionService) findEndpoint(ctx context.Context, endpointId, projectId string) (*datastore.Endpoint, error) {
+	endpoint, err := s.EndpointRepo.FindEndpointByID(ctx, endpointId, projectId)
+	if err != nil {
+		return nil, err
+	}
+
+	return endpoint, nil
 }

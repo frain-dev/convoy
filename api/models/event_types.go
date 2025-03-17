@@ -21,11 +21,7 @@ func (ce *CreateEventType) Validate() error {
 }
 
 type EventTypeResponse struct {
-	EventType *datastore.ProjectEventType `json:"event_type"`
-}
-
-type EventTypeListResponse struct {
-	EventTypes []datastore.ProjectEventType `json:"event_types"`
+	*datastore.ProjectEventType
 }
 
 type UpdateEventType struct {

@@ -1,13 +1,15 @@
 import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent } from 'src/app/components/card/card.component';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import {FormArray, FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { CreateSubscriptionService } from '../create-subscription/create-subscription.service';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { MonacoComponent } from '../monaco/monaco.component';
 import { ActivatedRoute } from '@angular/router';
 import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
+import {EVENT_TYPE} from "../../../models/event.model";
+import {FILTER} from "../../../models/filter.model";
 
 @Component({
 	selector: 'convoy-create-subscription-filter',
@@ -21,23 +23,21 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 	@ViewChild('headerSchemaEditor') headerSchemaEditor!: MonacoComponent;
 	@ViewChild('requestEditor') requestEditor!: MonacoComponent;
 	@ViewChild('schemaEditor') schemaEditor!: MonacoComponent;
+
 	@Input('action') action: 'update' | 'create' | 'view' | 'portal' = 'create';
 	@Input('schema') schema?: any;
-	@Output('filterSchema') filterSchema: EventEmitter<any> = new EventEmitter();
+	@Input('selectedEventType') selectedEventType?: string = '';
+
+
 	@Output('close') close: EventEmitter<any> = new EventEmitter();
+	@Output('filterSchema') filterSchema: EventEmitter<any> = new EventEmitter();
+
+	dialogName = 'Event Filter';
+	isLoading = false;
+	showFilterEditor = false;
 
 	tabs: ['body', 'header'] = ['body', 'header'];
 	activeTab: 'body' | 'header' = 'body';
-	subscriptionFilterForm: FormGroup = this.formBuilder.group({
-		request: this.formBuilder.group({
-			header: [null],
-			body: [null]
-		}),
-		schema: this.formBuilder.group({
-			header: [null],
-			body: [null]
-		})
-	});
 	isFilterTestPassed = false;
 	payload: any = {
 		id: 'Sample-1',
@@ -50,6 +50,7 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 
 	ngOnInit() {
 		this.checkForExistingData();
+		this.dialogName = this.dialogName + ' for "' + this.selectedEventType + '"';
 	}
 
 	toggleActiveTab(tab: 'body' | 'header') {
@@ -58,7 +59,8 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 
 	async testFilter() {
 		this.isFilterTestPassed = false;
-		this.subscriptionFilterForm.patchValue({
+
+		const testVals={
 			request: {
 				header: this.requestHeaderEditor?.getValue() ? this.generalService.convertStringToJson(this.requestHeaderEditor.getValue()) : null,
 				body: this.requestEditor?.getValue() ? this.generalService.convertStringToJson(this.requestEditor.getValue()) : null
@@ -67,10 +69,10 @@ export class CreateSubscriptionFilterComponent implements OnInit {
 				header: this.headerSchemaEditor?.getValue() ? this.generalService.convertStringToJson(this.headerSchemaEditor.getValue()) : null,
 				body: this.schemaEditor?.getValue() ? this.generalService.convertStringToJson(this.schemaEditor.getValue()) : null
 			}
-		});
+		};
 
 		try {
-			const response = await this.createSubscriptionService.testSubsriptionFilter(this.subscriptionFilterForm.value);
+			const response = await this.createSubscriptionService.testSubscriptionFilter(testVals);
 			const testResponse = `The sample data was ${!response.data ? 'not' : ''} accepted by the filter`;
 			this.generalService.showNotification({ message: testResponse, style: !response.data ? 'error' : 'success' });
 			this.isFilterTestPassed = !!response.data;

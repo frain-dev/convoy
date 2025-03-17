@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"golang.org/x/crypto/bcrypt"
 	"math"
 	"net/http"
 	"strings"
@@ -23,7 +24,6 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Pageable struct {
@@ -1247,6 +1247,19 @@ type AlertConfiguration struct {
 type FilterConfiguration struct {
 	EventTypes pq.StringArray `json:"event_types" db:"event_types"`
 	Filter     FilterSchema   `json:"filter" db:"filter"`
+}
+
+// EventTypeFilter represents a filter configuration for a specific event type within a subscription
+type EventTypeFilter struct {
+	UID            string    `json:"uid" db:"id"`
+	SubscriptionID string    `json:"subscription_id" db:"subscription_id"`
+	EventType      string    `json:"event_type" db:"event_type"`
+	Headers        M         `json:"headers" db:"headers"`
+	Body           M         `json:"body" db:"body"`
+	RawHeaders     M         `json:"raw_headers" db:"raw_headers"`
+	RawBody        M         `json:"raw_body" db:"raw_body"`
+	CreatedAt      time.Time `json:"-" db:"created_at" swaggertype:"string"`
+	UpdatedAt      time.Time `json:"-" db:"updated_at" swaggertype:"string"`
 }
 
 type M map[string]interface{}
