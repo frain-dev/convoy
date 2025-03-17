@@ -41,21 +41,21 @@ func (e *CreateEvent) Validate() error {
 type DynamicEvent struct {
 	JobID string `json:"jid" swaggerignore:"true"`
 
-	EventID string `json:"event_ide" swaggerignore:"true"`
+	EventID string `json:"event_id" swaggerignore:"true"`
 
 	// URL is the endpoint's URL prefixed with https. non-https urls are currently
 	// not supported.
-	URL string `json:"url" valid:"required~please provide a url"`
+	URL string `json:"url" valid:"required~please provide an endpoint url"`
 
 	// Endpoint's webhook secret. If not provided, Convoy autogenerates one for the endpoint.
-	Secret string `json:"secret" valid:"required~please provide a secret"`
+	Secret string `json:"secret" valid:"optional~please provide a secret"`
 
 	// A list of event types for the subscription filter config
 	EventTypes []string `json:"event_types"`
 
 	// Data is an arbitrary JSON value that gets sent as the body of the
 	// webhook to the endpoints
-	Data json.RawMessage `json:"data" valid:"required~please provide your data" swaggertype:"object"`
+	Data json.RawMessage `json:"data" valid:"required~please provide your webhook event data" swaggertype:"object"`
 
 	ProjectID string `json:"project_id" swaggerignore:"true"`
 
@@ -68,7 +68,7 @@ type DynamicEvent struct {
 	// Specify a key for event deduplication
 	IdempotencyKey string `json:"idempotency_key"`
 
-	AcknowledgedAt time.Time `json:"acknowledged_at,omitempty"`
+	AcknowledgedAt time.Time `json:"acknowledged_at,omitempty" swaggerignore:"true"`
 }
 
 func (de *DynamicEvent) Validate() error {

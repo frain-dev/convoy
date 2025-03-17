@@ -1162,13 +1162,16 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	endpoint1, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
+	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	require.NoError(s.T(), err)
+
 	subscription, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
 		EventTypes: []string{"*"},
 		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
 	})
 	require.NoError(s.T(), err)
 
-	subscription2, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint1, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
+	subscription2, err := testdb.SeedSubscription(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), datastore.OutgoingProject, &datastore.Source{}, endpoint2, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, &datastore.FilterConfiguration{
 		EventTypes: []string{"*"},
 		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
 	})
@@ -1189,13 +1192,10 @@ func (s *PublicEventIntegrationTestSuite) Test_GetEventDeliveriesPaged() {
 	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event1, endpoint1, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription2)
 	require.NoError(s.T(), err)
 
-	endpoint2, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	require.NoError(s.T(), err)
-
 	event2, err := testdb.SeedEvent(s.ConvoyApp.A.DB, endpoint2, s.DefaultProject.UID, ulid.Make().String(), "*", "", []byte(`{}`))
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription)
+	_, err = testdb.SeedEventDelivery(s.ConvoyApp.A.DB, event2, endpoint2, s.DefaultProject.UID, ulid.Make().String(), datastore.FailureEventStatus, subscription2)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries?endpointId=%s&subscriptionId=%s", s.DefaultProject.UID, endpoint1.UID, subscription.UID)
@@ -2604,7 +2604,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 	subscriptionId := ulid.Make().String()
 
 	// Just Before
-	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
+	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "endpoint", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
 	source, err := testdb.SeedSource(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", "", nil, "", "")
@@ -2640,6 +2640,8 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 
 	// Act
 	s.Router.ServeHTTP(w, req)
+
+	s.T().Logf("%+v\n", w.Body.String())
 
 	// Assert
 	require.Equal(s.T(), http.StatusAccepted, w.Code)
@@ -2948,9 +2950,9 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_GetEventTypes() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var resp models.EventTypeListResponse
+	var resp []models.EventTypeResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.NotEmpty(s.T(), resp.EventTypes)
+	require.NotEmpty(s.T(), resp)
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) Test_CreateEventType() {
@@ -2976,7 +2978,7 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_CreateEventType() {
 	// Deep Assert.
 	var resp models.EventTypeResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), eventTypeName, resp.EventType.Name)
+	require.Equal(s.T(), eventTypeName, resp.Name)
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) Test_UpdateEventType() {
@@ -3006,11 +3008,11 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_UpdateEventType() {
 	// Deep Assert.
 	var resp models.EventTypeResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), "Updated Category", resp.EventType.Category)
-	require.Equal(s.T(), "Updated Description", resp.EventType.Description)
+	require.Equal(s.T(), "Updated Category", resp.Category)
+	require.Equal(s.T(), "Updated Description", resp.Description)
 
 	// Name should not change
-	require.Equal(s.T(), "Initial Name", resp.EventType.Name)
+	require.Equal(s.T(), "Initial Name", resp.Name)
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) Test_DeprecateEventType() {
@@ -3035,9 +3037,9 @@ func (s *PublicEventTypeIntegrationTestSuite) Test_DeprecateEventType() {
 	// Deep Assert.
 	var resp models.EventTypeResponse
 	parseResponse(s.T(), w.Result(), &resp)
-	require.Equal(s.T(), eventTypeId, resp.EventType.UID)
-	require.NotNil(s.T(), resp.EventType.DeprecatedAt)
-	require.True(s.T(), resp.EventType.DeprecatedAt.Valid)
+	require.Equal(s.T(), eventTypeId, resp.UID)
+	require.NotNil(s.T(), resp.DeprecatedAt)
+	require.True(s.T(), resp.DeprecatedAt.Valid)
 }
 
 func TestPublicEventTypeIntegrationTestSuite(t *testing.T) {
