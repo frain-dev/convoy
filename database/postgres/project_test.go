@@ -486,10 +486,26 @@ func seedOrg(t *testing.T, db database.Database) *datastore.Organisation {
 func seedProject(t *testing.T, db database.Database) *datastore.Project {
 	p := &datastore.Project{
 		UID:            ulid.Make().String(),
-		Name:           "Yet another project",
+		Name:           "An incoming project",
 		LogoURL:        "s3.com/dsiuirueiy",
 		OrganisationID: seedOrg(t, db).UID,
 		Type:           datastore.IncomingProject,
+		Config:         &datastore.DefaultProjectConfig,
+	}
+
+	err := NewProjectRepo(db).CreateProject(context.Background(), p)
+	require.NoError(t, err)
+
+	return p
+}
+
+func seedOutgoingProject(t *testing.T, db database.Database) *datastore.Project {
+	p := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "An outgoing project",
+		LogoURL:        "s3.com/dsiuirueiy",
+		OrganisationID: seedOrg(t, db).UID,
+		Type:           datastore.OutgoingProject,
 		Config:         &datastore.DefaultProjectConfig,
 	}
 

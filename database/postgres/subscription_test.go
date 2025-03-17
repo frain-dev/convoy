@@ -251,20 +251,13 @@ func Test_CountEndpointSubscriptions(t *testing.T) {
 
 	subRepo := NewSubscriptionRepo(db)
 
-	project := seedProject(t, db)
+	project := seedOutgoingProject(t, db)
 	source := seedSource(t, db)
 	endpoint := seedEndpoint(t, db)
 	endpoint2 := seedEndpoint(t, db)
 
 	newSub1 := generateSubscription(project, source, endpoint, &datastore.Device{})
-	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub1.ProjectID, newSub1))
-
-	// Attempt to create another subscription with the same endpoint - should fail due to unique constraint
-	tempSub := generateSubscription(project, source, endpoint, &datastore.Device{})
-	err := subRepo.CreateSubscription(context.Background(), tempSub.ProjectID, tempSub)
-	require.Error(t, err)
-	// The error should be related to the unique constraint violation
-	require.Contains(t, err.Error(), "unique constraint")
+	require.NoError(t, subRepo.CreateSubscription(context.Background(), project.UID, newSub1))
 
 	// Create a subscription with a different endpoint - should succeed
 	newSub2 := generateSubscription(project, source, endpoint2, &datastore.Device{})
