@@ -34,11 +34,13 @@ export interface Project {
 		};
 		ssl: Ssl;
 		meta_event: {
-			event_type: string[] | null;
+			// FIXME I think `event_type` should be `event_types` or `types`
+			event_type:  Array<typeof EventTypes[number]> | null;
 			is_enabled: boolean;
 			secret: string;
 			type: string;
 			url: string;
+			// pub_sub: null; // It's in the backend but not in the frontend model
 		};
 		multiple_endpoint_subscriptions: boolean;
 		// retention_policy: {
@@ -147,3 +149,14 @@ export interface Version {
 	encoding: string;
 	created_at: string;
 }
+
+export const EventTypes = [
+	'endpoint.created',
+	'endpoint.deleted',
+	'endpoint.updated',
+	'eventdelivery.success',
+	'eventdelivery.failed',
+	'project.updated',
+] as const; 
+
+export type EventType = typeof EventTypes[number]

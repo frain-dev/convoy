@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useState, useCallback, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
-import { Bot, Home, Settings, User, Plus } from 'lucide-react';
+import { Bot, Home, Settings, User, Plus, X } from 'lucide-react';
 
 import {
 	Form,
@@ -15,6 +15,7 @@ import {
 	FormDescription,
 	FormMessageWithErrorIcon,
 } from '@/components/ui/form';
+import { Command as CommandPrimitive } from 'cmdk';
 import {
 	Sheet,
 	SheetContent,
@@ -56,11 +57,19 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select';
+import {
+	Command,
+	CommandGroup,
+	CommandItem,
+	CommandList,
+} from '@/components/ui/command';
+import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/dashboard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+
 
 import { cn } from '@/lib/utils';
 import { toMMMDDYYYY } from '@/lib/pipes';
@@ -68,10 +77,13 @@ import { useProjectStore } from '@/store/index';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
+import { EventTypes } from '@/models/project.model';
 
-import type { Project } from '@/models/project.model';
+import type { KeyboardEvent } from 'react';
+import type { EventType, Project } from '@/models/project.model';
 
 import warningAnimation from '../../../../assets/img/warning-animation.gif';
+
 
 export const Route = createFileRoute('/projects_/$projectId/settings')({
 	beforeLoad({ context }) {
@@ -1399,7 +1411,12 @@ function EndpointsConfig(props: {
 	canManageProject: boolean;
 }) {
 	const { project, canManageProject } = props;
-	const [isUpdating, setIsUpdating] = useState(false);
+	const [isUpdatingDisableEndpoint, setIsUpdatingDisableEndpoint] =
+		useState(false);
+	const [
+		isUpdatingEnforceSecureEndpoints,
+		setIsUpdatingEnforceSecureEndpoints,
+	] = useState(false);
 	const { setProject, setProjects, projects } = useProjectStore();
 
 	const form = useForm<z.infer<typeof EndpointsConfigFormSchema>>({
@@ -1411,7 +1428,7 @@ function EndpointsConfig(props: {
 	});
 
 	async function updateDisableEndpoint(value: boolean) {
-		setIsUpdating(true);
+		setIsUpdatingDisableEndpoint(true);
 		try {
 			project.config.disable_endpoint = value;
 			// @ts-expect-error this works
@@ -1421,12 +1438,12 @@ function EndpointsConfig(props: {
 		} catch (error) {
 			console.error(error);
 		} finally {
-			setIsUpdating(false);
+			setIsUpdatingDisableEndpoint(false);
 		}
 	}
 
 	async function updateEnforceSecureEndpoints(value: boolean) {
-		setIsUpdating(true);
+		setIsUpdatingEnforceSecureEndpoints(true);
 		try {
 			project.config.ssl.enforce_secure_endpoints = value;
 			// @ts-expect-error this works
@@ -1436,7 +1453,7 @@ function EndpointsConfig(props: {
 		} catch (error) {
 			console.error(error);
 		} finally {
-			setIsUpdating(false);
+			setIsUpdatingEnforceSecureEndpoints(false);
 		}
 	}
 
@@ -1453,19 +1470,21 @@ function EndpointsConfig(props: {
 								name="disable_endpoint"
 								render={({ field }) => (
 									<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-										<div className="space-y-0.5">
+										<div className="space-y-0.5 hover:cursor-pointer">
 											<FormLabel className="font-semibold text-xs">
 												Disable Failing Endpoint
+												<FormDescription className="max-w-prose font-normal text-xs/5 hover:cursor-pointer">
+													Toggling this configuration on will automatically
+													disable all endpoints in this project with failure
+													response until requests to them are manually retried
+												</FormDescription>
 											</FormLabel>
-											<FormDescription className="max-w-prose text-xs">
-												Toggling this configuration on will automatically
-												disable all endpoints in this project with failure
-												response until requests to them are manually retried
-											</FormDescription>
 										</div>
 										<FormControl>
 											<Switch
-												disabled={!canManageProject || isUpdating}
+												disabled={
+													!canManageProject || isUpdatingDisableEndpoint
+												}
 												checked={field.value}
 												onCheckedChange={async e => {
 													field.onChange(e);
@@ -1476,23 +1495,26 @@ function EndpointsConfig(props: {
 									</FormItem>
 								)}
 							/>
+
 							<FormField
 								control={form.control}
 								name="enforce_secure_endpoints"
 								render={({ field }) => (
 									<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-										<div className="space-y-0.5">
+										<div className="space-y-0.5 hover:cursor-pointer">
 											<FormLabel className="font-semibold text-xs">
 												Allow Only HTTPS Secure Endpoints
+												<FormDescription className="max-w-prose font-normal text-xs/5">
+													Toggling this will allow only HTTPS secure endpoints,
+													this allows only TLS connections to your endpoints.
+												</FormDescription>
 											</FormLabel>
-											<FormDescription className="max-w-prose text-xs">
-												Toggling this will allow only HTTPS secure endpoints,
-												this allows only TLS connections to your endpoints.
-											</FormDescription>
 										</div>
 										<FormControl>
 											<Switch
-												disabled={!canManageProject || isUpdating}
+												disabled={
+													!canManageProject || isUpdatingEnforceSecureEndpoints
+												}
 												checked={field.value}
 												onCheckedChange={async e => {
 													field.onChange(e);
@@ -1504,6 +1526,327 @@ function EndpointsConfig(props: {
 								)}
 							/>
 						</div>
+					</div>
+				</form>
+			</Form>
+		</section>
+	);
+}
+
+const MetaEventsConfigFormSchema = z
+	.object({
+		is_enabled: z.boolean(),
+		secret: z.string().transform(v => (v ? v : '')),
+		url: z.string().transform(v => (v ? v : '')),
+		event_type: z
+			.array(z.enum(EventTypes), {
+				message: 'Event type(s) is required',
+			})
+			.nullable(),
+	})
+	.refine(
+		config => {
+			if (!config.is_enabled) return true;
+
+			return !!config.url?.length && !!config.event_type?.length;
+		},
+		config => {
+			if (!config.url?.length) {
+				return {
+					message: 'URL is required',
+					path: ['url'],
+				};
+			}
+
+			if (!config.event_type?.length) {
+				return {
+					message: 'At least one event type is required',
+					path: ['event_type'],
+				};
+			}
+
+			return { message: '' };
+		},
+	)
+	.transform(config => {
+		if (!config.is_enabled) {
+			return {
+				is_enabled: config.is_enabled,
+				secret: '',
+				url: '',
+				event_type: null,
+			};
+		}
+
+		return config;
+	});
+
+function MetaEventsConfig(props: {
+	project: Project;
+	canManageProject: boolean;
+}) {
+	const { project, canManageProject } = props;
+	const [isUpdating, setIsUpdating] = useState(false);
+	const { setProject, setProjects, projects } = useProjectStore();
+
+	const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false);
+	const [selectedEventTypes, setSelectedEventTypes] = useState<EventType[]>(
+		project.config.meta_event.event_type ?? [],
+	);
+	const [inputValue, setInputValue] = useState('');
+	const handleUnselect = useCallback((eventType: EventType) => {
+		setSelectedEventTypes(prev => prev.filter(s => s !== eventType));
+	}, []);
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent<HTMLInputElement>) => {
+			if (e.key === 'Backspace' && selectedEventTypes.length > 0) {
+				setSelectedEventTypes(prev => prev.slice(0, -1));
+				return true;
+			}
+			return false;
+		},
+		[selectedEventTypes],
+	);
+	const filteredEventTypes = useMemo(
+		() =>
+			EventTypes.filter(eventType => !selectedEventTypes.includes(eventType)),
+		[selectedEventTypes],
+	);
+
+	const form = useForm<z.infer<typeof MetaEventsConfigFormSchema>>({
+		resolver: zodResolver(MetaEventsConfigFormSchema),
+		defaultValues: {
+			is_enabled: project.config.meta_event.is_enabled,
+			url: project.config.meta_event.url,
+			secret: project.config.meta_event.secret,
+			event_type:
+				project.config.meta_event.event_type === null
+					? []
+					: project.config.meta_event.event_type,
+		},
+	});
+
+	const isEventTypeEnabled = form.watch('is_enabled');
+
+	async function updateMetaEventsConfig(
+		metaEvent: z.infer<typeof MetaEventsConfigFormSchema>,
+	) {
+		setIsUpdating(true);
+		try {
+			project.config.meta_event = { ...metaEvent, type: '' };
+			// @ts-expect-error this works
+			const updated = await projectsService.updateProject(project);
+			setProjects(projects.map(p => (p.uid == updated.uid ? updated : p)));
+			setProject(updated);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsUpdating(false);
+		}
+	}
+
+	return (
+		<section className="flex flex-col gap-4">
+			<h1 className="font-bold">Meta Event Configurations</h1>
+
+			<Form {...form}>
+				<form
+					onSubmit={(...args) =>
+						form.handleSubmit(updateMetaEventsConfig)(...args)
+					}
+				>
+					<div className="space-y-4">
+						<FormField
+							control={form.control}
+							name="is_enabled"
+							render={({ field }) => (
+								<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+									<div className="space-y-0.5">
+										<FormLabel className="font-semibold text-xs">
+											Enable Meta Events
+										</FormLabel>
+										<FormDescription className="max-w-prose text-xs/5">
+											Meta events allows you to receive webhook events based on
+											events happening in your projects including webhook event
+											activities.
+										</FormDescription>
+									</div>
+									<FormControl>
+										<Switch
+											disabled={!canManageProject || isUpdating}
+											checked={field.value}
+											onCheckedChange={field.onChange}
+										/>
+									</FormControl>
+								</FormItem>
+							)}
+						/>
+					</div>
+					<hr className="my-8" />
+
+					{isEventTypeEnabled && (
+						<div className="flex flex-col w-[75%]">
+							<h2 className="text-xs font-semibold pb-2">
+								Meta Events Configurations
+							</h2>
+							<FormField
+								control={form.control}
+								name="url"
+								render={({ field, fieldState }) => (
+									<FormItem className="w-full relative mb-6 block">
+										<div className="w-full mb-2 flex items-center justify-between">
+											<FormLabel className="text-xs/5 text-neutral-9">
+												Webhook URL
+											</FormLabel>
+										</div>
+										<FormControl>
+											<Input
+												autoComplete="on"
+												type="url"
+												className={cn(
+													'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+													fieldState.error
+														? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+														: ' hover:border-new.primary-100 focus:border-new.primary-300',
+												)}
+												{...field}
+											/>
+										</FormControl>
+										<FormMessageWithErrorIcon />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="secret"
+								render={({ field, fieldState }) => (
+									<FormItem className="w-full relative mb-6 block">
+										<div className="w-full mb-2 flex items-center justify-between">
+											<FormLabel className="text-xs/5 text-neutral-9">
+												Endpoint Secret
+											</FormLabel>
+										</div>
+										<FormControl>
+											<Input
+												type="text"
+												className={cn(
+													'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+													fieldState.error
+														? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+														: ' hover:border-new.primary-100 focus:border-new.primary-300',
+												)}
+												{...field}
+											/>
+										</FormControl>
+										<FormMessageWithErrorIcon />
+									</FormItem>
+								)}
+							/>
+
+							<FormField
+								control={form.control}
+								name="event_type"
+								render={({ field }) => (
+									<FormItem className="w-full relative mb-6 block">
+										<div className="w-full mb-2 flex items-center justify-between">
+											<FormLabel className="text-xs/5 text-neutral-9">
+												Select events to listen to
+											</FormLabel>
+										</div>
+										<Command className="overflow-visible">
+											<div className="rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+												<div className="flex flex-wrap gap-1">
+													{selectedEventTypes.map(eventType => {
+														return (
+															<Badge
+																key={eventType}
+																variant="secondary"
+																className="select-none"
+															>
+																{eventType}
+																<X
+																	className="size-3 text-muted-foreground hover:text-foreground ml-2 cursor-pointer"
+																	onMouseDown={e => {
+																		e.preventDefault();
+																	}}
+																	onClick={() => {
+																		handleUnselect(eventType);
+																		field.onChange(
+																			selectedEventTypes.filter(
+																				s => s !== eventType,
+																			),
+																		);
+																	}}
+																/>
+															</Badge>
+														);
+													})}
+													<CommandPrimitive.Input
+														onKeyDown={e => {
+															const isRemoveAction = handleKeyDown(e);
+															if (isRemoveAction) {
+																field.onChange(selectedEventTypes.slice(0, -1));
+															}
+														}}
+														onValueChange={setInputValue}
+														value={inputValue}
+														onBlur={() => setIsMultiSelectOpen(false)}
+														onFocus={() => setIsMultiSelectOpen(true)}
+														placeholder=""
+														className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+													/>
+												</div>
+											</div>
+											<div className="relative mt-2">
+												<CommandList>
+													{isMultiSelectOpen && !!filteredEventTypes.length && (
+														<div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none">
+															<CommandGroup className="h-full overflow-auto">
+																{filteredEventTypes.map(eventType => {
+																	return (
+																		<CommandItem
+																			key={eventType}
+																			onMouseDown={e => {
+																				e.preventDefault();
+																			}}
+																			onSelect={() => {
+																				setInputValue('');
+																				setSelectedEventTypes(prev => {
+																					field.onChange([...prev, eventType]);
+																					return [...prev, eventType];
+																				});
+																			}}
+																			className={'cursor-pointer'}
+																		>
+																			{eventType}
+																		</CommandItem>
+																	);
+																})}
+															</CommandGroup>
+														</div>
+													)}
+												</CommandList>
+											</div>
+										</Command>
+										<FormMessageWithErrorIcon />
+									</FormItem>
+								)}
+							/>
+						</div>
+					)}
+
+					<div className="flex justify-end">
+						<Button
+							disabled={
+								!canManageProject || !form.formState.isValid || isUpdating
+							}
+							type="submit"
+							variant="ghost"
+							className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
+						>
+							Save Changes
+						</Button>
 					</div>
 				</form>
 			</Form>
@@ -1537,7 +1880,7 @@ const tabs = [
 		name: 'Meta Events',
 		value: 'meta-events',
 		icon: Bot,
-		component: ProjectConfig,
+		component: MetaEventsConfig,
 		projectTypes: ['incoming', 'outgoing'],
 	},
 	{
