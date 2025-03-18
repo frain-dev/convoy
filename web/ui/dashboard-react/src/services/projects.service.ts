@@ -1,6 +1,10 @@
 import { request } from '@/services/http.service';
 
-import type { Project, CreateProjectResponse } from '@/models/project.model';
+import type {
+	Project,
+	CreateProjectResponse,
+	EventType,
+} from '@/models/project.model';
 
 type CreateProjectParams = {
 	name: string;
@@ -126,4 +130,49 @@ export async function deleteProject(
 	});
 
 	return res.data;
+}
+
+export async function getEventTypes(
+	_uid: string,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<{ event_types: Array<EventType> }>({
+		method: 'get',
+		url: '/event-types',
+		level: 'org_project',
+	});
+
+	return res.data;
+}
+
+type CreateEventTypeParams = {
+	name: string;
+	category?: string;
+	description?: string;
+};
+
+export async function createEventType(
+	_uid: string,
+	eventType: CreateEventTypeParams,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<{ event_type: EventType }>({
+		url: `/event-types`,
+		method: 'post',
+		body: eventType,
+		level: 'org_project',
+	});
+
+	return res.data.event_type;
+}
+
+export async function deprecateEventType(uid:string, 	deps: { httpReq: typeof request } = { httpReq: request },) {
+	const res = await deps.httpReq<null>({
+		url: `/event-types/${uid}/deprecate`,
+		method: 'post',
+		body: {},
+		level: 'org_project'
+	})
+
+	return res;
 }

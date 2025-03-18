@@ -4,7 +4,16 @@ import { useState, useCallback, useMemo } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
-import { Bot, Home, Settings, User, Plus, X } from 'lucide-react';
+import {
+	Bot,
+	Home,
+	Settings,
+	User,
+	Plus,
+	X,
+	PencilLine,
+	Trash2,
+} from 'lucide-react';
 
 import {
 	Form,
@@ -70,20 +79,20 @@ import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/dashboard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
-
 import { cn } from '@/lib/utils';
 import { toMMMDDYYYY } from '@/lib/pipes';
 import { useProjectStore } from '@/store/index';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
-import { EventTypes } from '@/models/project.model';
+import * as licenseService from '@/services/licenses.service'
+import { MetaEventTypes } from '@/models/project.model';
 
 import type { KeyboardEvent } from 'react';
-import type { EventType, Project } from '@/models/project.model';
+import type { EventType, MetaEventType, Project } from '@/models/project.model';
 
 import warningAnimation from '../../../../assets/img/warning-animation.gif';
-
+import eventTypesEmptyState from '../../../../assets/img/events-log-empty-state.png';
 
 export const Route = createFileRoute('/projects_/$projectId/settings')({
 	beforeLoad({ context }) {
@@ -95,7 +104,14 @@ export const Route = createFileRoute('/projects_/$projectId/settings')({
 		const canManageProject = await authService.ensureUserCanAccess(
 			'Project Settings|MANAGE',
 		);
-		return { project, canManageProject };
+
+		const licenses = await licenseService.getLicenses()
+
+		const { event_types } = await projectsService.getEventTypes(
+			params.projectId,
+		);
+
+		return { project, canManageProject, eventTypes: event_types, hasAdvancedSubscriptions: licenses.includes('ADVANCED_SUBSCRIPTIONS') };
 	},
 	component: ProjectSettings,
 });
@@ -1539,7 +1555,7 @@ const MetaEventsConfigFormSchema = z
 		secret: z.string().transform(v => (v ? v : '')),
 		url: z.string().transform(v => (v ? v : '')),
 		event_type: z
-			.array(z.enum(EventTypes), {
+			.array(z.enum(MetaEventTypes), {
 				message: 'Event type(s) is required',
 			})
 			.nullable(),
@@ -1590,11 +1606,11 @@ function MetaEventsConfig(props: {
 	const { setProject, setProjects, projects } = useProjectStore();
 
 	const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false);
-	const [selectedEventTypes, setSelectedEventTypes] = useState<EventType[]>(
+	const [selectedEventTypes, setSelectedEventTypes] = useState<MetaEventType[]>(
 		project.config.meta_event.event_type ?? [],
 	);
 	const [inputValue, setInputValue] = useState('');
-	const handleUnselect = useCallback((eventType: EventType) => {
+	const handleUnselect = useCallback((eventType: MetaEventType) => {
 		setSelectedEventTypes(prev => prev.filter(s => s !== eventType));
 	}, []);
 	const handleKeyDown = useCallback(
@@ -1609,7 +1625,9 @@ function MetaEventsConfig(props: {
 	);
 	const filteredEventTypes = useMemo(
 		() =>
-			EventTypes.filter(eventType => !selectedEventTypes.includes(eventType)),
+			MetaEventTypes.filter(
+				eventType => !selectedEventTypes.includes(eventType),
+			),
 		[selectedEventTypes],
 	);
 
@@ -1854,6 +1872,445 @@ function MetaEventsConfig(props: {
 	);
 }
 
+const NewEventTypeFormSchema = z.object({
+	name: z.string().min(1, 'Name is required'),
+	category: z.string().optional(),
+	description: z.string().optional(),
+});
+
+function EventTypesConfig(props: {
+	project: Project;
+	canManageProject: boolean;
+	hasAdvancedSubscriptions: boolean;
+	eventTypes: Array<EventType>;
+}) {
+	const { eventTypes, canManageProject, project , hasAdvancedSubscriptions} = props;
+	const [isCreating, setIsCreating] = useState(false);
+	const [isDeprecating, setIsDeprecating] = useState(false)
+	const [_eventTypes, set_eventTypes] = useState(eventTypes);
+
+	const form = useForm<z.infer<typeof NewEventTypeFormSchema>>({
+		resolver: zodResolver(NewEventTypeFormSchema),
+		defaultValues: {
+			name: '',
+			category: '',
+			description: '',
+		},
+		mode: 'onTouched',
+	});
+
+	async function createNewEventType(
+		eventType: z.infer<typeof NewEventTypeFormSchema>,
+	) {
+		setIsCreating(true);
+		try {
+			const created = await projectsService.createEventType(
+				project.uid,
+				eventType,
+			);
+			set_eventTypes(prev => prev.concat(created));
+			// TODO should close the sheet here
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsCreating(false);
+		}
+	}
+
+	async function deprecateEventType(eventTypeUid:string) {
+		setIsDeprecating(true)
+		try {
+			await projectsService.deprecateEventType(eventTypeUid)
+			const {event_types} = await projectsService.getEventTypes(project.uid)
+			set_eventTypes(event_types)
+
+		} catch (error) {
+			console.error(error)
+		} finally {
+			setIsDeprecating(false)
+		}
+	}
+	return (
+		<section className="flex flex-col gap-4">
+			<div className="flex items-center justify-between">
+				<h1 className="font-bold">Event Types</h1>
+
+				{/* This sheet is duplicated. Keep it single */}
+				<Sheet>
+					<SheetTrigger asChild>
+						<Button
+							disabled={!canManageProject}
+							size={'sm'}
+							variant="ghost"
+							className="hover:bg-new.primary-400 px-3 text-xs hover:text-white-100 bg-new.primary-400 flex justify-between items-center"
+						>
+							<Plus className="stroke-white-100" />
+							<p className=" text-white-100">Event Type</p>
+						</Button>
+					</SheetTrigger>
+					<SheetContent className="w-[400px] px-0">
+						<SheetHeader className="text-start px-4">
+							<SheetTitle>New Event Type</SheetTitle>
+							<SheetDescription className="sr-only">
+								Add a new event type
+							</SheetDescription>
+						</SheetHeader>
+						<hr className="my-6 border-neutral-5" />
+						<div className="px-4">
+							<Form {...form}>
+								<form
+									onSubmit={(...args) =>
+										void form.handleSubmit(createNewEventType)(...args)
+									}
+								>
+									<div>
+										<FormField
+											control={form.control}
+											name="name"
+											render={({ field, fieldState }) => (
+												<FormItem className="w-full relative mb-6 block">
+													<div className="w-full mb-2 flex items-center justify-between">
+														<FormLabel className="text-xs/5 text-neutral-9">
+															Name
+														</FormLabel>
+													</div>
+													<FormControl>
+														<Input
+															type="text"
+															className={cn(
+																'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																fieldState.error
+																	? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																	: ' hover:border-new.primary-100 focus:border-new.primary-300',
+															)}
+															{...field}
+														/>
+													</FormControl>
+													<FormMessageWithErrorIcon />
+												</FormItem>
+											)}
+										/>
+
+										<FormField
+											control={form.control}
+											name="category"
+											render={({ field, fieldState }) => (
+												<FormItem className="w-full relative mb-6 block">
+													<div className="w-full mb-2 flex items-center justify-between">
+														<FormLabel className="text-xs/5 text-neutral-9">
+															Category
+														</FormLabel>
+													</div>
+													<FormControl>
+														<Input
+															autoComplete="on"
+															type="text"
+															className={cn(
+																'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																fieldState.error
+																	? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																	: ' hover:border-new.primary-100 focus:border-new.primary-300',
+															)}
+															{...field}
+														/>
+													</FormControl>
+													<FormMessageWithErrorIcon />
+												</FormItem>
+											)}
+										/>
+
+										<FormField
+											control={form.control}
+											name="description"
+											render={({ field, fieldState }) => (
+												<FormItem className="w-full relative mb-6 block">
+													<div className="w-full mb-2 flex items-center justify-between">
+														<FormLabel className="text-xs/5 text-neutral-9">
+															Description
+														</FormLabel>
+													</div>
+													<FormControl>
+														<Input
+															autoComplete="on"
+															type="text"
+															className={cn(
+																'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																fieldState.error
+																	? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																	: ' hover:border-new.primary-100 focus:border-new.primary-300',
+															)}
+															{...field}
+														/>
+													</FormControl>
+													<FormMessageWithErrorIcon />
+												</FormItem>
+											)}
+										/>
+									</div>
+									<div className="flex justify-end items-center gap-x-4">
+										<SheetClose asChild>
+											<Button
+												variant="ghost"
+												className="hover:bg-white-100 text-destructive hover:text-destructive border border-destructive text-xs hover:destructive"
+											>
+												Discard
+											</Button>
+										</SheetClose>
+
+										<Button
+											type="submit"
+											disabled={
+												!canManageProject ||
+												!form.formState.isValid ||
+												isCreating
+											}
+											variant="ghost"
+											className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
+										>
+											Create
+										</Button>
+									</div>
+								</form>
+							</Form>
+						</div>
+					</SheetContent>
+				</Sheet>
+			</div>
+
+			<div>
+				{/* TODO include empty state */}
+				{_eventTypes.length == 0 ? (
+					<div className="flex flex-col items-center">
+						<img
+							src={eventTypesEmptyState}
+							alt="No event types created"
+							className="mb-12 h-40"
+						/>
+						<p className="font-bold mb-4 text-base text-neutral-12 text-center">
+							You currently do not have any event types
+						</p>
+						<p className="text-sm text-neutral-10 text-center mb-4">
+							Event types will be listed here when available
+						</p>
+						{/* This sheet is duplicated. Keep it single */}
+						<Sheet>
+							<SheetTrigger asChild>
+								<Button
+									disabled={!canManageProject}
+									size={'sm'}
+									variant="ghost"
+									className="hover:bg-new.primary-400 px-3 text-xs hover:text-white-100 bg-new.primary-400 flex justify-between items-center"
+								>
+									<Plus className="stroke-white-100" />
+									<p className=" text-white-100">Create Event Type</p>
+								</Button>
+							</SheetTrigger>
+							<SheetContent className="w-[400px] px-0">
+								<SheetHeader className="text-start px-4">
+									<SheetTitle>New Event Type</SheetTitle>
+									<SheetDescription className="sr-only">
+										Add a new event type
+									</SheetDescription>
+								</SheetHeader>
+								<hr className="my-6 border-neutral-5" />
+								<div className="px-4">
+									<Form {...form}>
+										<form
+											onSubmit={(...args) =>
+												void form.handleSubmit(createNewEventType)(...args)
+											}
+										>
+											<div>
+												<FormField
+													control={form.control}
+													name="name"
+													render={({ field, fieldState }) => (
+														<FormItem className="w-full relative mb-6 block">
+															<div className="w-full mb-2 flex items-center justify-between">
+																<FormLabel className="text-xs/5 text-neutral-9">
+																	Name
+																</FormLabel>
+															</div>
+															<FormControl>
+																<Input
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+
+												<FormField
+													control={form.control}
+													name="category"
+													render={({ field, fieldState }) => (
+														<FormItem className="w-full relative mb-6 block">
+															<div className="w-full mb-2 flex items-center justify-between">
+																<FormLabel className="text-xs/5 text-neutral-9">
+																	Category
+																</FormLabel>
+															</div>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+
+												<FormField
+													control={form.control}
+													name="description"
+													render={({ field, fieldState }) => (
+														<FormItem className="w-full relative mb-6 block">
+															<div className="w-full mb-2 flex items-center justify-between">
+																<FormLabel className="text-xs/5 text-neutral-9">
+																	Description
+																</FormLabel>
+															</div>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+											<div className="flex justify-end items-center gap-x-4">
+												<SheetClose asChild>
+													<Button
+														variant="ghost"
+														className="hover:bg-white-100 text-destructive hover:text-destructive border border-destructive text-xs hover:destructive"
+													>
+														Discard
+													</Button>
+												</SheetClose>
+
+												<Button
+													type="submit"
+													disabled={
+														!canManageProject ||
+														!form.formState.isValid ||
+														isCreating
+													}
+													variant="ghost"
+													className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
+												>
+													Create
+												</Button>
+											</div>
+										</form>
+									</Form>
+								</div>
+							</SheetContent>
+						</Sheet>
+					</div>
+				) : (
+					<div>
+						<Table>
+							<TableCaption className="sr-only">
+								{project.name} Event types
+							</TableCaption>
+							<TableHeader>
+								<TableRow>
+									<TableHead className=" uppercase text-new.black font-medium text-xs">
+										event type
+									</TableHead>
+									<TableHead className="uppercase text-new.black font-medium text-xs">
+										category
+									</TableHead>
+									<TableHead className="uppercase text-new.black font-medium text-xs">
+										description
+									</TableHead>
+									<TableHead className="uppercase text-new.black font-medium text-xs"></TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{_eventTypes.map(et => {
+									return (
+										<TableRow key={et.uid}>
+											<TableCell className="space-x-2">
+												<span className="px-2 py-1 font-normal text-xs bg-neutral-a3 rounded-16px text-neutral-12">
+													{et.name}
+												</span>
+												<span
+													className={cn(
+														'px-2 py-1 font-normal text-xs rounded-16px text-neutral-12',
+														et.deprecated_at
+															? 'bg-destructive/10 text-destructive'
+															: 'bg-new.success-50 text-new.success-600',
+													)}
+												>
+													{et.deprecated_at ? 'deprecated' : 'active'}
+												</span>
+											</TableCell>
+											<TableCell className="text-xs font-normal text-neutral-12">
+												{et.category || '-'}
+											</TableCell>
+											<TableCell className="text-xs font-normal text-neutral-12">
+												{et.description || '-'}
+											</TableCell>
+											<TableCell className="flex items-center gap-x-2">
+												<Button
+													variant={'ghost'}
+													className="p-1 bg-transparent hover:bg-transparent"
+													disabled={!!et.deprecated_at || !hasAdvancedSubscriptions}
+												>
+													<PencilLine className="stroke-neutral-10" />{' '}
+													<span className="text-xs text-neutral-10">Edit</span>
+												</Button>
+												<Button
+												onClick={() => deprecateEventType(et.uid)}
+													variant={'ghost'}
+													className="p-1 bg-transparent hover:bg-transparent"
+													disabled={!!et.deprecated_at || !hasAdvancedSubscriptions || isDeprecating}
+												>
+													<Trash2 className="stroke-destructive" />{' '}
+													<span className="text-xs text-destructive">
+														Deprecate
+													</span>
+												</Button>
+											</TableCell>
+										</TableRow>
+									);
+								})}
+							</TableBody>
+						</Table>
+					</div>
+				)}
+			</div>
+		</section>
+	);
+}
+
 const tabs = [
 	{
 		name: 'Project',
@@ -1887,7 +2344,7 @@ const tabs = [
 		name: 'Event Types',
 		value: 'event-types',
 		icon: Home,
-		component: ProjectConfig,
+		component: EventTypesConfig,
 		projectTypes: ['outgoing'],
 	},
 	{
@@ -1900,7 +2357,7 @@ const tabs = [
 ];
 
 function ProjectSettings() {
-	const { project, canManageProject } = Route.useLoaderData();
+	const { project, canManageProject, eventTypes, hasAdvancedSubscriptions } = Route.useLoaderData();
 
 	return (
 		<DashboardLayout showSidebar={true}>
@@ -1933,6 +2390,8 @@ function ProjectSettings() {
 										<tab.component
 											project={project}
 											canManageProject={canManageProject}
+											eventTypes={eventTypes}
+											hasAdvancedSubscriptions={hasAdvancedSubscriptions}
 										/>
 									</TabsContent>
 								))}
