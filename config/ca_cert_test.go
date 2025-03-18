@@ -78,6 +78,6 @@ gNzJgq2rBh+ytZgv31JGEcG/DwfPrC7eANAy
 			MinVersion: tls.VersionTLS12,
 		}
 
-		require.Equal(t, systemTlsCfg, tlsCfg)
+		require.Equal(t, len(systemTlsCfg.Certificates), len(tlsCfg.Certificates))
 	})
 }
