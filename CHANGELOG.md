@@ -1,3 +1,19 @@
+# 25.3.1
+
+### Features
+
+-  Added custom Certificate Authority support in dispatcher and server for secure TLS connections #2266
+
+# 25.2.2
+
+### Enhancements
+
+-  Portal links can now be authenticated using the owner id #2256
+
+### Bug Fixes
+ 
+- Fixed a bug where the rate-limit setting was not being deleted when updating projects and endpoints #2246
+
 # 25.2.1
 
 ### Features
