@@ -237,6 +237,20 @@ func (mr *MockLicenserMockRecorder) CredentialEncryption() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CredentialEncryption", reflect.TypeOf((*MockLicenser)(nil).CredentialEncryption))
 }
 
+// CustomCertificateAuthority mocks base method.
+func (m *MockLicenser) CustomCertificateAuthority() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CustomCertificateAuthority")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// CustomCertificateAuthority indicates an expected call of CustomCertificateAuthority.
+func (mr *MockLicenserMockRecorder) CustomCertificateAuthority() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CustomCertificateAuthority", reflect.TypeOf((*MockLicenser)(nil).CustomCertificateAuthority))
+}
+
 // DatadogTracing mocks base method.
 func (m *MockLicenser) DatadogTracing() bool {
 	m.ctrl.T.Helper()

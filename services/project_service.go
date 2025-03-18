@@ -74,7 +74,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 			projectConfig.SSL = &datastore.DefaultSSLConfig
 		}
 
-		err := validateMetaEvent(projectConfig)
+		err := validateMetaEvent(projectConfig, ps.Licenser)
 		if err != nil {
 			return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -175,7 +175,7 @@ func (ps *ProjectService) UpdateProject(ctx context.Context, project *datastore.
 
 		project.Config = update.Config.Transform()
 		checkSignatureVersions(project.Config.Signature.Versions)
-		err := validateMetaEvent(project.Config)
+		err := validateMetaEvent(project.Config, ps.Licenser)
 		if err != nil {
 			return nil, util.NewServiceError(http.StatusBadRequest, err)
 		}
@@ -211,7 +211,7 @@ func checkSignatureVersions(versions []datastore.SignatureVersion) {
 	}
 }
 
-func validateMetaEvent(c *datastore.ProjectConfig) error {
+func validateMetaEvent(c *datastore.ProjectConfig, licenser license.Licenser) error {
 	metaEvent := c.MetaEvent
 	if metaEvent == nil {
 		return nil
@@ -222,7 +222,7 @@ func validateMetaEvent(c *datastore.ProjectConfig) error {
 	}
 
 	if metaEvent.Type == datastore.HTTPMetaEvent {
-		url, err := util.ValidateEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints)
+		url, err := util.ValidateEndpoint(metaEvent.URL, c.SSL.EnforceSecureEndpoints, licenser.CustomCertificateAuthority())
 		if err != nil {
 			return err
 		}
