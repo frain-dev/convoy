@@ -34,7 +34,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
 	}
 
-	url, err := util.ValidateEndpoint(a.E.URL, project.Config.SSL.EnforceSecureEndpoints)
+	url, err := util.ValidateEndpoint(a.E.URL, project.Config.SSL.EnforceSecureEndpoints, a.Licenser.CustomCertificateAuthority())
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}

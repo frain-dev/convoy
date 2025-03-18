@@ -273,6 +273,11 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		telemetry.OptionBackend(pb),
 		telemetry.OptionBackend(mb))
 
+	caCertTLSCfg, err := config.GetCaCert()
+	if err != nil {
+		return err
+	}
+
 	dispatcher, err := net.NewDispatcher(
 		a.Licenser,
 		featureFlag,
@@ -282,7 +287,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		net.ProxyOption(cfg.Server.HTTP.HttpProxy),
 		net.AllowListOption(cfg.Dispatcher.AllowList),
 		net.BlockListOption(cfg.Dispatcher.BlockList),
-		net.InsecureSkipVerifyOption(cfg.Dispatcher.InsecureSkipVerify),
+		net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
 	)
 	if err != nil {
 		lo.WithError(err).Fatal("Failed to create new net dispatcher")

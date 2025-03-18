@@ -24,7 +24,7 @@ func TestCleanEndpoint(t *testing.T) {
 	}
 
 	for _, v := range tt {
-		url, err := ValidateEndpoint(v.url, v.enforceSecure)
+		url, err := ValidateEndpoint(v.url, v.enforceSecure, false)
 		if v.hasError {
 			require.Error(t, err)
 			continue

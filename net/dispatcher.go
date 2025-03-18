@@ -219,15 +219,20 @@ func BlockListOption(blockList []string) DispatcherOption {
 	}
 }
 
-// InsecureSkipVerifyOption allow self-signed certificates
-// to be used if set to true but is susceptible to Man In The Middle attacks.
-func InsecureSkipVerifyOption(insecureSkipVerify bool) DispatcherOption {
+// TLSConfigOption configures TLS settings for the dispatcher.
+// If `insecureSkipVerify` is true, it allows self-signed certificates but is vulnerable to MITM attacks.
+// If a custom CA is provided, it is used for TLS verification.
+// Otherwise, it enforces a secure minimum TLS version.
+func TLSConfigOption(insecureSkipVerify bool, licenser license.Licenser, caCertTLSConfig *tls.Config) DispatcherOption {
 	return func(d *Dispatcher) error {
-		if insecureSkipVerify {
+		switch {
+		case insecureSkipVerify:
 			d.transport.TLSClientConfig = &tls.Config{
 				InsecureSkipVerify: true,
 			}
-		} else {
+		case licenser.CustomCertificateAuthority() && caCertTLSConfig != nil:
+			d.transport.TLSClientConfig = caCertTLSConfig
+		default:
 			d.transport.TLSClientConfig = &tls.Config{
 				MinVersion: tls.VersionTLS12,
 			}

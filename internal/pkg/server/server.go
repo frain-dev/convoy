@@ -25,7 +25,6 @@ type Server struct {
 }
 
 func NewServer(port uint32, stopFn func()) *Server {
-
 	srv := &Server{
 		s: &http.Server{
 			ReadTimeout:  time.Second * 30,

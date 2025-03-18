@@ -335,6 +335,7 @@ func TestNewDispatcher(t *testing.T) {
 				l := licenser.(*mocks.MockLicenser)
 				l.EXPECT().UseForwardProxy().Return(true)
 				l.EXPECT().IpRules().Return(true)
+				l.EXPECT().CustomCertificateAuthority().Return(false)
 			},
 			wantProxy:  true,
 			wantErr:    false,
@@ -350,6 +351,7 @@ func TestNewDispatcher(t *testing.T) {
 				l := licenser.(*mocks.MockLicenser)
 				l.EXPECT().UseForwardProxy().Return(false)
 				l.EXPECT().IpRules().Return(true)
+				l.EXPECT().CustomCertificateAuthority().Return(false)
 			},
 			wantProxy:  false,
 			wantErr:    false,
@@ -370,7 +372,7 @@ func TestNewDispatcher(t *testing.T) {
 				licenser,
 				fflag.NewFFlag([]string{string(fflag.IpRules)}),
 				LoggerOption(log.NewLogger(os.Stdout)),
-				InsecureSkipVerifyOption(tt.args.enforceSecure),
+				TLSConfigOption(tt.args.enforceSecure, licenser, nil),
 				ProxyOption(tt.args.httpProxy),
 			)
 			if tt.wantErr {

@@ -30,6 +30,7 @@ type Licenser interface {
 	DatadogTracing() bool
 	ReadReplica() bool
 	CredentialEncryption() bool
+	CustomCertificateAuthority() bool
 
 	RetentionPolicy() bool
 	AdvancedMsgBroker() bool

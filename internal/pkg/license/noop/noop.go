@@ -132,3 +132,6 @@ func (k *Licenser) ReadReplica() bool {
 func (k *Licenser) CredentialEncryption() bool {
 	return true
 }
+func (k *Licenser) CustomCertificateAuthority() bool {
+	return true
+}
