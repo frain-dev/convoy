@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
@@ -67,6 +69,15 @@ gNzJgq2rBh+ytZgv31JGEcG/DwfPrC7eANAy
 	t.Run("should return nil if no CA is provided", func(t *testing.T) {
 		tlsCfg, err := getCACertTLSCfg("", "")
 		require.NoError(t, err)
-		require.Nil(t, tlsCfg)
+
+		systemCertPool, err := x509.SystemCertPool()
+		require.NoError(t, err)
+
+		systemTlsCfg := &tls.Config{
+			RootCAs:    systemCertPool,
+			MinVersion: tls.VersionTLS12,
+		}
+
+		require.Equal(t, len(systemTlsCfg.Certificates), len(tlsCfg.Certificates))
 	})
 }
