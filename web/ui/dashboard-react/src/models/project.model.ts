@@ -35,7 +35,7 @@ export interface Project {
 		ssl: Ssl;
 		meta_event: {
 			// FIXME I think `event_type` should be `event_types` or `types`
-			event_type:  Array<typeof EventTypes[number]> | null;
+			event_type: Array<(typeof MetaEventTypes)[number]> | null;
 			is_enabled: boolean;
 			secret: string;
 			type: string;
@@ -150,13 +150,21 @@ export interface Version {
 	created_at: string;
 }
 
-export const EventTypes = [
+export const MetaEventTypes = [
 	'endpoint.created',
 	'endpoint.deleted',
 	'endpoint.updated',
 	'eventdelivery.success',
 	'eventdelivery.failed',
 	'project.updated',
-] as const; 
+] as const;
 
-export type EventType = typeof EventTypes[number]
+export type MetaEventType = (typeof MetaEventTypes)[number];
+
+export type EventType = {
+	uid: string;
+	name: string;
+	category: string;
+	description: string;
+	deprecated_at: null | string;
+};
