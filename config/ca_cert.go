@@ -40,14 +40,15 @@ func getCACertTLSCfg(caCertString, caCertPath string) (*tls.Config, error) {
 
 	// Load custom CA cert if provided
 	var caCertData []byte
-	if caCertString != "" {
-		caCertData = []byte(caCertString)
-	} else if caCertPath != "" {
-		var err error
+	if caCertPath != "" {
 		caCertData, err = os.ReadFile(caCertPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read CA certificate: %w", err)
 		}
+	}
+
+	if caCertString != "" {
+		caCertData = []byte(caCertString)
 	}
 
 	// Append custom cert to the pool
