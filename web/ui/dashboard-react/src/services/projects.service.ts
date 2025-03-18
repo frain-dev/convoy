@@ -165,3 +165,14 @@ export async function createEventType(
 
 	return res.data.event_type;
 }
+
+export async function deprecateEventType(uid:string, 	deps: { httpReq: typeof request } = { httpReq: request },) {
+	const res = await deps.httpReq<null>({
+		url: `/event-types/${uid}/deprecate`,
+		method: 'post',
+		body: {},
+		level: 'org_project'
+	})
+
+	return res;
+}

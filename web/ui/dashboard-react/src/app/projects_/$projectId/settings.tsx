@@ -85,6 +85,7 @@ import { useProjectStore } from '@/store/index';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
+import * as licenseService from '@/services/licenses.service'
 import { MetaEventTypes } from '@/models/project.model';
 
 import type { KeyboardEvent } from 'react';
@@ -104,11 +105,13 @@ export const Route = createFileRoute('/projects_/$projectId/settings')({
 			'Project Settings|MANAGE',
 		);
 
+		const licenses = await licenseService.getLicenses()
+
 		const { event_types } = await projectsService.getEventTypes(
 			params.projectId,
 		);
 
-		return { project, canManageProject, eventTypes: event_types };
+		return { project, canManageProject, eventTypes: event_types, hasAdvancedSubscriptions: licenses.includes('ADVANCED_SUBSCRIPTIONS') };
 	},
 	component: ProjectSettings,
 });
@@ -1878,10 +1881,12 @@ const NewEventTypeFormSchema = z.object({
 function EventTypesConfig(props: {
 	project: Project;
 	canManageProject: boolean;
+	hasAdvancedSubscriptions: boolean;
 	eventTypes: Array<EventType>;
 }) {
-	const { eventTypes, canManageProject, project } = props;
+	const { eventTypes, canManageProject, project , hasAdvancedSubscriptions} = props;
 	const [isCreating, setIsCreating] = useState(false);
+	const [isDeprecating, setIsDeprecating] = useState(false)
 	const [_eventTypes, set_eventTypes] = useState(eventTypes);
 
 	const form = useForm<z.infer<typeof NewEventTypeFormSchema>>({
@@ -1909,6 +1914,20 @@ function EventTypesConfig(props: {
 			console.error(error);
 		} finally {
 			setIsCreating(false);
+		}
+	}
+
+	async function deprecateEventType(eventTypeUid:string) {
+		setIsDeprecating(true)
+		try {
+			await projectsService.deprecateEventType(eventTypeUid)
+			const {event_types} = await projectsService.getEventTypes(project.uid)
+			set_eventTypes(event_types)
+
+		} catch (error) {
+			console.error(error)
+		} finally {
+			setIsDeprecating(false)
 		}
 	}
 	return (
@@ -2263,15 +2282,16 @@ function EventTypesConfig(props: {
 												<Button
 													variant={'ghost'}
 													className="p-1 bg-transparent hover:bg-transparent"
-													disabled={!!et.deprecated_at}
+													disabled={!!et.deprecated_at || !hasAdvancedSubscriptions}
 												>
 													<PencilLine className="stroke-neutral-10" />{' '}
 													<span className="text-xs text-neutral-10">Edit</span>
 												</Button>
 												<Button
+												onClick={() => deprecateEventType(et.uid)}
 													variant={'ghost'}
 													className="p-1 bg-transparent hover:bg-transparent"
-													disabled={!!et.deprecated_at}
+													disabled={!!et.deprecated_at || !hasAdvancedSubscriptions || isDeprecating}
 												>
 													<Trash2 className="stroke-destructive" />{' '}
 													<span className="text-xs text-destructive">
@@ -2337,7 +2357,7 @@ const tabs = [
 ];
 
 function ProjectSettings() {
-	const { project, canManageProject, eventTypes } = Route.useLoaderData();
+	const { project, canManageProject, eventTypes, hasAdvancedSubscriptions } = Route.useLoaderData();
 
 	return (
 		<DashboardLayout showSidebar={true}>
@@ -2371,6 +2391,7 @@ function ProjectSettings() {
 											project={project}
 											canManageProject={canManageProject}
 											eventTypes={eventTypes}
+											hasAdvancedSubscriptions={hasAdvancedSubscriptions}
 										/>
 									</TabsContent>
 								))}
