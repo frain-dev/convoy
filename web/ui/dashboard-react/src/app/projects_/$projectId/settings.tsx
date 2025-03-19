@@ -13,6 +13,8 @@ import {
 	X,
 	PencilLine,
 	Trash2,
+	CopyIcon,
+	RefreshCcw,
 } from 'lucide-react';
 
 import {
@@ -85,12 +87,13 @@ import { useProjectStore } from '@/store/index';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as authService from '@/services/auth.service';
 import * as projectsService from '@/services/projects.service';
-import * as licenseService from '@/services/licenses.service'
+import * as licenseService from '@/services/licenses.service';
 import { MetaEventTypes } from '@/models/project.model';
 
 import type { KeyboardEvent } from 'react';
 import type { EventType, MetaEventType, Project } from '@/models/project.model';
 
+import successAnimation from '../../../../assets/img/success.gif';
 import warningAnimation from '../../../../assets/img/warning-animation.gif';
 import eventTypesEmptyState from '../../../../assets/img/events-log-empty-state.png';
 
@@ -105,13 +108,18 @@ export const Route = createFileRoute('/projects_/$projectId/settings')({
 			'Project Settings|MANAGE',
 		);
 
-		const licenses = await licenseService.getLicenses()
+		const licenses = await licenseService.getLicenses();
 
 		const { event_types } = await projectsService.getEventTypes(
 			params.projectId,
 		);
 
-		return { project, canManageProject, eventTypes: event_types, hasAdvancedSubscriptions: licenses.includes('ADVANCED_SUBSCRIPTIONS') };
+		return {
+			project,
+			canManageProject,
+			eventTypes: event_types,
+			hasAdvancedSubscriptions: licenses.includes('ADVANCED_SUBSCRIPTIONS'),
+		};
 	},
 	component: ProjectSettings,
 });
@@ -1884,9 +1892,10 @@ function EventTypesConfig(props: {
 	hasAdvancedSubscriptions: boolean;
 	eventTypes: Array<EventType>;
 }) {
-	const { eventTypes, canManageProject, project , hasAdvancedSubscriptions} = props;
+	const { eventTypes, canManageProject, project, hasAdvancedSubscriptions } =
+		props;
 	const [isCreating, setIsCreating] = useState(false);
-	const [isDeprecating, setIsDeprecating] = useState(false)
+	const [isDeprecating, setIsDeprecating] = useState(false);
 	const [_eventTypes, set_eventTypes] = useState(eventTypes);
 
 	const form = useForm<z.infer<typeof NewEventTypeFormSchema>>({
@@ -1917,17 +1926,16 @@ function EventTypesConfig(props: {
 		}
 	}
 
-	async function deprecateEventType(eventTypeUid:string) {
-		setIsDeprecating(true)
+	async function deprecateEventType(eventTypeUid: string) {
+		setIsDeprecating(true);
 		try {
-			await projectsService.deprecateEventType(eventTypeUid)
-			const {event_types} = await projectsService.getEventTypes(project.uid)
-			set_eventTypes(event_types)
-
+			await projectsService.deprecateEventType(eventTypeUid);
+			const { event_types } = await projectsService.getEventTypes(project.uid);
+			set_eventTypes(event_types);
 		} catch (error) {
-			console.error(error)
+			console.error(error);
 		} finally {
-			setIsDeprecating(false)
+			setIsDeprecating(false);
 		}
 	}
 	return (
@@ -2282,16 +2290,22 @@ function EventTypesConfig(props: {
 												<Button
 													variant={'ghost'}
 													className="p-1 bg-transparent hover:bg-transparent"
-													disabled={!!et.deprecated_at || !hasAdvancedSubscriptions}
+													disabled={
+														!!et.deprecated_at || !hasAdvancedSubscriptions
+													}
 												>
 													<PencilLine className="stroke-neutral-10" />{' '}
 													<span className="text-xs text-neutral-10">Edit</span>
 												</Button>
 												<Button
-												onClick={() => deprecateEventType(et.uid)}
+													onClick={() => deprecateEventType(et.uid)}
 													variant={'ghost'}
 													className="p-1 bg-transparent hover:bg-transparent"
-													disabled={!!et.deprecated_at || !hasAdvancedSubscriptions || isDeprecating}
+													disabled={
+														!!et.deprecated_at ||
+														!hasAdvancedSubscriptions ||
+														isDeprecating
+													}
 												>
 													<Trash2 className="stroke-destructive" />{' '}
 													<span className="text-xs text-destructive">
@@ -2307,6 +2321,160 @@ function EventTypesConfig(props: {
 					</div>
 				)}
 			</div>
+		</section>
+	);
+}
+
+function SecretsConfig(props: { project: Project; canManageProject: boolean }) {
+	const { project } = props;
+	const [apiKey, setAPIKey] = useState('');
+	const [hasGeneratedKey, setHasGeneratedKey] = useState(false);
+
+	async function regenerateAPIKey(projectId: string) {
+		setHasGeneratedKey(false);
+		try {
+			const { key } = await projectsService.regenerateAPIKey(projectId);
+			setAPIKey(key);
+			setHasGeneratedKey(true);
+		} catch (error) {
+			console.error(error);
+			setHasGeneratedKey(true);
+		}
+	}
+
+	return (
+		<section className="flex flex-col gap-4">
+			<h1 className="text-base font-bold text-neutral-10 mb-6">
+				Project Secrets
+			</h1>
+			<div>
+				<p className="text-neutral-9 text-xs mb-3">Project ID</p>
+				<div className="flex items-center justify-between h-[50px] border border-neutral-a3 bg-[#F7F9FC] pr-2 pl-3 rounded-md mb-6">
+					<span className="text-xs text-neutral-11 font-normal truncate">
+						{project.uid}
+					</span>
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						className="asbolute right-[1%] top-0 h-full py-2 hover:bg-transparent pr-1 pl-0"
+						onClick={() => {
+							window.navigator.clipboard.writeText(project.uid).then();
+							// TODO show toast message on copy successful
+						}}
+					>
+						<CopyIcon className="opacity-50" aria-hidden="true" />
+						<span className="sr-only">copy project key</span>
+					</Button>
+				</div>
+				<div className="flex justify-center">
+					{/* [ ] shpuld propably use an <AlertDialog> here */}
+					<Dialog>
+						<DialogTrigger asChild>
+							<Button
+								disabled={!props.canManageProject}
+								size={'sm'}
+								variant="ghost"
+								className="hover:bg-new.primary-400 px-3 text-xs hover:text-white-100 bg-new.primary-400 flex justify-between items-center"
+							>
+								<span className="rotate-180">
+									<RefreshCcw className="stroke-white-100 " />
+								</span>
+
+								<p className="text-white-100">Regenerate API Key</p>
+							</Button>
+						</DialogTrigger>
+						{/* TODO: Maybe change the copy of this */}
+						<DialogContent className="flex flex-col gap-y-4 rounded-md">
+							<DialogTitle className="text-sm font-bold text-black">
+								Confirm Action
+							</DialogTitle>
+							<DialogDescription className="text-xs font-medium text-neutral-11">
+								You are about to regenerate a new API Key for this project
+							</DialogDescription>
+							<DialogFooter className="flex flex-row justify-end gap-x-3">
+								<DialogClose asChild>
+									<Button
+										size={'sm'}
+										variant="ghost"
+										className="hover:bg-transparent px-3 text-xs text-new.black hover:text-new.black bg-transparent flex justify-between items-center"
+									>
+										Cancel
+									</Button>
+								</DialogClose>
+
+								<DialogClose asChild>
+									<Button
+										onClick={() => regenerateAPIKey(project.uid)}
+										disabled={!props.canManageProject}
+										size={'sm'}
+										variant="ghost"
+										className="hover:bg-new.primary-400 px-3 text-white-100 text-xs hover:text-white-100 bg-new.primary-400 flex justify-between items-center"
+									>
+										Confirm
+									</Button>
+								</DialogClose>
+							</DialogFooter>
+						</DialogContent>
+					</Dialog>
+				</div>
+			</div>
+
+			<Dialog open={hasGeneratedKey}>
+				<DialogTrigger></DialogTrigger>
+				<DialogContent
+					className="sm:max-w-[432px] rounded-lg"
+					aria-describedby={undefined}
+				>
+					<DialogHeader>
+						<DialogTitle className="flex flex-col justify-center items-center">
+							<img src={successAnimation} alt="warning" className="w-28" />
+							<span className="text-sm font-semibold">
+								Project Created Successfully
+							</span>
+						</DialogTitle>
+						<div className="flex flex-col items-center gap-y-3">
+							<div className="flex flex-col justify-center items-center font-normal text-neutral-11 text-xs/5">
+								<span>Your API Key has also been created.</span>
+								<span>Please copy this key and save it somewhere safe.</span>
+							</div>
+
+							<div className="flex items-center justify-between w-[400px] h-[50px] border border-neutral-a3 bg-[#F7F9FC] pr-2 pl-3 rounded-md">
+								<span className="text-xs text-neutral-11 font-normal truncate">
+									{apiKey}
+								</span>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="asbolute right-[1%] top-0 h-full py-2 hover:bg-transparent pr-1 pl-0"
+									onClick={() => {
+										window.navigator.clipboard.writeText(apiKey).then();
+										// TODO show toast message on copy successful
+									}}
+								>
+									<CopyIcon className="opacity-50" aria-hidden="true" />
+									<span className="sr-only">copy project key</span>
+								</Button>
+							</div>
+						</div>
+					</DialogHeader>
+					<DialogFooter className="flex justify-center items-center">
+						<DialogClose asChild>
+							<Button
+								onClick={() => {
+									setHasGeneratedKey(false);
+								}}
+								type="button"
+								variant="ghost"
+								className="hover:bg-new.primary-400 text-white-100 hover:text-white-100 bg-new.primary-400 px-3 py-4 text-xs"
+							>
+								Done
+							</Button>
+						</DialogClose>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</section>
 	);
 }
@@ -2351,13 +2519,14 @@ const tabs = [
 		name: 'Secrets',
 		value: 'secrets',
 		icon: Settings,
-		component: ProjectConfig,
+		component: SecretsConfig,
 		projectTypes: ['incoming', 'outgoing'],
 	},
 ];
 
 function ProjectSettings() {
-	const { project, canManageProject, eventTypes, hasAdvancedSubscriptions } = Route.useLoaderData();
+	const { project, canManageProject, eventTypes, hasAdvancedSubscriptions } =
+		Route.useLoaderData();
 
 	return (
 		<DashboardLayout showSidebar={true}>
