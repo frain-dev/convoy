@@ -356,14 +356,9 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		try {
 			const response = await this.privateService.getEventTypes();
-
-			const { event_types } = response.data;
-			this.eventTypes = event_types.filter((type: EVENT_TYPE) => !type.deprecated_at);
-
-			return;
+			this.eventTypes = response.data.filter((type: EVENT_TYPE) => !type.deprecated_at);
 		} catch (error) {
 			console.error('Error loading event types:', error);
-			return;
 		}
 	}
 
