@@ -166,13 +166,30 @@ export async function createEventType(
 	return res.data.event_type;
 }
 
-export async function deprecateEventType(uid:string, 	deps: { httpReq: typeof request } = { httpReq: request },) {
+export async function deprecateEventType(
+	uid: string,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
 	const res = await deps.httpReq<null>({
 		url: `/event-types/${uid}/deprecate`,
 		method: 'post',
 		body: {},
-		level: 'org_project'
-	})
+		level: 'org_project',
+	});
 
 	return res;
+}
+
+export async function regenerateAPIKey(
+	_projectId: string,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<{key:string, uid: string}>({
+		url: `/security/keys/regenerate`,
+		method: 'put',
+		body: null,
+		level: 'org_project',
+	});
+
+	return res.data;
 }

@@ -176,7 +176,7 @@ export async function request<TData>(
 			| undefined
 			| null
 			| Record<string, string | number | object | undefined | null>
-		>;
+		> | null;
 		method: 'get' | 'post' | 'delete' | 'put';
 		hideNotification?: boolean;
 		query?: Record<
