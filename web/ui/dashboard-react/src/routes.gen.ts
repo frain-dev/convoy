@@ -22,6 +22,7 @@ import { Route as IndexImport } from './app/index'
 import { Route as ProjectsIndexImport } from './app/projects/index'
 import { Route as ProjectsNewImport } from './app/projects_/new'
 import { Route as ProjectsProjectIdSettingsImport } from './app/projects_/$projectId/settings'
+import { Route as ProjectsProjectIdEndpointsNewImport } from './app/projects_/$projectId/endpoints/new'
 
 // Create/Update Routes
 
@@ -90,6 +91,13 @@ const ProjectsProjectIdSettingsRoute = ProjectsProjectIdSettingsImport.update({
   path: '/projects/$projectId/settings',
   getParentRoute: () => rootRoute,
 } as any)
+
+const ProjectsProjectIdEndpointsNewRoute =
+  ProjectsProjectIdEndpointsNewImport.update({
+    id: '/projects_/$projectId/endpoints/new',
+    path: '/projects/$projectId/endpoints/new',
+    getParentRoute: () => rootRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -172,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIdSettingsImport
       parentRoute: typeof rootRoute
     }
+    '/projects_/$projectId/endpoints/new': {
+      id: '/projects_/$projectId/endpoints/new'
+      path: '/projects/$projectId/endpoints/new'
+      fullPath: '/projects/$projectId/endpoints/new'
+      preLoaderRoute: typeof ProjectsProjectIdEndpointsNewImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -201,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/projects/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
   '/projects/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
+  '/projects/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
 }
 
 export interface FileRoutesByTo {
@@ -214,6 +230,7 @@ export interface FileRoutesByTo {
   '/projects/new': typeof ProjectsNewRoute
   '/projects': typeof ProjectsIndexRoute
   '/projects/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
+  '/projects/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
 }
 
 export interface FileRoutesById {
@@ -229,6 +246,7 @@ export interface FileRoutesById {
   '/projects_/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
   '/projects_/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
+  '/projects_/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
 }
 
 export interface FileRouteTypes {
@@ -245,6 +263,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/projects/'
     | '/projects/$projectId/settings'
+    | '/projects/$projectId/endpoints/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -257,6 +276,7 @@ export interface FileRouteTypes {
     | '/projects/new'
     | '/projects'
     | '/projects/$projectId/settings'
+    | '/projects/$projectId/endpoints/new'
   id:
     | '__root__'
     | '/'
@@ -270,6 +290,7 @@ export interface FileRouteTypes {
     | '/projects_/new'
     | '/projects/'
     | '/projects_/$projectId/settings'
+    | '/projects_/$projectId/endpoints/new'
   fileRoutesById: FileRoutesById
 }
 
@@ -284,6 +305,7 @@ export interface RootRouteChildren {
   UserSettingsRoute: typeof UserSettingsRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
   ProjectsProjectIdSettingsRoute: typeof ProjectsProjectIdSettingsRoute
+  ProjectsProjectIdEndpointsNewRoute: typeof ProjectsProjectIdEndpointsNewRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -297,6 +319,7 @@ const rootRouteChildren: RootRouteChildren = {
   UserSettingsRoute: UserSettingsRoute,
   ProjectsNewRoute: ProjectsNewRoute,
   ProjectsProjectIdSettingsRoute: ProjectsProjectIdSettingsRoute,
+  ProjectsProjectIdEndpointsNewRoute: ProjectsProjectIdEndpointsNewRoute,
 }
 
 export const routeTree = rootRoute
@@ -318,7 +341,8 @@ export const routeTree = rootRoute
         "/signup",
         "/user-settings",
         "/projects_/new",
-        "/projects_/$projectId/settings"
+        "/projects_/$projectId/settings",
+        "/projects_/$projectId/endpoints/new"
       ]
     },
     "/": {
@@ -357,6 +381,9 @@ export const routeTree = rootRoute
     },
     "/projects_/$projectId/settings": {
       "filePath": "projects_/$projectId/settings.tsx"
+    },
+    "/projects_/$projectId/endpoints/new": {
+      "filePath": "projects_/$projectId/endpoints/new.tsx"
     }
   }
 }

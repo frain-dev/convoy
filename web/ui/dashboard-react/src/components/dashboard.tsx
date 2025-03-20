@@ -480,7 +480,7 @@ function ProjectLinks() {
 		},
 		{
 			name: 'Endpoints',
-			route: '/',
+			route: `/projects/${project?.uid}/endpoints`,
 		},
 		{
 			name: 'Events Log',
