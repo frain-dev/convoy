@@ -16,9 +16,10 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import { FormsModule } from '@angular/forms';
+import { ControlContainer, FormsModule, FormGroupDirective, ReactiveFormsModule } from '@angular/forms';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import {CreatePortalEndpointComponent} from "../create-portal-endpoint/create-portal-endpoint.component";
+import { CreatePortalEndpointComponent } from '../create-portal-endpoint/create-portal-endpoint.component';
+import { CreateEndpointComponent } from '../../private/components/create-endpoint/create-endpoint.component';
 
 interface PORTAL_ENDPOINT extends ENDPOINT {
 	subscription?: SUBSCRIPTION;
@@ -26,7 +27,24 @@ interface PORTAL_ENDPOINT extends ENDPOINT {
 @Component({
 	selector: 'convoy-endpoints',
 	standalone: true,
-	imports: [CommonModule, DialogDirective, EndpointSecretComponent, TagComponent, StatusColorModule, CardComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent, CreatePortalEndpointComponent, PaginationComponent, FormsModule, CopyButtonComponent],
+	imports: [
+		CommonModule,
+		DialogDirective,
+		EndpointSecretComponent,
+		TagComponent,
+		StatusColorModule,
+		CardComponent,
+		DropdownComponent,
+		DropdownOptionDirective,
+		ButtonComponent,
+		CreatePortalEndpointComponent,
+		PaginationComponent,
+		FormsModule,
+		ReactiveFormsModule,
+		CopyButtonComponent,
+		CreateEndpointComponent
+	],
+	providers: [{ provide: ControlContainer, useValue: null }, FormGroupDirective],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
 })

@@ -171,9 +171,10 @@
 		<convoy-create-portal-endpoint
                 type="portal"
                 showAction="true"
-                action="create"
+                [action]="action"
                 [endpointId]="activeEndpoint?.uid || ''" (onAction)="goBack(true)">
         </convoy-create-portal-endpoint>
+<!--        <convoy-create-endpoint type="portal" showAction="true" [endpointId]="activeEndpoint?.uid || ''" (onAction)="goBack(true)"></convoy-create-endpoint>-->
 	</div>
 </div>
 
