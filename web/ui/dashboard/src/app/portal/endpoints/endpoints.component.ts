@@ -14,11 +14,11 @@ import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
 import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
-import { CreateEndpointSubscriptionComponent } from 'src/app/private/components/create-endpoint-subscription/create-endpoint-subscription.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { FormsModule } from '@angular/forms';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
+import {CreatePortalEndpointComponent} from "../create-portal-endpoint/create-portal-endpoint.component";
 
 interface PORTAL_ENDPOINT extends ENDPOINT {
 	subscription?: SUBSCRIPTION;
@@ -26,7 +26,7 @@ interface PORTAL_ENDPOINT extends ENDPOINT {
 @Component({
 	selector: 'convoy-endpoints',
 	standalone: true,
-	imports: [CommonModule, DialogDirective, EndpointSecretComponent, TagComponent, StatusColorModule, CardComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent, CreateEndpointSubscriptionComponent, PaginationComponent, FormsModule, CopyButtonComponent],
+	imports: [CommonModule, DialogDirective, EndpointSecretComponent, TagComponent, StatusColorModule, CardComponent, DropdownComponent, DropdownOptionDirective, ButtonComponent, CreatePortalEndpointComponent, PaginationComponent, FormsModule, CopyButtonComponent],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
 })

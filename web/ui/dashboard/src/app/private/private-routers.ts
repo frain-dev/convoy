@@ -49,10 +49,6 @@ const routes: Routes = [
 				path: 'get-started',
 				loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent)
 			},
-			{
-				path: 'example-endpoint-subscription',
-				loadComponent: () => import('./pages/example-create-endpoint-subscription.component').then(m => m.ExampleCreateEndpointSubscriptionComponent)
-			}
 		]
 	}
 ];

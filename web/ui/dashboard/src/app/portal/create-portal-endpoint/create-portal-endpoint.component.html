@@ -31,10 +31,7 @@
                     [color]="selectedEndpointType === type.id ? 'primary' : 'neutral'"
                     size="sm"
                     (click)="selectEndpointType(type.id)">
-                <img src="assets/img/{{type.icon}}.svg" width="14" height="14" class="mr-4px fill-transparent" alt="{{type.name}}"/>
-<!--                <svg width="14" height="14" class="mr-4px fill-transparent">-->
-<!--                    <use [attr.xlink:href]="'#' + type.icon"></use>-->
-<!--                </svg>-->
+                <img ngSrc="assets/img/{{type.icon}}.svg" width="14" height="14" class="mr-4px fill-transparent" alt="{{type.name}}"/>
                 {{ type.name }}
             </button>
         </div>
@@ -246,7 +243,7 @@
           </ng-container>
 
           <div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
-            <ng-container *ngFor="let config of endpointConfigurations">
+            <ng-container *ngFor="let config of configurations">
               <ng-container *ngIf="!config.show">
                 <convoy-config-button convoy-permission="Endpoints|MANAGE" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
               </ng-container>
@@ -323,6 +320,13 @@
         </div>
     </div>
 
+    <div class="mt-32px mb-32px">
+        <convoy-create-portal-transform-function
+                (updatedTransformFunction)="getFunction($event)"
+                [transformFunction]="subscriptionForm.get('function')?.value">
+        </convoy-create-portal-transform-function>
+    </div>
+
   <div class="flex justify-end mt-40px mb-60px" [ngClass]="{ hidden: showAction === 'false' }">
     <button convoy-button [disabled]="savingEndpoint || endpointForm.disabled" (click)="saveEndpointAndSubscription()">
       {{ savingEndpoint ? 'Creating...' : 'Create Endpoint' }}
@@ -330,26 +334,18 @@
   </div>
 </div>
 
-<!-- Filter Dialog -->
+
+<!-- subscription filters form  -->
 <dialog open convoy-dialog position="full" *ngIf="showFilterDialog">
-  <div convoy-dialog-header (closeDialog)="showFilterDialog = false">
-    <h2 class="font-semibold text-14">Edit Filter for {{ selectedEventType }}</h2>
-  </div>
-  
-  <div class="p-24px">
-    <div class="p-16px border border-neutral-4 rounded-8px mb-24px">
-      <p class="text-14">Filter editor would go here</p>
+    <div class="w-full h-full">
+        <convoy-create-subscription-filter
+                [action]="action"
+                [selectedEventType]="selectedEventType"
+                [schema]="filters[selectedIndex]"
+                (filterSchema)="onSaveFilter($event)"
+                (close)="showFilterDialog = false">
+        </convoy-create-subscription-filter>
     </div>
-    
-    <div class="flex justify-end gap-16px">
-      <button convoy-button fill="soft" (click)="showFilterDialog = false">
-        Cancel
-      </button>
-      <button convoy-button (click)="onSaveFilter({headerSchema: {}, bodySchema: {}})">
-        Save Filter
-      </button>
-    </div>
-  </div>
 </dialog>
 
 <convoy-notification></convoy-notification> 

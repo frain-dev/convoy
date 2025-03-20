@@ -676,21 +676,10 @@ export class CreateSubscriptionComponent implements OnInit {
 				// Update existing filters in bulk if needed
 				if (filtersToUpdate.length > 0) {
 					try {
-						const updateResponse = await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
+						await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
 					} catch (error) {
 						console.error('Error calling bulkUpdateFilters:', error);
 					}
-				}
-
-				// Handle filters that need to be deleted
-				// Find event types in the existing filters that are not in the current filtersMap
-				const filtersToDelete = existingFiltersContent.filter((existingFilter: any) => !this.filtersMap.has(existingFilter.event_type)).map((filter: any) => filter.uid);
-
-				if (filtersToDelete.length > 0) {
-					console.log('Filters to delete:', filtersToDelete);
-					// Delete filters that are no longer needed
-					// Note: You would need to implement a method in your filterService to handle deletion
-					// await this.filterService.deleteFilters(this.subscriptionId, filtersToDelete);
 				}
 			} catch (error) {
 				console.error('Error saving filters:', error);

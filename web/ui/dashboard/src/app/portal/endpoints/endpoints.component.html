@@ -61,7 +61,8 @@
 
 					<ul dropdownOptions class="p-10px">
 						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
-							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="activeEndpoint = endpoint; openEndpointForm('update')">
+							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral"
+                                    (click)="activeEndpoint = endpoint; openEndpointForm('update')">
 								<svg width="16" height="16" class="mr-8px">
 									<use xlink:href="#edit-icon"></use>
 								</svg>
@@ -167,7 +168,12 @@
 			</div>
 			Back
 		</button>
-		<convoy-create-endpoint-subscription type="portal" showAction="true" [endpointId]="activeEndpoint?.uid || ''" (onAction)="goBack(true)"></convoy-create-endpoint-subscription>
+		<convoy-create-portal-endpoint
+                type="portal"
+                showAction="true"
+                action="create"
+                [endpointId]="activeEndpoint?.uid || ''" (onAction)="goBack(true)">
+        </convoy-create-portal-endpoint>
 	</div>
 </div>
 
