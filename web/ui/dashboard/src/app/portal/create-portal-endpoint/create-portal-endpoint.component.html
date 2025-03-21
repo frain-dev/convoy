@@ -2,7 +2,9 @@
     <convoy-loader *ngIf="isLoadingForm"></convoy-loader>
     <div *ngIf="showAction === 'true'" class="flex justify-between items-center mb-24px">
     <div class="flex items-center gap-8px">
-      <h2 class="font-semibold text-16 text-neutral-11">Create Endpoint</h2>
+      <h2 class="font-semibold text-16 text-neutral-11">
+          {{ isUpdateAction || editMode ? 'Update ' + endpointForm.get('name')?.getRawValue() : 'Create Endpoint' }}
+      </h2>
     </div>
 
     <a href="https://getconvoy.io/docs" class="text-new.primary-400 text-14 flex items-center" target="_blank">
@@ -19,7 +21,7 @@
 
     <!-- Endpoint Type Selection -->
     <div class="mb-32px">
-        <h3 class="text-14 font-semibold text-neutral-11 mb-8px">Choose Endpoint Type</h3>
+<!--        <h3 class="text-14 font-semibold text-neutral-11 mb-8px">Choose Endpoint Type</h3>-->
         <p class="text-12 text-neutral-9 mb-16px">
             Select the type of endpoint you're trying to create.
             <a href="https://getconvoy.io/docs/endpoints" class="text-new.primary-400" target="_blank">View all supported destinations</a>
@@ -262,7 +264,7 @@
         <div id="eventTypesContainer" convoy-card class="p-24px relative">
             <!-- Event Types Configuration -->
             <ng-container>
-                <div class="border-l-2 border-neutral-3 pl-16px mb-40px">
+                <div class="mb-40px">
                     <div class="flex justify-between items-end mb-8px">
                         <p class="text-12 font-medium text-neutral-9 flex items-center" >
                             Event Types

@@ -41,6 +41,7 @@ import { NotificationComponent } from '../../components/notification/notificatio
 import { ConfigButtonComponent } from '../../private/components/config-button/config-button.component';
 import {LoaderModule} from "../../private/components/loader/loader.module";
 import {TagComponent} from "../../components/tag/tag.component";
+import {DialogDirective} from "../../components/dialog/dialog.directive";
 
 @Component({
 	selector: 'convoy-create-portal-endpoint',
@@ -66,7 +67,8 @@ import {TagComponent} from "../../components/tag/tag.component";
 		NotificationComponent,
 		ConfigButtonComponent,
 		LoaderModule,
-		TagComponent
+		TagComponent,
+		DialogDirective
 	],
 	providers: [
 		{
@@ -268,6 +270,9 @@ export class CreatePortalEndpointComponent implements OnInit {
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) {
 			this.endpointForm.disable();
 		}
+
+		// Force UI update
+		this.cdr.detectChanges();
 	}
 
 	async getEventTypes() {
@@ -633,7 +638,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 				try {
 					// Prepare subscription data for update
 					const subscriptionData = {
-						endpoint_id: createdEndpoint.uid,
 						filter_config: {
 							event_types: this.selectedEventTypes,
 							filter: {
@@ -735,293 +739,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 	get eventTypesFormGroup(): FormGroup {
 		return this.subscriptionForm.get('eventTypes') as FormGroup;
-	}
-
-	async saveSubscription(setup?: boolean) {
-		// Validate form before submitting
-		if (this.subscriptionForm.invalid) {
-			console.error('Form is invalid:', this.subscriptionForm.errors);
-			return;
-		}
-
-		// Check if event types are required and set
-		if (this.projectType === 'outgoing' && this.showConfig('events') && Object.keys(this.eventTypesFormGroup.controls).length === 0) {
-			console.error('Event types are required for outgoing projects');
-			return;
-		}
-
-		// STEP 1: Handle event type selection and ensure mutual exclusivity with wildcard (*)
-
-		// If no event types are selected, use the wildcard
-		if (this.selectedEventTypes.length === 0) {
-			console.log('No event types selected, using wildcard (*)');
-			this.selectedEventTypes = ['*'];
-		}
-
-		// Enforce mutual exclusivity between wildcard (*) and specific event types
-		const hasWildcard = this.selectedEventTypes.includes('*');
-		if (hasWildcard && this.selectedEventTypes.length > 1) {
-			console.log('Both wildcard (*) and specific event types selected. Using only wildcard.');
-			// If wildcard is selected, ignore other event types
-			this.selectedEventTypes = ['*'];
-
-			// Also update the filtersMap to include only the wildcard
-			const wildcardFilter = this.filtersMap.get('*');
-			this.filtersMap.clear();
-			if (wildcardFilter) {
-				this.filtersMap.set('*', wildcardFilter);
-			} else {
-				this.filtersMap.set('*', {
-					uid: '', // Will be assigned by backend
-					subscription_id: this.subscriptionId,
-					event_type: '*',
-					headers: {},
-					body: {},
-					is_new: true
-				});
-			}
-
-			// Sync with filters array
-			this._syncFiltersArrayWithMap();
-		}
-
-		// STEP 2: Update the form with the final event types selection
-		this.subscriptionForm.patchValue({
-			filter_config: {
-				event_types: this.selectedEventTypes
-			}
-		});
-
-		// STEP 3: Validate the subscription
-		await this.runSubscriptionValidation();
-
-		// Clean up the duplicate code above and consolidate event type handling
-		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
-			this.subscriptionForm.markAllAsTouched();
-			return;
-		}
-
-		// check subscription form validation
-		if (this.subscriptionForm.invalid) {
-			this.isCreatingSubscription = false;
-			return this.subscriptionForm.markAllAsTouched();
-		}
-
-		// Since we're using per-event-type filters, we don't need the global filter anymore
-		// Reset the filter config to an empty object
-		const filterGroup = this.subscriptionForm.get('filter_config.filter') as FormGroup;
-		if (filterGroup) {
-			filterGroup.patchValue({
-				headers: {},
-				body: {}
-			});
-		}
-
-		// Get the current form values
-		const subscriptionData = structuredClone(this.subscriptionForm.value);
-
-		// ALWAYS convert endpoint_id to UID string
-		// This is essential for both for the API call and to prevent objects being sent
-		if (subscriptionData.endpoint_id) {
-			if (typeof subscriptionData.endpoint_id === 'object') {
-				if (subscriptionData.endpoint_id.uid) {
-					subscriptionData.endpoint_id = subscriptionData.endpoint_id.uid;
-				} else {
-					// Try other possible properties that might contain the ID
-					const possibleIdFields = ['id', '_id', 'ID', 'value'];
-					for (const field of possibleIdFields) {
-						if (subscriptionData.endpoint_id[field]) {
-							subscriptionData.endpoint_id = subscriptionData.endpoint_id[field];
-							break;
-						}
-					}
-				}
-			} else if (typeof subscriptionData.endpoint_id !== 'string') {
-				console.error('Unexpected endpoint_id type:', typeof subscriptionData.endpoint_id);
-				// Convert to string as a fallback
-				subscriptionData.endpoint_id = String(subscriptionData.endpoint_id);
-			}
-		}
-
-		// Similarly, ensure source_id is a string if present
-		if (subscriptionData.source_id && typeof subscriptionData.source_id === 'object' && subscriptionData.source_id.uid) {
-			subscriptionData.source_id = subscriptionData.source_id.uid;
-		}
-
-		// If we have event types, include them in the request
-		if (this.selectedEventTypes.length > 0) {
-			// Update payload with event types
-			if (this.projectType === 'outgoing') {
-				subscriptionData.filter_config = {
-					...(subscriptionData.filter_config || {}),
-					event_types: this.selectedEventTypes // Use the selectedEventTypes array directly
-				};
-			}
-		}
-
-		// create subscription
-		try {
-			let response;
-			if (this.action === 'update' || this.isUpdateAction) {
-				response = await this.createSubscriptionService.updateSubscription({ data: subscriptionData, id: this.subscriptionId });
-			} else {
-				response = await this.createSubscriptionService.createSubscription(subscriptionData);
-				this.subscriptionId = response.data.uid;
-			}
-
-			// Save filters after subscription is created/updated
-			if (this.filters.length > 0) {
-				try {
-					// Get the existing filters once to avoid multiple API calls
-					const existingFiltersResponse = await this.filterService.getFilters(this.subscriptionId);
-					const existingFiltersContent = existingFiltersResponse.data || [];
-
-					// Create a map of existing filters by event type for easy lookup
-					const existingFiltersByEventType: { [key: string]: any } = {};
-					existingFiltersContent.forEach((filter: any) => {
-						existingFiltersByEventType[filter.event_type] = filter;
-					});
-
-					// Process filters to update - filters with UIDs
-					const filtersToUpdate = this.filters
-						.filter(filter => {
-							// Check if filter has a UID or if there's an existing filter with the same event type
-							return !!filter.uid || existingFiltersByEventType[filter.event_type];
-						})
-						.map(filter => {
-							// If filter has no UID but there's a matching event type, use that existing filter's UID
-							const matchingFilter = filter.uid ? existingFiltersContent.find((f: any) => f.uid === filter.uid) : existingFiltersByEventType[filter.event_type];
-
-							// Only include event_type if it's actually changed
-							const updatePayload: any = {
-								uid: filter.uid || (matchingFilter ? matchingFilter.uid : ''),
-								headers: filter.headers || {},
-								body: filter.body || {}
-							};
-
-							// Only include event_type if it's different from the existing one
-							if (matchingFilter && filter.event_type !== matchingFilter.event_type) {
-								updatePayload.event_type = filter.event_type;
-							}
-
-							return updatePayload;
-						});
-
-					// Extract filters to create (those without UIDs and no matching event type)
-					const filtersToCreate = this.filters
-						.filter(filter => {
-							// Only create if no UID and no existing filter with same event type
-							return !filter.uid && !existingFiltersByEventType[filter.event_type];
-						})
-						.map(filter => ({
-							subscription_id: this.subscriptionId,
-							event_type: filter.event_type,
-							headers: filter.headers || {},
-							body: filter.body || {},
-							raw_headers: filter.raw_headers || {},
-							raw_body: filter.raw_body || {}
-						}));
-
-					console.log('Filters to create:', filtersToCreate);
-					console.log('Filters to update:', filtersToUpdate);
-
-					// Create new filters in bulk if needed
-					if (filtersToCreate.length > 0) {
-						await this.filterService.createFilters(this.subscriptionId, filtersToCreate);
-					}
-
-					// Update existing filters in bulk if needed
-					if (filtersToUpdate.length > 0) {
-						try {
-							const updateResponse = await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
-						} catch (error) {
-							console.error('Error calling bulkUpdateFilters:', error);
-						}
-					}
-				} catch (error) {
-					console.error('Error saving filters:', error);
-				}
-			}
-
-			// Save filters after subscription is created/updated (using Map implementation)
-			try {
-				// Get the existing filters once to avoid multiple API calls
-				const existingFiltersResponse = await this.filterService.getFilters(this.subscriptionId);
-				const existingFiltersContent = existingFiltersResponse.data || [];
-
-				// Create a map of existing filters by event type for easy lookup
-				const existingFiltersByEventType: { [key: string]: any } = {};
-				existingFiltersContent.forEach((filter: any) => {
-					existingFiltersByEventType[filter.event_type] = filter;
-				});
-
-				// Process filters in the map
-				const filtersToUpdate: any[] = [];
-				const filtersToCreate: any[] = [];
-
-				// Process each filter in the map
-				this.filtersMap.forEach((filter, eventType) => {
-					// Check if this filter needs to be updated or created
-					const existingFilter = existingFiltersByEventType[eventType];
-
-					if (existingFilter) {
-						// This is an existing filter that needs to be updated
-						const updatePayload: any = {
-							uid: existingFilter.uid,
-							headers: filter.headers || {},
-							body: filter.body || {}
-						};
-
-						// Only include event_type if it's different from the existing one
-						if (eventType !== existingFilter.event_type) {
-							updatePayload.event_type = eventType;
-						}
-
-						filtersToUpdate.push(updatePayload);
-					} else {
-						// This is a new filter that needs to be created
-						filtersToCreate.push({
-							subscription_id: this.subscriptionId,
-							event_type: eventType,
-							headers: filter.headers || {},
-							body: filter.body || {},
-							raw_headers: filter.raw_headers || {},
-							raw_body: filter.raw_body || {}
-						});
-					}
-				});
-
-				console.log('Filters to create:', filtersToCreate);
-				console.log('Filters to update:', filtersToUpdate);
-
-				// Create new filters in bulk if needed
-				if (filtersToCreate.length > 0) {
-					await this.filterService.createFilters(this.subscriptionId, filtersToCreate);
-				}
-
-				// Update existing filters in bulk if needed
-				if (filtersToUpdate.length > 0) {
-					try {
-						await this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate);
-					} catch (error) {
-						console.error('Error calling bulkUpdateFilters:', error);
-					}
-				}
-			} catch (error) {
-				console.error('Error saving filters:', error);
-			}
-
-			this.subscription = response.data;
-			if (setup) await this.privateService.getProjectStat({ refresh: true });
-			this.privateService.getSubscriptions();
-			localStorage.removeItem('FUNCTION');
-			this.createdSubscription = true;
-
-			this.onAction.emit({ data: this.subscription, action: this.action == 'update' ? 'update' : 'create' });
-		} catch (error) {
-			this.createdSubscription = false;
-			this.isCreatingSubscription = false;
-		}
 	}
 
 	// Helper method to update filters for an existing subscription
