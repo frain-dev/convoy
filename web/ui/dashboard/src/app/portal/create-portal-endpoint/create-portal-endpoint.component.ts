@@ -1,67 +1,73 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ViewEncapsulation } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { RadioComponent } from 'src/app/components/radio/radio.component';
-import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
-import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
-import { PermissionDirective } from '../../private/components/permission/permission.directive';
-import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { TagComponent } from 'src/app/components/tag/tag.component';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
-import { ConfigButtonComponent } from '../../private/components/config-button/config-button.component';
-import { DialogDirective, DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
-import { CreateTransformFunctionComponent } from '../../private/components/create-transform-function/create-transform-function.component';
-import { CreateSubscriptionFilterComponent } from '../../private/components/create-subscription-filter/create-subscription-filter.component';
+import { ControlContainer, FormArray, FormBuilder, FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+
+import { GeneralService } from '../../services/general/general.service';
+import { FilterService } from '../../private/components/create-subscription/filter.service';
+import { RbacService } from '../../services/rbac/rbac.service';
+import { LicensesService } from '../../services/licenses/licenses.service';
 import { PrivateService } from '../../private/private.service';
 import { CreateEndpointService } from '../../private/components/create-endpoint/create-endpoint.service';
 import { CreateSubscriptionService } from '../../private/components/create-subscription/create-subscription.service';
-import { FilterService } from '../../private/components/create-subscription/filter.service';
-import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
-import {SUBSCRIPTION, SUBSCRIPTION_CONFIG} from 'src/app/models/subscription';
-import { EVENT_TYPE } from 'src/app/models/event.model';
-import { FILTER } from 'src/app/models/filter.model';
-import {
-	CreatePortalTransformFunctionComponent
-} from "../create-portal-transform-function/create-portal-transform-function.component";
+
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from '../../components/input/input.component';
+import { ButtonComponent } from '../../components/button/button.component';
+import { RadioComponent } from '../../components/radio/radio.component';
+import { TooltipComponent } from '../../components/tooltip/tooltip.component';
+import { CardComponent } from '../../components/card/card.component';
+import { ToggleComponent } from '../../components/toggle/toggle.component';
+import { FormLoaderComponent } from '../../components/form-loader/form-loader.component';
+import { PermissionDirective } from '../../private/components/permission/permission.directive';
+import { CreateTransformFunctionComponent } from '../../private/components/create-transform-function/create-transform-function.component';
+import { CreateSubscriptionFilterComponent } from '../../private/components/create-subscription-filter/create-subscription-filter.component';
+import { CreatePortalTransformFunctionComponent } from '../create-portal-transform-function/create-portal-transform-function.component';
+
+import { ENDPOINT, SECRET } from '../../models/endpoint.model';
+import { EVENT_TYPE } from '../../models/event.model';
+import { FILTER } from '../../models/filter.model';
+import { SUBSCRIPTION } from '../../models/subscription';
+import {EndpointsService} from "../../private/pages/project/endpoints/endpoints.service";
+import {NotificationComponent} from "../../components/notification/notification.component";
+import {ConfigButtonComponent} from "../../private/components/config-button/config-button.component";
 
 @Component({
 	selector: 'convoy-create-portal-endpoint',
 	standalone: true,
 	imports: [
 		CommonModule,
+		NgOptimizedImage,
 		ReactiveFormsModule,
 		InputDirective,
-		InputErrorComponent,
 		InputFieldDirective,
+		InputErrorComponent,
 		LabelComponent,
 		ButtonComponent,
 		RadioComponent,
 		TooltipComponent,
 		CardComponent,
-		ToggleComponent,
 		FormLoaderComponent,
+		ToggleComponent,
 		PermissionDirective,
-		NotificationComponent,
-		ConfigButtonComponent,
-		CopyButtonComponent,
-		TagComponent,
-		DialogDirective,
-		DialogHeaderComponent,
-		NgOptimizedImage,
 		CreateTransformFunctionComponent,
 		CreateSubscriptionFilterComponent,
-		CreatePortalTransformFunctionComponent
+		CreatePortalTransformFunctionComponent,
+		NotificationComponent,
+		ConfigButtonComponent
+	],
+	providers: [
+		{
+			provide: ControlContainer,
+			useExisting: FormGroupDirective
+		},
+		FormGroupDirective,
+		FilterService,
+		CreateEndpointService,
+		CreateSubscriptionService
 	],
 	templateUrl: './create-portal-endpoint.component.html',
-	styleUrls: ['./create-portal-endpoint.component.scss']
+	styleUrls: ['./create-portal-endpoint.component.scss'],
+	encapsulation: ViewEncapsulation.None
 })
 export class CreatePortalEndpointComponent implements OnInit {
 	@Input('editMode') editMode = false;
@@ -79,11 +85,12 @@ export class CreatePortalEndpointComponent implements OnInit {
 	private createEndpointService = inject(CreateEndpointService);
 	private createSubscriptionService = inject(CreateSubscriptionService);
 	private filterService = inject(FilterService);
+	private endpointService = inject(EndpointsService);
 
 	// Endpoint Related Variables
-	endpointForm: FormGroup
+	endpointForm: FormGroup;
 
-	subscriptionForm: FormGroup
+	subscriptionForm: FormGroup;
 
 	// Event Type Selection Variables
 	selectedEventTypes: string[] = [];
@@ -167,9 +174,12 @@ export class CreatePortalEndpointComponent implements OnInit {
 		// Load event types for the subscription
 		await this.getEventTypes();
 
-		// If we're in edit mode, load the endpoint details
+		// If we're in edit mode, load the endpoint details and related subscription
 		if (this.isUpdateAction || this.editMode) {
-			this.getEndpointDetails();
+			await this.getEndpointDetails();
+			if (this.endpointUid) {
+				await this.getEndpointSubscription();
+			}
 		} else {
 			// Initialize selectedEventTypes with wildcard if available, otherwise first event type
 			this.initializeDefaultEventType();
@@ -197,6 +207,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 		try {
 			const response = await this.privateService.getEventTypes();
 			this.eventTypes = response.data.filter((type: EVENT_TYPE) => !type.deprecated_at);
+			console.log("event types:", this.eventTypes);
 			return;
 		} catch (error) {
 			console.error('Error loading event types:', error);
@@ -209,15 +220,14 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 		try {
 			// Find the endpoint in the list of endpoints
-			const response = await this.privateService.getEndpoints({ q: this.endpointUid });
-			const endpoints = response.data.content;
-			const endpointDetails: ENDPOINT = endpoints.find((endpoint: ENDPOINT) => endpoint.uid === this.endpointUid);
+			const response = await this.endpointService.getEndpoint(this.endpointUid);
+			const endpointDetails: ENDPOINT = response.data;
 
 			if (!endpointDetails) {
 				throw new Error('Endpoint not found');
 			}
 
-			this.endpointSecret = endpointDetails?.secrets?.find(it => !it.expires_at);
+			this.endpointSecret = endpointDetails?.secrets?.find((it: SECRET) => !it.expires_at);
 
 			// Set the configuration toggles based on endpoint details
 			if (endpointDetails.rate_limit_duration) this.toggleConfigForm('rate_limit');
@@ -230,8 +240,73 @@ export class CreatePortalEndpointComponent implements OnInit {
 			this.endpointForm.patchValue(endpointDetails);
 
 			this.isLoadingEndpointDetails = false;
-		} catch {
+		} catch (error) {
+			console.error('Error loading endpoint details:', error);
+			this.generalService.showNotification({
+				message: 'Failed to load endpoint details',
+				style: 'error'
+			});
 			this.isLoadingEndpointDetails = false;
+		}
+	}
+
+	async getEndpointSubscription() {
+		try {
+			// Check if we have an endpoint ID
+			if (!this.endpointUid) {
+				return;
+			}
+
+			// Get subscriptions for this endpoint
+			const response = await this.privateService.getSubscriptions({ endpointId: this.endpointUid });
+			const subscriptions = response.data.content;
+
+
+			if (!subscriptions && subscriptions.length == 0) {
+				throw new Error('Endpoint not found');
+			}
+
+			console.log("sub event types:", subscriptions[0].filter_config.event_types);
+
+			// If we found a subscription, load it
+			this.subscription = subscriptions[0];
+			this.subscriptionId = this.subscription.uid;
+
+			// Load event types from the subscription
+			if (this.subscription.filter_config?.event_types) {
+				this.selectedEventTypes = [...this.subscription.filter_config.event_types];
+
+				// Show the event types section
+				this.toggleConfigForm('events', true);
+			}
+
+			// Load filters for this subscription
+			await this.loadFiltersForSubscription();
+
+		} catch (error) {
+			console.error('Error loading subscription:', error);
+		}
+	}
+
+	async loadFiltersForSubscription() {
+		if (!this.subscriptionId) {
+			return;
+		}
+
+		try {
+			// Get filters for this subscription
+			const response = await this.filterService.getFilters(this.subscriptionId);
+			this.filters = response.data || [];
+
+			// Clear the map and populate it with the filter data
+			this.filtersMap.clear();
+			this.filters.forEach((filter: FILTER) => {
+				this.filtersMap.set(filter.event_type, { ...filter });
+			});
+
+			console.log('Loaded filters:', this.filters);
+		} catch (error) {
+			console.error('Error loading filters:', error);
 		}
 	}
 
@@ -413,14 +488,17 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 		if (this.endpointForm.invalid) {
 			this.savingEndpoint = false;
-			return this.endpointForm.markAllAsTouched();
+			this.endpointForm.markAllAsTouched();
+			this.generalService.showNotification({ message: 'Please fill all required fields', style: 'error' });
+			return;
 		}
 
+		// Handle rate limit deletion
 		let rateLimitDeleted = !this.showConfig('rate_limit') && this.configDeleted('rate_limit');
 		if (rateLimitDeleted) {
 			const configKeys = ['rate_limit', 'rate_limit_duration'];
 			configKeys.forEach(key => {
-				this.endpointForm.value[key] = 0; // element type = number
+				this.endpointForm.value[key] = 0;
 				this.endpointForm.get(`${key}`)?.patchValue(0);
 			});
 			this.setConfigFormDeleted('rate_limit', false);
@@ -429,83 +507,159 @@ export class CreatePortalEndpointComponent implements OnInit {
 		this.savingEndpoint = true;
 		const endpointValue = structuredClone(this.endpointForm.value);
 
+		// Remove authentication if not provided
 		if (!this.endpointForm.value.authentication.api_key.header_name && !this.endpointForm.value.authentication.api_key.header_value) {
 			delete endpointValue.authentication;
 		}
 
 		try {
-			// Step 1: Create or update the endpoint
-			const response = this.isUpdateAction || this.editMode ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
+			// STEP 1: Create or update the endpoint
+			const response =
+				this.isUpdateAction || this.editMode
+					? await this.createEndpointService.editEndpoint({
+							endpointId: this.endpointUid || '',
+							body: endpointValue
+					  })
+					: await this.createEndpointService.addNewEndpoint({
+							body: endpointValue
+					  });
 
 			const createdEndpoint = response.data;
+			this.endpointSecret = createdEndpoint?.secrets?.find((it: SECRET) => !it.expires_at);
 			this.endpointCreated = true;
+			this.endpointUid = createdEndpoint.uid;
 
-			// Step 2: If creating a new endpoint, automatically create a subscription with event types
-			if (!this.isUpdateAction && !this.editMode && createdEndpoint) {
-				await this.createSubscriptionForEndpoint(createdEndpoint);
+			// Show success notification for endpoint creation
+			this.generalService.showNotification({
+				message: this.isUpdateAction || this.editMode ? 'Endpoint updated successfully' : 'Endpoint created successfully',
+				style: 'success'
+			});
+
+			// STEP 2: Create or update subscription with event types
+			if (!this.subscriptionId || !(this.isUpdateAction || this.editMode)) {
+				// Generate a subscription name based on endpoint name
+				const uuid = this.generateUUID().substring(0, 8);
+				const subscriptionName = `${createdEndpoint.name}-${uuid}`;
+
+				// Prepare subscription data
+				const subscriptionData = {
+					name: subscriptionName,
+					endpoint_id: createdEndpoint.uid,
+					filter_config: {
+						event_types: this.selectedEventTypes,
+						filter: {
+							headers: {},
+							body: {}
+						}
+					}
+				};
+
+				try {
+					// Create the subscription
+					const subscriptionResponse = await this.createSubscriptionService.createSubscription(subscriptionData);
+					this.subscription = subscriptionResponse.data;
+					this.subscriptionId = this.subscription.uid;
+
+					// STEP 3: Create filters for the subscription
+					if (this.filtersMap.size > 0) {
+						try {
+							// Prepare filters to create
+							const filtersToCreate = Array.from(this.filtersMap.values()).map(filter => ({
+								subscription_id: this.subscriptionId,
+								event_type: filter.event_type,
+								headers: filter.headers || {},
+								body: filter.body || {}
+							}));
+
+							// Create filters if we have any
+							if (filtersToCreate.length > 0) {
+								await this.filterService.createFilters(this.subscriptionId, filtersToCreate);
+							}
+
+							this.generalService.showNotification({
+								message: 'Subscription created with filters',
+								style: 'success'
+							});
+						} catch (error) {
+							console.error('Error creating filters:', error);
+							this.generalService.showNotification({
+								message: 'Subscription created but filters could not be added',
+								style: 'warning'
+							});
+						}
+					} else {
+						this.generalService.showNotification({
+							message: 'Subscription created successfully',
+							style: 'success'
+						});
+					}
+
+					this.createdSubscription = true;
+				} catch (error) {
+					console.error('Error creating subscription:', error);
+					this.generalService.showNotification({
+						message: 'Endpoint created but subscription could not be created',
+						style: 'warning'
+					});
+				}
+			} else {
+				// We're in update mode and have a subscription ID
+				try {
+					// Prepare subscription data for update
+					const subscriptionData = {
+						endpoint_id: createdEndpoint.uid,
+						filter_config: {
+							event_types: this.selectedEventTypes,
+							filter: {
+								headers: {},
+								body: {}
+							}
+						}
+					};
+
+					// Update the subscription
+					const subscriptionResponse = await this.createSubscriptionService.updateSubscription({
+						data: subscriptionData,
+						id: this.subscriptionId
+					});
+
+					this.subscription = subscriptionResponse.data;
+
+					// Handle filters update for existing subscription
+					await this.updateFiltersForSubscription();
+
+					this.generalService.showNotification({
+						message: 'Subscription updated successfully',
+						style: 'success'
+					});
+
+					this.createdSubscription = true;
+				} catch (error) {
+					console.error('Error updating subscription:', error);
+					this.generalService.showNotification({
+						message: 'Endpoint updated but subscription update failed',
+						style: 'warning'
+					});
+				}
 			}
 
-			this.generalService.showNotification({ message: response.message, style: 'success' });
+			// Final notification of success
 			this.onAction.emit({
 				action: this.endpointUid && this.editMode ? 'update' : 'save',
 				data: createdEndpoint
 			});
 
-			this.endpointForm.reset();
+			this.savingEndpoint = false;
 			return response;
-		} catch {
+		} catch (error) {
+			console.error('Error creating endpoint:', error);
+			this.generalService.showNotification({
+				message: 'Failed to create endpoint',
+				style: 'error'
+			});
 			this.endpointCreated = false;
 			this.savingEndpoint = false;
 			return;
-		}
-	}
-
-	private async createSubscriptionForEndpoint(endpoint: ENDPOINT) {
-		// Generate a UUID v4
-		const uuid = this.generateUUID();
-		const subscriptionName = `${endpoint.name}-${uuid}`;
-
-		const subscriptionData = {
-			name: subscriptionName,
-			endpoint_id: endpoint.uid,
-			filter_config: {
-				event_types: this.selectedEventTypes,
-				filter: {
-					headers: {},
-					body: {}
-				}
-			}
-		};
-
-		try {
-			// Create the subscription
-			const subscriptionResponse = await this.createSubscriptionService.createSubscription(subscriptionData);
-			const subscription = subscriptionResponse.data;
-
-			// If we have filters, save them
-			if (this.filtersMap.size > 0) {
-				try {
-					// Convert filters from map to array
-					const filtersToCreate = Array.from(this.filtersMap.values()).map(filter => ({
-						subscription_id: subscription.uid,
-						event_type: filter.event_type,
-						headers: filter.headers || {},
-						body: filter.body || {}
-					}));
-
-					// Create filters
-					if (filtersToCreate.length > 0) {
-						await this.filterService.createFilters(subscription.uid, filtersToCreate);
-					}
-				} catch (error) {
-					console.error('Error saving filters:', error);
-				}
-			}
-
-			return subscription;
-		} catch (error) {
-			console.error('Error creating subscription:', error);
-			throw error;
 		}
 	}
 
@@ -844,4 +998,112 @@ export class CreatePortalEndpointComponent implements OnInit {
 		}
 	}
 
+	// Helper method to update filters for an existing subscription
+	private async updateFiltersForSubscription(): Promise<void> {
+		if (!this.subscriptionId) {
+			console.error('Cannot update filters: No subscription ID');
+			return;
+		}
+
+		try {
+			// Get existing filters
+			const existingFiltersResponse = await this.filterService.getFilters(this.subscriptionId);
+			const existingFiltersContent = existingFiltersResponse.data || [];
+
+			// Create a map of existing filters by event type for easy lookup
+			const existingFiltersByEventType: { [key: string]: any } = {};
+			existingFiltersContent.forEach((filter: any) => {
+				existingFiltersByEventType[filter.event_type] = filter;
+			});
+
+			// Identify filters to update and create
+			const filtersToUpdate: any[] = [];
+			const filtersToCreate: any[] = [];
+
+			// Process each filter in the map
+			this.filtersMap.forEach((filter, eventType) => {
+				const existingFilter = existingFiltersByEventType[eventType];
+
+				if (existingFilter) {
+					// This is an existing filter that needs to be updated
+					const updatePayload: any = {
+						uid: existingFilter.uid,
+						headers: filter.headers || {},
+						body: filter.body || {}
+					};
+
+					// Only include event_type if it's different from the existing one
+					if (eventType !== existingFilter.event_type) {
+						updatePayload.event_type = eventType;
+					}
+
+					filtersToUpdate.push(updatePayload);
+				} else {
+					// This is a new filter that needs to be created
+					filtersToCreate.push({
+						subscription_id: this.subscriptionId,
+						event_type: eventType,
+						headers: filter.headers || {},
+						body: filter.body || {}
+					});
+				}
+			});
+
+			// Process deletes: Look for filters that exist in existingFiltersByEventType
+			// but not in filtersMap (they've been removed and need to be deleted)
+			const filtersToDelete: string[] = [];
+
+			Object.keys(existingFiltersByEventType).forEach(eventType => {
+				if (!this.filtersMap.has(eventType)) {
+					// This filter exists on the server but is no longer in our local map
+					filtersToDelete.push(existingFiltersByEventType[eventType].uid);
+				}
+			});
+
+			// Execute the API operations
+			const operations = [];
+
+			// Create new filters
+			if (filtersToCreate.length > 0) {
+				operations.push(this.filterService.createFilters(this.subscriptionId, filtersToCreate));
+			}
+
+			// Update existing filters
+			if (filtersToUpdate.length > 0) {
+				operations.push(this.filterService.bulkUpdateFilters(this.subscriptionId, filtersToUpdate));
+			}
+
+			// Delete filters that were removed
+			if (filtersToDelete.length > 0) {
+				// Note: You need to implement a method for deleting filters
+				// operations.push(this.filterService.deleteFilters(this.subscriptionId, filtersToDelete));
+				console.log('Filters to delete:', filtersToDelete);
+				// For now we'll just log them
+			}
+
+			// Wait for all operations to complete
+			if (operations.length > 0) {
+				await Promise.all(operations);
+			}
+
+			console.log('Filters updated successfully');
+			return;
+		} catch (error) {
+			console.error('Error updating filters:', error);
+			throw error;
+		}
+	}
+
+	/** Copy text to clipboard */
+	copyToClipboard(text: string): void {
+		navigator.clipboard
+			.writeText(text)
+			.then(() => {
+				console.log('Text copied to clipboard');
+				// Show a notification if needed
+			})
+			.catch(err => {
+				console.error('Could not copy text: ', err);
+			});
+	}
 }
