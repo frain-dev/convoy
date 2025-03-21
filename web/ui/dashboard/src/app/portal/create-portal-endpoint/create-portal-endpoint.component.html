@@ -1,5 +1,6 @@
 <div [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'">
-  <div *ngIf="showAction === 'true'" class="flex justify-between items-center mb-24px">
+    <convoy-loader *ngIf="isLoadingForm"></convoy-loader>
+    <div *ngIf="showAction === 'true'" class="flex justify-between items-center mb-24px">
     <div class="flex items-center gap-8px">
       <h2 class="font-semibold text-16 text-neutral-11">Create Endpoint</h2>
     </div>
@@ -258,9 +259,10 @@
         <h3 class="text-14 font-semibold text-neutral-11 mb-8px">Configure Event Types</h3>
         <p class="text-12 text-neutral-9 mb-16px">Configure how you want this endpoint to receive webhook events.</p>
 
-        <div id="#eventTypesContainer" *ngIf="!isLoadingEndpointDetails" convoy-card class="p-24px relative">
+        <div id="eventTypesContainer" convoy-card class="p-24px relative">
             <!-- Event Types Configuration -->
-            <ng-container *ngIf="showConfig('events')">
+            <ng-container>
+                <div class="border-l-2 border-neutral-3 pl-16px mb-40px">
                     <div class="flex justify-between items-end mb-8px">
                         <p class="text-12 font-medium text-neutral-9 flex items-center" >
                             Event Types
@@ -282,9 +284,9 @@
                                 <div class="flex items-center">
                                     <div class="relative mr-12px">
                                         <div
-                                            class="border border-neutral-5 w-16px h-16px flex items-center justify-center rounded-sm"
-                                            [class.border-primary-600]="isEventTypeSelected(eventType.name)"
-                                            [class.bg-primary-50]="isEventTypeSelected(eventType.name)"
+                                                class="border border-neutral-5 w-16px h-16px flex items-center justify-center rounded-sm"
+                                                [class.border-primary-600]="isEventTypeSelected(eventType.name)"
+                                                [class.bg-primary-50]="isEventTypeSelected(eventType.name)"
                                         >
                                             <span *ngIf="isEventTypeSelected(eventType.name)" class="text-primary-600 text-12 font-bold leading-none">✓</span>
                                         </div>
@@ -293,6 +295,7 @@
                                                 [id]="'event_type_' + eventType.name + '_box'"
                                                 [checked]="isEventTypeSelected(eventType.name)"
                                                 (change)="toggleEventType(eventType.name)"
+                                                [disabled]="action === 'view'"
                                                 class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
                                         />
                                     </div>
@@ -308,7 +311,7 @@
                                             color="primary"
                                             class="mr-8px"
                                             (click)="openFilterDialog(eventType.name)"
-                                            [disabled]="!isEventTypeSelected(eventType.name) || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                                            [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" >
                                         Edit Filter
                                     </button>
                                 </div>
@@ -316,6 +319,7 @@
                             <p *ngIf="eventTypes.length === 0" class="text-12 text-neutral-7 italic">No event types available</p>
                         </div>
                     </div>
+                </div>
             </ng-container>
         </div>
     </div>

@@ -1,4 +1,13 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject, ViewEncapsulation } from '@angular/core';
+import {
+	Component,
+	EventEmitter,
+	Input,
+	OnInit,
+	Output,
+	inject,
+	ViewEncapsulation,
+	ChangeDetectorRef
+} from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ControlContainer, FormArray, FormBuilder, FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -27,9 +36,11 @@ import { ENDPOINT, SECRET } from '../../models/endpoint.model';
 import { EVENT_TYPE } from '../../models/event.model';
 import { FILTER } from '../../models/filter.model';
 import { SUBSCRIPTION } from '../../models/subscription';
-import {EndpointsService} from "../../private/pages/project/endpoints/endpoints.service";
-import {NotificationComponent} from "../../components/notification/notification.component";
-import {ConfigButtonComponent} from "../../private/components/config-button/config-button.component";
+import { EndpointsService } from '../../private/pages/project/endpoints/endpoints.service';
+import { NotificationComponent } from '../../components/notification/notification.component';
+import { ConfigButtonComponent } from '../../private/components/config-button/config-button.component';
+import {LoaderModule} from "../../private/components/loader/loader.module";
+import {TagComponent} from "../../components/tag/tag.component";
 
 @Component({
 	selector: 'convoy-create-portal-endpoint',
@@ -53,7 +64,9 @@ import {ConfigButtonComponent} from "../../private/components/config-button/conf
 		CreateSubscriptionFilterComponent,
 		CreatePortalTransformFunctionComponent,
 		NotificationComponent,
-		ConfigButtonComponent
+		ConfigButtonComponent,
+		LoaderModule,
+		TagComponent
 	],
 	providers: [
 		{
@@ -124,6 +137,8 @@ export class CreatePortalEndpointComponent implements OnInit {
 	isLoadingEndpointDetails = false;
 	endpointCreated = false;
 	endpointSecret?: SECRET;
+	isLoadingForm = true;
+
 
 	// Configurations
 	configurations = [
@@ -138,7 +153,15 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 
-	constructor(private route: ActivatedRoute, public privateService: PrivateService, private router: Router, public licenseService: LicensesService) {
+	// Flag to prevent infinite recursion in toggleEventType
+	private _isTogglingEventType = false;
+
+	constructor(
+		private route: ActivatedRoute,
+		private cdr: ChangeDetectorRef,
+		public privateService: PrivateService,
+		public licenseService: LicensesService
+	) {
 		// Initialize form here in constructor
 		this.endpointForm = this.formBuilder.group({
 			name: ['', Validators.required],
@@ -171,8 +194,13 @@ export class CreatePortalEndpointComponent implements OnInit {
 	}
 
 	async ngOnInit() {
+		this.isLoadingForm = true;
+
 		// Load event types for the subscription
 		await this.getEventTypes();
+
+		// Make sure events config is shown
+		this.toggleConfigForm('events');
 
 		// If we're in edit mode, load the endpoint details and related subscription
 		if (this.isUpdateAction || this.editMode) {
@@ -180,10 +208,61 @@ export class CreatePortalEndpointComponent implements OnInit {
 			if (this.endpointUid) {
 				await this.getEndpointSubscription();
 			}
-		} else {
-			// Initialize selectedEventTypes with wildcard if available, otherwise first event type
-			this.initializeDefaultEventType();
 		}
+
+		// Initialize eventTypes form group if we have selectedEventTypes
+		if (this.selectedEventTypes.length > 0) {
+			// Create a form group with string keys
+			const eventTypesControls: Record<string, any> = {};
+			this.selectedEventTypes.forEach((eventType, index) => {
+				eventTypesControls[index.toString()] = this.formBuilder.control(eventType);
+			});
+
+			// Set the form group values
+			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+		}
+
+		// For new subscriptions with outgoing project type, initialize with at least one event type
+		if (this.action === 'create' && this.projectType === 'outgoing' && this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
+			this.selectedEventTypes = [this.eventTypes[0].name];
+			const eventTypesControls: Record<string, any> = {
+				'0': this.formBuilder.control(this.eventTypes[0].name)
+			};
+			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+			this.toggleConfigForm('events', true);
+		}
+
+		// For new subscriptions with outgoing project type, initialize with at least one event type
+		if (this.action === 'create' && this.projectType === 'outgoing' && this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
+			// Default to the '*' (wildcard) event type for new subscriptions if available
+			const wildcardExists = this.eventTypes.some(type => type.name === '*');
+
+			if (wildcardExists) {
+				console.log('Initializing new subscription with wildcard (*) event type');
+				this.selectedEventTypes = ['*'];
+				const eventTypesControls: Record<string, any> = {
+					'0': this.formBuilder.control('*')
+				};
+				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+			} else {
+				// Fall back to first event type if wildcard doesn't exist
+				console.log(`Initializing new subscription with first available event type: ${this.eventTypes[0].name}`);
+				this.selectedEventTypes = [this.eventTypes[0].name];
+				const eventTypesControls: Record<string, any> = {
+					'0': this.formBuilder.control(this.eventTypes[0].name)
+				};
+				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
+			}
+
+			this.toggleConfigForm('events', true);
+		}
+
+		// If we have selected event types, make sure to show the event types section
+		if (this.selectedEventTypes.length > 0) {
+			this.toggleConfigForm('events', true);
+		}
+
+		this.isLoadingForm = false;
 
 		// Add RBAC check
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) {
@@ -191,23 +270,13 @@ export class CreatePortalEndpointComponent implements OnInit {
 		}
 	}
 
-	initializeDefaultEventType() {
-		if (this.eventTypes.length > 0) {
-			// Prefer wildcard if available
-			const wildcardExists = this.eventTypes.some(type => type.name === '*');
-			if (wildcardExists) {
-				this.selectedEventTypes = ['*'];
-			} else {
-				this.selectedEventTypes = [this.eventTypes[0].name];
-			}
-		}
-	}
-
 	async getEventTypes() {
 		try {
+			console.log('Fetching event types...');
 			const response = await this.privateService.getEventTypes();
 			this.eventTypes = response.data.filter((type: EVENT_TYPE) => !type.deprecated_at);
-			console.log("event types:", this.eventTypes);
+			console.log('Loaded event types:', this.eventTypes);
+			console.log('Event types length:', this.eventTypes.length);
 			return;
 		} catch (error) {
 			console.error('Error loading event types:', error);
@@ -254,19 +323,21 @@ export class CreatePortalEndpointComponent implements OnInit {
 		try {
 			// Check if we have an endpoint ID
 			if (!this.endpointUid) {
+				console.log('No endpoint UID provided');
 				return;
 			}
 
+			console.log('Fetching subscriptions for endpoint:', this.endpointUid);
 			// Get subscriptions for this endpoint
 			const response = await this.privateService.getSubscriptions({ endpointId: this.endpointUid });
-			const subscriptions = response.data.content;
+			console.log('Subscription response:', response);
+			const subscriptions = response.data.content.filter((it: SUBSCRIPTION) => it.endpoint_metadata?.uid === this.endpointUid);
 
-
-			if (!subscriptions && subscriptions.length == 0) {
-				throw new Error('Endpoint not found');
+			if (!subscriptions || subscriptions.length === 0) {
+				throw new Error('No subscriptions found for this endpoint');
 			}
 
-			console.log("sub event types:", subscriptions[0].filter_config.event_types);
+			console.log('Found subscriptions:', subscriptions);
 
 			// If we found a subscription, load it
 			this.subscription = subscriptions[0];
@@ -275,6 +346,16 @@ export class CreatePortalEndpointComponent implements OnInit {
 			// Load event types from the subscription
 			if (this.subscription.filter_config?.event_types) {
 				this.selectedEventTypes = [...this.subscription.filter_config.event_types];
+				console.log('Selected event types from subscription:', this.selectedEventTypes);
+
+				// Create a form group with string keys
+				const eventTypesControls: Record<string, any> = {};
+				this.selectedEventTypes.forEach((eventType, index) => {
+					eventTypesControls[index.toString()] = this.formBuilder.control(eventType);
+				});
+
+				// Set the form group values
+				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
 
 				// Show the event types section
 				this.toggleConfigForm('events', true);
@@ -282,7 +363,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 			// Load filters for this subscription
 			await this.loadFiltersForSubscription();
-
 		} catch (error) {
 			console.error('Error loading subscription:', error);
 		}
@@ -365,54 +445,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 		return this.configurations.find(config => config.uid === configValue)?.deleted || false;
 	}
 
-	// Event Type Selection Methods
-
-	toggleEventType(eventTypeName: string): void {
-		const index = this.selectedEventTypes.indexOf(eventTypeName);
-		const isWildcard = eventTypeName === '*';
-
-		if (index !== -1) {
-			// If already selected, remove it (unless it's the only one left)
-			if (this.selectedEventTypes.length > 1) {
-				this.selectedEventTypes.splice(index, 1);
-				this.filtersMap.delete(eventTypeName);
-			}
-			return;
-		}
-
-		// If selecting the wildcard (*) event type, remove all other event types
-		if (isWildcard) {
-			this.selectedEventTypes = [];
-			this.filtersMap.clear();
-		}
-		// If selecting a specific event type and wildcard is already selected, remove the wildcard
-		else if (this.selectedEventTypes.includes('*')) {
-			const wildcardIndex = this.selectedEventTypes.indexOf('*');
-			this.selectedEventTypes.splice(wildcardIndex, 1);
-			this.filtersMap.delete('*');
-		}
-
-		// Add the newly selected event type
-		this.selectedEventTypes.push(eventTypeName);
-
-		// Add a filter for this event type to the map
-		this.filtersMap.set(eventTypeName, {
-			uid: '', // Will be assigned by backend
-			subscription_id: '',
-			event_type: eventTypeName,
-			headers: {},
-			is_new: true,
-			body: {}
-		});
-
-		// Sync with filters array for compatibility
-		this._syncFiltersArrayWithMap();
-	}
-
-	isEventTypeSelected(eventTypeName: string): boolean {
-		return this.selectedEventTypes.includes(eventTypeName);
-	}
-
 	openFilterDialog(eventType: string) {
 		this.selectedEventType = eventType || '';
 
@@ -473,12 +505,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 		// Close the filter dialog
 		this.showFilterDialog = false;
-	}
-
-	// Helper method to sync filters array with filtersMap
-	private _syncFiltersArrayWithMap(): void {
-		// Convert the map values to an array and assign to filters
-		this.filters = Array.from(this.filtersMap.values());
 	}
 
 	// Save endpoint and create subscription
@@ -1105,5 +1131,191 @@ export class CreatePortalEndpointComponent implements OnInit {
 			.catch(err => {
 				console.error('Could not copy text: ', err);
 			});
+	}
+
+	// Check if an event type is selected
+	isEventTypeSelected(eventTypeName: string): boolean {
+		return this.selectedEventTypes.includes(eventTypeName);
+	}
+
+	// Toggle an event type on/off with special handling for wildcard (*)
+	toggleEventType(eventTypeName: string, isAutoSelect = false): void {
+		// Prevent toggling if the subscription is being created/updated
+		if (this.isCreatingSubscription) {
+			console.warn('Cannot toggle event type while subscription is being saved');
+			return;
+		}
+
+		// Prevent recursive calls
+		if (this._isTogglingEventType) {
+			console.warn('Already toggling an event type, skipping');
+			return;
+		}
+
+		try {
+			this._isTogglingEventType = true;
+
+			const index = this.selectedEventTypes.indexOf(eventTypeName);
+			const isWildcard = eventTypeName === '*';
+
+			if (index !== -1) {
+				// If already selected, just remove it
+				this.removeEventType(index, isAutoSelect);
+				return;
+			}
+
+			// If selecting the wildcard (*) event type, remove all other event types
+			if (isWildcard) {
+				console.log('Selecting wildcard (*) event type - removing all other event types');
+
+				// Store all event types that need to be removed
+				const eventTypesToRemove = [...this.selectedEventTypes];
+
+				// Clear all selected event types and their filters
+				eventTypesToRemove.forEach(type => {
+					const typeIndex = this.selectedEventTypes.indexOf(type);
+					if (typeIndex !== -1) {
+						this.removeEventType(typeIndex, true);
+					}
+				});
+			}
+			// If selecting a specific event type, remove the wildcard (*) if it's selected
+			else if (this.selectedEventTypes.includes('*')) {
+				console.log(`Selecting specific event type '${eventTypeName}' - removing wildcard (*) event type`);
+				const wildcardIndex = this.selectedEventTypes.indexOf('*');
+				this.removeEventType(wildcardIndex, true);
+			}
+
+			// Add the newly selected event type
+			this.selectedEventTypes.push(eventTypeName);
+
+			// Add a filter for this event type to the map
+			this.filtersMap.set(eventTypeName, {
+				uid: '', // Will be assigned by backend
+				subscription_id: this.subscriptionId,
+				event_type: eventTypeName,
+				headers: {},
+				is_new: true,
+				body: {}
+			});
+
+			// Sync with filters array for compatibility
+			this._syncFiltersArrayWithMap();
+
+			// Force UI update
+			this.cdr.detectChanges();
+		} finally {
+			this._isTogglingEventType = false;
+		}
+	}
+
+	// Helper method to sync filters array with filtersMap
+	private _syncFiltersArrayWithMap(): void {
+		// Convert the map values to an array and assign to filters
+		this.filters = Array.from(this.filtersMap.values());
+	}
+
+	removeEventType(index: number, isAutoSelect = false) {
+		// Get the event type being removed
+		const eventType = this.selectedEventTypes[index];
+		const isWildcard = eventType === '*';
+
+		// Log the action for debugging
+		console.log(`Removing event type: ${eventType}`);
+
+		// Remove from selectedEventTypes array
+		this.selectedEventTypes.splice(index, 1);
+
+		// Remove from the filtersMap
+		this.filtersMap.delete(eventType);
+
+		// If we just removed the last event type, and it wasn't a wildcard removal
+		// as part of selecting another event type, add the wildcard as default
+		if (this.selectedEventTypes.length === 0 && !isWildcard && !isAutoSelect) {
+			this.toggleEventType('*');
+		}
+
+		// Sync with filters array for compatibility
+		this._syncFiltersArrayWithMap();
+
+		// Force UI update
+		this.cdr.detectChanges();
+	}
+
+	updateEventType(index: number, eventType: string | EVENT_TYPE) {
+		// Update the event type in the form group
+		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
+
+		// Update the form control
+		this.eventTypesFormGroup.get(index.toString())?.setValue(newEventType);
+
+		// Get the old event type from the array
+		const oldEventType = this.selectedEventTypes[index];
+
+		// Skip if they're the same
+		if (oldEventType === newEventType) {
+			return;
+		}
+
+		console.log(`Updating event type from "${oldEventType}" to "${newEventType}"`);
+
+		// Get the filter for the old event type
+		const oldFilter = this.filtersMap.get(oldEventType);
+
+		// Check if there's already a filter for the new event type
+		const hasNewTypeFilter = this.filtersMap.has(newEventType);
+
+		// If we have an old filter, update its event type
+		if (oldFilter && !hasNewTypeFilter) {
+			// Clone the filter and update its event type
+			const updatedFilter = {
+				...oldFilter,
+				event_type: newEventType,
+				// Mark as new if it doesn't have a UID
+				is_new: !oldFilter.uid,
+				// Mark as modified to help with syncing to the backend
+				is_modified: true
+			};
+
+			// Remove the old filter and add the updated one
+			this.filtersMap.delete(oldEventType);
+			this.filtersMap.set(newEventType, updatedFilter);
+
+			console.log(`Filter updated from "${oldEventType}" to "${newEventType}"`, updatedFilter);
+		} else if (!hasNewTypeFilter) {
+			// If there's no filter for either the old or new event type, create a new one
+			this.filtersMap.set(newEventType, {
+				uid: '', // Will be assigned by backend
+				subscription_id: this.subscriptionId,
+				event_type: newEventType,
+				headers: {},
+				body: {},
+				is_new: true
+			});
+
+			console.log(`New filter created for "${newEventType}"`);
+		}
+
+		// If the old filter exists but there's also already a filter for the new type,
+		// just delete the old one as we'll use the existing new one
+		if (oldFilter && hasNewTypeFilter) {
+			this.filtersMap.delete(oldEventType);
+			console.log(`Old filter for "${oldEventType}" deleted as "${newEventType}" already has a filter`);
+		}
+
+		// Update the selectedEventTypes array
+		this.selectedEventTypes[index] = newEventType;
+
+		// Sync with filters array for compatibility
+		this._syncFiltersArrayWithMap();
+
+		// Force UI update
+		this.cdr.detectChanges();
+	}
+
+	updateSelectedEventType(index: number, eventType: string | EVENT_TYPE) {
+		// Handle both string and EVENT_TYPE objects
+		const newEventType = typeof eventType === 'string' ? eventType : eventType.name;
+		this.selectedEventTypes[index] = newEventType;
 	}
 }
