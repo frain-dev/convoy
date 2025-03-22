@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
@@ -66,12 +66,25 @@ export class EndpointsComponent implements OnInit {
 	action: 'create' | 'update' = 'create';
 	endpointSearchString = '';
 
-	constructor(private route: ActivatedRoute, private generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router) {}
+	constructor(private route: ActivatedRoute, private generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router) {
+		// Listen to route changes to handle browser back/forward
+		this.router.events.subscribe(event => {
+			if (event instanceof NavigationEnd) {
+				// Check if we're on the base endpoints page
+				const isEndpointsBase = event.url.match(/^\/portal\/endpoints(\?|$)/);
+				if (isEndpointsBase) {
+					this.showCreateEndpoint = false;
+					this.activeEndpoint = undefined;
+					document.getElementsByTagName('body')[0].classList.remove('overflow-hidden');
+				}
+			}
+		});
+	}
 
 	async ngOnInit(): Promise<void> {
 		await Promise.all([this.getPortalDetails(), this.getEndpoints()]);
 
-		// Check if we have an endpoint ID in the route
+		// Check if we have an endpoint ID in the route params
 		const endpointId = this.route.snapshot.params['id'];
 		if (endpointId) {
 			// Find the endpoint in the list
@@ -82,13 +95,6 @@ export class EndpointsComponent implements OnInit {
 				this.action = endpointId === 'new' ? 'create' : 'update';
 				this.showCreateEndpoint = true;
 				document.getElementsByTagName('body')[0].classList.add('overflow-hidden');
-			}
-		} else {
-			// Check query params for endpointId
-			const queryEndpointId = this.route.snapshot.queryParams.endpointId;
-			if (queryEndpointId) {
-				this.activeEndpoint = this.endpoints.find(endpoint => endpoint.uid === queryEndpointId);
-				this.showCreateEndpoint = !!queryEndpointId;
 			}
 		}
 	}
@@ -166,31 +172,45 @@ export class EndpointsComponent implements OnInit {
 	openEndpointForm(action: 'create' | 'update') {
 		this.action = action;
 		this.showCreateEndpoint = true;
-		const queryParams = new URLSearchParams();
-		if (this.token) queryParams.append('token', this.token);
-		if (this.route.snapshot.queryParams.owner_id) queryParams.append('owner_id', this.route.snapshot.queryParams.owner_id);
 
-		this.location.go(`/portal/endpoints/${action === 'create' ? 'new' : this.activeEndpoint?.uid}?${queryParams.toString()}`);
+		// Build query params
+		const queryParams: any = {};
+		if (this.token) queryParams.token = this.token;
+		if (this.route.snapshot.queryParams.owner_id) queryParams.owner_id = this.route.snapshot.queryParams.owner_id;
+
+		// Navigate to the new URL
+		this.router.navigate([`/portal/endpoints/${action === 'create' ? 'new' : this.activeEndpoint?.uid}`], { queryParams });
+
 		document.getElementsByTagName('body')[0].classList.add('overflow-hidden');
 	}
 
 	onCloseEndpointForm() {
 		this.activeEndpoint = undefined;
-		this.getEndpoints();
 		this.showCreateEndpoint = false;
 
-		const queryParams = new URLSearchParams();
-		if (this.token) queryParams.append('token', this.token);
-		if (this.route.snapshot.queryParams.owner_id) queryParams.append('owner_id', this.route.snapshot.queryParams.owner_id);
+		// Build query params
+		const queryParams: any = {};
+		if (this.token) queryParams.token = this.token;
+		if (this.route.snapshot.queryParams.owner_id) queryParams.owner_id = this.route.snapshot.queryParams.owner_id;
 
-		this.location.go(`/portal/endpoints?${queryParams.toString()}`);
+		// Navigate back to the endpoints list
+		this.router.navigate(['/portal/endpoints'], { queryParams });
+		document.getElementsByTagName('body')[0].classList.remove('overflow-hidden');
 	}
 
 	goBack(isForm?: boolean) {
-		if (isForm) this.showCreateEndpoint = false;
-		this.activeEndpoint = undefined;
-		this.getEndpoints();
-		this.location.back();
-		document.getElementsByTagName('body')[0].classList.remove('overflow-hidden');
+		if (isForm) {
+			this.showCreateEndpoint = false;
+			this.activeEndpoint = undefined;
+			document.getElementsByTagName('body')[0].classList.remove('overflow-hidden');
+		}
+
+		// Build query params
+		const queryParams: any = {};
+		if (this.token) queryParams.token = this.token;
+		if (this.route.snapshot.queryParams.owner_id) queryParams.owner_id = this.route.snapshot.queryParams.owner_id;
+
+		// Navigate back to the endpoints list
+		this.router.navigate(['/portal/endpoints'], { queryParams });
 	}
 }
