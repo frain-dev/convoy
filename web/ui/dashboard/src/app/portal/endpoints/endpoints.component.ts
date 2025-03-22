@@ -68,11 +68,29 @@ export class EndpointsComponent implements OnInit {
 
 	constructor(private route: ActivatedRoute, private generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router) {}
 
-	ngOnInit(): void {
-		Promise.all([this.getPortalDetails(), this.getEndpoints()]).then(() => {
-			this.activeEndpoint = this.endpoints.find(endpoint => endpoint.uid === this.route.snapshot.queryParams.endpointId);
-			this.showCreateEndpoint = !!this.route.snapshot.queryParams.endpointId;
-		});
+	async ngOnInit(): Promise<void> {
+		await Promise.all([this.getPortalDetails(), this.getEndpoints()]);
+
+		// Check if we have an endpoint ID in the route
+		const endpointId = this.route.snapshot.params['id'];
+		if (endpointId) {
+			// Find the endpoint in the list
+			this.activeEndpoint = this.endpoints.find(endpoint => endpoint.uid === endpointId);
+
+			// If we found the endpoint or if it's a new endpoint, show the form
+			if (this.activeEndpoint || endpointId === 'new') {
+				this.action = endpointId === 'new' ? 'create' : 'update';
+				this.showCreateEndpoint = true;
+				document.getElementsByTagName('body')[0].classList.add('overflow-hidden');
+			}
+		} else {
+			// Check query params for endpointId
+			const queryEndpointId = this.route.snapshot.queryParams.endpointId;
+			if (queryEndpointId) {
+				this.activeEndpoint = this.endpoints.find(endpoint => endpoint.uid === queryEndpointId);
+				this.showCreateEndpoint = !!queryEndpointId;
+			}
+		}
 	}
 
 	async getPortalDetails() {

@@ -1,13 +1,4 @@
-import {
-	Component,
-	EventEmitter,
-	Input,
-	OnInit,
-	Output,
-	inject,
-	ViewEncapsulation,
-	ChangeDetectorRef
-} from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { ControlContainer, FormArray, FormBuilder, FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -39,9 +30,10 @@ import { SUBSCRIPTION } from '../../models/subscription';
 import { EndpointsService } from '../../private/pages/project/endpoints/endpoints.service';
 import { NotificationComponent } from '../../components/notification/notification.component';
 import { ConfigButtonComponent } from '../../private/components/config-button/config-button.component';
-import {LoaderModule} from "../../private/components/loader/loader.module";
-import {TagComponent} from "../../components/tag/tag.component";
-import {DialogDirective} from "../../components/dialog/dialog.directive";
+import { LoaderModule } from '../../private/components/loader/loader.module';
+import { TagComponent } from '../../components/tag/tag.component';
+import { DialogDirective } from '../../components/dialog/dialog.directive';
+import {CopyButtonComponent} from "../../components/copy-button/copy-button.component";
 
 @Component({
 	selector: 'convoy-create-portal-endpoint',
@@ -68,7 +60,8 @@ import {DialogDirective} from "../../components/dialog/dialog.directive";
 		ConfigButtonComponent,
 		LoaderModule,
 		TagComponent,
-		DialogDirective
+		DialogDirective,
+		CopyButtonComponent
 	],
 	providers: [
 		{
@@ -141,7 +134,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 	endpointSecret?: SECRET;
 	isLoadingForm = true;
 
-
 	// Configurations
 	configurations = [
 		{ uid: 'http_timeout', name: 'Timeout ', show: false, deleted: false },
@@ -158,12 +150,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 	// Flag to prevent infinite recursion in toggleEventType
 	private _isTogglingEventType = false;
 
-	constructor(
-		private route: ActivatedRoute,
-		private cdr: ChangeDetectorRef,
-		public privateService: PrivateService,
-		public licenseService: LicensesService
-	) {
+	constructor(private route: ActivatedRoute, private cdr: ChangeDetectorRef, public privateService: PrivateService, public licenseService: LicensesService) {
 		// Initialize form here in constructor
 		this.endpointForm = this.formBuilder.group({
 			name: ['', Validators.required],
@@ -198,11 +185,22 @@ export class CreatePortalEndpointComponent implements OnInit {
 	async ngOnInit() {
 		this.isLoadingForm = true;
 
+		// Get the endpoint ID from route params if not provided via input
+		if (!this.endpointUid) {
+			this.endpointUid = this.route.snapshot.params['id'];
+		}
+
+		// Set edit mode based on endpoint ID
+		if (this.endpointUid && this.endpointUid !== 'new') {
+			this.editMode = true;
+			this.action = 'update';
+		}
+
 		// Load event types for the subscription
 		await this.getEventTypes();
 
 		// Make sure events config is shown
-		this.toggleConfigForm('events');
+		this.toggleConfigForm('events', true);
 
 		// If we're in edit mode, load the endpoint details and related subscription
 		if (this.isUpdateAction || this.editMode) {
@@ -222,16 +220,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 			// Set the form group values
 			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
-		}
-
-		// For new subscriptions with outgoing project type, initialize with at least one event type
-		if (this.action === 'create' && this.projectType === 'outgoing' && this.selectedEventTypes.length === 0 && this.eventTypes.length > 0) {
-			this.selectedEventTypes = [this.eventTypes[0].name];
-			const eventTypesControls: Record<string, any> = {
-				'0': this.formBuilder.control(this.eventTypes[0].name)
-			};
-			this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
-			this.toggleConfigForm('events', true);
 		}
 
 		// For new subscriptions with outgoing project type, initialize with at least one event type
@@ -835,19 +823,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 			console.error('Error updating filters:', error);
 			throw error;
 		}
-	}
-
-	/** Copy text to clipboard */
-	copyToClipboard(text: string): void {
-		navigator.clipboard
-			.writeText(text)
-			.then(() => {
-				console.log('Text copied to clipboard');
-				// Show a notification if needed
-			})
-			.catch(err => {
-				console.error('Could not copy text: ', err);
-			});
 	}
 
 	// Check if an event type is selected

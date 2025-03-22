@@ -61,7 +61,7 @@
             <label for="secret" convoy-label>Endpoint Secret</label>
             <div class="flex items-center justify-between w-full h-46px border border-new.gray-200 bg-[#F7F9FC] rounded-[6px] px-16px mb-12px" *ngIf="editMode && endpointSecret">
               <span class="text-12 text-new.gray-600 font-normal truncate">{{ endpointSecret.value || '' }}</span>
-              <button class="ml-8px" (click)="copyToClipboard(endpointSecret.value || '')">Copy</button>
+                <div class="ml-8px" convoy-copy-button [text]="endpointSecret.value || ''" notificationText="Endpoint secret copied to clipboard."></div>
             </div>
             <input *ngIf="!editMode || !endpointSecret" type="secret" id="secret" convoy-input formControlName="secret" placeholder="Enter endpoint secret here" />
           </convoy-input-field>
