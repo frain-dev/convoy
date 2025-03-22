@@ -101,6 +101,12 @@
 			</div>
 			Back
 		</button>
-		<convoy-create-subscription [action]="action" isPortal="true" showAction="true" [endpointId]="endpointId" [subscriptionId]="activeSubscription?.uid" (onAction)="getSubscriptions(); goBack(true)"></convoy-create-subscription>
+		<convoy-create-portal-endpoint
+                [action]="action"
+                showAction="true"
+                [endpointId]="endpointId"
+                [subscriptionId]="activeSubscription?.uid"
+                (onAction)="getSubscriptions(); goBack(true)">
+        </convoy-create-portal-endpoint>
 	</div>
 </div>
