@@ -142,7 +142,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 		{ uid: 'auth', name: 'Auth', show: false, deleted: false },
 		{ uid: 'alert_config', name: 'Notifications', show: false, deleted: false },
 		{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
-		{ uid: 'events', name: 'Event Types', show: true, deleted: false }
 	];
 
 	currentRoute = window.location.pathname.split('/').reverse()[0];
@@ -933,4 +932,9 @@ export class CreatePortalEndpointComponent implements OnInit {
 		// Force UI update
 		this.cdr.detectChanges();
 	}
+
+	toEventTypesString(){
+		return this.eventTypes.map(e => e.name).filter(e=> e !== '*')
+	}
+
 }

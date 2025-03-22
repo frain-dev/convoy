@@ -329,6 +329,8 @@
     <div class="mt-32px mb-32px">
         <convoy-create-portal-transform-function
                 (updatedTransformFunction)="getFunction($event)"
+                [defaultOption]="'Select Event Type'"
+                [options]="toEventTypesString()"
                 [transformFunction]="subscriptionForm.get('function')?.value">
         </convoy-create-portal-transform-function>
     </div>

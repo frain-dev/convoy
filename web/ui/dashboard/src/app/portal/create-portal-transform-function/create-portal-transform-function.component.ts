@@ -24,6 +24,8 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 	@ViewChild('payloadEditor') payloadEditor!: MonacoComponent;
 	@ViewChild('functionEditor') functionEditor!: MonacoComponent;
 	@Input('transformFunction') transformFunction: any;
+	@Input('options') options: any;
+	@Input('defaultOption') defaultOption: any;
 
 	@Output('updatedTransformFunction') updatedTransformFunction: EventEmitter<any> = new EventEmitter();
 	tabs = ['output', 'diff'];
@@ -31,7 +33,7 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 	transformForm: FormGroup = this.formBuilder.group({
 		payload: [null],
 		function: [null],
-		type: ['scheme.deleted']
+		type: ['Select Event Type']
 	});
 	isTransformFunctionPassed = false;
 	isTestingFunction = false;
@@ -42,6 +44,7 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 		name: 'Sample 1',
 		description: 'This is sample data #1'
 	};
+
 
 	output: any;
 	setFunction = `/* 1. While you can write multiple functions, the main function
@@ -93,6 +96,8 @@ function transform(payload) {
 		} catch (error) {
 			this.isTestingFunction = false;
 			this.isTransformFunctionPassed = false;
+
+			this.updatedTransformFunction.emit(this.functionEditor.getValue());
 
 			return this.isTransformFunctionPassed;
 		}

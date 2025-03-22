@@ -3,14 +3,15 @@
 </div>
 
 <div class="max-w-[1192px] m-auto mb-100px" convoy-card>
-    <div class="px-24px pt-24px">
-        <form [formGroup]="transformForm" class="max-w-[50%]">
+    <div class="px-24px pt-24px flex justify-end">
+        <form [formGroup]="transformForm" class="max-w-[50%] w-full">
             <convoy-select
                     (selectedOption)="log($event)"
-                    [options]="['scheme.deleted', 'scheme.created', 'scheme.updated']"
+                    [options]="options"
+                    className="w-full"
                     formControlName="type"
                     name="event_types"
-                    placeholder="scheme.deleted">
+                    placeholder="{{ defaultOption }}">
             </convoy-select>
         </form>
     </div>
