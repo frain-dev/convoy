@@ -3,16 +3,17 @@
 </div>
 
 <div class="max-w-[1192px] m-auto mb-100px" convoy-card>
-    <form [formGroup]="transformForm">
-        <convoy-select
-                (selectedOption)="log($event)"
-                [options]="['scheme.deleted', 'scheme.created', 'scheme.updated']"
-                className="mb-24px flex items-center mt-24px pl-24px w-full"
-                formControlName="type"
-                name="event_types"
-                placeholder="scheme.deleted">
-        </convoy-select>
-    </form>
+    <div class="px-24px pt-24px">
+        <form [formGroup]="transformForm" class="max-w-[50%]">
+            <convoy-select
+                    (selectedOption)="log($event)"
+                    [options]="['scheme.deleted', 'scheme.created', 'scheme.updated']"
+                    formControlName="type"
+                    name="event_types"
+                    placeholder="scheme.deleted">
+            </convoy-select>
+        </form>
+    </div>
 
     <div class="flex mt-12px px-12px">
         <div class="flex flex-col w-full border-r border-r-neutral-4">
