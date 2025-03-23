@@ -613,7 +613,7 @@ function EndpointsPageContent() {
 																			sendTestEvent();
 																		}}
 																	>
-																		<Send className="mr-[8px] h-4 w-4 stroke-neutral-10" />
+																		<Send className="h-4 w-4 stroke-neutral-10" />
 																		<span className="text-xs text-neutral-10 cursor-pointer">
 																			Send Test Event
 																		</span>
