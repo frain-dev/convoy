@@ -10,7 +10,7 @@ export interface ENDPOINT {
   owner_id?: string;
   description: string;
   events?: unknown;
-  status: string;
+  status: 'paused' | 'active' | 'inactive';
   secrets?: SECRET[];
   name?: string;
   url: string;

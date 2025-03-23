@@ -22,6 +22,7 @@ import { Route as IndexImport } from './app/index'
 import { Route as ProjectsIndexImport } from './app/projects/index'
 import { Route as ProjectsNewImport } from './app/projects_/new'
 import { Route as ProjectsProjectIdSettingsImport } from './app/projects_/$projectId/settings'
+import { Route as ProjectsProjectIdEndpointsIndexImport } from './app/projects_/$projectId/endpoints/index'
 import { Route as ProjectsProjectIdEndpointsNewImport } from './app/projects_/$projectId/endpoints/new'
 
 // Create/Update Routes
@@ -91,6 +92,13 @@ const ProjectsProjectIdSettingsRoute = ProjectsProjectIdSettingsImport.update({
   path: '/projects/$projectId/settings',
   getParentRoute: () => rootRoute,
 } as any)
+
+const ProjectsProjectIdEndpointsIndexRoute =
+  ProjectsProjectIdEndpointsIndexImport.update({
+    id: '/projects_/$projectId/endpoints/',
+    path: '/projects/$projectId/endpoints/',
+    getParentRoute: () => rootRoute,
+  } as any)
 
 const ProjectsProjectIdEndpointsNewRoute =
   ProjectsProjectIdEndpointsNewImport.update({
@@ -187,6 +195,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIdEndpointsNewImport
       parentRoute: typeof rootRoute
     }
+    '/projects_/$projectId/endpoints/': {
+      id: '/projects_/$projectId/endpoints/'
+      path: '/projects/$projectId/endpoints'
+      fullPath: '/projects/$projectId/endpoints'
+      preLoaderRoute: typeof ProjectsProjectIdEndpointsIndexImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -217,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/projects/': typeof ProjectsIndexRoute
   '/projects/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
+  '/projects/$projectId/endpoints': typeof ProjectsProjectIdEndpointsIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -231,6 +247,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsIndexRoute
   '/projects/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
+  '/projects/$projectId/endpoints': typeof ProjectsProjectIdEndpointsIndexRoute
 }
 
 export interface FileRoutesById {
@@ -247,6 +264,7 @@ export interface FileRoutesById {
   '/projects/': typeof ProjectsIndexRoute
   '/projects_/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects_/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
+  '/projects_/$projectId/endpoints/': typeof ProjectsProjectIdEndpointsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -264,6 +282,7 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/projects/$projectId/settings'
     | '/projects/$projectId/endpoints/new'
+    | '/projects/$projectId/endpoints'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -277,6 +296,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/projects/$projectId/settings'
     | '/projects/$projectId/endpoints/new'
+    | '/projects/$projectId/endpoints'
   id:
     | '__root__'
     | '/'
@@ -291,6 +311,7 @@ export interface FileRouteTypes {
     | '/projects/'
     | '/projects_/$projectId/settings'
     | '/projects_/$projectId/endpoints/new'
+    | '/projects_/$projectId/endpoints/'
   fileRoutesById: FileRoutesById
 }
 
@@ -306,6 +327,7 @@ export interface RootRouteChildren {
   ProjectsNewRoute: typeof ProjectsNewRoute
   ProjectsProjectIdSettingsRoute: typeof ProjectsProjectIdSettingsRoute
   ProjectsProjectIdEndpointsNewRoute: typeof ProjectsProjectIdEndpointsNewRoute
+  ProjectsProjectIdEndpointsIndexRoute: typeof ProjectsProjectIdEndpointsIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -320,6 +342,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsNewRoute: ProjectsNewRoute,
   ProjectsProjectIdSettingsRoute: ProjectsProjectIdSettingsRoute,
   ProjectsProjectIdEndpointsNewRoute: ProjectsProjectIdEndpointsNewRoute,
+  ProjectsProjectIdEndpointsIndexRoute: ProjectsProjectIdEndpointsIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -342,7 +365,8 @@ export const routeTree = rootRoute
         "/user-settings",
         "/projects_/new",
         "/projects_/$projectId/settings",
-        "/projects_/$projectId/endpoints/new"
+        "/projects_/$projectId/endpoints/new",
+        "/projects_/$projectId/endpoints/"
       ]
     },
     "/": {
@@ -384,6 +408,9 @@ export const routeTree = rootRoute
     },
     "/projects_/$projectId/endpoints/new": {
       "filePath": "projects_/$projectId/endpoints/new.tsx"
+    },
+    "/projects_/$projectId/endpoints/": {
+      "filePath": "projects_/$projectId/endpoints/index.tsx"
     }
   }
 }
