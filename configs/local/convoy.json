@@ -1,5 +1,5 @@
 {
-    "host": "localhost:5005",
+    "host": "*",
     "database": {
         "host": "pgbouncer",
         "username": "convoy",
@@ -26,5 +26,6 @@
         "prometheus",
         "circuit-breaker",
         "full-text-search"
-    ]
+    ],
+    "license_key": "CD2A07-0199FB-AD5CA1-536859-09CC01-V3"
 }

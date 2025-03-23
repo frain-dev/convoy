@@ -21,11 +21,7 @@ import {
 	DialogClose,
 	DialogDescription,
 } from '@/components/ui/dialog';
-import {
-	Form,
-	FormField,
-	FormItem,
-} from '@/components/ui/form';
+import { Form, FormField, FormItem } from '@/components/ui/form';
 import {
 	Table,
 	TableBody,
@@ -58,10 +54,10 @@ import type { Pagination } from '@/models/global.model';
 
 import viewEventsImg from '../../../../../assets/svg/view-events-icon.svg';
 import searchIcon from '../../../../../assets/svg/search-icon.svg';
+import { ConvoyLoader } from '@/components/convoy-loader';
 
 export const Route = createFileRoute('/projects_/$projectId/endpoints/')({
 	component: ListEndpointsPage,
-
 });
 
 const ExpireSecretFormSchema = z.object({
@@ -118,7 +114,8 @@ function EndpointsPageContent() {
 		try {
 			const response = await endpointsService.getEndpoints(params);
 			// The response contains a flat array of ENDPOINT objects
-			setDisplayedEndpoints(response.data?.content || []);
+
+			setDisplayedEndpoints(/* response.data?.content ||  */ []);
 			setPagination(response.data?.pagination);
 		} catch (error) {
 			console.error('Error fetching endpoints:', error);
@@ -172,22 +169,25 @@ function EndpointsPageContent() {
 
 	async function sendTestEvent() {
 		const testEvent = {
-			data: { data: 'test event from Convoy', convoy: 'https://getconvoy.io', amount: 1000 },
+			data: {
+				data: 'test event from Convoy',
+				convoy: 'https://getconvoy.io',
+				amount: 1000,
+			},
 			endpoint_id: selectedEndpoint?.uid,
-			event_type: 'test.convoy'
+			event_type: 'test.convoy',
 		};
 
 		setIsSendingTestEvent(true);
 		try {
 			const response = await endpointsService.sendEvent({ body: testEvent });
 			// TODO: Add toast notification
-		} catch (error){
-			console.error(error)
+		} catch (error) {
+			console.error(error);
 		} finally {
 			setIsSendingTestEvent(false);
 		}
 	}
-
 
 	// Function to copy text to clipboard
 	const copyToClipboard = (text: string) => {
@@ -209,11 +209,7 @@ function EndpointsPageContent() {
 
 	// Loading state
 	if (isLoadingEndpoints) {
-		return (
-			<div className="relative min-h-[500px] flex items-center justify-center">
-				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-			</div>
-		);
+		return <ConvoyLoader isTransparent={true} isVisible={true} />;
 	}
 
 	// Empty state
@@ -223,22 +219,26 @@ function EndpointsPageContent() {
 				<img
 					src="/assets/img/events-log-empty-state.png"
 					alt="Empty state"
-					className="mb-6 w-40"
+					className="mb-6 h-40"
 				/>
 				<h2 className="text-[18px] font-bold text-neutral-12 mb-2">
 					{searchString
 						? `${searchString} endpoint does not exist`
 						: 'You currently do not have any endpoints'}
 				</h2>
-				<p className="text-neutral-11 text-[12px] mb-[36px]">
+				<p className="text-neutral-11 text-sm mb-9">
 					Endpoints will be listed here when available
 				</p>
-				<Button asChild size="sm" className="mt-[36px]">
+				<Button
+					asChild
+					size="sm"
+					className="mt-9 mb-9 hover:bg-new.primary-400 bg-new.primary-400 text-white-100 hover:text-white-100 "
+				>
 					<Link to="/projects/$projectId/endpoints/new" params={{ projectId }}>
 						<svg
 							width="22"
 							height="22"
-							className="mr-2 scale-75"
+							className="scale-100"
 							fill="#ffffff"
 						>
 							<use xlinkHref="#plus-icon"></use>
