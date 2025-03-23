@@ -24,3 +24,27 @@ export function toMMMDDYYYY(date: string) {
 		new Date(date),
 	);
 }
+
+export function groupItemsByDate<T>(
+	items: Array<T & { created_at: string }>,
+	sortOrder: 'desc' | 'asc' = 'desc',
+) {
+	const groupsObj = Object.groupBy(items, ({ created_at }) =>
+		toMMMDDYYYY(created_at),
+	);
+
+	const sortedGroup = new Map<string, typeof items>();
+
+	Object.keys(groupsObj)
+		.sort((dateA, dateB) => {
+			if (sortOrder == 'desc') {
+				return Number(new Date(dateB)) - Number(new Date(dateA));
+			}
+			return Number(new Date(dateA)) - Number(new Date(dateB));
+		})
+		.reduce((acc, dateKey) => {
+			return acc.set(dateKey, groupsObj[dateKey] as typeof items);
+		}, sortedGroup);
+
+	return sortedGroup;
+}

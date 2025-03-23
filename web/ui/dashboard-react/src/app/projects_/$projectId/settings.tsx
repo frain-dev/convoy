@@ -82,7 +82,7 @@ import { DashboardLayout } from '@/components/dashboard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 import { cn } from '@/lib/utils';
-import { toMMMDDYYYY } from '@/lib/pipes';
+import { groupItemsByDate } from '@/lib/pipes';
 import { useProjectStore } from '@/store/index';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as authService from '@/services/auth.service';
@@ -1120,30 +1120,6 @@ function ProjectConfig(props: { project: Project; canManageProject: boolean }) {
 	);
 }
 
-function groupItemsByDate<T>(
-	items: Array<T & { created_at: string }>,
-	sortOrder: 'desc' | 'asc' = 'desc',
-) {
-	const groupsObj = Object.groupBy(items, ({ created_at }) =>
-		toMMMDDYYYY(created_at),
-	);
-
-	const sortedGroup = new Map<string, typeof items>();
-
-	Object.keys(groupsObj)
-		.sort((dateA, dateB) => {
-			if (sortOrder == 'desc') {
-				return Number(new Date(dateB)) - Number(new Date(dateA));
-			}
-			return Number(new Date(dateA)) - Number(new Date(dateB));
-		})
-		.reduce((acc, dateKey) => {
-			return acc.set(dateKey, groupsObj[dateKey] as typeof items);
-		}, sortedGroup);
-
-	return sortedGroup;
-}
-
 const NewSignatureFormSchema = z.object({
 	encoding: z
 		.enum(['hex', 'base64', ''])
@@ -1391,7 +1367,7 @@ function SignatureHistoryConfig(props: {
 									key={dateKey}
 									className="border-new.primary-25 border-t border-b-0 hover:bg-transparent"
 								>
-									<TableCell className="font-medium text-neutral-8">
+									<TableCell className="font-medium text-neutral-8" colSpan={4}>
 										{dateKey}
 									</TableCell>
 									<TableCell className="font-medium"></TableCell>

@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useParams, createFileRoute, Link } from '@tanstack/react-router';
-import { toast } from 'sonner';
 import { useNavigate } from '@tanstack/react-router';
 
 import { Button } from '@/components/ui/button';
@@ -29,9 +28,10 @@ import {
 import * as authService from '@/services/auth.service';
 import { endpointsService } from '@/services/endpoints.service';
 import { useLicenseStore, useProjectStore } from '@/store/index';
-import type { EndpointFormValues } from '@/models/endpoint.model';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import { cn } from '@/lib/utils';
+
+import type { EndpointFormValues } from '@/models/endpoint.model';
 
 // Import back button icon
 import modalCloseIcon from '../../../../../assets/svg/modal-close-icon.svg';
@@ -226,14 +226,14 @@ function CreateEndpointPage() {
 		try {
 			// Create new endpoint
 			const response = await endpointsService.addEndpoint(endpointValue);
-			toast.success(response.message || 'Endpoint created successfully');
+			// toast.success(response.message || 'Endpoint created successfully');
 
 			reset();
 
 			// Navigate back to endpoints list
 			navigate({ to: `/projects/${params.projectId}/endpoints` });
 		} catch (error) {
-			toast.error('Failed to save endpoint');
+			// toast.error('Failed to save endpoint');
 			console.error(error);
 		} finally {
 			setIsCreating(false);
