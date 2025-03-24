@@ -48,7 +48,7 @@ This command helps you identify webhook endpoints in your OpenAPI spec and gener
 				return fmt.Errorf("error creating converter: %v", err)
 			}
 
-			collection, err := conv.ExtractWebhooks(projectID)
+			collection, err := conv.ExtractWebhooks()
 			if err != nil {
 				return fmt.Errorf("error extracting webhooks: %v", err)
 			}

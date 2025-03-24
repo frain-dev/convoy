@@ -37,12 +37,12 @@ func New(doc interface{}) (*Converter, error) {
 }
 
 // ExtractWebhooks extracts webhook schemas from OpenAPI spec
-func (c *Converter) ExtractWebhooks(projectID string) (*Collection, error) {
+func (c *Converter) ExtractWebhooks() (*Collection, error) {
 	collection := &Collection{
 		Webhooks: make(map[string]*openapi3.Schema),
 	}
 
-	// Try official webhooks field first (OpenAPI 3.1)
+	// Try the official webhooks field first (OpenAPI 3.1)
 	if c.doc.Extensions != nil {
 		if webhooksExt, ok := c.doc.Extensions["webhooks"]; ok {
 			webhooksMap, ok := webhooksExt.(map[string]interface{})
@@ -99,7 +99,22 @@ func (c *Converter) extractWebhookSchema(pathItemRaw interface{}) (*openapi3.Sch
 						schemaName := ref[len("#/components/schemas/"):]
 						if c.doc.Components != nil && c.doc.Components.Schemas != nil {
 							if schema, ok := c.doc.Components.Schemas[schemaName]; ok {
-								return schema.Value, nil
+								// Create a copy of the schema to avoid modifying the original
+								schemaCopy := *schema.Value
+
+								// Add examples from the request body if available
+								if examples, ok := jsonContent["examples"].(map[string]interface{}); ok {
+									for _, example := range examples {
+										if exampleObj, ok := example.(map[string]interface{}); ok {
+											if value, ok := exampleObj["value"]; ok {
+												schemaCopy.Example = value
+												break // Use the first example as the schema example
+											}
+										}
+									}
+								}
+
+								return &schemaCopy, nil
 							}
 						}
 					}
@@ -121,7 +136,7 @@ func getStringValue(m map[string]interface{}, key string) string {
 
 // isWebhook determines if an operation is a webhook based on path, method, and operation details
 func isWebhook(path, method string, operation *openapi3.Operation) bool {
-	// You can customize this logic based on your OpenAPI spec conventions
+	// You can customize this logic based on your OpenAPI spec conventions,
 	// For example, check if the path contains "webhook" or if there are specific tags
 	if strings.Contains(strings.ToLower(path), "webhook") {
 		return true

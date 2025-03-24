@@ -9,6 +9,5 @@ type WebhookSchema struct {
 
 // WebhookCollection represents a collection of webhook schemas
 type WebhookCollection struct {
-	ProjectID string          `json:"project_id"`
-	Webhooks  []WebhookSchema `json:"webhooks"`
+	Webhooks []WebhookSchema `json:"webhooks"`
 }
