@@ -155,6 +155,7 @@ function CreateEndpointPage() {
 			},
 			advanced_signatures: null,
 		},
+		mode: 'onTouched'
 	});
 
 	const { register, setValue, watch, reset, control } = form;
