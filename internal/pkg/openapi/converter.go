@@ -7,111 +7,68 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
+type Webhook struct {
+	Name        string           `json:"name"`
+	ProjectID   string           `json:"project_id"`
+	Description string           `json:"description"`
+	Schema      *openapi3.Schema `json:"schema"`
+}
+
+type Collection struct {
+	ProjectID string    `json:"project_id"`
+	Webhooks  []Webhook `json:"webhooks"`
+}
+
 // Converter handles the conversion from OpenAPI spec to JSON Schema
 type Converter struct {
-	spec *openapi3.T
+	doc *openapi3.T
 }
 
 // New creates a new Converter instance
-func New(spec *openapi3.T) *Converter {
-	return &Converter{spec: spec}
+func New(doc interface{}) (*Converter, error) {
+	if doc == nil {
+		return nil, fmt.Errorf("OpenAPI document is nil")
+	}
+
+	t, ok := doc.(*openapi3.T)
+	if !ok {
+		return nil, fmt.Errorf("unsupported OpenAPI document type")
+	}
+
+	return &Converter{doc: t}, nil
 }
 
 // ExtractWebhooks extracts webhook schemas from OpenAPI spec
-func (c *Converter) ExtractWebhooks(projectID string) (*WebhookCollection, error) {
-	collection := &WebhookCollection{
+func (c *Converter) ExtractWebhooks(projectID string) (*Collection, error) {
+	collection := &Collection{
 		ProjectID: projectID,
-		Webhooks:  make([]WebhookSchema, 0),
+		Webhooks:  make([]Webhook, 0),
 	}
 
-	// First, try to extract from top-level webhooks field (OpenAPI 3.1.0)
-	if webhooks, ok := c.spec.Extensions["webhooks"].(map[string]interface{}); ok {
-		for name, webhook := range webhooks {
-			if webhookMap, ok := webhook.(map[string]interface{}); ok {
-				if post, ok := webhookMap["post"].(map[string]interface{}); ok {
-					if reqBody, ok := post["requestBody"].(map[string]interface{}); ok {
-						if content, ok := reqBody["content"].(map[string]interface{}); ok {
-							for contentType, mediaType := range content {
-								if !strings.Contains(contentType, "json") {
-									continue
-								}
-
-								if mediaTypeMap, ok := mediaType.(map[string]interface{}); ok {
-									if schema, ok := mediaTypeMap["schema"].(map[string]interface{}); ok {
-										webhookSchema := WebhookSchema{
-											Name:        fmt.Sprintf("POST %s", name),
-											Description: getStringValue(post, "description"),
-											Schema:      schema,
-										}
-										collection.Webhooks = append(collection.Webhooks, webhookSchema)
-									}
-								}
-							}
-						}
+	// Try official webhooks field first (OpenAPI 3.1)
+	if c.doc.Extensions != nil {
+		if webhooksExt, ok := c.doc.Extensions["webhooks"]; ok {
+			webhooksMap, ok := webhooksExt.(map[string]interface{})
+			if ok {
+				for name, pathItemRaw := range webhooksMap {
+					webhook, err := c.extractWebhook(name, pathItemRaw, projectID)
+					if err == nil {
+						collection.Webhooks = append(collection.Webhooks, webhook)
 					}
 				}
 			}
 		}
 	}
 
-	// Then, try to extract from x-webhooks field (OpenAPI 3.0.x)
-	if xWebhooks, ok := c.spec.Extensions["x-webhooks"].(map[string]interface{}); ok {
-		for name, webhook := range xWebhooks {
-			if webhookMap, ok := webhook.(map[string]interface{}); ok {
-				if post, ok := webhookMap["post"].(map[string]interface{}); ok {
-					if reqBody, ok := post["requestBody"].(map[string]interface{}); ok {
-						if content, ok := reqBody["content"].(map[string]interface{}); ok {
-							for contentType, mediaType := range content {
-								if !strings.Contains(contentType, "json") {
-									continue
-								}
-
-								if mediaTypeMap, ok := mediaType.(map[string]interface{}); ok {
-									if schema, ok := mediaTypeMap["schema"].(map[string]interface{}); ok {
-										webhookSchema := WebhookSchema{
-											Name:        fmt.Sprintf("POST %s", name),
-											Description: getStringValue(post, "description"),
-											Schema:      schema,
-										}
-										collection.Webhooks = append(collection.Webhooks, webhookSchema)
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-
-	// Finally, look for webhook operations in paths
-	if c.spec.Paths != nil {
-		paths := c.spec.Paths.Map()
-		for path, pathItem := range paths {
-			for method, operation := range pathItem.Operations() {
-				// Check if this is a webhook endpoint
-				if isWebhook(path, method, operation) {
-					if operation.RequestBody == nil || operation.RequestBody.Value == nil {
-						continue
-					}
-
-					for contentType, mediaType := range operation.RequestBody.Value.Content {
-						if !strings.Contains(contentType, "json") {
-							continue
-						}
-
-						if mediaType.Schema == nil {
-							continue
-						}
-
-						schema := c.convertSchema(mediaType.Schema.Value)
-						webhookSchema := WebhookSchema{
-							Name:        fmt.Sprintf("%s %s", method, path),
-							Description: operation.Description,
-							Schema:      schema,
-						}
-
-						collection.Webhooks = append(collection.Webhooks, webhookSchema)
+	// If no webhooks found, try x-webhooks extension (OpenAPI 3.0)
+	if len(collection.Webhooks) == 0 && c.doc.Extensions != nil {
+		if webhooksExt, ok := c.doc.Extensions["x-webhooks"]; ok {
+			webhooksMap, ok := webhooksExt.(map[string]interface{})
+			if ok {
+				for name, pathItemRaw := range webhooksMap {
+					webhook, err := c.extractWebhook(name, pathItemRaw, projectID)
+					if err == nil {
+						collection.Webhooks = append(collection.Webhooks, webhook)
 					}
 				}
 			}
@@ -123,6 +80,51 @@ func (c *Converter) ExtractWebhooks(projectID string) (*WebhookCollection, error
 	}
 
 	return collection, nil
+}
+
+// extractWebhook extracts a single webhook from a path item
+func (c *Converter) extractWebhook(name string, pathItemRaw interface{}, projectID string) (Webhook, error) {
+	webhook := Webhook{
+		Name:      name,
+		ProjectID: projectID,
+	}
+
+	pathItemMap, ok := pathItemRaw.(map[string]interface{})
+	if !ok {
+		return webhook, fmt.Errorf("invalid path item format")
+	}
+
+	postOp, ok := pathItemMap["post"].(map[string]interface{})
+	if !ok {
+		return webhook, fmt.Errorf("no POST operation found")
+	}
+
+	if desc, ok := postOp["description"].(string); ok {
+		webhook.Description = desc
+	}
+
+	if reqBody, ok := postOp["requestBody"].(map[string]interface{}); ok {
+		if content, ok := reqBody["content"].(map[string]interface{}); ok {
+			if jsonContent, ok := content["application/json"].(map[string]interface{}); ok {
+				if schema, ok := jsonContent["schema"].(map[string]interface{}); ok {
+					if ref, ok := schema["$ref"].(string); ok && strings.HasPrefix(ref, "#/components/schemas/") {
+						schemaName := ref[len("#/components/schemas/"):]
+						if c.doc.Components != nil && c.doc.Components.Schemas != nil {
+							if schema, ok := c.doc.Components.Schemas[schemaName]; ok {
+								webhook.Schema = schema.Value
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if webhook.Schema == nil {
+		return webhook, fmt.Errorf("no schema found")
+	}
+
+	return webhook, nil
 }
 
 // getStringValue safely extracts a string value from a map

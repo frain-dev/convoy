@@ -21,22 +21,33 @@ func AddOpenAPICommand(app *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "openapi",
 		Short: "Extract webhook schemas from OpenAPI specifications",
-		Long: `Extract webhook schemas from OpenAPI 3.0 specifications and convert them to JSON Schema format.
+		Long: `Extract webhook schemas from OpenAPI 3.x specifications and convert them to JSON Schema format.
 This command helps you identify webhook endpoints in your OpenAPI spec and generate corresponding JSON schemas.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if inputFile == "" || outputFile == "" || projectID == "" {
 				return fmt.Errorf("input file, output file, and project ID are required")
 			}
 
-			// Load OpenAPI spec
-			loader := openapi3.NewLoader()
-			doc, err := loader.LoadFromFile(inputFile)
+			// Read the file content
+			content, err := os.ReadFile(inputFile)
 			if err != nil {
-				return fmt.Errorf("error loading OpenAPI spec: %v", err)
+				return fmt.Errorf("error reading OpenAPI spec: %v", err)
+			}
+
+			// Load as OpenAPI 3.x
+			loader := openapi3.NewLoader()
+			loader.IsExternalRefsAllowed = true
+			swagger, err := loader.LoadFromData(content)
+			if err != nil {
+				return fmt.Errorf("error loading OpenAPI 3.x spec: %v", err)
 			}
 
 			// Create converter and extract webhooks
-			conv := openapi.New(doc)
+			conv, err := openapi.New(swagger)
+			if err != nil {
+				return fmt.Errorf("error creating converter: %v", err)
+			}
+
 			collection, err := conv.ExtractWebhooks(projectID)
 			if err != nil {
 				return fmt.Errorf("error extracting webhooks: %v", err)
