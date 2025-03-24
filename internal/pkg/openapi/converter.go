@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/getkin/kin-openapi/openapi2"
+	"github.com/getkin/kin-openapi/openapi2conv"
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
@@ -28,12 +30,20 @@ func New(doc interface{}) (*Converter, error) {
 		return nil, fmt.Errorf("OpenAPI document is nil")
 	}
 
-	t, ok := doc.(*openapi3.T)
-	if !ok {
+	var docV3 *openapi3.T
+
+	// Try to convert from OpenAPI 2.0 if needed
+	if docV2, ok := doc.(*openapi2.T); ok {
+		var err error
+		docV3, err = openapi2conv.ToV3(docV2)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert OpenAPI 2.0 to 3.0: %v", err)
+		}
+	} else if docV3, ok = doc.(*openapi3.T); !ok {
 		return nil, fmt.Errorf("unsupported OpenAPI document type")
 	}
 
-	return &Converter{doc: t}, nil
+	return &Converter{doc: docV3}, nil
 }
 
 // ExtractWebhooks extracts webhook schemas from OpenAPI spec
@@ -44,28 +54,43 @@ func (c *Converter) ExtractWebhooks() (*Collection, error) {
 
 	// Try the official webhooks field first (OpenAPI 3.1)
 	if c.doc.Extensions != nil {
-		if webhooksExt, ok := c.doc.Extensions["webhooks"]; ok {
-			webhooksMap, ok := webhooksExt.(map[string]interface{})
-			if ok {
-				for name, pathItemRaw := range webhooksMap {
-					schema, err := c.extractWebhookSchema(pathItemRaw)
-					if err == nil {
-						collection.Webhooks[name] = schema
+		// Try both webhooks and x-webhooks
+		for _, key := range []string{"webhooks", "x-webhooks"} {
+			if webhooksExt, ok := c.doc.Extensions[key]; ok {
+				webhooksMap, ok := webhooksExt.(map[string]interface{})
+				if ok {
+					for name, pathItemRaw := range webhooksMap {
+						schema, err := c.extractWebhookSchema(pathItemRaw)
+						if err == nil {
+							collection.Webhooks[name] = schema
+						}
 					}
 				}
 			}
 		}
 	}
 
-	// If no webhooks found, try x-webhooks extension (OpenAPI 3.0)
-	if len(collection.Webhooks) == 0 && c.doc.Extensions != nil {
-		if webhooksExt, ok := c.doc.Extensions["x-webhooks"]; ok {
-			webhooksMap, ok := webhooksExt.(map[string]interface{})
-			if ok {
-				for name, pathItemRaw := range webhooksMap {
-					schema, err := c.extractWebhookSchema(pathItemRaw)
-					if err == nil {
-						collection.Webhooks[name] = schema
+	// If still no webhooks found, try to find them in paths (OpenAPI 2.0 style)
+	if len(collection.Webhooks) == 0 && c.doc.Paths != nil {
+		for path, pathItem := range c.doc.Paths.Map() {
+			if pathItem != nil && pathItem.Post != nil && isWebhook(path, pathItem.Post) {
+				if pathItem.Post.RequestBody != nil && pathItem.Post.RequestBody.Value != nil &&
+					pathItem.Post.RequestBody.Value.Content != nil &&
+					pathItem.Post.RequestBody.Value.Content["application/json"] != nil &&
+					pathItem.Post.RequestBody.Value.Content["application/json"].Schema != nil {
+
+					name := extractWebhookName(path)
+					schema := pathItem.Post.RequestBody.Value.Content["application/json"].Schema.Value
+					if schema != nil {
+						// Create a copy of the schema to avoid modifying the original
+						schemaCopy := *schema
+
+						// Add examples from the request body if available
+						if pathItem.Post.RequestBody.Value.Content["application/json"].Example != nil {
+							schemaCopy.Example = pathItem.Post.RequestBody.Value.Content["application/json"].Example
+						}
+
+						collection.Webhooks[name] = &schemaCopy
 					}
 				}
 			}
@@ -95,29 +120,55 @@ func (c *Converter) extractWebhookSchema(pathItemRaw interface{}) (*openapi3.Sch
 		if content, ok := reqBody["content"].(map[string]interface{}); ok {
 			if jsonContent, ok := content["application/json"].(map[string]interface{}); ok {
 				if schema, ok := jsonContent["schema"].(map[string]interface{}); ok {
-					if ref, ok := schema["$ref"].(string); ok && strings.HasPrefix(ref, "#/components/schemas/") {
-						schemaName := ref[len("#/components/schemas/"):]
-						if c.doc.Components != nil && c.doc.Components.Schemas != nil {
-							if schema, ok := c.doc.Components.Schemas[schemaName]; ok {
-								// Create a copy of the schema to avoid modifying the original
-								schemaCopy := *schema.Value
+					// Create a new schema
+					newSchema := &openapi3.Schema{}
 
-								// Add examples from the request body if available
-								if examples, ok := jsonContent["examples"].(map[string]interface{}); ok {
-									for _, example := range examples {
-										if exampleObj, ok := example.(map[string]interface{}); ok {
-											if value, ok := exampleObj["value"]; ok {
-												schemaCopy.Example = value
-												break // Use the first example as the schema example
-											}
-										}
-									}
-								}
+					// Copy properties
+					if props, ok := schema["properties"].(map[string]interface{}); ok {
+						newSchema.Properties = make(map[string]*openapi3.SchemaRef)
+						for propName, propValue := range props {
+							propMap, ok := propValue.(map[string]interface{})
+							if !ok {
+								continue
+							}
 
-								return &schemaCopy, nil
+							propSchema := &openapi3.Schema{}
+							if propType, ok := propMap["type"].(string); ok {
+								types := openapi3.Types{propType}
+								propSchema.Type = &types
+							}
+							if format, ok := propMap["format"].(string); ok {
+								propSchema.Format = format
+							}
+							if enum, ok := propMap["enum"].([]interface{}); ok {
+								propSchema.Enum = enum
+							}
+							if minimum, ok := propMap["minimum"].(float64); ok {
+								propSchema.Min = &minimum
+							}
+
+							newSchema.Properties[propName] = &openapi3.SchemaRef{
+								Value: propSchema,
 							}
 						}
 					}
+
+					// Copy required fields
+					if required, ok := schema["required"].([]interface{}); ok {
+						newSchema.Required = make([]string, len(required))
+						for i, r := range required {
+							if str, ok := r.(string); ok {
+								newSchema.Required[i] = str
+							}
+						}
+					}
+
+					// Copy example
+					if example, ok := schema["example"].(map[string]interface{}); ok {
+						newSchema.Example = example
+					}
+
+					return newSchema, nil
 				}
 			}
 		}
@@ -126,16 +177,8 @@ func (c *Converter) extractWebhookSchema(pathItemRaw interface{}) (*openapi3.Sch
 	return nil, fmt.Errorf("no schema found")
 }
 
-// getStringValue safely extracts a string value from a map
-func getStringValue(m map[string]interface{}, key string) string {
-	if val, ok := m[key].(string); ok {
-		return val
-	}
-	return ""
-}
-
-// isWebhook determines if an operation is a webhook based on path, method, and operation details
-func isWebhook(path, method string, operation *openapi3.Operation) bool {
+// isWebhook determines if an operation is a webhook based on the path and operation details
+func isWebhook(path string, operation *openapi3.Operation) bool {
 	// You can customize this logic based on your OpenAPI spec conventions,
 	// For example, check if the path contains "webhook" or if there are specific tags
 	if strings.Contains(strings.ToLower(path), "webhook") {
@@ -160,6 +203,38 @@ func isWebhook(path, method string, operation *openapi3.Operation) bool {
 	}
 
 	return false
+}
+
+// extractWebhookName extracts a webhook name from a path
+func extractWebhookName(path string) string {
+	// Remove any leading/trailing slashes
+	path = strings.Trim(path, "/")
+
+	// Split the path into segments
+	segments := strings.Split(path, "/")
+
+	// Find the segment containing "webhook"
+	for i, segment := range segments {
+		if strings.Contains(strings.ToLower(segment), "webhook") {
+			// If this is the last segment, use it
+			if i == len(segments)-1 {
+				return segment
+			}
+			// Otherwise, use the next segment if it exists
+			if i < len(segments)-1 {
+				return segments[i+1]
+			}
+			return segment
+		}
+	}
+
+	// If no webhook segment found, use the last segment
+	if len(segments) > 0 {
+		return segments[len(segments)-1]
+	}
+
+	// Fallback to a generic name
+	return "webhook"
 }
 
 // convertSchema converts OpenAPI schema to JSON Schema

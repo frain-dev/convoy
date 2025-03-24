@@ -1,101 +1,97 @@
 openapi: "3.1.0"
 info:
   title: Test API
-  version: 1.0.0
+  version: "1.0.0"
   description: Test API for webhook extraction
 
 paths: {}
 
 webhooks:
-  barberSaasWebhook:
+  barber:
     post:
-      summary: Barber SaaS webhook
-      description: Webhook for barber shop management events
+      summary: Barber Shop Webhook
+      description: Webhook for barber shop events
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/BarberSaaS"
-            examples:
-              newBooking:
-                summary: New booking created
-                value:
-                  barberId: "barber_123"
-                  barberName: "John Smith"
-                  booking:
-                    bookingId: "book_456"
-                    customerEmail: "alice@example.com"
-                    customerName: "Alice Johnson"
-                    serviceId: "service_789"
-                    date: "2024-03-25"
-                    startTime: "14:30:00"
-                    endTime: "15:30:00"
-                  schedule:
-                    workingDays:
-                      ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-                    workingHours:
-                      startTime: "09:00:00"
-                      endTime: "18:00:00"
-                  services:
-                    - serviceId: "service_789"
-                      name: "Haircut"
-                      price: 30.00
-                      duration: 60
-                    - serviceId: "service_790"
-                      name: "Beard Trim"
-                      price: 15.00
-                      duration: 30
-      responses:
-        "200":
-          description: Webhook processed successfully
-  electricalEquipmentWebhook:
+              type: object
+              required:
+                - event_type
+                - appointment_id
+                - customer_name
+                - service_type
+                - timestamp
+              properties:
+                event_type:
+                  type: string
+                  enum:
+                    - appointment_created
+                    - appointment_updated
+                    - appointment_cancelled
+                appointment_id:
+                  type: string
+                  format: uuid
+                customer_name:
+                  type: string
+                service_type:
+                  type: string
+                timestamp:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+              example:
+                event_type: appointment_created
+                appointment_id: 123e4567-e89b-12d3-a456-426614174000
+                customer_name: John Doe
+                service_type: Haircut
+                timestamp: "2024-03-20T10:00:00Z"
+                notes: First time customer
+
+  electrical:
     post:
-      summary: Electrical Equipment webhook
+      summary: Electrical Equipment Webhook
       description: Webhook for electrical equipment inventory updates
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ElectricalEquipment"
-            examples:
-              productUpdate:
-                summary: Product inventory and price update
-                value:
-                  id: "prod_123"
-                  name: "Professional Hair Dryer X2000"
-                  brand: "StylePro"
-                  category: "Hair Care Equipment"
-                  description: "Professional-grade hair dryer with ionic technology"
-                  price: 199.99
-                  currency: "USD"
-                  inStock: true
-                  images:
-                    [
-                      "https://example.com/images/dryer-front.jpg",
-                      "https://example.com/images/dryer-side.jpg",
-                    ]
-                  specifications:
-                    voltage: "110-240V"
-                    wattage: "1800W"
-                    weight: "500g"
-                    warranty: "2 years"
-                  ratings:
-                    average: 4.8
-                    count: 245
-                  availableVariants:
-                    - variantId: "var_456"
-                      color: "Black"
-                      price: 199.99
-                      inStock: true
-                    - variantId: "var_457"
-                      color: "Rose Gold"
-                      price: 209.99
-                      inStock: false
-      responses:
-        "200":
-          description: Webhook processed successfully
+              type: object
+              required:
+                - event_type
+                - item_id
+                - quantity
+                - location
+                - timestamp
+              properties:
+                event_type:
+                  type: string
+                  enum:
+                    - stock_added
+                    - stock_removed
+                    - stock_transferred
+                item_id:
+                  type: string
+                quantity:
+                  type: integer
+                  minimum: 1
+                location:
+                  type: string
+                timestamp:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+              example:
+                event_type: stock_added
+                item_id: LED-BULB-60W
+                quantity: 100
+                location: Warehouse A
+                timestamp: "2024-03-20T14:30:00Z"
+                notes: Bulk order received
 
 components:
   schemas:
