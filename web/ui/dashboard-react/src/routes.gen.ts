@@ -22,7 +22,9 @@ import { Route as IndexImport } from './app/index'
 import { Route as ProjectsIndexImport } from './app/projects/index'
 import { Route as ProjectsNewImport } from './app/projects_/new'
 import { Route as ProjectsProjectIdSettingsImport } from './app/projects_/$projectId/settings'
+import { Route as ProjectsProjectIdSubscriptionsIndexImport } from './app/projects_/$projectId/subscriptions/index'
 import { Route as ProjectsProjectIdEndpointsIndexImport } from './app/projects_/$projectId/endpoints/index'
+import { Route as ProjectsProjectIdSubscriptionsNewImport } from './app/projects_/$projectId/subscriptions/new'
 import { Route as ProjectsProjectIdEndpointsNewImport } from './app/projects_/$projectId/endpoints/new'
 import { Route as ProjectsProjectIdEndpointsEndpointIdImport } from './app/projects_/$projectId/endpoints/$endpointId'
 
@@ -94,10 +96,24 @@ const ProjectsProjectIdSettingsRoute = ProjectsProjectIdSettingsImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const ProjectsProjectIdSubscriptionsIndexRoute =
+  ProjectsProjectIdSubscriptionsIndexImport.update({
+    id: '/projects_/$projectId/subscriptions/',
+    path: '/projects/$projectId/subscriptions/',
+    getParentRoute: () => rootRoute,
+  } as any)
+
 const ProjectsProjectIdEndpointsIndexRoute =
   ProjectsProjectIdEndpointsIndexImport.update({
     id: '/projects_/$projectId/endpoints/',
     path: '/projects/$projectId/endpoints/',
+    getParentRoute: () => rootRoute,
+  } as any)
+
+const ProjectsProjectIdSubscriptionsNewRoute =
+  ProjectsProjectIdSubscriptionsNewImport.update({
+    id: '/projects_/$projectId/subscriptions/new',
+    path: '/projects/$projectId/subscriptions/new',
     getParentRoute: () => rootRoute,
   } as any)
 
@@ -210,11 +226,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsProjectIdEndpointsNewImport
       parentRoute: typeof rootRoute
     }
+    '/projects_/$projectId/subscriptions/new': {
+      id: '/projects_/$projectId/subscriptions/new'
+      path: '/projects/$projectId/subscriptions/new'
+      fullPath: '/projects/$projectId/subscriptions/new'
+      preLoaderRoute: typeof ProjectsProjectIdSubscriptionsNewImport
+      parentRoute: typeof rootRoute
+    }
     '/projects_/$projectId/endpoints/': {
       id: '/projects_/$projectId/endpoints/'
       path: '/projects/$projectId/endpoints'
       fullPath: '/projects/$projectId/endpoints'
       preLoaderRoute: typeof ProjectsProjectIdEndpointsIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/projects_/$projectId/subscriptions/': {
+      id: '/projects_/$projectId/subscriptions/'
+      path: '/projects/$projectId/subscriptions'
+      fullPath: '/projects/$projectId/subscriptions'
+      preLoaderRoute: typeof ProjectsProjectIdSubscriptionsIndexImport
       parentRoute: typeof rootRoute
     }
   }
@@ -248,7 +278,9 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects/$projectId/endpoints/$endpointId': typeof ProjectsProjectIdEndpointsEndpointIdRoute
   '/projects/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
+  '/projects/$projectId/subscriptions/new': typeof ProjectsProjectIdSubscriptionsNewRoute
   '/projects/$projectId/endpoints': typeof ProjectsProjectIdEndpointsIndexRoute
+  '/projects/$projectId/subscriptions': typeof ProjectsProjectIdSubscriptionsIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -264,7 +296,9 @@ export interface FileRoutesByTo {
   '/projects/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects/$projectId/endpoints/$endpointId': typeof ProjectsProjectIdEndpointsEndpointIdRoute
   '/projects/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
+  '/projects/$projectId/subscriptions/new': typeof ProjectsProjectIdSubscriptionsNewRoute
   '/projects/$projectId/endpoints': typeof ProjectsProjectIdEndpointsIndexRoute
+  '/projects/$projectId/subscriptions': typeof ProjectsProjectIdSubscriptionsIndexRoute
 }
 
 export interface FileRoutesById {
@@ -282,7 +316,9 @@ export interface FileRoutesById {
   '/projects_/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects_/$projectId/endpoints/$endpointId': typeof ProjectsProjectIdEndpointsEndpointIdRoute
   '/projects_/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
+  '/projects_/$projectId/subscriptions/new': typeof ProjectsProjectIdSubscriptionsNewRoute
   '/projects_/$projectId/endpoints/': typeof ProjectsProjectIdEndpointsIndexRoute
+  '/projects_/$projectId/subscriptions/': typeof ProjectsProjectIdSubscriptionsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -301,7 +337,9 @@ export interface FileRouteTypes {
     | '/projects/$projectId/settings'
     | '/projects/$projectId/endpoints/$endpointId'
     | '/projects/$projectId/endpoints/new'
+    | '/projects/$projectId/subscriptions/new'
     | '/projects/$projectId/endpoints'
+    | '/projects/$projectId/subscriptions'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -316,7 +354,9 @@ export interface FileRouteTypes {
     | '/projects/$projectId/settings'
     | '/projects/$projectId/endpoints/$endpointId'
     | '/projects/$projectId/endpoints/new'
+    | '/projects/$projectId/subscriptions/new'
     | '/projects/$projectId/endpoints'
+    | '/projects/$projectId/subscriptions'
   id:
     | '__root__'
     | '/'
@@ -332,7 +372,9 @@ export interface FileRouteTypes {
     | '/projects_/$projectId/settings'
     | '/projects_/$projectId/endpoints/$endpointId'
     | '/projects_/$projectId/endpoints/new'
+    | '/projects_/$projectId/subscriptions/new'
     | '/projects_/$projectId/endpoints/'
+    | '/projects_/$projectId/subscriptions/'
   fileRoutesById: FileRoutesById
 }
 
@@ -349,7 +391,9 @@ export interface RootRouteChildren {
   ProjectsProjectIdSettingsRoute: typeof ProjectsProjectIdSettingsRoute
   ProjectsProjectIdEndpointsEndpointIdRoute: typeof ProjectsProjectIdEndpointsEndpointIdRoute
   ProjectsProjectIdEndpointsNewRoute: typeof ProjectsProjectIdEndpointsNewRoute
+  ProjectsProjectIdSubscriptionsNewRoute: typeof ProjectsProjectIdSubscriptionsNewRoute
   ProjectsProjectIdEndpointsIndexRoute: typeof ProjectsProjectIdEndpointsIndexRoute
+  ProjectsProjectIdSubscriptionsIndexRoute: typeof ProjectsProjectIdSubscriptionsIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -366,7 +410,11 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsProjectIdEndpointsEndpointIdRoute:
     ProjectsProjectIdEndpointsEndpointIdRoute,
   ProjectsProjectIdEndpointsNewRoute: ProjectsProjectIdEndpointsNewRoute,
+  ProjectsProjectIdSubscriptionsNewRoute:
+    ProjectsProjectIdSubscriptionsNewRoute,
   ProjectsProjectIdEndpointsIndexRoute: ProjectsProjectIdEndpointsIndexRoute,
+  ProjectsProjectIdSubscriptionsIndexRoute:
+    ProjectsProjectIdSubscriptionsIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -391,7 +439,9 @@ export const routeTree = rootRoute
         "/projects_/$projectId/settings",
         "/projects_/$projectId/endpoints/$endpointId",
         "/projects_/$projectId/endpoints/new",
-        "/projects_/$projectId/endpoints/"
+        "/projects_/$projectId/subscriptions/new",
+        "/projects_/$projectId/endpoints/",
+        "/projects_/$projectId/subscriptions/"
       ]
     },
     "/": {
@@ -437,8 +487,14 @@ export const routeTree = rootRoute
     "/projects_/$projectId/endpoints/new": {
       "filePath": "projects_/$projectId/endpoints/new.tsx"
     },
+    "/projects_/$projectId/subscriptions/new": {
+      "filePath": "projects_/$projectId/subscriptions/new.tsx"
+    },
     "/projects_/$projectId/endpoints/": {
       "filePath": "projects_/$projectId/endpoints/index.tsx"
+    },
+    "/projects_/$projectId/subscriptions/": {
+      "filePath": "projects_/$projectId/subscriptions/index.tsx"
     }
   }
 }

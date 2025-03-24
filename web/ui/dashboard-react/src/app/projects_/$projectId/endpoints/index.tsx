@@ -487,11 +487,8 @@ function EndpointsPageContent() {
 																	asChild
 																>
 																	<Link
-																		// @ts-expect-error I'll create this route soon
 																		to="/projects/$projectId/subscriptions"
-																		// @ts-expect-error I'll create this route soon
 																		params={{ projectId }}
-																		// @ts-expect-error I'll create this route soon
 																		search={prev => ({
 																			...prev,
 																			endpointId: ep.uid,
@@ -564,10 +561,8 @@ function EndpointsPageContent() {
 																	asChild
 																>
 																	<Link
-																		// @ts-expect-error I'll create this route soon
 																		to="/projects/$projectId/endpoints/$endpointId"
 																		params={{
-																			// @ts-expect-error I'll create this route soon
 																			projectId,
 																			endpointId: ep.uid,
 																		}}

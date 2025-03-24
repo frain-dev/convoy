@@ -476,7 +476,7 @@ function ProjectLinks() {
 		},
 		{
 			name: 'Subscriptions',
-			route: '/',
+			route:  `/projects/${project?.uid}/subscriptions`,
 		},
 		{
 			name: 'Endpoints',
