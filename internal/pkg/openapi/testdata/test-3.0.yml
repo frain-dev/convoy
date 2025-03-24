@@ -1,0 +1,333 @@
+openapi: "3.0.3"
+info:
+  title: Test API
+  version: 1.0.0
+  description: Test API for webhook extraction
+
+paths: {}
+
+x-webhooks:
+  barberSaasWebhook:
+    post:
+      summary: Barber SaaS webhook
+      description: Webhook for barber shop management events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BarberSaaS"
+            examples:
+              newBooking:
+                summary: New booking created
+                value:
+                  barberId: "barber_123"
+                  barberName: "John Smith"
+                  booking:
+                    bookingId: "book_456"
+                    customerEmail: "alice@example.com"
+                    customerName: "Alice Johnson"
+                    serviceId: "service_789"
+                    date: "2024-03-25"
+                    startTime: "14:30:00"
+                    endTime: "15:30:00"
+                  schedule:
+                    workingDays:
+                      ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+                    workingHours:
+                      startTime: "09:00:00"
+                      endTime: "18:00:00"
+                  services:
+                    - serviceId: "service_789"
+                      name: "Haircut"
+                      price: 30.00
+                      duration: 60
+                    - serviceId: "service_790"
+                      name: "Beard Trim"
+                      price: 15.00
+                      duration: 30
+      responses:
+        "200":
+          description: Webhook processed successfully
+  electricalEquipmentWebhook:
+    post:
+      summary: Electrical Equipment Webhook
+      description: Webhook for electrical equipment inventory updates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElectricalEquipment"
+            examples:
+              productUpdate:
+                summary: Product inventory and price update
+                value:
+                  id: "prod_123"
+                  name: "Professional Hair Dryer X2000"
+                  brand: "StylePro"
+                  category: "Hair Care Equipment"
+                  description: "Professional-grade hair dryer with ionic technology"
+                  price: 199.99
+                  currency: "USD"
+                  inStock: true
+                  images:
+                    [
+                      "https://example.com/images/dryer-front.jpg",
+                      "https://example.com/images/dryer-side.jpg",
+                    ]
+                  specifications:
+                    voltage: "110-240V"
+                    wattage: "1800W"
+                    weight: "500g"
+                    warranty: "2 years"
+                  ratings:
+                    average: 4.8
+                    count: 245
+                  availableVariants:
+                    - variantId: "var_456"
+                      color: "Black"
+                      price: 199.99
+                      inStock: true
+                    - variantId: "var_457"
+                      color: "Rose Gold"
+                      price: 209.99
+                      inStock: false
+      responses:
+        "200":
+          description: Webhook processed successfully
+
+components:
+  schemas:
+    BarberSaaS:
+      type: object
+      required:
+        - barberId
+        - barberName
+        - booking
+        - schedule
+        - services
+      properties:
+        barberId:
+          type: string
+          description: Unique identifier for the barber
+          example: "barber_123"
+        barberName:
+          type: string
+          description: Name of the barber
+          example: "John Smith"
+        booking:
+          type: object
+          required:
+            - bookingId
+            - customerEmail
+            - customerName
+            - serviceId
+            - date
+            - startTime
+            - endTime
+          properties:
+            bookingId:
+              type: string
+              description: Unique identifier for the booking
+              example: "book_456"
+            customerEmail:
+              type: string
+              format: email
+              description: Email address of the customer
+              example: "alice@example.com"
+            customerName:
+              type: string
+              description: Name of the customer
+              example: "Alice Johnson"
+            serviceId:
+              type: string
+              description: Identifier of the booked service
+              example: "service_789"
+            date:
+              type: string
+              format: date
+              description: Date of the booking
+              example: "2024-03-25"
+            startTime:
+              type: string
+              format: time
+              description: Start time of the booking
+              example: "14:30:00"
+            endTime:
+              type: string
+              format: time
+              description: End time of the booking
+              example: "15:30:00"
+        schedule:
+          type: object
+          required:
+            - workingDays
+            - workingHours
+          properties:
+            workingDays:
+              type: array
+              description: Days of the week when the barber is working
+              items:
+                type: string
+                enum:
+                  [
+                    Monday,
+                    Tuesday,
+                    Wednesday,
+                    Thursday,
+                    Friday,
+                    Saturday,
+                    Sunday,
+                  ]
+              example: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+            workingHours:
+              type: object
+              required:
+                - startTime
+                - endTime
+              properties:
+                startTime:
+                  type: string
+                  format: time
+                  description: Start time of the working day
+                  example: "09:00:00"
+                endTime:
+                  type: string
+                  format: time
+                  description: End time of the working day
+                  example: "18:00:00"
+        services:
+          type: array
+          items:
+            type: object
+            required:
+              - serviceId
+              - name
+              - price
+              - duration
+            properties:
+              serviceId:
+                type: string
+                description: Unique identifier for the service
+                example: "service_789"
+              name:
+                type: string
+                description: Name of the service
+                example: "Haircut"
+              price:
+                type: number
+                format: float
+                description: Price of the service
+                example: 30.00
+              duration:
+                type: integer
+                description: Duration of the service in minutes
+                example: 60
+
+    ElectricalEquipment:
+      type: object
+      required:
+        - id
+        - name
+        - brand
+        - category
+        - price
+        - currency
+        - inStock
+        - availableVariants
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the product
+          example: "prod_123"
+        name:
+          type: string
+          description: Name of the product
+          example: "Professional Hair Dryer X2000"
+        brand:
+          type: string
+          description: Brand of the product
+          example: "StylePro"
+        category:
+          type: string
+          description: Category of the product
+          example: "Hair Care Equipment"
+        description:
+          type: string
+          description: Detailed description of the product
+          example: "Professional-grade hair dryer with ionic technology"
+        price:
+          type: number
+          format: float
+          description: Base price of the product
+          example: 199.99
+        currency:
+          type: string
+          description: Currency of the price
+          example: "USD"
+        inStock:
+          type: boolean
+          description: Whether the product is in stock
+          example: true
+        images:
+          type: array
+          description: URLs of product images
+          items:
+            type: string
+            format: uri
+          example:
+            - "https://example.com/images/dryer-front.jpg"
+            - "https://example.com/images/dryer-side.jpg"
+        specifications:
+          type: object
+          additionalProperties:
+            type: string
+          description: Technical specifications of the product
+          example:
+            voltage: "110-240V"
+            wattage: "1800W"
+            weight: "500g"
+            warranty: "2 years"
+        ratings:
+          type: object
+          properties:
+            average:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 5
+              description: Average rating of the product
+              example: 4.8
+            count:
+              type: integer
+              minimum: 0
+              description: Number of ratings
+              example: 245
+        availableVariants:
+          type: array
+          items:
+            type: object
+            required:
+              - variantId
+              - color
+              - price
+              - inStock
+            properties:
+              variantId:
+                type: string
+                description: Unique identifier for the variant
+                example: "var_456"
+              color:
+                type: string
+                description: Color of the variant
+                example: "Black"
+              price:
+                type: number
+                format: float
+                description: Price of this variant
+                example: 199.99
+              inStock:
+                type: boolean
+                description: Whether this variant is in stock
+                example: true
