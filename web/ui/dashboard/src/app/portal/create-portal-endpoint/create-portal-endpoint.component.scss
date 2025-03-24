@@ -1,0 +1,70 @@
+// Empty file with standard Angular styling approaches
+// Any custom styles needed for the dialogs
+dialog {
+  &[open] {
+    display: block;
+    border: none;
+  }
+}
+
+.input--multiple .tag {
+  margin-bottom: 2px;
+  padding: 2px 4px;
+  margin-right: 4px;
+}
+
+// Any additional specific styling needed
+
+// Ensure dialog styling works correctly
+dialog {
+  &::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+// Fix button alignment
+button[disabled] {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+// Ensuring smooth transitions for checkbox states
+.w-4.h-4.border {
+  transition: all 0.2s ease-in-out;
+}
+
+// Fix for grid layout in smaller screens
+@media (max-width: 768px) {
+  .grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Custom class for blue background
+.bg-convoy-blue25 {
+  background-color: rgba(102, 153, 204, 0.25);
+}
+
+// Font styles
+.font-body-16px-semibold {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.font-body-12px-regular {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.font-body-10px-medium {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+// Nice transition for hover effects on buttons
+button {
+  transition: all 0.2s ease;
+  &:hover:not([disabled]) {
+    opacity: 0.9;
+  }
+} 
