@@ -35,10 +35,8 @@ export async function updateEndpoint(
 	});
 }
 
-export async function getEndpoint(
-	endpointId: string,
-): Promise<HttpResponse<{ data: ENDPOINT; message: string }>> {
-	return request<{ data: ENDPOINT; message: string }>({
+export async function getEndpoint(endpointId: string) {
+	return request<ENDPOINT & { message: string }>({
 		url: `/endpoints/${endpointId}`,
 		method: 'get',
 		level: 'org_project',
@@ -131,5 +129,5 @@ export const endpointsService = {
 	toggleEndpoint,
 	activateEndpoint,
 	expireSecret,
-	sendEvent
+	sendEvent,
 };

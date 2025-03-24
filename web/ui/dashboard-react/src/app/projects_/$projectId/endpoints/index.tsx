@@ -115,7 +115,7 @@ function EndpointsPageContent() {
 			const response = await endpointsService.getEndpoints(params);
 			// The response contains a flat array of ENDPOINT objects
 
-			setDisplayedEndpoints(/* response.data?.content ||  */ []);
+			setDisplayedEndpoints(response.data?.content || []);
 			setPagination(response.data?.pagination);
 		} catch (error) {
 			console.error('Error fetching endpoints:', error);
@@ -235,12 +235,7 @@ function EndpointsPageContent() {
 					className="mt-9 mb-9 hover:bg-new.primary-400 bg-new.primary-400 text-white-100 hover:text-white-100 "
 				>
 					<Link to="/projects/$projectId/endpoints/new" params={{ projectId }}>
-						<svg
-							width="22"
-							height="22"
-							className="scale-100"
-							fill="#ffffff"
-						>
+						<svg width="22" height="22" className="scale-100" fill="#ffffff">
 							<use xlinkHref="#plus-icon"></use>
 						</svg>
 						Create Endpoint
@@ -772,7 +767,7 @@ function EndpointsPageContent() {
 
 			{/* Delete Modal */}
 			<Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-				<DialogContent>
+				<DialogContent className="rounded-lg">
 					<DialogHeader>
 						<DialogTitle>Delete Endpoint</DialogTitle>
 					</DialogHeader>
