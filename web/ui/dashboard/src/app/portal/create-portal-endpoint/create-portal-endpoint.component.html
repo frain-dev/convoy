@@ -263,66 +263,62 @@
 
         <div id="eventTypesContainer" convoy-card class="p-24px relative">
             <!-- Event Types Configuration -->
-            <ng-container>
-                <div class="mb-40px">
-                    <div class="flex justify-between items-end mb-8px">
-                        <p class="text-12 font-medium text-neutral-9 flex items-center" >
-                            Event Types
-                            <convoy-tooltip size="sm" position="top-right" class="ml-4px">
-                                These are the event types that this endpoint will receive. You can add filters to each event type to control which events are delivered.
-                            </convoy-tooltip>
-                        </p>
-                    </div>
+            <div class="flex justify-between items-end">
+                <p class="text-12 font-medium text-neutral-9 flex items-center" >
+                    Event Types
+                    <convoy-tooltip size="sm" position="top-right" class="ml-4px">
+                        These are the event types that this endpoint will receive. You can add filters to each event type to control which events are delivered.
+                    </convoy-tooltip>
+                </p>
+            </div>
 
-                    <div class="mt-16px">
-                        <div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-                            <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                                <use xlink:href="#lock-icon"></use>
-                            </svg>
-                            Business
-                        </div>
-                        <div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-                            <div *ngFor="let eventType of eventTypes" class="flex items-center justify-between mb-12px border border-neutral-4 p-12px rounded-6px">
-                                <div class="flex items-center">
-                                    <div class="relative mr-12px">
-                                        <div
-                                                class="border border-neutral-5 w-16px h-16px flex items-center justify-center rounded-sm"
-                                                [class.border-primary-600]="isEventTypeSelected(eventType.name)"
-                                                [class.bg-primary-50]="isEventTypeSelected(eventType.name)"
-                                        >
-                                            <span *ngIf="isEventTypeSelected(eventType.name)" class="text-primary-600 text-12 font-bold leading-none">✓</span>
-                                        </div>
-                                        <input
-                                                type="checkbox"
-                                                [id]="'event_type_' + eventType.name + '_box'"
-                                                [checked]="isEventTypeSelected(eventType.name)"
-                                                (change)="toggleEventType(eventType.name)"
-                                                [disabled]="action === 'view'"
-                                                class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
-                                        />
-                                    </div>
-                                    <label [for]="'event_type_' + eventType.name + '_box'" class="text-12 cursor-pointer">
-                                        {{ eventType.name }}
-                                    </label>
+            <div class="mt-16px">
+                <div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                        <use xlink:href="#lock-icon"></use>
+                    </svg>
+                    Business
+                </div>
+                <div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                    <div *ngFor="let eventType of eventTypes" class="flex items-center justify-between mb-4px border border-neutral-4 p-12px rounded-6px">
+                        <div class="flex items-center">
+                            <div class="relative mr-12px">
+                                <div
+                                        class="border border-neutral-5 w-16px h-16px flex items-center justify-center rounded-sm"
+                                        [class.border-primary-600]="isEventTypeSelected(eventType.name)"
+                                        [class.bg-primary-50]="isEventTypeSelected(eventType.name)"
+                                >
+                                    <span *ngIf="isEventTypeSelected(eventType.name)" class="text-primary-600 text-12 font-bold leading-none">✓</span>
                                 </div>
-                                <div class="flex items-center">
-                                    <button convoy-button
-                                            type="button"
-                                            size="xs"
-                                            fill="soft-outline"
-                                            color="primary"
-                                            class="mr-8px"
-                                            (click)="openFilterDialog(eventType.name)"
-                                            [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" >
-                                        Edit Filter
-                                    </button>
-                                </div>
+                                <input
+                                        type="checkbox"
+                                        [id]="'event_type_' + eventType.name + '_box'"
+                                        [checked]="isEventTypeSelected(eventType.name)"
+                                        (change)="toggleEventType(eventType.name)"
+                                        [disabled]="action === 'view'"
+                                        class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
+                                />
                             </div>
-                            <p *ngIf="eventTypes.length === 0" class="text-12 text-neutral-7 italic">No event types available</p>
+                            <label [for]="'event_type_' + eventType.name + '_box'" class="text-12 cursor-pointer">
+                                {{ eventType.name }}
+                            </label>
+                        </div>
+                        <div class="flex items-center">
+                            <button convoy-button
+                                    type="button"
+                                    size="xs"
+                                    fill="soft-outline"
+                                    color="primary"
+                                    class="mr-8px"
+                                    (click)="openFilterDialog(eventType.name)"
+                                    [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" >
+                                Edit Filter
+                            </button>
                         </div>
                     </div>
+                    <p *ngIf="eventTypes.length === 0" class="text-12 text-neutral-7 italic">No event types available</p>
                 </div>
-            </ng-container>
+            </div>
         </div>
     </div>
 
