@@ -9,14 +9,12 @@ import (
 
 type Webhook struct {
 	Name        string           `json:"name"`
-	ProjectID   string           `json:"project_id"`
 	Description string           `json:"description"`
 	Schema      *openapi3.Schema `json:"schema"`
 }
 
 type Collection struct {
-	ProjectID string    `json:"project_id"`
-	Webhooks  []Webhook `json:"webhooks"`
+	Webhooks map[string]*openapi3.Schema `json:"webhooks"`
 }
 
 // Converter handles the conversion from OpenAPI spec to JSON Schema
@@ -41,8 +39,7 @@ func New(doc interface{}) (*Converter, error) {
 // ExtractWebhooks extracts webhook schemas from OpenAPI spec
 func (c *Converter) ExtractWebhooks(projectID string) (*Collection, error) {
 	collection := &Collection{
-		ProjectID: projectID,
-		Webhooks:  make([]Webhook, 0),
+		Webhooks: make(map[string]*openapi3.Schema),
 	}
 
 	// Try official webhooks field first (OpenAPI 3.1)
@@ -51,9 +48,9 @@ func (c *Converter) ExtractWebhooks(projectID string) (*Collection, error) {
 			webhooksMap, ok := webhooksExt.(map[string]interface{})
 			if ok {
 				for name, pathItemRaw := range webhooksMap {
-					webhook, err := c.extractWebhook(name, pathItemRaw, projectID)
+					schema, err := c.extractWebhookSchema(pathItemRaw)
 					if err == nil {
-						collection.Webhooks = append(collection.Webhooks, webhook)
+						collection.Webhooks[name] = schema
 					}
 				}
 			}
@@ -66,9 +63,9 @@ func (c *Converter) ExtractWebhooks(projectID string) (*Collection, error) {
 			webhooksMap, ok := webhooksExt.(map[string]interface{})
 			if ok {
 				for name, pathItemRaw := range webhooksMap {
-					webhook, err := c.extractWebhook(name, pathItemRaw, projectID)
+					schema, err := c.extractWebhookSchema(pathItemRaw)
 					if err == nil {
-						collection.Webhooks = append(collection.Webhooks, webhook)
+						collection.Webhooks[name] = schema
 					}
 				}
 			}
@@ -82,25 +79,16 @@ func (c *Converter) ExtractWebhooks(projectID string) (*Collection, error) {
 	return collection, nil
 }
 
-// extractWebhook extracts a single webhook from a path item
-func (c *Converter) extractWebhook(name string, pathItemRaw interface{}, projectID string) (Webhook, error) {
-	webhook := Webhook{
-		Name:      name,
-		ProjectID: projectID,
-	}
-
+// extractWebhookSchema extracts a schema from a path item
+func (c *Converter) extractWebhookSchema(pathItemRaw interface{}) (*openapi3.Schema, error) {
 	pathItemMap, ok := pathItemRaw.(map[string]interface{})
 	if !ok {
-		return webhook, fmt.Errorf("invalid path item format")
+		return nil, fmt.Errorf("invalid path item format")
 	}
 
 	postOp, ok := pathItemMap["post"].(map[string]interface{})
 	if !ok {
-		return webhook, fmt.Errorf("no POST operation found")
-	}
-
-	if desc, ok := postOp["description"].(string); ok {
-		webhook.Description = desc
+		return nil, fmt.Errorf("no POST operation found")
 	}
 
 	if reqBody, ok := postOp["requestBody"].(map[string]interface{}); ok {
@@ -111,7 +99,7 @@ func (c *Converter) extractWebhook(name string, pathItemRaw interface{}, project
 						schemaName := ref[len("#/components/schemas/"):]
 						if c.doc.Components != nil && c.doc.Components.Schemas != nil {
 							if schema, ok := c.doc.Components.Schemas[schemaName]; ok {
-								webhook.Schema = schema.Value
+								return schema.Value, nil
 							}
 						}
 					}
@@ -120,11 +108,7 @@ func (c *Converter) extractWebhook(name string, pathItemRaw interface{}, project
 		}
 	}
 
-	if webhook.Schema == nil {
-		return webhook, fmt.Errorf("no schema found")
-	}
-
-	return webhook, nil
+	return nil, fmt.Errorf("no schema found")
 }
 
 // getStringValue safely extracts a string value from a map
