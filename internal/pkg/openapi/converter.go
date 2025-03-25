@@ -10,10 +10,14 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-type WebhookSchema openapi3.Schema
+type Webhook struct {
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Schema      *openapi3.Schema `json:"schema"`
+}
 
-func (w *WebhookSchema) AsBytes() []byte {
-	bytes, err := json.Marshal((*openapi3.Schema)(w))
+func (w *Webhook) AsBytes() []byte {
+	bytes, err := json.Marshal(w.Schema)
 	if err != nil {
 		return nil
 	}
@@ -22,7 +26,7 @@ func (w *WebhookSchema) AsBytes() []byte {
 }
 
 type Collection struct {
-	Webhooks map[string]*openapi3.Schema `json:"webhooks"`
+	Webhooks map[string]*Webhook `json:"webhooks"`
 }
 
 // Converter handles the conversion from OpenAPI spec to JSON Schema
@@ -68,7 +72,7 @@ func NewFromBytes(data []byte) (*Converter, error) {
 // ExtractWebhooks extracts webhook schemas from OpenAPI spec
 func (c *Converter) ExtractWebhooks() (*Collection, error) {
 	collection := &Collection{
-		Webhooks: make(map[string]*openapi3.Schema),
+		Webhooks: make(map[string]*Webhook),
 	}
 
 	// Try the official webhooks field first (OpenAPI 3.1)
@@ -79,9 +83,10 @@ func (c *Converter) ExtractWebhooks() (*Collection, error) {
 				webhooksMap, ok := webhooksExt.(map[string]interface{})
 				if ok {
 					for name, pathItemRaw := range webhooksMap {
-						schema, err := c.extractWebhookSchema(pathItemRaw)
+						webhook, err := c.extractWebhook(pathItemRaw)
 						if err == nil {
-							collection.Webhooks[name] = schema
+							webhook.Name = name
+							collection.Webhooks[name] = webhook
 						}
 					}
 				}
@@ -109,7 +114,12 @@ func (c *Converter) ExtractWebhooks() (*Collection, error) {
 							schemaCopy.Example = pathItem.Post.RequestBody.Value.Content["application/json"].Example
 						}
 
-						collection.Webhooks[name] = &schemaCopy
+						webhook := &Webhook{
+							Name:        name,
+							Description: pathItem.Post.Description,
+							Schema:      &schemaCopy,
+						}
+						collection.Webhooks[name] = webhook
 					}
 				}
 			}
@@ -123,8 +133,8 @@ func (c *Converter) ExtractWebhooks() (*Collection, error) {
 	return collection, nil
 }
 
-// extractWebhookSchema extracts a schema from a path item
-func (c *Converter) extractWebhookSchema(pathItemRaw interface{}) (*openapi3.Schema, error) {
+// extractWebhook extracts a webhook from a path item
+func (c *Converter) extractWebhook(pathItemRaw interface{}) (*Webhook, error) {
 	pathItemMap, ok := pathItemRaw.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("invalid path item format")
@@ -133,6 +143,11 @@ func (c *Converter) extractWebhookSchema(pathItemRaw interface{}) (*openapi3.Sch
 	postOp, ok := pathItemMap["post"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("no POST operation found")
+	}
+
+	description := ""
+	if desc, ok := postOp["description"].(string); ok {
+		description = desc
 	}
 
 	if reqBody, ok := postOp["requestBody"].(map[string]interface{}); ok {
@@ -187,7 +202,10 @@ func (c *Converter) extractWebhookSchema(pathItemRaw interface{}) (*openapi3.Sch
 						newSchema.Example = example
 					}
 
-					return newSchema, nil
+					return &Webhook{
+						Description: description,
+						Schema:      newSchema,
+					}, nil
 				}
 			}
 		}

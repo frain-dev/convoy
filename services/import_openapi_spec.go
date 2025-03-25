@@ -35,13 +35,11 @@ func (im *ImportOpenapiSpecService) Run(ctx context.Context) ([]datastore.Projec
 		return nil, err
 	}
 
-	for eventType, v := range webhooks.Webhooks {
+	for eventType, schema := range webhooks.Webhooks {
 		exists, existsErr := im.EventTypesRepo.CheckEventTypeExists(ctx, eventType, im.ProjectId)
 		if existsErr != nil {
 			return nil, existsErr
 		}
-
-		schema := openapi.WebhookSchema(*v)
 
 		if exists {
 			ev, innerErr := im.EventTypesRepo.FetchEventTypeByName(ctx, eventType, im.ProjectId)

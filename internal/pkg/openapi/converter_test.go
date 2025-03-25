@@ -15,11 +15,12 @@ import (
 
 func TestConverter_ExtractWebhooks(t *testing.T) {
 	tests := []struct {
-		name           string
-		specFile       string
-		expectedCount  int
-		expectedTypes  map[string]string
-		expectedFields map[string][]string
+		name                 string
+		specFile             string
+		expectedCount        int
+		expectedTypes        map[string]string
+		expectedFields       map[string][]string
+		expectedDescriptions map[string]string
 	}{
 		{
 			name:          "OpenAPI 3.0",
@@ -35,6 +36,10 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 			},
 			expectedFields: map[string][]string{
 				"barber": {"event_type", "appointment_id", "customer_name", "service_type", "timestamp"},
+			},
+			expectedDescriptions: map[string]string{
+				"barber":     "Webhook for barber shop events",
+				"electrical": "Webhook for electrical equipment inventory updates",
 			},
 		},
 		{
@@ -52,6 +57,10 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 			expectedFields: map[string][]string{
 				"barber": {"event_type", "appointment_id", "customer_name", "service_type", "timestamp"},
 			},
+			expectedDescriptions: map[string]string{
+				"barber":     "Webhook for barber shop events",
+				"electrical": "Webhook for electrical equipment inventory updates",
+			},
 		},
 		{
 			name:          "OpenAPI 2.0",
@@ -67,6 +76,10 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 			},
 			expectedFields: map[string][]string{
 				"barber": {"event_type", "appointment_id", "customer_name", "service_type", "timestamp"},
+			},
+			expectedDescriptions: map[string]string{
+				"barber":     "Webhook for barber shop events",
+				"electrical": "Webhook for electrical equipment inventory updates",
 			},
 		},
 	}
@@ -134,17 +147,22 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 			require.Equal(t, tt.expectedCount, len(collection.Webhooks))
 
 			// Verify webhook schema properties and types
-			for name, schema := range collection.Webhooks {
+			for name, webhook := range collection.Webhooks {
 				if fields, ok := tt.expectedFields[name]; ok {
-					require.NotNil(t, schema)
-					require.NotNil(t, schema.Required)
-					require.ElementsMatch(t, fields, schema.Required)
+					require.NotNil(t, webhook.Schema)
+					require.NotNil(t, webhook.Schema.Required)
+					require.ElementsMatch(t, fields, webhook.Schema.Required)
 
-					for prop, propSchema := range schema.Properties {
+					for prop, propSchema := range webhook.Schema.Properties {
 						if expectedType, ok := tt.expectedTypes[prop]; ok {
 							require.Equal(t, expectedType, string((*propSchema.Value.Type)[0]), "property %s type mismatch", prop)
 						}
 					}
+				}
+
+				// Verify webhook description
+				if expectedDesc, ok := tt.expectedDescriptions[name]; ok {
+					require.Equal(t, expectedDesc, webhook.Description, "webhook %s description mismatch", name)
 				}
 			}
 
@@ -190,8 +208,9 @@ func TestConverter_ExtractWebhooks_Examples(t *testing.T) {
 			expectedEvent: map[string]interface{}{
 				"event_type": "stock_added",
 				"item_id":    "LED-BULB-60W",
-				"quantity":   float64(100), // JSON numbers are float64
 				"location":   "Warehouse A",
+				"notes":      "Bulk order received",
+				"quantity":   float64(100),
 				"timestamp":  "2024-03-20T14:30:00Z",
 			},
 		},
@@ -270,19 +289,11 @@ func TestConverter_ExtractWebhooks_Examples(t *testing.T) {
 			require.NoError(t, err)
 
 			// Verify webhook schema and example
-			schema, ok := collection.Webhooks[tt.webhookName]
+			webhook, ok := collection.Webhooks[tt.webhookName]
 			require.True(t, ok, "webhook %s not found", tt.webhookName)
-			require.NotNil(t, schema)
-			require.NotNil(t, schema.Example)
-
-			// Compare example values
-			example, ok := schema.Example.(map[string]interface{})
-			require.True(t, ok)
-			for key, expectedValue := range tt.expectedEvent {
-				actualValue, ok := example[key]
-				require.True(t, ok, "example missing key %s", key)
-				require.Equal(t, expectedValue, actualValue, "example value mismatch for key %s", key)
-			}
+			require.NotNil(t, webhook)
+			require.NotNil(t, webhook.Schema)
+			require.Equal(t, tt.expectedEvent, webhook.Schema.Example)
 		})
 	}
 }
