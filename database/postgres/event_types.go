@@ -18,14 +18,15 @@ var (
 
 const (
 	createEventType = `
-	INSERT INTO convoy.event_types (id, name, description, category, project_id, created_at, updated_at)
-	VALUES ($1, $2, $3, $4, $5, now(), now());
+	INSERT INTO convoy.event_types (id, name, description, category, project_id, json_schema, created_at, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, now(), now());
 	`
 
 	updateEventType = `
 	UPDATE convoy.event_types SET
 	description = $3,
 	category = $4,
+	json_schema = $5,
 	updated_at = NOW()
 	WHERE id = $1 and project_id = $2;
 	`
@@ -40,6 +41,11 @@ const (
 	fetchEventTypeById = `
 	SELECT * FROM convoy.event_types
 	WHERE id = $1 and project_id = $2;
+	`
+
+	fetchEventTypeByIName = `
+	SELECT * FROM convoy.event_types
+	WHERE name = $1 and project_id = $2;
 	`
 
 	checkEventTypeExists = `
@@ -67,6 +73,7 @@ func (e *eventTypesRepo) CreateEventType(ctx context.Context, eventType *datasto
 		eventType.Description,
 		eventType.Category,
 		eventType.ProjectId,
+		eventType.JSONSchema,
 	)
 	if err != nil {
 		return err
@@ -122,6 +129,7 @@ func (e *eventTypesRepo) UpdateEventType(ctx context.Context, eventType *datasto
 		eventType.ProjectId,
 		eventType.Description,
 		eventType.Category,
+		eventType.JSONSchema,
 	)
 	if err != nil {
 		return err
@@ -155,6 +163,19 @@ func (e *eventTypesRepo) DeprecateEventType(ctx context.Context, id, projectId s
 func (e *eventTypesRepo) FetchEventTypeById(ctx context.Context, id, projectId string) (*datastore.ProjectEventType, error) {
 	eventType := &datastore.ProjectEventType{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventTypeById, id, projectId).StructScan(eventType)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrEventTypeNotFound
+		}
+		return nil, err
+	}
+
+	return eventType, nil
+}
+
+func (e *eventTypesRepo) FetchEventTypeByName(ctx context.Context, name, projectId string) (*datastore.ProjectEventType, error) {
+	eventType := &datastore.ProjectEventType{}
+	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventTypeByIName, name, projectId).StructScan(eventType)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrEventTypeNotFound
