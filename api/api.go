@@ -189,6 +189,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 					projectSubRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
 						eventTypesRouter.Get("/", handler.GetEventTypes)
 						eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
+						eventTypesRouter.With(handler.RequireEnabledProject()).Post("/import", handler.ImportOpenApiSpec)
 						eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
 						eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
 					})
@@ -382,6 +383,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						projectSubRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
 							eventTypesRouter.Get("/", handler.GetEventTypes)
 							eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
+							eventTypesRouter.With(handler.RequireEnabledProject()).Post("/import", handler.ImportOpenApiSpec)
 							eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
 							eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
 						})

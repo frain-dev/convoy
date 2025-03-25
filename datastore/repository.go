@@ -242,6 +242,7 @@ type EventTypesRepository interface {
 	CreateDefaultEventType(ctx context.Context, projectId string) error
 	DeprecateEventType(context.Context, string, string) (*ProjectEventType, error)
 	FetchEventTypeById(context.Context, string, string) (*ProjectEventType, error)
+	FetchEventTypeByName(context.Context, string, string) (*ProjectEventType, error)
 	FetchAllEventTypes(context.Context, string) ([]ProjectEventType, error)
 	CheckEventTypeExists(context.Context, string, string) (bool, error)
 }

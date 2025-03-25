@@ -1,6 +1,7 @@
 package openapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -9,10 +10,15 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-type Webhook struct {
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	Schema      *openapi3.Schema `json:"schema"`
+type WebhookSchema openapi3.Schema
+
+func (w *WebhookSchema) AsBytes() []byte {
+	bytes, err := json.Marshal((*openapi3.Schema)(w))
+	if err != nil {
+		return nil
+	}
+
+	return bytes
 }
 
 type Collection struct {
@@ -44,6 +50,19 @@ func New(doc interface{}) (*Converter, error) {
 	}
 
 	return &Converter{doc: docV3}, nil
+}
+
+// NewFromBytes creates a new Converter instance from bytes
+func NewFromBytes(data []byte) (*Converter, error) {
+	loader := openapi3.NewLoader()
+	loader.IsExternalRefsAllowed = true
+	swagger, err := loader.LoadFromData(data)
+	if err != nil {
+		return nil, fmt.Errorf("error loading OpenAPI spec: %v", err)
+	}
+
+	// Create converter
+	return New(swagger)
 }
 
 // ExtractWebhooks extracts webhook schemas from OpenAPI spec

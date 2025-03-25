@@ -14,6 +14,9 @@ type CreateEventType struct {
 
 	// Description is used to describe what the event type does
 	Description string `json:"description"`
+
+	// JSONSchema is the JSON structure of the event type
+	JSONSchema any `json:"json_schema"`
 }
 
 func (ce *CreateEventType) Validate() error {
@@ -30,4 +33,11 @@ type UpdateEventType struct {
 
 	// Description is used to describe what the event type does
 	Description string `json:"description"`
+
+	// JSONSchema is the JSON structure of the event type
+	JSONSchema any `json:"json_schema"`
+}
+
+type ImportOpenAPISpec struct {
+	Spec string `json:"spec"`
 }

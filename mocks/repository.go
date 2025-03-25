@@ -3016,6 +3016,21 @@ func (mr *MockEventTypesRepositoryMockRecorder) FetchEventTypeById(arg0, arg1, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchEventTypeById", reflect.TypeOf((*MockEventTypesRepository)(nil).FetchEventTypeById), arg0, arg1, arg2)
 }
 
+// FetchEventTypeByName mocks base method.
+func (m *MockEventTypesRepository) FetchEventTypeByName(arg0 context.Context, arg1, arg2 string) (*datastore.ProjectEventType, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchEventTypeByName", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*datastore.ProjectEventType)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchEventTypeByName indicates an expected call of FetchEventTypeByName.
+func (mr *MockEventTypesRepositoryMockRecorder) FetchEventTypeByName(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchEventTypeByName", reflect.TypeOf((*MockEventTypesRepository)(nil).FetchEventTypeByName), arg0, arg1, arg2)
+}
+
 // UpdateEventType mocks base method.
 func (m *MockEventTypesRepository) UpdateEventType(arg0 context.Context, arg1 *datastore.ProjectEventType) error {
 	m.ctrl.T.Helper()
