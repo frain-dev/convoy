@@ -5,27 +5,25 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/openapi"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/spf13/cobra"
 )
 
-func AddOpenAPICommand(app *cli.App) *cobra.Command {
+func AddOpenAPICommand() *cobra.Command {
 	var (
 		inputFile  string
 		outputFile string
-		projectID  string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "openapi",
 		Short: "Extract webhook schemas from OpenAPI specifications",
-		Long: `Extract webhook schemas from OpenAPI 3.x specifications and convert them to JSON Schema format.
+		Long: `Extract webhook schemas from OpenAPI 2.x and 3.x specifications and convert them to JSON Schema format.
 This command helps you identify webhook endpoints in your OpenAPI spec and generate corresponding JSON schemas.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if inputFile == "" || outputFile == "" || projectID == "" {
-				return fmt.Errorf("input file, output file, and project ID are required")
+			if inputFile == "" {
+				return fmt.Errorf("input file is required")
 			}
 
 			// Read the file content
@@ -59,6 +57,11 @@ This command helps you identify webhook endpoints in your OpenAPI spec and gener
 				return fmt.Errorf("error marshaling output: %v", err)
 			}
 
+			if outputFile == "" {
+				fmt.Printf("Successfully extracted %d webhook schemas. See below:\n%s", len(collection.Webhooks), output)
+				return nil
+			}
+
 			err = os.WriteFile(outputFile, output, 0644)
 			if err != nil {
 				return fmt.Errorf("error writing output file: %v", err)
@@ -70,12 +73,9 @@ This command helps you identify webhook endpoints in your OpenAPI spec and gener
 	}
 
 	cmd.Flags().StringVarP(&inputFile, "input", "i", "", "Path to OpenAPI specification file (required)")
-	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Path to output JSON Schema file (required)")
-	cmd.Flags().StringVarP(&projectID, "project", "p", "", "Project ID for the webhook collection (required)")
+	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Path to output JSON Schema file")
 
 	_ = cmd.MarkFlagRequired("input")
-	_ = cmd.MarkFlagRequired("output")
-	_ = cmd.MarkFlagRequired("project")
 
 	return cmd
 }

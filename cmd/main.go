@@ -155,7 +155,7 @@ func main() {
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())
 	c.AddCommand(utils.AddUtilsCommand(app))
-	c.AddCommand(openapi.AddOpenAPICommand(app))
+	c.AddCommand(openapi.AddOpenAPICommand())
 
 	if err = c.Execute(); err != nil {
 		slog.Fatal(err)
