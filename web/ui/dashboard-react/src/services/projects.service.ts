@@ -5,6 +5,8 @@ import type {
 	CreateProjectResponse,
 	EventType,
 } from '@/models/project.model';
+import type { SOURCE } from '@/models/source';
+import type { PaginatedResult, PaginationCursor } from '@/models/global.model';
 
 type CreateProjectParams = {
 	name: string;
@@ -184,7 +186,7 @@ export async function regenerateAPIKey(
 	_projectId: string,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
-	const res = await deps.httpReq<{key:string, uid: string}>({
+	const res = await deps.httpReq<{ key: string; uid: string }>({
 		url: `/security/keys/regenerate`,
 		method: 'put',
 		body: null,

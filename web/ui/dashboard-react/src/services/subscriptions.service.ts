@@ -9,6 +9,21 @@ type GetSubscriptionsReqDetails = {
   direction?: 'next' | 'prev';
 }
 
+// Subscription creation type
+type CreateSubscriptionData = {
+  name: string;
+  endpoint_id: string;
+  source_id?: string;
+  filter_config?: {
+    event_types?: string[] | null;
+    filter?: {
+      headers?: Record<string, string> | null;
+      body?: Record<string, string> | null;
+    };
+  };
+  function?: string | null;
+};
+
 export async function getSubscriptions(reqDetails: GetSubscriptionsReqDetails,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
@@ -24,4 +39,18 @@ export async function getSubscriptions(reqDetails: GetSubscriptionsReqDetails,
   })
 
   return res.data
+}
+
+// Add new subscription
+export async function createSubscription(data: CreateSubscriptionData, 
+  deps: { httpReq: typeof request } = { httpReq: request },
+) {
+  const res = await deps.httpReq<{data: SUBSCRIPTION}>({
+    url: '/subscriptions',
+    method: 'post',
+    level: 'org_project',
+    body: data
+  });
+
+  return res.data;
 }
