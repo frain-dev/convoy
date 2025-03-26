@@ -224,7 +224,7 @@ const (
 	SELECT COUNT(s.id) AS count
 	FROM convoy.subscriptions s
 	WHERE s.deleted_at IS NULL
-	AND s.project_id = $1 AND s.endpoint_id = $2`
+	AND s.project_id = $1 AND s.endpoint_id = $2 AND s.id <> $3`
 
 	countPrevSubscriptions = `
 	SELECT COUNT(DISTINCT(s.id)) AS count
@@ -926,10 +926,10 @@ func (s *subscriptionRepo) FindCLISubscriptions(ctx context.Context, projectID s
 	return scanSubscriptions(rows)
 }
 
-func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
+func (s *subscriptionRepo) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID, subscriptionID string) (int64, error) {
 	var count int64
 
-	err := s.db.GetReadDB().GetContext(ctx, &count, countEndpointSubscriptions, projectID, endpointID)
+	err := s.db.GetReadDB().GetContext(ctx, &count, countEndpointSubscriptions, projectID, endpointID, subscriptionID)
 	if err != nil {
 		return 0, err
 	}

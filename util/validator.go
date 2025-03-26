@@ -17,6 +17,8 @@ func Validate(dst interface{}) error {
 	var messages []string
 
 	if err != nil {
+		messages = append(messages, err.Error())
+
 		errs := govalidator.ErrorsByField(err)
 		for field, message := range errs {
 			messages = append(messages, fmt.Sprintf("%s:%s", field, message))

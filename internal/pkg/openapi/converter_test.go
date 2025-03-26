@@ -15,12 +15,13 @@ import (
 
 func TestConverter_ExtractWebhooks(t *testing.T) {
 	tests := []struct {
-		name                 string
-		specFile             string
-		expectedCount        int
-		expectedTypes        map[string]string
-		expectedFields       map[string][]string
-		expectedDescriptions map[string]string
+		name                      string
+		specFile                  string
+		expectedCount             int
+		expectedTypes             map[string]string
+		expectedFields            map[string][]string
+		expectedDescriptions      map[string]string
+		expectedFieldDescriptions map[string]map[string]string
 	}{
 		{
 			name:          "OpenAPI 3.0",
@@ -40,6 +41,24 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 			expectedDescriptions: map[string]string{
 				"barber":     "Webhook for barber shop events",
 				"electrical": "Webhook for electrical equipment inventory updates",
+			},
+			expectedFieldDescriptions: map[string]map[string]string{
+				"barber": {
+					"event_type":     "Type of event that occurred (e.g., appointment created, updated, cancelled)",
+					"appointment_id": "Unique identifier for the appointment",
+					"customer_name":  "Full name of the customer",
+					"service_type":   "Type of service booked (e.g., Haircut, Shave)",
+					"timestamp":      "Date and time when the event occurred",
+					"notes":          "Additional notes or comments about the appointment",
+				},
+				"electrical": {
+					"event_type": "Type of inventory event (e.g., restock, sold, damaged)",
+					"item_id":    "Unique identifier for the electrical equipment",
+					"quantity":   "Number of items affected by the event",
+					"location":   "Storage location or warehouse identifier",
+					"timestamp":  "Date and time when the inventory event occurred",
+					"notes":      "Additional notes about the inventory update",
+				},
 			},
 		},
 		{
@@ -61,6 +80,24 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 				"barber":     "Webhook for barber shop events",
 				"electrical": "Webhook for electrical equipment inventory updates",
 			},
+			expectedFieldDescriptions: map[string]map[string]string{
+				"barber": {
+					"event_type":     "Type of event that occurred (e.g., appointment created, updated, cancelled)",
+					"appointment_id": "Unique identifier for the appointment",
+					"customer_name":  "Full name of the customer",
+					"service_type":   "Type of service booked (e.g., Haircut, Shave)",
+					"timestamp":      "Date and time when the event occurred",
+					"notes":          "Additional notes or comments about the appointment",
+				},
+				"electrical": {
+					"event_type": "Type of inventory event (e.g., restock, sold, damaged)",
+					"item_id":    "Unique identifier for the electrical equipment",
+					"quantity":   "Number of items affected by the event",
+					"location":   "Storage location or warehouse identifier",
+					"timestamp":  "Date and time when the inventory event occurred",
+					"notes":      "Additional notes about the inventory update",
+				},
+			},
 		},
 		{
 			name:          "OpenAPI 2.0",
@@ -80,6 +117,24 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 			expectedDescriptions: map[string]string{
 				"barber":     "Webhook for barber shop events",
 				"electrical": "Webhook for electrical equipment inventory updates",
+			},
+			expectedFieldDescriptions: map[string]map[string]string{
+				"barber": {
+					"event_type":     "Type of event that occurred (e.g., appointment created, updated, cancelled)",
+					"appointment_id": "Unique identifier for the appointment",
+					"customer_name":  "Full name of the customer",
+					"service_type":   "Type of service booked (e.g., Haircut, Shave)",
+					"timestamp":      "Date and time when the event occurred",
+					"notes":          "Additional notes or comments about the appointment",
+				},
+				"electrical": {
+					"event_type": "Type of inventory event (e.g., restock, sold, damaged)",
+					"item_id":    "Unique identifier for the electrical equipment",
+					"quantity":   "Number of items affected by the event",
+					"location":   "Storage location or warehouse identifier",
+					"timestamp":  "Date and time when the inventory event occurred",
+					"notes":      "Additional notes about the inventory update",
+				},
 			},
 		},
 	}
@@ -164,6 +219,12 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 				if expectedDesc, ok := tt.expectedDescriptions[name]; ok {
 					require.Equal(t, expectedDesc, webhook.Description, "webhook %s description mismatch", name)
 				}
+
+				for propName, prop := range webhook.Schema.Properties {
+					if expectedFieldDesc, ok := tt.expectedFieldDescriptions[name][propName]; ok {
+						require.Equal(t, expectedFieldDesc, prop.Value.Description, "field %s description mismatch", propName)
+					}
+				}
 			}
 
 			// Write output to file for manual inspection
@@ -183,16 +244,18 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 
 func TestConverter_ExtractWebhooks_Examples(t *testing.T) {
 	tests := []struct {
-		name          string
-		specFile      string
-		webhookName   string
-		expectedEvent map[string]interface{}
+		name            string
+		specFile        string
+		webhookName     string
+		expectedCount   int
+		expectedExample map[string]interface{}
 	}{
 		{
-			name:        "OpenAPI 3.0 - BarberSaaS",
-			specFile:    "testdata/test-3.0.yml",
-			webhookName: "barber",
-			expectedEvent: map[string]interface{}{
+			name:          "OpenAPI 3.0 - BarberSaaS",
+			specFile:      "testdata/test-3.0.yml",
+			webhookName:   "barber",
+			expectedCount: 2,
+			expectedExample: map[string]interface{}{
 				"event_type":     "appointment_created",
 				"appointment_id": "123e4567-e89b-12d3-a456-426614174000",
 				"customer_name":  "John Doe",
@@ -202,23 +265,25 @@ func TestConverter_ExtractWebhooks_Examples(t *testing.T) {
 			},
 		},
 		{
-			name:        "OpenAPI 3.1 - ElectricalEquipment",
-			specFile:    "testdata/test-3.1.yml",
-			webhookName: "electrical",
-			expectedEvent: map[string]interface{}{
-				"event_type": "stock_added",
-				"item_id":    "LED-BULB-60W",
-				"location":   "Warehouse A",
-				"notes":      "Bulk order received",
-				"quantity":   float64(100),
+			name:          "OpenAPI 3.1 - ElectricalEquipment",
+			specFile:      "testdata/test-3.1.yml",
+			webhookName:   "electrical",
+			expectedCount: 2,
+			expectedExample: map[string]interface{}{
+				"event_type": "item_restocked",
+				"item_id":    "789e0123-f45b-67d8-a456-426614174000",
+				"quantity":   float64(50),
+				"location":   "Warehouse-A",
 				"timestamp":  "2024-03-20T14:30:00Z",
+				"notes":      "Bulk order received",
 			},
 		},
 		{
-			name:        "OpenAPI 2.0 - BarberSaaS",
-			specFile:    "testdata/test-2.0.yml",
-			webhookName: "barber",
-			expectedEvent: map[string]interface{}{
+			name:          "OpenAPI 2.0 - BarberSaaS",
+			specFile:      "testdata/test-2.0.yml",
+			webhookName:   "barber",
+			expectedCount: 2,
+			expectedExample: map[string]interface{}{
 				"event_type":     "appointment_created",
 				"appointment_id": "123e4567-e89b-12d3-a456-426614174000",
 				"customer_name":  "John Doe",
@@ -293,7 +358,7 @@ func TestConverter_ExtractWebhooks_Examples(t *testing.T) {
 			require.True(t, ok, "webhook %s not found", tt.webhookName)
 			require.NotNil(t, webhook)
 			require.NotNil(t, webhook.Schema)
-			require.Equal(t, tt.expectedEvent, webhook.Schema.Example)
+			require.Equal(t, tt.expectedExample, webhook.Schema.Example)
 		})
 	}
 }

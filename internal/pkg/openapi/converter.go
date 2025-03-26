@@ -17,7 +17,18 @@ type Webhook struct {
 }
 
 func (w *Webhook) AsBytes() []byte {
-	bytes, err := json.Marshal(w.Schema)
+	if w.Schema == nil {
+		return nil
+	}
+
+	// Create a map with the schema type
+	schemaMap := map[string]interface{}{
+		"type":       "object",
+		"properties": w.Schema.Properties,
+		"required":   w.Schema.Required,
+	}
+
+	bytes, err := json.Marshal(schemaMap)
 	if err != nil {
 		return nil
 	}
@@ -179,6 +190,10 @@ func (c *Converter) extractWebhook(pathItemRaw interface{}) (*Webhook, error) {
 							}
 							if minimum, ok := propMap["minimum"].(float64); ok {
 								propSchema.Min = &minimum
+							}
+							// Extract field description
+							if desc, ok := propMap["description"].(string); ok {
+								propSchema.Description = desc
 							}
 
 							newSchema.Properties[propName] = &openapi3.SchemaRef{

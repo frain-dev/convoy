@@ -134,7 +134,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
-	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
+	CountEndpointSubscriptions(context.Context, string, string, string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}, isFlattened bool) (bool, error)
 	CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error)
 	LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]Subscription, error)
