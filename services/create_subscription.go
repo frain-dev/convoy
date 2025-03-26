@@ -51,7 +51,7 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 	}
 
 	if s.Project.Type == datastore.OutgoingProject && !s.Project.Config.MultipleEndpointSubscriptions {
-		count, err := s.SubRepo.CountEndpointSubscriptions(ctx, s.Project.UID, endpoint.UID)
+		count, err := s.SubRepo.CountEndpointSubscriptions(ctx, s.Project.UID, endpoint.UID, "")
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to count endpoint subscriptions")
 			return nil, &ServiceError{ErrMsg: "failed to count endpoint subscriptions"}
