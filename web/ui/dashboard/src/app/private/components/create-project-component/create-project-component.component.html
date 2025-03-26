@@ -316,24 +316,38 @@
 			</ng-container>
 
 			<ng-container *ngIf="activeTab.label === 'event types'">
-				<div class="flex items-center justify-between mb-24px">
-					<h3 class="text-16 font-bold" *ngIf="action === 'update'">Event Types</h3>
+                <div class="flex items-end justify-between mb-24px">
+                    <h3 class="text-16 font-bold" *ngIf="action === 'update'">Event Types</h3>
 
                     <ng-container *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-                        <button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button" *ngIf="eventTypes.length > 0" (click)="newEventTypeDialog.showModal()">
-                            <svg width="18" height="18" class="mr-2 fill-white-100">
-                                <use xlink:href="#plus-icon"></use>
-                            </svg>
-                            Event Type
-                        </button>
-                    </ng-container>
-				</div>
+                        <div class="flex gap-12px">
+                            <!-- Import OpenAPI Spec Button -->
+                            <button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button" fill="outline"
+                                    (click)="fileInput.click()">
+                                <svg width="18" height="18" class="mr-2 fill-new.primary-400">
+                                    <use xlink:href="#plus-icon"></use>
+                                </svg>
+                                Import OpenAPI Spec
+                            </button>
+                            <input #fileInput type="file" accept=".json,.yaml,.yml" hidden (change)="importOpenAPISpec($event)">
 
-				<div convoy-card>
+                            <!-- Create Event Type Button -->
+                            <button convoy-permission="Project Settings|MANAGE" convoy-button size="sm" type="button"
+                                    *ngIf="eventTypes.length > 0" (click)="this.selectedEventType = null; newEventTypeDialog.showModal()">
+                                <svg width="18" height="18" class="mr-2 fill-white-100">
+                                    <use xlink:href="#plus-icon"></use>
+                                </svg>
+                                Event Type
+                            </button>
+                        </div>
+                    </ng-container>
+                </div>
+
+                <div convoy-card>
 					<!-- empty state  -->
 					<div class="py-40px" *ngIf="eventTypes.length == 0">
 						<div convoy-empty-state imgSrc="/assets/img/events-log-empty-state.png" heading="You currently do not have any event types" description="Event types will be listed here when available" id="event-type-empty-state">
-							<button emptyStateCTA convoy-button type="button" size="sm" class="mt-36px" id="create-eventtype-modal-button" (click)="newEventTypeDialog.showModal()">
+							<button emptyStateCTA convoy-button type="button" size="sm" class="mt-36px" id="create-eventtype-modal-button" (click)="this.selectedEventType = null; newEventTypeDialog.showModal()">
 								<svg width="22" height="22" class="mr-2 scale-75" fill="#ffffff">
 									<use xlink:href="#plus-icon"></use>
 								</svg>
@@ -417,17 +431,22 @@
 				<input type="text" id="event_name" convoy-input autocomplete="event_name" placeholder="Enter event name" formControlName="name" [readonly]="selectedEventType" />
 				<convoy-input-error *ngIf="newEventTypeForm.get('name')?.touched && newEventTypeForm.get('name')?.invalid">Please enter an event name</convoy-input-error>
 			</convoy-input-field>
+            <convoy-input-field className="mb-0">
+                <label for="description" convoy-label>Description</label>
+                <input type="text" id="description" convoy-input autocomplete="description" placeholder="Enter description" formControlName="description" />
+            </convoy-input-field>
 			<convoy-input-field className="mb-0">
 				<label for="category" convoy-label>Category</label>
 				<input type="text" id="category" convoy-input autocomplete="category" placeholder="Enter category" formControlName="category" />
 			</convoy-input-field>
-			<convoy-input-field>
-				<label for="event_description" convoy-label>Event description</label>
-				<input type="text" id="event_description" convoy-input autocomplete="Event description" placeholder="Enter event description" formControlName="description" />
-			</convoy-input-field>
+            <convoy-input-field>
+                <label for="event_schema" convoy-label>Event Schema (JSON)</label>
+                <textarea id="event_schema" convoy-input rows="6" placeholder="Enter JSON schema" formControlName="json_schema"></textarea>
+                <convoy-input-error *ngIf="newEventTypeForm.get('json_schema')?.touched && newEventTypeForm.get('json_schema')?.invalid">Please enter a valid schema</convoy-input-error>
+            </convoy-input-field>
 			<div class="flex justify-end gap-12px mt-38px">
-				<button convoy-button color="error" fill="outline" type="button" (click)="newEventTypeDialog.close()">Discard</button>
-				<button convoy-button (click)="selectedEventType ? updateNewEventType() : createNewEventType()">{{ selectedEventType ? 'Update' : 'Create' }}</button>
+				<button convoy-button color="error" fill="outline" type="button" (click)="newEventTypeDialog.close(); this.selectedEventType = null;">Discard</button>
+				<button convoy-button (click)="selectedEventType ? updateNewEventType() : createNewEventType(); this.selectedEventType = null; ">{{ selectedEventType ? 'Update' : 'Create' }}</button>
 			</div>
 		</form>
 	</div>

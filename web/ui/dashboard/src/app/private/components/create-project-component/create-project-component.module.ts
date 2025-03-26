@@ -18,40 +18,42 @@ import { NotificationComponent } from 'src/app/components/notification/notificat
 import { ConfigButtonComponent } from '../config-button/config-button.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
+import { MonacoComponent } from '../monaco/monaco.component';
 
 @NgModule({
 	declarations: [CreateProjectComponent],
-	imports: [
-		CommonModule,
-		ReactiveFormsModule,
-		TooltipComponent,
-		RadioComponent,
-		ToggleComponent,
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        TooltipComponent,
+        RadioComponent,
+        ToggleComponent,
 
-		SelectComponent,
-		ButtonComponent,
-		DialogHeaderComponent,
-		CopyButtonComponent,
-		CardComponent,
-		ButtonComponent,
-		TooltipComponent,
-		TableCellComponent,
-		TableComponent,
-		TableHeadCellComponent,
-		TableHeadComponent,
-		TableRowComponent,
-		InputFieldDirective,
-		InputErrorComponent,
-		InputDirective,
-		LabelComponent,
-		TokenModalComponent,
-		PermissionDirective,
-		DialogDirective,
-		NotificationComponent,
-		ConfigButtonComponent,
+        SelectComponent,
+        ButtonComponent,
+        DialogHeaderComponent,
+        CopyButtonComponent,
+        CardComponent,
+        ButtonComponent,
+        TooltipComponent,
+        TableCellComponent,
+        TableComponent,
+        TableHeadCellComponent,
+        TableHeadComponent,
+        TableRowComponent,
+        InputFieldDirective,
+        InputErrorComponent,
+        InputDirective,
+        LabelComponent,
+        TokenModalComponent,
+        PermissionDirective,
+        DialogDirective,
+        NotificationComponent,
+        ConfigButtonComponent,
         TagComponent,
-        EmptyStateComponent
-	],
+        EmptyStateComponent,
+        MonacoComponent
+    ],
 	exports: [CreateProjectComponent]
 })
 export class CreateProjectComponentModule {}

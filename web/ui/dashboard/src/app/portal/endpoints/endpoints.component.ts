@@ -1,13 +1,15 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
 import { SUBSCRIPTION } from 'src/app/models/subscription';
 import { GeneralService } from 'src/app/services/general/general.service';
 import { EndpointsService } from 'src/app/private/pages/project/endpoints/endpoints.service';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
-import { EndpointSecretComponent } from 'src/app/private/pages/project/endpoints/endpoint-secret/endpoint-secret.component';
+import {
+    EndpointSecretComponent
+} from 'src/app/private/pages/project/endpoints/endpoint-secret/endpoint-secret.component';
 import { PortalService } from '../portal.service';
 import { PrivateService } from 'src/app/private/private.service';
 import { TagComponent } from 'src/app/components/tag/tag.component';
@@ -16,10 +18,20 @@ import { CardComponent } from 'src/app/components/card/card.component';
 import { ButtonComponent } from 'src/app/components/button/button.component';
 import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import { ControlContainer, FormsModule, FormGroupDirective, ReactiveFormsModule } from '@angular/forms';
+import {
+    ControlContainer,
+    FormBuilder,
+    FormGroup,
+    FormGroupDirective,
+    FormsModule,
+    ReactiveFormsModule,
+    Validators
+} from '@angular/forms';
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { CreatePortalEndpointComponent } from '../create-portal-endpoint/create-portal-endpoint.component';
-import { CreateEndpointComponent } from '../../private/components/create-endpoint/create-endpoint.component';
+import { EventCatalogComponent, EventType } from '../event-catalog/event-catalog.component';
+import { ListItemComponent } from '../../components/list-item/list-item.component';
+import { PrismModule } from '../../private/components/prism/prism.module';
 
 interface PORTAL_ENDPOINT extends ENDPOINT {
 	subscription?: SUBSCRIPTION;
@@ -27,23 +39,25 @@ interface PORTAL_ENDPOINT extends ENDPOINT {
 @Component({
 	selector: 'convoy-endpoints',
 	standalone: true,
-	imports: [
-		CommonModule,
-		DialogDirective,
-		EndpointSecretComponent,
-		TagComponent,
-		StatusColorModule,
-		CardComponent,
-		DropdownComponent,
-		DropdownOptionDirective,
-		ButtonComponent,
-		CreatePortalEndpointComponent,
-		PaginationComponent,
-		FormsModule,
-		ReactiveFormsModule,
-		CopyButtonComponent,
-		CreateEndpointComponent
-	],
+    imports: [
+        CommonModule,
+        DialogDirective,
+        EndpointSecretComponent,
+        TagComponent,
+        StatusColorModule,
+        CardComponent,
+        DropdownComponent,
+        DropdownOptionDirective,
+        ButtonComponent,
+        CreatePortalEndpointComponent,
+        PaginationComponent,
+        FormsModule,
+        ReactiveFormsModule,
+        CopyButtonComponent,
+        EventCatalogComponent,
+        ListItemComponent,
+        PrismModule
+    ],
 	providers: [{ provide: ControlContainer, useValue: null }, FormGroupDirective],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
@@ -66,7 +80,11 @@ export class EndpointsComponent implements OnInit {
 	action: 'create' | 'update' = 'create';
 	endpointSearchString = '';
 
-	constructor(private route: ActivatedRoute, private generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router) {
+    selectedEventType: EventType | null = null;
+    endpointUid: string | null = null; // Store the selected endpoint UID
+    eventTypes: EventType[] = [];
+
+	constructor(private route: ActivatedRoute, protected generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router, private formBuilder: FormBuilder) {
 		// Listen to route changes to handle browser back/forward
 		this.router.events.subscribe(event => {
 			if (event instanceof NavigationEnd) {
@@ -213,4 +231,42 @@ export class EndpointsComponent implements OnInit {
 		// Navigate back to the endpoints list
 		this.router.navigate(['/portal/endpoints'], { queryParams });
 	}
+
+    selectEventType(eventType: EventType) {
+        this.selectedEventType = eventType;
+    }
+
+    async sendEvent() {
+        if (!this.selectedEventType || !this.endpointUid) {
+            return;
+        }
+
+        const eventData = this.selectedEventType.parsed_schema;
+
+        console.log('Sending event:', {
+            eventType: this.selectedEventType.name,
+            endpointUid: this.endpointUid,
+            data: eventData
+        });
+
+        const testEvent = {
+            data: eventData,
+            endpoint_id: this.endpointUid,
+            event_type: this.selectedEventType.name
+        };
+
+        try {
+            const response = await this.endpointService.sendEvent({ body: testEvent });
+            this.generalService.showNotification({ message: response.message, style: 'success' });
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+    onEventTypesFetched(eventTypes: EventType[]) {
+        this.eventTypes = eventTypes;
+        if (!this.selectedEventType && eventTypes.length > 0) {
+            this.selectedEventType = eventTypes[0];
+        }
+    }
 }

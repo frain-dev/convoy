@@ -20,7 +20,7 @@
   </div>
 
     <!-- Endpoint Type Selection -->
-    <div class="mb-32px">
+    <div style="display: none" class="mb-32px">
 <!--        <h3 class="text-14 font-semibold text-neutral-11 mb-8px">Choose Endpoint Type</h3>-->
         <p class="text-12 text-neutral-9 mb-16px">
             Select the type of endpoint you're trying to create.
@@ -257,11 +257,11 @@
 
     <div *ngIf="savingEndpoint" convoy-form-loader [loading]="!endpointCreated"></div>
 
-    <div class="mt-32px mb-32px">
-        <h3 class="text-14 font-semibold text-neutral-11 mb-8px">Configure Event Types</h3>
-        <p class="text-12 text-neutral-9 mb-16px">Configure how you want this endpoint to receive webhook events.</p>
+    <div class="mt-72px mb-48px">
+        <h3 class="font-semibold text-14 mt-20px">Configure Event Types</h3>
+        <p class="text-12 text-neutral-10 mt-6px">Configure how you want this endpoint to receive webhook events.</p>
 
-        <div id="eventTypesContainer" convoy-card class="p-24px relative">
+        <div id="eventTypesContainer" convoy-card class="p-24px mt-24px relative">
             <!-- Event Types Configuration -->
             <div class="flex justify-between items-end">
                 <p class="text-12 font-medium text-neutral-9 flex items-center" >
@@ -280,7 +280,7 @@
                     Business
                 </div>
                 <div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-                    <div *ngFor="let eventType of eventTypes" class="flex items-center justify-between mb-4px border border-neutral-4 p-12px rounded-6px">
+                    <div *ngFor="let eventType of eventTypes; let i = index" class="flex items-center justify-between mb-4px p-12px rounded-6px">
                         <div class="flex items-center">
                             <div class="relative mr-12px">
                                 <div
@@ -291,12 +291,12 @@
                                     <span *ngIf="isEventTypeSelected(eventType.name)" class="text-primary-600 text-12 font-bold leading-none">✓</span>
                                 </div>
                                 <input
-                                        type="checkbox"
-                                        [id]="'event_type_' + eventType.name + '_box'"
-                                        [checked]="isEventTypeSelected(eventType.name)"
-                                        (change)="toggleEventType(eventType.name)"
-                                        [disabled]="action === 'view'"
-                                        class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
+                                    type="checkbox"
+                                    [id]="'event_type_' + eventType.name + '_box'"
+                                    [checked]="selectedEventTypes.includes(eventType.name)"
+                                    (change)="toggleEventTypeSelection(eventType.name)"
+                                    [disabled]="action === 'view'"
+                                    class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
                                 />
                             </div>
                             <label [for]="'event_type_' + eventType.name + '_box'" class="text-12 cursor-pointer">
@@ -309,10 +309,14 @@
                                     size="xs"
                                     fill="soft-outline"
                                     color="primary"
-                                    class="mr-8px"
-                                    (click)="openFilterDialog(eventType.name)"
-                                    [disabled]="!isEventTypeSelected(eventType.name) || action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" >
-                                Edit Filter
+                                    class="mr-8px flex items-center"
+                                    (click)="openFilterDialog(i)"
+                                    [disabled]="action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS') || !selectedEventTypes.includes(eventType.name)">
+                                <span *ngIf="!filtersMap.has(eventType.name)">Add Filter</span>
+                                <span *ngIf="filtersMap.has(eventType.name)">Edit Filter</span>
+                                <svg *ngIf="!filtersMap.has(eventType.name)" width="10" height="10" class="ml-4px fill-new.primary-400">
+                                    <use xlink:href="#plus-icon"></use>
+                                </svg>
                             </button>
                         </div>
                     </div>
@@ -322,23 +326,37 @@
         </div>
     </div>
 
-    <div class="mt-32px mb-32px">
-        <convoy-create-portal-transform-function
+    <div id="transform-section" class="mt-16px mb-32px">
+        <div class="flex justify-between items-center cursor-pointer" (click)="toggleTransformFunction()">
+            <h3 class="font-semibold text-14 mt-20px">Test Transforms</h3>
+            <button class="text-12 text-neutral-9 flex items-center">
+                {{ isTransformFunctionCollapsed ? 'Expand' : 'Collapse' }}
+            </button>
+        </div>
+
+        <p *ngIf="!isTransformFunctionCollapsed" class="text-12 text-neutral-10 mt-6px mb-24px">
+            Configure how you want to test and apply transformation logic to webhook events.
+        </p>
+
+        <div *ngIf="!isTransformFunctionCollapsed">
+            <convoy-create-portal-transform-function
+                [showTitle]="false"
+                [titleClass]="'font-semibold text-14 capitalize pb-16px'"
                 (updatedTransformFunction)="getFunction($event)"
                 [defaultOption]="'Select Event Type'"
                 [options]="toEventTypesString()"
                 [transformFunction]="subscriptionForm.get('function')?.value">
-        </convoy-create-portal-transform-function>
+            </convoy-create-portal-transform-function>
+        </div>
     </div>
 
 
-
   <div class="flex justify-end mt-32px">
-    <button 
-        convoy-button 
-        type="button" 
-        fill="solid" 
-        color="primary" 
+    <button
+        convoy-button
+        type="button"
+        fill="solid"
+        color="primary"
         class="h-40px px-24px py-8px w-auto text-white"
         [disabled]="savingEndpoint"
         (click)="saveEndpointAndSubscription()">
@@ -362,4 +380,4 @@
     </div>
 </dialog>
 
-<convoy-notification></convoy-notification> 
+<convoy-notification></convoy-notification>

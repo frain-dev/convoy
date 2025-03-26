@@ -1,7 +1,23 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject, ViewEncapsulation, ChangeDetectorRef } from '@angular/core';
+import {
+    ChangeDetectorRef,
+    Component,
+    EventEmitter,
+    inject,
+    Input,
+    OnInit,
+    Output, ViewChild,
+    ViewEncapsulation
+} from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
-import { ControlContainer, FormArray, FormBuilder, FormControl, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import {
+    ControlContainer,
+    FormBuilder,
+    FormGroup,
+    FormGroupDirective,
+    ReactiveFormsModule,
+    Validators
+} from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 
 import { GeneralService } from '../../services/general/general.service';
 import { FilterService } from '../../private/components/create-subscription/filter.service';
@@ -11,17 +27,24 @@ import { PrivateService } from '../../private/private.service';
 import { CreateEndpointService } from '../../private/components/create-endpoint/create-endpoint.service';
 import { CreateSubscriptionService } from '../../private/components/create-subscription/create-subscription.service';
 
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from '../../components/input/input.component';
+import {
+    InputDirective,
+    InputErrorComponent,
+    InputFieldDirective,
+    LabelComponent
+} from '../../components/input/input.component';
 import { ButtonComponent } from '../../components/button/button.component';
 import { RadioComponent } from '../../components/radio/radio.component';
 import { TooltipComponent } from '../../components/tooltip/tooltip.component';
 import { CardComponent } from '../../components/card/card.component';
-import { ToggleComponent } from '../../components/toggle/toggle.component';
 import { FormLoaderComponent } from '../../components/form-loader/form-loader.component';
 import { PermissionDirective } from '../../private/components/permission/permission.directive';
-import { CreateTransformFunctionComponent } from '../../private/components/create-transform-function/create-transform-function.component';
-import { CreateSubscriptionFilterComponent } from '../../private/components/create-subscription-filter/create-subscription-filter.component';
-import { CreatePortalTransformFunctionComponent } from '../create-portal-transform-function/create-portal-transform-function.component';
+import {
+    CreateSubscriptionFilterComponent
+} from '../../private/components/create-subscription-filter/create-subscription-filter.component';
+import {
+    CreatePortalTransformFunctionComponent
+} from '../create-portal-transform-function/create-portal-transform-function.component';
 
 import { ENDPOINT, SECRET } from '../../models/endpoint.model';
 import { EVENT_TYPE } from '../../models/event.model';
@@ -33,36 +56,34 @@ import { ConfigButtonComponent } from '../../private/components/config-button/co
 import { LoaderModule } from '../../private/components/loader/loader.module';
 import { TagComponent } from '../../components/tag/tag.component';
 import { DialogDirective } from '../../components/dialog/dialog.directive';
-import {CopyButtonComponent} from "../../components/copy-button/copy-button.component";
+import { CopyButtonComponent } from '../../components/copy-button/copy-button.component';
 
 @Component({
 	selector: 'convoy-create-portal-endpoint',
 	standalone: true,
-	imports: [
-		CommonModule,
-		NgOptimizedImage,
-		ReactiveFormsModule,
-		InputDirective,
-		InputFieldDirective,
-		InputErrorComponent,
-		LabelComponent,
-		ButtonComponent,
-		RadioComponent,
-		TooltipComponent,
-		CardComponent,
-		FormLoaderComponent,
-		ToggleComponent,
-		PermissionDirective,
-		CreateTransformFunctionComponent,
-		CreateSubscriptionFilterComponent,
-		CreatePortalTransformFunctionComponent,
-		NotificationComponent,
-		ConfigButtonComponent,
-		LoaderModule,
-		TagComponent,
-		DialogDirective,
-		CopyButtonComponent
-	],
+    imports: [
+        CommonModule,
+        NgOptimizedImage,
+        ReactiveFormsModule,
+        InputDirective,
+        InputFieldDirective,
+        InputErrorComponent,
+        LabelComponent,
+        ButtonComponent,
+        RadioComponent,
+        TooltipComponent,
+        CardComponent,
+        FormLoaderComponent,
+        PermissionDirective,
+        CreateSubscriptionFilterComponent,
+        CreatePortalTransformFunctionComponent,
+        NotificationComponent,
+        ConfigButtonComponent,
+        LoaderModule,
+        TagComponent,
+        DialogDirective,
+        CopyButtonComponent
+    ],
 	providers: [
 		{
 			provide: ControlContainer,
@@ -133,6 +154,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 	endpointCreated = false;
 	endpointSecret?: SECRET;
 	isLoadingForm = true;
+    isTransformFunctionCollapsed = true;
 
 	// Configurations
 	configurations = [
@@ -437,32 +459,53 @@ export class CreatePortalEndpointComponent implements OnInit {
 		return this.configurations.find(config => config.uid === configValue)?.deleted || false;
 	}
 
-	openFilterDialog(eventType: string) {
-		this.selectedEventType = eventType || '';
+    toggleEventTypeSelection(eventType: string) {
+        const isWildcard = eventType === '*';
+        const index = this.selectedEventTypes.indexOf(eventType);
 
-		// For backward compatibility
-		this.selectedIndex = this.filters.findIndex(item => item.event_type === eventType);
+        if (index > -1) {
+            // If already selected, remove it
+            this.selectedEventTypes.splice(index, 1);
+            return;
+        }
 
-		// Ensure we have a filter entry for this event type in the map
-		if (!this.filtersMap.has(eventType) && eventType) {
-			// Create a new filter entry if it doesn't exist
-			this.filtersMap.set(eventType, {
-				uid: '', // Will be assigned by backend
-				subscription_id: '',
-				event_type: eventType,
-				headers: {},
-				body: {},
-				is_new: true
-			});
+        if (isWildcard) {
+            // Selecting wildcard (*) - clear all event types first
+            this.selectedEventTypes = ['*'];
+        } else {
+            // If a specific event type is selected, remove wildcard (*) if it's present
+            const wildcardIndex = this.selectedEventTypes.indexOf('*');
+            if (wildcardIndex > -1) {
+                this.selectedEventTypes.splice(wildcardIndex, 1);
+            }
+            this.selectedEventTypes.push(eventType);
+        }
+    }
 
-			// Sync with filters array for compatibility
-			this._syncFiltersArrayWithMap();
-		}
 
-		this.showFilterDialog = true;
-	}
+    openFilterDialog(index: number) {
+        const eventType = this.eventTypes[index].name;
+        this.selectedEventType = eventType || '';
+        this.selectedIndex = index;
 
-	onSaveFilter(schema: any) {
+        // Ensure a filter entry exists for this event type
+        if (!this.filtersMap.has(eventType)) {
+            this.filtersMap.set(eventType, {
+                uid: '', // Assigned by backend
+                subscription_id: '',
+                event_type: eventType,
+                headers: {},
+                body: {},
+                is_new: true
+            });
+
+            this._syncFiltersArrayWithMap();
+        }
+
+        this.showFilterDialog = true;
+    }
+
+    onSaveFilter(schema: any) {
 		if (!this.selectedEventType) {
 			console.error('No event type selected for filter');
 			return;
@@ -936,5 +979,9 @@ export class CreatePortalEndpointComponent implements OnInit {
 	toEventTypesString(){
 		return this.eventTypes.map(e => e.name).filter(e=> e !== '*')
 	}
+
+    toggleTransformFunction() {
+        this.isTransformFunctionCollapsed = !this.isTransformFunctionCollapsed;
+    }
 
 }

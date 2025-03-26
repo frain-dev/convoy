@@ -363,7 +363,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindStuckEventDeliveriesBySta
 }
 
 // LoadEventDeliveriesIntervals mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, ids []string) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period)
 	ret0, _ := ret[0].([]datastore.EventInterval)

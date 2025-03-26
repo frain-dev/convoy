@@ -26,6 +26,8 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 	@Input('transformFunction') transformFunction: any;
 	@Input('options') options: any;
 	@Input('defaultOption') defaultOption: any;
+    @Input() titleClass: string = 'font-semibold text-14 capitalize';
+    @Input() showTitle: boolean = true;
 
 	@Output('updatedTransformFunction') updatedTransformFunction: EventEmitter<any> = new EventEmitter();
 	tabs = ['output', 'diff'];

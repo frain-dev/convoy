@@ -526,6 +526,10 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			})
 		})
 
+		portalLinkRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
+			dashboardRouter.Get("/summary", handler.GetDashboardSummary)
+		})
+
 		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 			subscriptionRouter.Post("/", handler.CreateSubscription)
 			subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)

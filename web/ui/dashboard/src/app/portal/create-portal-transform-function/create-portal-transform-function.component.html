@@ -1,5 +1,5 @@
 <div class="flex items-center justify-between w-full">
-    <h2 class="font-semibold text-14 capitalize">Test Transforms</h2>
+    <h2 *ngIf="showTitle" [ngClass]="titleClass">Test Transforms</h2>
 </div>
 
 <div class="max-w-[1192px] m-auto mb-100px" convoy-card>

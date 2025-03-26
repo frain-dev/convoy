@@ -152,6 +152,7 @@ const (
         deleted_at IS NULL AND
         created_at >= $2 AND
         created_at <= $3
+        %s
     GROUP BY
         "data.group_only", "data.index";
     `
@@ -819,7 +820,7 @@ const (
 	yearlyIntervalFormat  = "yyyy"              // 1 month
 )
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, endpointIds []string) ([]datastore.EventInterval, error) {
 	intervals := make([]datastore.EventInterval, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
@@ -849,8 +850,14 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesIntervals(ctx context.Context, pr
 		return nil, errors.New("specified data cannot be generated for period")
 	}
 
-	q := fmt.Sprintf(loadEventDeliveriesIntervals, timeComponent, timeComponent, format, extract)
-	rows, err := e.db.GetReadDB().QueryxContext(ctx, q, projectID, start, end)
+	filter := ""
+	var args = []interface{}{projectID, start, end}
+	if len(endpointIds) > 0 {
+		filter = "AND endpoint_id = ANY($4)"
+		args = append(args, pq.Array(endpointIds))
+	}
+	q := fmt.Sprintf(loadEventDeliveriesIntervals, timeComponent, timeComponent, format, extract, filter)
+	rows, err := e.db.GetReadDB().QueryxContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}

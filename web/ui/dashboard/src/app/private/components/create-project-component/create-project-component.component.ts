@@ -8,11 +8,27 @@ import { CreateProjectComponentService } from './create-project-component.servic
 import { RbacService } from 'src/app/services/rbac/rbac.service';
 import { LicensesService } from 'src/app/services/licenses/licenses.service';
 import { EVENT_TYPE } from 'src/app/models/event.model';
+import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+
 
 interface TAB {
 	label: string;
 	svg: 'fill' | 'stroke';
 	icon: string;
+}
+
+function jsonValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+        if (!control.value || typeof control.value === 'object') {
+            return null;
+        }
+        try {
+            JSON.parse(control.value);
+            return null; // Valid JSON
+        } catch (e) {
+            return { invalidJson: true }; // Invalid JSON
+        }
+    };
 }
 
 @Component({
@@ -67,7 +83,8 @@ export class CreateProjectComponent implements OnInit {
 	newEventTypeForm: FormGroup = this.formBuilder.group({
 		name: ['', Validators.required],
 		category: ['', Validators.required],
-		description: ['', Validators.required]
+		description: ['', Validators.required],
+        json_schema: ['', jsonValidator()],
 	});
 	newSignatureForm: FormGroup = this.formBuilder.group({
 		encoding: [null],
@@ -105,7 +122,7 @@ export class CreateProjectComponent implements OnInit {
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
 	eventTypes: EVENT_TYPE[] = [];
-	selectedEventType!: EVENT_TYPE;
+	selectedEventType: EVENT_TYPE | null = null;
     rateLimitDeleted = false;
 
 	constructor(
@@ -374,27 +391,53 @@ export class CreateProjectComponent implements OnInit {
 		return this.configurations.filter(config => config.show).length;
 	}
 
-	async createNewEventType() {
-		try {
-			await this.createProjectService.createEventType(this.newEventTypeForm.value);
-			this.newEventTypeForm.reset();
-			this.newEventTypeDialog.nativeElement.close();
-			this.getEventTypes();
-		} catch {}
-	}
+    async createNewEventType() {
+        try {
+            const payload = {
+                ...this.newEventTypeForm.value,
+                json_schema: this.newEventTypeForm.value.json_schema
+                    ? (typeof this.newEventTypeForm.value.json_schema === 'string'
+                        ? JSON.parse(this.newEventTypeForm.value.json_schema)
+                        : this.newEventTypeForm.value.json_schema)
+                    : {},
+            };
 
-	async updateNewEventType() {
-		const payload = {
-			data: this.newEventTypeForm.value,
-			eventId: this.selectedEventType.uid
-		};
-		try {
-			await this.createProjectService.updateEventType(payload);
-			this.newEventTypeForm.reset();
-			this.newEventTypeDialog.nativeElement.close();
-			this.getEventTypes();
-		} catch {}
-	}
+            await this.createProjectService.createEventType(payload);
+            this.newEventTypeForm.reset();
+            this.newEventTypeDialog.nativeElement.close();
+            this.getEventTypes();
+        } catch (error) {
+            console.error("Error creating event type:", error);
+        }
+    }
+
+    async updateNewEventType() {
+        if (!this.selectedEventType) {
+            this.generalService.showNotification({message: "Event type not selected", style: 'error', type: 'alert'});
+            return;
+        }
+
+        const payload = {
+            data: {
+                ...this.newEventTypeForm.value,
+                json_schema: this.newEventTypeForm.value.json_schema
+                    ? (typeof this.newEventTypeForm.value.json_schema === 'string'
+                        ? JSON.parse(this.newEventTypeForm.value.json_schema)
+                        : this.newEventTypeForm.value.json_schema)
+                    : {},
+            },
+            eventId: this.selectedEventType.uid
+        };
+
+        try {
+            await this.createProjectService.updateEventType(payload);
+            this.newEventTypeForm.reset();
+            this.newEventTypeDialog.nativeElement.close();
+            this.getEventTypes();
+        } catch (error) {
+            console.error("Error updating event type:", error);
+        }
+    }
 
 	async deprecateEventType(eventTypeId: string) {
 		try {
@@ -420,8 +463,32 @@ export class CreateProjectComponent implements OnInit {
 		this.newEventTypeForm.patchValue({
 			name: eventType.name,
 			description: eventType.description,
-			category: eventType.category
+			category: eventType.category,
+            json_schema: eventType.json_schema
+                ? (typeof eventType.json_schema === 'string'
+                    ? eventType.json_schema
+                    : JSON.stringify(eventType.json_schema))
+                : ''
 		});
 		this.newEventTypeDialog.nativeElement.showModal();
 	}
+
+    async importOpenAPISpec(event: Event) {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async () => {
+            try {
+                const specContent = reader.result as string;
+                await this.createProjectService.importOpenAPISpec({ spec: specContent });
+                this.generalService.showNotification({ message: "OpenAPI spec imported successfully", style: 'success' });
+                this.getEventTypes(); // Refresh event types
+            } catch (error) {
+                this.generalService.showNotification({ message: "Failed to import OpenAPI spec", style: 'error' });
+                console.error("Import error:", error);
+            }
+        };
+        reader.readAsText(file);
+    }
 }
