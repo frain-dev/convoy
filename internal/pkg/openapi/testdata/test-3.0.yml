@@ -26,22 +26,28 @@ x-webhooks:
               properties:
                 event_type:
                   type: string
+                  description: Type of event that occurred (e.g., appointment created, updated, cancelled)
                   enum:
                     - appointment_created
                     - appointment_updated
                     - appointment_cancelled
                 appointment_id:
                   type: string
+                  description: Unique identifier for the appointment
                   format: uuid
                 customer_name:
                   type: string
+                  description: Full name of the customer
                 service_type:
                   type: string
+                  description: Type of service booked (e.g., Haircut, Shave)
                 timestamp:
                   type: string
+                  description: Date and time when the event occurred
                   format: date-time
                 notes:
                   type: string
+                  description: Additional notes or comments about the appointment
               example:
                 event_type: appointment_created
                 appointment_id: 123e4567-e89b-12d3-a456-426614174000
@@ -69,29 +75,36 @@ x-webhooks:
               properties:
                 event_type:
                   type: string
+                  description: Type of inventory event (e.g., restock, sold, damaged)
                   enum:
-                    - stock_added
-                    - stock_removed
-                    - stock_transferred
+                    - item_restocked
+                    - item_sold
+                    - item_damaged
                 item_id:
                   type: string
+                  description: Unique identifier for the electrical equipment
+                  format: uuid
                 quantity:
                   type: integer
+                  description: Number of items affected by the event
                   minimum: 1
                 location:
                   type: string
+                  description: Storage location or warehouse identifier
                 timestamp:
                   type: string
+                  description: Date and time when the inventory event occurred
                   format: date-time
                 notes:
                   type: string
+                  description: Additional notes about the inventory update
               example:
-                event_type: stock_added
-                item_id: LED-BULB-60W
-                quantity: 100
-                location: Warehouse A
+                event_type: item_restocked
+                item_id: 789e0123-f45b-67d8-a456-426614174000
+                quantity: 50
+                location: "Warehouse-A"
                 timestamp: "2024-03-20T14:30:00Z"
-                notes: Bulk order received
+                notes: "Bulk order received"
 
 components:
   schemas:

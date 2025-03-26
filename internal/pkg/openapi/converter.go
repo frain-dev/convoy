@@ -180,6 +180,10 @@ func (c *Converter) extractWebhook(pathItemRaw interface{}) (*Webhook, error) {
 							if minimum, ok := propMap["minimum"].(float64); ok {
 								propSchema.Min = &minimum
 							}
+							// Extract field description
+							if desc, ok := propMap["description"].(string); ok {
+								propSchema.Description = desc
+							}
 
 							newSchema.Properties[propName] = &openapi3.SchemaRef{
 								Value: propSchema,
