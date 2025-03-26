@@ -241,7 +241,7 @@ export class EndpointsComponent implements OnInit {
             return;
         }
 
-        const eventData = this.selectedEventType.parsed_schema;
+        const eventData = this.selectedEventType.example_json;
 
         console.log('Sending event:', {
             eventType: this.selectedEventType.name,
