@@ -19,8 +19,55 @@ type ValidationResult struct {
 	Errors  []ValidationError `json:"errors,omitempty"`
 }
 
-// Validate validates the given data against the webhook's JSON schema
-func (w *Webhook) Validate(data interface{}) (*ValidationResult, error) {
+// ValidateSchema ensures the provided schema is a valid JSON Schema
+func (w *Webhook) ValidateSchema() (*ValidationResult, error) {
+	// Convert schema to JSON
+	schemaBytes, err := json.Marshal(w.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal schema: %v", err)
+	}
+
+	// Load the schema
+	schemaLoader := gojsonschema.NewStringLoader(string(schemaBytes))
+
+	// Load the meta-schema (JSON Schema draft-07)
+	metaSchemaLoader := gojsonschema.NewReferenceLoader("http://json-schema.org/draft-07/schema#")
+
+	// Validate the schema against the meta-schema
+	result, err := gojsonschema.Validate(metaSchemaLoader, schemaLoader)
+	if err != nil {
+		return nil, fmt.Errorf("schema validation failed: %v", err)
+	}
+
+	// Convert validation result
+	validationResult := &ValidationResult{
+		IsValid: result.Valid(),
+	}
+
+	if !result.Valid() {
+		validationResult.Errors = make([]ValidationError, 0, len(result.Errors()))
+		for _, resultError := range result.Errors() {
+			validationResult.Errors = append(validationResult.Errors, ValidationError{
+				Field:       resultError.Field(),
+				Description: resultError.Description(),
+			})
+		}
+	}
+
+	return validationResult, nil
+}
+
+// ValidateData validates the given data against the webhook's JSON schema
+func (w *Webhook) ValidateData(data interface{}) (*ValidationResult, error) {
+	// First validate that our schema itself is valid
+	schemaResult, err := w.ValidateSchema()
+	if err != nil {
+		return nil, fmt.Errorf("schema validation failed: %v", err)
+	}
+	if !schemaResult.IsValid {
+		return schemaResult, nil
+	}
+
 	// Convert schema to JSON
 	schemaBytes, err := json.Marshal(w.Schema)
 	if err != nil {
@@ -49,7 +96,7 @@ func (w *Webhook) Validate(data interface{}) (*ValidationResult, error) {
 	// Validate
 	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 	if err != nil {
-		return nil, fmt.Errorf("validation failed: %v", err)
+		return nil, fmt.Errorf("data validation failed: %v", err)
 	}
 
 	// Convert validation result

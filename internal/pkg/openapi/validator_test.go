@@ -7,8 +7,91 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWebhook_Validate(t *testing.T) {
-	// Create a test webhook with a schema
+func TestWebhook_ValidateSchema(t *testing.T) {
+	tests := []struct {
+		name          string
+		schema        *openapi3.Schema
+		wantValid     bool
+		wantErrorLen  int
+		wantErrorDesc string
+	}{
+		{
+			name: "Valid schema",
+			schema: &openapi3.Schema{
+				Type:     &openapi3.Types{"object"},
+				Required: []string{"event_type", "timestamp"},
+				Properties: map[string]*openapi3.SchemaRef{
+					"event_type": {
+						Value: &openapi3.Schema{
+							Type: &openapi3.Types{"string"},
+							Enum: []interface{}{"created", "updated", "deleted"},
+						},
+					},
+					"timestamp": {
+						Value: &openapi3.Schema{
+							Type:   &openapi3.Types{"string"},
+							Format: "date-time",
+						},
+					},
+				},
+			},
+			wantValid: true,
+		},
+		{
+			name: "Invalid schema - missing type",
+			schema: &openapi3.Schema{
+				Properties: map[string]*openapi3.SchemaRef{
+					"event_type": {
+						Value: &openapi3.Schema{
+							Enum: []interface{}{"created", "updated", "deleted"},
+						},
+					},
+				},
+			},
+			wantValid:     false,
+			wantErrorLen:  1,
+			wantErrorDesc: "(root): type is required",
+		},
+		{
+			name: "Invalid schema - invalid type",
+			schema: &openapi3.Schema{
+				Type: &openapi3.Types{"invalid_type"},
+			},
+			wantValid:     false,
+			wantErrorLen:  1,
+			wantErrorDesc: "(root).type: type must be one of the following: \"array\", \"boolean\", \"integer\", \"null\", \"number\", \"object\", \"string\"",
+		},
+		{
+			name: "Invalid schema - invalid format",
+			schema: &openapi3.Schema{
+				Type:   &openapi3.Types{"string"},
+				Format: "invalid_format",
+			},
+			wantValid:     false,
+			wantErrorLen:  1,
+			wantErrorDesc: "(root).format: format must be one of the following: \"date\", \"date-time\", \"duration\", \"email\", \"hostname\", \"idn-email\", \"idn-hostname\", \"ipv4\", \"ipv6\", \"iri\", \"iri-reference\", \"json-pointer\", \"regex\", \"relative-json-pointer\", \"time\", \"uri\", \"uri-reference\", \"uri-template\", \"uuid\"",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			webhook := &Webhook{Schema: tt.schema}
+			result, err := webhook.ValidateSchema()
+			require.NoError(t, err)
+			require.NotNil(t, result)
+			require.Equal(t, tt.wantValid, result.IsValid)
+
+			if !tt.wantValid {
+				require.Equal(t, tt.wantErrorLen, len(result.Errors))
+				if tt.wantErrorDesc != "" {
+					require.Equal(t, tt.wantErrorDesc, result.Errors[0].Description)
+				}
+			}
+		})
+	}
+}
+
+func TestWebhook_ValidateData(t *testing.T) {
 	webhook := &Webhook{
 		Name:        "test",
 		Description: "Test webhook",
@@ -98,7 +181,7 @@ func TestWebhook_Validate(t *testing.T) {
 			wantErrorDesc: "Does not match format 'date-time'",
 		},
 		{
-			name: "Invalid data type",
+			name: "Invalid data types",
 			data: map[string]interface{}{
 				"event_type": "created",
 				"timestamp":  "2024-03-20T10:00:00Z",
@@ -111,12 +194,12 @@ func TestWebhook_Validate(t *testing.T) {
 			wantErrorLen: 2,
 		},
 		{
-			name:      "String input",
+			name:      "Valid JSON string input",
 			data:      `{"event_type": "created", "timestamp": "2024-03-20T10:00:00Z"}`,
 			wantValid: true,
 		},
 		{
-			name:      "Bytes input",
+			name:      "Valid JSON bytes input",
 			data:      []byte(`{"event_type": "created", "timestamp": "2024-03-20T10:00:00Z"}`),
 			wantValid: true,
 		},
@@ -124,7 +207,7 @@ func TestWebhook_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := webhook.Validate(tt.data)
+			result, err := webhook.ValidateData(tt.data)
 			require.NoError(t, err)
 			require.NotNil(t, result)
 			require.Equal(t, tt.wantValid, result.IsValid)
@@ -139,21 +222,54 @@ func TestWebhook_Validate(t *testing.T) {
 	}
 }
 
-func TestWebhook_Validate_InvalidInput(t *testing.T) {
-	webhook := &Webhook{
-		Schema: &openapi3.Schema{
-			Type: &openapi3.Types{"object"},
+func TestWebhook_ValidateData_InvalidInput(t *testing.T) {
+	tests := []struct {
+		name       string
+		schema     *openapi3.Schema
+		data       interface{}
+		wantErrMsg string
+	}{
+		{
+			name: "Invalid JSON string",
+			schema: &openapi3.Schema{
+				Type: &openapi3.Types{"object"},
+			},
+			data:       "invalid json",
+			wantErrMsg: "data validation failed: invalid character 'i' looking for beginning of value",
+		},
+		{
+			name: "JSON string should not match",
+			schema: &openapi3.Schema{
+				Extensions: map[string]interface{}{
+					"foo": "bar",
+				},
+			},
+			data:       "invalid json",
+			wantErrMsg: "data validation failed: invalid character 'i' looking for beginning of value",
+		},
+		{
+			name:       "Nil schema",
+			schema:     nil,
+			data:       map[string]interface{}{},
+			wantErrMsg: "schema validation failed: schema is required",
+		},
+		{
+			name: "Invalid schema",
+			schema: &openapi3.Schema{
+				Type: &openapi3.Types{"invalid_type"},
+			},
+			data:       map[string]interface{}{},
+			wantErrMsg: "schema validation failed: (root).type: type must be one of the following: \"array\", \"boolean\", \"integer\", \"null\", \"number\", \"object\", \"string\"",
 		},
 	}
 
-	// Test with invalid JSON string
-	result, err := webhook.Validate("invalid json")
-	require.Error(t, err)
-	require.Nil(t, result)
-
-	// Test with nil schema
-	webhook.Schema = nil
-	result, err = webhook.Validate(map[string]interface{}{})
-	require.Error(t, err)
-	require.Nil(t, result)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			webhook := &Webhook{Schema: tt.schema}
+			result, err := webhook.ValidateData(tt.data)
+			require.Error(t, err)
+			require.Nil(t, result)
+			require.Contains(t, err.Error(), tt.wantErrMsg)
+		})
+	}
 }

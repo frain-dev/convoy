@@ -17,7 +17,18 @@ type Webhook struct {
 }
 
 func (w *Webhook) AsBytes() []byte {
-	bytes, err := json.Marshal(w.Schema)
+	if w.Schema == nil {
+		return nil
+	}
+
+	// Create a map with the schema type
+	schemaMap := map[string]interface{}{
+		"type":       "object",
+		"properties": w.Schema.Properties,
+		"required":   w.Schema.Required,
+	}
+
+	bytes, err := json.Marshal(schemaMap)
 	if err != nil {
 		return nil
 	}
