@@ -263,7 +263,7 @@ func Test_CountEndpointSubscriptions(t *testing.T) {
 	newSub2 := generateSubscription(project, source, endpoint2, &datastore.Device{})
 	require.NoError(t, subRepo.CreateSubscription(context.Background(), newSub2.ProjectID, newSub2))
 
-	endpointSubscriptions, err := subRepo.CountEndpointSubscriptions(context.Background(), newSub1.ProjectID, endpoint.UID)
+	endpointSubscriptions, err := subRepo.CountEndpointSubscriptions(context.Background(), newSub1.ProjectID, endpoint.UID, "")
 	require.NoError(t, err)
 
 	require.Equal(t, int64(1), endpointSubscriptions)

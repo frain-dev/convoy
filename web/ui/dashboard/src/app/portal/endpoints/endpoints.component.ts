@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
+import {CommonModule, Location, NgOptimizedImage} from '@angular/common';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
@@ -39,25 +39,26 @@ interface PORTAL_ENDPOINT extends ENDPOINT {
 @Component({
 	selector: 'convoy-endpoints',
 	standalone: true,
-    imports: [
-        CommonModule,
-        DialogDirective,
-        EndpointSecretComponent,
-        TagComponent,
-        StatusColorModule,
-        CardComponent,
-        DropdownComponent,
-        DropdownOptionDirective,
-        ButtonComponent,
-        CreatePortalEndpointComponent,
-        PaginationComponent,
-        FormsModule,
-        ReactiveFormsModule,
-        CopyButtonComponent,
-        EventCatalogComponent,
-        ListItemComponent,
-        PrismModule
-    ],
+	imports: [
+		CommonModule,
+		DialogDirective,
+		EndpointSecretComponent,
+		TagComponent,
+		StatusColorModule,
+		CardComponent,
+		DropdownComponent,
+		DropdownOptionDirective,
+		ButtonComponent,
+		CreatePortalEndpointComponent,
+		PaginationComponent,
+		FormsModule,
+		ReactiveFormsModule,
+		CopyButtonComponent,
+		EventCatalogComponent,
+		ListItemComponent,
+		PrismModule,
+		NgOptimizedImage
+	],
 	providers: [{ provide: ControlContainer, useValue: null }, FormGroupDirective],
 	templateUrl: './endpoints.component.html',
 	styleUrls: ['./endpoints.component.scss']
@@ -269,4 +270,8 @@ export class EndpointsComponent implements OnInit {
             this.selectedEventType = eventTypes[0];
         }
     }
+
+	toEventTypesString(){
+		return this.eventTypes.filter(e=> e.name !== '*')
+	}
 }

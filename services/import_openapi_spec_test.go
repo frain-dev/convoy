@@ -122,8 +122,19 @@ func TestImportOpenapiSpecService_Run(t *testing.T) {
 					}
 				}
 			}`,
-			projectID:     "test-project",
-			expectedError: "invalid schema for event type test.event: invalid JSON schema: required must be of an array",
+			projectID: "test-project",
+			mockFn: func(repo *mocks.MockEventTypesRepository) {
+				repo.EXPECT().CheckEventTypeExists(gomock.Any(), "test.event", "test-project").Return(false, nil)
+				repo.EXPECT().CreateEventType(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, et *datastore.ProjectEventType) error {
+					// Verify schema is set correctly during creation
+					var schema map[string]interface{}
+					err := json.Unmarshal(et.JSONSchema, &schema)
+					require.NoError(t, err)
+					require.Equal(t, "object", schema["type"])
+					require.NotNil(t, schema["properties"])
+					return nil
+				})
+			},
 		},
 		{
 			name: "should successfully update existing event type with valid schema",

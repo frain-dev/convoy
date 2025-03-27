@@ -147,7 +147,7 @@
 		</ng-container>
 
 		<div class="flex justify-center items-center p-40px flex-col" *ngIf="!isloadingSubscriptions && endpoints?.length === 0">
-			<img src="/assets/img/empty-state.svg" alt="empty state image" />
+			<img ngSrc="/assets/img/empty-state.svg" alt="empty state image" height="108" width="124"/>
 			<p class="mt-16px text-12 text-neutral-11">You don't have any endpoints yet</p>
 		</div>
 	</ul>
@@ -174,7 +174,6 @@
                 [action]="action"
                 [endpointId]="activeEndpoint?.uid || ''" (onAction)="goBack(true)">
         </convoy-create-portal-endpoint>
-<!--        <convoy-create-endpoint type="portal" showAction="true" [endpointId]="activeEndpoint?.uid || ''" (onAction)="goBack(true)"></convoy-create-endpoint>-->
 	</div>
 </div>
 
@@ -199,7 +198,7 @@
 
                 <ul dropdownOptions>
                     <li convoy-dropdown-option convoy-list-item
-                        *ngFor="let eventType of eventTypes"
+                        *ngFor="let eventType of toEventTypesString()"
                         class="text-14 px-20px w-full min-w-max"
                         [active]="selectedEventType == eventType ? 'true' : 'false'"
                         [hasBorder]="true">

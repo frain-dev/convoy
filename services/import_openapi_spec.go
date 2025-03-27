@@ -68,7 +68,7 @@ func (im *ImportOpenapiSpecService) Run(ctx context.Context) ([]datastore.Projec
 	for eventType, schema := range webhooks.Webhooks {
 		// Validate the schema before proceeding
 		schemaBytes := schema.AsBytes()
-		if err := im.validateSchema(schemaBytes); err != nil {
+		if err = im.validateSchema(schemaBytes); err != nil {
 			return nil, fmt.Errorf("invalid schema for event type %s: %v", eventType, err)
 		}
 

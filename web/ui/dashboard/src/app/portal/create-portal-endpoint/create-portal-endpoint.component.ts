@@ -596,8 +596,8 @@ export class CreatePortalEndpointComponent implements OnInit {
 				style: 'success'
 			});
 
-			// STEP 2: Create or update subscription with event types
-			if (!this.subscriptionId || !(this.isUpdateAction || this.editMode)) {
+			// STEP 2: Create a subscription with event types
+			if (this.subscriptionId == 'new' || !(this.isUpdateAction || this.editMode)) {
 				// Generate a subscription name based on endpoint name
 				const uuid = this.generateUUID().substring(0, 8);
 				const subscriptionName = `${createdEndpoint.name}-${uuid}`;
@@ -664,7 +664,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 					});
 				}
 			} else {
-				// We're in update mode and have a subscription ID
+				// We're in update mode and have a valid subscription ID
 				try {
 					// Prepare subscription data for update
 					const subscriptionData = {
