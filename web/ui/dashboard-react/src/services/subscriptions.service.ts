@@ -24,6 +24,19 @@ type CreateSubscriptionData = {
   function?: string | null;
 };
 
+// Function request type
+type FunctionRequest = {
+  payload: Record<string, any>;
+  function: string;
+  type?: string;
+};
+
+// Function response type
+type FunctionResponse = {
+  payload: any;
+  log: string[];
+};
+
 export async function getSubscriptions(reqDetails: GetSubscriptionsReqDetails,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
@@ -53,4 +66,42 @@ export async function createSubscription(data: CreateSubscriptionData,
   });
 
   return res.data;
+}
+
+// Test subscription transform function
+export async function testTransformFunction(data: FunctionRequest,
+  deps: { httpReq: typeof request } = { httpReq: request },
+) {
+  const res = await deps.httpReq<{data: FunctionResponse; message: string}>({
+    url: '/subscriptions/test_function',
+    method: 'post',
+    level: 'org_project',
+    body: data
+  });
+
+  return res.data;
+}
+
+type TestSubscriptionFilterRequest = {
+  request: {
+    body: Record<string, string> | null;
+    header: Record<string, string> | null;
+  };
+  schema:{
+    body: Record<string, string> | null;
+    header: Record<string, string> | null;
+  };
+}
+
+export async function testFilter(reqDetails: TestSubscriptionFilterRequest,
+  deps: { httpReq: typeof request } = { httpReq: request },
+) {
+  const res = await deps.httpReq<boolean>({
+    url: `/subscriptions/test_filter`,
+    method: 'post',
+    body: reqDetails,
+    level: 'org_project'
+  })
+
+  return res.data
 }

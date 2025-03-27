@@ -1,10 +1,11 @@
 import { z } from 'zod';
-import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { Editor } from '@monaco-editor/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 
-import { Check, ChevronDown, Info } from 'lucide-react';
+import { Check, ChevronDown, Info, Save } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { InputTags } from '@/components/ui/input-tags';
@@ -44,12 +45,11 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
 import { DashboardLayout } from '@/components/dashboard';
-import { ConvoyLoader } from '@/components/convoy-loader';
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
@@ -57,6 +57,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { cn } from '@/lib/utils';
 import { useLicenseStore, useProjectStore } from '@/store';
+import { stringToJson } from '@/lib/pipes';
 import * as subscriptionsService from '@/services/subscriptions.service';
 import * as authService from '@/services/auth.service';
 import * as endpointsService from '@/services/endpoints.service';
@@ -139,6 +140,19 @@ const CreateEndpointFormSchema = z.object({
 
 const CreateSubscriptionFormSchema = z.object({
 	name: z.string().min(1, 'Enter new subscription name'),
+	function: z.string().optional(), // transform function
+	filter_config: z.object({
+		event_types: z.array(z.string()),
+		filter: z
+			.object({
+				headers: z.union([z.record(z.string(), z.any()), z.object({})]),
+				body: z.union([z.record(z.string(), z.any()), z.object({})]),
+			})
+			.optional(),
+	}),
+	showEventsFilter: z.boolean(),
+	showEventTypes: z.boolean(),
+	showTransform: z.boolean(),
 	source_id: z.string({ required_error: 'Select source' }),
 	source: CreateSourceFormSchema.optional(),
 	endpoint_id: z.string().optional(),
@@ -152,22 +166,60 @@ export const Route = createFileRoute('/projects_/$projectId/subscriptions/new')(
 			const perms = await authService.getUserPermissions();
 			const sources = await sourcesService.getSources({});
 			const endpoints = await endpointsService.getEndpoints();
-			const hasAdvancedEndpointManagement = useLicenseStore
-				.getState()
-				.licenses.includes('ADVANCED_ENDPOINT_MANAGEMENT');
-
+			const licenses = useLicenseStore.getState().licenses;
+			const hasAdvancedEndpointManagement = licenses.includes(
+				'ADVANCED_ENDPOINT_MANAGEMENT',
+			);
+			const hasAdvancedSubscriptions = licenses.includes(
+				'ADVANCED_SUBSCRIPTIONS',
+			);
+			const hasWebhookTransformations = licenses.includes(
+				'WEBHOOK_TRANSFORMATIONS',
+			);
 			return {
 				canManageSubscriptions: perms.includes('Subscriptions|MANAGE'),
 				existingSources: sources.content,
 				existingEndpoints: endpoints.data.content,
 				hasAdvancedEndpointManagement,
+				hasAdvancedSubscriptions,
+				hasWebhookTransformations,
 			};
 		},
 	},
 );
 
+const monacoEditorOptions = {
+	formatOnPaste: true,
+	formatOnType: true,
+	tabSize: 2,
+	minimap: {
+		enabled: false,
+	},
+};
+
+const defaultFilterRequestBody = `{
+		"id": "Sample-1",
+		"name": "Sample 1",
+		"description": "This is sample data #1"
+}`;
+
+const defaultTransformFunctionContent = `/* 1. While you can write multiple functions, the main function
+    called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+    the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs must be written like this
+    console.log('%j', logged_item) to get printed in the log below. */
+
+function transform(payload) {
+    // Transform function here
+    return payload; 
+}`;
+
 function CreateSubscriptionPage() {
-	const navigate = useNavigate();
 	const { project } = useProjectStore();
 	const { projectId } = Route.useParams();
 	const {
@@ -175,11 +227,27 @@ function CreateSubscriptionPage() {
 		existingSources,
 		existingEndpoints,
 		hasAdvancedEndpointManagement,
+		hasAdvancedSubscriptions,
+		hasWebhookTransformations,
 	} = Route.useLoaderData();
 	const [toUseExistingSource, setToUseExistingSource] = useState(true);
 	const [toUseExistingEndpoint, setToUseExistingEndpoint] = useState(true);
 	const [showCustomResponse, setShowCustomResponse] = useState(false);
 	const [showIdempotency, setShowIdempotency] = useState(false);
+	const [showEventsFilterDialog, setShowEventsFilterDialog] = useState(false);
+	const [showTransformFunctionDialog, setShowTransformFunctionDialog] =
+		useState(false);
+	const [hasPassedTestFilter, setHasPassedTestFilter] = useState(false);
+	const [eventsFilter, setEventsFilter] = useState({
+		request: {
+			body: defaultFilterRequestBody,
+			header: '',
+		},
+		schema: {
+			body: `null`,
+			header: `null`,
+		},
+	});
 
 	const sourceVerifications = [
 		{ uid: 'noop', name: 'None' },
@@ -195,6 +263,14 @@ function CreateSubscriptionPage() {
 		resolver: zodResolver(CreateSubscriptionFormSchema),
 		defaultValues: {
 			name: '',
+			function: '',
+			filter_config: {
+				filter: {
+					body: {},
+					headers: {},
+				},
+				event_types: [],
+			},
 			source_id: '',
 			source: {
 				name: '',
@@ -241,6 +317,9 @@ function CreateSubscriptionPage() {
 				showNotifications: false,
 				showSignatureFormat: false,
 			},
+			showTransform: false,
+			showEventTypes: false,
+			showEventsFilter: hasAdvancedSubscriptions,
 		},
 		mode: 'onTouched',
 	});
@@ -257,6 +336,38 @@ function CreateSubscriptionPage() {
 
 	function toggleUseExistingEndpoint() {
 		setToUseExistingEndpoint(prev => !prev);
+	}
+
+	async function testFilter() {
+		setHasPassedTestFilter(false);
+		try {
+			const eventFilter = {
+				request: {
+					body: stringToJson(eventsFilter.request.body),
+					header: stringToJson(eventsFilter.request.header),
+				},
+				schema: {
+					body: stringToJson(eventsFilter.schema.body),
+					header: stringToJson(eventsFilter.schema.header),
+				},
+			};
+			const isPass = await subscriptionsService.testFilter(eventFilter);
+			setHasPassedTestFilter(isPass);
+			return eventFilter;
+			// TODO show notification
+		} catch (error) {
+			console.error(error);
+			return null;
+		}
+	}
+
+	async function setSubscriptionFilter() {
+		const eventFilter = await testFilter();
+		if (hasPassedTestFilter && eventFilter) {
+			const { schema } = eventFilter;
+			form.setValue('filter_config.filter.body', schema.body);
+			form.setValue('filter_config.filter.headers', schema.header);
+		}
 	}
 
 	type SourceType =
@@ -1217,7 +1328,7 @@ function CreateSubscriptionPage() {
 																			className=" peer
     appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
     mt-1 shrink-0 checked:bg-new.primary-300
-     checked:border-0 cursor-pointer"
+     checked:border-0 cursor-pointer disabled:opacity-50"
 																			defaultChecked={field.value}
 																			onChange={field.onChange}
 																			disabled={!hasAdvancedEndpointManagement}
@@ -1242,7 +1353,12 @@ function CreateSubscriptionPage() {
 															</FormItem>
 														)}
 													/>
-													<span className="block text-neutral-9 text-xs">
+													<span
+														className={cn(
+															'block text-neutral-9 text-xs',
+															!hasAdvancedEndpointManagement && 'opacity-50',
+														)}
+													>
 														Timeout
 													</span>
 												</label>
@@ -1834,10 +1950,510 @@ function CreateSubscriptionPage() {
 									)}
 								</div>
 							</section>
+
+							{/* Webhook Subscription Configuration */}
+							<section>
+								<h2 className="font-semibold text-sm">
+									Webhook Subscription Configuration
+								</h2>
+								<p className="text-xs text-neutral-10 mt-1.5">
+									Configure how you want this endpoint to receive webhook
+									events.
+								</p>
+								<div className="border border-neutral-4 p-6 rounded-8px mt-6">
+									<div className="space-y-6">
+										<FormField
+											name="name"
+											control={form.control}
+											render={({ field, fieldState }) => (
+												<FormItem className="space-y-2">
+													<FormLabel className="text-neutral-9 text-xs">
+														Subscription Name
+													</FormLabel>
+													<FormControl>
+														<Input
+															type="text"
+															autoComplete="text"
+															placeholder="e.g paystack-live"
+															{...field}
+															className={cn(
+																'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																fieldState.error
+																	? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																	: ' hover:border-new.primary-100 focus:border-new.primary-300',
+															)}
+														></Input>
+													</FormControl>
+													<FormMessageWithErrorIcon />
+												</FormItem>
+											)}
+										/>
+
+										<hr />
+
+										<div className="flex gap-x-4 items-center">
+											<label className="flex items-center gap-2 cursor-pointer">
+												{/* TODO you may want to make this label into a component */}
+												<FormField
+													control={form.control}
+													name="showEventsFilter"
+													render={({ field }) => (
+														<FormItem>
+															<FormControl className="relative">
+																<div className="relative">
+																	<input
+																		type="checkbox"
+																		className=" peer
+    appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
+    mt-1 shrink-0 checked:bg-new.primary-300
+     checked:border-0 cursor-pointer disabled:opacity-50"
+																		defaultChecked={field.value}
+																		onChange={field.onChange}
+																		disabled={!hasAdvancedSubscriptions}
+																		// TODO: for business icon
+																	/>
+																	<svg
+																		className="
+      absolute
+      w-3 h-3 mt-1
+      hidden peer-checked:block top-[0.5px] right-[1px]"
+																		xmlns="http://www.w3.org/2000/svg"
+																		viewBox="0 0 24 24"
+																		fill="none"
+																		stroke="white"
+																		strokeWidth="4"
+																		strokeLinecap="round"
+																		strokeLinejoin="round"
+																	>
+																		<polyline points="20 6 9 17 4 12"></polyline>
+																	</svg>
+																</div>
+															</FormControl>
+														</FormItem>
+													)}
+												/>
+												<span
+													className={cn(
+														'block text-neutral-9 text-xs',
+														!hasAdvancedSubscriptions && 'opacity-50',
+													)}
+												>
+													Events Filter
+												</span>
+											</label>
+
+											{project?.type == 'outgoing' && (
+												<label className="flex items-center gap-2 cursor-pointer">
+													{/* TODO you may want to make this label into a component */}
+													<FormField
+														control={form.control}
+														name="showEventTypes"
+														render={({ field }) => (
+															<FormItem>
+																<FormControl className="relative">
+																	<div className="relative">
+																		<input
+																			type="checkbox"
+																			className=" peer
+    appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
+    mt-1 shrink-0 checked:bg-new.primary-300
+     checked:border-0 cursor-pointer"
+																			defaultChecked={field.value}
+																			onChange={field.onChange}
+																		/>
+																		<svg
+																			className="
+      absolute
+      w-3 h-3 mt-1
+      hidden peer-checked:block top-[0.5px] right-[1px]"
+																			xmlns="http://www.w3.org/2000/svg"
+																			viewBox="0 0 24 24"
+																			fill="none"
+																			stroke="white"
+																			strokeWidth="4"
+																			strokeLinecap="round"
+																			strokeLinejoin="round"
+																		>
+																			<polyline points="20 6 9 17 4 12"></polyline>
+																		</svg>
+																	</div>
+																</FormControl>
+															</FormItem>
+														)}
+													/>
+													<span className="block text-neutral-9 text-xs">
+														Event Types
+													</span>
+												</label>
+											)}
+
+											{project?.type == 'incoming' && (
+												<label className="flex items-center gap-2 cursor-pointer">
+													{/* TODO you may want to make this label into a component */}
+													<FormField
+														control={form.control}
+														name="showTransform"
+														render={({ field }) => (
+															<FormItem>
+																<FormControl className="relative">
+																	<div className="relative">
+																		<input
+																			type="checkbox"
+																			className=" peer
+    appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
+    mt-1 shrink-0 checked:bg-new.primary-300
+     checked:border-0 cursor-pointer"
+																			defaultChecked={field.value}
+																			onChange={field.onChange}
+																			disabled={!hasWebhookTransformations}
+																		/>
+																		<svg
+																			className="
+      absolute
+      w-3 h-3 mt-1
+      hidden peer-checked:block top-[0.5px] right-[1px]"
+																			xmlns="http://www.w3.org/2000/svg"
+																			viewBox="0 0 24 24"
+																			fill="none"
+																			stroke="white"
+																			strokeWidth="4"
+																			strokeLinecap="round"
+																			strokeLinejoin="round"
+																		>
+																			<polyline points="20 6 9 17 4 12"></polyline>
+																		</svg>
+																	</div>
+																</FormControl>
+															</FormItem>
+														)}
+													/>
+													<span
+														className={cn(
+															'block text-neutral-9 text-xs',
+															!hasWebhookTransformations && 'opacity-50',
+														)}
+													>
+														Transform
+													</span>
+												</label>
+											)}
+										</div>
+
+										<div className="flex flex-col gap-y-6">
+											{form.watch('showEventsFilter') && (
+												<div className="pl-4 border-l-2 border-l-new.primary-25 flex justify-between items-center">
+													<div className="flex flex-col gap-y-2 justify-center">
+														<p className="text-neutral-10 font-medium text-xs">
+															Events filter
+														</p>
+														<p className="text-[10px] text-neutral-10">
+															Filter events received by request body and header
+														</p>
+													</div>
+													<div>
+														<Button
+															type="button"
+															variant="outline"
+															size="sm"
+															disabled={!hasAdvancedSubscriptions}
+															className="text-xs text-neutral-10 shadow-none hover:text-neutral-10 hover:bg-white-100"
+															onClick={e => {
+																e.stopPropagation();
+																setShowTransformFunctionDialog(false);
+																setShowEventsFilterDialog(true);
+															}}
+														>
+															Open Editor
+														</Button>
+													</div>
+												</div>
+											)}
+
+											{form.watch('showTransform') && (
+												<div className="pl-4 border-l-2 border-l-new.primary-25 flex justify-between items-center">
+													<div className="flex flex-col gap-y-2 justify-center">
+														<p className="text-neutral-10 font-medium text-xs">
+															Transform
+														</p>
+														<p className="text-[10px] text-neutral-10">
+															Transform request body of events with a JavaScript
+															function.
+														</p>
+													</div>
+													<div>
+														<Button
+															type="button"
+															variant="outline"
+															size="sm"
+															disabled={!hasWebhookTransformations}
+															className="text-xs text-neutral-10 shadow-none hover:text-neutral-10 hover:bg-white-100"
+															onClick={e => {
+																e.stopPropagation();
+																setShowEventsFilterDialog(false);
+																setShowTransformFunctionDialog(true);
+															}}
+														>
+															Open Editor
+														</Button>
+													</div>
+												</div>
+											)}
+										</div>
+									</div>
+								</div>
+							</section>
 						</form>
 					</Form>
 				</div>
 			</div>
+
+			{/* Events Filter Dialog */}
+			<Dialog
+				open={showEventsFilterDialog}
+				onOpenChange={setShowEventsFilterDialog}
+			>
+				<DialogContent className="max-w-[1280px] w-[80vw] h-[80vh] rounded-md">
+					<DialogHeader className="flex flex-row items-center justify-between w-[80%] mx-auto space-y-0">
+						<DialogTitle className="font-semibold text-sm capitalize">
+							Subscription Filter
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							Subscription Filter
+						</DialogDescription>
+						<div className="flex items-center justify-end gap-x-4">
+							<Button
+								variant="outline"
+								size="sm"
+								className="shadow-none border-new.primary-400 hover:bg-white-100 text-new.primary-400 hover:text-new.primary-400"
+								onClick={testFilter}
+							>
+								Test Filter
+								<svg width="18" height="18" className="fill-white-100">
+									<use xlinkHref="#test-icon"></use>
+								</svg>
+							</Button>
+							<Button
+								size="sm"
+								variant="ghost"
+								className="shadow-none bg-new.primary-400 text-white-100 hover:bg-new.primary-400 hover:text-white-100"
+								disabled={!hasPassedTestFilter}
+								onClick={setSubscriptionFilter}
+							>
+								Save
+							</Button>
+						</div>
+					</DialogHeader>
+
+					<div className="mt-10 border border-neutral-4 rounded-md">
+						<Tabs
+							defaultValue="body"
+							// value={activeFilterTab}
+							// onValueChange={setActiveFilterTab}
+							className="w-full"
+						>
+							<TabsList className="flex justify-center w-full border-b-[.5px] border-neutral-4 rounded-none">
+								<TabsTrigger value="body" className="capitalize" type="button">
+									body
+								</TabsTrigger>
+								<TabsTrigger
+									value="header"
+									className="capitalize"
+									type="button"
+								>
+									header
+								</TabsTrigger>
+							</TabsList>
+
+							<TabsContent value="body" className="m-0">
+								<div className="flex">
+									<div className="flex flex-col w-full border-r border-r-neutral-4">
+										<div className="text-sm border-b border-b-neutral-4 p-5 font-semibold">
+											Event Payload
+										</div>
+										<div className="h-[350px] p-4">
+											<Editor
+												className="max-h-[100%]"
+												defaultLanguage="json"
+												defaultValue={eventsFilter.request.body}
+												onChange={body =>
+													setEventsFilter(prev => ({
+														...prev,
+														request: { ...prev.request, body: body || '' },
+													}))
+												}
+												options={monacoEditorOptions}
+											/>
+										</div>
+									</div>
+									<div className="flex flex-col w-full">
+										<div className="text-sm border-b border-b-neutral-4 p-5 font-semibold">
+											Filter Schema
+										</div>
+										<div className="h-[400px] p-4">
+											<Editor
+												className="max-h-[100%]"
+												defaultLanguage="json"
+												defaultValue={eventsFilter.schema.body}
+												onChange={body =>
+													setEventsFilter(prev => ({
+														...prev,
+														schema: { ...prev.schema, body: body || '' },
+													}))
+												}
+												options={monacoEditorOptions}
+											/>
+										</div>
+									</div>
+								</div>
+							</TabsContent>
+
+							<TabsContent value="header" className="m-0">
+								<div className="flex">
+									<div className="flex flex-col w-full border-r border-r-neutral-4">
+										<div className="text-sm border-b border-b-neutral-4 p-5 font-semibold">
+											Event Headers
+										</div>
+										<div className="h-[400px] p-4">
+											<Editor
+												className="max-h-[100%]"
+												defaultLanguage="json"
+												defaultValue={eventsFilter.request.header}
+												onChange={header =>
+													setEventsFilter(prev => ({
+														...prev,
+														request: { ...prev.request, header: header || '' },
+													}))
+												}
+												options={monacoEditorOptions}
+											/>
+										</div>
+									</div>
+									<div className="flex flex-col w-full">
+										<div className="text-sm border-b border-b-neutral-4 p-5 font-semibold">
+											Filter Schema
+										</div>
+										<div className="h-[400px] p-4">
+											<Editor
+												className="max-h-[100%]"
+												defaultLanguage="json"
+												defaultValue={eventsFilter.schema.header}
+												onChange={header =>
+													setEventsFilter(prev => ({
+														...prev,
+														schema: { ...prev.schema, header: header || '' },
+													}))
+												}
+												options={monacoEditorOptions}
+											/>
+										</div>
+									</div>
+								</div>
+							</TabsContent>
+						</Tabs>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			{/* Transform Function Dialog */}
+			<Dialog
+				open={showTransformFunctionDialog}
+				// open={true}
+				onOpenChange={setShowTransformFunctionDialog}
+			>
+				<DialogContent className="max-w-[90vw] h-[90vh] rounded-md grid grid-rows-10 grid-flow-col">
+					<DialogHeader className="flex flex-row items-center justify-between w-[80%] mx-auto space-y-0 row-span-1">
+						<DialogTitle className="font-semibold text-sm capitalize">
+							Subscription Transform
+						</DialogTitle>
+						<DialogDescription className="sr-only">
+							Subscription Transform
+						</DialogDescription>
+
+						<Button
+							variant="outline"
+							size="sm"
+							className="shadow-none bg-new.primary-400 text-white-100 hover:bg-new.primary-400 hover:text-white-100"
+							onClick={() => console.log('save fn')}
+						>
+							<Save className="stroke-white-100" />
+							Save Function
+						</Button>
+					</DialogHeader>
+
+					<div className="border border-neutral-4 rounded-md row-span-9 grid grid-cols-2">
+						<div className="border border-neutral-4 grid grid-rows-2 max-h-[70vh]">
+							<div className="flex flex-col">
+								<div className="text-xs text-neutral-10 border-l border-neutral-4 p-2">
+									Input
+								</div>
+								<div className="flex-1">
+									<Editor
+										defaultLanguage="json"
+										defaultValue={defaultFilterRequestBody}
+										options={monacoEditorOptions}
+									/>
+								</div>
+							</div>
+							<div>
+								<Tabs defaultValue="output" className="w-full">
+									<TabsList className="w-full p-0 bg-background justify-start border-b rounded-none">
+										<TabsTrigger
+											type="button"
+											value="output"
+											className="text-sm rounded-none bg-background h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary"
+										>
+											Output
+										</TabsTrigger>
+
+										<TabsTrigger
+											value="diff"
+											className="text-sm rounded-none bg-background h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-primary"
+										>
+											Diff
+										</TabsTrigger>
+									</TabsList>
+									<TabsContent value="output">
+										<div className="h-10 flex items-center justify-between border gap-2 rounded-md pl-3 pr-1.5">
+											<code className="text-[13px]">Output</code>
+										</div>
+									</TabsContent>
+
+									<TabsContent value="diff">
+										<div className="h-10 flex items-center justify-between border gap-2 rounded-md pl-3 pr-1.5">
+											<code className="text-[13px]">Diff</code>
+										</div>
+									</TabsContent>
+								</Tabs>
+							</div>
+						</div>
+						<div className="border border-neutral-4 grid grid-rows-2 max-h-[70vh]">
+							<div>
+								<div className="text-xs text-neutral-10 border border-neutral-4 p-1 flex justify-between items-center">
+									<p>Transform Function</p>
+									<Button
+										variant={'outline'}
+										size={'sm'}
+										className="py-1 px-2 bg-white-100 hover:text-new.primary-400 text-xs hover:bg-white-100 border-new.primary-400 text-new.primary-400 shadow-none"
+									>
+										Run
+									</Button>
+								</div>
+								<Editor
+									defaultLanguage="javascript"
+									defaultValue={defaultTransformFunctionContent}
+									options={monacoEditorOptions}
+								/>
+							</div>
+							<div className="">
+								Lorem ipsum dolor sit, amet consectetur adipisicing elit. Veniam
+								odio, dolores tempore dolor maxime eius fugiat ea voluptates
+								enim nulla pariatur iste molestias beatae temporibus ipsa optio
+								culpa quibusdam. Maiores.
+							</div>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</DashboardLayout>
 	);
 }
