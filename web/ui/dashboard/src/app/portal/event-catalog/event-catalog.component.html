@@ -1,4 +1,3 @@
-
 <div *ngIf="!singleEventMode" class="max-w-[1300px] w-full mx-auto px-24px pb-100px pt-80px">
     <h2 class="font-medium text-14 text-neutral-10 mb-24px">Event Catalog</h2>
     <div class="flex justify-between items-center mb-12px">
@@ -45,14 +44,14 @@
                 </div>
 
                 <div class="p-16px flex justify-between gap-16px border-t border-new.primary-25">
-                    <div class="w-[730px] overflow-y-auto max-h-[600px]">
+                    <div class="w-[730px] overflow-y-auto">
                         <ng-container *ngTemplateOutlet="fieldsList; context: { $implicit: eventType.fields, eventType: eventType, level: 0 }"></ng-container>
                     </div>
 
                     <div class="w-[1px] bg-new.primary-25"></div>
 
                     <div class="w-[620px]">
-                        <div class="py-12px w-full">
+                        <div class="w-full">
                             <prism *ngIf="eventType.expanded" title="JSON Schema" language="json" [code]="generalService.getCodeSnippetString('event_data', eventType.example_json)"></prism>
                         </div>
                     </div>
