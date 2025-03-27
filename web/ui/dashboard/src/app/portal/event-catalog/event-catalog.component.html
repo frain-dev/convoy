@@ -12,7 +12,7 @@
     </div>
 
     <ul convoy-card class="mb-40px">
-        <ng-container *ngIf="isLoadingEvents && !eventTypes?.length">
+        <ng-container *ngIf="isLoadingEvents && !validEventTypes()?.length">
             <li class="px-4 py-14px">
                 <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
             </li>
@@ -61,11 +61,10 @@
         </ng-container>
 
         <div class="flex justify-center items-center p-40px flex-col" *ngIf="!isLoadingEvents && displayedEventTypes?.length === 0">
-            <img src="/assets/img/empty-state.svg" alt="empty state image" />
+            <img ngSrc="/assets/img/empty-state.svg" alt="empty state image" height="108" width="124"/>
             <p class="mt-16px text-12 text-neutral-11">
                 {{ eventSearchString ? 'No event types match your search' : 'No event types available' }}
             </p>
-
         </div>
     </ul>
 </div>

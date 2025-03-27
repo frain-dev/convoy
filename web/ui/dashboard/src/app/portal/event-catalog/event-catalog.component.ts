@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, type OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {CommonModule, NgOptimizedImage} from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonComponent } from '../../components/button/button.component';
 import {
@@ -50,6 +50,7 @@ interface Field {
         PrismModule,
         TagComponent,
         CardComponent,
+        NgOptimizedImage,
     ],
     styleUrls: ["./event-catalog.component.scss"],
 })
@@ -340,10 +341,10 @@ export class EventCatalogComponent implements OnInit {
 
     get displayedEventTypes() {
         if (!this.eventSearchString?.trim()) {
-            return this.eventTypes;
+            return this.validEventTypes();
         }
         const term = this.eventSearchString.toLowerCase();
-        return this.eventTypes.filter(event =>
+        return this.validEventTypes().filter(event =>
             event.name.toLowerCase().includes(term) ||
             event.description?.toLowerCase().includes(term) ||
             JSON.stringify(event.json_schema || {}).toLowerCase().includes(term)
@@ -370,5 +371,9 @@ export class EventCatalogComponent implements OnInit {
             object: 'primary',
         };
         return colorMap[type] || 'neutral';
+    }
+
+    validEventTypes(){
+        return this.eventTypes.filter(e=> e.name !== '*')
     }
 }
