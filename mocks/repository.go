@@ -365,16 +365,16 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindStuckEventDeliveriesBySta
 // LoadEventDeliveriesIntervals mocks base method.
 func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, ids []string) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period)
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period, ids)
 	ret0, _ := ret[0].([]datastore.EventInterval)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadEventDeliveriesIntervals indicates an expected call of LoadEventDeliveriesIntervals.
-func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(ctx, projectID, params, period any) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(ctx, projectID, params, period, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), ctx, projectID, params, period)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), ctx, projectID, params, period, ids)
 }
 
 // LoadEventDeliveriesPaged mocks base method.
@@ -1532,18 +1532,18 @@ func (mr *MockSubscriptionRepositoryMockRecorder) CompareFlattenedPayload(arg0, 
 }
 
 // CountEndpointSubscriptions mocks base method.
-func (m *MockSubscriptionRepository) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
+func (m *MockSubscriptionRepository) CountEndpointSubscriptions(arg0 context.Context, arg1, arg2, arg3 string) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountEndpointSubscriptions", ctx, projectID, endpointID)
+	ret := m.ctrl.Call(m, "CountEndpointSubscriptions", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountEndpointSubscriptions indicates an expected call of CountEndpointSubscriptions.
-func (mr *MockSubscriptionRepositoryMockRecorder) CountEndpointSubscriptions(ctx, projectID, endpointID any) *gomock.Call {
+func (mr *MockSubscriptionRepositoryMockRecorder) CountEndpointSubscriptions(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEndpointSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).CountEndpointSubscriptions), ctx, projectID, endpointID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEndpointSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).CountEndpointSubscriptions), arg0, arg1, arg2, arg3)
 }
 
 // CreateSubscription mocks base method.
