@@ -158,6 +158,8 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 	// Configurations
 	configurations = [
+		{ uid: 'events', name: 'Event Types', show: false, deleted: false },
+		{ uid: 'transform_config', name: 'Transform', show: false, deleted: false },
 		{ uid: 'http_timeout', name: 'Timeout ', show: false, deleted: false },
 		{ uid: 'owner_id', name: 'Owner ID ', show: false, deleted: false },
 		{ uid: 'rate_limit', name: 'Rate Limit ', show: false, deleted: false },
@@ -220,9 +222,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 		// Load event types for the subscription
 		await this.getEventTypes();
 
-		// Make sure events config is shown
-		this.toggleConfigForm('events', true);
-
 		// If we're in edit mode, load the endpoint details and related subscription
 		if (this.isUpdateAction || this.editMode) {
 			await this.getEndpointDetails();
@@ -264,8 +263,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 				};
 				this.subscriptionForm.setControl('eventTypes', this.formBuilder.group(eventTypesControls));
 			}
-
-			this.toggleConfigForm('events', true);
 		}
 
 		// If we have selected event types, make sure to show the event types section
