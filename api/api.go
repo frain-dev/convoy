@@ -189,6 +189,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 					projectSubRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
 						eventTypesRouter.Get("/", handler.GetEventTypes)
 						eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
+						eventTypesRouter.With(handler.RequireEnabledProject()).Post("/import", handler.ImportOpenApiSpec)
 						eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
 						eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
 					})
@@ -382,6 +383,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						projectSubRouter.Route("/event-types", func(eventTypesRouter chi.Router) {
 							eventTypesRouter.Get("/", handler.GetEventTypes)
 							eventTypesRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEventType)
+							eventTypesRouter.With(handler.RequireEnabledProject()).Post("/import", handler.ImportOpenApiSpec)
 							eventTypesRouter.With(handler.RequireEnabledProject()).Put("/{eventTypeId}", handler.UpdateEventType)
 							eventTypesRouter.With(handler.RequireEnabledProject()).Post("/{eventTypeId}/deprecate", handler.DeprecateEventType)
 						})
@@ -524,9 +526,14 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			})
 		})
 
+		portalLinkRouter.Route("/dashboard", func(dashboardRouter chi.Router) {
+			dashboardRouter.Get("/summary", handler.GetDashboardSummary)
+		})
+
 		portalLinkRouter.Route("/subscriptions", func(subscriptionRouter chi.Router) {
 			subscriptionRouter.Post("/", handler.CreateSubscription)
 			subscriptionRouter.Post("/test_filter", handler.TestSubscriptionFilter)
+			subscriptionRouter.Post("/test_function", handler.TestSubscriptionFunction)
 			subscriptionRouter.With(middleware.Pagination).Get("/", handler.GetSubscriptions)
 			subscriptionRouter.Delete("/{subscriptionID}", handler.DeleteSubscription)
 			subscriptionRouter.Get("/{subscriptionID}", handler.GetSubscription)

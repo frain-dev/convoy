@@ -580,26 +580,6 @@
 				},
 				"type": "object"
 			},
-			"datastore.ProjectEventType": {
-				"properties": {
-					"category": {
-						"type": "string"
-					},
-					"deprecated_at": {
-						"type": "string"
-					},
-					"description": {
-						"type": "string"
-					},
-					"name": {
-						"type": "string"
-					},
-					"uid": {
-						"type": "string"
-					}
-				},
-				"type": "object"
-			},
 			"datastore.ProviderConfig": {
 				"properties": {
 					"twitter": {
@@ -1100,6 +1080,9 @@
 						"description": "Description is used to describe what the event type does",
 						"type": "string"
 					},
+					"json_schema": {
+						"description": "JSONSchema is the JSON structure of the event type"
+					},
 					"name": {
 						"description": "Name is the event type name. E.g., invoice.created",
 						"type": "string"
@@ -1531,21 +1514,28 @@
 				},
 				"type": "object"
 			},
-			"models.EventTypeListResponse": {
-				"properties": {
-					"event_types": {
-						"items": {
-							"$ref": "#/components/schemas/datastore.ProjectEventType"
-						},
-						"type": "array"
-					}
-				},
-				"type": "object"
-			},
 			"models.EventTypeResponse": {
 				"properties": {
-					"event_type": {
-						"$ref": "#/components/schemas/datastore.ProjectEventType"
+					"category": {
+						"type": "string"
+					},
+					"deprecated_at": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"json_schema": {
+						"items": {
+							"type": "integer"
+						},
+						"type": "array"
+					},
+					"name": {
+						"type": "string"
+					},
+					"uid": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -1730,6 +1720,14 @@
 							"type": "string"
 						},
 						"type": "array"
+					}
+				},
+				"type": "object"
+			},
+			"models.ImportOpenAPISpec": {
+				"properties": {
+					"spec": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -2209,6 +2207,9 @@
 					"description": {
 						"description": "Description is used to describe what the event type does",
 						"type": "string"
+					},
+					"json_schema": {
+						"description": "JSONSchema is the JSON structure of the event type"
 					}
 				},
 				"type": "object"
@@ -3540,7 +3541,10 @@
 										{
 											"properties": {
 												"data": {
-													"$ref": "#/components/schemas/models.EventTypeListResponse"
+													"items": {
+														"$ref": "#/components/schemas/models.EventTypeResponse"
+													},
+													"type": "array"
 												}
 											},
 											"type": "object"
@@ -3750,6 +3754,137 @@
 					}
 				],
 				"summary": "Create an event type",
+				"tags": [
+					"EventTypes"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/event-types/import": {
+			"post": {
+				"description": "This endpoint imports event types from an OpenAPI specification",
+				"operationId": "ImportOpenApiSpec",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.ImportOpenAPISpec"
+							}
+						}
+					},
+					"description": "OpenAPI specification",
+					"required": true,
+					"x-originalParamName": "spec"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"items": {
+														"$ref": "#/components/schemas/models.EventTypeResponse"
+													},
+													"type": "array"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Import event types from OpenAPI spec",
 				"tags": [
 					"EventTypes"
 				]

@@ -72,7 +72,7 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 					Times(1).
 					Return(nil)
 
-				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1", gomock.Any()).
 					Times(1).
 					Return(int64(0), nil)
 
@@ -148,7 +148,7 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 					return ok
 				})).Times(1).Return(nil)
 
-				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1", gomock.Any()).
 					Times(1).
 					Return(int64(0), nil)
 
@@ -182,7 +182,7 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 			},
 			dbFn: func(ss *CreateSubscriptionService) {
 				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1", gomock.Any()).
 					Times(1).
 					Return(int64(0), errors.New("failed"))
 
@@ -256,7 +256,7 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 			},
 			dbFn: func(ss *CreateSubscriptionService) {
 				s, _ := ss.SubRepo.(*mocks.MockSubscriptionRepository)
-				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1", gomock.Any()).
 					Times(1).
 					Return(int64(1), nil)
 
@@ -499,7 +499,7 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 					Times(1).
 					Return(nil)
 
-				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1").
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), "12345", "endpoint-id-1", gomock.Any()).
 					Times(1).
 					Return(int64(0), nil)
 

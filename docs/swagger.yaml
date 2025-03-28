@@ -420,19 +420,6 @@ definitions:
       prev_page_cursor:
         type: string
     type: object
-  datastore.ProjectEventType:
-    properties:
-      category:
-        type: string
-      deprecated_at:
-        type: string
-      description:
-        type: string
-      name:
-        type: string
-      uid:
-        type: string
-    type: object
   datastore.ProviderConfig:
     properties:
       twitter:
@@ -823,6 +810,8 @@ definitions:
       description:
         description: Description is used to describe what the event type does
         type: string
+      json_schema:
+        description: JSONSchema is the JSON structure of the event type
       name:
         description: Name is the event type name. E.g., invoice.created
         type: string
@@ -1123,17 +1112,22 @@ definitions:
       url_query_params:
         type: string
     type: object
-  models.EventTypeListResponse:
-    properties:
-      event_types:
-        items:
-          $ref: '#/definitions/datastore.ProjectEventType'
-        type: array
-    type: object
   models.EventTypeResponse:
     properties:
-      event_type:
-        $ref: '#/definitions/datastore.ProjectEventType'
+      category:
+        type: string
+      deprecated_at:
+        type: string
+      description:
+        type: string
+      json_schema:
+        items:
+          type: integer
+        type: array
+      name:
+        type: string
+      uid:
+        type: string
     type: object
   models.ExpireSecret:
     properties:
@@ -1264,6 +1258,11 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  models.ImportOpenAPISpec:
+    properties:
+      spec:
+        type: string
     type: object
   models.KafkaAuth:
     properties:
@@ -1600,6 +1599,8 @@ definitions:
       description:
         description: Description is used to describe what the event type does
         type: string
+      json_schema:
+        description: JSONSchema is the JSON structure of the event type
     type: object
   models.UpdateFilterRequest:
     properties:
@@ -2305,7 +2306,9 @@ paths:
             - $ref: '#/definitions/util.ServerResponse'
             - properties:
                 data:
-                  $ref: '#/definitions/models.EventTypeListResponse'
+                  items:
+                    $ref: '#/definitions/models.EventTypeResponse'
+                  type: array
               type: object
         "400":
           description: Bad Request
@@ -2521,6 +2524,70 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Deprecates an event type
+      tags:
+      - EventTypes
+  /v1/projects/{projectID}/event-types/import:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint imports event types from an OpenAPI specification
+      operationId: ImportOpenApiSpec
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: OpenAPI specification
+        in: body
+        name: spec
+        required: true
+        schema:
+          $ref: '#/definitions/models.ImportOpenAPISpec'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.EventTypeResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Import event types from OpenAPI spec
       tags:
       - EventTypes
   /v1/projects/{projectID}/eventdeliveries:

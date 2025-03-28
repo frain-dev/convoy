@@ -1,14 +1,17 @@
 package handlers
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/oklog/ulid/v2"
-	"net/http"
 )
 
 // GetEventTypes
@@ -20,7 +23,7 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string	true	"Project ID"
-//	@Success		200			{object}	util.ServerResponse{data=models.EventTypeListResponse}
+//	@Success		200			{object}	util.ServerResponse{data=[]models.EventTypeResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/event-types [get]
@@ -86,6 +89,12 @@ func (h *Handler) CreateEventType(w http.ResponseWriter, r *http.Request) {
 		Description: newEventType.Description,
 	}
 
+	b, err2 := json.Marshal(newEventType.JSONSchema)
+	if err2 != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err2.Error(), http.StatusBadRequest))
+	}
+	pe.JSONSchema = b
+
 	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
 	err = eventTypeRepo.CreateEventType(r.Context(), pe)
 	if err != nil {
@@ -142,6 +151,14 @@ func (h *Handler) UpdateEventType(w http.ResponseWriter, r *http.Request) {
 		pe.Category = ue.Category
 	}
 
+	if ue.JSONSchema != nil {
+		b, err2 := json.Marshal(ue.JSONSchema)
+		if err2 != nil {
+			_ = render.Render(w, r, util.NewErrorResponse(err2.Error(), http.StatusBadRequest))
+		}
+		pe.JSONSchema = b
+	}
+
 	err = eventTypeRepo.UpdateEventType(r.Context(), pe)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
@@ -183,4 +200,51 @@ func (h *Handler) DeprecateEventType(w http.ResponseWriter, r *http.Request) {
 
 	resp := &models.EventTypeResponse{ProjectEventType: pe}
 	_ = render.Render(w, r, util.NewServerResponse("Event type deprecated successfully", resp, http.StatusOK))
+}
+
+// ImportOpenApiSpec
+//
+//	@Summary		Import event types from OpenAPI spec
+//	@Description	This endpoint imports event types from an OpenAPI specification
+//	@Id				ImportOpenApiSpec
+//	@Tags			EventTypes
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID	path		string						true	"Project ID"
+//	@Param			spec		body		models.ImportOpenAPISpec	true	"OpenAPI specification"
+//	@Success		200			{object}	util.ServerResponse{data=[]models.EventTypeResponse}
+//	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/event-types/import [post]
+func (h *Handler) ImportOpenApiSpec(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	var body models.ImportOpenAPISpec
+	err = util.ReadJSON(r, &body)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	eventTypeRepo := postgres.NewEventTypesRepo(h.A.DB)
+	importService, err := services.NewImportOpenapiSpecService(body.Spec, project.UID, eventTypeRepo)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	eventTypes, err := importService.Run(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	resp := models.NewListResponse(eventTypes, func(eventType datastore.ProjectEventType) models.EventTypeResponse {
+		return models.EventTypeResponse{ProjectEventType: &eventType}
+	})
+	_ = render.Render(w, r, util.NewServerResponse("Event types imported successfully", resp, http.StatusOK))
 }

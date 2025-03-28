@@ -2924,6 +2924,12 @@ func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
 	}
 
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+
+	// Initialize realm chain
+	apiKeyRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	initRealmChain(s.T(), apiKeyRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) TearDownTest() {
