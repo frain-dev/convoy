@@ -52,12 +52,16 @@ import { endpointsService } from '@/services/endpoints.service';
 import type { ENDPOINT } from '@/models/endpoint.model';
 import type { Pagination } from '@/models/global.model';
 
+import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import viewEventsImg from '../../../../../assets/svg/view-events-icon.svg';
 import searchIcon from '../../../../../assets/svg/search-icon.svg';
 import { ConvoyLoader } from '@/components/convoy-loader';
 
 export const Route = createFileRoute('/projects_/$projectId/endpoints/')({
 	component: ListEndpointsPage,
+	beforeLoad({ context }) {
+		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
+	},
 });
 
 const ExpireSecretFormSchema = z.object({
