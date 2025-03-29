@@ -540,8 +540,11 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		return err
 	}
 
-	subscription.FilterConfig.Filter.Headers = subscription.FilterConfig.Filter.RawHeaders
-	subscription.FilterConfig.Filter.Body = subscription.FilterConfig.Filter.RawBody
+	_subscription.FilterConfig.Filter.Headers = _subscription.FilterConfig.Filter.RawHeaders
+	_subscription.FilterConfig.Filter.Body = _subscription.FilterConfig.Filter.RawBody
+
+	nullifyEmptyConfig(_subscription)
+	*subscription = *_subscription
 
 	eventTypesSlice := make([]*datastore.ProjectEventType, len(subscription.FilterConfig.EventTypes))
 	for i := range subscription.FilterConfig.EventTypes {

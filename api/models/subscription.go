@@ -189,8 +189,10 @@ func (fc *FilterConfiguration) Transform() *datastore.FilterConfiguration {
 	return &datastore.FilterConfiguration{
 		EventTypes: fc.EventTypes,
 		Filter: datastore.FilterSchema{
-			Headers: fc.Filter.Headers,
-			Body:    fc.Filter.Body,
+			Headers:    fc.Filter.Headers,
+			Body:       fc.Filter.Body,
+			RawHeaders: fc.Filter.Headers,
+			RawBody:    fc.Filter.Body,
 		},
 	}
 }
