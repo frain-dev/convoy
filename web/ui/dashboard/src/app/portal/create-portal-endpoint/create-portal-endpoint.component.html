@@ -90,7 +90,7 @@
                         Business
                     </div>
                     <div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-                        <div *ngFor="let eventType of eventTypes; let i = index" class="flex items-center justify-between my-12px rounded-6px">
+                        <div *ngFor="let eventType of validEventTypes(); let i = index" class="flex items-center justify-between my-12px rounded-6px">
                             <div class="flex items-center">
                                 <div class="relative mr-12px">
                                     <div
@@ -133,6 +133,32 @@
                         <p *ngIf="eventTypes.length === 0" class="text-12 text-neutral-7 italic">No event types available</p>
                     </div>
                 </div>
+            </div>
+        </ng-container>
+
+        <ng-container *ngIf="showConfig('transform')">
+            <div id="transform-section" class="mt-16px mb-32px">
+                <div class="flex justify-between items-center cursor-pointer">
+                    <h3 class="font-semibold text-14 mt-20px">Payload Transformation</h3>
+                    <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" *ngIf="action !== 'view'" (click)="toggleConfigForm('transform')">
+                        <svg width="14" height="14" class="fill-transparent stroke-neutral-9">
+                            <use xlink:href="#delete-icon2"></use>
+                        </svg>
+                    </button>
+                </div>
+
+                <p class="text-12 text-neutral-10 mt-6px mb-24px">
+                    Configure how you want to test and apply transformation logic to webhook events.
+                </p>
+
+                <convoy-create-portal-transform-function
+                        [showTitle]="false"
+                        [titleClass]="'font-semibold text-14 capitalize pb-16px'"
+                        (updatedTransformFunction)="getFunction($event)"
+                        [defaultOption]="'Select Event Type'"
+                        [options]="toEventTypesString()"
+                        [transformFunction]="subscriptionForm.get('function')?.value">
+                </convoy-create-portal-transform-function>
             </div>
         </ng-container>
 
@@ -326,31 +352,6 @@
     </div>
 
     <div *ngIf="savingEndpoint" convoy-form-loader [loading]="!endpointCreated"></div>
-
-    <div id="transform-section" class="mt-16px mb-32px">
-        <div class="flex justify-between items-center cursor-pointer" (click)="toggleTransformFunction()">
-            <h3 class="font-semibold text-14 mt-20px">Test Transforms</h3>
-            <button class="text-12 text-neutral-9 flex items-center">
-                {{ isTransformFunctionCollapsed ? 'Expand' : 'Collapse' }}
-            </button>
-        </div>
-
-        <p *ngIf="!isTransformFunctionCollapsed" class="text-12 text-neutral-10 mt-6px mb-24px">
-            Configure how you want to test and apply transformation logic to webhook events.
-        </p>
-
-        <div *ngIf="!isTransformFunctionCollapsed">
-            <convoy-create-portal-transform-function
-                [showTitle]="false"
-                [titleClass]="'font-semibold text-14 capitalize pb-16px'"
-                (updatedTransformFunction)="getFunction($event)"
-                [defaultOption]="'Select Event Type'"
-                [options]="toEventTypesString()"
-                [transformFunction]="subscriptionForm.get('function')?.value">
-            </convoy-create-portal-transform-function>
-        </div>
-    </div>
-
 
   <div class="flex justify-end mt-32px">
     <button

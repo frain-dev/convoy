@@ -130,7 +130,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 	selectedEventType: string = '';
 	showFilterDialog = false;
 	selectedIndex: number = 0;
-	showTransformDialog = false;
 	isCreatingSubscription = false;
 	createdSubscription = false;
 
@@ -159,7 +158,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 	// Configurations
 	configurations = [
 		{ uid: 'events', name: 'Event Types', show: false, deleted: false },
-		{ uid: 'transform_config', name: 'Transform', show: false, deleted: false },
+		{ uid: 'transform', name: 'Payload Transformation', show: false, deleted: false },
 		{ uid: 'http_timeout', name: 'Timeout ', show: false, deleted: false },
 		{ uid: 'owner_id', name: 'Owner ID ', show: false, deleted: false },
 		{ uid: 'rate_limit', name: 'Rate Limit ', show: false, deleted: false },
@@ -739,7 +738,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 	getFunction(subscriptionFunction: any) {
 		if (subscriptionFunction) this.subscriptionForm.get('function')?.patchValue(subscriptionFunction);
-		this.showTransformDialog = false;
 	}
 
 	async runSubscriptionValidation() {
@@ -975,6 +973,10 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 	toEventTypesString(){
 		return this.eventTypes.map(e => e.name).filter(e=> e !== '*')
+	}
+
+	validEventTypes(){
+		return this.eventTypes.filter(e=> e.name !== '*')
 	}
 
     toggleTransformFunction() {
