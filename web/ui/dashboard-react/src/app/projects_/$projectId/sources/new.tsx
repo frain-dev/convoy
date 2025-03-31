@@ -294,6 +294,8 @@ const OutgoingSourceFormSchema = z
 			.min(1, 'Enter new source name'),
 		body_function: z.record(z.string(), z.any()).nullable(),
 		header_function: z.record(z.string(), z.any()).nullable(),
+		type: z.literal('pub_sub'),
+		is_disabled: z.boolean(),
 		pub_sub: z.object({
 			type: z
 				.enum(['', ...pubSubTypes.map(t => t.uid)])
@@ -362,9 +364,9 @@ const OutgoingSourceFormSchema = z
 				})
 				.optional(),
 		}),
-		showKafkaAuth: z.boolean(),
-		showAMQPAuth: z.boolean(),
-		showAMQPBindExhange: z.boolean(),
+		showKafkaAuth: z.boolean().optional(),
+		showAMQPAuth: z.boolean().optional(),
+		showAMQPBindExhange: z.boolean().optional(),
 	})
 	.refine(
 		({ pub_sub }) => {
@@ -524,7 +526,7 @@ const OutgoingSourceFormSchema = z
 				return false;
 			}
 
-			return true
+			return true;
 		},
 		({ pub_sub, showAMQPAuth, showAMQPBindExhange }) => {
 			if (!pub_sub.amqp?.schema)
@@ -714,7 +716,7 @@ function RouteComponent() {
 		};
 	}
 
-	async function saveIncomingSource(
+	async function createIncomingSource(
 		raw: z.infer<typeof IncomingSourceFormSchema>,
 	) {
 		const payload = transformIncomingSource(raw);
@@ -766,6 +768,8 @@ function RouteComponent() {
 		resolver: zodResolver(OutgoingSourceFormSchema),
 		defaultValues: {
 			name: '',
+			type: 'pub_sub',
+			is_disabled: true,
 			body_function: {},
 			header_function: {},
 			pub_sub: {
@@ -820,10 +824,91 @@ function RouteComponent() {
 		mode: 'onTouched',
 	});
 
-	async function saveOutgoingSource(
+	function transformOutgoingSource(
 		raw: z.infer<typeof OutgoingSourceFormSchema>,
 	) {
-		console.log(raw);
+		const payload: typeof raw = {
+			name: raw.name,
+			type: raw.type,
+			is_disabled: true,
+			pub_sub: {
+				workers: raw.pub_sub.workers,
+				type: raw.pub_sub.type,
+			},
+			body_function:
+				raw.body_function !== null && Object.keys(raw.body_function).length == 0
+					? null
+					: raw.body_function,
+			header_function:
+				raw.header_function !== null &&
+				Object.keys(raw.header_function).length == 0
+					? null
+					: raw.header_function,
+		};
+
+		if (raw.pub_sub.type == 'google') {
+			return {
+				...payload,
+				pub_sub: {
+					...payload.pub_sub,
+					google: raw.pub_sub.google,
+				},
+			};
+		}
+
+		if (raw.pub_sub.type == 'kafka') {
+			const kafka = raw.pub_sub.kafka;
+			return {
+				...payload,
+				pub_sub: {
+					...payload.pub_sub,
+					kafka: {
+						...kafka,
+						auth: {
+							...kafka?.auth,
+							tls: kafka?.auth?.tls == 'enabled' ? true : false,
+						},
+					},
+				},
+			};
+		}
+
+		if (raw.pub_sub.type == 'sqs') {
+			const sqs = raw.pub_sub.sqs;
+			return {
+				...payload,
+				pub_sub: {
+					...payload.pub_sub,
+					sqs,
+				},
+			};
+		}
+
+		if (raw.pub_sub.type == 'amqp') {
+			const amqp = raw.pub_sub.amqp;
+			return {
+				...payload,
+				pub_sub: {
+					...payload.pub_sub,
+					amqp,
+				},
+			};
+		}
+	}
+
+	async function createOutgoingSource(
+		raw: z.infer<typeof OutgoingSourceFormSchema>,
+	) {
+		const payload = transformOutgoingSource(raw);
+		setIsCreating(true);
+		try {
+		/* const res =  */	await sourcesService.createSource(payload);
+			// TODO notify UI
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsCreating(false);
+		}
 	}
 
 	function onFileInputDrop(
@@ -857,10 +942,6 @@ function RouteComponent() {
 		}
 	}
 
-	console.log(
-		outgoingForm.formState.isValid,
-		OutgoingSourceFormSchema.safeParse(outgoingForm.getValues()).error,
-	);
 	return (
 		<DashboardLayout showSidebar={false}>
 			<section className="flex flex-col p-2 max-w-[770px] min-w-[600px] w-full m-auto my-4 gap-y-6">
@@ -883,7 +964,7 @@ function RouteComponent() {
 				{project?.type == 'incoming' && (
 					<Form {...incomingForm}>
 						<form
-							onSubmit={incomingForm.handleSubmit(saveIncomingSource)}
+							onSubmit={incomingForm.handleSubmit(createIncomingSource)}
 							className="w-full"
 						>
 							<div className="border border-neutral-4 rounded-8px p-6 w-full">
@@ -1510,7 +1591,7 @@ function RouteComponent() {
 				{project?.type == 'outgoing' && (
 					<Form {...outgoingForm}>
 						<form
-							onSubmit={outgoingForm.handleSubmit(saveOutgoingSource)}
+							onSubmit={outgoingForm.handleSubmit(createOutgoingSource)}
 							className="w-full"
 						>
 							<div className="border border-neutral-4 rounded-8px p-6 w-full">
@@ -1931,6 +2012,7 @@ function RouteComponent() {
 																			Authentication
 																		</span>
 																	)}
+																	// @ts-expect-error the default value is boolean
 																	isChecked={field.value}
 																	onChange={field.onChange}
 																/>
@@ -2501,6 +2583,7 @@ function RouteComponent() {
 															<FormControl>
 																<ConvoyCheckbox
 																	label="Authentication"
+																	// @ts-expect-error the default value is boolean
 																	isChecked={field.value}
 																	onChange={field.onChange}
 																/>
@@ -2517,6 +2600,7 @@ function RouteComponent() {
 															<FormControl>
 																<ConvoyCheckbox
 																	label="Bind Exchange"
+																	// @ts-expect-error the default value is boolean
 																	isChecked={field.value}
 																	onChange={field.onChange}
 																/>
@@ -2728,7 +2812,6 @@ function RouteComponent() {
 					<DialogFooter>
 						<DialogClose asChild>
 							<div className="flex justify-end">
-								{' '}
 								<Button
 									onClick={() => setHasCreatedIncomingSource(false)}
 									type="button"
