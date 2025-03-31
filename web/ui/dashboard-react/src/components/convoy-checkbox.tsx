@@ -9,6 +9,7 @@ export function ConvoyCheckbox(props: {
 	isChecked: boolean;
 	onChange: ChangeEventHandler<HTMLInputElement>;
 	className?: string;
+	disabled?: boolean
 }) {
 	return (
 		<label className="flex items-center gap-2 hover:cursor-pointer">
@@ -21,6 +22,7 @@ export function ConvoyCheckbox(props: {
 					)}
 					defaultChecked={props.isChecked}
 					onChange={props.onChange}
+					disabled = {props.disabled}
 				/>
 				<svg
 					className={cn(

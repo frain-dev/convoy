@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { useForm, type RegisterOptions } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { DiffEditor, Editor } from '@monaco-editor/react';
 
-import { ChevronRight, Info, CopyIcon } from 'lucide-react';
+import { ChevronRight, Info, CopyIcon, SaveIcon } from 'lucide-react';
 
 import {
 	Form,
@@ -31,7 +32,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogFooter,
+	DialogDescription,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
 	Select,
 	SelectContent,
@@ -292,8 +295,6 @@ const OutgoingSourceFormSchema = z
 		name: z
 			.string({ required_error: 'Enter new source name' })
 			.min(1, 'Enter new source name'),
-		body_function: z.record(z.string(), z.any()).nullable(),
-		header_function: z.record(z.string(), z.any()).nullable(),
 		type: z.literal('pub_sub'),
 		is_disabled: z.boolean(),
 		pub_sub: z.object({
@@ -367,6 +368,7 @@ const OutgoingSourceFormSchema = z
 		showKafkaAuth: z.boolean().optional(),
 		showAMQPAuth: z.boolean().optional(),
 		showAMQPBindExhange: z.boolean().optional(),
+		showTransform: z.boolean().optional(),
 	})
 	.refine(
 		({ pub_sub }) => {
@@ -581,6 +583,12 @@ const OutgoingSourceFormSchema = z
 		},
 	);
 
+const defaultBody = {
+	id: 'Sample-1',
+	name: 'Sample 1',
+	description: 'This is sample data #1',
+};
+
 function RouteComponent() {
 	const navigate = useNavigate();
 	const { project } = useProjectStore();
@@ -591,6 +599,87 @@ function RouteComponent() {
 	const [hasCreatedIncomingSource, setHasCreatedIncomingSource] =
 		useState(false);
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+	const [showTransformFunctionDialog, setShowTransformFunctionDialog] =
+		useState(false);
+
+	// Transform function state variables
+	const [isTestingFunction, setIsTestingFunction] = useState(false);
+	const [isTransformPassed, setIsTransformPassed] = useState(false);
+	const [showConsole, setShowConsole] = useState(true);
+	const [transformBodyPayload, setTransformBodyPayload] =
+		useState<Record<string, unknown>>(defaultBody);
+	const [headerPayload, setHeaderPayload] =
+		useState<Record<string, unknown>>(defaultBody);
+	const [transformFunctionBody, setTransformFunctionBody] = useState<string>(
+		`/*  1. While you can write multiple functions, the main
+   function called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is the
+ payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this:
+console.log('%j', logged_item) to get printed in the log below.
+
+5. The output payload from the function should be in this format
+    {
+        "owner_id": "string, optional",
+        "event_type": "string, required",
+        "data": "object, required",
+        "custom_headers": "object, optional",
+        "idempotency_key": "string, optional"
+        "endpoint_id": "string, depends",
+    }
+
+6. The endpoint_id field is only required when sending event to
+a single endpoint. */
+
+function transform(payload) {
+    // Transform function here
+    return {
+        "endpoint_id": "",
+        "owner_id": "",
+        "event_type": "sample",
+        "data": payload,
+        "custom_headers": {
+            "sample-header": "sample-value"
+        },
+        "idempotency_key": ""
+    }
+}`,
+	);
+	const [transformFunctionHeader, setTransformFunctionHeader] =
+		useState<string>(
+			`/* 1. While you can write multiple functions, the main function
+called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this
+console.log('%j', logged_item) to get printed in the log below. */
+
+function transform(payload) {
+// Transform function here
+return payload;
+}`,
+		);
+	const [bodyOutput, setBodyOutput] = useState<{
+		previous: Record<string, unknown> | null | string;
+		current: Record<string, unknown> | null | string;
+	}>({ previous: '', current: '' });
+	const [headerOutput, setHeaderOutput] = useState<{
+		previous: Record<string, unknown> | null | string;
+		current: Record<string, unknown> | null | string;
+	}>({ previous: '', current: '' });
+	const [bodyLogs, setBodyLogs] = useState<string[]>([]);
+	const [headerLogs, setHeaderLogs] = useState<string[]>([]);
+	const [transformFunction, setTransformFunction] = useState<null | string>();
+	const [headerTransformFunction, setHeaderTransformFunction] =
+		useState<null | string>();
 
 	type SourceType = (typeof sourceVerifications)[number]['uid'];
 
@@ -639,8 +728,8 @@ function RouteComponent() {
 				hmac: Object.entries(config).reduce((acc, record: [string, string]) => {
 					const [key, val] = record;
 					if (['encoding', 'hash', 'header', 'secret'].includes(key)) {
-						acc[key] = val
-						return acc
+						acc[key] = val;
+						return acc;
 					}
 					return acc;
 				}, obj),
@@ -655,7 +744,7 @@ function RouteComponent() {
 						const [key, val] = record;
 						if (['password', 'username'].includes(key)) {
 							acc[key] = val;
-							return acc
+							return acc;
 						}
 						return acc;
 					},
@@ -672,7 +761,7 @@ function RouteComponent() {
 					(acc, record: [string, string]) => {
 						const [key, val] = record;
 						if (['header_name', 'header_value'].includes(key)) {
-							return acc[key] = val;
+							return (acc[key] = val);
 						}
 						return acc;
 					},
@@ -820,6 +909,7 @@ function RouteComponent() {
 			showKafkaAuth: false,
 			showAMQPAuth: false,
 			showAMQPBindExhange: false,
+			showTransform: false,
 		},
 		mode: 'onTouched',
 	});
@@ -827,7 +917,8 @@ function RouteComponent() {
 	function transformOutgoingSource(
 		raw: z.infer<typeof OutgoingSourceFormSchema>,
 	) {
-		const payload: typeof raw = {
+		console.log(transformFunctionBody)
+		const payload  = {
 			name: raw.name,
 			type: raw.type,
 			is_disabled: true,
@@ -835,15 +926,8 @@ function RouteComponent() {
 				workers: raw.pub_sub.workers,
 				type: raw.pub_sub.type,
 			},
-			body_function:
-				raw.body_function !== null && Object.keys(raw.body_function).length == 0
-					? null
-					: raw.body_function,
-			header_function:
-				raw.header_function !== null &&
-				Object.keys(raw.header_function).length == 0
-					? null
-					: raw.header_function,
+			body_function: transformFunctionBody,
+			header_function: transformFunctionHeader,
 		};
 
 		if (raw.pub_sub.type == 'google') {
@@ -896,19 +980,80 @@ function RouteComponent() {
 		}
 	}
 
+	// Function to test transform
+	async function testTransformFunction(type: 'body' | 'header') {
+		setIsTransformPassed(false);
+		setIsTestingFunction(true);
+
+		const payload = type === 'body' ? transformBodyPayload : headerPayload;
+		const transformFunc =
+			type === 'body' ? transformFunctionBody : transformFunctionHeader;
+
+		try {
+			// Call the sources service to test the transform function
+			const response = await sourcesService.testTransformFunction({
+				payload,
+				function: transformFunc,
+				type,
+			});
+
+			// In a real implementation, this would return payload and logs
+			if (type === 'body') {
+				setBodyOutput(prev => ({
+					current: response.payload,
+					previous: prev.current,
+				}));
+				setBodyLogs(
+					response.log.toReversed() || [
+						'Transform function executed successfully',
+					],
+				);
+			} else {
+				setHeaderOutput(prev => ({
+					current: response.payload,
+					previous: prev.current,
+				}));
+				setHeaderLogs(
+					response.log.toReversed() || [
+						'Transform function executed successfully',
+					],
+				);
+			}
+
+			setIsTransformPassed(true);
+			setIsTestingFunction(false);
+			setShowConsole(bodyLogs.length || headerLogs.length ? true : false);
+
+			if (type === 'body') {
+				setTransformFunction(transformFunc);
+			} else {
+				setHeaderTransformFunction(transformFunc);
+			}
+		} catch (error) {
+			console.error(error);
+			setIsTestingFunction(false);
+			if (type === 'body') {
+				setBodyLogs(['Error executing transform function']);
+			} else {
+				setHeaderLogs(['Error executing transform function']);
+			}
+		}
+	}
+
 	async function createOutgoingSource(
 		raw: z.infer<typeof OutgoingSourceFormSchema>,
 	) {
 		const payload = transformOutgoingSource(raw);
-		setIsCreating(true);
-		try {
-		/* const res =  */	await sourcesService.createSource(payload);
-			// TODO notify UI
-		} catch (error) {
-			console.error(error);
-		} finally {
-			setIsCreating(false);
-		}
+		console.log(payload);
+		// setIsCreating(true);
+		// try {
+		// /* const res =  */ await sourcesService.createSource(payload);
+		// TODO notify UI
+		// } catch (error) {
+		// 	console.error(error);
+		// } finally {
+		// 	setIsCreating(false);
+		// }
 	}
 
 	function onFileInputDrop(
@@ -1671,9 +1816,9 @@ function RouteComponent() {
 											control={outgoingForm.control}
 											name="pub_sub.workers"
 											render={({ field, fieldState }) => (
-												<FormItem className="w-full block">
-													<div className="w-full mb-2">
-														<FormLabel className="flex items-center gap-2">
+												<FormItem className="">
+													<div className="space-y-2">
+														<FormLabel className="flex items-center gap-2 mb-2">
 															<span className="text-xs/5 text-neutral-9 ">
 																Workers
 															</span>
@@ -2741,6 +2886,59 @@ function RouteComponent() {
 											)}
 										</section>
 									)}
+
+									<hr />
+
+									{/* <div className="flex items-center gap-x-4">
+										<FormField
+											control={outgoingForm.control}
+											name="showTransform"
+											render={({ field }) => (
+												<FormItem>
+													<FormControl>
+														<ConvoyCheckbox
+															label="Transform"
+															// @ts-expect-error the default value fixes this
+															isChecked={field.value}
+															onChange={field.onChange}
+															disabled={
+																!licenses.includes('WEBHOOK_TRANSFORMATIONS')
+															}
+														/>
+													</FormControl>
+												</FormItem>
+											)}
+										/>
+									</div> */}
+
+									{/* {outgoingForm.watch('showTransform') && ( */}
+									<div className="pl-4 border-l border-l-new.primary-25 flex justify-between items-center">
+										<div className="flex flex-col gap-y-2 justify-center">
+											<p className="text-neutral-12 font-semibold text-xs">
+												Transform
+											</p>
+											<p className="text-[10px] text-neutral-10">
+												Transform request body of events with a JavaScript
+												function.
+											</p>
+										</div>
+										<div>
+											<Button
+												type="button"
+												variant="outline"
+												size="sm"
+												disabled={!licenses.includes('WEBHOOK_TRANSFORMATIONS')}
+												className="text-xs text-neutral-10 shadow-none hover:text-neutral-10 hover:bg-white-100"
+												onClick={e => {
+													e.stopPropagation();
+													setShowTransformFunctionDialog(true);
+												}}
+											>
+												Open Editor
+											</Button>
+										</div>
+									</div>
+									{/* )} */}
 								</div>
 							</div>
 							{/* Submit Button */}
@@ -2823,6 +3021,434 @@ function RouteComponent() {
 							</div>
 						</DialogClose>
 					</DialogFooter>
+				</DialogContent>
+			</Dialog>
+
+			{/* Transform Function Dialog */}
+			<Dialog
+				open={showTransformFunctionDialog}
+				onOpenChange={open => {
+					if (!open) setShowTransformFunctionDialog(false);
+				}}
+			>
+				<DialogContent className="w-[90%] h-[90%] max-w-[90%] max-h-[90%] p-0 overflow-hidden rounded-8px">
+					<div className="flex flex-col h-full">
+						{/* Dialog Header */}
+						<DialogHeader className="px-12 py-4 border-b border-neutral-4">
+							<div className="flex items-center justify-between w-full">
+								<DialogTitle className="text-base font-semibold">
+									Source Transform
+								</DialogTitle>
+
+								<DialogDescription className="sr-only">
+									Source Transform
+								</DialogDescription>
+								<Button
+									variant="ghost"
+									size={'sm'}
+									className="px-4 py-2 bg-new.primary-400 text-white-100 hover:bg-new.primary-400 hover:text-white-100 text-xs"
+									onClick={() => setShowTransformFunctionDialog(false)}
+									disabled={!isTransformPassed}
+								>
+									<SaveIcon className="stroke-white-100" />
+									Save Function
+								</Button>
+							</div>
+						</DialogHeader>
+
+						{/* Dialog Body */}
+						<div className="flex-1 overflow-auto p-6">
+							<div className="min-w-[80vw] mx-auto">
+								{/* Tabs for Body/Header */}
+								<Tabs defaultValue="body" className="w-full">
+									<TabsList className="w-full p-0 bg-background border-b rounded-none flex items-center justify-center">
+										<TabsTrigger
+											value="body"
+											className="rounded-none bg-background h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-new.primary-400"
+										>
+											<span className="text-sm">Body</span>
+										</TabsTrigger>
+										<TabsTrigger
+											value="header"
+											className="rounded-none bg-background h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-new.primary-400"
+										>
+											<span className="text-sm">Header</span>
+										</TabsTrigger>
+									</TabsList>
+									{/* Body */}
+									<TabsContent value="body">
+										<div className="flex w-full border border-neutral-4 rounded-lg">
+											<div className="flex flex-col w-1/2 border-r border-neutral-4">
+												<div>
+													{/* Body Input */}
+													<div className="text-xs text-neutral-11 border-b border-neutral-4 p-3 rounded-tl-lg">
+														Input
+													</div>
+													<div className="h-[300px]">
+														<Editor
+															height="300px"
+															language="json"
+															value={JSON.stringify(
+																transformBodyPayload,
+																null,
+																2,
+															)}
+															onChange={value =>
+																setTransformBodyPayload(
+																	JSON.parse(value || '{}'),
+																)
+															}
+															options={{
+																formatOnType: true,
+																formatOnPaste: true,
+																minimap: { enabled: false },
+																scrollBeyondLastLine: false,
+																fontSize: 12,
+															}}
+														/>
+													</div>
+												</div>
+												<div className="min-h-[370px]">
+													<Tabs defaultValue="output">
+														<TabsList className="w-full p-0 bg-background border-b rounded-none flex items-center justify-start">
+															<TabsTrigger
+																value="output"
+																className="rounded-none bg-background h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-new.primary-400"
+															>
+																<span className="text-xs">Output</span>
+															</TabsTrigger>
+															<TabsTrigger
+																value="diff"
+																className="rounded-none bg-background h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-new.primary-400"
+															>
+																<span className="text-xs">Diff</span>
+															</TabsTrigger>
+														</TabsList>
+														<div className="h-[336px]">
+															{/* Body Output */}
+															<TabsContent value="output" className="h-[336px]">
+																<Editor
+																	height="336px"
+																	language="json"
+																	value={
+																		typeof bodyOutput.current === 'object'
+																			? JSON.stringify(
+																					bodyOutput.current,
+																					null,
+																					2,
+																				)
+																			: `${bodyOutput.current}`
+																	}
+																	options={{
+																		readOnly: true,
+																		minimap: { enabled: false },
+																		scrollBeyondLastLine: false,
+																		fontSize: 12,
+																	}}
+																/>
+															</TabsContent>
+															{/* Body Diff */}
+															<TabsContent value="diff" className="h-[336px]">
+																<DiffEditor
+																	height="336px"
+																	language="json"
+																	original={
+																		typeof bodyOutput.previous === 'object'
+																			? JSON.stringify(
+																					bodyOutput.previous,
+																					null,
+																					2,
+																				)
+																			: `${bodyOutput.previous}`
+																	}
+																	modified={
+																		// TODO change to body diff
+																		typeof bodyOutput.current === 'object'
+																			? JSON.stringify(
+																					bodyOutput.current,
+																					null,
+																					2,
+																				)
+																			: `${bodyOutput.current}`
+																	}
+																	options={{
+																		readOnly: true,
+																		minimap: { enabled: false },
+																		scrollBeyondLastLine: false,
+																		renderSideBySide: true,
+																		fontSize: 12,
+																	}}
+																/>
+															</TabsContent>
+														</div>
+													</Tabs>
+												</div>
+											</div>
+											<div className="flex flex-col w-1/2">
+												<div className="flex justify-between items-center text-xs  border-b border-neutral-4 px-3 py-2 rounded-tr-lg">
+													<span className="text-neutral-11">
+														Transform Function
+													</span>
+													<Button
+														variant="outline"
+														size="sm"
+														className="h-6 py-0 px-2 text-xs border border-new.primary-300 shadow-none text-new.primary-300 gap-1 hover:text-new.primary-300 hover:bg-white-100"
+														disabled={isTestingFunction}
+														onClick={() => {
+															setShowConsole(true);
+															testTransformFunction('body');
+														}}
+													>
+														<svg
+															width="10"
+															height="11"
+															viewBox="0 0 10 11"
+															fill="none"
+															xmlns="http://www.w3.org/2000/svg"
+															className=""
+														>
+															<path
+																d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
+																stroke="#477DB3"
+																strokeMiterlimit="10"
+																strokeLinecap="round"
+																strokeLinejoin="round"
+															/>
+														</svg>
+														Run
+													</Button>
+												</div>
+												{/* Body Transform Function */}
+												<div
+													className={showConsole ? 'h-[500px]' : 'h-[632px]'}
+												>
+													<Editor
+														height="100%"
+														language="javascript"
+														value={transformFunctionBody}
+														onChange={value =>
+															setTransformFunctionBody(value || '')
+														}
+														options={{
+															formatOnType: true,
+															formatOnPaste: true,
+															minimap: { enabled: false },
+															scrollBeyondLastLine: false,
+															fontSize: 12,
+														}}
+													/>
+												</div>
+
+												{/* Body Console */}
+												{(showConsole || bodyLogs.length > 0) && (
+													<div className="border-t border-neutral-4">
+														<div className="flex justify-between items-center px-3 py-1.5 text-xs text-neutral-11">
+															<span>Console</span>
+															<Button
+																variant="ghost"
+																size="sm"
+																className="h-5 w-5 p-0"
+																onClick={() => setShowConsole(false)}
+															>
+																<svg
+																	width="14"
+																	height="14"
+																	className="fill-neutral-10"
+																>
+																	<use xlinkHref="#close-icon"></use>
+																</svg>
+															</Button>
+														</div>
+														<div className="h-[132px] bg-neutral-1 p-2 overflow-auto">
+															{bodyLogs.map((log, index) => (
+																<div
+																	key={index}
+																	className="text-xs font-mono whitespace-pre-wrap"
+																>
+																	{log}
+																</div>
+															))}
+														</div>
+													</div>
+												)}
+											</div>
+										</div>
+									</TabsContent>
+
+									{/* Header Tab */}
+									<TabsContent value="header">
+										<div className="flex w-full border border-neutral-4 rounded-lg">
+											<div className="flex flex-col w-1/2 border-r border-neutral-4">
+												<div>
+													<div className="text-xs text-neutral-11 border-b border-neutral-4 p-3 rounded-tl-lg">
+														Input
+													</div>
+													{/* Header Input Transform */}
+													<div className="h-[300px]">
+														<Editor
+															height="300px"
+															language="json"
+															value={JSON.stringify(headerPayload, null, 2)}
+															onChange={value =>
+																setHeaderPayload(JSON.parse(value || '{}'))
+															}
+															options={{
+																formatOnType: true,
+																formatOnPaste: true,
+																minimap: { enabled: false },
+																scrollBeyondLastLine: false,
+																fontSize: 12,
+															}}
+														/>
+													</div>
+												</div>
+												<div className="min-h-[370px]">
+													<Tabs defaultValue="output">
+														<TabsList className="w-full p-0 bg-background border-b rounded-none flex items-center justify-start">
+															<TabsTrigger
+																value="output"
+																className="rounded-none bg-background h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-new.primary-400"
+															>
+																<span className="text-xs">Output</span>
+															</TabsTrigger>
+															<TabsTrigger
+																value="diff"
+																className="rounded-none bg-background h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-new.primary-400"
+															>
+																<span className="text-xs">Diff</span>
+															</TabsTrigger>
+														</TabsList>
+														<TabsContent value="output">
+															<div className="h-[336px]">
+																<Editor
+																	height="336px"
+																	language="json"
+																	value={
+																		typeof headerOutput === 'object'
+																			? JSON.stringify(headerOutput, null, 2)
+																			: String(headerOutput)
+																	}
+																	options={{
+																		formatOnType: true,
+																		formatOnPaste: true,
+																		readOnly: true,
+																		minimap: { enabled: false },
+																		scrollBeyondLastLine: false,
+																		fontSize: 12,
+																	}}
+																/>
+															</div>
+														</TabsContent>
+														<TabsContent value="diff">
+															<Editor
+																height="336px"
+																language="json"
+																value={
+																	typeof headerOutput === 'object'
+																		? JSON.stringify(headerOutput, null, 2)
+																		: String(headerOutput)
+																}
+																options={{
+																	formatOnType: true,
+																	formatOnPaste: true,
+																	readOnly: true,
+																	minimap: { enabled: false },
+																	scrollBeyondLastLine: false,
+																	fontSize: 12,
+																}}
+															/>
+														</TabsContent>
+													</Tabs>
+												</div>
+											</div>
+											<div className="flex flex-col w-1/2">
+												<div className="flex justify-between items-center text-xs text-neutral-11 border-b border-neutral-4 px-3 py-2 rounded-tr-lg">
+													<span>Transform Function</span>
+													<Button
+														variant="outline"
+														size="sm"
+														className="h-6 py-0 px-2 text-xs"
+														disabled={isTestingFunction}
+														onClick={() => testTransformFunction('header')}
+													>
+														<svg
+															width="10"
+															height="11"
+															viewBox="0 0 10 11"
+															fill="none"
+															xmlns="http://www.w3.org/2000/svg"
+															className="mr-1.5"
+														>
+															<path
+																d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
+																stroke="#477DB3"
+																strokeMiterlimit="10"
+																strokeLinecap="round"
+																strokeLinejoin="round"
+															/>
+														</svg>
+														Run
+													</Button>
+												</div>
+												{/* Header Transform Function*/}
+												<div
+													className={showConsole ? 'h-[500px]' : 'h-[632px]'}
+												>
+													<Editor
+														height="100%"
+														language="javascript"
+														value={transformFunctionHeader}
+														onChange={value =>
+															setTransformFunctionHeader(value || '')
+														}
+														options={{
+															formatOnType: true,
+															formatOnPaste: true,
+															minimap: { enabled: false },
+															scrollBeyondLastLine: false,
+															fontSize: 12,
+														}}
+													/>
+												</div>
+
+												{showConsole && headerLogs.length > 0 && (
+													<div className="border-t border-neutral-4">
+														<div className="flex justify-between items-center px-3 py-2 text-xs text-neutral-11">
+															<span>Console</span>
+															<Button
+																variant="ghost"
+																size="sm"
+																className="h-5 w-5 p-0"
+																onClick={() => setShowConsole(false)}
+															>
+																<svg
+																	width="14"
+																	height="14"
+																	className="fill-neutral-10"
+																>
+																	<use xlinkHref="#close-icon"></use>
+																</svg>
+															</Button>
+														</div>
+														<div className="h-[132px] bg-neutral-1 p-2 overflow-auto">
+															{headerLogs.map((log, index) => (
+																<div
+																	key={index}
+																	className="text-xs font-mono whitespace-pre-wrap"
+																>
+																	{log}
+																</div>
+															))}
+														</div>
+													</div>
+												)}
+											</div>
+										</div>
+									</TabsContent>
+								</Tabs>
+							</div>
+						</div>
+					</div>
 				</DialogContent>
 			</Dialog>
 		</DashboardLayout>
