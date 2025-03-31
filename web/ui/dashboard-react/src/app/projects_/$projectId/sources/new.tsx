@@ -636,11 +636,11 @@ function RouteComponent() {
 		if (type == 'hmac') {
 			return {
 				type: 'hmac',
-				// @ts-expect-error types match
 				hmac: Object.entries(config).reduce((acc, record: [string, string]) => {
 					const [key, val] = record;
 					if (['encoding', 'hash', 'header', 'secret'].includes(key)) {
-						return (acc[key] = val);
+						acc[key] = val
+						return acc
 					}
 					return acc;
 				}, obj),
@@ -651,11 +651,11 @@ function RouteComponent() {
 			return {
 				type: 'basic_auth',
 				basic_auth: Object.entries(config).reduce(
-					// @ts-expect-error types match
 					(acc, record: [string, string]) => {
 						const [key, val] = record;
 						if (['password', 'username'].includes(key)) {
-							return (acc[key] = val);
+							acc[key] = val;
+							return acc
 						}
 						return acc;
 					},
@@ -672,7 +672,7 @@ function RouteComponent() {
 					(acc, record: [string, string]) => {
 						const [key, val] = record;
 						if (['header_name', 'header_value'].includes(key)) {
-							return (acc[key] = val);
+							return acc[key] = val;
 						}
 						return acc;
 					},
