@@ -98,6 +98,10 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 }
 
 func RetentionPolicies(rd *rdb.Redis, ret retention.Retentioner) func(context.Context, *asynq.Task) error {
+	if ret == nil {
+		return nil
+	}
+
 	pool := goredis.NewPool(rd.Client())
 	rs := redsync.New(pool)
 
