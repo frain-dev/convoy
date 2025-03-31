@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type RegisterOptions } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 
@@ -49,9 +49,13 @@ import { useLicenseStore, useProjectStore } from '@/store';
 import * as authService from '@/services/auth.service';
 import * as sourcesService from '@/services/sources.service';
 
+import type { DragEvent, ChangeEvent } from 'react';
+
+import uploadIcon from '../../../../../assets/img/upload.png';
 import githubIcon from '../../../../../assets/img/github.png';
 import shopifyIcon from '../../../../../assets/img/shopify.png';
 import twitterIcon from '../../../../../assets/img/twitter.png';
+import docIcon from '../../../../../assets/img/doc-icon-primary.svg';
 import modalCloseIcon from '../../../../../assets/svg/modal-close-icon.svg';
 
 export const Route = createFileRoute('/projects_/$projectId/sources/new')({
@@ -64,21 +68,64 @@ export const Route = createFileRoute('/projects_/$projectId/sources/new')({
 	},
 });
 
-const CreateIncomingSourceFormSchema = z
+const pubSubTypes = [
+	{ uid: 'google', name: 'Google Pub/Sub' },
+	{ uid: 'kafka', name: 'Kafka' },
+	{ uid: 'sqs', name: 'AWS SQS' },
+	{ uid: 'amqp', name: 'AMQP / RabbitMQ' },
+] as const;
+
+const sourceVerifications = [
+	{ uid: 'noop', name: 'None' },
+	{ uid: 'hmac', name: 'HMAC' },
+	{ uid: 'basic_auth', name: 'Basic Auth' },
+	{ uid: 'api_key', name: 'API Key' },
+	{ uid: 'github', name: 'Github' },
+	{ uid: 'shopify', name: 'Shopify' },
+	{ uid: 'twitter', name: 'Twitter' },
+] as const;
+
+const AWSRegions = [
+	{ uid: 'us-east-2', name: 'US East (Ohio)' },
+	{ uid: 'us-east-1', name: 'US East (N. Virginia)' },
+	{ uid: 'us-west-1', name: 'US West (N. California)' },
+	{ uid: 'us-west-2', name: 'US West (Oregon)' },
+	{ uid: 'af-south-1', name: 'Africa (Cape Town)' },
+	{ uid: 'ap-east-1', name: 'Asia Pacific (Hong Kong)' },
+	{ uid: 'ap-south-2', name: 'Asia Pacific (Hyderabad)' },
+	{ uid: 'ap-southeast-3', name: 'Asia Pacific (Jakarta)' },
+	{ uid: 'ap-southeast-4', name: 'Asia Pacific (Melbourne)' },
+	{ uid: 'ap-south-1', name: 'Asia Pacific (Mumbai)' },
+	{ uid: 'ap-northeast-3', name: 'Asia Pacific (Osaka)' },
+	{ uid: 'ap-northeast-2', name: 'Asia Pacific (Seoul)' },
+	{ uid: 'ap-southeast-1', name: 'Asia Pacific (Singapore)' },
+	{ uid: 'ap-southeast-2', name: 'Asia Pacific (Sydney)' },
+	{ uid: 'ap-northeast-1', name: 'Asia Pacific (Tokyo)' },
+	{ uid: 'ca-central-1', name: 'Canada (Central)' },
+	{ uid: 'eu-central-1', name: 'Europe (Frankfurt)' },
+	{ uid: 'eu-west-1', name: 'Europe (Ireland)' },
+	{ uid: 'eu-west-2', name: 'Europe (London)' },
+	{ uid: 'eu-south-1', name: 'Europe (Milan)' },
+	{ uid: 'eu-west-3', name: 'Europe (Paris)' },
+	{ uid: 'eu-south-2', name: 'Europe (Spain)' },
+	{ uid: 'eu-north-1', name: 'Europe (Stockholm)' },
+	{ uid: 'eu-central-2', name: 'Europe (Zurich)' },
+	{ uid: 'me-south-1', name: 'Middle East (Bahrain)' },
+	{ uid: 'me-central-1', name: 'Middle East (UAE)' },
+	{ uid: 'sa-east-1', name: 'South America (São Paulo)' },
+	{ uid: 'us-gov-east-1', name: 'AWS GovCloud (US-East)' },
+	{ uid: 'us-gov-west-1', name: 'AWS GovCloud (US-West)' },
+] as const;
+
+const IncomingSourceFormSchema = z
 	.object({
 		name: z.string().min(1, 'Enter new source name'),
 		type: z.enum([
-			'noop',
-			'hmac',
-			'basic_auth',
-			'api_key',
-			'github',
-			'shopify',
-			'twitter',
+			sourceVerifications[0].uid,
+			...sourceVerifications.slice(1).map(t => t.uid),
 		]),
-		// is_disabled: z.boolean().optional().default(false),
+		is_disabled: z.boolean().optional(),
 		config: z.object({
-			// TODO: In refine, encoding, hash, header and secret are required if type == hmac
 			encoding: z.enum(['base64', 'hex', '']).optional(),
 			hash: z.enum(['SHA256', 'SHA512', '']).optional(),
 			header: z.string().optional(),
@@ -240,57 +287,317 @@ const CreateIncomingSourceFormSchema = z
 		},
 	);
 
-const CreateOutgoingSourceFormSchema = z.object({
-	name: z.string({ required_error: 'Enter new source name' }),
-	type: z.enum(['google', 'kafka', 'sqs', 'amqp', '']),
-	verifier: z.object({
-		type: z.enum([
-			'noop',
-			'hmac',
-			'basic_auth',
-			'api_key',
-			'github',
-			'shopify',
-			'twitter',
-		]),
-	}),
-	workers: z.number({ required_error: 'Enter number of workers' }).int(),
-});
+const OutgoingSourceFormSchema = z
+	.object({
+		name: z
+			.string({ required_error: 'Enter new source name' })
+			.min(1, 'Enter new source name'),
+		body_function: z.record(z.string(), z.any()).nullable(),
+		header_function: z.record(z.string(), z.any()).nullable(),
+		pub_sub: z.object({
+			type: z
+				.enum(['', ...pubSubTypes.map(t => t.uid)])
+				.refine(v => (v == '' ? false : true), {
+					message: 'Select source type',
+					path: ['type'],
+				}),
+			workers: z
+				.string({ required_error: 'Enter number of workers' })
+				.min(1, 'Enter number of workers')
+				.refine(v => v !== null)
+				.transform(Number),
+			google: z
+				.object({
+					project_id: z.string(),
+					service_account: z.string(),
+					subscription_id: z.string(),
+				})
+				.optional(),
+			kafka: z
+				.object({
+					brokers: z.array(z.string()).optional(),
+					consumer_group_id: z.string().optional(),
+					topic_name: z.string(),
+					auth: z
+						.object({
+							type: z.enum(['plain', 'scram', '']),
+							tls: z.enum(['enabled', 'disabled', '']),
+							username: z.string().optional(),
+							password: z.string().optional(),
+							hash: z.enum(['SHA256', 'SHA512', '']).optional(),
+						})
+						.optional(),
+				})
+				.optional(),
+			sqs: z
+				.object({
+					queue_name: z.string(),
+					access_key_id: z.string(),
+					secret_key: z.string(),
+					default_region: z
+						.enum(['', ...AWSRegions.map(reg => reg.uid)])
+						.optional(),
+				})
+				.optional(),
+			amqp: z
+				.object({
+					schema: z.string(),
+					host: z.string(),
+					port: z.string().transform(Number),
+					queue: z.string(),
+					deadLetterExchange: z.string().optional(),
+					vhost: z.string().optional(),
+					auth: z
+						.object({
+							user: z.string(),
+							password: z.string(),
+						})
+						.optional(),
+					bindExchange: z
+						.object({
+							exchange: z.string(),
+							routingKey: z.string(),
+						})
+						.optional(),
+				})
+				.optional(),
+		}),
+		showKafkaAuth: z.boolean(),
+		showAMQPAuth: z.boolean(),
+		showAMQPBindExhange: z.boolean(),
+	})
+	.refine(
+		({ pub_sub }) => {
+			if (pub_sub.type !== 'google') return true;
+
+			if (
+				!pub_sub.google?.project_id ||
+				!pub_sub.google?.subscription_id ||
+				!pub_sub.google?.service_account
+			) {
+				return false;
+			}
+
+			return true;
+		},
+		({ pub_sub }) => {
+			if (!pub_sub.google?.project_id) {
+				return {
+					message: 'Project ID is required',
+					path: ['pub_sub.google.project_id'],
+				};
+			}
+
+			if (!pub_sub.google?.subscription_id) {
+				return {
+					message: 'Subscription ID is required',
+					path: ['pub_sub.google.subscription_id'],
+				};
+			}
+			if (!pub_sub.google?.service_account) {
+				return {
+					message: 'Service account is required',
+					path: ['pub_sub.google.service_account'],
+				};
+			}
+
+			return { message: '', path: [] };
+		},
+	)
+	.refine(
+		({ showKafkaAuth, pub_sub }) => {
+			if (pub_sub.type !== 'kafka') return true;
+			if (!pub_sub.kafka?.brokers?.length) return false;
+			if (!pub_sub.kafka.topic_name) return false;
+			if (!showKafkaAuth) return true;
+
+			let hasInvalidValue =
+				!pub_sub.kafka?.auth?.type || !pub_sub.kafka?.auth?.tls;
+			if (hasInvalidValue) return false;
+
+			hasInvalidValue =
+				!pub_sub.kafka?.auth?.username || !pub_sub.kafka?.auth?.password;
+			if (hasInvalidValue) return false;
+
+			hasInvalidValue =
+				pub_sub.kafka?.auth?.type == 'scram' && !pub_sub.kafka?.auth?.hash;
+			if (hasInvalidValue) return false;
+
+			return true;
+		},
+		({ pub_sub }) => {
+			if (!pub_sub.kafka?.topic_name) {
+				return {
+					message: 'Topic name is required',
+					path: ['pub_sub.kafka.topic_name'],
+				};
+			}
+
+			if (!pub_sub.kafka?.brokers?.length) {
+				return {
+					message: 'A minimum of one broker address is required',
+					path: ['pub_sub.kafka.brokers'],
+				};
+			}
+
+			if (!pub_sub.kafka?.auth?.type) {
+				return {
+					message: 'Please select authentication type',
+					path: ['pub_sub.kafka.auth.type'],
+				};
+			}
+
+			if (!pub_sub.kafka?.auth?.tls) {
+				return {
+					message: 'Enable or disable TLS',
+					path: ['pub_sub.kafka.auth.tls'],
+				};
+			}
+
+			if (!pub_sub.kafka?.auth?.hash) {
+				return {
+					message: 'has is required when authentication type is scram',
+					path: ['pub_sub.kafka.auth.hash'],
+				};
+			}
+
+			if (!pub_sub.kafka?.auth?.username) {
+				return {
+					message: 'Username is required',
+					path: ['pub_sub.kafka.auth.username'],
+				};
+			}
+
+			if (!pub_sub.kafka?.auth?.password) {
+				return {
+					message: 'Password is required',
+					path: ['pub_sub.kafka.auth.password'],
+				};
+			}
+
+			return { message: '', path: [''] };
+		},
+	)
+	.refine(
+		({ pub_sub }) => {
+			if (pub_sub.type !== 'sqs') return true;
+
+			if (
+				!pub_sub.sqs?.default_region ||
+				!pub_sub.sqs?.queue_name ||
+				!pub_sub.sqs?.access_key_id ||
+				!pub_sub.sqs?.secret_key
+			)
+				return false;
+			return true;
+		},
+		{
+			message: 'Select AWS default region',
+			path: ['pub_sub.sqs.default_region'],
+		},
+	)
+	.refine(
+		({ pub_sub, showAMQPAuth, showAMQPBindExhange }) => {
+			if (pub_sub.type != 'amqp') return true;
+
+			if (
+				!pub_sub.amqp?.schema ||
+				!pub_sub.amqp?.host ||
+				!pub_sub.amqp?.port ||
+				!pub_sub.amqp?.queue
+			) {
+				return false;
+			}
+
+			if (!showAMQPAuth) return true;
+
+			if (!pub_sub.amqp?.auth?.user || !pub_sub.amqp?.auth?.password) {
+				return false;
+			}
+
+			if (!showAMQPBindExhange) return true;
+
+			if (
+				!pub_sub.amqp?.bindExchange?.exchange ||
+				!pub_sub.amqp?.bindExchange?.routingKey
+			) {
+				return false;
+			}
+
+			return true
+		},
+		({ pub_sub, showAMQPAuth, showAMQPBindExhange }) => {
+			if (!pub_sub.amqp?.schema)
+				return {
+					message: 'Schema is required',
+					path: ['pub_sub.amqp.schema'],
+				};
+
+			if (!pub_sub.amqp?.host)
+				return {
+					message: 'Host is required',
+					path: ['pub_sub.amqp.host'],
+				};
+
+			if (!pub_sub.amqp?.port)
+				return {
+					message: 'Port is required',
+					path: ['pub_sub.amqp.port'],
+				};
+
+			if (!pub_sub.amqp?.queue)
+				return {
+					message: 'Queue is required',
+					path: ['pub_sub.amqp.queue'],
+				};
+
+			if (showAMQPAuth && !pub_sub.amqp?.auth?.user)
+				return {
+					message: 'User is required when authentication is enabled',
+					path: ['pub_sub.amqp.auth.user'],
+				};
+
+			if (showAMQPAuth && !pub_sub.amqp?.auth?.password)
+				return {
+					message: 'Password is required when authentication is enabled',
+					path: ['pub_sub.amqp.auth.password'],
+				};
+
+			if (showAMQPBindExhange && !pub_sub.amqp?.bindExchange?.exchange)
+				return {
+					message: 'Exchange is required when binding exchange is enabled',
+					path: ['pub_sub.amqp.bindExchange.exchange'],
+				};
+
+			if (showAMQPBindExhange && !pub_sub.amqp?.bindExchange?.routingKey)
+				return {
+					message: 'Routing key is required when binding exchange is enabled',
+					path: ['pub_sub.amqp.bindExchange.routingKey'],
+				};
+
+			return { message: '', path: [] };
+		},
+	);
 
 function RouteComponent() {
-	const navigate = useNavigate()
+	const navigate = useNavigate();
 	const { project } = useProjectStore();
 	const { licenses } = useLicenseStore();
 	const { projectId } = Route.useParams();
+	const [sourceUrl, setSourceUrl] = useState('');
 	const [isCreating, setIsCreating] = useState(false);
 	const [hasCreatedIncomingSource, setHasCreatedIncomingSource] =
 		useState(false);
-	const [sourceUrl, setSourceUrl] = useState('');
-
-	const pubSubTypes = [
-		{ uid: 'google', name: 'Google Pub/Sub' },
-		{ uid: 'kafka', name: 'Kafka' },
-		{ uid: 'sqs', name: 'AWS SQS' },
-		{ uid: 'amqp', name: 'AMQP / RabbitMQ' },
-	];
-
-	const sourceVerifications = [
-		{ uid: 'noop', name: 'None' },
-		{ uid: 'hmac', name: 'HMAC' },
-		{ uid: 'basic_auth', name: 'Basic Auth' },
-		{ uid: 'api_key', name: 'API Key' },
-		{ uid: 'github', name: 'Github' },
-		{ uid: 'shopify', name: 'Shopify' },
-		{ uid: 'twitter', name: 'Twitter' },
-	] as const;
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
 	type SourceType = (typeof sourceVerifications)[number]['uid'];
 
-	const createIncomingSourceForm = useForm({
-		resolver: zodResolver(CreateIncomingSourceFormSchema),
+	const incomingForm = useForm<z.infer<typeof IncomingSourceFormSchema>>({
+		resolver: zodResolver(IncomingSourceFormSchema),
 		defaultValues: {
 			name: '',
 			type: 'noop',
+			is_disabled: true,
 			config: {
 				hash: '',
 				encoding: '',
@@ -320,7 +627,7 @@ function RouteComponent() {
 
 	function getVerifierType(
 		type: SourceType,
-		config: z.infer<typeof CreateIncomingSourceFormSchema>['config'],
+		config: z.infer<typeof IncomingSourceFormSchema>['config'],
 	) {
 		const obj: Record<string, string> = {};
 
@@ -391,11 +698,11 @@ function RouteComponent() {
 	}
 
 	function transformIncomingSource(
-		v: z.infer<typeof CreateIncomingSourceFormSchema>,
+		v: z.infer<typeof IncomingSourceFormSchema>,
 	) {
 		return {
 			name: v.name,
-			is_disabled: true,
+			is_disabled: v.is_disabled,
 			type: 'http',
 			custom_response: {
 				body: v.custom_response?.body || '',
@@ -408,7 +715,7 @@ function RouteComponent() {
 	}
 
 	async function saveIncomingSource(
-		raw: z.infer<typeof CreateIncomingSourceFormSchema>,
+		raw: z.infer<typeof IncomingSourceFormSchema>,
 	) {
 		const payload = transformIncomingSource(raw);
 		setIsCreating(true);
@@ -423,15 +730,137 @@ function RouteComponent() {
 		}
 	}
 
-	const createOutgoingSourceForm = useForm({
-		resolver: zodResolver(CreateOutgoingSourceFormSchema),
+	function onFileInputChange(
+		e: ChangeEvent<HTMLInputElement>,
+		field: RegisterOptions,
+	) {
+		if (e.target?.files?.length) {
+			const file = e.target.files[0];
+			// ensure 5kb limit
+			if (file.size > 5 * 1024) {
+				setSelectedFile(null);
+				field.onChange?.('');
+				// TODO: Show error toast/message
+				console.error('File size exceeds 5kb limit');
+				return;
+			}
+			setSelectedFile(file);
+			// Handle the file here
+			const reader = new FileReader();
+			reader.onload = event => {
+				try {
+					JSON.parse(event.target?.result as string);
+					// Parse JSON to the form to check if it's valid
+					if (reader.result) {
+						field.onChange?.(btoa(reader.result.toString()));
+					}
+				} catch (error) {
+					console.error('Invalid JSON file');
+				}
+			};
+			reader.readAsText(file, 'UTF-8');
+		}
+	}
+
+	const outgoingForm = useForm<z.infer<typeof OutgoingSourceFormSchema>>({
+		resolver: zodResolver(OutgoingSourceFormSchema),
+		defaultValues: {
+			name: '',
+			body_function: {},
+			header_function: {},
+			pub_sub: {
+				type: '',
+				// @ts-expect-error the transform works
+				workers: '',
+				google: {
+					project_id: '',
+					subscription_id: '',
+					service_account: '',
+				},
+				kafka: {
+					brokers: [],
+					consumer_group_id: '',
+					topic_name: '',
+					auth: {
+						type: '',
+						tls: '',
+						username: '',
+						password: '',
+						hash: '',
+					},
+				},
+				sqs: {
+					queue_name: '',
+					access_key_id: '',
+					secret_key: '',
+					default_region: '',
+				},
+				amqp: {
+					schema: '',
+					host: '',
+					// @ts-expect-error the transform fixes this
+					port: '',
+					queue: '',
+					deadLetterExchange: '',
+					vhost: '',
+					auth: {
+						password: '',
+						user: '',
+					},
+					bindExchange: {
+						exchange: '',
+						routingKey: '""',
+					},
+				},
+			},
+			showKafkaAuth: false,
+			showAMQPAuth: false,
+			showAMQPBindExhange: false,
+		},
 		mode: 'onTouched',
 	});
 
-	async function saveOutgoingSource(raw: any) {
+	async function saveOutgoingSource(
+		raw: z.infer<typeof OutgoingSourceFormSchema>,
+	) {
 		console.log(raw);
 	}
 
+	function onFileInputDrop(
+		e: DragEvent<HTMLInputElement>,
+		field: RegisterOptions,
+	) {
+		e.preventDefault();
+		e.stopPropagation();
+		if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+			const file = e.dataTransfer.files[0];
+			if (file.size > 5 * 1024) {
+				// TODO: Show error toast/message
+				setSelectedFile(null);
+				console.error('File size exceeds 5kb limit');
+				return;
+			}
+			setSelectedFile(file);
+			const reader = new FileReader();
+			reader.onload = event => {
+				try {
+					// Parse JSON to the form to check if it's valid
+					JSON.parse(event.target?.result as string);
+					if (reader.result) {
+						field.onChange?.(btoa(reader.result.toString()));
+					}
+				} catch (error) {
+					console.error('Invalid JSON file');
+				}
+			};
+			reader.readAsText(file);
+		}
+	}
+
+	console.log(
+		outgoingForm.formState.isValid,
+		OutgoingSourceFormSchema.safeParse(outgoingForm.getValues()).error,
+	);
 	return (
 		<DashboardLayout showSidebar={false}>
 			<section className="flex flex-col p-2 max-w-[770px] min-w-[600px] w-full m-auto my-4 gap-y-6">
@@ -452,15 +881,12 @@ function RouteComponent() {
 				</div>
 
 				{project?.type == 'incoming' && (
-					<Form {...createIncomingSourceForm}>
+					<Form {...incomingForm}>
 						<form
-							onSubmit={createIncomingSourceForm.handleSubmit(
-								// @ts-expect-error it works. trust me bro
-								saveIncomingSource,
-							)}
+							onSubmit={incomingForm.handleSubmit(saveIncomingSource)}
 							className="w-full"
 						>
-							<div className="border border-neutral-4 rounded-8px p-6 relative w-full">
+							<div className="border border-neutral-4 rounded-8px p-6 w-full">
 								<div className="grid grid-cols-1 w-full gap-y-5">
 									<h3 className="font-semibold mb-5 text-xs text-neutral-10">
 										Pre-configured Sources
@@ -469,10 +895,10 @@ function RouteComponent() {
 										<ToggleGroup
 											type="single"
 											className="flex justify-start items-center gap-x-4"
-											value={createIncomingSourceForm.watch('type')}
+											value={incomingForm.watch('type')}
 											onValueChange={(v: SourceType) => {
-												createIncomingSourceForm.setValue('type', v);
-												createIncomingSourceForm.setValue(
+												incomingForm.setValue('type', v);
+												incomingForm.setValue(
 													'name',
 													`${v.charAt(0).toUpperCase()}${v.slice(1)} Source`,
 												);
@@ -483,7 +909,7 @@ function RouteComponent() {
 												aria-label="Toggle github"
 												className={cn(
 													'w-[60px] h-[60px] border border-neutral-6 px-4 py-[6px] rounded-8px hover:bg-white-100 !bg-white-100',
-													createIncomingSourceForm.watch('type') === 'github' &&
+													incomingForm.watch('type') === 'github' &&
 														'border-new.primary-400',
 												)}
 											>
@@ -497,8 +923,8 @@ function RouteComponent() {
 												aria-label="Toggle shopify"
 												className={cn(
 													'w-[60px] h-[60px] border border-neutral-6 px-4 py-[6px] rounded-8px hover:bg-white-100 !bg-white-100',
-													createIncomingSourceForm.watch('type') ===
-														'shopify' && 'border-new.primary-400',
+													incomingForm.watch('type') === 'shopify' &&
+														'border-new.primary-400',
 												)}
 											>
 												<img
@@ -511,8 +937,8 @@ function RouteComponent() {
 												aria-label="Toggle twitter"
 												className={cn(
 													'w-[60px] h-[60px] border border-neutral-6 px-4 py-[6px] rounded-8px hover:bg-white-100 !bg-white-100',
-													createIncomingSourceForm.watch('type') ===
-														'twitter' && 'border-new.primary-400',
+													incomingForm.watch('type') === 'twitter' &&
+														'border-new.primary-400',
 												)}
 											>
 												<img
@@ -526,7 +952,7 @@ function RouteComponent() {
 									<div>
 										<FormField
 											name="name"
-											control={createIncomingSourceForm.control}
+											control={incomingForm.control}
 											render={({ field, fieldState }) => (
 												<FormItem className="space-y-2">
 													<FormLabel className="text-neutral-9 text-xs">
@@ -554,20 +980,20 @@ function RouteComponent() {
 									<div>
 										<FormField
 											name="type"
-											control={createIncomingSourceForm.control}
+											control={incomingForm.control}
 											render={({ field }) => (
 												<FormItem className="space-y-2">
 													<FormLabel className="text-neutral-9 text-xs">
 														Source Verification
 													</FormLabel>
 													<Select
-														value={createIncomingSourceForm.watch('type')}
+														value={incomingForm.watch('type')}
 														onValueChange={(v: SourceType) => {
 															field.onChange(v);
 															if (
 																['github', 'shopify', 'twitter'].includes(v)
 															) {
-																createIncomingSourceForm.setValue(
+																incomingForm.setValue(
 																	'name',
 																	`${v.charAt(0).toUpperCase()}${v.slice(1)} Source`,
 																);
@@ -603,7 +1029,7 @@ function RouteComponent() {
 									</div>
 
 									{/* When source verification is HMAC */}
-									{createIncomingSourceForm.watch('type') == 'hmac' && (
+									{incomingForm.watch('type') == 'hmac' && (
 										<div className="grid grid-cols-2 gap-x-5 gap-y-4">
 											<p className="capitalize font-semibold text-xs col-span-full text-neutral-10">
 												Configure HMAC
@@ -611,7 +1037,7 @@ function RouteComponent() {
 
 											<FormField
 												name="config.encoding"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -649,7 +1075,7 @@ function RouteComponent() {
 
 											<FormField
 												name="config.hash"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -688,7 +1114,7 @@ function RouteComponent() {
 
 											<FormField
 												name="config.header"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -715,7 +1141,7 @@ function RouteComponent() {
 
 											<FormField
 												name="config.secret"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -742,7 +1168,7 @@ function RouteComponent() {
 									)}
 
 									{/* When source verification is basic auth */}
-									{createIncomingSourceForm.watch('type') == 'basic_auth' && (
+									{incomingForm.watch('type') == 'basic_auth' && (
 										<div className="grid grid-cols-2 gap-x-5 gap-y-4">
 											<p className="capitalize font-semibold text-xs col-span-full text-neutral-10">
 												Configure Basic Auth
@@ -750,7 +1176,7 @@ function RouteComponent() {
 
 											<FormField
 												name="config.username"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -777,7 +1203,7 @@ function RouteComponent() {
 
 											<FormField
 												name="config.password"
-												control={createOutgoingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -785,7 +1211,7 @@ function RouteComponent() {
 														</FormLabel>
 														<FormControl>
 															<Input
-																type="password"
+																type="text"
 																autoComplete="off"
 																placeholder="********"
 																{...field}
@@ -805,7 +1231,7 @@ function RouteComponent() {
 									)}
 
 									{/* When source verification is API Key */}
-									{createIncomingSourceForm.watch('type') == 'api_key' && (
+									{incomingForm.watch('type') == 'api_key' && (
 										<div className="grid grid-cols-2 gap-x-5 gap-y-4">
 											<p className="capitalize font-semibold text-xs col-span-full text-neutral-10">
 												Configure API Key
@@ -813,7 +1239,7 @@ function RouteComponent() {
 
 											<FormField
 												name="config.header_name"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -839,7 +1265,7 @@ function RouteComponent() {
 
 											<FormField
 												name="config.header_value"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -867,16 +1293,16 @@ function RouteComponent() {
 
 									{/* When source verification is github, twitter or shopify */}
 									{['github', 'shopify', 'twitter'].includes(
-										createIncomingSourceForm.watch('type'),
+										incomingForm.watch('type'),
 									) && (
 										<div className="grid grid-cols-1 gap-x-5 gap-y-4">
 											<p className="capitalize font-semibold text-xs col-span-full text-neutral-10">
-												{createIncomingSourceForm.watch('type')} Credentials
+												{incomingForm.watch('type')} Credentials
 											</p>
 
 											<FormField
 												name="config.secret"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -909,7 +1335,7 @@ function RouteComponent() {
 									{/* Checkboxes for custom response and idempotency */}
 									<div className="flex items-center gap-x-4">
 										<FormField
-											control={createIncomingSourceForm.control}
+											control={incomingForm.control}
 											name="showCustomResponse"
 											render={({ field }) => (
 												<FormItem>
@@ -925,7 +1351,7 @@ function RouteComponent() {
 										/>
 
 										<FormField
-											control={createIncomingSourceForm.control}
+											control={incomingForm.control}
 											name="showIdempotency"
 											render={({ field }) => (
 												<FormItem>
@@ -942,15 +1368,15 @@ function RouteComponent() {
 									</div>
 
 									{/* Custom Response */}
-									{createIncomingSourceForm.watch('showCustomResponse') && (
-										<div className="border-l-2 border-new.primary-25 pl-4 flex flex-col gap-y-4">
+									{incomingForm.watch('showCustomResponse') && (
+										<div className="border-l border-new.primary-25 pl-4 flex flex-col gap-y-4">
 											<h3 className="text-xs text-neutral-10 font-semibold">
 												Custom Response
 											</h3>
 
 											<FormField
 												name="custom_response.content_type"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -976,7 +1402,7 @@ function RouteComponent() {
 
 											<FormField
 												name="custom_response.body"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -1002,15 +1428,15 @@ function RouteComponent() {
 									)}
 
 									{/* Idempotency */}
-									{createIncomingSourceForm.watch('showIdempotency') && (
-										<div className="border-l-2 border-new.primary-25 pl-4 flex flex-col gap-y-4">
+									{incomingForm.watch('showIdempotency') && (
+										<div className="border-l border-new.primary-25 pl-4 flex flex-col gap-y-4">
 											<h3 className="text-xs text-neutral-10 font-semibold">
 												Idempotency Config
 											</h3>
 
 											<FormField
 												name="idempotency_keys"
-												control={createIncomingSourceForm.control}
+												control={incomingForm.control}
 												render={({ field, fieldState }) => (
 													<FormItem className="space-y-2">
 														<FormLabel className="flex items-center gap-x-1">
@@ -1066,7 +1492,7 @@ function RouteComponent() {
 								<Button
 									type="submit"
 									disabled={
-										!createIncomingSourceForm.formState.isValid ||
+										!incomingForm.formState.isValid ||
 										isCreating ||
 										!licenses.includes('WEBHOOK_TRANSFORMATIONS')
 									}
@@ -1082,26 +1508,22 @@ function RouteComponent() {
 				)}
 
 				{project?.type == 'outgoing' && (
-					<Form {...createOutgoingSourceForm}>
+					<Form {...outgoingForm}>
 						<form
-							onSubmit={createOutgoingSourceForm.handleSubmit(
-								saveOutgoingSource,
-							)}
+							onSubmit={outgoingForm.handleSubmit(saveOutgoingSource)}
 							className="w-full"
 						>
-							<div className="border border-neutral-4 rounded-8px p-6 relative w-full">
-								<div className="grid grid-cols-1 w-full  gap-y-5">
+							<div className="border border-neutral-4 rounded-8px p-6 w-full">
+								<div className="grid grid-cols-1 w-full gap-y-5">
 									<div>
 										<FormField
-											control={createOutgoingSourceForm.control}
+											control={outgoingForm.control}
 											name="name"
 											render={({ field, fieldState }) => (
-												<FormItem className="w-full relative block">
-													<div className="w-full mb-2 flex items-center justify-between">
-														<FormLabel className="text-xs/5 text-neutral-9">
-															Source name
-														</FormLabel>
-													</div>
+												<FormItem className="space-y-2">
+													<FormLabel className="text-xs/5 text-neutral-9">
+														Source name
+													</FormLabel>
 													<FormControl>
 														<Input
 															autoComplete="on"
@@ -1121,14 +1543,15 @@ function RouteComponent() {
 											)}
 										/>
 									</div>
+
 									<div>
 										<FormField
-											name="type"
-											control={createOutgoingSourceForm.control}
+											name="pub_sub.type"
+											control={outgoingForm.control}
 											render={({ field }) => (
 												<FormItem className="space-y-2">
 													<FormLabel className="text-neutral-9 text-xs">
-														Source Verification
+														Source Type
 													</FormLabel>
 													<Select
 														onValueChange={field.onChange}
@@ -1142,6 +1565,7 @@ function RouteComponent() {
 																/>
 															</SelectTrigger>
 														</FormControl>
+														<FormMessageWithErrorIcon />
 														<SelectContent className="shadow-none">
 															{pubSubTypes.map(type => (
 																<SelectItem
@@ -1160,13 +1584,14 @@ function RouteComponent() {
 											)}
 										/>
 									</div>
+
 									<div>
 										<FormField
-											control={createOutgoingSourceForm.control}
-											name="workers"
+											control={outgoingForm.control}
+											name="pub_sub.workers"
 											render={({ field, fieldState }) => (
 												<FormItem className="w-full block">
-													<div className="w-full mb-2 flex items-center justify-between">
+													<div className="w-full mb-2">
 														<FormLabel className="flex items-center gap-2">
 															<span className="text-xs/5 text-neutral-9 ">
 																Workers
@@ -1211,11 +1636,1025 @@ function RouteComponent() {
 										/>
 									</div>
 
-									{createOutgoingSourceForm.watch('type') == 'google' && (
-										<section>
-											<h3 className="text-xs font-semibold">
+									{outgoingForm.watch('pub_sub.type') == 'google' && (
+										<section className="grid grid-cols-2 gap-x-5 gap-y-4">
+											<h3 className="text-xs font-semibold col-span-full">
 												Configure Google Pub/Sub
 											</h3>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.google.project_id"
+													render={({ field, fieldState }) => (
+														<FormItem className="w-full relative block">
+															<div className="w-full mb-2">
+																<FormLabel className="text-xs/5 text-neutral-9">
+																	Project ID
+																</FormLabel>
+															</div>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.google.subscription_id"
+													render={({ field, fieldState }) => (
+														<FormItem className="w-full relative block">
+															<div className="w-full mb-2">
+																<FormLabel className="text-xs/5 text-neutral-9">
+																	Subscription ID
+																</FormLabel>
+															</div>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-full">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.google.service_account"
+													render={({ field }) => (
+														<FormItem className="w-full block">
+															<div className="w-full mb-2">
+																<FormLabel>
+																	<span className="text-xs/5 text-neutral-9">
+																		Service Account
+																	</span>
+
+																	<Tooltip>
+																		<TooltipTrigger
+																			asChild
+																			className="hover:cursor-pointer"
+																		>
+																			<Info
+																				size={12}
+																				className="ml-1 text-neutral-9 inline"
+																			/>
+																		</TooltipTrigger>
+																		<TooltipContent className="bg-white-100 border border-neutral-4">
+																			<p className="w-[300px] text-xs text-neutral-10">
+																				Service accounts provide a way to manage
+																				authentication into your Google Pub/Sub.
+																			</p>
+																		</TooltipContent>
+																	</Tooltip>
+																</FormLabel>
+															</div>
+															<FormControl>
+																<div className="border-dashed border-2 border-neutral-4 rounded-md hover:border-new.primary-100 transition-all cursor-pointer">
+																	<div className="relative h-[100px]">
+																		<div
+																			className="absolute"
+																			style={{ top: '15%', left: '30%' }}
+																		>
+																			<div className="flex flex-col items-center justify-center gap-2">
+																				<img
+																					src={uploadIcon}
+																					alt="upload"
+																					className="w-8 h-8"
+																				/>
+																				<p className="text-center text-xs text-neutral-11 mx-auto">
+																					<span className="text-primary-100 font-semibold">
+																						Click to upload
+																					</span>{' '}
+																					or drag and drop JSON (max 5kb)
+																				</p>
+																				{field.value && (
+																					<div className="flex items-center mt-2">
+																						<span className="text-xs text-neutral-10 w-full">
+																							File selected
+																							{selectedFile
+																								? `: ${selectedFile.name} (${(selectedFile.size / 1000).toFixed(2)}kB)`
+																								: ''}
+																						</span>
+																						<Button
+																							type="button"
+																							variant="ghost"
+																							size="sm"
+																							className="ml-2 p-5 h-auto hover:bg-transparent"
+																							onClick={() => {
+																								field.onChange('');
+																								const fileInput =
+																									document.getElementById(
+																										'service_account_file',
+																									) as HTMLInputElement;
+																								fileInput.value = '';
+																								setSelectedFile(null);
+																							}}
+																						>
+																							<svg
+																								width="14"
+																								height="14"
+																								className="fill-transparent stroke-destructive"
+																							>
+																								<use xlinkHref="#delete-icon2"></use>
+																							</svg>
+																						</Button>
+																					</div>
+																				)}
+																			</div>
+																		</div>
+																		<input
+																			name="pub_sub.google.service_account"
+																			type="file"
+																			id="service_account_file"
+																			className="opacity-0 w-full h-[80px] cursor-pointer"
+																			accept=".json"
+																			onChange={e =>
+																				onFileInputChange(e, field)
+																			}
+																			onDragOver={e => {
+																				e.preventDefault();
+																				e.stopPropagation();
+																			}}
+																			onDrop={e => onFileInputDrop(e, field)}
+																		/>
+																	</div>
+																</div>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+										</section>
+									)}
+
+									{outgoingForm.watch('pub_sub.type') == 'kafka' && (
+										<section className="grid grid-cols-2 gap-x-5 gap-y-4">
+											<h3 className="text-xs font-semibold col-span-full flex items-center justify-start gap-x-4">
+												<span>Configure Kafka</span>{' '}
+												<a
+													href="https://docs.getconvoy.io/product-manual/sources#kafka"
+													className="flex justify-start items-center gap-x-2"
+												>
+													<img
+														src={docIcon}
+														alt="convoy kafka docs"
+														className="h-4 w-4"
+													/>
+													<span className="font-medium text-xs text-new.primary-400 whitespace-normal">
+														Docs
+													</span>
+												</a>
+											</h3>
+											<div className="col-span-full">
+												<FormField
+													name="pub_sub.kafka.brokers"
+													control={outgoingForm.control}
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-10">
+																Broker Addresses
+															</FormLabel>
+															<FormControl>
+																<InputTags
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	name={field.name}
+																	onChange={field.onChange}
+																	value={field.value || []}
+																/>
+															</FormControl>
+															<p className="text-[10px] text-neutral-10 italic">
+																Set the value of each input with a coma (,)
+															</p>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													name="pub_sub.kafka.topic_name"
+													control={outgoingForm.control}
+													render={({ field, fieldState }) => (
+														<FormItem className="w-full space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Topic Name
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													name="pub_sub.kafka.consumer_group_id"
+													control={outgoingForm.control}
+													render={({ field, fieldState }) => (
+														<FormItem className="w-full space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Consumer ID
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div>
+												<FormField
+													name="showKafkaAuth"
+													control={outgoingForm.control}
+													render={({ field }) => (
+														<FormItem>
+															<FormControl>
+																<ConvoyCheckbox
+																	label={() => (
+																		<span className="font-semibold text-xs">
+																			Authentication
+																		</span>
+																	)}
+																	isChecked={field.value}
+																	onChange={field.onChange}
+																/>
+															</FormControl>
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="space-y-2 col-span-full pl-4 border-l border-l-new.primary-25">
+												{/* Authentication Type */}
+												{outgoingForm.watch('showKafkaAuth') && (
+													<div className="col-span-full">
+														<FormField
+															name="pub_sub.kafka.auth.type"
+															control={outgoingForm.control}
+															render={({ field }) => (
+																<FormItem className="w-full relative mb-6 block">
+																	<p className="text-xs/5 text-neutral-9 mb-2">
+																		Authentiation Type
+																	</p>
+																	<div className="flex w-full gap-x-6">
+																		{[
+																			{ label: 'plain', value: 'plain' },
+																			{ label: 'scram', value: 'scram' },
+																		].map(({ label, value }) => {
+																			return (
+																				<FormControl
+																					className="w-full"
+																					key={label}
+																				>
+																					<label
+																						className={cn(
+																							'cursor-pointer border border-primary-100 flex items-start gap-x-2 p-4 rounded-sm',
+																							field.value === value
+																								? 'border-new.primary-300 bg-[#FAFAFE]'
+																								: 'border-neutral-5',
+																						)}
+																						htmlFor={`kafka_auth_type_${label}`}
+																					>
+																						<span className="sr-only">
+																							{label}
+																						</span>
+																						<Input
+																							type="radio"
+																							id={`kafka_auth_type_${label}`}
+																							{...field}
+																							value={value}
+																							className="shadow-none h-4 w-fit"
+																						/>
+																						<div className="flex flex-col gap-y-1">
+																							<p className="w-full text-xs text-neutral-10 font-semibold">
+																								{label}
+																							</p>
+																						</div>
+																					</label>
+																				</FormControl>
+																			);
+																		})}
+																		<FormMessageWithErrorIcon />
+																	</div>
+																</FormItem>
+															)}
+														/>
+													</div>
+												)}
+
+												{/* TLS */}
+												{outgoingForm.watch('showKafkaAuth') && (
+													<div className="col-span-full">
+														<FormField
+															control={outgoingForm.control}
+															name="pub_sub.kafka.auth.tls"
+															render={({ field }) => (
+																<FormItem className="w-full relative mb-6 block">
+																	<p className="text-xs/5 text-neutral-9 mb-2">
+																		TLS
+																	</p>
+																	<div className="flex w-full gap-x-6">
+																		{[
+																			{ label: 'Enabled', value: 'enabled' },
+																			{ label: 'Disabled', value: 'disabled' },
+																		].map(({ label, value }) => {
+																			return (
+																				<FormControl
+																					className="w-full"
+																					key={label}
+																				>
+																					<label
+																						className={cn(
+																							'cursor-pointer border border-primary-100 flex items-start gap-x-2 p-4 rounded-sm',
+																							field.value === value
+																								? 'border-new.primary-300 bg-[#FAFAFE]'
+																								: 'border-neutral-5',
+																						)}
+																						htmlFor={`kafka_tls_${label}`}
+																					>
+																						<span className="sr-only">
+																							{label}
+																						</span>
+																						<Input
+																							type="radio"
+																							id={`kafka_tls_${label}`}
+																							{...field}
+																							value={value}
+																							className="shadow-none h-4 w-fit"
+																						/>
+																						<div className="flex flex-col gap-y-1">
+																							<p className="w-full text-xs text-neutral-10 font-semibold capitalize">
+																								{label}
+																							</p>
+																						</div>
+																					</label>
+																				</FormControl>
+																			);
+																		})}
+																	</div>
+																	<FormMessageWithErrorIcon />
+																</FormItem>
+															)}
+														/>
+													</div>
+												)}
+
+												{/* Username/Password */}
+												{outgoingForm.watch('showKafkaAuth') && (
+													<div className="col-span-full grid grid-cols-2 gap-x-5">
+														<div>
+															<FormField
+																name="pub_sub.kafka.auth.username"
+																control={outgoingForm.control}
+																render={({ field, fieldState }) => (
+																	<FormItem className="w-full space-y-2">
+																		<FormLabel className="text-xs/5 text-neutral-9">
+																			Username
+																		</FormLabel>
+																		<FormControl>
+																			<Input
+																				autoComplete="on"
+																				type="text"
+																				className={cn(
+																					'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																					fieldState.error
+																						? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																						: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																				)}
+																				{...field}
+																			/>
+																		</FormControl>
+																		<FormMessageWithErrorIcon />
+																	</FormItem>
+																)}
+															/>
+														</div>
+
+														<div>
+															<FormField
+																name="pub_sub.kafka.auth.password"
+																control={outgoingForm.control}
+																render={({ field, fieldState }) => (
+																	<FormItem className="w-full space-y-2">
+																		<FormLabel className="text-xs/5 text-neutral-9">
+																			Password
+																		</FormLabel>
+																		<FormControl>
+																			<Input
+																				autoComplete="on"
+																				type="text"
+																				className={cn(
+																					'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																					fieldState.error
+																						? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																						: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																				)}
+																				{...field}
+																			/>
+																		</FormControl>
+																		<FormMessageWithErrorIcon />
+																	</FormItem>
+																)}
+															/>
+														</div>
+													</div>
+												)}
+
+												{outgoingForm.watch('pub_sub.kafka.auth.type') ==
+													'scram' && (
+													<div className="col-span-1">
+														<FormField
+															name="pub_sub.kafka.auth.hash"
+															control={outgoingForm.control}
+															render={({ field }) => (
+																<FormItem className="space-y-2">
+																	<FormLabel className="text-neutral-9 text-xs">
+																		Hash
+																	</FormLabel>
+																	<Select
+																		onValueChange={field.onChange}
+																		defaultValue={field.value}
+																	>
+																		<FormControl>
+																			<SelectTrigger className="shadow-none h-12 focus:ring-0 text-neutral-9 text-xs">
+																				<SelectValue
+																					placeholder=""
+																					className="text-xs text-neutral-10"
+																				/>
+																			</SelectTrigger>
+																		</FormControl>
+																		<SelectContent className="shadow-none">
+																			{['SHA256', 'SHA512'].map(hash => (
+																				<SelectItem
+																					className="cursor-pointer text-xs py-3 hover:bg-transparent"
+																					value={hash}
+																					key={hash}
+																				>
+																					<span className="text-neutral-10">
+																						{hash}
+																					</span>
+																				</SelectItem>
+																			))}
+																		</SelectContent>
+																	</Select>
+																</FormItem>
+															)}
+														/>
+													</div>
+												)}
+											</div>
+										</section>
+									)}
+
+									{outgoingForm.watch('pub_sub.type') == 'sqs' && (
+										<section className="grid grid-cols-2 gap-x-5 gap-y-4">
+											<h3 className="text-xs font-semibold col-span-full">
+												Configure SQS
+											</h3>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.sqs.access_key_id"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<div>
+																<FormLabel className="text-xs/5 text-neutral-9">
+																	AWS Access Key ID
+																</FormLabel>
+															</div>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.sqs.secret_key"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																AWS Secret Access Key
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div>
+												<FormField
+													name="pub_sub.sqs.default_region"
+													control={outgoingForm.control}
+													render={({ field }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-neutral-9 text-xs">
+																AWS Region
+															</FormLabel>
+															<Select
+																name={field.name}
+																onValueChange={field.onChange}
+																defaultValue={field.value}
+															>
+																<FormControl>
+																	<SelectTrigger className="shadow-none h-12 focus:ring-0 text-neutral-9 text-xs">
+																		<SelectValue
+																			placeholder=""
+																			className="text-xs text-neutral-10"
+																		/>
+																	</SelectTrigger>
+																</FormControl>
+																<SelectContent className="shadow-none">
+																	{AWSRegions.map(region => (
+																		<SelectItem
+																			className="cursor-pointer text-xs py-3 hover:bg-transparent"
+																			value={region.uid}
+																			key={region.uid}
+																		>
+																			<span className="text-neutral-10">
+																				{region.name}
+																			</span>
+																		</SelectItem>
+																	))}
+																</SelectContent>
+															</Select>
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.sqs.queue_name"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Queue Name
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+										</section>
+									)}
+
+									{outgoingForm.watch('pub_sub.type') == 'amqp' && (
+										<section className="grid grid-cols-2 gap-x-5 gap-y-4">
+											<h3 className="text-xs font-semibold col-span-full">
+												Configure AMQP / RabbitMQ
+											</h3>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.amqp.schema"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Schema
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.amqp.host"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Host
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.amqp.port"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Port
+															</FormLabel>
+															<FormControl>
+																<Input
+																	type="number"
+																	inputMode="numeric"
+																	pattern="\d*"
+																	step={1}
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.amqp.queue"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Queue
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.amqp.deadLetterExchange"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Dead Letter Exchange
+																<Tooltip>
+																	<TooltipTrigger
+																		asChild
+																		className="hover:cursor-pointer"
+																	>
+																		<Info
+																			size={12}
+																			className="ml-1 text-neutral-9 inline"
+																		/>
+																	</TooltipTrigger>
+																	<TooltipContent className="bg-white-100 border border-neutral-4">
+																		<p className="w-[300px] text-xs text-neutral-10">
+																			In case of failure, the message will be
+																			published to the dlx, please note that
+																			this will not declare the dlx.
+																		</p>
+																	</TooltipContent>
+																</Tooltip>
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											<div className="col-span-1">
+												<FormField
+													control={outgoingForm.control}
+													name="pub_sub.amqp.vhost"
+													render={({ field, fieldState }) => (
+														<FormItem className="space-y-2">
+															<FormLabel className="text-xs/5 text-neutral-9">
+																Virtual Host
+															</FormLabel>
+															<FormControl>
+																<Input
+																	autoComplete="on"
+																	type="text"
+																	className={cn(
+																		'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																		fieldState.error
+																			? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																			: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																	)}
+																	{...field}
+																/>
+															</FormControl>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											{/* Checkboxes for Authentication and Bind Exchange */}
+											<div className="flex items-center gap-x-4">
+												<FormField
+													control={outgoingForm.control}
+													name="showAMQPAuth"
+													render={({ field }) => (
+														<FormItem>
+															<FormControl>
+																<ConvoyCheckbox
+																	label="Authentication"
+																	isChecked={field.value}
+																	onChange={field.onChange}
+																/>
+															</FormControl>
+														</FormItem>
+													)}
+												/>
+
+												<FormField
+													control={outgoingForm.control}
+													name="showAMQPBindExhange"
+													render={({ field }) => (
+														<FormItem>
+															<FormControl>
+																<ConvoyCheckbox
+																	label="Bind Exchange"
+																	isChecked={field.value}
+																	onChange={field.onChange}
+																/>
+															</FormControl>
+														</FormItem>
+													)}
+												/>
+											</div>
+
+											{/* AMQP Username/Password */}
+											{outgoingForm.watch('showAMQPAuth') && (
+												<div className="col-span-full grid grid-cols-2 gap-x-5 gap-y-4 pl-4 border-l border-new.primary-25">
+													<h4 className="text-xs font-semibold col-span-full">
+														Authentication
+													</h4>
+													<div>
+														<FormField
+															name="pub_sub.amqp.auth.user"
+															control={outgoingForm.control}
+															render={({ field, fieldState }) => (
+																<FormItem className="w-full space-y-2">
+																	<FormLabel className="text-xs/5 text-neutral-9">
+																		Username
+																	</FormLabel>
+																	<FormControl>
+																		<Input
+																			autoComplete="on"
+																			type="text"
+																			className={cn(
+																				'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																				fieldState.error
+																					? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																					: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																			)}
+																			{...field}
+																		/>
+																	</FormControl>
+																	<FormMessageWithErrorIcon />
+																</FormItem>
+															)}
+														/>
+													</div>
+
+													<div>
+														<FormField
+															name="pub_sub.amqp.auth.password"
+															control={outgoingForm.control}
+															render={({ field, fieldState }) => (
+																<FormItem className="w-full space-y-2">
+																	<FormLabel className="text-xs/5 text-neutral-9">
+																		Password
+																	</FormLabel>
+																	<FormControl>
+																		<Input
+																			autoComplete="on"
+																			type="text"
+																			className={cn(
+																				'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																				fieldState.error
+																					? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																					: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																			)}
+																			{...field}
+																		/>
+																	</FormControl>
+																	<FormMessageWithErrorIcon />
+																</FormItem>
+															)}
+														/>
+													</div>
+												</div>
+											)}
+
+											{/* AMQP Binding Exchange*/}
+											{outgoingForm.watch('showAMQPBindExhange') && (
+												<div className="col-span-full grid grid-cols-2 gap-x-5 gap-y-4 pl-4 border-l border-new.primary-25">
+													<h4 className="text-xs font-semibold col-span-full">
+														Bind Exchange
+													</h4>
+
+													<div>
+														<FormField
+															name="pub_sub.amqp.bindExchange.exchange"
+															control={outgoingForm.control}
+															render={({ field, fieldState }) => (
+																<FormItem className="w-full space-y-2">
+																	<FormLabel className="text-xs/5 text-neutral-9">
+																		Exchange
+																	</FormLabel>
+																	<FormControl>
+																		<Input
+																			autoComplete="on"
+																			type="text"
+																			className={cn(
+																				'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																				fieldState.error
+																					? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																					: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																			)}
+																			{...field}
+																		/>
+																	</FormControl>
+																	<FormMessageWithErrorIcon />
+																</FormItem>
+															)}
+														/>
+													</div>
+
+													<div>
+														<FormField
+															name="pub_sub.amqp.bindExchange.routingKey"
+															control={outgoingForm.control}
+															render={({ field, fieldState }) => (
+																<FormItem className="w-full space-y-2">
+																	<FormLabel className="text-xs/5 text-neutral-9">
+																		Routing Key
+																	</FormLabel>
+																	<FormControl>
+																		<Input
+																			autoComplete="on"
+																			type="text"
+																			className={cn(
+																				'mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25',
+																				fieldState.error
+																					? 'border-destructive focus-visible:ring-0 hover:border-destructive'
+																					: ' hover:border-new.primary-100 focus:border-new.primary-300',
+																			)}
+																			{...field}
+																			// TODO default value is `""`
+																		/>
+																	</FormControl>
+																	<FormMessageWithErrorIcon />
+																</FormItem>
+															)}
+														/>
+													</div>
+												</div>
+											)}
 										</section>
 									)}
 								</div>
@@ -1225,7 +2664,9 @@ function RouteComponent() {
 								<Button
 									type="submit"
 									disabled={
-										isCreating || !licenses.includes('WEBHOOK_TRANSFORMATIONS')
+										isCreating ||
+										!licenses.includes('WEBHOOK_TRANSFORMATIONS') ||
+										!outgoingForm.formState.isValid
 									}
 									variant="ghost"
 									className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
@@ -1239,14 +2680,17 @@ function RouteComponent() {
 				)}
 			</section>
 
-			<Dialog open={hasCreatedIncomingSource} onOpenChange={(isOpen) => {
-				if(!isOpen){
-					return navigate({
-						to: "/projects/$projectId/sources",
-						params: {projectId}
-					})
-				}
-			}}>
+			<Dialog
+				open={hasCreatedIncomingSource}
+				onOpenChange={isOpen => {
+					if (!isOpen) {
+						return navigate({
+							to: '/projects/$projectId/sources',
+							params: { projectId },
+						});
+					}
+				}}
+			>
 				<DialogContent
 					className="max-w-[480px] rounded-lg p-4"
 					aria-describedby={undefined}

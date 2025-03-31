@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
-import { type ChangeEventHandler } from 'react';
+import { type ChangeEventHandler, type ComponentType } from 'react';
 
 /**
  * Use as a child of <FormControl> in react-hook-form
  */
 export function ConvoyCheckbox(props: {
-	label: string
+	label: string | ComponentType;
 	isChecked: boolean;
 	onChange: ChangeEventHandler<HTMLInputElement>;
 	className?: string;
@@ -25,7 +25,7 @@ export function ConvoyCheckbox(props: {
 				<svg
 					className={cn(
 						'absolute w-3 h-3 mt-1 hidden peer-checked:block top-[0.5px] right-[1px]',
-						props.className && props.className
+						props.className && props.className,
 					)}
 					xmlns="http://www.w3.org/2000/svg"
 					viewBox="0 0 24 24"
@@ -39,7 +39,11 @@ export function ConvoyCheckbox(props: {
 				</svg>
 			</div>
 
-			<span className="block text-neutral-9 text-xs">{props.label}</span>
+			{typeof props.label === 'string' ? (
+				<span className="block text-neutral-9 text-xs">{props.label}</span>
+			) : (
+				<props.label/>
+			)}
 		</label>
 	);
 }

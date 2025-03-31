@@ -657,7 +657,7 @@ function EndpointsPageContent() {
 									if (index != arr.length - 1) return null;
 									return (
 										<div key={index} className="mt-4">
-											<p className="text-xs text-neutral-10 mb-8px">Secret</p>
+											<p className="text-xs text-neutral-10 mb-2">Secret</p>
 											<div className="flex mt-2 border items-center rounded-md">
 												<p className="p-3 bg-gray-100  rounded flex-1 text-base text-neutral-10 font-normal truncate overflow-auto">
 													{secret.value}
