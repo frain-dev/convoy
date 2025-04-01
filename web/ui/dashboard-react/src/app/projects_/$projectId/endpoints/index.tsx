@@ -52,12 +52,16 @@ import { endpointsService } from '@/services/endpoints.service';
 import type { ENDPOINT } from '@/models/endpoint.model';
 import type { Pagination } from '@/models/global.model';
 
+import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import viewEventsImg from '../../../../../assets/svg/view-events-icon.svg';
 import searchIcon from '../../../../../assets/svg/search-icon.svg';
 import { ConvoyLoader } from '@/components/convoy-loader';
 
 export const Route = createFileRoute('/projects_/$projectId/endpoints/')({
 	component: ListEndpointsPage,
+	beforeLoad({ context }) {
+		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
+	},
 });
 
 const ExpireSecretFormSchema = z.object({
@@ -648,7 +652,7 @@ function EndpointsPageContent() {
 									if (index != arr.length - 1) return null;
 									return (
 										<div key={index} className="mt-4">
-											<p className="text-xs text-neutral-10 mb-8px">Secret</p>
+											<p className="text-xs text-neutral-10 mb-2">Secret</p>
 											<div className="flex mt-2 border items-center rounded-md">
 												<p className="p-3 bg-gray-100  rounded flex-1 text-base text-neutral-10 font-normal truncate overflow-auto">
 													{secret.value}
