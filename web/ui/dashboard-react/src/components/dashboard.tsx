@@ -472,7 +472,7 @@ function ProjectLinks() {
 		},
 		{
 			name: 'Sources',
-			route: '/',
+			route: `/projects/${project?.uid}/sources`,
 		},
 		{
 			name: 'Subscriptions',
@@ -504,7 +504,6 @@ function ProjectLinks() {
 						{links.map(link => {
 							return (
 								<li key={link.name} className="mb-1">
-									{/* TODO change to link route */}
 									<Link
 										to={link.route}
 										className="flex hover:bg-neutral-3 py-2 pr-3 pl-2 rounded-sm"
