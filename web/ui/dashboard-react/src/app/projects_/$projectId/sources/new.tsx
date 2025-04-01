@@ -61,6 +61,19 @@ import twitterIcon from '../../../../../assets/img/twitter.png';
 import docIcon from '../../../../../assets/img/doc-icon-primary.svg';
 import modalCloseIcon from '../../../../../assets/svg/modal-close-icon.svg';
 
+type FuncOutput = {
+	previous: Record<string, unknown> | null | string;
+	current: Record<string, unknown> | null | string;
+};
+
+const editorOptions = {
+	formatOnType: true,
+	formatOnPaste: true,
+	minimap: { enabled: false },
+	scrollBeyondLastLine: false,
+	fontSize: 12,
+};
+
 export const Route = createFileRoute('/projects_/$projectId/sources/new')({
 	component: RouteComponent,
 	async loader() {
@@ -589,6 +602,8 @@ const defaultBody = {
 	description: 'This is sample data #1',
 };
 
+const defaultOutput = { previous: '', current: '' };
+
 function RouteComponent() {
 	const navigate = useNavigate();
 	const { project } = useProjectStore();
@@ -603,6 +618,7 @@ function RouteComponent() {
 		useState(false);
 
 	// Transform function state variables
+	// TODO use a reducer hook
 	const [isTestingFunction, setIsTestingFunction] = useState(false);
 	const [isTransformPassed, setIsTransformPassed] = useState(false);
 	const [showConsole, setShowConsole] = useState(true);
@@ -610,7 +626,7 @@ function RouteComponent() {
 		useState<Record<string, unknown>>(defaultBody);
 	const [headerPayload, setHeaderPayload] =
 		useState<Record<string, unknown>>(defaultBody);
-	const [transformFunctionBody, setTransformFunctionBody] = useState<string>(
+	const [transformFnBody, setTransformFnBody] = useState<string>(
 		`/*  1. While you can write multiple functions, the main
    function called for your transformation is the transform function.
 
@@ -649,9 +665,8 @@ function transform(payload) {
     }
 }`,
 	);
-	const [transformFunctionHeader, setTransformFunctionHeader] =
-		useState<string>(
-			`/* 1. While you can write multiple functions, the main function
+	const [transformFnHeader, setTransformFnHeader] = useState<string>(
+		`/* 1. While you can write multiple functions, the main function
 called for your transformation is the transform function.
 
 2. The only argument acceptable in the transform function is
@@ -666,20 +681,14 @@ function transform(payload) {
 // Transform function here
 return payload;
 }`,
-		);
-	const [bodyOutput, setBodyOutput] = useState<{
-		previous: Record<string, unknown> | null | string;
-		current: Record<string, unknown> | null | string;
-	}>({ previous: '', current: '' });
-	const [headerOutput, setHeaderOutput] = useState<{
-		previous: Record<string, unknown> | null | string;
-		current: Record<string, unknown> | null | string;
-	}>({ previous: '', current: '' });
+	);
+	const [bodyOutput, setBodyOutput] = useState<FuncOutput>(defaultOutput);
+	const [headerOutput, setHeaderOutput] = useState<FuncOutput>(defaultOutput);
 	const [bodyLogs, setBodyLogs] = useState<string[]>([]);
 	const [headerLogs, setHeaderLogs] = useState<string[]>([]);
-	const [transformFunction, setTransformFunction] = useState<null | string>();
-	const [headerTransformFunction, setHeaderTransformFunction] =
-		useState<null | string>();
+	const [transformFn, setTransformFn] = useState<string>();
+	const [headerTransformFn, setHeaderTransformFn] = useState<string>();
+	const [hasSavedFn, setHasSavedFn] = useState(false);
 
 	type SourceType = (typeof sourceVerifications)[number]['uid'];
 
@@ -853,6 +862,37 @@ return payload;
 		}
 	}
 
+	function onFileInputDrop(
+		e: DragEvent<HTMLInputElement>,
+		field: RegisterOptions,
+	) {
+		e.preventDefault();
+		e.stopPropagation();
+		if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+			const file = e.dataTransfer.files[0];
+			if (file.size > 5 * 1024) {
+				// TODO: Show error toast/message
+				setSelectedFile(null);
+				console.error('File size exceeds 5kb limit');
+				return;
+			}
+			setSelectedFile(file);
+			const reader = new FileReader();
+			reader.onload = event => {
+				try {
+					// Parse JSON to the form to check if it's valid
+					JSON.parse(event.target?.result as string);
+					if (reader.result) {
+						field.onChange?.(btoa(reader.result.toString()));
+					}
+				} catch (error) {
+					console.error('Invalid JSON file');
+				}
+			};
+			reader.readAsText(file);
+		}
+	}
+
 	const outgoingForm = useForm<z.infer<typeof OutgoingSourceFormSchema>>({
 		resolver: zodResolver(OutgoingSourceFormSchema),
 		defaultValues: {
@@ -917,8 +957,7 @@ return payload;
 	function transformOutgoingSource(
 		raw: z.infer<typeof OutgoingSourceFormSchema>,
 	) {
-		console.log(transformFunctionBody)
-		const payload  = {
+		const payload = {
 			name: raw.name,
 			type: raw.type,
 			is_disabled: true,
@@ -926,8 +965,9 @@ return payload;
 				workers: raw.pub_sub.workers,
 				type: raw.pub_sub.type,
 			},
-			body_function: transformFunctionBody,
-			header_function: transformFunctionHeader,
+			body_function: raw.showTransform && transformFn ? transformFn : null,
+			header_function:
+				raw.showTransform && headerTransformFn ? headerTransformFn : null,
 		};
 
 		if (raw.pub_sub.type == 'google') {
@@ -986,8 +1026,7 @@ return payload;
 		setIsTestingFunction(true);
 
 		const payload = type === 'body' ? transformBodyPayload : headerPayload;
-		const transformFunc =
-			type === 'body' ? transformFunctionBody : transformFunctionHeader;
+		const transformFunc = type === 'body' ? transformFnBody : transformFnHeader;
 
 		try {
 			// Call the sources service to test the transform function
@@ -1025,9 +1064,9 @@ return payload;
 			setShowConsole(bodyLogs.length || headerLogs.length ? true : false);
 
 			if (type === 'body') {
-				setTransformFunction(transformFunc);
+				setTransformFn(transformFunc);
 			} else {
-				setHeaderTransformFunction(transformFunc);
+				setHeaderTransformFn(transformFunc);
 			}
 		} catch (error) {
 			console.error(error);
@@ -1054,37 +1093,6 @@ return payload;
 		// } finally {
 		// 	setIsCreating(false);
 		// }
-	}
-
-	function onFileInputDrop(
-		e: DragEvent<HTMLInputElement>,
-		field: RegisterOptions,
-	) {
-		e.preventDefault();
-		e.stopPropagation();
-		if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-			const file = e.dataTransfer.files[0];
-			if (file.size > 5 * 1024) {
-				// TODO: Show error toast/message
-				setSelectedFile(null);
-				console.error('File size exceeds 5kb limit');
-				return;
-			}
-			setSelectedFile(file);
-			const reader = new FileReader();
-			reader.onload = event => {
-				try {
-					// Parse JSON to the form to check if it's valid
-					JSON.parse(event.target?.result as string);
-					if (reader.result) {
-						field.onChange?.(btoa(reader.result.toString()));
-					}
-				} catch (error) {
-					console.error('Invalid JSON file');
-				}
-			};
-			reader.readAsText(file);
-		}
 	}
 
 	return (
@@ -2889,7 +2897,7 @@ return payload;
 
 									<hr />
 
-									{/* <div className="flex items-center gap-x-4">
+									<div className="flex items-center gap-x-4">
 										<FormField
 											control={outgoingForm.control}
 											name="showTransform"
@@ -2909,36 +2917,38 @@ return payload;
 												</FormItem>
 											)}
 										/>
-									</div> */}
-
-									{/* {outgoingForm.watch('showTransform') && ( */}
-									<div className="pl-4 border-l border-l-new.primary-25 flex justify-between items-center">
-										<div className="flex flex-col gap-y-2 justify-center">
-											<p className="text-neutral-12 font-semibold text-xs">
-												Transform
-											</p>
-											<p className="text-[10px] text-neutral-10">
-												Transform request body of events with a JavaScript
-												function.
-											</p>
-										</div>
-										<div>
-											<Button
-												type="button"
-												variant="outline"
-												size="sm"
-												disabled={!licenses.includes('WEBHOOK_TRANSFORMATIONS')}
-												className="text-xs text-neutral-10 shadow-none hover:text-neutral-10 hover:bg-white-100"
-												onClick={e => {
-													e.stopPropagation();
-													setShowTransformFunctionDialog(true);
-												}}
-											>
-												Open Editor
-											</Button>
-										</div>
 									</div>
-									{/* )} */}
+
+									{outgoingForm.watch('showTransform') && (
+										<div className="pl-4 border-l border-l-new.primary-25 flex justify-between items-center">
+											<div className="flex flex-col gap-y-2 justify-center">
+												<p className="text-neutral-12 font-semibold text-xs">
+													Transform
+												</p>
+												<p className="text-[10px] text-neutral-10">
+													Transform request body of events with a JavaScript
+													function.
+												</p>
+											</div>
+											<div>
+												<Button
+													type="button"
+													variant="outline"
+													size="sm"
+													disabled={
+														!licenses.includes('WEBHOOK_TRANSFORMATIONS')
+													}
+													className="text-xs text-neutral-10 shadow-none hover:text-neutral-10 hover:bg-white-100"
+													onClick={e => {
+														e.stopPropagation();
+														setShowTransformFunctionDialog(true);
+													}}
+												>
+													Open Editor
+												</Button>
+											</div>
+										</div>
+									)}
 								</div>
 							</div>
 							{/* Submit Button */}
@@ -2961,7 +2971,7 @@ return payload;
 					</Form>
 				)}
 			</section>
-
+			{/* Reate Incoming Source Response Dialog */}
 			<Dialog
 				open={hasCreatedIncomingSource}
 				onOpenChange={isOpen => {
@@ -3028,6 +3038,11 @@ return payload;
 			<Dialog
 				open={showTransformFunctionDialog}
 				onOpenChange={open => {
+					if (!open && !hasSavedFn) {
+						alert('You have not saved your function'); // TODO use toast instead
+						setShowTransformFunctionDialog(false);
+						return;
+					}
 					if (!open) setShowTransformFunctionDialog(false);
 				}}
 			>
@@ -3047,7 +3062,10 @@ return payload;
 									variant="ghost"
 									size={'sm'}
 									className="px-4 py-2 bg-new.primary-400 text-white-100 hover:bg-new.primary-400 hover:text-white-100 text-xs"
-									onClick={() => setShowTransformFunctionDialog(false)}
+									onClick={() => {
+										setHasSavedFn(true);
+										setShowTransformFunctionDialog(false);
+									}}
 									disabled={!isTransformPassed}
 								>
 									<SaveIcon className="stroke-white-100" />
@@ -3075,7 +3093,7 @@ return payload;
 											<span className="text-sm">Header</span>
 										</TabsTrigger>
 									</TabsList>
-									{/* Body */}
+									{/* Body Tab*/}
 									<TabsContent value="body">
 										<div className="flex w-full border border-neutral-4 rounded-lg">
 											<div className="flex flex-col w-1/2 border-r border-neutral-4">
@@ -3098,13 +3116,7 @@ return payload;
 																	JSON.parse(value || '{}'),
 																)
 															}
-															options={{
-																formatOnType: true,
-																formatOnPaste: true,
-																minimap: { enabled: false },
-																scrollBeyondLastLine: false,
-																fontSize: 12,
-															}}
+															options={editorOptions}
 														/>
 													</div>
 												</div>
@@ -3139,12 +3151,7 @@ return payload;
 																				)
 																			: `${bodyOutput.current}`
 																	}
-																	options={{
-																		readOnly: true,
-																		minimap: { enabled: false },
-																		scrollBeyondLastLine: false,
-																		fontSize: 12,
-																	}}
+																	options={{ ...editorOptions, readOnly: true }}
 																/>
 															</TabsContent>
 															{/* Body Diff */}
@@ -3171,13 +3178,7 @@ return payload;
 																				)
 																			: `${bodyOutput.current}`
 																	}
-																	options={{
-																		readOnly: true,
-																		minimap: { enabled: false },
-																		scrollBeyondLastLine: false,
-																		renderSideBySide: true,
-																		fontSize: 12,
-																	}}
+																	options={{ ...editorOptions, readOnly: true }}
 																/>
 															</TabsContent>
 														</div>
@@ -3192,7 +3193,7 @@ return payload;
 													<Button
 														variant="outline"
 														size="sm"
-														className="h-6 py-0 px-2 text-xs border border-new.primary-300 shadow-none text-new.primary-300 gap-1 hover:text-new.primary-300 hover:bg-white-100"
+														className="h-6 py-0 px-2 text-xs border border-new.primary-300 text-new.primary-300 gap-1 hover:text-new.primary-300 hover:bg-white-100 shadow-none"
 														disabled={isTestingFunction}
 														onClick={() => {
 															setShowConsole(true);
@@ -3225,17 +3226,12 @@ return payload;
 													<Editor
 														height="100%"
 														language="javascript"
-														value={transformFunctionBody}
-														onChange={value =>
-															setTransformFunctionBody(value || '')
-														}
-														options={{
-															formatOnType: true,
-															formatOnPaste: true,
-															minimap: { enabled: false },
-															scrollBeyondLastLine: false,
-															fontSize: 12,
+														value={transformFnBody}
+														onChange={value => {
+															setTransformFnBody(value || '');
+															setHasSavedFn(false);
 														}}
+														options={editorOptions}
 													/>
 												</div>
 
@@ -3283,7 +3279,7 @@ return payload;
 													<div className="text-xs text-neutral-11 border-b border-neutral-4 p-3 rounded-tl-lg">
 														Input
 													</div>
-													{/* Header Input Transform */}
+													{/* Header Input */}
 													<div className="h-[300px]">
 														<Editor
 															height="300px"
@@ -3292,13 +3288,7 @@ return payload;
 															onChange={value =>
 																setHeaderPayload(JSON.parse(value || '{}'))
 															}
-															options={{
-																formatOnType: true,
-																formatOnPaste: true,
-																minimap: { enabled: false },
-																scrollBeyondLastLine: false,
-																fontSize: 12,
-															}}
+															options={{ ...editorOptions, readOnly: false }}
 														/>
 													</div>
 												</div>
@@ -3324,38 +3314,41 @@ return payload;
 																	height="336px"
 																	language="json"
 																	value={
-																		typeof headerOutput === 'object'
-																			? JSON.stringify(headerOutput, null, 2)
-																			: String(headerOutput)
+																		typeof headerOutput.current === 'object'
+																			? JSON.stringify(
+																					headerOutput.current,
+																					null,
+																					2,
+																				)
+																			: String(headerOutput.current)
 																	}
-																	options={{
-																		formatOnType: true,
-																		formatOnPaste: true,
-																		readOnly: true,
-																		minimap: { enabled: false },
-																		scrollBeyondLastLine: false,
-																		fontSize: 12,
-																	}}
+																	options={{ ...editorOptions, readOnly: true }}
 																/>
 															</div>
 														</TabsContent>
 														<TabsContent value="diff">
-															<Editor
+															<DiffEditor
 																height="336px"
 																language="json"
-																value={
-																	typeof headerOutput === 'object'
-																		? JSON.stringify(headerOutput, null, 2)
-																		: String(headerOutput)
+																original={
+																	typeof headerOutput.previous === 'object'
+																		? JSON.stringify(
+																				headerOutput.previous,
+																				null,
+																				2,
+																			)
+																		: String(headerOutput.previous)
 																}
-																options={{
-																	formatOnType: true,
-																	formatOnPaste: true,
-																	readOnly: true,
-																	minimap: { enabled: false },
-																	scrollBeyondLastLine: false,
-																	fontSize: 12,
-																}}
+																modified={
+																	typeof headerOutput.current === 'object'
+																		? JSON.stringify(
+																				headerOutput.current,
+																				null,
+																				2,
+																			)
+																		: String(headerOutput.current)
+																}
+																options={{ ...editorOptions, readOnly: true }}
 															/>
 														</TabsContent>
 													</Tabs>
@@ -3367,8 +3360,8 @@ return payload;
 													<Button
 														variant="outline"
 														size="sm"
-														className="h-6 py-0 px-2 text-xs"
 														disabled={isTestingFunction}
+														className="h-6 py-0 px-2 text-xs border border-new.primary-300 text-new.primary-300 gap-1 hover:text-new.primary-300 hover:bg-white-100 shadow-none"
 														onClick={() => testTransformFunction('header')}
 													>
 														<svg
@@ -3377,7 +3370,7 @@ return payload;
 															viewBox="0 0 10 11"
 															fill="none"
 															xmlns="http://www.w3.org/2000/svg"
-															className="mr-1.5"
+															className=""
 														>
 															<path
 																d="M1.66797 5.5004V4.01707C1.66797 2.1754 2.97214 1.42124 4.56797 2.34207L5.85547 3.08374L7.14297 3.8254C8.7388 4.74624 8.7388 6.25457 7.14297 7.1754L5.85547 7.91707L4.56797 8.65874C2.97214 9.57957 1.66797 8.8254 1.66797 6.98374V5.5004Z"
@@ -3397,17 +3390,12 @@ return payload;
 													<Editor
 														height="100%"
 														language="javascript"
-														value={transformFunctionHeader}
-														onChange={value =>
-															setTransformFunctionHeader(value || '')
-														}
-														options={{
-															formatOnType: true,
-															formatOnPaste: true,
-															minimap: { enabled: false },
-															scrollBeyondLastLine: false,
-															fontSize: 12,
+														value={transformFnHeader}
+														onChange={value => {
+															setTransformFnHeader(value || '');
+															setHasSavedFn(false);
 														}}
+														options={editorOptions}
 													/>
 												</div>
 
