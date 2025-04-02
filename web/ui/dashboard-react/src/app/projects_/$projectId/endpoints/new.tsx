@@ -226,7 +226,7 @@ function CreateEndpointPage() {
 
 		try {
 			// Create new endpoint
-			const response = await endpointsService.addEndpoint(endpointValue);
+			await endpointsService.addEndpoint(endpointValue);
 			// toast.success(response.message || 'Endpoint created successfully');
 
 			reset();

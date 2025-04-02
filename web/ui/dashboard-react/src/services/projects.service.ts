@@ -5,6 +5,8 @@ import type {
 	CreateProjectResponse,
 	EventType,
 } from '@/models/project.model';
+import type { SOURCE } from '@/models/source';
+import type { PaginatedResult, PaginationCursor } from '@/models/global.model';
 
 type CreateProjectParams = {
 	name: string;
@@ -133,7 +135,7 @@ export async function deleteProject(
 }
 
 export async function getEventTypes(
-	_uid: string,
+	_projectId: string,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
 	const res = await deps.httpReq<{ event_types: Array<EventType> }>({
@@ -152,7 +154,7 @@ type CreateEventTypeParams = {
 };
 
 export async function createEventType(
-	_uid: string,
+	_projectId: string,
 	eventType: CreateEventTypeParams,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
@@ -167,11 +169,11 @@ export async function createEventType(
 }
 
 export async function deprecateEventType(
-	uid: string,
+	eventUid: string,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
 	const res = await deps.httpReq<null>({
-		url: `/event-types/${uid}/deprecate`,
+		url: `/event-types/${eventUid}/deprecate`,
 		method: 'post',
 		body: {},
 		level: 'org_project',
@@ -184,7 +186,7 @@ export async function regenerateAPIKey(
 	_projectId: string,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
-	const res = await deps.httpReq<{key:string, uid: string}>({
+	const res = await deps.httpReq<{ key: string; uid: string }>({
 		url: `/security/keys/regenerate`,
 		method: 'put',
 		body: null,

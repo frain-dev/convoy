@@ -17,3 +17,9 @@ export interface PaginatedResult<T> {
 	content: Array<T>;
 	pagination: Pagination;
 }
+
+export interface PaginationCursor {
+	next_page_cursor?: string;
+	prev_page_cursor?: string;
+	direction?: 'next' | 'prev';
+}

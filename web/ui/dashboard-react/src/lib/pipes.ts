@@ -48,3 +48,15 @@ export function groupItemsByDate<T>(
 
 	return sortedGroup;
 }
+
+export function stringToJson(str: string) {
+	if (!str) return null;
+	try {
+		const jsonObject = JSON.parse(str);
+		return jsonObject;
+	} catch (error) {
+		console.error(error);
+		// returning `undefined` as err value because `undefined` is invalid JSON
+		return undefined;
+	}
+}

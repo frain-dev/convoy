@@ -12,7 +12,7 @@ export function ConvoyCheckbox(props: {
 	disabled?: boolean
 }) {
 	return (
-		<label className="flex items-center gap-2 hover:cursor-pointer">
+		<label className={cn("flex items-center gap-2 hover:cursor-pointer", props.disabled && "opacity-50")}>
 			<div className="relative">
 				<input
 					type="checkbox"

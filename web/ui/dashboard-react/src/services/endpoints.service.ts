@@ -12,10 +12,8 @@ type RequestBody = Record<
 	| undefined
 >;
 
-export async function addEndpoint(
-	body: Record<string, unknown>,
-): Promise<HttpResponse<{ data: ENDPOINT; message: string }>> {
-	return request<{ data: ENDPOINT; message: string }>({
+export async function addEndpoint(body: Record<string, unknown>) {
+	return request<ENDPOINT>({
 		url: '/endpoints',
 		method: 'post',
 		body: body as RequestBody,
