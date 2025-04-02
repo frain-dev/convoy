@@ -295,7 +295,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendRequest(context.Background(), tt.args.endpoint, tt.args.method, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute)
+			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)
@@ -398,7 +398,7 @@ func TestNewDispatcher(t *testing.T) {
 	}
 }
 
-// TestDispatcherSendRequest tests the basic functionality of SendRequest
+// TestDispatcherSendRequest tests the basic functionality of SendWebhook
 func TestDispatcherSendRequest(t *testing.T) {
 	// Start a test server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -437,10 +437,9 @@ func TestDispatcherSendRequest(t *testing.T) {
 	}
 
 	// Send request
-	resp, err := dispatcher.SendRequest(
+	resp, err := dispatcher.SendWebhook(
 		context.Background(),
 		server.URL,
-		"POST",
 		jsonData,
 		"X-Signature",
 		"test-hmac",
@@ -483,10 +482,9 @@ func TestDispatcherWithTimeout(t *testing.T) {
 	require.NoError(t, err)
 
 	// Send request with a short timeout
-	_, err = dispatcher.SendRequest(
+	_, err = dispatcher.SendWebhook(
 		context.Background(),
 		server.URL,
-		"GET",
 		nil,
 		"X-Signature",
 		"test-hmac",
@@ -529,10 +527,9 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 	require.NoError(t, err)
 
 	// Attempt to send a request
-	_, err = dispatcher.SendRequest(
+	_, err = dispatcher.SendWebhook(
 		context.Background(),
 		server.URL,
-		"GET",
 		nil,
 		"X-Signature",
 		"test-hmac",
