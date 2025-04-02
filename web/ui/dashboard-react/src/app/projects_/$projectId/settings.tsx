@@ -1597,6 +1597,7 @@ function MetaEventsConfig(props: {
 	const handleUnselect = useCallback((eventType: MetaEventType) => {
 		setSelectedEventTypes(prev => prev.filter(s => s !== eventType));
 	}, []);
+
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent<HTMLInputElement>) => {
 			if (e.key === 'Backspace' && selectedEventTypes.length > 0) {
@@ -1607,6 +1608,7 @@ function MetaEventsConfig(props: {
 		},
 		[selectedEventTypes],
 	);
+	
 	const filteredEventTypes = useMemo(
 		() =>
 			MetaEventTypes.filter(

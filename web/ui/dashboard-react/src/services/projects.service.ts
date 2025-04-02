@@ -135,7 +135,7 @@ export async function deleteProject(
 }
 
 export async function getEventTypes(
-	_uid: string,
+	_projectId: string,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
 	const res = await deps.httpReq<{ event_types: Array<EventType> }>({
@@ -154,7 +154,7 @@ type CreateEventTypeParams = {
 };
 
 export async function createEventType(
-	_uid: string,
+	_projectId: string,
 	eventType: CreateEventTypeParams,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
@@ -169,11 +169,11 @@ export async function createEventType(
 }
 
 export async function deprecateEventType(
-	uid: string,
+	eventUid: string,
 	deps: { httpReq: typeof request } = { httpReq: request },
 ) {
 	const res = await deps.httpReq<null>({
-		url: `/event-types/${uid}/deprecate`,
+		url: `/event-types/${eventUid}/deprecate`,
 		method: 'post',
 		body: {},
 		level: 'org_project',

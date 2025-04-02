@@ -1,13 +1,14 @@
 import { z } from 'zod';
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Editor, DiffEditor } from '@monaco-editor/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 
-import { Check, ChevronDown, Info, Save } from 'lucide-react';
+import { Check, ChevronDown, Info, Save, ChevronRight, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { InputTags } from '@/components/ui/input-tags';
 import {
 	Command,
@@ -56,6 +57,7 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Command as CommandPrimitive } from 'cmdk';
 
 import { cn } from '@/lib/utils';
 import { useLicenseStore, useProjectStore } from '@/store';
@@ -64,11 +66,14 @@ import * as subscriptionsService from '@/services/subscriptions.service';
 import * as authService from '@/services/auth.service';
 import * as endpointsService from '@/services/endpoints.service';
 import * as sourcesService from '@/services/sources.service';
+import * as projectsService from '@/services/projects.service';
 
 import githubIcon from '../../../../../assets/img/github.png';
 import shopifyIcon from '../../../../../assets/img/shopify.png';
 import twitterIcon from '../../../../../assets/img/twitter.png';
 import modalCloseIcon from '../../../../../assets/svg/modal-close-icon.svg';
+
+import type { KeyboardEvent } from 'react';
 
 type SourceType = (typeof sourceVerifications)[number]['uid'];
 
@@ -95,160 +100,297 @@ const editorOptions = {
 	fontSize: 12,
 };
 
-const CreateSourceFormSchema = z
+const CreateSourceFormSchema = z.object({
+	name: z.string(),
+	type: z.enum([
+		sourceVerifications[0].uid,
+		...sourceVerifications.slice(1).map(t => t.uid),
+	]),
+	is_disabled: z.boolean().optional(),
+	config: z.object({
+		encoding: z.enum(['base64', 'hex', '']).optional(),
+		hash: z.enum(['SHA256', 'SHA512', '']).optional(),
+		header: z.string().optional(),
+		secret: z.string().optional(),
+		username: z.string().optional(),
+		password: z.string().optional(),
+		header_name: z.string().optional(),
+		header_value: z.string().optional(),
+	}),
+	custom_response: z
+		.object({
+			content_type: z.string().optional(),
+			body: z.string().optional(),
+		})
+		.optional(),
+	idempotency_keys: z.array(z.string()).optional(),
+	showHmac: z.boolean(),
+	showBasicAuth: z.boolean(),
+	showAPIKey: z.boolean(),
+	showGithub: z.boolean(),
+	showTwitter: z.boolean(),
+	showShopify: z.boolean(),
+	showCustomResponse: z.boolean(),
+	showIdempotency: z.boolean(),
+});
+
+const CreateEndpointFormSchema = z
 	.object({
-		name: z.string().min(1, 'Enter new source name'),
-		type: z.enum([
-			sourceVerifications[0].uid,
-			...sourceVerifications.slice(1).map(t => t.uid),
-		]),
-		is_disabled: z.boolean().optional(),
-		config: z.object({
-			encoding: z.enum(['base64', 'hex', '']).optional(),
-			hash: z.enum(['SHA256', 'SHA512', '']).optional(),
-			header: z.string().optional(),
-			secret: z.string().optional(),
-			username: z.string().optional(),
-			password: z.string().optional(),
-			header_name: z.string().optional(),
-			header_value: z.string().optional(),
-		}), // z.record(z.union([z.string(), z.boolean()])).optional(),
-		custom_response: z
+		name: z.string(),
+		url: z.union([z.literal(''), z.string().trim().url()]),
+		secret: z.string().optional(),
+		owner_id: z.string().optional(),
+		http_timeout: z
+			.string()
+			.optional()
+			.transform(v => (v === '' ? undefined : Number(v))),
+		rate_limit: z
+			.string()
+			.optional()
+			.transform(v => (v === '' ? undefined : Number(v))),
+		rate_limit_duration: z
+			.string()
+			.optional()
+			.transform(v => (v === '' ? undefined : Number(v))),
+		support_email: z.union([z.literal(''), z.string().trim().email()]),
+		slack_webhook_url: z.union([z.literal(''), z.string().trim().url()]),
+		authentication: z
 			.object({
-				content_type: z.string().optional(),
-				body: z.string().optional(),
+				type: z.string().default('api_key'),
+				api_key: z
+					.object({
+						header_name: z.string().optional(),
+						header_value: z.string().optional(),
+					})
+					.optional(),
 			})
 			.optional(),
-		idempotency_keys: z.array(z.string()).optional(),
-		showHmac: z.boolean(),
-		showBasicAuth: z.boolean(),
-		showAPIKey: z.boolean(),
-		showGithub: z.boolean(),
-		showTwitter: z.boolean(),
-		showShopify: z.boolean(),
-		showCustomResponse: z.boolean(),
-		showIdempotency: z.boolean(),
+		advanced_signatures: z.enum(['true', 'false']).transform(v => v === 'true'),
+		showHttpTimeout: z.boolean(),
+		showRateLimit: z.boolean(),
+		showOwnerId: z.boolean(),
+		showAuth: z.boolean(),
+		showNotifications: z.boolean(),
+		showSignatureFormat: z.boolean(),
+	})
+	.transform(v => {
+		if (!v.showAuth) {
+			v.authentication = undefined;
+			return v;
+		}
+		return v;
+	});
+
+const CreateSubscriptionFormSchema = z
+	.object({
+		name: z.string().min(1, 'Enter new subscription name'),
+		function: z
+			.string()
+			.nullable()
+			.transform(v => (v?.length ? v : null)), // transform function
+		filter_config: z.object({
+			event_types: z
+				.array(z.string())
+				.nullable()
+				.transform(v => (v?.length ? v : null))
+				.transform(v => (v?.length ? v : null)),
+			filter: z.object({
+				headers: z.any().transform(v => {
+					const isEmptyObj =
+						typeof v === 'object' && v !== null && Object.keys(v).length == 0;
+					if (isEmptyObj) return null;
+					return v;
+				}),
+				body: z.any().transform(v => {
+					const isEmptyObj =
+						typeof v === 'object' && v !== null && Object.keys(v).length == 0;
+					if (isEmptyObj) return null;
+					return v;
+				}),
+			}),
+		}),
+		source_id: z.string({ required_error: 'Select source' }).optional(),
+		source: CreateSourceFormSchema.nullable(),
+		endpoint_id: z.string().optional(),
+		endpoint: CreateEndpointFormSchema.nullable(),
+		showEventsFilter: z.boolean(),
+		showEventTypes: z.boolean(),
+		showTransform: z.boolean(),
+		useExistingEndpoint: z.boolean(),
+		useExistingSource: z.boolean(),
 	})
 	.refine(
-		v => {
+		({ showEventTypes, filter_config }) => {
+			if (!showEventTypes) return true;
+
+			return filter_config?.event_types?.length;
+		},
+		{
+			message: 'Include at least one event type when event types is enabled',
+			path: ['filter_config.event_types'],
+		},
+	)
+	.refine(({ showTransform, function: fn }) => !(showTransform && !fn), {
+		message: 'Set transform function when Transform is enabled',
+		path: ['function'],
+	})
+	.refine(
+		({ useExistingEndpoint, endpoint_id }) =>
+			!(useExistingEndpoint && !endpoint_id),
+		{ message: 'Select endpoint', path: ['endpoint_id'] },
+	)
+	.refine(
+		({ useExistingSource, source_id }) => !(useExistingSource && !source_id),
+		{ message: 'Select source', path: ['source_id'] },
+	)
+	.refine(
+		({ useExistingSource, source }) => {
+			if (useExistingSource) return true;
 			if (
-				v.showCustomResponse &&
-				(!v.custom_response?.content_type || !v.custom_response.body)
+				source?.showCustomResponse &&
+				(!source?.custom_response?.content_type ||
+					!source?.custom_response.body)
 			) {
 				return false;
 			}
+
 			return true;
 		},
-		({ custom_response }) => {
-			if (!custom_response?.content_type)
+		({ source }) => {
+			if (!source?.custom_response?.content_type)
 				return {
 					message: 'Enter content type',
-					path: ['custom_response.content_type'],
+					path: ['source.custom_response.content_type'],
 				};
 
-			if (!custom_response?.body)
+			if (!source?.custom_response?.body)
 				return {
 					message: 'Enter response content',
-					path: ['custom_response.body'],
+					path: ['source.custom_response.body'],
 				};
 
 			return { message: '', path: [] };
 		},
 	)
 	.refine(
-		({ showIdempotency, idempotency_keys }) => {
-			if (showIdempotency && idempotency_keys?.length == 0) return false;
+		({ source, useExistingSource }) => {
+			if (useExistingSource) return true;
+
+			if (source?.showIdempotency && source?.idempotency_keys?.length == 0)
+				return false;
 			return true;
 		},
 		() => {
 			return {
 				message:
 					'Add at least one idempotency key if idempotency configuration is enabled',
-				path: ['idempotency_keys'],
+				path: ['source.idempotency_keys'],
 			};
 		},
 	)
 	.refine(
-		({ type, config }) => {
-			const { encoding, hash, header, secret } = config;
+		({ source, useExistingSource }) => {
+			if (useExistingSource) return true;
+			if (!source) return false;
+
+			const { encoding, hash, header, secret } = source.config;
 			const hasInvalidValue = !encoding || !hash || !header || !secret;
-			if (type == 'hmac' && hasInvalidValue) return false;
+			if (source.type == 'hmac' && hasInvalidValue) return false;
+
 			return true;
 		},
-		({ config }) => {
-			const { encoding, hash, header, secret } = config;
+		({ source }) => {
+			if (!source) return { message: '', path: [] };
+
+			const { encoding, hash, header, secret } = source.config;
 			if (!encoding)
 				return {
 					message: 'Enter encoding value',
-					path: ['config.encoding'],
+					path: ['source.config.encoding'],
 				};
 
 			if (!hash)
 				return {
 					message: 'Enter hash value',
-					path: ['config.hash'],
+					path: ['source.config.hash'],
 				};
 
 			if (!header)
 				return {
 					message: 'Enter header key',
-					path: ['config.header'],
+					path: ['source.config.header'],
 				};
 
 			if (!secret)
 				return {
 					message: 'Enter webhook signing secret',
-					path: ['config.secret'],
+					path: ['source.config.secret'],
 				};
 
 			return { message: '', path: [] };
 		},
 	)
 	.refine(
-		({ type, config }) => {
-			const { secret } = config;
-			const isPreconfigured = ['github', 'shopify', 'twitter'].includes(type);
+		({ useExistingSource, source }) => {
+			if (useExistingSource) return true;
+			if (!source) return false;
+
+			const { secret } = source.config;
+			const isPreconfigured = ['github', 'shopify', 'twitter'].includes(
+				source?.type,
+			);
 			if (isPreconfigured && !secret) return false;
 			return true;
 		},
 		() => ({
 			message: 'Enter webhook signing secret',
-			path: ['config.secret'],
+			path: ['source.config.secret'],
 		}),
 	)
 	.refine(
-		({ type, config }) => {
-			const { username, password } = config;
+		({ source, useExistingSource }) => {
+			if (useExistingSource) return true;
+			if (!source) return false;
+
+			const { username, password } = source.config;
 			const hasInvalidValue = !username || !password;
-			if (type == 'basic_auth' && hasInvalidValue) return false;
+			if (source.type == 'basic_auth' && hasInvalidValue) return false;
 			return true;
 		},
-		({ config }) => {
-			const { username, password } = config;
+		({ source }) => {
+			if (!source) return { message: '', path: [] };
+
+			const { username, password } = source.config;
 			if (!username)
 				return {
 					message: 'Enter username',
-					path: ['config.username'],
+					path: ['source.config.username'],
 				};
 
 			if (!password)
 				return {
 					message: 'Enter password',
-					path: ['config.password'],
+					path: ['source.config.password'],
 				};
 
 			return { message: '', path: [] };
 		},
 	)
 	.refine(
-		({ type, config }) => {
-			const { header_name, header_value } = config;
+		({ useExistingSource, source }) => {
+			if (useExistingSource) return true;
+			if (!source) return false;
+
+			const { header_name, header_value } = source.config;
 			const hasInvalidValue = !header_name || !header_value;
-			if (type == 'api_key' && hasInvalidValue) return false;
+			if (source.type == 'api_key' && hasInvalidValue) return false;
+
 			return true;
 		},
-		({ config }) => {
-			const { header_name, header_value } = config;
+		({ source }) => {
+			if (!source) return { message: '', path: [] };
+
+			const { header_name, header_value } = source.config;
 			if (!header_name)
 				return {
 					message: 'Enter API header key',
@@ -263,65 +405,163 @@ const CreateSourceFormSchema = z
 
 			return { message: '', path: [] };
 		},
+	)
+	.refine(
+		({ useExistingSource, source }) => {
+			if (useExistingSource) return true;
+			if (!source) return false;
+
+			if (!source.name) return false;
+
+			return true;
+		},
+		{
+			message: 'Enter source name',
+			path: ['source.name'],
+		},
+	)
+	.refine(
+		({ useExistingEndpoint, endpoint }) => {
+			if (useExistingEndpoint) return true;
+			if (!endpoint?.name || !endpoint?.url) return false;
+			return true;
+		},
+		({ endpoint }) => {
+			if (!endpoint?.name)
+				return {
+					message: 'Enter endpoint name',
+					path: ['endpoint.name'],
+				};
+
+			if (!endpoint?.url)
+				return {
+					message: 'Enter endpoint URL',
+					path: ['endpoint.url'],
+				};
+
+			return { message: '', path: [] };
+		},
+	)
+	.refine(
+		({ useExistingEndpoint, endpoint }) => {
+			if (useExistingEndpoint) return true;
+
+			if (endpoint?.showHttpTimeout && !endpoint.http_timeout) return false;
+
+			return true;
+		},
+		{
+			message: 'Timeout is required when enabled',
+			path: ['endpoint.http_timeout'],
+		},
+	)
+	.refine(
+		({ useExistingEndpoint, endpoint }) => {
+			if (useExistingEndpoint) return true;
+
+			if (endpoint?.showRateLimit && !endpoint.rate_limit) return false;
+
+			if (endpoint?.showRateLimit && !endpoint.rate_limit_duration)
+				return false;
+
+			return true;
+		},
+		({ endpoint }) => {
+			if (!endpoint?.rate_limit)
+				return {
+					message: 'Rate limit is required when enabled',
+					path: ['endpoint.rate_limit'],
+				};
+
+			if (!endpoint?.rate_limit)
+				return {
+					message: 'Rate limit duration is required when enabled',
+					path: ['endpoint.rate_limit_duration'],
+				};
+
+			return {
+				message: '',
+				path: [],
+			};
+		},
+	)
+	.refine(
+		({ useExistingEndpoint, endpoint }) => {
+			if (useExistingEndpoint) return true;
+
+			if (endpoint?.showOwnerId && !endpoint.owner_id) return false;
+
+			return true;
+		},
+		{
+			message: 'Owner ID is required when enabled',
+			path: ['endpoint.ownerId'],
+		},
+	)
+	.refine(
+		({ useExistingEndpoint, endpoint }) => {
+			if (useExistingEndpoint) return true;
+
+			if (endpoint?.showAuth && !endpoint.authentication?.api_key?.header_name)
+				return false;
+
+			if (endpoint?.showAuth && !endpoint.authentication?.api_key?.header_value)
+				return false;
+
+			return true;
+		},
+		({ endpoint }) => {
+			if (!endpoint?.authentication?.api_key?.header_name)
+				return {
+					message: 'API key is required when auth is enabled',
+					path: ['endpoint.authentication.api_key.header_name'],
+				};
+
+			if (!endpoint?.authentication?.api_key?.header_name)
+				return {
+					message: 'API key value is required when auth is enabled',
+					path: ['endpoint.authentication.api_key.header_value'],
+				};
+
+			return { message: '', path: [] };
+		},
+	)
+	.refine(
+		({ useExistingEndpoint, endpoint }) => {
+			if (useExistingEndpoint) return true;
+
+			if (
+				endpoint?.showNotifications &&
+				!endpoint.support_email &&
+				!endpoint.slack_webhook_url
+			)
+				return false;
+
+			return true;
+		},
+		{
+			message: 'One of email or webhook URL is required',
+			path: ['endpoint.support_email'],
+		},
+	)
+	.refine(
+		({ useExistingEndpoint, endpoint }) => {
+			if (useExistingEndpoint) return true;
+
+			if (endpoint?.showSignatureFormat && !endpoint.advanced_signatures)
+				return false;
+			return true;
+		},
+		{
+			message: 'Signature format is required when enabled',
+			path: ['endpoint.advanced_signatures'],
+		},
 	);
-
-const CreateEndpointFormSchema = z.object({
-	name: z.string().min(1, 'Please provide a name'),
-	url: z.string().url('Invalid endpoint URL'),
-	secret: z.string().optional(),
-	showHttpTimeout: z.boolean(),
-	showRateLimit: z.boolean(),
-	showOwnerId: z.boolean(),
-	showAuth: z.boolean(),
-	showNotifications: z.boolean(),
-	showSignatureFormat: z.boolean(),
-	owner_id: z.string().optional(),
-	http_timeout: z.string().optional(),
-	rate_limit: z.string().optional(),
-	rate_limit_duration: z.string().optional(),
-	support_email: z.string().email('Email is invalid').optional(),
-	slack_webhook_url: z.string().url('URL is invalid').optional(),
-	authentication: z
-		.object({
-			type: z.string().default('api_key'),
-			api_key: z
-				.object({
-					header_name: z.string().optional(),
-					header_value: z.string().optional(),
-				})
-				.optional(),
-		})
-		.optional(),
-	advanced_signatures: z.enum(['true', 'false']),
-});
-
-const CreateSubscriptionFormSchema = z.object({
-	name: z.string().min(1, 'Enter new subscription name'),
-	function: z.string().optional(), // transform function
-	filter_config: z.object({
-		event_types: z.array(z.string()),
-		filter: z
-			.object({
-				headers: z.union([z.record(z.string(), z.any()), z.object({})]),
-				body: z.union([z.record(z.string(), z.any()), z.object({})]),
-			})
-			.optional(),
-	}),
-	showEventsFilter: z.boolean(),
-	showEventTypes: z.boolean(),
-	showTransform: z.boolean(),
-	source_id: z.string({ required_error: 'Select source' }),
-	source: CreateSourceFormSchema.optional(),
-	endpoint_id: z.string().optional(),
-	endpoint: CreateEndpointFormSchema.optional(),
-	showIdempotency: z.boolean(),
-	showCustomResponse: z.boolean(),
-});
 
 export const Route = createFileRoute('/projects_/$projectId/subscriptions/new')(
 	{
 		component: CreateSubscriptionPage,
-		loader: async function () {
+		loader: async function ({ params }) {
 			const perms = await authService.getUserPermissions();
 			const sources = await sourcesService.getSources({});
 			const endpoints = await endpointsService.getEndpoints();
@@ -335,6 +575,10 @@ export const Route = createFileRoute('/projects_/$projectId/subscriptions/new')(
 			const hasWebhookTransformations = licenses.includes(
 				'WEBHOOK_TRANSFORMATIONS',
 			);
+			const { event_types } = await projectsService.getEventTypes(
+				params.projectId,
+			);
+
 			return {
 				canManageSubscriptions: perms.includes('Subscriptions|MANAGE'),
 				existingSources: sources.content,
@@ -342,6 +586,9 @@ export const Route = createFileRoute('/projects_/$projectId/subscriptions/new')(
 				hasAdvancedEndpointManagement,
 				hasAdvancedSubscriptions,
 				hasWebhookTransformations,
+				eventTypes: event_types
+					.filter(et => et.deprecated_at === null)
+					.map(({ name }) => name),
 			};
 		},
 	},
@@ -364,6 +611,7 @@ const defaultBody = {
 function CreateSubscriptionPage() {
 	const { project } = useProjectStore();
 	const { projectId } = Route.useParams();
+	const navigate = useNavigate();
 	const {
 		canManageSubscriptions,
 		existingSources,
@@ -371,9 +619,35 @@ function CreateSubscriptionPage() {
 		hasAdvancedEndpointManagement,
 		hasAdvancedSubscriptions,
 		hasWebhookTransformations,
+		eventTypes,
 	} = Route.useLoaderData();
-	const [toUseExistingSource, setToUseExistingSource] = useState(true);
-	const [toUseExistingEndpoint, setToUseExistingEndpoint] = useState(true);
+	const [isCreating, setIsCreating] = useState(false);
+
+	const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false);
+	const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
+
+	const [inputValue, setInputValue] = useState('');
+
+	const handleUnselect = useCallback((eventType: string) => {
+		setSelectedEventTypes(prev => prev.filter(s => s !== eventType));
+	}, []);
+
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent<HTMLInputElement>) => {
+			if (e.key === 'Backspace' && selectedEventTypes.length > 0) {
+				setSelectedEventTypes(prev => prev.slice(0, -1));
+				return true;
+			}
+			return false;
+		},
+		[selectedEventTypes],
+	);
+
+	const filteredEventTypes = useMemo(
+		() => eventTypes.filter(et => !selectedEventTypes.includes(et)),
+		[selectedEventTypes, eventTypes],
+	);
+
 	const [showEventsFilterDialog, setShowEventsFilterDialog] = useState(false);
 	const [hasPassedTestFilter, setHasPassedTestFilter] = useState(false);
 	const [eventsFilter, setEventsFilter] = useState({
@@ -458,8 +732,8 @@ return payload;
 	const [headerOutput, setHeaderOutput] = useState<FuncOutput>(defaultOutput);
 	const [bodyLogs, setBodyLogs] = useState<string[]>([]);
 	const [headerLogs, setHeaderLogs] = useState<string[]>([]);
-	const [, /* transformFn */ setTransformFn] = useState<string>();
-	const [, /* headerTransformFn */ setHeaderTransformFn] = useState<string>();
+	const [transformFn, setTransformFn] = useState<string>('');
+	// const [headerTransformFn, setHeaderTransformFn] = useState<string>();
 	const [hasSavedFn, setHasSavedFn] = useState(false);
 	const form = useForm<z.infer<typeof CreateSubscriptionFormSchema>>({
 		resolver: zodResolver(CreateSubscriptionFormSchema),
@@ -473,7 +747,7 @@ return payload;
 				},
 				event_types: [],
 			},
-			source_id: '',
+			source_id: project?.type == 'incoming' ? '' : ' ',
 			source: {
 				name: '',
 				type: 'noop',
@@ -492,6 +766,15 @@ return payload;
 					body: '',
 				},
 				idempotency_keys: [],
+				is_disabled: true,
+				showHmac: false,
+				showBasicAuth: false,
+				showAPIKey: false,
+				showGithub: false,
+				showTwitter: false,
+				showShopify: false,
+				showCustomResponse: false,
+				showIdempotency: false,
 			},
 			endpoint_id: '',
 			endpoint: {
@@ -499,8 +782,11 @@ return payload;
 				url: '',
 				secret: '',
 				owner_id: '',
+				// @ts-expect-error the transform takes care of this
 				http_timeout: '',
+				// @ts-expect-error the transform takes care of this
 				rate_limit: '',
+				// @ts-expect-error the transform takes care of this
 				rate_limit_duration: '',
 				support_email: '',
 				slack_webhook_url: '',
@@ -511,6 +797,7 @@ return payload;
 						header_value: '',
 					},
 				},
+				// @ts-expect-error thr transformation takes care of this
 				advanced_signatures: 'true',
 				showHttpTimeout: false,
 				showRateLimit: false,
@@ -522,23 +809,11 @@ return payload;
 			showTransform: false,
 			showEventTypes: false,
 			showEventsFilter: hasAdvancedSubscriptions,
-			showIdempotency: false,
-			showCustomResponse: false,
+			useExistingEndpoint: true,
+			useExistingSource: true,
 		},
 		mode: 'onTouched',
 	});
-	console.log(
-		existingSources,
-		CreateSubscriptionFormSchema.safeParse(form.getValues()),
-	);
-
-	function toggleUseExistingSource() {
-		setToUseExistingSource(prev => !prev);
-	}
-
-	function toggleUseExistingEndpoint() {
-		setToUseExistingEndpoint(prev => !prev);
-	}
 
 	async function testFilter() {
 		setHasPassedTestFilter(false);
@@ -555,6 +830,8 @@ return payload;
 			};
 			const isPass = await subscriptionsService.testFilter(eventFilter);
 			setHasPassedTestFilter(isPass);
+			form.setValue('filter_config.filter.body', eventFilter.schema.body);
+			form.setValue('filter_config.filter.headers', eventFilter.schema.header);
 			return eventFilter;
 			// TODO show notification
 		} catch (error) {
@@ -585,10 +862,11 @@ return payload;
 					current: response.payload,
 					previous: prev.current,
 				}));
+
 				setBodyLogs(
-					response.log.toReversed() || [
-						'Transform function executed successfully',
-					],
+					response.log.toReversed().length
+						? response.log.toReversed()
+						: ['Transform function executed successfully'],
 				);
 			} else {
 				setHeaderOutput(prev => ({
@@ -596,9 +874,9 @@ return payload;
 					previous: prev.current,
 				}));
 				setHeaderLogs(
-					response.log.toReversed() || [
-						'Transform function executed successfully',
-					],
+					response.log.toReversed().length
+						? response.log.toReversed()
+						: ['Transform function executed successfully'],
 				);
 			}
 
@@ -608,9 +886,12 @@ return payload;
 
 			if (type === 'body') {
 				setTransformFn(transformFunc);
-			} else {
-				setHeaderTransformFn(transformFunc);
 			}
+
+			// else {
+			// 	setHeaderTransformFn(transformFunc);
+			// 	console.log({ transformFunc });
+			// }
 		} catch (error) {
 			console.error(error);
 			setIsTestingFunction(false);
@@ -622,12 +903,161 @@ return payload;
 		}
 	}
 
+	function saveTransformFn() {
+		form.setValue('function', transformFn);
+		form.trigger('function');
+	}
+
 	async function setSubscriptionFilter() {
 		const eventFilter = await testFilter();
 		if (hasPassedTestFilter && eventFilter) {
 			const { schema } = eventFilter;
 			form.setValue('filter_config.filter.body', schema.body);
 			form.setValue('filter_config.filter.headers', schema.header);
+		}
+	}
+
+	function getVerifierType(
+		type: SourceType,
+		config: z.infer<typeof CreateSourceFormSchema>['config'],
+	) {
+		const obj: Record<string, string> = {};
+
+		if (type == 'hmac') {
+			return {
+				type: 'hmac',
+				hmac: Object.entries(config).reduce((acc, record: [string, string]) => {
+					const [key, val] = record;
+					if (['encoding', 'hash', 'header', 'secret'].includes(key)) {
+						acc[key] = val;
+						return acc;
+					}
+					return acc;
+				}, obj),
+			};
+		}
+
+		if (type == 'basic_auth') {
+			return {
+				type: 'basic_auth',
+				basic_auth: Object.entries(config).reduce(
+					(acc, record: [string, string]) => {
+						const [key, val] = record;
+						if (['password', 'username'].includes(key)) {
+							acc[key] = val;
+							return acc;
+						}
+						return acc;
+					},
+					obj,
+				),
+			};
+		}
+
+		if (type == 'api_key') {
+			return {
+				type: 'api_key',
+				api_key: Object.entries(config).reduce(
+					// @ts-expect-error types match
+					(acc, record: [string, string]) => {
+						const [key, val] = record;
+						if (['header_name', 'header_value'].includes(key)) {
+							return (acc[key] = val);
+						}
+						return acc;
+					},
+					obj,
+				),
+			};
+		}
+
+		if (['github', 'shopify', 'twitter'].includes(type)) {
+			return {
+				type: 'hmac',
+				hmac: {
+					encoding: type == 'github' ? 'hex' : 'base64',
+					hash: 'SHA256',
+					header: `X-${type == 'github' ? 'Hub' : type == 'shopify' ? 'Shopify-Hmac' : 'Twitter-Webhooks'}-Signature-256`,
+					secret: config.secret,
+				},
+			};
+		}
+
+		return {
+			type: 'noop',
+			noop: obj,
+		};
+	}
+
+	// TODO move this to utils/pipes
+	function transformIncomingSource(v: z.infer<typeof CreateSourceFormSchema>) {
+		return {
+			name: v.name,
+			is_disabled: v.is_disabled,
+			type: 'http',
+			custom_response: {
+				body: v.custom_response?.body || '',
+				content_type: v.custom_response?.content_type || '',
+			},
+			idempotency_keys: v.idempotency_keys?.length ? v.idempotency_keys : null,
+			verifier: getVerifierType(v.type, v.config),
+			provider: ['github', 'twitter', 'shopify'].includes(v.type) ? v.type : '',
+		};
+	}
+
+	async function createSubscription(
+		payload: z.infer<typeof CreateSubscriptionFormSchema>,
+	) {
+		setIsCreating(true);
+		if (!payload.useExistingEndpoint && payload.endpoint?.name) {
+			try {
+				const res = await endpointsService.addEndpoint(payload.endpoint);
+				payload.endpoint_id = res.data.uid;
+			} catch (error) {
+				console.error('Unable to create new endpoint:', error);
+				setIsCreating(false);
+				throw new Error('Unable to create new endpoint');
+			}
+		}
+
+		if (
+			!payload.useExistingSource &&
+			payload.source?.name &&
+			project?.type == 'incoming'
+		) {
+			try {
+				const transformed = transformIncomingSource(payload.source)
+				const res = await sourcesService.createSource(transformed);
+				payload.source_id = res.uid;
+			} catch (error) {
+				console.error('Unable to create new source:', error);
+				setIsCreating(false);
+				throw new Error('Unable to create new source');
+			}
+		}
+
+		try {
+			await subscriptionsService.createSubscription({
+				name: payload.name,
+				endpoint_id: payload.endpoint_id!,
+				source_id: payload.source_id!,
+				function: payload.function,
+				filter_config: {
+					event_types: payload.filter_config.event_types,
+					filter: payload.filter_config.filter,
+				},
+			});
+
+			return navigate({
+				to: '/projects/$projectId/subscriptions',
+				params: { projectId },
+			});
+		} catch (error) {
+			// TODO notify UI
+			console.error('Unable to create subscription');
+			console.error(error);
+		} finally {
+			setIsCreating(false);
 		}
 	}
 
@@ -660,7 +1090,10 @@ return payload;
 					</div>
 
 					<Form {...form}>
-						<form className="flex flex-col gap-y-6">
+						<form
+							className="flex flex-col gap-y-8"
+							onSubmit={form.handleSubmit(createSubscription)}
+						>
 							{/* Source */}
 							{project?.type == 'incoming' && (
 								<section>
@@ -670,7 +1103,7 @@ return payload;
 									</p>
 
 									<div className="border border-neutral-4 p-6 rounded-8px mt-6">
-										{toUseExistingSource ? (
+										{form.watch('useExistingSource') ? (
 											<div className="space-y-4">
 												<FormField
 													control={form.control}
@@ -750,15 +1183,26 @@ return payload;
 												/>
 
 												<div>
-													<Button
-														disabled={!canManageSubscriptions}
-														variant="ghost"
-														size="sm"
-														className="pl-0 bg-white-100 text-new.primary-400 hover:bg-white-100 hover:text-new.primary-400 text-xs"
-														onClick={toggleUseExistingSource}
-													>
-														Create New Source
-													</Button>
+													<FormField
+														name="useExistingSource"
+														control={form.control}
+														render={({ field }) => (
+															<FormItem>
+																<FormControl>
+																	<Button
+																		disabled={!canManageSubscriptions}
+																		variant="ghost"
+																		size="sm"
+																		type="button"
+																		className="pl-0 bg-white-100 text-new.primary-400 hover:bg-white-100 hover:text-new.primary-400 text-xs"
+																		onClick={() => field.onChange(!field.value)}
+																	>
+																		Create New Source
+																	</Button>
+																</FormControl>
+															</FormItem>
+														)}
+													/>
 												</div>
 											</div>
 										) : (
@@ -1216,7 +1660,7 @@ return payload;
 												<div className="flex items-center gap-x-6">
 													<FormField
 														control={form.control}
-														name="showCustomResponse"
+														name="source.showCustomResponse"
 														render={({ field }) => (
 															<FormItem>
 																<FormControl>
@@ -1232,7 +1676,7 @@ return payload;
 
 													<FormField
 														control={form.control}
-														name="showIdempotency"
+														name="source.showIdempotency"
 														render={({ field }) => (
 															<FormItem>
 																<FormControl>
@@ -1248,7 +1692,7 @@ return payload;
 												</div>
 
 												{/* Custom Response */}
-												{form.watch('showCustomResponse') && (
+												{form.watch('source.showCustomResponse') && (
 													<div className="border-l border-new.primary-25 pl-4 flex flex-col gap-y-4">
 														<h3 className="text-xs text-neutral-10 font-semibold">
 															Custom Response
@@ -1308,7 +1752,7 @@ return payload;
 												)}
 
 												{/* Idempotency */}
-												{form.watch('showIdempotency') && (
+												{form.watch('source.showIdempotency') && (
 													<div className="border-l border-new.primary-25 pl-4 flex flex-col gap-y-4">
 														<h3 className="text-xs text-neutral-10 font-semibold">
 															Idempotency Config
@@ -1366,8 +1810,29 @@ return payload;
 														/>
 													</div>
 												)}
-
 												<div>
+													<FormField
+														name="useExistingSource"
+														control={form.control}
+														render={({ field }) => (
+															<FormItem>
+																<FormControl>
+																	<Button
+																		disabled={!canManageSubscriptions}
+																		variant="ghost"
+																		type="button"
+																		size="sm"
+																		className="pl-0 bg-white-100 text-new.primary-400 hover:bg-white-100 hover:text-new.primary-400 text-xs"
+																		onClick={() => field.onChange(!field.value)}
+																	>
+																		Use Existing Source
+																	</Button>
+																</FormControl>
+															</FormItem>
+														)}
+													/>
+												</div>
+												{/* <div>
 													<Button
 														type="button"
 														variant="ghost"
@@ -1377,7 +1842,7 @@ return payload;
 													>
 														Use Existing Source
 													</Button>
-												</div>
+												</div> */}
 											</div>
 										)}
 									</div>
@@ -1391,7 +1856,7 @@ return payload;
 									Endpoint this subscription routes events into.
 								</p>
 								<div className="border border-neutral-4 p-6 rounded-8px mt-6">
-									{toUseExistingEndpoint ? (
+									{form.watch('useExistingEndpoint') ? (
 										<div className="space-y-4">
 											<FormField
 												control={form.control}
@@ -1468,8 +1933,29 @@ return payload;
 													</FormItem>
 												)}
 											/>
-
 											<div>
+												<FormField
+													name="useExistingEndpoint"
+													control={form.control}
+													render={({ field }) => (
+														<FormItem>
+															<FormControl>
+																<Button
+																	disabled={!canManageSubscriptions}
+																	variant="ghost"
+																	type="button"
+																	size="sm"
+																	className="pl-0 bg-white-100 text-new.primary-400 hover:bg-white-100 hover:text-new.primary-400 text-xs"
+																	onClick={() => field.onChange(!field.value)}
+																>
+																	Create New Endpoint
+																</Button>
+															</FormControl>
+														</FormItem>
+													)}
+												/>
+											</div>
+											{/* <div>
 												<Button
 													disabled={!canManageSubscriptions}
 													type="button"
@@ -1480,7 +1966,7 @@ return payload;
 												>
 													Create New Endpoint
 												</Button>
-											</div>
+											</div> */}
 										</div>
 									) : (
 										<div className="space-y-4">
@@ -1564,6 +2050,7 @@ return payload;
 											</div>
 
 											<div className="flex items-center gap-x-6">
+												{/* TODO add popover to show if business and disabled */}
 												<FormField
 													control={form.control}
 													name="endpoint.showHttpTimeout"
@@ -1647,49 +2134,21 @@ return payload;
 												/>
 
 												{project?.type == 'outgoing' && (
-													<label className="flex items-center gap-2 cursor-pointer">
-														{/* TODO you may want to make this label into a component */}
-														{/* TODO add popover to show if business and disabled */}
-														<FormField
-															control={form.control}
-															name="endpoint.showSignatureFormat"
-															render={({ field }) => (
-																<FormItem>
-																	<FormControl className="relative">
-																		<div className="relative">
-																			<input
-																				type="checkbox"
-																				className=" peer
-    appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
-    mt-1 shrink-0 checked:bg-new.primary-300
-     checked:border-0 cursor-pointer"
-																				defaultChecked={field.value}
-																				onChange={field.onChange}
-																			/>
-																			<svg
-																				className="
-      absolute
-      w-3 h-3 mt-1
-      hidden peer-checked:block top-[0.5px] right-[1px]"
-																				xmlns="http://www.w3.org/2000/svg"
-																				viewBox="0 0 24 24"
-																				fill="none"
-																				stroke="white"
-																				strokeWidth="4"
-																				strokeLinecap="round"
-																				strokeLinejoin="round"
-																			>
-																				<polyline points="20 6 9 17 4 12"></polyline>
-																			</svg>
-																		</div>
-																	</FormControl>
-																</FormItem>
-															)}
-														/>
-														<span className="block text-neutral-9 text-xs">
-															Signature Format
-														</span>
-													</label>
+													<FormField
+														control={form.control}
+														name="endpoint.showSignatureFormat"
+														render={({ field }) => (
+															<FormItem>
+																<FormControl>
+																	<ConvoyCheckbox
+																		label="Signature Format"
+																		isChecked={field.value}
+																		onChange={field.onChange}
+																	/>
+																</FormControl>
+															</FormItem>
+														)}
+													/>
 												)}
 											</div>
 
@@ -2002,13 +2461,14 @@ return payload;
 																		].map(({ label, value }) => {
 																			return (
 																				<FormControl
-																					className="w-full "
+																					className="w-full"
 																					key={label}
 																				>
 																					<label
 																						className={cn(
 																							'cursor-pointer border border-primary-100 flex items-start gap-x-2 p-4 rounded-sm',
-																							field.value === value
+																							// @ts-expect-error the transformation takes care of this
+																							field.value == value
 																								? 'border-new.primary-300 bg-[#FAFAFE]'
 																								: 'border-neutral-5',
 																						)}
@@ -2043,15 +2503,26 @@ return payload;
 											</div>
 
 											<div>
-												<Button
-													type="button"
-													variant="ghost"
-													size="sm"
-													className="pl-0 bg-white-100 text-new.primary-400 hover:bg-white-100 hover:text-new.primary-400 text-xs"
-													onClick={toggleUseExistingEndpoint}
-												>
-													Use Existing Endpoint
-												</Button>
+												<FormField
+													name="useExistingEndpoint"
+													control={form.control}
+													render={({ field }) => (
+														<FormItem>
+															<FormControl>
+																<Button
+																	disabled={!canManageSubscriptions}
+																	variant="ghost"
+																	type="button"
+																	size="sm"
+																	className="pl-0 bg-white-100 text-new.primary-400 hover:bg-white-100 hover:text-new.primary-400 text-xs"
+																	onClick={() => field.onChange(!field.value)}
+																>
+																	Use Existing Endpoint
+																</Button>
+															</FormControl>
+														</FormItem>
+													)}
+												/>
 											</div>
 										</div>
 									)}
@@ -2089,7 +2560,7 @@ return payload;
 																	? 'border-destructive focus-visible:ring-0 hover:border-destructive'
 																	: ' hover:border-new.primary-100 focus:border-new.primary-300',
 															)}
-														></Input>
+														/>
 													</FormControl>
 													<FormMessageWithErrorIcon />
 												</FormItem>
@@ -2099,152 +2570,194 @@ return payload;
 										<hr />
 
 										<div className="flex gap-x-4 items-center">
-											<label className="flex items-center gap-2 cursor-pointer">
-												{/* TODO you may want to make this label into a component */}
+											<FormField
+												control={form.control}
+												name="showEventsFilter"
+												render={({ field }) => (
+													<FormItem>
+														<FormControl>
+															<ConvoyCheckbox
+																disabled={!hasAdvancedSubscriptions}
+																label="Events Filter"
+																isChecked={field.value}
+																onChange={field.onChange}
+															/>
+														</FormControl>
+													</FormItem>
+												)}
+											/>
+
+											{project?.type == 'outgoing' && (
 												<FormField
 													control={form.control}
-													name="showEventsFilter"
+													name="showEventTypes"
 													render={({ field }) => (
 														<FormItem>
-															<FormControl className="relative">
-																<div className="relative">
-																	<input
-																		type="checkbox"
-																		className=" peer
-    appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
-    mt-1 shrink-0 checked:bg-new.primary-300
-     checked:border-0 cursor-pointer disabled:opacity-50"
-																		defaultChecked={field.value}
-																		onChange={field.onChange}
-																		disabled={!hasAdvancedSubscriptions}
-																		// TODO: for business icon
-																	/>
-																	<svg
-																		className="
-      absolute
-      w-3 h-3 mt-1
-      hidden peer-checked:block top-[0.5px] right-[1px]"
-																		xmlns="http://www.w3.org/2000/svg"
-																		viewBox="0 0 24 24"
-																		fill="none"
-																		stroke="white"
-																		strokeWidth="4"
-																		strokeLinecap="round"
-																		strokeLinejoin="round"
-																	>
-																		<polyline points="20 6 9 17 4 12"></polyline>
-																	</svg>
-																</div>
+															<FormControl>
+																<ConvoyCheckbox
+																	disabled={!hasAdvancedSubscriptions}
+																	label="Event Types"
+																	isChecked={field.value}
+																	onChange={field.onChange}
+																/>
 															</FormControl>
 														</FormItem>
 													)}
 												/>
-												<span
-													className={cn(
-														'block text-neutral-9 text-xs',
-														!hasAdvancedSubscriptions && 'opacity-50',
-													)}
-												>
-													Events Filter
-												</span>
-											</label>
-
-											{project?.type == 'outgoing' && (
-												<label className="flex items-center gap-2 cursor-pointer">
-													{/* TODO you may want to make this label into a component */}
-													<FormField
-														control={form.control}
-														name="showEventTypes"
-														render={({ field }) => (
-															<FormItem>
-																<FormControl className="relative">
-																	<div className="relative">
-																		<input
-																			type="checkbox"
-																			className=" peer
-    appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
-    mt-1 shrink-0 checked:bg-new.primary-300
-     checked:border-0 cursor-pointer"
-																			defaultChecked={field.value}
-																			onChange={field.onChange}
-																		/>
-																		<svg
-																			className="
-      absolute
-      w-3 h-3 mt-1
-      hidden peer-checked:block top-[0.5px] right-[1px]"
-																			xmlns="http://www.w3.org/2000/svg"
-																			viewBox="0 0 24 24"
-																			fill="none"
-																			stroke="white"
-																			strokeWidth="4"
-																			strokeLinecap="round"
-																			strokeLinejoin="round"
-																		>
-																			<polyline points="20 6 9 17 4 12"></polyline>
-																		</svg>
-																	</div>
-																</FormControl>
-															</FormItem>
-														)}
-													/>
-													<span className="block text-neutral-9 text-xs">
-														Event Types
-													</span>
-												</label>
 											)}
 
 											{project?.type == 'incoming' && (
-												<label className="flex items-center gap-2 cursor-pointer">
-													{/* TODO you may want to make this label into a component */}
-													<FormField
-														control={form.control}
-														name="showTransform"
-														render={({ field }) => (
-															<FormItem>
-																<FormControl className="relative">
-																	<div className="relative">
-																		<input
-																			type="checkbox"
-																			className=" peer
-    appearance-none w-[14px] h-[14px] border-[1px] border-new.primary-300 rounded-sm bg-white-100
-    mt-1 shrink-0 checked:bg-new.primary-300
-     checked:border-0 cursor-pointer"
-																			defaultChecked={field.value}
-																			onChange={field.onChange}
-																			disabled={!hasWebhookTransformations}
-																		/>
-																		<svg
-																			className="
-      absolute
-      w-3 h-3 mt-1
-      hidden peer-checked:block top-[0.5px] right-[1px]"
-																			xmlns="http://www.w3.org/2000/svg"
-																			viewBox="0 0 24 24"
-																			fill="none"
-																			stroke="white"
-																			strokeWidth="4"
-																			strokeLinecap="round"
-																			strokeLinejoin="round"
-																		>
-																			<polyline points="20 6 9 17 4 12"></polyline>
-																		</svg>
-																	</div>
-																</FormControl>
-															</FormItem>
-														)}
-													/>
-													<span
-														className={cn(
-															'block text-neutral-9 text-xs',
-															!hasWebhookTransformations && 'opacity-50',
-														)}
-													>
-														Transform
-													</span>
-												</label>
+												<FormField
+													control={form.control}
+													name="showTransform"
+													render={({ field }) => (
+														<FormItem>
+															<FormControl>
+																<ConvoyCheckbox
+																	disabled={!hasWebhookTransformations}
+																	label="Transform"
+																	isChecked={field.value}
+																	onChange={field.onChange}
+																/>
+															</FormControl>
+														</FormItem>
+													)}
+												/>
 											)}
 										</div>
+
+										{form.watch('showEventTypes') && (
+											<div className="pl-4 border-l border-l-new.primary-25 flex justify-between items-center">
+												<FormField
+													control={form.control}
+													name="filter_config.event_types"
+													render={({ field }) => (
+														<FormItem className="w-full flex flex-col gap-y-2">
+															<div className="w-full space-y-2 flex items-center">
+																<FormLabel className="flex items-center gap-x-2">
+																	<span className="text-neutral-9 text-xs/5 ">
+																		Event Types
+																	</span>
+
+																	<Tooltip>
+																		<TooltipTrigger
+																			asChild
+																			className="hover:cursor-pointer"
+																		>
+																			<Info
+																				size={12}
+																				className="ml-1 text-neutral-9 inline"
+																			/>
+																		</TooltipTrigger>
+																		<TooltipContent className="bg-white-100 border border-neutral-4">
+																			<p className="w-[300px] text-xs text-neutral-10">
+																				These are the specifications for the
+																				retry mechanism for your endpoints under
+																				this subscription. In Linear time retry,
+																				event retries are done in linear time,
+																				while in Exponential back off retry,
+																				events are retried progressively
+																				increasing the time before the next
+																				retry attempt.
+																			</p>
+																		</TooltipContent>
+																	</Tooltip>
+																</FormLabel>
+															</div>
+															<Command className="overflow-visible">
+																<div className="rounded-md border border-input px-3 py-2 text-sm focus-within:ring-0 h-12">
+																	<div className="flex flex-wrap gap-1">
+																		{selectedEventTypes.map(eventType => {
+																			return (
+																				<Badge
+																					key={eventType}
+																					variant="secondary"
+																					className="select-none"
+																				>
+																					{eventType}
+																					<X
+																						className="size-3 text-muted-foreground hover:text-foreground ml-2 cursor-pointer"
+																						onMouseDown={e => {
+																							e.preventDefault();
+																						}}
+																						onClick={() => {
+																							handleUnselect(eventType);
+																							field.onChange(
+																								selectedEventTypes.filter(
+																									s => s !== eventType,
+																								),
+																							);
+																						}}
+																					/>
+																				</Badge>
+																			);
+																		})}
+																		<CommandPrimitive.Input
+																			onKeyDown={e => {
+																				const isRemoveAction = handleKeyDown(e);
+																				if (isRemoveAction) {
+																					field.onChange(
+																						selectedEventTypes.slice(0, -1),
+																					);
+																				}
+																			}}
+																			onValueChange={setInputValue}
+																			value={inputValue}
+																			onBlur={() => setIsMultiSelectOpen(false)}
+																			onFocus={() => setIsMultiSelectOpen(true)}
+																			placeholder=""
+																			className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+																		/>
+																	</div>
+																</div>
+																<div className="relative mt-2">
+																	<CommandList>
+																		{isMultiSelectOpen &&
+																			!!filteredEventTypes.length && (
+																				<div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none">
+																					<CommandGroup className="h-full overflow-auto">
+																						{filteredEventTypes.map(
+																							eventType => {
+																								return (
+																									<CommandItem
+																										key={eventType}
+																										onMouseDown={e => {
+																											e.preventDefault();
+																										}}
+																										onSelect={() => {
+																											setInputValue('');
+																											setSelectedEventTypes(
+																												prev => {
+																													field.onChange([
+																														...prev,
+																														eventType,
+																													]);
+																													return [
+																														...prev,
+																														eventType,
+																													];
+																												},
+																											);
+																										}}
+																										className={'cursor-pointer'}
+																									>
+																										{eventType}
+																									</CommandItem>
+																								);
+																							},
+																						)}
+																					</CommandGroup>
+																				</div>
+																			)}
+																	</CommandList>
+																</div>
+															</Command>
+															<FormMessageWithErrorIcon />
+														</FormItem>
+													)}
+												/>
+											</div>
+										)}
 
 										<div className="flex flex-col gap-y-6">
 											{form.watch('showEventsFilter') && (
@@ -2266,7 +2779,6 @@ return payload;
 															className="text-xs text-neutral-10 shadow-none hover:text-neutral-10 hover:bg-white-100"
 															onClick={e => {
 																e.stopPropagation();
-																setShowTransformFunctionDialog(false);
 																setShowEventsFilterDialog(true);
 															}}
 														>
@@ -2296,7 +2808,6 @@ return payload;
 															className="text-xs text-neutral-10 shadow-none hover:text-neutral-10 hover:bg-white-100"
 															onClick={e => {
 																e.stopPropagation();
-																setShowEventsFilterDialog(false);
 																setShowTransformFunctionDialog(true);
 															}}
 														>
@@ -2309,157 +2820,23 @@ return payload;
 									</div>
 								</div>
 							</section>
+
+							{/* Submit Button */}
+							<div className="flex justify-end w-full">
+								<Button
+									type="submit"
+									disabled={isCreating || !form.formState.isValid}
+									variant="ghost"
+									className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
+								>
+									{isCreating ? 'Creating...' : 'Create'} Subscription
+									<ChevronRight className="stroke-white-100" />
+								</Button>
+							</div>
 						</form>
 					</Form>
 				</div>
 			</div>
-
-			{/* Events Filter Dialog Old*/}
-			<Dialog
-				open={showEventsFilterDialog}
-				onOpenChange={setShowEventsFilterDialog}
-			>
-				<DialogContent className="max-w-[1280px] w-[80vw] h-[80vh] rounded-md">
-					<DialogHeader className="flex flex-row items-center justify-between w-[80%] mx-auto space-y-0">
-						<DialogTitle className="font-semibold text-sm capitalize">
-							Subscription Filter
-						</DialogTitle>
-						<DialogDescription className="sr-only">
-							Subscription Filter
-						</DialogDescription>
-						<div className="flex items-center justify-end gap-x-4">
-							<Button
-								variant="outline"
-								size="sm"
-								className="shadow-none border-new.primary-400 hover:bg-white-100 text-new.primary-400 hover:text-new.primary-400"
-								onClick={testFilter}
-							>
-								Test Filter
-								<svg width="18" height="18" className="fill-white-100">
-									<use xlinkHref="#test-icon"></use>
-								</svg>
-							</Button>
-							<Button
-								size="sm"
-								variant="ghost"
-								className="shadow-none bg-new.primary-400 text-white-100 hover:bg-new.primary-400 hover:text-white-100"
-								disabled={!hasPassedTestFilter}
-								onClick={setSubscriptionFilter}
-							>
-								Save
-							</Button>
-						</div>
-					</DialogHeader>
-
-					<div className="mt-10 border border-neutral-4 rounded-md">
-						<Tabs
-							defaultValue="body"
-							// value={activeFilterTab}
-							// onValueChange={setActiveFilterTab}
-							className="w-full"
-						>
-							<TabsList className="flex justify-center w-full border-b-[.5px] border-neutral-4 rounded-none">
-								<TabsTrigger value="body" className="capitalize" type="button">
-									body
-								</TabsTrigger>
-								<TabsTrigger
-									value="header"
-									className="capitalize"
-									type="button"
-								>
-									header
-								</TabsTrigger>
-							</TabsList>
-
-							<TabsContent value="body" className="m-0">
-								<div className="flex">
-									<div className="flex flex-col w-full border-r border-r-neutral-4">
-										<div className="text-sm border-b border-b-neutral-4 p-5 font-semibold">
-											Event Payload
-										</div>
-										<div className="h-[350px] p-4">
-											<Editor
-												className="max-h-[100%]"
-												defaultLanguage="json"
-												defaultValue={eventsFilter.request.body}
-												onChange={body =>
-													setEventsFilter(prev => ({
-														...prev,
-														request: { ...prev.request, body: body || '' },
-													}))
-												}
-												options={editorOptions}
-											/>
-										</div>
-									</div>
-									<div className="flex flex-col w-full">
-										<div className="text-sm border-b border-b-neutral-4 p-5 font-semibold">
-											Filter Schema
-										</div>
-										<div className="h-[400px] p-4">
-											<Editor
-												className="max-h-[100%]"
-												defaultLanguage="json"
-												defaultValue={eventsFilter.schema.body}
-												onChange={body =>
-													setEventsFilter(prev => ({
-														...prev,
-														schema: { ...prev.schema, body: body || '' },
-													}))
-												}
-												options={editorOptions}
-											/>
-										</div>
-									</div>
-								</div>
-							</TabsContent>
-
-							<TabsContent value="header" className="m-0">
-								<div className="flex">
-									<div className="flex flex-col w-full border-r border-r-neutral-4">
-										<div className="text-sm border-b border-b-neutral-4 p-5 font-semibold">
-											Event Headers
-										</div>
-										<div className="h-[400px] p-4">
-											<Editor
-												className="max-h-[100%]"
-												defaultLanguage="json"
-												defaultValue={eventsFilter.request.header}
-												onChange={header =>
-													setEventsFilter(prev => ({
-														...prev,
-														request: { ...prev.request, header: header || '' },
-													}))
-												}
-												options={editorOptions}
-											/>
-										</div>
-									</div>
-									<div className="flex flex-col w-full">
-										<div className="text-sm border-b border-b-neutral-4 p-5 font-semibold">
-											Filter Schema
-										</div>
-										<div className="h-[400px] p-4">
-											<Editor
-												className="max-h-[100%]"
-												defaultLanguage="json"
-												defaultValue={eventsFilter.schema.header}
-												onChange={header =>
-													setEventsFilter(prev => ({
-														...prev,
-														schema: { ...prev.schema, header: header || '' },
-													}))
-												}
-												options={editorOptions}
-											/>
-										</div>
-									</div>
-								</div>
-							</TabsContent>
-						</Tabs>
-					</div>
-				</DialogContent>
-			</Dialog>
 
 			{/* Events Filter Dialog New*/}
 			<Dialog
@@ -2577,7 +2954,7 @@ return payload;
 								</TabsContent>
 
 								<TabsContent value="header">
-								<div className="flex w-full border border-neutral-4 rounded-lg">
+									<div className="flex w-full border border-neutral-4 rounded-lg">
 										{/* Body Event Payload */}
 										<div className="flex flex-col w-1/2 border-r border-neutral-4">
 											<div>
@@ -2593,7 +2970,10 @@ return payload;
 														onChange={header =>
 															setEventsFilter(prev => ({
 																...prev,
-																request: { ...prev.request, header: header || '' },
+																request: {
+																	...prev.request,
+																	header: header || '',
+																},
 															}))
 														}
 														options={editorOptions}
@@ -2617,7 +2997,10 @@ return payload;
 														onChange={header =>
 															setEventsFilter(prev => ({
 																...prev,
-																schema: { ...prev.schema, header: header || '' },
+																schema: {
+																	...prev.schema,
+																	header: header || '',
+																},
 															}))
 														}
 														options={editorOptions}
@@ -2664,6 +3047,7 @@ return payload;
 									onClick={() => {
 										setHasSavedFn(true);
 										setShowTransformFunctionDialog(false);
+										saveTransformFn();
 									}}
 									disabled={!isTransformPassed}
 								>
