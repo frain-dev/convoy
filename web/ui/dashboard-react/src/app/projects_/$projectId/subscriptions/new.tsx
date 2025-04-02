@@ -709,12 +709,6 @@ return payload;
 																		<CommandInput
 																			placeholder="Filter source"
 																			className="h-9"
-																			onInput={e => {
-																				form.setValue(
-																					'source_id',
-																					(e.target as HTMLInputElement).value,
-																				);
-																			}}
 																		/>
 																		<CommandList className="max-h-40">
 																			<CommandEmpty className="text-xs text-neutral-10 hover:text-neutral-10 py-4">
@@ -729,12 +723,9 @@ return payload;
 																						<CommandItem
 																							className="cursor-pointer text-xs !text-neutral-10 py-4 !hover:text-neutral-10"
 																							value={`${source.name}-${source.uid}`}
-																							onSelect={() => {
-																								form.setValue(
-																									'source_id',
-																									source.uid,
-																								);
-																							}}
+																							onSelect={() =>
+																								field.onChange(source.uid)
+																							}
 																						>
 																							{source.name} ({source.uid})
 																							<Check
@@ -1401,10 +1392,10 @@ return payload;
 								</p>
 								<div className="border border-neutral-4 p-6 rounded-8px mt-6">
 									{toUseExistingEndpoint ? (
-										<div>
+										<div className="space-y-4">
 											<FormField
 												control={form.control}
-												name="source_id"
+												name="endpoint_id"
 												render={({ field }) => (
 													<FormItem className="flex flex-col gap-y-2">
 														<FormLabel className="text-neutral-9 text-xs">
@@ -1438,12 +1429,6 @@ return payload;
 																	<CommandInput
 																		placeholder="Filter endpoints"
 																		className="h-9"
-																		onInput={e => {
-																			form.setValue(
-																				'source_id',
-																				(e.target as HTMLInputElement).value,
-																			);
-																		}}
 																	/>
 																	<CommandList className="max-h-40">
 																		<CommandEmpty className="text-xs text-neutral-10 hover:text-neutral-10 py-4">
@@ -1458,12 +1443,9 @@ return payload;
 																					<CommandItem
 																						className="cursor-pointer text-xs !text-neutral-10 py-4 !hover:text-neutral-10"
 																						value={`${ep.name}-${ep.uid}`}
-																						onSelect={() => {
-																							form.setValue(
-																								'endpoint_id',
-																								ep.uid,
-																							);
-																						}}
+																						onSelect={() =>
+																							field.onChange(ep.uid)
+																						}
 																					>
 																						{ep.name} ({ep.uid})
 																						<Check
@@ -1487,7 +1469,7 @@ return payload;
 												)}
 											/>
 
-											<div className="mt-4">
+											<div>
 												<Button
 													disabled={!canManageSubscriptions}
 													type="button"
