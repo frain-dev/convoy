@@ -1122,7 +1122,7 @@ return payload;
 						>
 							<div className="border border-neutral-4 rounded-8px p-6 w-full">
 								<div className="grid grid-cols-1 w-full gap-y-5">
-									<h3 className="font-semibold mb-5 text-xs text-neutral-10">
+									<h3 className="font-semibold text-xs text-neutral-10">
 										Pre-configured Sources
 									</h3>
 									<div className="flex flex-col gap-y-2">
@@ -1265,9 +1265,9 @@ return payload;
 									{/* When source verification is HMAC */}
 									{incomingForm.watch('type') == 'hmac' && (
 										<div className="grid grid-cols-2 gap-x-5 gap-y-4">
-											<p className="capitalize font-semibold text-xs col-span-full text-neutral-10">
+											<h4 className="capitalize font-semibold text-xs col-span-full text-neutral-10">
 												Configure HMAC
-											</p>
+											</h4>
 
 											<FormField
 												name="config.encoding"
@@ -2922,7 +2922,7 @@ return payload;
 									{outgoingForm.watch('showTransform') && (
 										<div className="pl-4 border-l border-l-new.primary-25 flex justify-between items-center">
 											<div className="flex flex-col gap-y-2 justify-center">
-												<p className="text-neutral-12 font-semibold text-xs">
+												<p className="text-neutral-10 text-xs">
 													Transform
 												</p>
 												<p className="text-[10px] text-neutral-10">
