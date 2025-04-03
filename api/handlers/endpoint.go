@@ -84,6 +84,8 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		Licenser:       h.A.Licenser,
 		E:              e,
 		ProjectID:      project.UID,
+		FeatureFlag:    h.A.FFlag,
+		Logger:         h.A.Logger,
 	}
 
 	endpoint, err := ce.Run(r.Context())
@@ -319,6 +321,8 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		ProjectRepo:  postgres.NewProjectRepo(h.A.DB),
 		Licenser:     h.A.Licenser,
+		FeatureFlag:  h.A.FFlag,
+		Logger:       h.A.Logger,
 		E:            e,
 		Endpoint:     endpoint,
 		Project:      project,

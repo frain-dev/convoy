@@ -6,11 +6,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/license"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
@@ -43,7 +44,49 @@ const (
 	pageableCtx types.ContextKey = "pageable"
 )
 
-var ErrValidLicenseRequired = errors.New("access to this resource requires a valid license")
+var (
+	ErrValidLicenseRequired = errors.New("access to this resource requires a valid license")
+
+	// skipLoggingPaths defines paths that should not be logged by the request logger
+	skipLoggingPaths []string
+)
+
+// shouldSkipLogging checks if the given path should be excluded from logging
+func shouldSkipLogging(r map[string]interface{}, w map[string]interface{}) bool {
+	for _, skipPath := range skipLoggingPaths {
+		if strings.Contains(r["requestURL"].(string), skipPath) {
+			return true
+		}
+	}
+
+	headers := w["header"].(map[string]string)
+
+	if strings.Contains(headers["content-type"], "application/javascript") {
+		return true
+	}
+
+	if strings.Contains(headers["content-type"], "image") {
+		return true
+	}
+
+	if strings.Contains(headers["content-type"], "font") {
+		return true
+	}
+
+	if strings.Contains(headers["content-type"], "text/html") {
+		return true
+	}
+
+	if strings.Contains(headers["content-type"], "text/javascript") {
+		return true
+	}
+
+	if strings.Contains(headers["content-type"], "text/css") {
+		return true
+	}
+
+	return false
+}
 
 type AuthorizedLogin struct {
 	Username   string    `json:"username,omitempty"`
@@ -314,6 +357,10 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 				logFields := map[string]interface{}{
 					"httpRequest":  requestFields,
 					"httpResponse": responseFields,
+				}
+
+				if shouldSkipLogging(requestFields, responseFields) {
+					return
 				}
 
 				log.FromContext(r.Context()).WithFields(logFields).Log(lvl, requestFields["requestURL"])

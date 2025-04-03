@@ -37,6 +37,7 @@ var (
 	ErrLoggerIsRequired    = errors.New("logger is required")
 	ErrInvalidIPPrefix     = errors.New("invalid IP prefix")
 	ErrTracerIsRequired    = errors.New("tracer cannot be nil")
+	ErrNon2xxResponse      = errors.New("endpoint returned a non-2xx response")
 )
 
 type DispatcherOption func(d *Dispatcher) error
@@ -96,7 +97,7 @@ type Dispatcher struct {
 	ff *fflag.FFlag
 	l  license.Licenser
 
-	logger        *log.Logger
+	logger        log.StdLogger
 	transport     *http.Transport
 	client        *http.Client
 	rules         *netjail.Rules
@@ -242,7 +243,7 @@ func TLSConfigOption(insecureSkipVerify bool, licenser license.Licenser, caCertT
 	}
 }
 
-func LoggerOption(logger *log.Logger) DispatcherOption {
+func LoggerOption(logger log.StdLogger) DispatcherOption {
 	return func(d *Dispatcher) error {
 		if logger == nil {
 			return ErrLoggerIsRequired
@@ -289,7 +290,7 @@ func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	return nil, false, nil
 }
 
-func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -307,7 +308,7 @@ func (d *Dispatcher) SendRequest(ctx context.Context, endpoint, method string, j
 		ctx = netjail.ContextWithRules(ctx, d.rules)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, endpoint, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		d.logger.WithError(err).Error("error occurred while creating request")
 		return r, err
@@ -457,6 +458,51 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 
 	if err != nil {
 		d.logger.WithError(err).Error("couldn't parse response body")
+		return err
+	}
+
+	return nil
+}
+
+// Ping sends a GET request to the specified endpoint and verifies it returns a 2xx response.
+// It returns an error if the endpoint is unreachable or returns a non-2xx status code.
+func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration) error {
+	d.logger.Debugf("rules: %+v", d.rules)
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
+		ctx = netjail.ContextWithRules(ctx, d.rules)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	if err != nil {
+		d.logger.WithError(err).Error("error creating ping request")
+		return err
+	}
+
+	trace := &httptrace.ClientTrace{
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			d.logger.Debugf("IP address resolved for %s to: %s", endpoint, connInfo.Conn.RemoteAddr())
+		},
+	}
+
+	ctx = httptrace.WithClientTrace(ctx, trace)
+	req = req.WithContext(ctx)
+
+	req.Header.Add("User-Agent", defaultUserAgent())
+
+	response, err := d.client.Do(req)
+	if err != nil {
+		d.logger.WithError(err).Error("error sending ping request")
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		err = fmt.Errorf("%w: got status code %d", ErrNon2xxResponse, response.StatusCode)
+		d.logger.WithError(err).Error("ping request failed")
 		return err
 	}
 
