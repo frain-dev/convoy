@@ -180,12 +180,12 @@ function RouteComponent() {
 															Copy ID
 														</span>
 													</DropdownMenuItem>
-													<DropdownMenuItem className="flex items-center gap-2 hover:bg-new.primary-50 cursor-pointer">
+													<DropdownMenuItem className="flex items-center gap-2 hover:bg-new.primary-50 cursor-pointer" disabled={!canManageSources}>
 														<PencilLine className="stroke-neutral-9 !w-3 !h-3" />
 														<span className="text-xs text-neutral-9">Edit</span>
 													</DropdownMenuItem>
 													<DialogTrigger asChild>
-														<DropdownMenuItem className="flex items-center gap-2 hover:bg-new.primary-50 cursor-pointer">
+														<DropdownMenuItem className="flex items-center gap-2 hover:bg-new.primary-50 cursor-pointer" disabled={!canManageSources}>
 															<Trash2 className="stroke-destructive !w-3 !h-3" />
 															<span className="text-xs text-destructive">
 																Delete
@@ -218,7 +218,7 @@ function RouteComponent() {
 															onClick={async () =>
 																await deleteSource(source.uid)
 															}
-															disabled={isDeletingSource}
+															disabled={isDeletingSource || !canManageSources}
 															type="submit"
 															size="sm"
 															className="bg-destructive text-white-100 hover:bg-destructive hover:text-white-100 focus-visible:ring-0"
