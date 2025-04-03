@@ -1084,15 +1084,15 @@ return payload;
 	) {
 		const payload = transformOutgoingSource(raw);
 		console.log(payload);
-		// setIsCreating(true);
-		// try {
-		// /* const res =  */ await sourcesService.createSource(payload);
+		setIsCreating(true);
+		try {
+		/* const res =  */ await sourcesService.createSource(payload);
 		// TODO notify UI
-		// } catch (error) {
-		// 	console.error(error);
-		// } finally {
-		// 	setIsCreating(false);
-		// }
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setIsCreating(false);
+		}
 	}
 
 	return (

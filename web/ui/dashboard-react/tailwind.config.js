@@ -84,14 +84,14 @@ module.exports = {
 			bold: '600',
 			extrabold: '700',
 		},
-		screens: {
-			desktop: {
-				max: '1050px',
-			},
-			md: {
-				min: '850px',
-			},
-		},
+		// screens: {
+		// 	desktop: {
+		// 		max: '1050px',
+		// 	},
+		// 	md: {
+		// 		min: '850px',
+		// 	},
+		// },
 		borderRadius: {
 			'4px': '4px',
 			'8px': '8px',

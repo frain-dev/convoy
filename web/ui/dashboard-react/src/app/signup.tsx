@@ -352,7 +352,7 @@ function SignUpPage() {
 
 	return (
 		<div className="flex w-full">
-			<aside className="bg-primary-100 bg-[url('/assets/img/public-layout.png')] bg-no-repeat bg-right-top min-w-[374px] desktop:w-0 h-screen transition-all duration-300 px-[36px] pt-[70px]"></aside>
+			<aside className="bg-primary-100 bg-[url('/assets/img/public-layout.png')] bg-no-repeat bg-right-top min-w-[374px] lg:w-0 h-screen transition-all duration-300 px-[36px] pt-[70px]"></aside>
 			<div className="bg-[url('/assets/svg/pattern.svg')] bg-center bg-cover min-h-screen w-full">
 				<div className="min-h-screen flex flex-col items-center justify-center w-full">
 					<img
