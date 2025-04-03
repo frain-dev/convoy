@@ -62,7 +62,7 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		}
 
 		if project.Type == datastore.OutgoingProject {
-			count, err3 := s.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpoint.UID)
+			count, err3 := s.SubRepo.CountEndpointSubscriptions(ctx, project.UID, endpoint.UID, subscription.UID)
 			if err3 != nil {
 				log.FromContext(ctx).WithError(err3).Error("failed to count endpoint subscriptions")
 				return nil, &ServiceError{ErrMsg: "failed to count endpoint subscriptions", Err: err3}

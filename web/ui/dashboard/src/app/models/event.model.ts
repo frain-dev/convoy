@@ -92,6 +92,7 @@ export interface EVENT_TYPE{
     name: string;
 	category?: string;
 	description?: string;
+    json_schema?: any;
 	uid: string;
 	deprecated_at?: string;
 }

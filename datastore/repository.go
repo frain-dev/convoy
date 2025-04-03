@@ -40,7 +40,7 @@ type EventDeliveryRepository interface {
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
 	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
-	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period) ([]EventInterval, error)
+	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period, ids []string) ([]EventInterval, error)
 	PartitionEventDeliveriesTable(ctx context.Context) error
 	UnPartitionEventDeliveriesTable(ctx context.Context) error
 }
@@ -134,7 +134,7 @@ type SubscriptionRepository interface {
 	FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]Subscription, error)
 	FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType SubscriptionType) (*Subscription, error)
 	FindCLISubscriptions(ctx context.Context, projectID string) ([]Subscription, error)
-	CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error)
+	CountEndpointSubscriptions(context.Context, string, string, string) (int64, error)
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}, isFlattened bool) (bool, error)
 	CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error)
 	LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]Subscription, error)
@@ -242,6 +242,7 @@ type EventTypesRepository interface {
 	CreateDefaultEventType(ctx context.Context, projectId string) error
 	DeprecateEventType(context.Context, string, string) (*ProjectEventType, error)
 	FetchEventTypeById(context.Context, string, string) (*ProjectEventType, error)
+	FetchEventTypeByName(context.Context, string, string) (*ProjectEventType, error)
 	FetchAllEventTypes(context.Context, string) ([]ProjectEventType, error)
 	CheckEventTypeExists(context.Context, string, string) (bool, error)
 }

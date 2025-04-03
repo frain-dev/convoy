@@ -110,4 +110,21 @@ export class CreateProjectComponentService {
 			}
 		});
 	}
+
+    importOpenAPISpec(payload: { spec: string }): Promise<HTTP_RESPONSE> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const projectResponse = await this.http.request({
+                    url: `/event-types/import`,
+                    method: 'post',
+                    body: payload,
+                    level: 'org_project'
+                });
+
+                return resolve(projectResponse);
+            } catch (error) {
+                return reject(error);
+            }
+        });
+    }
 }

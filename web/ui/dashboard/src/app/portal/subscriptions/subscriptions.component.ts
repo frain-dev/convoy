@@ -18,11 +18,12 @@ import { PortalService } from '../portal.service';
 import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { LicensesService } from '../../services/licenses/licenses.service';
+import {CreatePortalEndpointComponent} from "../create-portal-endpoint/create-portal-endpoint.component";
 
 @Component({
 	selector: 'convoy-subscriptions',
 	standalone: true,
-	imports: [CommonModule, CreateSubscriptionModule, DeleteModalComponent, PaginationComponent, CopyButtonComponent, FormsModule, CardComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, DialogDirective, TagComponent],
+	imports: [CommonModule, CreateSubscriptionModule, DeleteModalComponent, PaginationComponent, CopyButtonComponent, FormsModule, CardComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, DialogDirective, TagComponent, CreatePortalEndpointComponent],
 	templateUrl: './subscriptions.component.html',
 	styleUrls: ['./subscriptions.component.scss']
 })

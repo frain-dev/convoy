@@ -363,18 +363,18 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) FindStuckEventDeliveriesBySta
 }
 
 // LoadEventDeliveriesIntervals mocks base method.
-func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period) ([]datastore.EventInterval, error) {
+func (m *MockEventDeliveryRepository) LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params datastore.SearchParams, period datastore.Period, ids []string) ([]datastore.EventInterval, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period)
+	ret := m.ctrl.Call(m, "LoadEventDeliveriesIntervals", ctx, projectID, params, period, ids)
 	ret0, _ := ret[0].([]datastore.EventInterval)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // LoadEventDeliveriesIntervals indicates an expected call of LoadEventDeliveriesIntervals.
-func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(ctx, projectID, params, period any) *gomock.Call {
+func (mr *MockEventDeliveryRepositoryMockRecorder) LoadEventDeliveriesIntervals(ctx, projectID, params, period, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), ctx, projectID, params, period)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadEventDeliveriesIntervals", reflect.TypeOf((*MockEventDeliveryRepository)(nil).LoadEventDeliveriesIntervals), ctx, projectID, params, period, ids)
 }
 
 // LoadEventDeliveriesPaged mocks base method.
@@ -1532,18 +1532,18 @@ func (mr *MockSubscriptionRepositoryMockRecorder) CompareFlattenedPayload(arg0, 
 }
 
 // CountEndpointSubscriptions mocks base method.
-func (m *MockSubscriptionRepository) CountEndpointSubscriptions(ctx context.Context, projectID, endpointID string) (int64, error) {
+func (m *MockSubscriptionRepository) CountEndpointSubscriptions(arg0 context.Context, arg1, arg2, arg3 string) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountEndpointSubscriptions", ctx, projectID, endpointID)
+	ret := m.ctrl.Call(m, "CountEndpointSubscriptions", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountEndpointSubscriptions indicates an expected call of CountEndpointSubscriptions.
-func (mr *MockSubscriptionRepositoryMockRecorder) CountEndpointSubscriptions(ctx, projectID, endpointID any) *gomock.Call {
+func (mr *MockSubscriptionRepositoryMockRecorder) CountEndpointSubscriptions(arg0, arg1, arg2, arg3 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEndpointSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).CountEndpointSubscriptions), ctx, projectID, endpointID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountEndpointSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).CountEndpointSubscriptions), arg0, arg1, arg2, arg3)
 }
 
 // CreateSubscription mocks base method.
@@ -3014,6 +3014,21 @@ func (m *MockEventTypesRepository) FetchEventTypeById(arg0 context.Context, arg1
 func (mr *MockEventTypesRepositoryMockRecorder) FetchEventTypeById(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchEventTypeById", reflect.TypeOf((*MockEventTypesRepository)(nil).FetchEventTypeById), arg0, arg1, arg2)
+}
+
+// FetchEventTypeByName mocks base method.
+func (m *MockEventTypesRepository) FetchEventTypeByName(arg0 context.Context, arg1, arg2 string) (*datastore.ProjectEventType, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchEventTypeByName", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*datastore.ProjectEventType)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchEventTypeByName indicates an expected call of FetchEventTypeByName.
+func (mr *MockEventTypesRepositoryMockRecorder) FetchEventTypeByName(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchEventTypeByName", reflect.TypeOf((*MockEventTypesRepository)(nil).FetchEventTypeByName), arg0, arg1, arg2)
 }
 
 // UpdateEventType mocks base method.

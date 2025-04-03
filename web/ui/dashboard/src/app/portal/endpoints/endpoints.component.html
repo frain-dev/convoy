@@ -61,7 +61,8 @@
 
 					<ul dropdownOptions class="p-10px">
 						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
-							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="activeEndpoint = endpoint; openEndpointForm('update')">
+							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral"
+                                    (click)="activeEndpoint = endpoint; openEndpointForm('update')">
 								<svg width="16" height="16" class="mr-8px">
 									<use xlink:href="#edit-icon"></use>
 								</svg>
@@ -98,7 +99,7 @@
 							</button>
 						</li>
 						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
-							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="sendTestEvent(endpoint?.uid)">
+							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="catalogDialog.showModal(); endpointUid = endpoint?.uid ?? ''">
 								<svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
 									<path d="M7.33317 11.8346L8.6665 10.5013L7.33317 9.16797L8.6665 10.5013H4.6665" fill="#F97066" />
 									<path d="M7.33317 11.8346L8.6665 10.5013L7.33317 9.16797L8.6665 10.5013H4.6665" stroke="#292D32" stroke-linecap="round" stroke-linejoin="round" />
@@ -146,7 +147,7 @@
 		</ng-container>
 
 		<div class="flex justify-center items-center p-40px flex-col" *ngIf="!isloadingSubscriptions && endpoints?.length === 0">
-			<img src="/assets/img/empty-state.svg" alt="empty state image" />
+			<img ngSrc="/assets/img/empty-state.svg" alt="empty state image" height="108" width="124"/>
 			<p class="mt-16px text-12 text-neutral-11">You don't have any endpoints yet</p>
 		</div>
 	</ul>
@@ -167,10 +168,64 @@
 			</div>
 			Back
 		</button>
-		<convoy-create-endpoint type="portal" showAction="true" [endpointId]="activeEndpoint?.uid || ''" (onAction)="goBack(true)"></convoy-create-endpoint>
+		<convoy-create-portal-endpoint
+                type="portal"
+                showAction="true"
+                [action]="action"
+                [endpointId]="activeEndpoint?.uid || ''" (onAction)="goBack(true)">
+        </convoy-create-portal-endpoint>
 	</div>
 </div>
 
 <dialog #secretDialog convoy-dialog position="center">
 	<convoy-endpoint-secret [endpointDetails]="activeEndpoint" (closeSecretModal)="secretDialog.close()" (expireCurrentSecret)="getEndpoints(); secretDialog.close()"></convoy-endpoint-secret>
 </dialog>
+
+<convoy-event-catalog style="display: none;" (eventTypesFetched)="onEventTypesFetched($event)" [singleEventMode]="true" [selectedEventType]="selectedEventType"></convoy-event-catalog>
+
+
+<dialog #catalogDialog convoy-dialog position="center" class="w-[840px] max-w-[100vw] max-h-screen overflow-y-auto">
+    <div class="p-32px max-h-[70vh] flex flex-col">
+        <h2 class="text-xl font-semibold mb-6">Event types</h2>
+
+        <div class="flex-1 overflow-y-auto min-h-0">
+            <label class="text-neutral-11 mb-2 block text-12">Select Event Type:</label>
+            <div convoy-dropdown size="full" position="center">
+            <button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px w-full p-8px !border-primary-400 flex items-center justify-between">
+                    <span class="text-primary-100 capitalize"> {{ selectedEventType?.name || 'None' }}</span>
+                    <img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-14px h-14px ml-10px" />
+                </button>
+
+                <ul dropdownOptions>
+                    <li convoy-dropdown-option convoy-list-item
+                        *ngFor="let eventType of toEventTypesString()"
+                        class="text-14 px-20px w-full min-w-max"
+                        [active]="selectedEventType == eventType ? 'true' : 'false'"
+                        [hasBorder]="true">
+                        <button convoy-button color="neutral" fill="text"
+                                (click)="selectEventType(eventType)"
+                                class="capitalize font-normal text-left w-full !justify-start text-12">
+                            {{ eventType.name }}
+                        </button>
+
+                    </li>
+                </ul>
+            </div>
+
+            <div *ngIf="selectedEventType">
+                <convoy-event-catalog [singleEventMode]="true" [selectedEventType]="selectedEventType"></convoy-event-catalog>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-24px justify-end mt-6 pt-4">
+            <button convoy-button size="sm" type="button" fill="outline" color="error" (click)="catalogDialog.close();">
+                Cancel
+            </button>
+            <button convoy-button [disabled]="!selectedEventType" size="sm" class="self-stretch px-18px" (click)="sendEvent(); getEndpoints(); catalogDialog.close()">
+                Send Test Event
+            </button>
+        </div>
+    </div>
+</dialog>
+
+

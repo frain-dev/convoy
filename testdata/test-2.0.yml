@@ -1,0 +1,119 @@
+swagger: "2.0"
+info:
+  title: Test API
+  version: "1.0.0"
+  description: Test API for webhook extraction
+
+paths:
+  /webhooks/barber:
+    post:
+      summary: Barber Shop Webhook
+      description: Webhook for barber shop events
+      tags:
+        - webhooks
+      operationId: barberWebhook
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/BarberEvent"
+      responses:
+        "200":
+          description: Webhook processed successfully
+
+  /webhooks/electrical:
+    post:
+      summary: Electrical Equipment Webhook
+      description: Webhook for electrical equipment inventory updates
+      tags:
+        - webhooks
+      operationId: electricalWebhook
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/ElectricalEvent"
+      responses:
+        "200":
+          description: Webhook processed successfully
+
+definitions:
+  BarberEvent:
+    type: object
+    required:
+      - event_type
+      - appointment_id
+      - customer_name
+      - service_type
+      - timestamp
+    properties:
+      event_type:
+        type: string
+        enum:
+          - appointment_created
+          - appointment_updated
+          - appointment_cancelled
+      appointment_id:
+        type: string
+        format: uuid
+      customer_name:
+        type: string
+      service_type:
+        type: string
+      timestamp:
+        type: string
+        format: date-time
+      notes:
+        type: string
+    example:
+      event_type: appointment_created
+      appointment_id: 123e4567-e89b-12d3-a456-426614174000
+      customer_name: John Doe
+      service_type: Haircut
+      timestamp: "2024-03-20T10:00:00Z"
+      notes: First time customer
+
+  ElectricalEvent:
+    type: object
+    required:
+      - event_type
+      - item_id
+      - quantity
+      - location
+      - timestamp
+    properties:
+      event_type:
+        type: string
+        enum:
+          - stock_added
+          - stock_removed
+          - stock_transferred
+      item_id:
+        type: string
+      quantity:
+        type: integer
+        minimum: 1
+      location:
+        type: string
+      timestamp:
+        type: string
+        format: date-time
+      notes:
+        type: string
+    example:
+      event_type: stock_added
+      item_id: LED-BULB-60W
+      quantity: 100
+      location: Warehouse A
+      timestamp: "2024-03-20T14:30:00Z"
+      notes: Bulk order received

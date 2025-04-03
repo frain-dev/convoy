@@ -48,7 +48,7 @@ const routes: Routes = [
 			{
 				path: 'get-started',
 				loadComponent: () => import('./pages/onboarding/onboarding.component').then(m => m.OnboardingComponent)
-			}
+			},
 		]
 	}
 ];

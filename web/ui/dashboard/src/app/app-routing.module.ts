@@ -35,7 +35,11 @@ const routes: Routes = [
 			{
 				path: 'event-deliveries/:id',
 				loadComponent: () => import('./portal/event-delivery/event-delivery.component').then(m => m.EventDeliveryComponent)
-			}
+			},
+            {
+                path: 'event-catalog',
+                loadComponent: () => import('./portal/event-catalog/event-catalog.component').then(m => m.EventCatalogComponent)
+            }
 		]
 	},
 	{

@@ -1,0 +1,132 @@
+swagger: "2.0"
+info:
+  title: Test API
+  version: "1.0.0"
+  description: Test API for webhook extraction
+
+paths:
+  /webhooks/barber:
+    post:
+      summary: Barber Shop Webhook
+      description: Webhook for barber shop events
+      tags:
+        - webhooks
+      operationId: barberWebhook
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/BarberEvent"
+      responses:
+        "200":
+          description: Webhook processed successfully
+
+  /webhooks/electrical:
+    post:
+      summary: Electrical Equipment Webhook
+      description: Webhook for electrical equipment inventory updates
+      tags:
+        - webhooks
+      operationId: electricalWebhook
+      consumes:
+        - application/json
+      produces:
+        - application/json
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/ElectricalEvent"
+      responses:
+        "200":
+          description: Webhook processed successfully
+
+definitions:
+  BarberEvent:
+    type: object
+    required:
+      - event_type
+      - appointment_id
+      - customer_name
+      - service_type
+      - timestamp
+    properties:
+      event_type:
+        type: string
+        description: Type of event that occurred (e.g., appointment created, updated, cancelled)
+        enum:
+          - appointment_created
+          - appointment_updated
+          - appointment_cancelled
+      appointment_id:
+        type: string
+        description: Unique identifier for the appointment
+        format: uuid
+      customer_name:
+        type: string
+        description: Full name of the customer
+      service_type:
+        type: string
+        description: Type of service booked (e.g., Haircut, Shave)
+      timestamp:
+        type: string
+        description: Date and time when the event occurred
+        format: date-time
+      notes:
+        type: string
+        description: Additional notes or comments about the appointment
+    example:
+      event_type: appointment_created
+      appointment_id: 123e4567-e89b-12d3-a456-426614174000
+      customer_name: John Doe
+      service_type: Haircut
+      timestamp: "2024-03-20T10:00:00Z"
+      notes: First time customer
+
+  ElectricalEvent:
+    type: object
+    required:
+      - event_type
+      - item_id
+      - quantity
+      - location
+      - timestamp
+    properties:
+      event_type:
+        type: string
+        description: Type of inventory event (e.g., restock, sold, damaged)
+        enum:
+          - item_restocked
+          - item_sold
+          - item_damaged
+      item_id:
+        type: string
+        description: Unique identifier for the electrical equipment
+        format: uuid
+      quantity:
+        type: integer
+        description: Number of items affected by the event
+        minimum: 1
+      location:
+        type: string
+        description: Storage location or warehouse identifier
+      timestamp:
+        type: string
+        description: Date and time when the inventory event occurred
+        format: date-time
+      notes:
+        type: string
+        description: Additional notes about the inventory update
+    example:
+      event_type: item_restocked
+      item_id: 789e0123-f45b-67d8-a456-426614174000
+      quantity: 50
+      location: "Warehouse-A"
+      timestamp: "2024-03-20T14:30:00Z"
+      notes: "Bulk order received"
