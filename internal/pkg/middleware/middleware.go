@@ -77,6 +77,10 @@ func shouldSkipLogging(r map[string]interface{}, w map[string]interface{}) bool 
 		return true
 	}
 
+	if strings.Contains(headers["content-type"], "text/javascript") {
+		return true
+	}
+
 	if strings.Contains(headers["content-type"], "text/css") {
 		return true
 	}

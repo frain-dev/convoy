@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/log"
+	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy"
@@ -18,11 +21,14 @@ import (
 
 func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoint, projectID string) *CreateEndpointService {
 	return &CreateEndpointService{
-		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
-		ProjectRepo:  mocks.NewMockProjectRepository(ctrl),
-		Licenser:     mocks.NewMockLicenser(ctrl),
-		E:            e,
-		ProjectID:    projectID,
+		PortalLinkRepo: nil,
+		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
+		ProjectRepo:    mocks.NewMockProjectRepository(ctrl),
+		Licenser:       mocks.NewMockLicenser(ctrl),
+		Logger:         log.NewLogger(os.Stdout),
+		FeatureFlag:    fflag.NoopFflag(),
+		E:              e,
+		ProjectID:      projectID,
 	}
 }
 
@@ -74,6 +80,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
@@ -124,6 +131,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(false)
 			},
@@ -176,6 +184,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
@@ -225,6 +234,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
@@ -237,6 +247,9 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			as := provideCreateEndpointService(ctrl, tc.args.e, tc.args.g.UID)
+
+			err := config.LoadConfig("")
+			require.NoError(t, err)
 
 			// Arrange Expectations
 			if tc.dbFn != nil {

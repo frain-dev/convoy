@@ -78,6 +78,12 @@ func NewFFlag(enableFeatureFlags []string) *FFlag {
 	return f
 }
 
+func NoopFflag() *FFlag {
+	return &FFlag{
+		Features: clone(DefaultFeaturesState),
+	}
+}
+
 func clone(src map[FeatureFlagKey]FeatureFlagState) map[FeatureFlagKey]FeatureFlagState {
 	dst := make(map[FeatureFlagKey]FeatureFlagState)
 	for k, v := range src {
