@@ -3,8 +3,13 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -23,9 +28,10 @@ type CreateEndpointService struct {
 	EndpointRepo   datastore.EndpointRepository
 	ProjectRepo    datastore.ProjectRepository
 	Licenser       license.Licenser
-
-	E         models.CreateEndpoint
-	ProjectID string
+	FeatureFlag    *fflag.FFlag
+	Logger         log.StdLogger
+	E              models.CreateEndpoint
+	ProjectID      string
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -34,12 +40,12 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
 	}
 
-	url, err := util.ValidateEndpoint(a.E.URL, project.Config.SSL.EnforceSecureEndpoints, a.Licenser.CustomCertificateAuthority())
+	endpointUrl, err := a.ValidateEndpoint(ctx, project.Config.SSL.EnforceSecureEndpoints)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
-	a.E.URL = url
+	a.E.URL = endpointUrl
 
 	truthValue := true
 	switch project.Type {
@@ -123,6 +129,56 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	}
 
 	return endpoint, nil
+}
+
+func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool) (string, error) {
+	if util.IsStringEmpty(a.E.URL) {
+		return "", errors.New("please provide the endpoint url")
+	}
+
+	u, pingErr := url.Parse(a.E.URL)
+	if pingErr != nil {
+		return "", pingErr
+	}
+
+	switch u.Scheme {
+	case "http":
+		if enforceSecure {
+			return "", errors.New("only https endpoints allowed")
+		}
+	case "https":
+		cfg, innerErr := config.Get()
+		if innerErr != nil {
+			return "", innerErr
+		}
+
+		caCertTLSCfg, innerErr := config.GetCaCert()
+		if innerErr != nil {
+			return "", innerErr
+		}
+
+		dispatcher, innerErr := net.NewDispatcher(
+			a.Licenser,
+			a.FeatureFlag,
+			net.LoggerOption(a.Logger),
+			net.ProxyOption(cfg.Server.HTTP.HttpProxy),
+			net.AllowListOption(cfg.Dispatcher.AllowList),
+			net.BlockListOption(cfg.Dispatcher.BlockList),
+			net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
+		)
+		if innerErr != nil {
+			return "", innerErr
+		}
+
+		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second)
+		if pingErr != nil {
+			return "", fmt.Errorf("failed to ping tls endpoint: %v", pingErr)
+		}
+	default:
+		return "", errors.New("invalid endpoint scheme")
+	}
+
+	return u.String(), nil
 }
 
 func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*datastore.EndpointAuthentication, error) {
