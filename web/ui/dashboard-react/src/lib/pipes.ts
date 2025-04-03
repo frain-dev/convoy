@@ -60,3 +60,40 @@ export function stringToJson(str: string) {
 		return undefined;
 	}
 }
+
+export function transformSourceValueType(
+	value: string,
+	type: 'sourceType' | 'verifier' | 'pub_sub',
+) {
+	const sourceTypes = [
+		{ value: 'http', viewValue: 'HTTP' },
+		{ value: 'rest_api', viewValue: 'Rest API' },
+		{ value: 'pub_sub', viewValue: 'Pub/Sub' },
+		{ value: 'db_change_stream', viewValue: 'Database' },
+	];
+	const httpTypes = [
+		{ value: 'hmac', viewValue: 'HMAC' },
+		{ value: 'basic_auth', viewValue: 'Basic Auth' },
+		{ value: 'api_key', viewValue: 'API Key' },
+		{ value: 'noop', viewValue: 'None' },
+	];
+
+	const pubSubTypes = [
+		{ value: 'google', viewValue: 'Google Pub/Sub' },
+		{ value: 'sqs', viewValue: 'AWS SQS' },
+		{ value: 'kafka', viewValue: 'Kafka' },
+		{ value: 'amqp', viewValue: 'AMQP / RabbitMQ' },
+	];
+
+	if (type === 'sourceType') {
+		return sourceTypes.find(source => source.value === value)?.viewValue || '-';
+	}
+	if (type === 'verifier') {
+		return httpTypes.find(source => source.value === value)?.viewValue || '-';
+	}
+	if (type === 'pub_sub') {
+		return pubSubTypes.find(source => source.value === value)?.viewValue || '-';
+	}
+
+	return '-';
+}
