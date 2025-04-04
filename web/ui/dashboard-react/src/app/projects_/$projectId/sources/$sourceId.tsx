@@ -19,6 +19,7 @@ import { InputTags } from '@/components/ui/input-tags';
 import { Textarea } from '@/components/ui/textarea';
 import { ConvoyCheckbox } from '@/components/convoy-checkbox';
 import { ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
 	Tooltip,
 	TooltipContent,
@@ -34,7 +35,6 @@ import {
 	DialogFooter,
 	DialogDescription,
 } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
 	Select,
 	SelectContent,
@@ -48,11 +48,11 @@ import { Button } from '@/components/ui/button';
 import { DashboardLayout } from '@/components/dashboard';
 
 import { cn } from '@/lib/utils';
-import { useLicenseStore, useProjectStore } from '@/store';
+
+import { useLicenseStore } from '@/store';
 import * as authService from '@/services/auth.service';
 import * as sourcesService from '@/services/sources.service';
-
-import type { DragEvent, ChangeEvent } from 'react';
+import * as projectsService from '@/services/projects.service';
 
 import uploadIcon from '../../../../../assets/img/upload.png';
 import githubIcon from '../../../../../assets/img/github.png';
@@ -60,6 +60,8 @@ import shopifyIcon from '../../../../../assets/img/shopify.png';
 import twitterIcon from '../../../../../assets/img/twitter.png';
 import docIcon from '../../../../../assets/img/doc-icon-primary.svg';
 import modalCloseIcon from '../../../../../assets/svg/modal-close-icon.svg';
+
+import type { DragEvent, ChangeEvent } from 'react';
 
 type FuncOutput = {
 	previous: Record<string, unknown> | null | string;
@@ -74,26 +76,24 @@ const editorOptions = {
 	fontSize: 12,
 };
 
-export const Route = createFileRoute('/projects_/$projectId/sources/new')({
-	component: RouteComponent,
-	async loader() {
-		const perms = await authService.getUserPermissions();
-		return {
-			// TODO I think that if a user does not have permission to manage soure, they should not even see this page at all
-			// In other words, they should be bounced
-			canManageSources: perms.includes('Sources|MANAGE'),
-		};
+export const Route = createFileRoute('/projects_/$projectId/sources/$sourceId')(
+	{
+		component: RouteComponent,
+		async loader({ params }) {
+			const source = await sourcesService.getSourceDetails(params.sourceId);
+			const perms = await authService.getUserPermissions();
+			const project = await projectsService.getProject(params.projectId);
+
+			return {
+				source,
+				project,
+				canManageSources: perms.includes('Sources|MANAGE'),
+			};
+		},
 	},
-});
+);
 
 type SourceType = (typeof sourceVerifications)[number]['uid'];
-
-const pubSubTypes = [
-	{ uid: 'google', name: 'Google Pub/Sub' },
-	{ uid: 'kafka', name: 'Kafka' },
-	{ uid: 'sqs', name: 'AWS SQS' },
-	{ uid: 'amqp', name: 'AMQP / RabbitMQ' },
-] as const;
 
 const sourceVerifications = [
 	{ uid: 'noop', name: 'None' },
@@ -103,6 +103,13 @@ const sourceVerifications = [
 	{ uid: 'github', name: 'Github' },
 	{ uid: 'shopify', name: 'Shopify' },
 	{ uid: 'twitter', name: 'Twitter' },
+] as const;
+
+const pubSubTypes = [
+	{ uid: 'google', name: 'Google Pub/Sub' },
+	{ uid: 'kafka', name: 'Kafka' },
+	{ uid: 'sqs', name: 'AWS SQS' },
+	{ uid: 'amqp', name: 'AMQP / RabbitMQ' },
 ] as const;
 
 const AWSRegions = [
@@ -137,6 +144,14 @@ const AWSRegions = [
 	{ uid: 'us-gov-west-1', name: 'AWS GovCloud (US-West)' },
 ] as const;
 
+const defaultBody = {
+	id: 'Sample-1',
+	name: 'Sample 1',
+	description: 'This is sample data #1',
+};
+
+const defaultOutput = { previous: '', current: '' };
+
 const IncomingSourceFormSchema = z
 	.object({
 		name: z.string().min(1, 'Enter new source name'),
@@ -154,7 +169,7 @@ const IncomingSourceFormSchema = z
 			password: z.string().optional(),
 			header_name: z.string().optional(),
 			header_value: z.string().optional(),
-		}), // z.record(z.union([z.string(), z.boolean()])).optional(),
+		}),
 		custom_response: z
 			.object({
 				content_type: z.string().optional(),
@@ -373,7 +388,7 @@ const OutgoingSourceFormSchema = z
 							password: z.string(),
 						})
 						.optional(),
-					bindedExchange: z
+					bindExchange: z
 						.object({
 							exchange: z.string(),
 							routingKey: z.string(),
@@ -539,8 +554,8 @@ const OutgoingSourceFormSchema = z
 			if (!showAMQPBindExhange) return true;
 
 			if (
-				!pub_sub.amqp?.bindedExchange?.exchange ||
-				!pub_sub.amqp?.bindedExchange?.routingKey
+				!pub_sub.amqp?.bindExchange?.exchange ||
+				!pub_sub.amqp?.bindExchange?.routingKey
 			) {
 				return false;
 			}
@@ -584,13 +599,13 @@ const OutgoingSourceFormSchema = z
 					path: ['pub_sub.amqp.auth.password'],
 				};
 
-			if (showAMQPBindExhange && !pub_sub.amqp?.bindedExchange?.exchange)
+			if (showAMQPBindExhange && !pub_sub.amqp?.bindExchange?.exchange)
 				return {
 					message: 'Exchange is required when binding exchange is enabled',
 					path: ['pub_sub.amqp.bindExchange.exchange'],
 				};
 
-			if (showAMQPBindExhange && !pub_sub.amqp?.bindedExchange?.routingKey)
+			if (showAMQPBindExhange && !pub_sub.amqp?.bindExchange?.routingKey)
 				return {
 					message: 'Routing key is required when binding exchange is enabled',
 					path: ['pub_sub.amqp.bindExchange.routingKey'],
@@ -600,22 +615,66 @@ const OutgoingSourceFormSchema = z
 		},
 	);
 
-const defaultBody = {
-	id: 'Sample-1',
-	name: 'Sample 1',
-	description: 'This is sample data #1',
-};
+const defaultTranformFnBody = `/*  1. While you can write multiple functions, the main
+         function called for your transformation is the transform function.
+      
+      2. The only argument acceptable in the transform function is the
+       payload data.
+      
+      3. The transform method must return a value.
+      
+      4. Console logs lust be written like this:
+      console.log('%j', logged_item) to get printed in the log below.
+      
+      5. The output payload from the function should be in this format
+          {
+              "owner_id": "string, optional",
+              "event_type": "string, required",
+              "data": "object, required",
+              "custom_headers": "object, optional",
+              "idempotency_key": "string, optional"
+              "endpoint_id": "string, depends",
+          }
+      
+      6. The endpoint_id field is only required when sending event to
+      a single endpoint. */
+      
+      function transform(payload) {
+          // Transform function here
+          return {
+              "endpoint_id": "",
+              "owner_id": "",
+              "event_type": "sample",
+              "data": payload,
+              "custom_headers": {
+                  "sample-header": "sample-value"
+              },
+              "idempotency_key": ""
+          }
+      }`;
 
-const defaultOutput = { previous: '', current: '' };
+const defaultTransformFnHeader = `/* 1. While you can write multiple functions, the main function
+      called for your transformation is the transform function.
+      
+      2. The only argument acceptable in the transform function is
+      the payload data.
+      
+      3. The transform method must return a value.
+      
+      4. Console logs lust be written like this
+      console.log('%j', logged_item) to get printed in the log below. */
+      
+      function transform(payload) {
+      // Transform function here
+      return payload;
+      }`;
 
 function RouteComponent() {
 	const navigate = useNavigate();
-	const { project } = useProjectStore();
 	const { licenses } = useLicenseStore();
-	const { projectId } = Route.useParams();
-	const { canManageSources } = Route.useLoaderData();
+	const { source, project, canManageSources } = Route.useLoaderData();
 	const [sourceUrl, setSourceUrl] = useState('');
-	const [isCreating, setIsCreating] = useState(false);
+	const [isUpdating, setIsUpdating] = useState(false);
 	const [hasCreatedIncomingSource, setHasCreatedIncomingSource] =
 		useState(false);
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -632,98 +691,108 @@ function RouteComponent() {
 	const [headerPayload, setHeaderPayload] =
 		useState<Record<string, unknown>>(defaultBody);
 	const [transformFnBody, setTransformFnBody] = useState<string>(
-		`/*  1. While you can write multiple functions, the main
-   function called for your transformation is the transform function.
-
-2. The only argument acceptable in the transform function is the
- payload data.
-
-3. The transform method must return a value.
-
-4. Console logs lust be written like this:
-console.log('%j', logged_item) to get printed in the log below.
-
-5. The output payload from the function should be in this format
-    {
-        "owner_id": "string, optional",
-        "event_type": "string, required",
-        "data": "object, required",
-        "custom_headers": "object, optional",
-        "idempotency_key": "string, optional"
-        "endpoint_id": "string, depends",
-    }
-
-6. The endpoint_id field is only required when sending event to
-a single endpoint. */
-
-function transform(payload) {
-    // Transform function here
-    return {
-        "endpoint_id": "",
-        "owner_id": "",
-        "event_type": "sample",
-        "data": payload,
-        "custom_headers": {
-            "sample-header": "sample-value"
-        },
-        "idempotency_key": ""
-    }
-}`,
+		source.body_function || defaultTranformFnBody,
 	);
 	const [transformFnHeader, setTransformFnHeader] = useState<string>(
-		`/* 1. While you can write multiple functions, the main function
-called for your transformation is the transform function.
-
-2. The only argument acceptable in the transform function is
-the payload data.
-
-3. The transform method must return a value.
-
-4. Console logs lust be written like this
-console.log('%j', logged_item) to get printed in the log below. */
-
-function transform(payload) {
-// Transform function here
-return payload;
-}`,
+		source.header_function || defaultTransformFnHeader,
 	);
 	const [bodyOutput, setBodyOutput] = useState<FuncOutput>(defaultOutput);
 	const [headerOutput, setHeaderOutput] = useState<FuncOutput>(defaultOutput);
 	const [bodyLogs, setBodyLogs] = useState<string[]>([]);
 	const [headerLogs, setHeaderLogs] = useState<string[]>([]);
-	const [transformFn, setTransformFn] = useState<string>('');
-	const [headerTransformFn, setHeaderTransformFn] = useState<string>('');
+	const [transformFn, setTransformFn] = useState<string>();
+	const [headerTransformFn, setHeaderTransformFn] = useState<string>();
 	const [hasSavedFn, setHasSavedFn] = useState(false);
 
 	const incomingForm = useForm<z.infer<typeof IncomingSourceFormSchema>>({
 		resolver: zodResolver(IncomingSourceFormSchema),
 		defaultValues: {
-			name: '',
-			type: 'noop',
+			name: source.name,
+			type: source.provider || source.verifier.type || 'noop',
 			is_disabled: true,
 			config: {
-				hash: '',
-				encoding: '',
-				header: '',
-				secret: '',
-				username: '',
-				password: '',
-				header_name: '',
-				header_value: '',
+				hash: source.verifier.hmac.hash,
+				encoding: source.verifier.hmac.encoding,
+				header: source.verifier.hmac.header,
+				secret: source.verifier.hmac.secret,
+				username: source.verifier.basic_auth.username,
+				password: source.verifier.basic_auth.password,
+				header_name: source.verifier.api_key.header_name,
+				header_value: source.verifier.api_key.header_value,
 			},
 			custom_response: {
-				content_type: '',
-				body: '',
+				content_type: source.custom_response.content_type,
+				body: source.custom_response.body,
 			},
-			idempotency_keys: [],
-			showHmac: false,
-			showBasicAuth: false,
-			showAPIKey: false,
-			showGithub: false,
-			showTwitter: false,
-			showShopify: false,
-			showCustomResponse: false,
-			showIdempotency: false,
+			idempotency_keys: source.idempotency_keys,
+			showHmac: source.verifier.type == 'hmac',
+			showBasicAuth: source.verifier.type == 'basic_auth',
+			showAPIKey: source.verifier.type == 'api_key',
+			showGithub: source.provider == 'github',
+			showTwitter: source.provider == 'twitter',
+			showShopify: source.provider == 'shopify',
+			showCustomResponse: source.custom_response.content_type ? true : false,
+			showIdempotency: source.idempotency_keys?.length ? true : false,
+		},
+		mode: 'onTouched',
+	});
+
+	const outgoingForm = useForm<z.infer<typeof OutgoingSourceFormSchema>>({
+		resolver: zodResolver(OutgoingSourceFormSchema),
+		defaultValues: {
+			name: source.name,
+			type: 'pub_sub',
+			is_disabled: true,
+			body_function: JSON.stringify(source.body_function),
+			header_function: JSON.stringify(source.header_function),
+			pub_sub: {
+				type: source.pub_sub.type,
+				workers: source.pub_sub.workers,
+				google: source.pub_sub.google,
+				kafka: {
+					brokers: source.pub_sub.kafka?.brokers
+						? source.pub_sub.kafka.brokers
+						: [],
+					consumer_group_id: source.pub_sub.kafka?.consumer_group_id,
+					topic_name: source.pub_sub.kafka?.topic_name,
+					auth: {
+						type: source.pub_sub.kafka?.auth?.type || '',
+						// TODO find out what the real response from this is
+						tls: source.pub_sub.kafka?.auth?.tls ? 'enabled' : 'disabled',
+						username: source.pub_sub.kafka?.auth?.username || '',
+						password: source.pub_sub.kafka?.auth?.password || '',
+						hash: source.pub_sub.kafka?.auth?.hash || '',
+					},
+				},
+				sqs: {
+					queue_name: source.pub_sub.sqs?.queue_name,
+					access_key_id: source.pub_sub.sqs?.access_key_id,
+					secret_key: source.pub_sub.sqs?.secret_key,
+					// @ts-expect-error this balances out in reality
+					default_region: source.pub_sub.sqs?.default_region,
+				},
+				amqp: {
+					schema: source.pub_sub.amqp?.schema,
+					host: source.pub_sub.amqp?.host,
+					// @ts-expect-error this balances out in reality
+					port: source.pub_sub.amqp?.port,
+					queue: source.pub_sub.amqp?.queue,
+					deadLetterExchange: source.pub_sub.amqp?.deadLetterExchange,
+					vhost: source.pub_sub.amqp?.vhost,
+					auth: {
+						password: source.pub_sub.amqp?.auth?.password || '',
+						user: source.pub_sub.amqp?.auth?.user || '',
+					},
+					bindedExchange: {
+						exchange: source.pub_sub.amqp?.bindedExchange?.exchange || '',
+						routingKey: source.pub_sub.amqp?.bindedExchange?.routingKey || '""',
+					},
+				},
+			},
+			showKafkaAuth: !!source.pub_sub.kafka?.auth.password,
+			showAMQPAuth: !!source.pub_sub.amqp?.auth.password,
+			showAMQPBindExhange: !!source.pub_sub.amqp?.bindedExchange.exchange,
+			showTransform: false,
 		},
 		mode: 'onTouched',
 	});
@@ -821,7 +890,7 @@ return payload;
 		raw: z.infer<typeof IncomingSourceFormSchema>,
 	) {
 		const payload = transformIncomingSource(raw);
-		setIsCreating(true);
+		setIsUpdating(true);
 		try {
 			const response = await sourcesService.createSource(payload);
 			setSourceUrl(response.url);
@@ -829,7 +898,7 @@ return payload;
 		} catch (error) {
 			console.error(error);
 		} finally {
-			setIsCreating(false);
+			setIsUpdating(false);
 		}
 	}
 
@@ -895,67 +964,6 @@ return payload;
 			reader.readAsText(file);
 		}
 	}
-
-	const outgoingForm = useForm<z.infer<typeof OutgoingSourceFormSchema>>({
-		resolver: zodResolver(OutgoingSourceFormSchema),
-		defaultValues: {
-			name: '',
-			type: 'pub_sub',
-			is_disabled: true,
-			body_function: {},
-			header_function: {},
-			pub_sub: {
-				type: '',
-				// @ts-expect-error the transform works
-				workers: '',
-				google: {
-					project_id: '',
-					subscription_id: '',
-					service_account: '',
-				},
-				kafka: {
-					brokers: [],
-					consumer_group_id: '',
-					topic_name: '',
-					auth: {
-						type: '',
-						tls: '',
-						username: '',
-						password: '',
-						hash: '',
-					},
-				},
-				sqs: {
-					queue_name: '',
-					access_key_id: '',
-					secret_key: '',
-					default_region: '',
-				},
-				amqp: {
-					schema: '',
-					host: '',
-					// @ts-expect-error the transform fixes this
-					port: '',
-					queue: '',
-					deadLetterExchange: '',
-					vhost: '',
-					auth: {
-						password: '',
-						user: '',
-					},
-					bindedExchange: {
-						exchange: '',
-						routingKey: '""',
-					},
-				},
-			},
-			showKafkaAuth: false,
-			showAMQPAuth: false,
-			showAMQPBindExhange: false,
-			showTransform: false,
-		},
-		mode: 'onTouched',
-	});
 
 	function transformOutgoingSource(
 		raw: z.infer<typeof OutgoingSourceFormSchema>,
@@ -1087,14 +1095,14 @@ return payload;
 	) {
 		const payload = transformOutgoingSource(raw);
 		console.log(payload);
-		setIsCreating(true);
+		setIsUpdating(true);
 		try {
 			/* const res =  */ await sourcesService.createSource(payload);
 			// TODO notify UI
 		} catch (error) {
 			console.error(error);
 		} finally {
-			setIsCreating(false);
+			setIsUpdating(false);
 		}
 	}
 
@@ -1104,7 +1112,7 @@ return payload;
 				<div className="flex justify-start items-center gap-2">
 					<Link
 						to="/projects/$projectId/sources"
-						params={{ projectId }}
+						params={{ projectId: project.uid }}
 						className="flex justify-center items-center p-2 bg-new.primary-25 rounded-8px"
 						activeProps={{}}
 					>
@@ -1680,24 +1688,25 @@ return payload;
 															<span className="text-neutral-9 text-xs">
 																Key locations
 															</span>
-
-															<Tooltip>
-																<TooltipTrigger
-																	asChild
-																	className="hover:cursor-pointer"
-																>
-																	<Info
-																		size={12}
-																		className="ml-1 text-neutral-9 inline"
-																	/>
-																</TooltipTrigger>
-																<TooltipContent className="bg-white-100 border border-neutral-4">
-																	<p className="w-[300px] text-xs text-neutral-10">
-																		JSON location of idempotency key, add
-																		multiple locations for different locations
-																	</p>
-																</TooltipContent>
-															</Tooltip>
+															<TooltipProvider>
+																<Tooltip>
+																	<TooltipTrigger
+																		asChild
+																		className="hover:cursor-pointer"
+																	>
+																		<Info
+																			size={12}
+																			className="ml-1 text-neutral-9 inline"
+																		/>
+																	</TooltipTrigger>
+																	<TooltipContent className="bg-white-100 border border-neutral-4">
+																		<p className="w-[300px] text-xs text-neutral-10">
+																			JSON location of idempotency key, add
+																			multiple locations for different locations
+																		</p>
+																	</TooltipContent>
+																</Tooltip>
+															</TooltipProvider>
 														</FormLabel>
 														<FormControl>
 															<InputTags
@@ -1730,13 +1739,13 @@ return payload;
 									type="submit"
 									disabled={
 										!incomingForm.formState.isValid ||
-										isCreating ||
+										isUpdating ||
 										!canManageSources
 									}
 									variant="ghost"
 									className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
 								>
-									{isCreating ? 'Creating...' : 'Create'} Source
+									{isUpdating ? 'Updating...' : 'Update'} Source
 									<ChevronRight className="stroke-white-100" />
 								</Button>
 							</div>
@@ -2839,7 +2848,7 @@ return payload;
 
 													<div>
 														<FormField
-															name="pub_sub.amqp.bindedExchange.exchange"
+															name="pub_sub.amqp.bindExchange.exchange"
 															control={outgoingForm.control}
 															render={({ field, fieldState }) => (
 																<FormItem className="w-full space-y-2">
@@ -2867,7 +2876,7 @@ return payload;
 
 													<div>
 														<FormField
-															name="pub_sub.amqp.bindedExchange.routingKey"
+															name="pub_sub.amqp.bindExchange.routingKey"
 															control={outgoingForm.control}
 															render={({ field, fieldState }) => (
 																<FormItem className="w-full space-y-2">
@@ -2957,14 +2966,14 @@ return payload;
 								<Button
 									type="submit"
 									disabled={
-										isCreating ||
+										isUpdating ||
 										!canManageSources ||
 										!outgoingForm.formState.isValid
 									}
 									variant="ghost"
 									className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
 								>
-									{isCreating ? 'Creating...' : 'Create'} Source
+									{isUpdating ? 'Updating...' : 'Update'} Source
 									<ChevronRight className="stroke-white-100" />
 								</Button>
 							</div>
@@ -2980,7 +2989,7 @@ return payload;
 					if (!isOpen) {
 						return navigate({
 							to: '/projects/$projectId/sources',
-							params: { projectId },
+							params: { projectId: project.uid },
 						});
 					}
 				}}
@@ -3174,7 +3183,6 @@ return payload;
 																			: `${bodyOutput.previous}`
 																	}
 																	modified={
-																		// TODO change to body diff
 																		typeof bodyOutput.current === 'object'
 																			? JSON.stringify(
 																					bodyOutput.current,

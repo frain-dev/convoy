@@ -106,8 +106,12 @@ export interface SOURCE {
 	uid: string;
 	updated_at: number;
 	url: string;
-	provider: string;
+	provider: 'github' | 'twitter' | 'shopify';
 	provider_config?: { twitter: { crc_verified_at: Date } };
+	custom_response: {
+		body: string;
+		content_type: string;
+	};
 	verifier: {
 		api_key: {
 			header_name: string;
@@ -118,12 +122,12 @@ export interface SOURCE {
 			username: string;
 		};
 		hmac: {
-			encoding: string;
-			hash: string;
+			encoding: 'base64' | 'hex' | '';
+			hash: 'SHA256' | 'SHA512' | '';
 			header: string;
 			secret: string;
 		};
-		type: string;
+		type: 'hmac' | 'api_key' | 'basic_auth';
 	};
 	pub_sub: {
 		sqs: {
@@ -136,13 +140,14 @@ export interface SOURCE {
 			schema: string;
 			host: string;
 			port: string;
-			queueName: string;
+			queue: string;
 			deadLetterExchange: string;
+			vhost: string;
 			auth: {
 				user: string;
 				password: string;
 			};
-			bindExchange: {
+			bindedExchange: {
 				exchange: string;
 				routingKey: string;
 			};
@@ -152,14 +157,21 @@ export interface SOURCE {
 			consumer_group_id: string;
 			topic_name: string;
 			auth: {
-				type: string;
+				type: "plain" | "scram" | "";
 				tls: boolean;
 				username: string;
 				password: string;
-				hash: string;
+				hash: "SHA256" | "SHA512";
 			};
 		};
-		type: string;
+		"google": {
+			"subscription_id": string,
+			"service_account": string,
+			"project_id": string
+		};
+		type: "google" | "kafka" | "sqs" | "amqp" | "";
 		workers: number;
 	};
+	body_function: null | '';
+	header_function: null | '';
 }

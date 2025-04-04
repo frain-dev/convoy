@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 
 import { EllipsisVertical, Copy, Trash2, PencilLine } from 'lucide-react';
 
@@ -53,6 +53,7 @@ function RouteComponent() {
 	const { canManageSources, sources } = Route.useLoaderData();
 	const [loadedSources, setLoadedSources] = useState(sources);
 	const [isDeletingSource, setIsDeletingSource] = useState(false);
+	const navigate = useNavigate();
 
 	async function deleteSource(sourceId: string) {
 		try {
@@ -180,12 +181,27 @@ function RouteComponent() {
 															Copy ID
 														</span>
 													</DropdownMenuItem>
-													<DropdownMenuItem className="flex items-center gap-2 hover:bg-new.primary-50 cursor-pointer" disabled={!canManageSources}>
+													<DropdownMenuItem
+														className="flex items-center gap-2 hover:bg-new.primary-50 cursor-pointer"
+														disabled={!canManageSources}
+														onClick={() =>
+															navigate({
+																to: '/projects/$projectId/sources/$sourceId',
+																params: {
+																	projectId,
+																	sourceId: source.uid,
+																},
+															})
+														}
+													>
 														<PencilLine className="stroke-neutral-9 !w-3 !h-3" />
 														<span className="text-xs text-neutral-9">Edit</span>
 													</DropdownMenuItem>
 													<DialogTrigger asChild>
-														<DropdownMenuItem className="flex items-center gap-2 hover:bg-new.primary-50 cursor-pointer" disabled={!canManageSources}>
+														<DropdownMenuItem
+															className="flex items-center gap-2 hover:bg-new.primary-50 cursor-pointer"
+															disabled={!canManageSources}
+														>
 															<Trash2 className="stroke-destructive !w-3 !h-3" />
 															<span className="text-xs text-destructive">
 																Delete
