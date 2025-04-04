@@ -106,8 +106,12 @@ export interface SOURCE {
 	uid: string;
 	updated_at: number;
 	url: string;
-	provider: string;
+	provider: 'github' | 'twitter' | 'shopify';
 	provider_config?: { twitter: { crc_verified_at: Date } };
+	"custom_response": {
+		"body": string,
+		"content_type": string
+	},
 	verifier: {
 		api_key: {
 			header_name: string;
@@ -118,12 +122,12 @@ export interface SOURCE {
 			username: string;
 		};
 		hmac: {
-			encoding: string;
-			hash: string;
+			encoding: 'base64' | 'hex' | '';
+			hash: 'SHA256' | 'SHA512' | '';
 			header: string;
 			secret: string;
 		};
-		type: string;
+		type: 'hmac' | 'api_key' | 'basic_auth';
 	};
 	pub_sub: {
 		sqs: {

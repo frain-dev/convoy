@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { useState } from 'react';
-import { useForm, type RegisterOptions } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { DiffEditor, Editor } from '@monaco-editor/react';
+import { useForm, type RegisterOptions } from 'react-hook-form';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 
 import { ChevronRight, Info, CopyIcon, SaveIcon } from 'lucide-react';
 
@@ -79,10 +79,14 @@ export const Route = createFileRoute('/projects_/$projectId/sources/new')({
 	async loader() {
 		const perms = await authService.getUserPermissions();
 		return {
+			// TODO I think that if a user does not have permission to manage soure, they should not even see this page at all
+			// In other words, they should be bounced
 			canManageSources: perms.includes('Sources|MANAGE'),
 		};
 	},
 });
+
+type SourceType = (typeof sourceVerifications)[number]['uid'];
 
 const pubSubTypes = [
 	{ uid: 'google', name: 'Google Pub/Sub' },
@@ -609,6 +613,7 @@ function RouteComponent() {
 	const { project } = useProjectStore();
 	const { licenses } = useLicenseStore();
 	const { projectId } = Route.useParams();
+	const {canManageSources} = Route.useLoaderData()
 	const [sourceUrl, setSourceUrl] = useState('');
 	const [isCreating, setIsCreating] = useState(false);
 	const [hasCreatedIncomingSource, setHasCreatedIncomingSource] =
@@ -689,8 +694,6 @@ return payload;
 	const [transformFn, setTransformFn] = useState<string>();
 	const [headerTransformFn, setHeaderTransformFn] = useState<string>();
 	const [hasSavedFn, setHasSavedFn] = useState(false);
-
-	type SourceType = (typeof sourceVerifications)[number]['uid'];
 
 	const incomingForm = useForm<z.infer<typeof IncomingSourceFormSchema>>({
 		resolver: zodResolver(IncomingSourceFormSchema),
@@ -1728,7 +1731,7 @@ return payload;
 									disabled={
 										!incomingForm.formState.isValid ||
 										isCreating ||
-										!licenses.includes('WEBHOOK_TRANSFORMATIONS')
+										!canManageSources
 									}
 									variant="ghost"
 									className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
@@ -2957,7 +2960,7 @@ return payload;
 									type="submit"
 									disabled={
 										isCreating ||
-										!licenses.includes('WEBHOOK_TRANSFORMATIONS') ||
+										!canManageSources ||
 										!outgoingForm.formState.isValid
 									}
 									variant="ghost"
@@ -2992,6 +2995,9 @@ return payload;
 						<DialogTitle className="text-base font-semibold text-start mb-4">
 							Source URL
 						</DialogTitle>
+						<DialogDescription className="sr-only">
+							Source URL created
+						</DialogDescription>
 						<div>
 							<p className="text-xs/5 text-neutral-10 mb-4 text-start">
 								Copy the source URL below into your source platform to start
