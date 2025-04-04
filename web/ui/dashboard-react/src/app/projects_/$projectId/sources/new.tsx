@@ -373,7 +373,7 @@ const OutgoingSourceFormSchema = z
 							password: z.string(),
 						})
 						.optional(),
-					bindExchange: z
+					bindedExchange: z
 						.object({
 							exchange: z.string(),
 							routingKey: z.string(),
@@ -539,8 +539,8 @@ const OutgoingSourceFormSchema = z
 			if (!showAMQPBindExhange) return true;
 
 			if (
-				!pub_sub.amqp?.bindExchange?.exchange ||
-				!pub_sub.amqp?.bindExchange?.routingKey
+				!pub_sub.amqp?.bindedExchange?.exchange ||
+				!pub_sub.amqp?.bindedExchange?.routingKey
 			) {
 				return false;
 			}
@@ -584,13 +584,13 @@ const OutgoingSourceFormSchema = z
 					path: ['pub_sub.amqp.auth.password'],
 				};
 
-			if (showAMQPBindExhange && !pub_sub.amqp?.bindExchange?.exchange)
+			if (showAMQPBindExhange && !pub_sub.amqp?.bindedExchange?.exchange)
 				return {
 					message: 'Exchange is required when binding exchange is enabled',
 					path: ['pub_sub.amqp.bindExchange.exchange'],
 				};
 
-			if (showAMQPBindExhange && !pub_sub.amqp?.bindExchange?.routingKey)
+			if (showAMQPBindExhange && !pub_sub.amqp?.bindedExchange?.routingKey)
 				return {
 					message: 'Routing key is required when binding exchange is enabled',
 					path: ['pub_sub.amqp.bindExchange.routingKey'],
@@ -613,7 +613,7 @@ function RouteComponent() {
 	const { project } = useProjectStore();
 	const { licenses } = useLicenseStore();
 	const { projectId } = Route.useParams();
-	const {canManageSources} = Route.useLoaderData()
+	const { canManageSources } = Route.useLoaderData();
 	const [sourceUrl, setSourceUrl] = useState('');
 	const [isCreating, setIsCreating] = useState(false);
 	const [hasCreatedIncomingSource, setHasCreatedIncomingSource] =
@@ -691,8 +691,8 @@ return payload;
 	const [headerOutput, setHeaderOutput] = useState<FuncOutput>(defaultOutput);
 	const [bodyLogs, setBodyLogs] = useState<string[]>([]);
 	const [headerLogs, setHeaderLogs] = useState<string[]>([]);
-	const [transformFn, setTransformFn] = useState<string>();
-	const [headerTransformFn, setHeaderTransformFn] = useState<string>();
+	const [transformFn, setTransformFn] = useState<string>('');
+	const [headerTransformFn, setHeaderTransformFn] = useState<string>('');
 	const [hasSavedFn, setHasSavedFn] = useState(false);
 
 	const incomingForm = useForm<z.infer<typeof IncomingSourceFormSchema>>({
@@ -943,7 +943,7 @@ return payload;
 						password: '',
 						user: '',
 					},
-					bindExchange: {
+					bindedExchange: {
 						exchange: '',
 						routingKey: '""',
 					},
@@ -1089,8 +1089,8 @@ return payload;
 		console.log(payload);
 		setIsCreating(true);
 		try {
-		/* const res =  */ await sourcesService.createSource(payload);
-		// TODO notify UI
+			/* const res =  */ await sourcesService.createSource(payload);
+			// TODO notify UI
 		} catch (error) {
 			console.error(error);
 		} finally {
@@ -2839,7 +2839,7 @@ return payload;
 
 													<div>
 														<FormField
-															name="pub_sub.amqp.bindExchange.exchange"
+															name="pub_sub.amqp.bindedExchange.exchange"
 															control={outgoingForm.control}
 															render={({ field, fieldState }) => (
 																<FormItem className="w-full space-y-2">
@@ -2867,7 +2867,7 @@ return payload;
 
 													<div>
 														<FormField
-															name="pub_sub.amqp.bindExchange.routingKey"
+															name="pub_sub.amqp.bindedExchange.routingKey"
 															control={outgoingForm.control}
 															render={({ field, fieldState }) => (
 																<FormItem className="w-full space-y-2">
@@ -2925,9 +2925,7 @@ return payload;
 									{outgoingForm.watch('showTransform') && (
 										<div className="pl-4 border-l border-l-new.primary-25 flex justify-between items-center">
 											<div className="flex flex-col gap-y-2 justify-center">
-												<p className="text-neutral-10 text-xs">
-													Transform
-												</p>
+												<p className="text-neutral-10 text-xs">Transform</p>
 												<p className="text-[10px] text-neutral-10">
 													Transform request body of events with a JavaScript
 													function.
@@ -2974,7 +2972,7 @@ return payload;
 					</Form>
 				)}
 			</section>
-			
+
 			{/* Reate Incoming Source Response Dialog */}
 			<Dialog
 				open={hasCreatedIncomingSource}
