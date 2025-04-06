@@ -331,11 +331,13 @@ function UpdateEndpointPage() {
 								<Label htmlFor="secret" className="text-xs/5 text-neutral-9">
 									Endpoint Secret
 								</Label>
+								{/* TODO copy */}
 								<Input
 									id="secret"
 									type="text"
 									{...form.register('secret')}
 									placeholder="Enter endpoint secret here"
+									readOnly
 									className="mt-0 outline-none focus-visible:ring-0 border-neutral-4 shadow-none w-full h-auto transition-all duration-300 bg-white-100 py-3 px-4 text-neutral-11 !text-xs/5 rounded-[4px] placeholder:text-new.gray-300 placeholder:text-sm/5 font-normal disabled:text-neutral-6 disabled:border-new.primary-25 hover:border-new.primary-100 focus:border-new.primary-300"
 								/>
 							</div>
