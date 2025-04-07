@@ -75,7 +75,6 @@ const endpointSchema = z.object({
 		.or(z.literal('')),
 	secret: z.string().nullable(),
 	http_timeout: z.number().nullable(),
-	description: z.string().nullable(),
 	owner_id: z.string().nullable(),
 	rate_limit: z.number().nullable(),
 	rate_limit_duration: z.number().nullable(),
@@ -196,7 +195,7 @@ function UpdateEndpointPage() {
 
 		try {
 			// Create new endpoint
-			const response = await endpointsService.updateEndpoint(
+			await endpointsService.updateEndpoint(
 				params.endpointId,
 				endpointValue,
 			);
@@ -226,7 +225,6 @@ function UpdateEndpointPage() {
 			http_timeout: endpoint.http_timeout
 				? Number(endpoint.http_timeout)
 				: null,
-			description: endpoint.description,
 			owner_id: endpoint.owner_id,
 			rate_limit: endpoint.rate_limit,
 			rate_limit_duration: endpoint.rate_limit_duration

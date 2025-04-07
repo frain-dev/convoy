@@ -184,7 +184,7 @@ function EndpointsPageContent() {
 
 		setIsSendingTestEvent(true);
 		try {
-			const response = await endpointsService.sendEvent({ body: testEvent });
+			await endpointsService.sendEvent({ body: testEvent });
 			// TODO: Add toast notification
 		} catch (error) {
 			console.error(error);

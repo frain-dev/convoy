@@ -71,6 +71,21 @@ export async function createSubscription(
 	return res.data;
 }
 
+export async function updateSubscription(
+	subscriptionId: string,
+	reqDetails: CreateSubscriptionData,
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<{ data: SUBSCRIPTION }>({
+		url: `/subscriptions/${subscriptionId}`,
+		method: 'put',
+		body: reqDetails,
+		level: 'org_project',
+	});
+
+	return res.data;
+}
+
 // Test subscription transform function
 export async function testTransformFunction(
 	data: FunctionRequest,

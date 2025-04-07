@@ -5,8 +5,6 @@ import type {
 	CreateProjectResponse,
 	EventType,
 } from '@/models/project.model';
-import type { SOURCE } from '@/models/source';
-import type { PaginatedResult, PaginationCursor } from '@/models/global.model';
 
 type CreateProjectParams = {
 	name: string;
