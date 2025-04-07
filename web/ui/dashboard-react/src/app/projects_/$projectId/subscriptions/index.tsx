@@ -443,6 +443,7 @@ function ListSubcriptionsPage() {
 		setIsDeletingSub(false);
 		try {
 			await subscriptionsService.deleteSubscription(subId);
+			navigate({ to: Route.fullPath });
 		} catch (error) {
 			console.error(error);
 		} finally {
