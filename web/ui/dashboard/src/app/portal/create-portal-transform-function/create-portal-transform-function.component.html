@@ -6,12 +6,12 @@
     <div class="px-24px pt-24px flex justify-end">
         <form [formGroup]="transformForm" class="max-w-[50%] w-full">
             <convoy-select
-                    (selectedOption)="log($event)"
+                    (selectedOption)="selectEventType($event)"
                     [options]="options"
                     className="w-full"
                     formControlName="type"
                     name="event_types"
-                    placeholder="{{ defaultOption }}">
+                    placeholder="Select Event Type">
             </convoy-select>
         </form>
     </div>

@@ -9,8 +9,9 @@ import { CreateSubscriptionService } from '../../private/components/create-subsc
 import { CreateSourceService } from '../../private/components/create-source/create-source.service';
 import { GeneralService } from '../../services/general/general.service';
 import { SelectComponent } from '../../components/select/select.component';
-import {languages} from "monaco-editor";
+import { languages } from 'monaco-editor';
 import json = languages.json;
+import { EVENT_TYPE } from '../../models/event.model';
 
 @Component({
 	selector: 'convoy-create-portal-transform-function',
@@ -24,10 +25,10 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 	@ViewChild('payloadEditor') payloadEditor!: MonacoComponent;
 	@ViewChild('functionEditor') functionEditor!: MonacoComponent;
 	@Input('transformFunction') transformFunction: any;
-	@Input('options') options: any;
+	@Input('options') options: EVENT_TYPE[] = [];
 	@Input('defaultOption') defaultOption: any;
-    @Input() titleClass: string = 'font-semibold text-14 capitalize';
-    @Input() showTitle: boolean = true;
+	@Input() titleClass: string = 'font-semibold text-14 capitalize';
+	@Input() showTitle: boolean = true;
 
 	@Output('updatedTransformFunction') updatedTransformFunction: EventEmitter<any> = new EventEmitter();
 	tabs = ['output', 'diff'];
@@ -35,7 +36,7 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 	transformForm: FormGroup = this.formBuilder.group({
 		payload: [null],
 		function: [null],
-		type: ['Select Event Type']
+		type: [null]
 	});
 	isTransformFunctionPassed = false;
 	isTestingFunction = false;
@@ -46,7 +47,6 @@ export class CreatePortalTransformFunctionComponent implements OnInit {
 		name: 'Sample 1',
 		description: 'This is sample data #1'
 	};
-
 
 	output: any;
 	setFunction = `/* 1. While you can write multiple functions, the main function
@@ -67,7 +67,13 @@ function transform(payload) {
 
 	constructor(private createSubscriptionService: CreateSubscriptionService, private createSourceService: CreateSourceService, public generalService: GeneralService, private formBuilder: FormBuilder) {}
 
-	ngOnInit(): void {}
+	ngOnInit(): void {
+		console.log('TransformFunctionComponent:', this.options);
+		if (this.defaultOption && !this.options.find(opt => opt === this.defaultOption)) {
+			this.options = [{ name: this.defaultOption, uid: this.defaultOption }, ...this.options];
+		}
+		this.transformForm.patchValue({ type: this.defaultOption });
+	}
 
 	async testTransformFunction() {
 		this.isTransformFunctionPassed = false;
@@ -105,8 +111,20 @@ function transform(payload) {
 		}
 	}
 
-	log(str: string) {
-		console.log(JSON.stringify({ str}))
+	selectEventType(str: string) {
+		for (let i = 0; i < this.options.length; i++) {
+			if (str === this.options[i].uid) {
+				this.transformForm.patchValue({ payload: this.options[i].json_schema });
+				this.updatePayloadEditorValue(this.options[i].json_schema?.example || {});
+				return;
+			}
+		}
+	}
+
+	updatePayloadEditorValue(value: any) {
+		if (this.payloadEditor) {
+			this.payloadEditor.setValue(value);
+		}
 	}
 
 	parseLog(log: string) {

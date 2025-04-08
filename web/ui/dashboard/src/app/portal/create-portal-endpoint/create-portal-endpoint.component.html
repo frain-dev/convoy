@@ -156,7 +156,7 @@
                         [titleClass]="'font-semibold text-14 capitalize pb-16px'"
                         (updatedTransformFunction)="getFunction($event)"
                         [defaultOption]="'Select Event Type'"
-                        [options]="toEventTypesString()"
+                        [options]="validEventTypes()"
                         [transformFunction]="subscriptionForm.get('function')?.value">
                 </convoy-create-portal-transform-function>
             </div>

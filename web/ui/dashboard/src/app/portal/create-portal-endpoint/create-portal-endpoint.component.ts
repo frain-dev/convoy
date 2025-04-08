@@ -286,7 +286,6 @@ export class CreatePortalEndpointComponent implements OnInit {
 			const response = await this.privateService.getEventTypes();
 			this.eventTypes = response.data.filter((type: EVENT_TYPE) => !type.deprecated_at);
 			console.log('Loaded event types:', this.eventTypes);
-			console.log('Event types length:', this.eventTypes.length);
 			return;
 		} catch (error) {
 			console.error('Error loading event types:', error);
