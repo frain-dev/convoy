@@ -422,7 +422,11 @@ function RouteComponent() {
 										<EmptyState
 											className="my-36"
 											image={detailsEmptyState}
-											description="Click on a meta event to display its details"
+											description={
+												!selectedMetaEvent && displayedMetaEvents.length == 0
+													? 'No meta event has been sent'
+													: 'Click on a meta event to display its details'
+											}
 										/>
 									)}
 								</div>
