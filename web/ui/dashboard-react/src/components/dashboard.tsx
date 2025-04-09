@@ -488,7 +488,7 @@ function ProjectLinks() {
 		},
 		{
 			name: 'Meta Events',
-			route: '/',
+			route: `/projects/${project?.uid}/meta-events`,
 		},
 		{
 			name: 'Project Settings',

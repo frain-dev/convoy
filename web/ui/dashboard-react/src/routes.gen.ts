@@ -22,6 +22,7 @@ import { Route as IndexImport } from './app/index'
 import { Route as ProjectsIndexImport } from './app/projects/index'
 import { Route as ProjectsNewImport } from './app/projects_/new'
 import { Route as ProjectsProjectIdSettingsImport } from './app/projects_/$projectId/settings'
+import { Route as ProjectsProjectIdMetaEventsImport } from './app/projects_/$projectId/meta-events'
 import { Route as ProjectsProjectIdSubscriptionsIndexImport } from './app/projects_/$projectId/subscriptions/index'
 import { Route as ProjectsProjectIdSourcesIndexImport } from './app/projects_/$projectId/sources/index'
 import { Route as ProjectsProjectIdEndpointsIndexImport } from './app/projects_/$projectId/endpoints/index'
@@ -99,6 +100,13 @@ const ProjectsProjectIdSettingsRoute = ProjectsProjectIdSettingsImport.update({
   path: '/projects/$projectId/settings',
   getParentRoute: () => rootRoute,
 } as any)
+
+const ProjectsProjectIdMetaEventsRoute =
+  ProjectsProjectIdMetaEventsImport.update({
+    id: '/projects_/$projectId/meta-events',
+    path: '/projects/$projectId/meta-events',
+    getParentRoute: () => rootRoute,
+  } as any)
 
 const ProjectsProjectIdSubscriptionsIndexRoute =
   ProjectsProjectIdSubscriptionsIndexImport.update({
@@ -237,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProjectsIndexImport
       parentRoute: typeof ProjectsRouteImport
     }
+    '/projects_/$projectId/meta-events': {
+      id: '/projects_/$projectId/meta-events'
+      path: '/projects/$projectId/meta-events'
+      fullPath: '/projects/$projectId/meta-events'
+      preLoaderRoute: typeof ProjectsProjectIdMetaEventsImport
+      parentRoute: typeof rootRoute
+    }
     '/projects_/$projectId/settings': {
       id: '/projects_/$projectId/settings'
       path: '/projects/$projectId/settings'
@@ -335,6 +350,7 @@ export interface FileRoutesByFullPath {
   '/user-settings': typeof UserSettingsRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/projects/$projectId/meta-events': typeof ProjectsProjectIdMetaEventsRoute
   '/projects/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects/$projectId/endpoints/$endpointId': typeof ProjectsProjectIdEndpointsEndpointIdRoute
   '/projects/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
@@ -357,6 +373,7 @@ export interface FileRoutesByTo {
   '/user-settings': typeof UserSettingsRoute
   '/projects/new': typeof ProjectsNewRoute
   '/projects': typeof ProjectsIndexRoute
+  '/projects/$projectId/meta-events': typeof ProjectsProjectIdMetaEventsRoute
   '/projects/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects/$projectId/endpoints/$endpointId': typeof ProjectsProjectIdEndpointsEndpointIdRoute
   '/projects/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
@@ -381,6 +398,7 @@ export interface FileRoutesById {
   '/user-settings': typeof UserSettingsRoute
   '/projects_/new': typeof ProjectsNewRoute
   '/projects/': typeof ProjectsIndexRoute
+  '/projects_/$projectId/meta-events': typeof ProjectsProjectIdMetaEventsRoute
   '/projects_/$projectId/settings': typeof ProjectsProjectIdSettingsRoute
   '/projects_/$projectId/endpoints/$endpointId': typeof ProjectsProjectIdEndpointsEndpointIdRoute
   '/projects_/$projectId/endpoints/new': typeof ProjectsProjectIdEndpointsNewRoute
@@ -406,6 +424,7 @@ export interface FileRouteTypes {
     | '/user-settings'
     | '/projects/new'
     | '/projects/'
+    | '/projects/$projectId/meta-events'
     | '/projects/$projectId/settings'
     | '/projects/$projectId/endpoints/$endpointId'
     | '/projects/$projectId/endpoints/new'
@@ -427,6 +446,7 @@ export interface FileRouteTypes {
     | '/user-settings'
     | '/projects/new'
     | '/projects'
+    | '/projects/$projectId/meta-events'
     | '/projects/$projectId/settings'
     | '/projects/$projectId/endpoints/$endpointId'
     | '/projects/$projectId/endpoints/new'
@@ -449,6 +469,7 @@ export interface FileRouteTypes {
     | '/user-settings'
     | '/projects_/new'
     | '/projects/'
+    | '/projects_/$projectId/meta-events'
     | '/projects_/$projectId/settings'
     | '/projects_/$projectId/endpoints/$endpointId'
     | '/projects_/$projectId/endpoints/new'
@@ -472,6 +493,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   UserSettingsRoute: typeof UserSettingsRoute
   ProjectsNewRoute: typeof ProjectsNewRoute
+  ProjectsProjectIdMetaEventsRoute: typeof ProjectsProjectIdMetaEventsRoute
   ProjectsProjectIdSettingsRoute: typeof ProjectsProjectIdSettingsRoute
   ProjectsProjectIdEndpointsEndpointIdRoute: typeof ProjectsProjectIdEndpointsEndpointIdRoute
   ProjectsProjectIdEndpointsNewRoute: typeof ProjectsProjectIdEndpointsNewRoute
@@ -494,6 +516,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   UserSettingsRoute: UserSettingsRoute,
   ProjectsNewRoute: ProjectsNewRoute,
+  ProjectsProjectIdMetaEventsRoute: ProjectsProjectIdMetaEventsRoute,
   ProjectsProjectIdSettingsRoute: ProjectsProjectIdSettingsRoute,
   ProjectsProjectIdEndpointsEndpointIdRoute:
     ProjectsProjectIdEndpointsEndpointIdRoute,
@@ -529,6 +552,7 @@ export const routeTree = rootRoute
         "/signup",
         "/user-settings",
         "/projects_/new",
+        "/projects_/$projectId/meta-events",
         "/projects_/$projectId/settings",
         "/projects_/$projectId/endpoints/$endpointId",
         "/projects_/$projectId/endpoints/new",
@@ -574,6 +598,9 @@ export const routeTree = rootRoute
     "/projects/": {
       "filePath": "projects/index.tsx",
       "parent": "/projects"
+    },
+    "/projects_/$projectId/meta-events": {
+      "filePath": "projects_/$projectId/meta-events.tsx"
     },
     "/projects_/$projectId/settings": {
       "filePath": "projects_/$projectId/settings.tsx"
