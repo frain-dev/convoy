@@ -181,7 +181,9 @@ export async function request<TData>(
 		hideNotification?: boolean;
 		query?: Record<
 			string,
-			Record<string, string | number | object | undefined | null>
+			| string
+			| number
+			| Record<string, string | number | object | undefined | null>
 		>;
 		level?: 'org' | 'org_project';
 		isOut?: boolean;

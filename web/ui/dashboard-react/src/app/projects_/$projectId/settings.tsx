@@ -97,9 +97,25 @@ import successAnimation from '../../../../assets/img/success.gif';
 import warningAnimation from '../../../../assets/img/warning-animation.gif';
 import eventTypesEmptyState from '../../../../assets/img/events-log-empty-state.png';
 
+const SettingsSearchSchema = z.object({
+	active_tab: z
+		.enum([
+			'projects',
+			'signature-history',
+			'endpoints',
+			'meta-events',
+			'event-types',
+			'secrets',
+		])
+		.catch('projects'),
+});
+
 export const Route = createFileRoute('/projects_/$projectId/settings')({
-	beforeLoad({ context }) {
+	validateSearch: SettingsSearchSchema,
+	beforeLoad({ context, search }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
+
+		return { search };
 	},
 	async loader({ params }) {
 		const project = await projectsService.getProject(params.projectId);
@@ -1588,7 +1604,6 @@ function MetaEventsConfig(props: {
 	const { project, canManageProject } = props;
 	const [isUpdating, setIsUpdating] = useState(false);
 	const { setProject, setProjects, projects } = useProjectStore();
-
 	const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false);
 	const [selectedEventTypes, setSelectedEventTypes] = useState<MetaEventType[]>(
 		project.config.meta_event.event_type ?? [],
@@ -1608,7 +1623,7 @@ function MetaEventsConfig(props: {
 		},
 		[selectedEventTypes],
 	);
-	
+
 	const filteredEventTypes = useMemo(
 		() =>
 			MetaEventTypes.filter(
@@ -2505,6 +2520,7 @@ const tabs = [
 function ProjectSettings() {
 	const { project, canManageProject, eventTypes, hasAdvancedSubscriptions } =
 		Route.useLoaderData();
+		const { active_tab } = Route.useSearch();
 
 	return (
 		<DashboardLayout showSidebar={true}>
@@ -2514,7 +2530,7 @@ function ProjectSettings() {
 					<div>
 						<Tabs
 							orientation="vertical"
-							defaultValue={tabs[0].value}
+							defaultValue={active_tab}
 							className="w-full flex items-start gap-4 justify-center"
 						>
 							<TabsList className="shrink-0 grid grid-cols-1 min-w-[20%] p-0 gap-y-2 bg-background">

@@ -312,6 +312,8 @@ const OutgoingSourceFormSchema = z
 		name: z
 			.string({ required_error: 'Enter new source name' })
 			.min(1, 'Enter new source name'),
+		body_function: z.record(z.string(), z.any()).nullable(),
+		header_function: z.record(z.string(), z.any()).nullable(),
 		type: z.literal('pub_sub'),
 		is_disabled: z.boolean(),
 		pub_sub: z.object({
