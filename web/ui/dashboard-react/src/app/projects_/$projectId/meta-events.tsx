@@ -122,9 +122,7 @@ function RouteComponent() {
 	const { projectId } = Route.useParams();
 	const { metaEvents } = Route.useLoaderData();
 	const isMetaEventEnabled = project?.config.meta_event.is_enabled;
-	const [displayedMetaEvents] = useState<MetaEvent[]>(
-		metaEvents.content,
-	);
+	const [displayedMetaEvents] = useState<MetaEvent[]>(metaEvents.content);
 	const [selectedMetaEvent, setSelectedMetaEvent] = useState<MetaEvent | null>(
 		null,
 	);
@@ -156,7 +154,7 @@ function RouteComponent() {
 		setIsRetryingMetaEvent(true);
 		try {
 			const ev = await metaEventsService.retryEvent(eventId);
-			setSelectedMetaEvent((prev) => ({...prev, ...ev}))
+			setSelectedMetaEvent(prev => ({ ...prev, ...ev }));
 		} catch (error) {
 			console.error('Error retrying meta event:', error);
 		} finally {
@@ -238,7 +236,9 @@ function RouteComponent() {
 			{isMetaEventEnabled && (
 				<div className="p-6">
 					<section className="space-y-6 w-full max-w-[1440px]">
-						<h1 className="text-lg font-bold text-neutral-12 bg-neut">Meta Events</h1>
+						<h1 className="text-lg font-bold text-neutral-12 bg-neut">
+							Meta Events
+						</h1>
 
 						<div className="flex border rounded-8px">
 							<div className="min-w-[605px] w-full h-full overflow-hidden relative">
@@ -271,8 +271,10 @@ function RouteComponent() {
 											</TableRow>
 										</TableHeader>
 										<TableBody>
-											{Array.from(groupItemsByDate(displayedMetaEvents, 'asc')).map(
-												([dateKey, events]) => {
+											{displayedMetaEvents.length > 0 &&
+												Array.from(
+													groupItemsByDate(displayedMetaEvents, 'asc'),
+												).map(([dateKey, events]) => {
 													return [
 														<TableRow className="bg-neutral-2" key={dateKey}>
 															<TableCell
@@ -339,19 +341,24 @@ function RouteComponent() {
 															</TableRow>
 														)),
 													);
-												},
+												})}
+
+											{displayedMetaEvents.length === 0 && (
+												<TableRow>
+													<TableCell colSpan={6}>
+														<div className="mx-auto w-full">
+															<EmptyState
+																className="my-36"
+																image={detailsEmptyState}
+																description="No meta event has been sent"
+															/>
+														</div>
+													</TableCell>
+												</TableRow>
 											)}
 										</TableBody>
 									</Table>
 								</div>
-
-								{displayedMetaEvents.length === 0 && (
-									<EmptyState
-										className="my-36"
-										image="/assets/img/empty-state.svg"
-										description="No meta event has been sent"
-									/>
-								)}
 							</div>
 
 							<div className="max-w-[450px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative border-l">
