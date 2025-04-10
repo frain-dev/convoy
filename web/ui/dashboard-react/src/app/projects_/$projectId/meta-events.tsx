@@ -236,7 +236,7 @@ function RouteComponent() {
 			{isMetaEventEnabled && (
 				<div className="p-6">
 					<section className="space-y-6 w-full max-w-[1440px]">
-						<h1 className="text-lg font-bold text-neutral-12 bg-neut">
+						<h1 className="text-lg font-bold text-neutral-12">
 							Meta Events
 						</h1>
 

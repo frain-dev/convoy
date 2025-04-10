@@ -483,8 +483,12 @@ function ProjectLinks() {
 			route: `/projects/${project?.uid}/endpoints`,
 		},
 		{
-			name: 'Events Log',
+			name: 'Portal Links',
 			route: '/',
+		},
+		{
+			name: 'Events Log',
+			route: `/projects/${project?.uid}/events-log`,
 		},
 		{
 			name: 'Meta Events',
