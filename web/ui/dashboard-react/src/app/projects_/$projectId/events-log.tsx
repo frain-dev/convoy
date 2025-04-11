@@ -1,13 +1,23 @@
+import React, { useState, useEffect, useRef } from 'react';
 import { z } from 'zod';
-import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format, setHours, setMinutes } from 'date-fns';
-import {formatInTimeZone} from 'date-fns-tz'
+import { formatInTimeZone } from 'date-fns-tz';
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 
 import { createFileRoute } from '@tanstack/react-router';
 
-import { ChevronDown, Check, CalendarIcon } from 'lucide-react';
+import {
+	ChevronDown,
+	Check,
+	CalendarIcon,
+	Copy,
+	ArrowUpRight,
+	RefreshCw,
+	ArrowRight,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ConvoyCheckbox } from '@/components/convoy-checkbox';
@@ -42,22 +52,41 @@ import {
 } from '@/components/ui/command';
 import { Calendar } from '@/components/ui/calendar';
 import { DashboardLayout } from '@/components/dashboard';
+import { Badge } from '@/components/ui/badge';
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from '@/components/ui/dialog';
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { cn } from '@/lib/utils';
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import * as eventsService from '@/services/events.service';
 import * as sourcesService from '@/services/sources.service';
+import * as eventLogService from '@/services/event-log.service';
 
 import type { DateRange } from 'react-day-picker';
+import type { Event, EventDelivery } from '@/models/event';
 
 import searchIcon from '../../../../assets/svg/search-icon.svg';
 import eventsLogEmptyStateImg from '../../../../assets/svg/events-empty-state-image.svg';
+import { useProjectStore } from '@/store';
 
 const EventsLogSearchSchema = z.object({
 	sort: z.enum(['asc', 'desc']).catch('desc'),
 	next_page_cursor: z.string().catch('FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF'),
 	direction: z.enum(['next', 'prev']).optional().catch('next'),
-	tail_events: z.boolean().catch(false),
+	enableTailMode: z.boolean().catch(false),
 	source_id: z.string().catch(''),
 	startDate: z.string().optional().catch(''),
 	endDate: z.string().optional().catch(''),
@@ -65,7 +94,7 @@ const EventsLogSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/projects_/$projectId/events-log')({
-	component: RouteComponent,
+	component: EventsLogPage,
 	validateSearch: EventsLogSearchSchema,
 	beforeLoad({ context, search }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
@@ -79,23 +108,14 @@ export const Route = createFileRoute('/projects_/$projectId/events-log')({
 	},
 });
 
-const filterFormSchema = z.object({
-	sort: z.enum(['asc', 'desc']).optional(),
-	tail_events: z.boolean().optional(),
-	source_id: z.string().optional(),
-	starttDate: z.string().optional(),
-	endDate: z.string().optional(),
-	query: z.string().optional(),
-});
-
-function RouteComponent() {
+function EventsLogPage() {
 	const navigate = Route.useNavigate();
+	const { events: initialEvents, sources } = Route.useLoaderData();
 	const search = Route.useSearch();
-	const { events, sources } = Route.useLoaderData();
+	const { project } = useProjectStore();
 	const [loadedSources, setLoadedSources] = useState(sources.content);
-	const [isLoadingEvents, setIsLoadingEvents] = useState(false);
-	const [endTimeValue, setEndTimeValue] = useState('23:59');
-	const [startTimeValue, setStartTimeValue] = useState('00:00');
+
+	// Search and filtering state
 	const [searchString, setSearchString] = useState(search.query);
 	const [date, setDate] = useState<DateRange | undefined>(
 		!search.startDate || !search.endDate
@@ -105,25 +125,226 @@ function RouteComponent() {
 					to: new Date(search.endDate),
 				},
 	);
-	useEffect(() => {
-		setLoadedSources(sources.content);
-	}, [sources]);
+	const [endTimeValue, setEndTimeValue] = useState('23:59');
+	const [startTimeValue, setStartTimeValue] = useState('00:00');
+
+	// Events and event details state
+	const [events, setEvents] = useState(initialEvents);
+	const [displayedEvents, setDisplayedEvents] = useState<
+		Array<{ date: string; content: Array<Event> }>
+	>([]);
+	const [isLoadingEvents, setIsLoadingEvents] = useState(false);
+	const [eventsDetailsItem, setEventsDetailsItem] = useState<Event | null>(
+		null,
+	);
+	const [sidebarEventDeliveries, setSidebarEventDeliveries] = useState<
+		Array<EventDelivery>
+	>([]);
+	const [isLoadingSidebarDeliveries, setIsLoadingSidebarDeliveries] =
+		useState(false);
+	const [duplicateEvents, setDuplicateEvents] = useState<Array<Event>>([]);
+	const [isFetchingDuplicateEvents, setIsFetchingDuplicateEvents] =
+		useState(false);
+	const [isRetrying, setIsRetrying] = useState(false);
+	const [batchRetryCount, setBatchRetryCount] = useState(0);
+	const [showBatchRetryDialog, setShowBatchRetryDialog] = useState(false);
+
+	const eventLogsTableHead = ['Event ID', 'Source', 'Time', ''];
+	const eventsInterval = useRef<number | null>(null);
+	const enableTailMode = search.enableTailMode || false;
 
 	const filterForm = useForm({
-		resolver: zodResolver(filterFormSchema),
+		resolver: zodResolver(
+			z.object({
+				source_id: z.string().optional(),
+			}),
+		),
 		defaultValues: {
-			sort: 'desc',
-			tail_events: false,
-			source_id: '',
-			startDate: '',
-			endDate: '',
-			query: '',
+			source_id: search.source_id || '',
 		},
 	});
+
+	// Format code for JSON display
+	const formatCode = (code: unknown): string => {
+		return typeof code === 'string' ? code : JSON.stringify(code, null, 2);
+	};
+
+	// Copy text to clipboard
+	const copyToClipboard = (text: string) => {
+		navigator.clipboard.writeText(text);
+		// Could add a notification here
+	};
 
 	function setTimeOnDate(time: string, date: Date) {
 		const [hours, minutes] = time.split(':').map(str => parseInt(str, 10));
 		return setHours(setMinutes(new Date(date), minutes), hours);
+	}
+
+	// Fetch event logs
+	const fetchEventLogs = async (requestDetails?: Record<string, unknown>) => {
+		setIsLoadingEvents(true);
+
+		try {
+			const eventsResponse = await eventsService.getEvents({
+				...requestDetails,
+				showLoader: true,
+			});
+
+			setEvents(eventsResponse);
+			const groupedEvents = groupEventsByDate(eventsResponse.content);
+			setDisplayedEvents(groupedEvents);
+
+			if (!eventsDetailsItem && eventsResponse.content.length > 0) {
+				setEventsDetailsItem(eventsResponse.content[0]);
+				getEventDeliveriesForSidebar(eventsResponse.content[0].uid);
+				getDuplicateEvents(eventsResponse.content[0]);
+			}
+
+			setIsLoadingEvents(false);
+		} catch (error) {
+			setIsLoadingEvents(false);
+		}
+	};
+
+	// Get event deliveries for sidebar
+	const getEventDeliveriesForSidebar = async (eventId: string) => {
+		setIsLoadingSidebarDeliveries(true);
+		setSidebarEventDeliveries([]);
+
+		try {
+			const response = await eventsService.getEventDeliveries({ eventId });
+			setSidebarEventDeliveries(response.content);
+			setIsLoadingSidebarDeliveries(false);
+		} catch (error) {
+			setIsLoadingSidebarDeliveries(false);
+		}
+	};
+
+	// Get duplicate events
+	const getDuplicateEvents = async (event: Event) => {
+		if (!event.is_duplicate_event || !event.idempotency_key) return;
+
+		setIsFetchingDuplicateEvents(true);
+		try {
+			const eventsResponse = await eventsService.getEvents({
+				idempotencyKey: event.idempotency_key,
+			});
+			setDuplicateEvents(eventsResponse.content);
+			setIsFetchingDuplicateEvents(false);
+		} catch (error) {
+			setIsFetchingDuplicateEvents(false);
+		}
+	};
+
+	// Replay event
+	const replayEvent = async (requestDetails: { eventId: string }) => {
+		setIsRetrying(true);
+		try {
+			const response = await eventLogService.retryEvent(requestDetails.eventId);
+			// Could add notification here
+			setIsRetrying(false);
+		} catch (error) {
+			setIsRetrying(false);
+		}
+	};
+
+	// Batch replay events
+	const batchReplayEvent = async () => {
+		setIsRetrying(true);
+
+		try {
+			await eventLogService.batchRetryEvent(search);
+			setShowBatchRetryDialog(false);
+			setIsRetrying(false);
+		} catch (error) {
+			setIsRetrying(false);
+		}
+	};
+
+	// Fetch retry count
+	const fetchRetryCount = async (requestDetails: Record<string, unknown>) => {
+		try {
+			const response = await eventLogService.getRetryCount(
+				requestDetails as any,
+			);
+			setBatchRetryCount(response.count);
+			setShowBatchRetryDialog(true);
+		} catch (error) {
+			console.error(error);
+		}
+	};
+
+	// Handle tailing
+	const handleTailing = (enabled: boolean) => {
+		if (enabled && !eventsInterval.current) {
+			eventsInterval.current = window.setInterval(() => {
+				fetchEventLogs(search);
+			}, 5000);
+		} else if (!enabled && eventsInterval.current) {
+			clearInterval(eventsInterval.current);
+			eventsInterval.current = null;
+		}
+	};
+
+	// Set up initial events and tailing
+	useEffect(() => {
+		fetchEventLogs(search);
+
+		if (enableTailMode) {
+			handleTailing(true);
+		}
+
+		return () => {
+			if (eventsInterval.current) {
+				clearInterval(eventsInterval.current);
+			}
+		};
+	}, [search]);
+
+	useEffect(() => {
+		setLoadedSources(sources.content);
+	}, [sources]);
+
+	// Helper function for date grouping
+	const groupEventsByDate = (events: Array<Event>) => {
+		if (!events?.length) return [];
+
+		const groups: Array<{ date: string; content: Array<Event> }> = [];
+
+		events.forEach(event => {
+			const date = new Date(event.created_at).toLocaleDateString('en-US', {
+				year: 'numeric',
+				month: 'long',
+				day: 'numeric',
+			});
+
+			const existingGroup = groups.find(group => group.date === date);
+
+			if (existingGroup) {
+				existingGroup.content.push(event);
+			} else {
+				groups.push({
+					date,
+					content: [event],
+				});
+			}
+		});
+
+		return groups;
+	};
+
+	// TODO move this function to a utility
+	function setTagColour(status: string) {
+		switch (status) {
+			case 'Success':
+				return 'bg-new.success-25 text-new.success-600 hover:bg-new.success-25 hover:new.success-600';
+			case 'Failure':
+			case 'Failed':
+				return 'bg-destructive/10 text-destructive hover:bg-destructive/10 hover:text-destructive';
+			// Pending
+			default:
+				return 'bg-neutral-3 text-neutral-10 hover:bg-neutral-3 hover:text-neutral-10';
+		}
 	}
 
 	return (
@@ -134,7 +355,7 @@ function RouteComponent() {
 				</section>
 
 				{/* Filter Section */}
-				<div className="flex items-center justify-between">
+				<div className="flex items-end justify-between">
 					<div className="flex items-center gap-x-4">
 						<div>
 							<form
@@ -187,7 +408,7 @@ function RouteComponent() {
 								Sort
 							</label>
 							<Select
-								defaultValue={'desc'}
+								defaultValue={search.sort || 'desc'}
 								onValueChange={sort =>
 									navigate({
 										to: Route.fullPath,
@@ -217,12 +438,12 @@ function RouteComponent() {
 						<div>
 							<div className="px-2 py-1 border border-neutral-5 rounded-8px mt-6">
 								<ConvoyCheckbox
-									isChecked={false}
+									isChecked={enableTailMode}
 									label="Tail Events"
 									onChange={e =>
 										navigate({
 											to: Route.fullPath,
-											search: { ...search, tail_events: e.target.checked },
+											search: { ...search, enableTailMode: e.target.checked },
 										})
 									}
 								/>
@@ -242,18 +463,29 @@ function RouteComponent() {
 												'w-[320px] justify-start text-left font-normal text-xs text-neutral-9',
 											)}
 										>
-											<CalendarIcon />
+											<CalendarIcon className="stroke-neutral-9" />
 											{date?.from ? (
 												date.to ? (
 													<>
-														{formatInTimeZone(date.from, "UTC", 'dd/LL/y, h:mm aa')} -{' '}
-														{formatInTimeZone(date.to, "UTC", 'dd/LL/y, h:mm aa')}
+														{formatInTimeZone(
+															date.from,
+															'UTC',
+															'dd/LL/y, h:mm aa',
+														)}{' '}
+														-{' '}
+														{formatInTimeZone(
+															date.to,
+															'UTC',
+															'dd/LL/y, h:mm aa',
+														)}
 													</>
 												) : (
 													format(date.from, 'dd/LL/y, h:mm aa')
 												)
 											) : (
-												<span>Pick a date range</span>
+												<span className="text-neutral-9">
+													Pick a date range
+												</span>
 											)}
 										</Button>
 									</PopoverTrigger>
@@ -335,7 +567,7 @@ function RouteComponent() {
 																date.from,
 															);
 															const to = setTimeOnDate(endTimeValue, date.to);
-															setDate({from, to})
+															setDate({ from, to });
 															navigate({
 																to: Route.fullPath,
 																search: {
@@ -449,9 +681,10 @@ function RouteComponent() {
 					<div>
 						<Button
 							size="sm"
-							asChild
 							variant="ghost"
-							className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400 h-[36px]"
+							className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
+							disabled={batchRetryCount === 0}
+							onClick={() => setShowBatchRetryDialog(true)}
 						>
 							Batch Retry
 						</Button>
@@ -459,21 +692,476 @@ function RouteComponent() {
 				</div>
 			</div>
 
-			{events.content.length == 0 && (
-				<div className="m-auto">
+			{/* Empty state or Main content section */}
+			{!isLoadingEvents &&
+			(!displayedEvents || displayedEvents.length === 0) ? (
+				<div className="m-auto py-80px">
 					<div className="flex flex-col items-center justify-center">
 						<img
 							src={eventsLogEmptyStateImg}
 							alt="No events"
 							className="h-40 mb-6"
 						/>
-
 						<p className="text-neutral-10 text-sm mb-6 max-w-[410px] text-center">
 							You currently do not have any event logs
 						</p>
 					</div>
 				</div>
+			) : (
+				<div className="flex gap-6 border-t border-t-new.primary-50 px-6">
+					{/* Events Table */}
+					<div className="w-full overflow-hidden relative">
+						{isLoadingEvents ? (
+							<div className="animate-pulse py-10">
+								{[1, 2, 3, 4, 5].map(index => (
+									<div
+										key={index}
+										className="h-12 bg-neutral-3 rounded-md my-1"
+									></div>
+								))}
+							</div>
+						) : (
+							<div
+								className="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]"
+								id="events-table-container"
+							>
+								<Table>
+									<TableHeader>
+										<TableRow>
+											{eventLogsTableHead.map((head, i) => (
+												<TableHead
+													key={i}
+													className={`uppercase text-xs font-medium text-neutral-12 ${i === 0 ? 'pl-5' : ''}`}
+												>
+													{head}
+												</TableHead>
+											))}
+										</TableRow>
+									</TableHeader>
+									<TableBody>
+										{displayedEvents.map((eventGroup, groupIndex) => (
+											<React.Fragment key={groupIndex}>
+												{/* Date Row */}
+												<TableRow className="border-t border-new.primary-25">
+													<TableCell className="pt-4 pl-4 pb-2 text-neutral-10 text-xs">
+														{eventGroup.date}
+													</TableCell>
+													<TableCell className="pt-4 pb-2 text-neutral-10"></TableCell>
+													<TableCell className="pt-4 pb-2 text-neutral-10"></TableCell>
+													<TableCell className="pt-4 pb-2 text-neutral-10"></TableCell>
+												</TableRow>
+
+												{/* Event Rows */}
+												{eventGroup.content.map((event, eventIndex) => (
+													<TableRow
+														key={eventIndex}
+														className={`cursor-pointer group hover:bg-new.primary-25 transition-all duration-300 ${event.uid === eventsDetailsItem?.uid ? 'bg-new.primary-25' : ''}`}
+														onClick={() => {
+															setEventsDetailsItem(event);
+															getEventDeliveriesForSidebar(event.uid);
+															getDuplicateEvents(event);
+														}}
+													>
+														<TableCell className="w-[380px] pl-4 pr-8 relative rounded-l-8px py-3">
+															<div className="flex items-center truncate gap-2">
+																<Badge className="max-w-[260px] gap-x-4 truncate font-normal flex items-center !rounded-22px text-sm bg-neutral-a3 hover:bg-neutral-a3 px-3 py-1.5 text-neutral-11">
+																	<span className='text-neutral-12 text-xs'>{event.uid}</span>
+
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		className="h-4 w-4 hover:bg-transparent"
+																		onClick={e => {
+																			e.stopPropagation();
+																			copyToClipboard(event.uid);
+																		}}
+																	>
+																		<Copy className="h-3 w-3 stroke-neutral-9" />
+																	</Button>
+																</Badge>
+															</div>
+														</TableCell>
+
+														<TableCell className="py-3">
+															<div className="max-w-[300px] w-full overflow-hidden overflow-ellipsis text-xs font-normal text-neutral-11">
+																{event.source_metadata?.name || 'Rest API'}
+															</div>
+														</TableCell>
+
+														<TableCell className="py-3 text-xs font-normal text-neutral-11">
+															{new Date(event.created_at).toLocaleTimeString()}
+														</TableCell>
+
+														<TableCell className="flex justify-end items-center gap-x-2 rounded-r-8px py-3">
+															{event.is_duplicate_event && (
+																<Badge className="bg-neutral-a3 text-neutral-11 shadow-none text-xs font-normal rounded-22px hover:bg-neutral-a3">
+																	Duplicate
+																</Badge>
+															)}
+
+															<Button
+																variant="ghost"
+																size="sm"
+																className="pr-5 hover:bg-transparent"
+																title="event deliveries"
+																onClick={e => {
+																	e.stopPropagation();
+																	// Navigate to event deliveries
+																	// TO DO: Implement navigation to event deliveries
+																}}
+															>
+																<ArrowUpRight className="h-3.5 w-3.5 stroke-neutral-10" />
+															</Button>
+														</TableCell>
+													</TableRow>
+												))}
+											</React.Fragment>
+										))}
+									</TableBody>
+								</Table>
+							</div>
+						)}
+					</div>
+
+					{/* Sidebar Separator */}
+					<div className="w-[1px] bg-new.primary-50"></div>
+
+					{/* Sidebar for Event Details */}
+					<div className="max-w-[472px] w-full max-h-[calc(100vh - 950px)] min-h-[707px] overflow-auto relative pt-4">
+						{/* Sidebar loader */}
+						{isLoadingEvents ? (
+							<>
+								<div className="border-b border-new.primary-25 pb-6">
+									<Skeleton className="h-4 w-20 rounded-full" />
+								</div>
+								<div className="flex justify-between border-y border-new.primary-25 py-6 mb-5">
+									<Skeleton className="h-4 w-20 rounded-full" />
+									<Skeleton className="h-4 w-52 rounded-full" />
+								</div>
+							</>
+						) : (
+							/* Event details */
+							eventsDetailsItem && (
+								<>
+									<div className="border-b border-new.primary-25 pb-6">
+										<Button
+											size="sm"
+											variant="ghost"
+											onClick={() =>
+												replayEvent({ eventId: eventsDetailsItem.uid })
+											}
+											disabled={isRetrying}
+											className="flex items-center shadow-none text-new.primary-400 hover:text-new.primary-400 hover:bg-new.primary-25 bg-new.primary-25 px-2 py-1"
+										>
+											<RefreshCw className="h-4 w-4 stroke-new.primary-400" />
+											Replay
+										</Button>
+									</div>
+
+									<div className="flex items-center border-b border-new.primary-25 py-6 text-xs">
+										<p className="text-neutral-10 mr-6">Idempotency Key</p>
+										<p className="text-neutral-10 w-[280px] overflow-hidden overflow-ellipsis">
+											{eventsDetailsItem.idempotency_key || '-'}
+										</p>
+									</div>
+								</>
+							)
+						)}
+
+						{/* Duplicate events */}
+						{eventsDetailsItem?.is_duplicate_event && (
+							<>
+								{isFetchingDuplicateEvents ? (
+									<div className="mt-5">
+										<Skeleton className="h-4 w-20 rounded-full mb-8" />
+										<div className="flex justify-between mb-5">
+											<Skeleton className="h-4 w-20 rounded-full" />
+											<Skeleton className="h-4 w-52 rounded-full" />
+											<Skeleton className="h-4 w-16 rounded-full" />
+										</div>
+										<div className="flex justify-between mb-5">
+											<Skeleton className="h-4 w-20 rounded-full" />
+											<Skeleton className="h-4 w-52 rounded-full" />
+											<Skeleton className="h-4 w-16 rounded-full" />
+										</div>
+									</div>
+								) : (
+									duplicateEvents?.length > 0 && (
+										<>
+											<p className="text-xs text-neutral-10 font-medium my-4">
+												Duplicate Events
+											</p>
+											<ul className="border-b border-new.primary-25 mb-4">
+												{duplicateEvents.map(event => (
+													<li
+														key={event.uid}
+														className="cursor-pointer border-none flex mb-2.5 hover:bg-new.primary-25 py-1.5 rounded-xl transition-colors pl-1"
+													>
+														<div className="w-1/3 flex items-center">
+															<Badge className="overflow-hidden text-ellipsis mr-2">
+																{event.uid}
+															</Badge>
+															<Button
+																variant="ghost"
+																size="icon"
+																className="h-4 w-4"
+																onClick={() => copyToClipboard(event.uid)}
+															>
+																<Copy className="h-3 w-3 text-neutral-10" />
+															</Button>
+														</div>
+														<div className="w-1/3 whitespace-nowrap overflow-hidden overflow-ellipsis text-xs text-neutral-10 pr-2">
+															{event.source_metadata?.name || 'Rest API'}
+														</div>
+														<div className="w-1/5">
+															{event.is_duplicate_event && (
+																<Badge variant="outline" className="text-xs">
+																	Duplicate
+																</Badge>
+															)}
+														</div>
+														<div className="flex items-center justify-end text-neutral-10 text-xs">
+															{new Date(event.created_at).toLocaleTimeString(
+																'en-US',
+																{ hour: 'numeric', minute: '2-digit' },
+															)}
+														</div>
+													</li>
+												))}
+											</ul>
+										</>
+									)
+								)}
+							</>
+						)}
+
+						{/* Event deliveries */}
+						{!eventsDetailsItem?.is_duplicate_event && (
+							<>
+								<p className="text-xs text-neutral-10 font-medium mb-4 mt-4">
+									Deliveries Overview
+								</p>
+
+								{isLoadingSidebarDeliveries ? (
+									<div>
+										<Skeleton className="h-4 w-20 rounded-full mb-8" />
+										<div className="flex justify-between mb-5">
+											<Skeleton className="h-4 w-20 rounded-full" />
+											<Skeleton className="h-4 w-52 rounded-full" />
+											<Skeleton className="h-4 w-16 rounded-full" />
+										</div>
+										<div className="flex justify-between mb-5">
+											<Skeleton className="h-4 w-20 rounded-full" />
+											<Skeleton className="h-4 w-52 rounded-full" />
+											<Skeleton className="h-4 w-16 rounded-full" />
+										</div>
+										<div className="flex justify-between mb-5">
+											<Skeleton className="h-4 w-20 rounded-full" />
+											<Skeleton className="h-4 w-52 rounded-full" />
+											<Skeleton className="h-4 w-16 rounded-full" />
+										</div>
+									</div>
+								) : (
+									<>
+										{sidebarEventDeliveries.length === 0 ? (
+											<div className="border-b border-new.primary-25 mb-6 p-6 pl-0 w-full text-xs text-neutral-10">
+												No event delivery attempt for this event yet.
+											</div>
+										) : (
+											<ul className="border-b border-new.primary-25 mb-6">
+												{sidebarEventDeliveries.map(delivery => (
+													<li
+														key={delivery.uid}
+														className="cursor-pointer border-none flex justify-between mb-2.5 hover:bg-new.primary-25 py-1.5 rounded-xl transition-colors pl-1"
+														onClick={() => {
+															// Navigate to event delivery details
+															// TO DO: Implement navigation to event delivery details
+														}}
+													>
+														<div className="flex items-center">
+															<div className="flex items-center mr-3">
+																<Badge
+																	className={`shadow-none font-normal text-xs border-0 !rounded-22px py-1.5 px-3 ${setTagColour(delivery.status)}`}
+																>
+																	{delivery.status}
+																</Badge>
+																{delivery.device_id && (
+																	<svg width="16" height="14" className="mr-1">
+																		<use xlinkHref="#cli-icon"></use>
+																	</svg>
+																)}
+															</div>
+
+															<div className="whitespace-nowrap overflow-ellipsis overflow-hidden text-neutral-10 text-center text-xs">
+																{!delivery.device_id ? (
+																	<div className="flex items-center">
+																		{project?.type == 'incoming' && (
+																			<div>
+																				<div className="max-w-[100px] truncate">
+																					{delivery.source_metadata?.name ||
+																						'Rest API'}
+																				</div>
+
+																				<div className="px-4 font-light">→</div>
+																			</div>
+																		)}
+
+																		<div className="max-w-[100px] overflow-hidden overflow-ellipsis">
+																			{delivery.endpoint_metadata?.name}
+																		</div>
+																	</div>
+																) : (
+																	<span>
+																		{delivery.device_metadata?.host_name}
+																	</span>
+																)}
+															</div>
+														</div>
+
+														<div className="flex items-center justify-end text-neutral-10 text-xs self-end">
+															{new Date(delivery.created_at).toLocaleTimeString(
+																'en-US',
+																{ hour: 'numeric', minute: '2-digit' },
+															)}
+
+															<Button variant="ghost" className="pr-0">
+																<ArrowRight className="h-6 w-6 fill-neutral-10" />
+															</Button>
+														</div>
+													</li>
+												))}
+											</ul>
+										)}
+									</>
+								)}
+							</>
+						)}
+
+						{/* Event payload and headers */}
+						{isLoadingEvents ? (
+							<>
+								<Skeleton className="h-[120px] w-full mb-5" />
+								<Skeleton className="h-[120px] w-full" />
+							</>
+						) : (
+							displayedEvents?.length > 0 &&
+							eventsDetailsItem && (
+								<>
+									<div className="mb-4">
+										<div className="mb-2 font-medium text-xs">Event</div>
+										<SyntaxHighlighter
+											language="json"
+											style={vs}
+											showLineNumbers={true}
+											className="rounded-md text-sm"
+										>
+											{formatCode(
+												eventsDetailsItem.data ||
+													eventsDetailsItem?.metadata?.data,
+											)}
+										</SyntaxHighlighter>
+									</div>
+
+									{eventsDetailsItem.headers && (
+										<div>
+											<div className="mb-2 font-medium text-xs">Headers</div>
+											<SyntaxHighlighter
+												language="json"
+												style={vs}
+												showLineNumbers={true}
+												className="rounded-md text-sm"
+											>
+												{formatCode(eventsDetailsItem.headers)}
+											</SyntaxHighlighter>
+										</div>
+									)}
+								</>
+							)
+						)}
+					</div>
+				</div>
 			)}
+
+			{/* Pagination */}
+			{events?.pagination?.has_next_page ||
+			events?.pagination?.has_prev_page ? (
+				<div className="flex justify-center items-center gap-2 py-4">
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={!events?.pagination?.has_prev_page}
+						onClick={() =>
+							navigate({
+								to: Route.fullPath,
+								search: {
+									...search,
+									direction: 'prev',
+									next_page_cursor: events?.pagination?.next_page_cursor || '',
+								},
+							})
+						}
+					>
+						Previous
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						disabled={!events?.pagination?.has_next_page}
+						onClick={() =>
+							navigate({
+								to: Route.fullPath,
+								search: {
+									...search,
+									direction: 'next',
+									next_page_cursor: events?.pagination?.next_page_cursor || '',
+								},
+							})
+						}
+					>
+						Next
+					</Button>
+				</div>
+			) : null}
+
+			{/* Batch retry dialog */}
+			<Dialog
+				open={showBatchRetryDialog}
+				onOpenChange={setShowBatchRetryDialog}
+			>
+				<DialogContent className="sm:max-w-md">
+					<div className="text-center py-8">
+						<img
+							src="/assets/img/filter.gif"
+							alt="filter icon"
+							className="w-[50px] m-auto mb-4"
+						/>
+						<DialogHeader>
+							<DialogTitle className="text-center text-base font-medium text-neutral-11 mb-2">
+								The filters applied will affect
+							</DialogTitle>
+						</DialogHeader>
+						<p className="text-center text-base font-semibold mb-8">
+							{batchRetryCount || 0} event{batchRetryCount !== 1 ? 's' : ''}
+						</p>
+						<div className="flex flex-col gap-2">
+							<Button
+								onClick={batchReplayEvent}
+								disabled={isRetrying || batchRetryCount === 0}
+								className="m-auto"
+							>
+								{isRetrying ? 'Retrying Events...' : 'Yes, Apply'}
+							</Button>
+							<Button
+								variant="ghost"
+								className="font-semibold m-auto"
+								onClick={() => setShowBatchRetryDialog(false)}
+							>
+								No, Cancel
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</DashboardLayout>
 	);
 }
