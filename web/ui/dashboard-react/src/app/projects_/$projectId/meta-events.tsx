@@ -106,7 +106,7 @@ const EmptyState = ({
 );
 
 export const Route = createFileRoute('/projects_/$projectId/meta-events')({
-	component: RouteComponent,
+	component: MetaEventsPage,
 	beforeLoad({ context }) {
 		ensureCanAccessPrivatePages(context.auth?.getTokens().isLoggedIn);
 	},
@@ -117,12 +117,14 @@ export const Route = createFileRoute('/projects_/$projectId/meta-events')({
 	},
 });
 
-function RouteComponent() {
+function MetaEventsPage() {
 	const { project } = useProjectStore();
 	const { projectId } = Route.useParams();
 	const { metaEvents } = Route.useLoaderData();
 	const isMetaEventEnabled = project?.config.meta_event.is_enabled;
-	const [displayedMetaEvents] = useState<MetaEvent[]>(metaEvents.content);
+	const [displayedMetaEvents, setDisplayedMetaEvents] = useState<MetaEvent[]>(
+		metaEvents.content,
+	);
 	const [selectedMetaEvent, setSelectedMetaEvent] = useState<MetaEvent | null>(
 		null,
 	);
@@ -155,6 +157,9 @@ function RouteComponent() {
 		try {
 			const ev = await metaEventsService.retryEvent(eventId);
 			setSelectedMetaEvent(prev => ({ ...prev, ...ev }));
+			setDisplayedMetaEvents(prev =>
+				prev.map(_ev => (ev.uid == _ev.uid ? { ..._ev, ...ev } : _ev)),
+			);
 		} catch (error) {
 			console.error('Error retrying meta event:', error);
 		} finally {
@@ -236,9 +241,7 @@ function RouteComponent() {
 			{isMetaEventEnabled && (
 				<div className="p-6">
 					<section className="space-y-6 w-full max-w-[1440px]">
-						<h1 className="text-lg font-bold text-neutral-12 bg-neut">
-							Meta Events
-						</h1>
+						<h1 className="text-lg font-bold text-neutral-12">Meta Events</h1>
 
 						<div className="flex border rounded-8px">
 							<div className="min-w-[605px] w-full h-full overflow-hidden relative">
@@ -254,7 +257,7 @@ function RouteComponent() {
 								)} */}
 
 								<div
-									className="min-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]"
+									className="min-h-[70vh] max-h-[70vh] overflow-y-auto overflow-x-auto w-full min-w-[485px]"
 									id="events-table-container"
 								>
 									<Table>
