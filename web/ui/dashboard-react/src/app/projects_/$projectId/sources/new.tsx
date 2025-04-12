@@ -58,7 +58,7 @@ import uploadIcon from '../../../../../assets/img/upload.png';
 import githubIcon from '../../../../../assets/img/github.png';
 import shopifyIcon from '../../../../../assets/img/shopify.png';
 import twitterIcon from '../../../../../assets/img/twitter.png';
-import docIcon from '../../../../../assets/img/doc-icon-primary.svg';
+import docIcon from '../../../../../assets/svg/doc-icon-primary.svg';
 import modalCloseIcon from '../../../../../assets/svg/modal-close-icon.svg';
 
 type FuncOutput = {

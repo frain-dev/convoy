@@ -50,7 +50,7 @@ import { useLicenseStore, useProjectStore } from '@/store';
 import { endpointsService } from '@/services/endpoints.service';
 
 import type { ENDPOINT } from '@/models/endpoint.model';
-import type { Pagination } from '@/models/global.model';
+// import type { Pagination } from '@/models/global.model';
 
 import { ensureCanAccessPrivatePages } from '@/lib/auth';
 import viewEventsImg from '../../../../../assets/svg/view-events-icon.svg';
@@ -86,7 +86,7 @@ function EndpointsPageContent() {
 	const { project } = useProjectStore();
 	const [isLoadingEndpoints, setIsLoadingEndpoints] = useState(false);
 	const [displayedEndpoints, setDisplayedEndpoints] = useState<ENDPOINT[]>([]);
-	const [pagination, setPagination] = useState<Pagination | null>(null);
+	// const [pagination, setPagination] = useState<Pagination | null>(null);
 	const [showExpireSecretSelectOptions, setShowExpireSecretSelectOptions] =
 		useState(false);
 	const [selectedEndpoint, setSelectedEndpoint] = useState<ENDPOINT | null>(
@@ -120,7 +120,7 @@ function EndpointsPageContent() {
 			// The response contains a flat array of ENDPOINT objects
 
 			setDisplayedEndpoints(response.data?.content || []);
-			setPagination(response.data?.pagination);
+			// setPagination(response.data?.pagination);
 		} catch (error) {
 			console.error('Error fetching endpoints:', error);
 		} finally {
@@ -135,12 +135,12 @@ function EndpointsPageContent() {
 	};
 
 	// Function to handle pagination
-	const handlePagination = (params: Record<string, string>) => {
-		getEndpoints({
-			...params,
-			...(searchString ? { search: searchString } : {}),
-		});
-	};
+	// const handlePagination = (params: Record<string, string>) => {
+	// 	getEndpoints({
+	// 		...params,
+	// 		...(searchString ? { search: searchString } : {}),
+	// 	});
+	// };
 
 	// Function to toggle endpoint status (pause/unpause)
 	const toggleEndpoint = async (endpointId: string) => {
@@ -203,7 +203,7 @@ function EndpointsPageContent() {
 	const getStatusColor = (status: 'active' | 'paused' | 'inactive') => {
 		switch (status.toLowerCase()) {
 			case 'active':
-				return 'bg-new.success-50 text-new.success-700';
+				return 'bg-new.success-25 text-new.success-500';
 			case 'paused':
 				return 'bg-neutral-a3 text-neutral-11';
 			default:

@@ -84,9 +84,8 @@ import { useProjectStore } from '@/store';
 
 const EventsLogSearchSchema = z.object({
 	sort: z.enum(['asc', 'desc']).catch('desc'),
-	next_page_cursor: z.string().catch('FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF'),
-	direction: z.enum(['next', 'prev']).optional().catch('next'),
-	enableTailMode: z.boolean().catch(false),
+	next_page_cursor: z.string().catch(''),
+	direction: z.enum(['next', 'prev', '']).optional().catch(''),
 	source_id: z.string().catch(''),
 	startDate: z.string().optional().catch(''),
 	endDate: z.string().optional().catch(''),
@@ -129,7 +128,7 @@ function EventsLogPage() {
 	const [startTimeValue, setStartTimeValue] = useState('00:00');
 
 	// Events and event details state
-	const [events, setEvents] = useState(initialEvents);
+	const [_events, setEvents] = useState(initialEvents);
 	const [displayedEvents, setDisplayedEvents] = useState<
 		Array<{ date: string; content: Array<Event> }>
 	>([]);
@@ -142,6 +141,7 @@ function EventsLogPage() {
 	>([]);
 	const [isLoadingSidebarDeliveries, setIsLoadingSidebarDeliveries] =
 		useState(false);
+	const [enableTailMode, setEnableTailMode] = useState(false);
 	const [duplicateEvents, setDuplicateEvents] = useState<Array<Event>>([]);
 	const [isFetchingDuplicateEvents, setIsFetchingDuplicateEvents] =
 		useState(false);
@@ -151,7 +151,6 @@ function EventsLogPage() {
 
 	const eventLogsTableHead = ['Event ID', 'Source', 'Time', ''];
 	const eventsInterval = useRef<number | null>(null);
-	const enableTailMode = search.enableTailMode || false;
 
 	const filterForm = useForm({
 		resolver: zodResolver(
@@ -179,32 +178,6 @@ function EventsLogPage() {
 		const [hours, minutes] = time.split(':').map(str => parseInt(str, 10));
 		return setHours(setMinutes(new Date(date), minutes), hours);
 	}
-
-	// Fetch event logs
-	const fetchEventLogs = async (requestDetails?: Record<string, unknown>) => {
-		setIsLoadingEvents(true);
-
-		try {
-			const eventsResponse = await eventsService.getEvents({
-				...requestDetails,
-				showLoader: true,
-			});
-
-			setEvents(eventsResponse);
-			const groupedEvents = groupEventsByDate(eventsResponse.content);
-			setDisplayedEvents(groupedEvents);
-
-			if (!eventsDetailsItem && eventsResponse.content.length > 0) {
-				setEventsDetailsItem(eventsResponse.content[0]);
-				getEventDeliveriesForSidebar(eventsResponse.content[0].uid);
-				getDuplicateEvents(eventsResponse.content[0]);
-			}
-
-			setIsLoadingEvents(false);
-		} catch (error) {
-			setIsLoadingEvents(false);
-		}
-	};
 
 	// Get event deliveries for sidebar
 	const getEventDeliveriesForSidebar = async (eventId: string) => {
@@ -240,11 +213,42 @@ function EventsLogPage() {
 	const replayEvent = async (requestDetails: { eventId: string }) => {
 		setIsRetrying(true);
 		try {
-			const response = await eventLogService.retryEvent(requestDetails.eventId);
+			await eventLogService.retryEvent(requestDetails.eventId);
 			// Could add notification here
 			setIsRetrying(false);
 		} catch (error) {
 			setIsRetrying(false);
+		}
+	};
+
+	// Fetch retry count
+	const fetchRetryCount = async (requestDetails?: Record<string, unknown>) => {
+		try {
+			// Create parameter object matching expected API format
+			const params = {
+				startDate: search.startDate
+					? formatInTimeZone(search.startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss")
+					: undefined,
+				endDate: search.endDate
+					? formatInTimeZone(search.endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss")
+					: undefined,
+				sourceId: search.source_id || undefined,
+				query: search.query || undefined,
+				...requestDetails,
+			};
+
+			// Filter out undefined values
+			const filteredParams = Object.fromEntries(
+				Object.entries(params).filter(
+					([_, value]) => value !== undefined && value !== '',
+				),
+			);
+
+			const response = await eventLogService.getRetryCount(filteredParams);
+			setBatchRetryCount(response.count);
+			setShowBatchRetryDialog(true);
+		} catch (error) {
+			console.error(error);
 		}
 	};
 
@@ -253,7 +257,26 @@ function EventsLogPage() {
 		setIsRetrying(true);
 
 		try {
-			await eventLogService.batchRetryEvent(search);
+			// Create parameter object matching expected API format
+			const params = {
+				startDate: search.startDate
+					? formatInTimeZone(search.startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss")
+					: undefined,
+				endDate: search.endDate
+					? formatInTimeZone(search.endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss")
+					: undefined,
+				sourceId: search.source_id || undefined,
+				query: search.query || undefined,
+			};
+
+			// Filter out undefined values
+			const filteredParams = Object.fromEntries(
+				Object.entries(params).filter(
+					([_, value]) => value !== undefined && value !== '',
+				),
+			);
+
+			await eventLogService.batchRetryEvent(filteredParams);
 			setShowBatchRetryDialog(false);
 			setIsRetrying(false);
 		} catch (error) {
@@ -261,33 +284,77 @@ function EventsLogPage() {
 		}
 	};
 
-	// Fetch retry count
-	const fetchRetryCount = async (requestDetails: Record<string, unknown>) => {
-		try {
-			const response = await eventLogService.getRetryCount(
-				requestDetails as any,
-			);
-			setBatchRetryCount(response.count);
-			setShowBatchRetryDialog(true);
-		} catch (error) {
-			console.error(error);
-		}
-	};
-
-	// Handle tailing
-	const handleTailing = (enabled: boolean) => {
-		if (enabled && !eventsInterval.current) {
-			eventsInterval.current = window.setInterval(() => {
-				fetchEventLogs(search);
-			}, 5000);
-		} else if (!enabled && eventsInterval.current) {
-			clearInterval(eventsInterval.current);
-			eventsInterval.current = null;
-		}
-	};
-
 	// Set up initial events and tailing
 	useEffect(() => {
+		// Fetch event logs
+		const fetchEventLogs = async (requestDetails?: Record<string, unknown>) => {
+			setIsLoadingEvents(true);
+
+			try {
+				// Create a properly formatted parameters object that matches the expected API format
+				const startDate = search.startDate
+					? new Date(search.startDate).toISOString().split('.')[0]
+					: undefined;
+				const endDate = search.endDate
+					? new Date(search.endDate).toISOString().split('.')[0]
+					: undefined;
+
+				const params = {
+					idempotencyKey: search.query?.includes('idempotency_key:')
+						? search.query.split('idempotency_key:')[1].trim()
+						: undefined,
+					query: search.query?.includes('idempotency_key:')
+						? undefined
+						: search.query,
+					sourceId: search.source_id || undefined,
+					sort: search.sort || 'desc',
+					next_page_cursor: search.next_page_cursor,
+					direction: search.direction,
+					...requestDetails,
+					showLoader: true,
+				};
+
+				// Filter out undefined values to keep the request clean
+				const filteredParams = Object.fromEntries(
+					Object.entries(params).filter(
+						([_, value]) => value !== undefined && value !== '',
+					),
+				);
+
+				const eventsResponse = await eventsService.getEvents({
+					...filteredParams,
+					startDate,
+					endDate,
+				});
+
+				setEvents(eventsResponse);
+				const groupedEvents = groupEventsByDate(eventsResponse.content);
+				setDisplayedEvents(groupedEvents);
+
+				if (!eventsDetailsItem && eventsResponse.content.length > 0) {
+					setEventsDetailsItem(eventsResponse.content[0]);
+					getEventDeliveriesForSidebar(eventsResponse.content[0].uid);
+					getDuplicateEvents(eventsResponse.content[0]);
+				}
+
+				setIsLoadingEvents(false);
+			} catch (error) {
+				setIsLoadingEvents(false);
+			}
+		};
+
+		// Handle tailing
+		const handleTailing = (enabled: boolean) => {
+			if (enabled && !eventsInterval.current) {
+				eventsInterval.current = window.setInterval(() => {
+					fetchEventLogs(search);
+				}, 5000);
+			} else if (!enabled && eventsInterval.current) {
+				clearInterval(eventsInterval.current);
+				eventsInterval.current = null;
+			}
+		};
+
 		fetchEventLogs(search);
 
 		if (enableTailMode) {
@@ -299,7 +366,7 @@ function EventsLogPage() {
 				clearInterval(eventsInterval.current);
 			}
 		};
-	}, [search]);
+	}, [search, enableTailMode, eventsDetailsItem]);
 
 	useEffect(() => {
 		setLoadedSources(sources.content);
@@ -356,7 +423,7 @@ function EventsLogPage() {
 
 				{/* Filter Section */}
 				<div className="flex items-end justify-between">
-					<div className="flex items-center gap-x-4">
+					<div className="flex items-center gap-x-2">
 						<div>
 							<form
 								className="flex flex-col gap-y-2"
@@ -426,10 +493,16 @@ function EventsLogPage() {
 									/>
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem className="text-xs " value="asc">
+									<SelectItem
+										className="text-xs hover:cursor-pointer"
+										value="asc"
+									>
 										<span className="text-neutral-9">Asc</span>
 									</SelectItem>
-									<SelectItem className="text-xs " value="desc">
+									<SelectItem
+										className="text-xs hover:cursor-pointer"
+										value="desc"
+									>
 										<span className="text-neutral-9">Desc</span>
 									</SelectItem>
 								</SelectContent>
@@ -440,12 +513,7 @@ function EventsLogPage() {
 								<ConvoyCheckbox
 									isChecked={enableTailMode}
 									label="Tail Events"
-									onChange={e =>
-										navigate({
-											to: Route.fullPath,
-											search: { ...search, enableTailMode: e.target.checked },
-										})
-									}
+									onChange={e => setEnableTailMode(e.target.checked)}
 								/>
 							</div>
 						</div>
@@ -684,7 +752,7 @@ function EventsLogPage() {
 							variant="ghost"
 							className="hover:bg-new.primary-400 text-white-100 text-xs hover:text-white-100 bg-new.primary-400"
 							disabled={batchRetryCount === 0}
-							onClick={() => setShowBatchRetryDialog(true)}
+							onClick={() => fetchRetryCount(search)}
 						>
 							Batch Retry
 						</Button>
@@ -765,7 +833,9 @@ function EventsLogPage() {
 														<TableCell className="w-[380px] pl-4 pr-8 relative rounded-l-8px py-3">
 															<div className="flex items-center truncate gap-2">
 																<Badge className="max-w-[260px] gap-x-4 truncate font-normal flex items-center !rounded-22px text-sm bg-neutral-a3 hover:bg-neutral-a3 px-3 py-1.5 text-neutral-11">
-																	<span className='text-neutral-12 text-xs'>{event.uid}</span>
+																	<span className="text-neutral-12 text-xs">
+																		{event.uid}
+																	</span>
 
 																	<Button
 																		variant="ghost"
@@ -783,7 +853,7 @@ function EventsLogPage() {
 														</TableCell>
 
 														<TableCell className="py-3">
-															<div className="max-w-[300px] w-full overflow-hidden overflow-ellipsis text-xs font-normal text-neutral-11">
+															<div className="max-w-[300px] w-full overflow-hidden overflow-ellipsis text-xs font-normal text-neutral-12">
 																{event.source_metadata?.name || 'Rest API'}
 															</div>
 														</TableCell>
@@ -1083,7 +1153,7 @@ function EventsLogPage() {
 			)}
 
 			{/* Pagination */}
-			{events?.pagination?.has_next_page ||
+			{/* {events?.pagination?.has_next_page ||
 			events?.pagination?.has_prev_page ? (
 				<div className="flex justify-center items-center gap-2 py-4">
 					<Button
@@ -1121,7 +1191,7 @@ function EventsLogPage() {
 						Next
 					</Button>
 				</div>
-			) : null}
+			) : null} */}
 
 			{/* Batch retry dialog */}
 			<Dialog

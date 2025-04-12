@@ -510,9 +510,9 @@ function ProjectLinks() {
 								<li key={link.name} className="mb-1">
 									<Link
 										to={link.route}
-										className="flex hover:bg-neutral-3 py-2 pr-3 pl-2 rounded-sm"
+										className="flex hover:bg-new.primary-25 py-2 pr-3 pl-2 rounded-sm"
 										activeProps={{
-											className: 'bg-neutral-4 hover:bg-neutral-4',
+											className: 'bg-new.primary-25 hover:bg-new.primary-25',
 										}}
 									>
 										{link.name}
@@ -570,7 +570,7 @@ export function DashboardSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
 	return (
 		<aside>
 			<Sidebar
-				className="top-[--header-height] !h-[calc(100svh-var(--header-height))]"
+				className="top-[--header-height] !h-[calc(100svh-var(--header-height))] bg-transparent"
 				{...props}
 			>
 				<SidebarContent className="gap-0 mt-1">
