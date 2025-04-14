@@ -127,6 +127,12 @@ function transform(payload) {
 		}
 	}
 
+	updateFunctionEditorValue(value: string) {
+		if (this.functionEditor) {
+			this.functionEditor.setValue(value);
+		}
+	}
+
 	parseLog(log: string) {
 		return JSON.parse(log);
 	}

@@ -1,22 +1,6 @@
-import {
-    ChangeDetectorRef,
-    Component,
-    EventEmitter,
-    inject,
-    Input,
-    OnInit,
-    Output, ViewChild,
-    ViewEncapsulation
-} from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, inject, Input, OnInit, Output, ViewChild, ViewEncapsulation } from '@angular/core';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
-import {
-    ControlContainer,
-    FormBuilder,
-    FormGroup,
-    FormGroupDirective,
-    ReactiveFormsModule,
-    Validators
-} from '@angular/forms';
+import { ControlContainer, FormBuilder, FormGroup, FormGroupDirective, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 
 import { GeneralService } from '../../services/general/general.service';
@@ -27,24 +11,15 @@ import { PrivateService } from '../../private/private.service';
 import { CreateEndpointService } from '../../private/components/create-endpoint/create-endpoint.service';
 import { CreateSubscriptionService } from '../../private/components/create-subscription/create-subscription.service';
 
-import {
-    InputDirective,
-    InputErrorComponent,
-    InputFieldDirective,
-    LabelComponent
-} from '../../components/input/input.component';
+import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from '../../components/input/input.component';
 import { ButtonComponent } from '../../components/button/button.component';
 import { RadioComponent } from '../../components/radio/radio.component';
 import { TooltipComponent } from '../../components/tooltip/tooltip.component';
 import { CardComponent } from '../../components/card/card.component';
 import { FormLoaderComponent } from '../../components/form-loader/form-loader.component';
 import { PermissionDirective } from '../../private/components/permission/permission.directive';
-import {
-    CreateSubscriptionFilterComponent
-} from '../../private/components/create-subscription-filter/create-subscription-filter.component';
-import {
-    CreatePortalTransformFunctionComponent
-} from '../create-portal-transform-function/create-portal-transform-function.component';
+import { CreateSubscriptionFilterComponent } from '../../private/components/create-subscription-filter/create-subscription-filter.component';
+import { CreatePortalTransformFunctionComponent } from '../create-portal-transform-function/create-portal-transform-function.component';
 
 import { ENDPOINT, SECRET } from '../../models/endpoint.model';
 import { EVENT_TYPE } from '../../models/event.model';
@@ -61,29 +36,29 @@ import { CopyButtonComponent } from '../../components/copy-button/copy-button.co
 @Component({
 	selector: 'convoy-create-portal-endpoint',
 	standalone: true,
-    imports: [
-        CommonModule,
-        NgOptimizedImage,
-        ReactiveFormsModule,
-        InputDirective,
-        InputFieldDirective,
-        InputErrorComponent,
-        LabelComponent,
-        ButtonComponent,
-        RadioComponent,
-        TooltipComponent,
-        CardComponent,
-        FormLoaderComponent,
-        PermissionDirective,
-        CreateSubscriptionFilterComponent,
-        CreatePortalTransformFunctionComponent,
-        NotificationComponent,
-        ConfigButtonComponent,
-        LoaderModule,
-        TagComponent,
-        DialogDirective,
-        CopyButtonComponent
-    ],
+	imports: [
+		CommonModule,
+		NgOptimizedImage,
+		ReactiveFormsModule,
+		InputDirective,
+		InputFieldDirective,
+		InputErrorComponent,
+		LabelComponent,
+		ButtonComponent,
+		RadioComponent,
+		TooltipComponent,
+		CardComponent,
+		FormLoaderComponent,
+		PermissionDirective,
+		CreateSubscriptionFilterComponent,
+		CreatePortalTransformFunctionComponent,
+		NotificationComponent,
+		ConfigButtonComponent,
+		LoaderModule,
+		TagComponent,
+		DialogDirective,
+		CopyButtonComponent
+	],
 	providers: [
 		{
 			provide: ControlContainer,
@@ -106,6 +81,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 	@Input('subscriptionId') subscriptionId = this.route.snapshot.params.id || this.route.snapshot.queryParams.id;
 	@Input('endpointId') endpointUid = this.route.snapshot.params.id;
 	@Output() onAction = new EventEmitter<any>();
+	@ViewChild(CreatePortalTransformFunctionComponent) transformFunctionComponent!: CreatePortalTransformFunctionComponent;
 
 	// Injected Services
 	private rbacService = inject(RbacService);
@@ -153,7 +129,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 	endpointCreated = false;
 	endpointSecret?: SECRET;
 	isLoadingForm = true;
-    isTransformFunctionCollapsed = true;
+	isTransformFunctionCollapsed = true;
 
 	// Configurations
 	configurations = [
@@ -164,13 +140,141 @@ export class CreatePortalEndpointComponent implements OnInit {
 		{ uid: 'rate_limit', name: 'Rate Limit ', show: false, deleted: false },
 		{ uid: 'auth', name: 'Auth', show: false, deleted: false },
 		{ uid: 'alert_config', name: 'Notifications', show: false, deleted: false },
-		{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
+		{ uid: 'signature', name: 'Signature Format', show: false, deleted: false }
 	];
 
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 
 	// Flag to prevent infinite recursion in toggleEventType
 	private _isTogglingEventType = false;
+
+	// Transform function templates for different endpoint types
+	private readonly transformFunctions: { [key: string]: string } = {
+		slack: `/* 1. While you can write multiple functions, the main function
+    called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+    the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this
+    console.log('%j', logged_item) to get printed in the log below. */
+
+function transform(payload) {
+  // Format the Slack message with the event payload: https://api.slack.com/messaging/webhooks#posting_with_webhooks
+  payload = {
+    text: \`New event: \${JSON.stringify(payload)}\`
+  }
+
+  return payload;
+}`,
+		discord: `/* 1. While you can write multiple functions, the main function
+    called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+    the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this
+    console.log('%j', logged_item) to get printed in the log below. */
+    
+function transform(payload) {
+  // Format the Discord message with the event payload: https://discord.com/developers/docs/resources/webhook#execute-webhook
+  payload = {
+    username: "Webhook Integration",
+    content: \`Event: \${JSON.stringify(payload)}\` 
+  }
+
+  return payload;
+}`,
+		teams: `/* 1. While you can write multiple functions, the main function
+    called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+    the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this
+    console.log('%j', logged_item) to get printed in the log below. */
+    
+function transform(payload) {
+  // See https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/connectors-using#send-adaptive-cards-using-an-incoming-webhook
+  payload = {
+    "type":"message",
+    "attachments":[
+      {
+        "contentType":"application/vnd.microsoft.card.adaptive",
+        "contentUrl":null,
+        "content":{
+          "$schema":"http://adaptivecards.io/schemas/adaptive-card.json",
+          "type":"AdaptiveCard",
+          "version":"1.2",
+          "body":[{
+            "type": "TextBlock",
+            "text": \`Event: \${JSON.stringify(payload)}\`
+          }]
+        }
+      }
+    ]
+  }
+
+  return payload;
+}`,
+		inngest: `/* 1. While you can write multiple functions, the main function
+    called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+    the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this
+    console.log('%j', logged_item) to get printed in the log below. */
+function transform(payload) {
+	// Transform function here
+ 	return payload;
+}`,
+		hubspot: `/* 1. While you can write multiple functions, the main function
+    called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+    the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this
+    console.log('%j', logged_item) to get printed in the log below. */
+
+function transform(payload) {
+  // See https://developers.hubspot.com/docs/guides/api/app-management/webhooks
+  payload = {
+    "properties": {
+      "email": "test@example.com",
+      "payload": \`\${JSON.stringify(payload)}\`
+    }
+  }
+
+  return payload;
+}`,
+		webhook: `/* 1. While you can write multiple functions, the main function
+    called for your transformation is the transform function.
+
+2. The only argument acceptable in the transform function is
+    the payload data.
+
+3. The transform method must return a value.
+
+4. Console logs lust be written like this
+    console.log('%j', logged_item) to get printed in the log below. */
+
+function transform(payload) {
+    // Transform function here
+    return payload;
+}`
+	};
 
 	constructor(private route: ActivatedRoute, private cdr: ChangeDetectorRef, public privateService: PrivateService, public licenseService: LicensesService) {
 		// Initialize form here in constructor
@@ -427,6 +531,21 @@ export class CreatePortalEndpointComponent implements OnInit {
 
 	selectEndpointType(typeId: string) {
 		this.selectedEndpointType = typeId;
+
+		// Show transform function configuration when an endpoint type is selected
+		if (!this.showConfig('transform')) {
+			this.toggleConfigForm('transform');
+		}
+
+		// Update the transform function in the child component
+		const transformFunction = this.transformFunctions[typeId.toLowerCase()] || this.transformFunctions['webhook'];
+
+		// Wait for next tick to ensure component is available
+		setTimeout(() => {
+			if (this.transformFunctionComponent) {
+				this.transformFunctionComponent.updateFunctionEditorValue(transformFunction);
+			}
+		});
 	}
 
 	toggleConfigForm(configValue: string, deleted?: boolean) {
@@ -454,53 +573,52 @@ export class CreatePortalEndpointComponent implements OnInit {
 		return this.configurations.find(config => config.uid === configValue)?.deleted || false;
 	}
 
-    toggleEventTypeSelection(eventType: string) {
-        const isWildcard = eventType === '*';
-        const index = this.selectedEventTypes.indexOf(eventType);
+	toggleEventTypeSelection(eventType: string) {
+		const isWildcard = eventType === '*';
+		const index = this.selectedEventTypes.indexOf(eventType);
 
-        if (index > -1) {
-            // If already selected, remove it
-            this.selectedEventTypes.splice(index, 1);
-            return;
-        }
+		if (index > -1) {
+			// If already selected, remove it
+			this.selectedEventTypes.splice(index, 1);
+			return;
+		}
 
-        if (isWildcard) {
-            // Selecting wildcard (*) - clear all event types first
-            this.selectedEventTypes = ['*'];
-        } else {
-            // If a specific event type is selected, remove wildcard (*) if it's present
-            const wildcardIndex = this.selectedEventTypes.indexOf('*');
-            if (wildcardIndex > -1) {
-                this.selectedEventTypes.splice(wildcardIndex, 1);
-            }
-            this.selectedEventTypes.push(eventType);
-        }
-    }
+		if (isWildcard) {
+			// Selecting wildcard (*) - clear all event types first
+			this.selectedEventTypes = ['*'];
+		} else {
+			// If a specific event type is selected, remove wildcard (*) if it's present
+			const wildcardIndex = this.selectedEventTypes.indexOf('*');
+			if (wildcardIndex > -1) {
+				this.selectedEventTypes.splice(wildcardIndex, 1);
+			}
+			this.selectedEventTypes.push(eventType);
+		}
+	}
 
+	openFilterDialog(index: number) {
+		const eventType = this.eventTypes[index].name;
+		this.selectedEventType = eventType || '';
+		this.selectedIndex = index;
 
-    openFilterDialog(index: number) {
-        const eventType = this.eventTypes[index].name;
-        this.selectedEventType = eventType || '';
-        this.selectedIndex = index;
+		// Ensure a filter entry exists for this event type
+		if (!this.filtersMap.has(eventType)) {
+			this.filtersMap.set(eventType, {
+				uid: '', // Assigned by backend
+				subscription_id: '',
+				event_type: eventType,
+				headers: {},
+				body: {},
+				is_new: true
+			});
 
-        // Ensure a filter entry exists for this event type
-        if (!this.filtersMap.has(eventType)) {
-            this.filtersMap.set(eventType, {
-                uid: '', // Assigned by backend
-                subscription_id: '',
-                event_type: eventType,
-                headers: {},
-                body: {},
-                is_new: true
-            });
+			this._syncFiltersArrayWithMap();
+		}
 
-            this._syncFiltersArrayWithMap();
-        }
+		this.showFilterDialog = true;
+	}
 
-        this.showFilterDialog = true;
-    }
-
-    onSaveFilter(schema: any) {
+	onSaveFilter(schema: any) {
 		if (!this.selectedEventType) {
 			console.error('No event type selected for filter');
 			return;
@@ -970,16 +1088,15 @@ export class CreatePortalEndpointComponent implements OnInit {
 		this.cdr.detectChanges();
 	}
 
-	toEventTypesString(){
-		return this.eventTypes.map(e => e.name).filter(e=> e !== '*')
+	toEventTypesString() {
+		return this.eventTypes.map(e => e.name).filter(e => e !== '*');
 	}
 
-	validEventTypes(){
-		return this.eventTypes.filter(e=> e.name !== '*')
+	validEventTypes() {
+		return this.eventTypes.filter(e => e.name !== '*');
 	}
 
-    toggleTransformFunction() {
-        this.isTransformFunctionCollapsed = !this.isTransformFunctionCollapsed;
-    }
-
+	toggleTransformFunction() {
+		this.isTransformFunctionCollapsed = !this.isTransformFunctionCollapsed;
+	}
 }
