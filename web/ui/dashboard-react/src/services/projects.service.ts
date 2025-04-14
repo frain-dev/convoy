@@ -193,3 +193,22 @@ export async function regenerateAPIKey(
 
 	return res.data;
 }
+
+export type ProjectStats = {
+	endpoints_exist: boolean;
+	events_exist: boolean;
+	sources_exist: boolean;
+	subscriptions_exist: boolean;
+};
+
+export async function getStats(
+	deps: { httpReq: typeof request } = { httpReq: request },
+) {
+	const res = await deps.httpReq<ProjectStats>({
+		url: `/stats`,
+		method: 'get',
+		level: 'org_project',
+	});
+
+	return res.data;
+}

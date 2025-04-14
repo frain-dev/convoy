@@ -58,3 +58,19 @@ export async function getEventDeliveries(
 
 	return res.data;
 }
+
+export async function getDashboardSummary(
+	reqDetails: {startDate: string, endDate: string},
+	deps: { httpReq: typeof request } = {
+		httpReq: request,
+	},
+) {
+	const res = await deps.httpReq({
+		url: `/dashboard/summary`,
+		method: 'get',
+		level: 'org_project',
+		query: reqDetails
+	});
+
+	return res.data;
+}

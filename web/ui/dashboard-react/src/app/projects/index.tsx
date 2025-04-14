@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 
 import { Button } from '@/components/ui/button';
 import { ConvoyLoader } from '@/components/convoy-loader';
@@ -37,6 +37,13 @@ export const Route = createFileRoute('/projects/')({
 
 		if (!useProjectStore.getState().project) {
 			useProjectStore.setState({ project: projects.at(0) || null });
+		}
+
+		if (projects.length > 0) {
+			throw redirect({
+				to: '/projects/$projectId/events',
+				params: { projectId: projects[0].uid },
+			});
 		}
 
 		const userPerms = await authService.getUserPermissions();
@@ -102,7 +109,7 @@ function ProjectIndexPage() {
 
 	if (!project) {
 		return (
-			<div className="flex flex-col items-center">
+			<div className="flex flex-col items-center p-6">
 				<img
 					src={projectsEmptyImg}
 					alt={'no projects created for ' + org.name}
@@ -132,8 +139,6 @@ function ProjectIndexPage() {
 			</div>
 		);
 	}
-
-	return <p className="text-3xl-font-bold">TODO: create project default UI</p>;
 }
 
 // FIXME: Semantic HTML says anchors shoudld be anchors and buttons, buttons.
