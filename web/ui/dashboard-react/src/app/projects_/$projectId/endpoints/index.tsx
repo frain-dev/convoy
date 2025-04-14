@@ -428,14 +428,8 @@ function EndpointsPageContent() {
 															className="hover:bg-new.primary-25 bg-new.primary-25 hover:text-new.primary-400 text-new.primary-400 text-xs py-1 px-4 rounded-md"
 														>
 															<Link
-																// @ts-expect-error TODO: I'll create this route soon
-																// TODO: I'll create this route soon
 																to="/projects/$projectId/events"
-																// @ts-expect-error TODO: I'll create this route soon
-																// TODO: I'll create this route soon
 																params={{ projectId }}
-																// @ts-expect-error TODO: I'll create this route soon
-																// TODO: I'll create this route soon
 																search={prev => ({
 																	...prev,
 																	endpointId: ep.uid,

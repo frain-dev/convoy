@@ -208,12 +208,13 @@ function HeaderRightOrganisation() {
 									{org.name}
 								</span>
 							</Button>
-							<a
-								href={`/settings`}
+							<Link
+								to="/settings"
+								search={{ token: '' }}
 								className="block p-2 bg-new.primary-25 rounded-8px transition-colors"
 							>
 								<SettingsIcon size={18} className="stroke-neutral-9" />
-							</a>
+							</Link>
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
 
@@ -233,7 +234,10 @@ function HeaderRightOrganisation() {
 										<DropdownMenuItem
 											key={_org.uid}
 											className="gap-0 text-xs text-neutral-11 p-3 py-1 hover:cursor-pointer flex justify-start items-center hover:bg-neutral-3"
-											onClick={() => reloadProjects(_org)}
+											onClick={() => {
+												reloadProjects(_org);
+												navigate({ to: '/projects' });
+											}}
 										>
 											<Button
 												variant={'ghost'}
@@ -362,7 +366,7 @@ function ProjectsList() {
 													variant="ghost"
 													role="combobox"
 													aria-expanded={isPopoverOpen}
-													className="px-2 flex justify-stretch items-center hover:bg-neutral-3"
+													className="px-2 flex justify-stretch items-center hover:bg-new.primary-25"
 												>
 													{project ? (
 														<div className="flex items-center grow font-semibold">
@@ -402,7 +406,7 @@ function ProjectsList() {
 														);
 													}}
 												/>
-												<CommandList className='shadow-none'>
+												<CommandList className="shadow-none">
 													<CommandEmpty>
 														{projects.length
 															? `No projects found for '${field.value}'`
@@ -418,10 +422,13 @@ function ProjectsList() {
 																	onSelect={() => {
 																		setProject(p);
 																		setIsPopoverOpen(false);
-																		navigate({ to: '/projects' });
+																		navigate({
+																			to: '/projects/$projectId/events',
+																			params: { projectId: p.uid },
+																		});
 																	}}
 																>
-																	<div className="flex items-center grow">
+																	<div className="flex items-center grow hover:bg-new.primary-25">
 																		<svg
 																			width="16"
 																			height="16"
@@ -468,7 +475,7 @@ function ProjectLinks() {
 	const links = [
 		{
 			name: 'Event Deliveries',
-			route: '/',
+			route: `/projects/${project?.uid}/events`,
 		},
 		{
 			name: 'Sources',
@@ -476,7 +483,7 @@ function ProjectLinks() {
 		},
 		{
 			name: 'Subscriptions',
-			route:  `/projects/${project?.uid}/subscriptions`,
+			route: `/projects/${project?.uid}/subscriptions`,
 		},
 		{
 			name: 'Endpoints',
