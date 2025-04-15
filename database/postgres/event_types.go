@@ -93,11 +93,12 @@ func (e *eventTypesRepo) CreateEventType(ctx context.Context, eventType *datasto
 
 func (e *eventTypesRepo) CreateDefaultEventType(ctx context.Context, projectId string) error {
 	eventType := &datastore.ProjectEventType{
-		UID:       ulid.Make().String(),
-		Name:      "*",
-		ProjectId: projectId,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
+		UID:        ulid.Make().String(),
+		Name:       "*",
+		ProjectId:  projectId,
+		JSONSchema: []byte("{}"),
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
 	}
 
 	r, err := e.db.GetDB().ExecContext(ctx, createEventType,
@@ -106,6 +107,7 @@ func (e *eventTypesRepo) CreateDefaultEventType(ctx context.Context, projectId s
 		eventType.Description,
 		eventType.Category,
 		eventType.ProjectId,
+		eventType.JSONSchema,
 	)
 	if err != nil {
 		return err
