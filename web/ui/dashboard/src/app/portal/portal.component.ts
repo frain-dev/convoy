@@ -20,8 +20,8 @@ export class PortalComponent implements OnInit {
 			route: '/endpoints'
 		},
 		{
-			name: 'Subscriptions',
-			route: '/subscriptions'
+			name: 'Event Catalog',
+			route: '/event-catalog'
 		}
 	];
 	activeNavTab: any;

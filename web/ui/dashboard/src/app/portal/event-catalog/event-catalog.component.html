@@ -1,0 +1,129 @@
+<div *ngIf="!singleEventMode" class="max-w-[1300px] w-full mx-auto px-24px pb-100px pt-80px">
+    <h2 class="font-medium text-14 text-neutral-10 mb-24px">Event Catalog</h2>
+    <div class="flex justify-between items-center mb-12px">
+        <form class="border border-primary-400 h-36px px-14px py-0 max-w-[350px] w-full rounded-[10px] flex items-center bg-white-100">
+            <img ngSrc="/assets/img/search-icon.svg" alt="search icon" class="mr-10px" height="14" width="14"/>
+            <input type="search" placeholder="Search event types" class="w-full text-neutral-11 text-12 outline-none" [(ngModel)]="eventSearchString" [ngModelOptions]="{ standalone: true }" />
+            <button convoy-button *ngIf="eventSearchString && eventSearchString.length > 0" class="transition-all duration-200" fill="text" (click)="filterEvents(eventSearchString)" size="sm">
+                <img ngSrc="/assets/img/enter-icon.png" alt="enter icon" class="w-16px" height="50" width="50"/>
+            </button>
+        </form>
+    </div>
+
+    <ul convoy-card class="mb-40px">
+        <ng-container *ngIf="isLoadingEvents && !validEventTypes()?.length">
+            <li class="px-4 py-14px">
+                <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
+            </li>
+            <li class="flex items-center gap-36px p-16px" *ngFor="let i of [0, 1, 2]">
+                <div class="bg-neutral-a3 rounded-8px animate-pulse w-150px h-20px"></div>
+                <div class="bg-neutral-a3 rounded-8px animate-pulse w-80px h-20px"></div>
+                <div class="bg-neutral-a3 rounded-8px animate-pulse w-320px h-20px"></div>
+            </li>
+        </ng-container>
+
+        <ng-container *ngFor="let eventType of displayedEventTypes">
+            <li class="flex flex-col justify-between py-12px px-22px hover:bg-new.primary-25 transition-all duration-300 last-of-type:mb-0 relative border-b border-new.primary-25">
+                <button convoy-button size="sm" fill="text" class="w-full flex items-center py-2 px-3 text-left" (click)="toggleEventTypeExpand(eventType)">
+                    <svg width="10" height="10" class="fill-new.primary-400 scale-150 mr-2">
+                        <use [attr.xlink:href]="eventType.expanded ? '#angle-arrow-down-icon' : '#arrow-right-icon'"></use>
+                    </svg>
+                    <span class="flex-1 font-semibold">{{ eventType.name }}</span>
+                </button>
+
+                <p class="pl-32px text-12 text-neutral-10">
+                    {{ eventType.description }}
+                </p>
+            </li>
+
+
+            <ng-container *ngIf="eventType.expanded">
+                <div class="p-16px flex justify-between gap-16px border-t border-new.primary-25">
+                    <div class="w-[730px] overflow-y-auto">
+                        <ng-container *ngTemplateOutlet="fieldsList; context: { $implicit: eventType.fields, eventType: eventType, level: 0 }"></ng-container>
+                    </div>
+
+                    <div class="w-[1px] bg-new.primary-25"></div>
+
+                    <div class="w-[620px]">
+                        <div class="w-full">
+                            <prism *ngIf="eventType.expanded" title="JSON Schema" language="json" [code]="generalService.getCodeSnippetString('event_data', eventType.example_json)"></prism>
+                        </div>
+                    </div>
+                </div>
+            </ng-container>
+        </ng-container>
+
+        <div class="flex justify-center items-center p-40px flex-col" *ngIf="!isLoadingEvents && displayedEventTypes?.length === 0">
+            <img ngSrc="/assets/img/empty-state.svg" alt="empty state image" height="108" width="124"/>
+            <p class="mt-16px text-12 text-neutral-11">
+                {{ eventSearchString ? 'No event types match your search' : 'No event types available' }}
+            </p>
+        </div>
+    </ul>
+</div>
+
+<ng-template #fieldsList let-fields let-eventType="eventType" let-level="level">
+    <div *ngFor="let field of fields" class="border-b border-new.primary-25">
+        <button (click)="toggleFieldExpand(field)"
+             class="py-12px w-full hover:bg-new.primary-25 transition-all duration-200"
+             [style.paddingLeft.px]="22 + (level * 20)"
+        >
+            <div class="flex items-start">
+                <div class="flex-shrink-0 mt-10px">
+                    <button convoy-button size="sm" fill="text" *ngIf="field.children && field.children.length > 0">
+                        <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                            <use [attr.xlink:href]="field.expanded ? '#angle-arrow-down-icon' : '#arrow-right-icon'"></use>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex flex-col ml-2">
+                    <div class="flex items-center">
+                        <span class="text-12 text-neutral-12 font-bold">{{ field.displayName }}</span>
+
+                        <convoy-tag class="ml-2" size="sm" fill="soft" [color]="getTagColor(field.type)">
+                            {{ field.type }}
+                        </convoy-tag>
+
+                        <span *ngIf="field.optional" class="ml-2 text-12 italic px-2 py-1 rounded-full bg-gray-100 text-gray-800">
+                            optional
+                        </span>
+                    </div>
+
+                    <div class="mt-1 text-12 text-neutral-10">
+                        {{ getFieldDescription(field) }}
+
+                        <span *ngIf="field.children?.length > 0" class="ml-2 text-12 font-medium text-new.primary-500">
+                            ({{ field.children.length }} item{{ field.children.length > 1 ? 's' : '' }})
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </button>
+
+        <!-- Recursively render children if expanded -->
+        <div *ngIf="field.expanded && field.children && field.children.length > 0">
+            <ng-container *ngTemplateOutlet="fieldsList; context: { $implicit: field.children, eventType: eventType, level: level + 1 }"></ng-container>
+        </div>
+    </div>
+</ng-template>
+
+<!-- Single Event Mode -->
+<div *ngIf="singleEventMode">
+    <div class="p-16px flex justify-between gap-16px border-new.primary-25">
+        <div class="w-[730px] overflow-y-auto max-h-[600px]">
+            <ng-container *ngTemplateOutlet="fieldsList; context: { $implicit: selectedEventType?.fields ?? [], eventType: selectedEventType, level: 0 }"></ng-container>
+        </div>
+
+        <div class="w-[1px] bg-new.primary-25"></div>
+
+        <div class="w-[620px]">
+            <div class="py-12px w-full">
+                <prism title="JSON Schema" language="json" [code]="generalService.getCodeSnippetString('event_data', selectedEventType?.example_json ?? {})"></prism>
+            </div>
+        </div>
+    </div>
+</div>
+
+

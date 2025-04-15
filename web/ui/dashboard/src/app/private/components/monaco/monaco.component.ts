@@ -88,4 +88,11 @@ export class MonacoComponent implements AfterViewInit {
 	public getValue(): string {
 		return this._editor.getValue();
 	}
+
+	public setValue(value: any): void {
+		if (this._editor) {
+			const formattedValue = this.format === 'json' ? JSON.stringify(value, null, '\t') : value;
+			this._editor.setValue(formattedValue);
+		}
+	}
 }

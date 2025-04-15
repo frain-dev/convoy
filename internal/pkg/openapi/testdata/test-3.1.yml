@@ -1,0 +1,342 @@
+openapi: "3.1.0"
+info:
+  title: Test API
+  version: "1.0.0"
+  description: Test API for webhook extraction
+
+paths: {}
+
+webhooks:
+  barber:
+    post:
+      summary: Barber Shop Webhook
+      description: Webhook for barber shop events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event_type
+                - appointment_id
+                - customer_name
+                - service_type
+                - timestamp
+              properties:
+                event_type:
+                  type: string
+                  description: Type of event that occurred (e.g., appointment created, updated, cancelled)
+                  enum:
+                    - appointment_created
+                    - appointment_updated
+                    - appointment_cancelled
+                appointment_id:
+                  type: string
+                  description: Unique identifier for the appointment
+                  format: uuid
+                customer_name:
+                  type: string
+                  description: Full name of the customer
+                service_type:
+                  type: string
+                  description: Type of service booked (e.g., Haircut, Shave)
+                timestamp:
+                  type: string
+                  description: Date and time when the event occurred
+                  format: date-time
+                notes:
+                  type: string
+                  description: Additional notes or comments about the appointment
+              example:
+                event_type: appointment_created
+                appointment_id: 123e4567-e89b-12d3-a456-426614174000
+                customer_name: John Doe
+                service_type: Haircut
+                timestamp: "2024-03-20T10:00:00Z"
+                notes: First time customer
+
+  electrical:
+    post:
+      summary: Electrical Equipment Webhook
+      description: Webhook for electrical equipment inventory updates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - event_type
+                - item_id
+                - quantity
+                - location
+                - timestamp
+              properties:
+                event_type:
+                  type: string
+                  description: Type of inventory event (e.g., restock, sold, damaged)
+                  enum:
+                    - item_restocked
+                    - item_sold
+                    - item_damaged
+                item_id:
+                  type: string
+                  description: Unique identifier for the electrical equipment
+                  format: uuid
+                quantity:
+                  type: integer
+                  description: Number of items affected by the event
+                  minimum: 1
+                location:
+                  type: string
+                  description: Storage location or warehouse identifier
+                timestamp:
+                  type: string
+                  description: Date and time when the inventory event occurred
+                  format: date-time
+                notes:
+                  type: string
+                  description: Additional notes about the inventory update
+              example:
+                event_type: item_restocked
+                item_id: 789e0123-f45b-67d8-a456-426614174000
+                quantity: 50
+                location: "Warehouse-A"
+                timestamp: "2024-03-20T14:30:00Z"
+                notes: "Bulk order received"
+
+components:
+  schemas:
+    BarberSaaS:
+      type: object
+      required:
+        - barberId
+        - barberName
+        - booking
+        - schedule
+        - services
+      properties:
+        barberId:
+          type: string
+          description: Unique identifier for the barber
+          example: "barber_123"
+        barberName:
+          type: string
+          description: Name of the barber
+          example: "John Smith"
+        booking:
+          type: object
+          required:
+            - bookingId
+            - customerEmail
+            - customerName
+            - serviceId
+            - date
+            - startTime
+            - endTime
+          properties:
+            bookingId:
+              type: string
+              description: Unique identifier for the booking
+              example: "book_456"
+            customerEmail:
+              type: string
+              format: email
+              description: Email address of the customer
+              example: "alice@example.com"
+            customerName:
+              type: string
+              description: Name of the customer
+              example: "Alice Johnson"
+            serviceId:
+              type: string
+              description: Identifier of the booked service
+              example: "service_789"
+            date:
+              type: string
+              format: date
+              description: Date of the booking
+              example: "2024-03-25"
+            startTime:
+              type: string
+              format: time
+              description: Start time of the booking
+              example: "14:30:00"
+            endTime:
+              type: string
+              format: time
+              description: End time of the booking
+              example: "15:30:00"
+        schedule:
+          type: object
+          required:
+            - workingDays
+            - workingHours
+          properties:
+            workingDays:
+              type: array
+              description: Days of the week when the barber is working
+              items:
+                type: string
+                enum:
+                  [
+                    Monday,
+                    Tuesday,
+                    Wednesday,
+                    Thursday,
+                    Friday,
+                    Saturday,
+                    Sunday,
+                  ]
+              example: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+            workingHours:
+              type: object
+              required:
+                - startTime
+                - endTime
+              properties:
+                startTime:
+                  type: string
+                  format: time
+                  description: Start time of the working day
+                  example: "09:00:00"
+                endTime:
+                  type: string
+                  format: time
+                  description: End time of the working day
+                  example: "18:00:00"
+        services:
+          type: array
+          items:
+            type: object
+            required:
+              - serviceId
+              - name
+              - price
+              - duration
+            properties:
+              serviceId:
+                type: string
+                description: Unique identifier for the service
+                example: "service_789"
+              name:
+                type: string
+                description: Name of the service
+                example: "Haircut"
+              price:
+                type: number
+                format: float
+                description: Price of the service
+                example: 30.00
+              duration:
+                type: integer
+                description: Duration of the service in minutes
+                example: 60
+
+    ElectricalEquipment:
+      type: object
+      required:
+        - id
+        - name
+        - brand
+        - category
+        - price
+        - currency
+        - inStock
+        - availableVariants
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the product
+          example: "prod_123"
+        name:
+          type: string
+          description: Name of the product
+          example: "Professional Hair Dryer X2000"
+        brand:
+          type: string
+          description: Brand of the product
+          example: "StylePro"
+        category:
+          type: string
+          description: Category of the product
+          example: "Hair Care Equipment"
+        description:
+          type: string
+          description: Detailed description of the product
+          example: "Professional-grade hair dryer with ionic technology"
+        price:
+          type: number
+          format: float
+          description: Base price of the product
+          example: 199.99
+        currency:
+          type: string
+          description: Currency of the price
+          example: "USD"
+        inStock:
+          type: boolean
+          description: Whether the product is in stock
+          example: true
+        images:
+          type: array
+          description: URLs of product images
+          items:
+            type: string
+            format: uri
+          example:
+            - "https://example.com/images/dryer-front.jpg"
+            - "https://example.com/images/dryer-side.jpg"
+        specifications:
+          type: object
+          additionalProperties:
+            type: string
+          description: Technical specifications of the product
+          example:
+            voltage: "110-240V"
+            wattage: "1800W"
+            weight: "500g"
+            warranty: "2 years"
+        ratings:
+          type: object
+          properties:
+            average:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 5
+              description: Average rating of the product
+              example: 4.8
+            count:
+              type: integer
+              minimum: 0
+              description: Number of ratings
+              example: 245
+        availableVariants:
+          type: array
+          items:
+            type: object
+            required:
+              - variantId
+              - color
+              - price
+              - inStock
+            properties:
+              variantId:
+                type: string
+                description: Unique identifier for the variant
+                example: "var_456"
+              color:
+                type: string
+                description: Color of the variant
+                example: "Black"
+              price:
+                type: number
+                format: float
+                description: Price of this variant
+                example: 199.99
+              inStock:
+                type: boolean
+                description: Whether this variant is in stock
+                example: true

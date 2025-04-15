@@ -30,6 +30,7 @@ func SeedEventType(db database.Database, projectId, uid, name, desc, category st
 	pe := &datastore.ProjectEventType{
 		UID:         uid,
 		Name:        name,
+		JSONSchema:  []byte("{}"),
 		Category:    category,
 		ProjectId:   projectId,
 		Description: desc,

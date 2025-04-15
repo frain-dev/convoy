@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/frain-dev/convoy/cmd/ff"
-	"github.com/frain-dev/convoy/cmd/utils"
 	"os"
 	"time"
 	_ "time/tzdata"
+
+	"github.com/frain-dev/convoy/cmd/ff"
+	"github.com/frain-dev/convoy/cmd/utils"
 
 	"github.com/frain-dev/convoy/cmd/agent"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
@@ -25,6 +26,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/cmd/openapi"
 )
 
 func main() {
@@ -153,6 +155,7 @@ func main() {
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())
 	c.AddCommand(utils.AddUtilsCommand(app))
+	c.AddCommand(openapi.AddOpenAPICommand())
 
 	if err = c.Execute(); err != nil {
 		slog.Fatal(err)

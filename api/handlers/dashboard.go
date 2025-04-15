@@ -71,7 +71,41 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	qs := fmt.Sprintf("%v:%v:%v:%v", project.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period)
+	endpointIDs := make([]string, 0)
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	pLQ := ""
+	if h.IsReqWithPortalLinkToken(authUser) {
+		portalLink, err := h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+		pLQ = ":" + portalLink.UID
+
+		eIDs, err := h.getEndpoints(r, portalLink)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if len(eIDs) == 0 {
+			intervals := make([]datastore.EventInterval, 0)
+			dashboardPL := models.DashboardSummary{
+				Applications: 0,
+				EventsSent:   0,
+				Period:       period,
+				PeriodData:   &intervals,
+			}
+
+			_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully.",
+				dashboardPL, http.StatusOK))
+			return
+		}
+
+		endpointIDs = append(endpointIDs, eIDs...)
+	}
+
+	qs := fmt.Sprintf("%v:%v:%v:%v%v", project.UID, searchParams.CreatedAtStart, searchParams.CreatedAtEnd, period, pLQ)
 
 	var data *models.DashboardSummary
 	err = h.A.Cache.Get(r.Context(), qs, &data)
@@ -80,27 +114,32 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if data != nil {
-		h.cacheNewDashboardDataInBackground(project, searchParams, p, period, qs)
+		h.cacheNewDashboardDataInBackground(project, searchParams, p, period, qs, endpointIDs)
 		_ = render.Render(w, r, util.NewServerResponse("Dashboard summary fetched successfully",
 			data, http.StatusOK))
 		return
 	}
 
-	apps, err := postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(r.Context(), project.UID)
-	if err != nil {
-		log.WithError(err).Error("failed to count project endpoints")
-		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
-		return
+	var endpoints int64
+	if len(endpointIDs) == 0 {
+		endpoints, err = postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(r.Context(), project.UID)
+		if err != nil {
+			log.WithError(err).Error("failed to count project endpoints")
+			_ = render.Render(w, r, util.NewErrorResponse("an error occurred while searching apps", http.StatusInternalServerError))
+			return
+		}
+	} else {
+		endpoints = int64(len(endpointIDs))
 	}
 
-	eventsSent, messages, err := h.computeDashboardMessages(r.Context(), project.UID, searchParams, p)
+	eventsSent, messages, err := h.computeDashboardMessages(r.Context(), project.UID, searchParams, p, endpointIDs)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("an error occurred while fetching messages", http.StatusInternalServerError))
 		return
 	}
 
 	dashboard := models.DashboardSummary{
-		Applications: int(apps),
+		Applications: int(endpoints),
 		EventsSent:   eventsSent,
 		Period:       period,
 		PeriodData:   &messages,
@@ -116,7 +155,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		dashboard, http.StatusOK))
 }
 
-func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, searchParams datastore.SearchParams, p datastore.Period, period string, qs string) {
+func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, searchParams datastore.SearchParams, p datastore.Period, period string, qs string, endpointIds []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
@@ -139,19 +178,24 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 			return
 		}
 
-		apps, err := postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(ctx, project.UID)
-		if err != nil {
-			log.WithError(err).Error("failed to count project endpoints")
-			return
+		var endpoints int64
+		if len(endpointIds) == 0 {
+			endpoints, err = postgres.NewEndpointRepo(h.A.DB).CountProjectEndpoints(ctx, project.UID)
+			if err != nil {
+				log.WithError(err).Error("failed to count project endpoints")
+				return
+			}
+		} else {
+			endpoints = int64(len(endpointIds))
 		}
-		eventsSent, messages, err := h.computeDashboardMessages(ctx, project.UID, searchParams, p)
+		eventsSent, messages, err := h.computeDashboardMessages(ctx, project.UID, searchParams, p, endpointIds)
 		if err != nil {
 			log.WithError(err).Error("an error occurred while fetching messages")
 			return
 		}
 
 		dashboard := models.DashboardSummary{
-			Applications: int(apps),
+			Applications: int(endpoints),
 			EventsSent:   eventsSent,
 			Period:       period,
 			PeriodData:   &messages,
@@ -169,11 +213,11 @@ func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, 
 	}()
 }
 
-func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period) (uint64, []datastore.EventInterval, error) {
+func (h *Handler) computeDashboardMessages(ctx context.Context, projectID string, searchParams datastore.SearchParams, period datastore.Period, endpointIds []string) (uint64, []datastore.EventInterval, error) {
 	var messagesSent uint64
 
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
-	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period)
+	messages, err := eventDeliveryRepo.LoadEventDeliveriesIntervals(ctx, projectID, searchParams, period, endpointIds)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to load message intervals - ")
 		return 0, nil, err

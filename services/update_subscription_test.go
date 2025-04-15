@@ -86,7 +86,7 @@ func TestUpdateSubscriptionService_Run(t *testing.T) {
 						UID: "endpoint-id-1",
 					}, nil)
 
-				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), gomock.Any(), gomock.Any()).
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(int64(0), nil)
 			},
 		},
@@ -125,7 +125,7 @@ func TestUpdateSubscriptionService_Run(t *testing.T) {
 						UID: "endpoint-id-1",
 					}, nil)
 
-				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), gomock.Any(), gomock.Any()).
+				s.EXPECT().CountEndpointSubscriptions(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(int64(0), nil)
 			},
 			wantErr:    true,

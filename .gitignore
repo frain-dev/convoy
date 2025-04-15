@@ -41,3 +41,6 @@ redis_data
 
 convoy-ee
 convoy-ce
+
+# used to generate test stubs
+.cursor

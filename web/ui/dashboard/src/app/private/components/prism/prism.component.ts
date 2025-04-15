@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, Input, OnChanges, ViewChild } from '@angular/core';
+import {AfterViewInit, Component, ElementRef, Input, OnChanges, ViewChild} from '@angular/core';
 import * as Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-scss';
@@ -16,7 +16,7 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 	@Input() language?: string;
 	@Input('title') title?: string;
 	@Input('type') type?: 'default' | 'headers' | 'display' = 'default';
-	showPayload = false;
+	@Input() showPayload = false;
 
 	constructor() {}
 
@@ -44,11 +44,9 @@ export class PrismComponent implements AfterViewInit, OnChanges {
 				});
 			});
 
-		const header = {
+		return {
 			headersLength: headers.length,
 			headers: this.showPayload ? headers : headers.slice(0, 6)
 		};
-
-		return header;
 	}
 }
