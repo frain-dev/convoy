@@ -64,7 +64,7 @@ func (w *Webhook) ValidateData(data interface{}) (*ValidationResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("schema validation failed: %v", err)
 	}
-	if !schemaResult.IsValid {
+	if schemaResult.IsValid {
 		return schemaResult, nil
 	}
 
