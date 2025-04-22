@@ -12,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
@@ -33,8 +33,8 @@ type VerifiedToken struct {
 const (
 	JwtDefaultSecret        string = "convoy-jwt"
 	JwtDefaultRefreshSecret string = "convoy-refresh-jwt"
-	JwtDefaultExpiry        int    = 1800  //seconds
-	JwtDefaultRefreshExpiry int    = 86400 //seconds
+	JwtDefaultExpiry        int    = 1800  // seconds
+	JwtDefaultRefreshExpiry int    = 86400 // seconds
 )
 
 type Jwt struct {
@@ -176,14 +176,14 @@ func (j *Jwt) validateToken(accessToken, secret string) (*VerifiedToken, error) 
 	})
 
 	if err != nil {
-		v, ok := err.(*jwt.ValidationError)
-		if ok && v.Errors == jwt.ValidationErrorExpired {
-			if payload, ok := token.Claims.(jwt.MapClaims); ok {
-				expiry = payload["exp"].(float64)
-			}
-
-			return &VerifiedToken{Expiry: int64(expiry)}, ErrTokenExpired
-		}
+		// v, ok := err.(*jwt.ValidationError)
+		// if ok && v.Errors == jwt.ValidationErrorExpired {
+		// 	if payload, ok := token.Claims.(jwt.MapClaims); ok {
+		// 		expiry = payload["exp"].(float64)
+		// 	}
+		//
+		// 	return &VerifiedToken{Expiry: int64(expiry)}, ErrTokenExpired
+		// }
 
 		return nil, err
 	}
