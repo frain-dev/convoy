@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/plugins"
 	"io"
 	"os"
 	"strings"
@@ -10,10 +11,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	_         StdLogger = &Logger{}
-	stdLogger           = NewLogger(os.Stdout)
-)
+func init() {
+	plugins.RegisterModule(stdLogger)
+}
+
+func (l *Logger) ModuleInfo() plugins.ModuleInfo {
+	return plugins.ModuleInfo{
+		ID: "core.logger",
+		New: func() plugins.Module {
+			return stdLogger
+		},
+	}
+}
+
+const ID plugins.ModuleID = "core.logger"
 
 type StdLogger interface {
 	Info(args ...interface{})
@@ -143,6 +154,25 @@ type Logger struct {
 	entry  *logrus.Entry
 }
 
+func (l *Logger) Validate() error {
+	if l.logger == nil {
+		return plugins.ErrModuleValidation(ID, "logger")
+	}
+
+	if l.entry == nil {
+		return plugins.ErrModuleValidation(ID, "entry")
+	}
+
+	return nil
+}
+
+func (l *Logger) Load(_ plugins.ModuleContext) error {
+	l.entry = stdLogger.entry
+	l.logger = stdLogger.logger
+
+	return nil
+}
+
 func (l *Logger) Debug(args ...interface{}) {
 	l.entry.Debug(args...)
 }
@@ -241,3 +271,10 @@ func ParseLevel(lvl string) (Level, error) {
 	var l Level
 	return l, fmt.Errorf("not a valid Level: %q", lvl)
 }
+
+var (
+	_         StdLogger         = (*Logger)(nil)
+	_         plugins.Loader    = (*Logger)(nil)
+	_         plugins.Validator = (*Logger)(nil)
+	stdLogger                   = NewLogger(os.Stdout)
+)

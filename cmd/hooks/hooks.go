@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/plugins"
 	"io"
 	"os"
 	"strings"
@@ -121,7 +122,17 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		q = redisQueue.NewQueue(opts)
 
-		lo := log.NewLogger(os.Stdout)
+		// load the plugin manager
+		ctx, cancel := plugins.New(cmd.Context())
+		defer cancel()
+
+		l, err := ctx.LoadModuleByID(log.ID)
+		if err != nil {
+			return err
+		}
+
+		// cast loaded module to *log.Logger
+		lo := l.(*log.Logger)
 
 		rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 		if err != nil {
