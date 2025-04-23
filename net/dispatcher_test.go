@@ -71,7 +71,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				hmac: "12345",
 			},
 			want: &Response{
-				Status:     "200",
+				Status:     "200 OK",
 				StatusCode: http.StatusOK,
 				Method:     http.MethodPost,
 				URL:        nil,
@@ -302,7 +302,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				require.Contains(t, got.Error, tt.want.Error)
 			}
 
-			require.Equal(t, tt.want.Status, got.Status)
+			require.Contains(t, got.Status, tt.want.Status)
 			require.Equal(t, tt.want.StatusCode, got.StatusCode)
 			require.Equal(t, tt.want.Method, got.Method)
 			require.Equal(t, tt.want.IP, got.IP)

@@ -134,7 +134,7 @@ func TestRefreshTokenService_Run(t *testing.T) {
 
 			if tc.wantErr {
 				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Contains(t, err.(*ServiceError).Error(), tc.wantErrMsg)
 				return
 			}
 

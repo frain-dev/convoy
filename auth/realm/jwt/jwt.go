@@ -12,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
@@ -33,8 +33,8 @@ type VerifiedToken struct {
 const (
 	JwtDefaultSecret        string = "convoy-jwt"
 	JwtDefaultRefreshSecret string = "convoy-refresh-jwt"
-	JwtDefaultExpiry        int    = 1800  //seconds
-	JwtDefaultRefreshExpiry int    = 86400 //seconds
+	JwtDefaultExpiry        int    = 1800  // seconds
+	JwtDefaultRefreshExpiry int    = 86400 // seconds
 )
 
 type Jwt struct {
@@ -75,11 +75,13 @@ func NewJwt(opts *config.JwtRealmOptions, cache cache.Cache) *Jwt {
 }
 
 func (j *Jwt) GenerateToken(user *datastore.User) (Token, error) {
-	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	claims := jwt.MapClaims{
 		"sub": user.UID,
 		"exp": time.Now().Add(time.Second * time.Duration(j.Expiry)).Unix(),
-	})
+		"iat": time.Now().Unix(),
+	}
 
+	tok := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	token := Token{}
 
 	accessToken, err := tok.SignedString([]byte(j.Secret))
@@ -96,7 +98,6 @@ func (j *Jwt) GenerateToken(user *datastore.User) (Token, error) {
 	token.RefreshToken = refreshToken
 
 	return token, nil
-
 }
 
 func (j *Jwt) ValidateAccessToken(accessToken string) (*VerifiedToken, error) {
@@ -145,11 +146,13 @@ func (j *Jwt) EncodeToken(token string) string {
 }
 
 func (j *Jwt) generateRefreshToken(user *datastore.User) (string, error) {
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+	claims := jwt.MapClaims{
 		"sub": user.UID,
 		"exp": time.Now().Add(time.Second * time.Duration(j.RefreshExpiry)).Unix(),
-	})
+		"iat": time.Now().Unix(),
+	}
 
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return refreshToken.SignedString([]byte(j.RefreshSecret))
 }
 
@@ -173,19 +176,22 @@ func (j *Jwt) validateToken(accessToken, secret string) (*VerifiedToken, error) 
 		}
 
 		return []byte(secret), nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}), jwt.WithIssuedAt())
 
 	if err != nil {
-		v, ok := err.(*jwt.ValidationError)
-		if ok && v.Errors == jwt.ValidationErrorExpired {
+		switch {
+		case errors.Is(err, jwt.ErrTokenExpired):
 			if payload, ok := token.Claims.(jwt.MapClaims); ok {
 				expiry = payload["exp"].(float64)
 			}
-
 			return &VerifiedToken{Expiry: int64(expiry)}, ErrTokenExpired
+		case errors.Is(err, jwt.ErrTokenMalformed):
+			return nil, err
+		case errors.Is(err, jwt.ErrTokenSignatureInvalid):
+			return nil, err
+		default:
+			return nil, err
 		}
-
-		return nil, err
 	}
 
 	payload, ok := token.Claims.(jwt.MapClaims)
