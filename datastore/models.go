@@ -2,7 +2,9 @@ package datastore
 
 import (
 	"context"
+
 	"database/sql/driver"
+
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1541,6 +1543,13 @@ type PortalLink struct {
 	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
 	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
+
+	// token api key
+	TokenExpiresAt null.Time `json:"token_expires_at" db:"token_expires_at"`
+	TokenMaskId    string    `json:"token_mask_id" db:"token_mask_id"`
+	TokenHash      string    `json:"token_hash" db:"token_hash"`
+	TokenSalt      string    `json:"token_salt" db:"token_salt"`
+	AuthKey        string    `json:"auth_key" db:"-"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

@@ -2,11 +2,16 @@ package postgres
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/xdg-go/pbkdf2"
+	"gopkg.in/guregu/null.v4"
+	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -22,8 +27,8 @@ var (
 
 const (
 	createPortalLink = `
-	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, can_manage_endpoint)
-	VALUES ($1, $2, $3, $4, $5, $6, $7);
+	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, can_manage_endpoint, token_expires_at, token_hash, token_salt, token_mask_id)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
 	`
 
 	createPortalLinkEndpoints = `
@@ -33,12 +38,16 @@ const (
 	updatePortalLink = `
 	UPDATE convoy.portal_links
 	SET
-		name = $2,
 		endpoints = $3,
 		owner_id = $4,
 		can_manage_endpoint = $5,
+		token_salt = $6,
+		token_mask_id = $7,
+		token_expires_at = $8,
+		token_hash = $9,
+		name = $10,
 		updated_at = NOW()
-	WHERE id = $1 AND deleted_at IS NULL;
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
 	deletePortalLinkEndpoints = `
@@ -53,6 +62,10 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.token_salt,
+	p.token_mask_id,
+	p.token_expires_at,
+	p.token_hash,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -78,6 +91,10 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.token_salt,
+	p.token_mask_id,
+	p.token_expires_at,
+	p.token_hash,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -103,6 +120,10 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.token_salt,
+	p.token_mask_id,
+	p.token_expires_at,
+	p.token_hash,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -139,6 +160,10 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.token_salt,
+	p.token_mask_id,
+	p.token_expires_at,
+	p.token_hash,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -162,6 +187,10 @@ const (
 		p.name,
 		p.token,
 		p.endpoints,
+		p.token_salt,
+		p.token_mask_id,
+		p.token_expires_at,
+		p.token_hash,
 		COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 		COALESCE(p.owner_id, '') AS "owner_id",
 		CASE
@@ -232,6 +261,11 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 	}
 	defer rollbackTx(tx)
 
+	err = generateToken(portal)
+	if err != nil {
+		return err
+	}
+
 	r, err := tx.ExecContext(ctx, createPortalLink,
 		portal.UID,
 		portal.ProjectID,
@@ -240,6 +274,10 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		portal.Endpoints,
 		portal.OwnerID,
 		portal.CanManageEndpoint,
+		portal.TokenExpiresAt,
+		portal.TokenHash,
+		portal.TokenSalt,
+		portal.TokenMaskId,
 	)
 	if err != nil {
 		return err
@@ -269,12 +307,22 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 	}
 	defer rollbackTx(tx)
 
+	err = generateToken(portal)
+	if err != nil {
+		return err
+	}
+
 	r, err := tx.ExecContext(ctx, updatePortalLink,
 		portal.UID,
-		portal.Name,
+		projectID,
 		portal.Endpoints,
 		portal.OwnerID,
 		portal.CanManageEndpoint,
+		portal.TokenExpiresAt,
+		portal.TokenHash,
+		portal.TokenSalt,
+		portal.TokenMaskId,
+		portal.Name,
 	)
 	if err != nil {
 		return err
@@ -539,4 +587,23 @@ type PortalLinkPaginated struct {
 		TargetUrl    string `db:"target_url"`
 	} `db:"endpoint"`
 	datastore.PortalLink
+}
+
+func generateToken(p *datastore.PortalLink) error {
+	maskId, key := util.GenerateAPIKey()
+	salt, err := util.GenerateSecret()
+	if err != nil {
+		return err
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+	p.AuthKey = key
+	p.TokenSalt = salt
+	p.TokenMaskId = maskId
+	p.TokenHash = encodedKey
+	p.TokenExpiresAt = null.NewTime(time.Now().Add(time.Hour), true)
+
+	return nil
 }
