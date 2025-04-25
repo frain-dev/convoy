@@ -134,7 +134,7 @@ type DatabaseConfiguration struct {
 	SetMaxIdleConnections int `json:"max_idle_conn" envconfig:"CONVOY_DB_MAX_IDLE_CONN"`
 	SetConnMaxLifetime    int `json:"conn_max_lifetime" envconfig:"CONVOY_DB_CONN_MAX_LIFETIME"`
 
-	ReadReplicas []DatabaseConfiguration `json:"read_replicas" envconfig:"CONVOY_DB_READ_REPLICAS"`
+	ReadReplicas ReadReplicaConfiguration `json:"read_replicas" envconfig:"CONVOY_DB_READ_REPLICAS"`
 }
 
 func (dc DatabaseConfiguration) BuildDsn() string {
@@ -162,6 +162,21 @@ func (dc DatabaseConfiguration) BuildDsn() string {
 	}
 
 	return fmt.Sprintf("%s://%s%s:%d%s%s", dc.Scheme, authPart, dc.Host, dc.Port, dbPart, optPart)
+}
+
+type ReadReplicaConfiguration []DatabaseConfiguration
+
+func (sd *ReadReplicaConfiguration) Decode(value string) error {
+	var readReplicas []DatabaseConfiguration
+
+	// Unmarshal the JSON string directly into a slice of DatabaseConfiguration
+	err := json.Unmarshal([]byte(value), &readReplicas)
+	if err != nil {
+		return err
+	}
+
+	*sd = readReplicas
+	return nil
 }
 
 type ServerConfiguration struct {
