@@ -318,10 +318,10 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		portal.Endpoints,
 		portal.OwnerID,
 		portal.CanManageEndpoint,
-		portal.TokenExpiresAt,
-		portal.TokenHash,
 		portal.TokenSalt,
 		portal.TokenMaskId,
+		portal.TokenExpiresAt,
+		portal.TokenHash,
 		portal.Name,
 	)
 	if err != nil {

@@ -332,15 +332,25 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		plResponse = append(plResponse, pl)
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", models.PagedResponse{Content: plResponse, Pagination: &paginationData}, http.StatusOK))
+	resp := models.NewListResponse(plResponse, func(p models.PortalLinkResponse) models.PortalLinkResponse {
+		return p
+	})
+	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) models.PortalLinkResponse {
+	var url string
+	if len(pl.OwnerID) > 0 {
+		url = fmt.Sprintf("%s/portal?owner_id=%s", baseUrl, pl.OwnerID)
+	} else {
+		url = fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token)
+	}
+
 	return models.PortalLinkResponse{
 		UID:               pl.UID,
 		ProjectID:         pl.ProjectID,
 		Name:              pl.Name,
-		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
+		URL:               url,
 		Token:             pl.Token,
 		OwnerID:           pl.OwnerID,
 		Endpoints:         pl.Endpoints,
