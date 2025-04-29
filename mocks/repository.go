@@ -2557,6 +2557,21 @@ func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByID(ctx, projectI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPortalLinkByID", reflect.TypeOf((*MockPortalLinkRepository)(nil).FindPortalLinkByID), ctx, projectID, id)
 }
 
+// FindPortalLinkByMaskId mocks base method.
+func (m *MockPortalLinkRepository) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*datastore.PortalLink, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindPortalLinkByMaskId", ctx, maskId)
+	ret0, _ := ret[0].(*datastore.PortalLink)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindPortalLinkByMaskId indicates an expected call of FindPortalLinkByMaskId.
+func (mr *MockPortalLinkRepositoryMockRecorder) FindPortalLinkByMaskId(ctx, maskId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindPortalLinkByMaskId", reflect.TypeOf((*MockPortalLinkRepository)(nil).FindPortalLinkByMaskId), ctx, maskId)
+}
+
 // FindPortalLinkByOwnerID mocks base method.
 func (m *MockPortalLinkRepository) FindPortalLinkByOwnerID(ctx context.Context, projectID, id string) (*datastore.PortalLink, error) {
 	m.ctrl.T.Helper()
@@ -2616,6 +2631,21 @@ func (m *MockPortalLinkRepository) LoadPortalLinksPaged(ctx context.Context, pro
 func (mr *MockPortalLinkRepositoryMockRecorder) LoadPortalLinksPaged(ctx, projectID, f, pageable any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadPortalLinksPaged", reflect.TypeOf((*MockPortalLinkRepository)(nil).LoadPortalLinksPaged), ctx, projectID, f, pageable)
+}
+
+// RefreshPortalLinkAuthToken mocks base method.
+func (m *MockPortalLinkRepository) RefreshPortalLinkAuthToken(ctx context.Context, projectID, portalLinkId string) (*datastore.PortalLink, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RefreshPortalLinkAuthToken", ctx, projectID, portalLinkId)
+	ret0, _ := ret[0].(*datastore.PortalLink)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RefreshPortalLinkAuthToken indicates an expected call of RefreshPortalLinkAuthToken.
+func (mr *MockPortalLinkRepositoryMockRecorder) RefreshPortalLinkAuthToken(ctx, projectID, portalLinkId any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshPortalLinkAuthToken", reflect.TypeOf((*MockPortalLinkRepository)(nil).RefreshPortalLinkAuthToken), ctx, projectID, portalLinkId)
 }
 
 // RevokePortalLink mocks base method.
