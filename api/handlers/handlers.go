@@ -69,7 +69,18 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	case h.IsReqWithProjectAPIKey(authUser):
 		apiKey, ok := authUser.APIKey.(*datastore.APIKey)
 		if !ok {
-			return nil, errors.New("invalid auth object")
+			portalLink, ok := authUser.PortalLink.(*datastore.PortalLink)
+			if !ok {
+				return nil, errors.New("invalid auth object")
+			}
+
+			projectID := portalLink.ProjectID
+			project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+			if err != nil {
+				return nil, err
+			}
+
+			return project, nil
 		}
 
 		projectID := apiKey.Role.Project
@@ -165,10 +176,21 @@ func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.Porta
 		}
 
 		if len(pLinks) == 0 {
-			return nil, err
-		}
+			// if the portal link is not authenticated with the token, then we need to check if the token is an api key
+			portalLink, ok := authUser.PortalLink.(*datastore.PortalLink)
+			if !ok {
+				return nil, errors.New("invalid auth object")
+			}
 
-		pLink = &pLinks[0]
+			pp, err2 := portalLinkRepo.FindPortalLinkByMaskId(r.Context(), portalLink.TokenMaskId)
+			if err2 != nil {
+				return nil, err2
+			}
+
+			pLink = pp
+		} else {
+			pLink = &pLinks[0]
+		}
 	}
 
 	return pLink, nil

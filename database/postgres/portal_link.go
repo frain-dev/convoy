@@ -7,11 +7,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/xdg-go/pbkdf2"
 	"gopkg.in/guregu/null.v4"
-	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -140,6 +141,11 @@ const (
 		ON e.id = pe.endpoint_id
 	WHERE p.token = $1 AND p.deleted_at IS NULL
 	GROUP BY p.id;
+	`
+
+	fetchPortalLinkByMaskId = `
+	SELECT id, project_id, token_salt, token_mask_id, token_expires_at, token_hash FROM convoy.portal_links 
+	WHERE token_mask_id = $1 AND deleted_at IS NULL;
 	`
 
 	countPrevPortalLinks = `
@@ -307,11 +313,6 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 	}
 	defer rollbackTx(tx)
 
-	err = generateToken(portal)
-	if err != nil {
-		return err
-	}
-
 	r, err := tx.ExecContext(ctx, updatePortalLink,
 		portal.UID,
 		projectID,
@@ -355,6 +356,11 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID strin
 		return nil, err
 	}
 
+	err = generateToken(portalLink)
+	if err != nil {
+		return nil, err
+	}
+
 	return portalLink, nil
 }
 
@@ -368,6 +374,11 @@ func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID 
 		return nil, err
 	}
 
+	err = generateToken(portalLink)
+	if err != nil {
+		return nil, err
+	}
+
 	return portalLink, nil
 }
 
@@ -378,6 +389,11 @@ func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
 		}
+		return nil, err
+	}
+
+	err = generateToken(portalLink)
+	if err != nil {
 		return nil, err
 	}
 
@@ -490,6 +506,21 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	pagination := &datastore.PaginationData{PrevRowCount: count}
 	pagination = pagination.Build(pageable, ids)
 
+	for i := range portalLinks {
+		err = generateToken(&portalLinks[i])
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+	}
+
+	// todo: we should bulk update the portal links
+	for i := range portalLinks {
+		err = p.UpdatePortalLink(ctx, portalLinks[i].ProjectID, &portalLinks[i])
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
+	}
+
 	return portalLinks, *pagination, nil
 }
 
@@ -522,6 +553,57 @@ func (p *portalLinkRepo) FindPortalLinksByOwnerID(ctx context.Context, ownerID s
 	}
 
 	return portalLinks, nil
+}
+
+func (p *portalLinkRepo) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*datastore.PortalLink, error) {
+	portalLink := &datastore.PortalLink{}
+	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkByMaskId, maskId).StructScan(portalLink)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrPortalLinkNotFound
+		}
+		return nil, err
+	}
+
+	err = generateToken(portalLink)
+	if err != nil {
+		return nil, err
+	}
+
+	return portalLink, nil
+}
+
+func (p *portalLinkRepo) RefreshPortalLinkAuthToken(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
+	portalLink := &datastore.PortalLink{}
+	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(portalLink)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrPortalLinkNotFound
+		}
+		return nil, err
+	}
+
+	maskId, key := util.GenerateAPIKey()
+	salt, err := util.GenerateSecret()
+	if err != nil {
+		return nil, err
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+	portalLink.AuthKey = key
+	portalLink.TokenSalt = salt
+	portalLink.TokenMaskId = maskId
+	portalLink.TokenHash = encodedKey
+	portalLink.TokenExpiresAt = null.NewTime(time.Now().Add(time.Hour), true)
+
+	err = p.UpdatePortalLink(ctx, projectID, portalLink)
+	if err != nil {
+		return nil, err
+	}
+
+	return portalLink, nil
 }
 
 func (p *portalLinkRepo) upsertPortalLinkEndpoint(ctx context.Context, tx *sqlx.Tx, portal *datastore.PortalLink) error {
@@ -590,6 +672,10 @@ type PortalLinkPaginated struct {
 }
 
 func generateToken(p *datastore.PortalLink) error {
+	if time.Now().Before(p.TokenExpiresAt.Time) {
+		return nil
+	}
+
 	maskId, key := util.GenerateAPIKey()
 	salt, err := util.GenerateSecret()
 	if err != nil {

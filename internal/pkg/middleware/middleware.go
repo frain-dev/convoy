@@ -241,6 +241,8 @@ func RequirePersonalAccessToken() func(next http.Handler) http.Handler {
 
 func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 	val := r.Header.Get("Authorization")
+
+	// authInfo is the token and the type of token based on the header (Bearer or Basic)
 	authInfo := strings.Split(val, " ")
 
 	if len(authInfo) != 2 {
@@ -274,6 +276,11 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 		if util.IsStringEmpty(authToken) {
 			return nil, errors.New("empty api key or token")
 		}
+
+		// Logic:
+		// if the token is prefixed with the prefix, then it is an api key
+		// if the token is not prefixed with the prefix, then it is a jwt token
+		// if the token is not prefixed with the prefix and is not a jwt token, then it is a token
 
 		prefix := fmt.Sprintf("%s%s", util.Prefix, util.Seperator)
 		if strings.HasPrefix(authToken, prefix) {

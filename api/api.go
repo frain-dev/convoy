@@ -246,6 +246,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 						portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
 						portalLinkRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreatePortalLink)
 						portalLinkRouter.Get("/{portalLinkID}", handler.GetPortalLink)
+						portalLinkRouter.Get("/{portalLinkID}/refresh_token", handler.RefreshPortalLinkAuthToken)
 						portalLinkRouter.With(middleware.Pagination).Get("/", handler.LoadPortalLinksPaged)
 						portalLinkRouter.With(handler.RequireEnabledProject()).Put("/{portalLinkID}", handler.UpdatePortalLink)
 						portalLinkRouter.With(handler.RequireEnabledProject()).Put("/{portalLinkID}/revoke", handler.RevokePortalLink)
