@@ -38,6 +38,7 @@ const (
 )
 
 const (
+	PortalRealmName = "portal_realm"
 	NativeRealmName = "native_realm"
 	JWTRealmName    = "jwt"
 	FileRealmName   = "file_realm"

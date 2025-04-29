@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/frain-dev/convoy/auth/realm/portal"
 	"sync/atomic"
 
 	"github.com/frain-dev/convoy/auth"
@@ -62,6 +63,14 @@ func Init(authConfig *config.AuthConfiguration,
 		err = rc.RegisterRealm(nr)
 		if err != nil {
 			return errors.New("failed to register native realm in realm chain")
+		}
+	}
+
+	if authConfig.Portal.Enabled {
+		pr := portal.NewPortalRealm(portalLinkRepo)
+		err = rc.RegisterRealm(pr)
+		if err != nil {
+			return errors.New("failed to register portal realm in realm chain")
 		}
 	}
 

@@ -91,6 +91,9 @@ var DefaultConfiguration = Configuration{
 		Jwt: JwtRealmOptions{
 			Enabled: true,
 		},
+		Portal: PortalRealmOptions{
+			Enabled: true,
+		},
 	},
 	ConsumerPoolSize: 100,
 	Tracer: TracerConfiguration{
@@ -226,11 +229,16 @@ type AuthConfiguration struct {
 	File            FileRealmOption    `json:"file"`
 	Native          NativeRealmOptions `json:"native"`
 	Jwt             JwtRealmOptions    `json:"jwt"`
+	Portal          PortalRealmOptions `json:"portal"`
 	IsSignupEnabled bool               `json:"is_signup_enabled" envconfig:"CONVOY_SIGNUP_ENABLED"`
 }
 
 type NativeRealmOptions struct {
 	Enabled bool `json:"enabled" envconfig:"CONVOY_NATIVE_REALM_ENABLED"`
+}
+
+type PortalRealmOptions struct {
+	Enabled bool `json:"enabled" envconfig:"CONVOY_PORTAL_REALM_ENABLED"`
 }
 
 type JwtRealmOptions struct {

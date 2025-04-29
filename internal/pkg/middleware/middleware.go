@@ -282,8 +282,16 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 		// if the token is not prefixed with the prefix, then it is a jwt token
 		// if the token is not prefixed with the prefix and is not a jwt token, then it is a token
 
-		prefix := fmt.Sprintf("%s%s", util.Prefix, util.Seperator)
-		if strings.HasPrefix(authToken, prefix) {
+		apiKeyPrefix := fmt.Sprintf("%s%s", util.APIKeyPrefix, util.Separator)
+		if strings.HasPrefix(authToken, apiKeyPrefix) {
+			return &auth.Credential{
+				Type:   auth.CredentialTypeAPIKey,
+				APIKey: authToken,
+			}, nil
+		}
+
+		portalTokenPrefix := fmt.Sprintf("%s%s", util.PortalAuthTokenPrefix, util.Separator)
+		if strings.HasPrefix(authToken, portalTokenPrefix) {
 			return &auth.Credential{
 				Type:   auth.CredentialTypeAPIKey,
 				APIKey: authToken,

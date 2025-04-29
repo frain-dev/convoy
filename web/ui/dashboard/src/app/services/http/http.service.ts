@@ -143,10 +143,7 @@ export class HttpService {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
 				// Use token for authorization if available, otherwise use ownerId or access_token
-				let authToken = this.token || this.ownerId || this.authDetails()?.access_token;
-				if (this.ownerId || this.token) {
-					authToken = this.getPortalLinkAuthToken();
-				}
+				let authToken = this.getPortalLinkAuthToken() || this.token || this.ownerId || this.authDetails()?.access_token;
 
 				const requestHeader = {
 					Authorization: `Bearer ${authToken}`,

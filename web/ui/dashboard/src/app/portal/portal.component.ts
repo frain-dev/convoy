@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {CommonModule, NgOptimizedImage} from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 
 @Component({
 	selector: 'convoy-portal',
 	standalone: true,
-	imports: [CommonModule, RouterModule],
+	imports: [CommonModule, RouterModule, NgOptimizedImage],
 	templateUrl: './portal.component.html',
 	styleUrls: ['./portal.component.scss']
 })

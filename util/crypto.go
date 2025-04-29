@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	Prefix    string = "CO"
-	Seperator string = "."
+	APIKeyPrefix          string = "CO"
+	PortalAuthTokenPrefix string = "PRT"
+	Separator             string = "."
 )
 
 func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
@@ -127,10 +128,10 @@ func GenerateAPIKey() (string, string) {
 
 	var api_key strings.Builder
 
-	api_key.WriteString(Prefix)
-	api_key.WriteString(Seperator)
+	api_key.WriteString(APIKeyPrefix)
+	api_key.WriteString(Separator)
 	api_key.WriteString(mask)
-	api_key.WriteString(Seperator)
+	api_key.WriteString(Separator)
 	api_key.WriteString(key)
 
 	return mask, api_key.String()

@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/dchest/uniuri"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -583,7 +585,7 @@ func (p *portalLinkRepo) RefreshPortalLinkAuthToken(ctx context.Context, project
 		return nil, err
 	}
 
-	maskId, key := util.GenerateAPIKey()
+	maskId, key := generateAuthKey()
 	salt, err := util.GenerateSecret()
 	if err != nil {
 		return nil, err
@@ -676,7 +678,7 @@ func generateToken(p *datastore.PortalLink) error {
 		return nil
 	}
 
-	maskId, key := util.GenerateAPIKey()
+	maskId, key := generateAuthKey()
 	salt, err := util.GenerateSecret()
 	if err != nil {
 		return err
@@ -692,4 +694,19 @@ func generateToken(p *datastore.PortalLink) error {
 	p.TokenExpiresAt = null.NewTime(time.Now().Add(time.Hour), true)
 
 	return nil
+}
+
+func generateAuthKey() (string, string) {
+	mask := uniuri.NewLen(16)
+	key := uniuri.NewLen(64)
+
+	var builder strings.Builder
+
+	builder.WriteString(util.PortalAuthTokenPrefix)
+	builder.WriteString(util.Separator)
+	builder.WriteString(mask)
+	builder.WriteString(util.Separator)
+	builder.WriteString(key)
+
+	return mask, builder.String()
 }
