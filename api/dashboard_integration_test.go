@@ -2656,7 +2656,7 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
-	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
+	require.Contains(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s&%s", pl.Token, pl.AuthKey))
 	require.Equal(s.T(), resp.Name, pl.Name)
 }
 

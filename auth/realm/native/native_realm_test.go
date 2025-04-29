@@ -29,7 +29,7 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 		wantErrMsg string
 	}{
 		{
-			name: "should_authenticate_portal_link_tokens_successfully",
+			name: "should_not_authenticate_portal_link_tokens",
 			args: args{
 				cred: &auth.Credential{
 					Type:  auth.CredentialTypeToken,
@@ -37,13 +37,6 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 				},
 			},
 			nFn: func(aR *mocks.MockAPIKeyRepository, uR *mocks.MockUserRepository, pR *mocks.MockPortalLinkRepository) {
-				pR.EXPECT().
-					FindPortalLinkByToken(gomock.Any(), gomock.Any()).
-					Times(1).Return(&datastore.PortalLink{
-					UID:       "abcd",
-					Token:     "C8oU2G7dA75BWrHfFYYvrash",
-					CreatedAt: time.Time{},
-				}, nil)
 			},
 			want: &auth.AuthenticatedUser{
 				AuthenticatedByRealm: "native_realm",
@@ -57,7 +50,8 @@ func TestNativeRealm_Authenticate(t *testing.T) {
 					CreatedAt: time.Time{},
 				},
 			},
-			wantErr: false,
+			wantErr:    true,
+			wantErrMsg: fmt.Sprintf("%s only authenticates credential type BEARER", "native_realm"),
 		},
 		{
 			name: "should_authenticate_apikey_successfully",
