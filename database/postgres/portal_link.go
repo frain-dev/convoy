@@ -355,6 +355,15 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 }
 
 func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
+	portalLink := &datastore.PortalLink{}
+	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(portalLink)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrPortalLinkNotFound
+		}
+		return nil, err
+	}
+
 	authToken, err := generateToken(portalLinkId)
 	if err != nil {
 		return nil, err
@@ -382,14 +391,6 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID strin
 		return nil, ErrPortalLinkAuthTokenNotCreated
 	}
 
-	portalLink := &datastore.PortalLink{}
-	err = p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(portalLink)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, datastore.ErrPortalLinkNotFound
-		}
-		return nil, err
-	}
 	portalLink.AuthKey = authToken.AuthKey
 
 	return portalLink, nil
