@@ -272,16 +272,11 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 		}, nil
 	case auth.CredentialTypeAPIKey:
 		authToken := authInfo[1]
-
 		if util.IsStringEmpty(authToken) {
-			return nil, errors.New("empty api key or token")
+			return nil, errors.New("empty api key")
 		}
 
-		// Logic:
-		// if the token is prefixed with the prefix, then it is an api key
-		// if the token is not prefixed with the prefix, then it is a jwt token
-		// if the token is not prefixed with the prefix and is not a jwt token, then it is a token
-
+		// the key is an API key or PAT
 		apiKeyPrefix := fmt.Sprintf("%s%s", util.APIKeyPrefix, util.Separator)
 		if strings.HasPrefix(authToken, apiKeyPrefix) {
 			return &auth.Credential{
@@ -293,11 +288,12 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 		portalTokenPrefix := fmt.Sprintf("%s%s", util.PortalAuthTokenPrefix, util.Separator)
 		if strings.HasPrefix(authToken, portalTokenPrefix) {
 			return &auth.Credential{
-				Type:   auth.CredentialTypeAPIKey,
+				Type:   auth.CredentialTypeToken,
 				APIKey: authToken,
 			}, nil
 		}
 
+		// the key is a jwt
 		parts := strings.Split(authToken, ".")
 		if len(parts) == 3 {
 			return &auth.Credential{
@@ -310,7 +306,6 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			Type:  auth.CredentialTypeToken,
 			Token: authToken,
 		}, nil
-
 	default:
 		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
 	}

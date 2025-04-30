@@ -28,7 +28,7 @@ func NewPortalRealm(portalLinkRepo datastore.PortalLinkRepository) *PortalRealm 
 
 func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
 	// this is where we'll switch portal auth types
-	if cred.Type == auth.CredentialTypeToken {
+	if len(cred.Token) > 0 { // this is the legacy static token type
 		pLink, err := p.portalLinkRepo.FindPortalLinkByToken(ctx, cred.Token)
 		if err != nil {
 			// cred.Token should be the owner id at this point

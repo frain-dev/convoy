@@ -143,9 +143,15 @@ const (
 	`
 
 	fetchPortalLinkByMaskId = `
-	SELECT pl.id, pl.project_id, pt.token_salt, pt.token_mask_id, pt.token_expires_at, pt.token_hash 
+	SELECT 
+	    pl.id, pl.project_id, pt.token_salt, pt.token_mask_id, pt.token_expires_at, pt.token_hash, pl.name, pl.token, pl.endpoints,
+		COALESCE(pl.can_manage_endpoint, FALSE) AS "can_manage_endpoint", COALESCE(pl.owner_id, '') AS "owner_id",
+		CASE
+			WHEN pl.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = pl.owner_id)
+			ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = pl.id)
+		END AS endpoint_count
 	FROM convoy.portal_tokens pt
-	join convoy.portal_links pl on pl.id = pt.portal_link_id
+		join convoy.portal_links pl on pl.id = pt.portal_link_id
 	WHERE pt.token_mask_id = $1;
 	`
 

@@ -69,6 +69,37 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 	case h.IsReqWithProjectAPIKey(authUser):
 		apiKey, ok := authUser.APIKey.(*datastore.APIKey)
 		if !ok {
+			return nil, errors.New("invalid auth object")
+		}
+
+		projectID := apiKey.Role.Project
+		project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+		if err != nil {
+			return nil, err
+		}
+	case h.IsReqWithPortalLinkToken(authUser):
+		if len(authUser.Credential.Token) > 0 { // this is the legacy static token type
+			portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+			pLink, err2 := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
+			if err2 != nil {
+				//  authUser.Credential.Token should be the owner id at this point
+				pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
+				if innerErr != nil {
+					return nil, innerErr
+				}
+
+				if len(pLinks) == 0 {
+					return nil, err2
+				}
+
+				pLink = &pLinks[0]
+			}
+
+			project, err2 = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
+			if err2 != nil {
+				return nil, err2
+			}
+		} else {
 			portalLink, ok := authUser.PortalLink.(*datastore.PortalLink)
 			if !ok {
 				return nil, errors.New("invalid auth object")
@@ -81,33 +112,6 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 			}
 
 			return project, nil
-		}
-
-		projectID := apiKey.Role.Project
-		project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
-		if err != nil {
-			return nil, err
-		}
-	case h.IsReqWithPortalLinkToken(authUser):
-		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
-		pLink, err2 := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
-		if err2 != nil {
-			//  authUser.Credential.Token should be the owner id at this point
-			pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
-			if innerErr != nil {
-				return nil, innerErr
-			}
-
-			if len(pLinks) == 0 {
-				return nil, err2
-			}
-
-			pLink = &pLinks[0]
-		}
-
-		project, err2 = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
-		if err2 != nil {
-			return nil, err2
 		}
 
 	default: // No auth, this is an impossible scenario, but fail anyways.
