@@ -7,9 +7,11 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/dchest/uniuri"
 	"strings"
 	"time"
+
+	"github.com/dchest/uniuri"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -23,15 +25,26 @@ import (
 )
 
 var (
-	ErrPortalLinkNotCreated = errors.New("portal link could not be created")
-	ErrPortalLinkNotUpdated = errors.New("portal link could not be updated")
-	ErrPortalLinkNotDeleted = errors.New("portal link could not be deleted")
+	ErrPortalLinkNotCreated          = errors.New("portal link could not be created")
+	ErrPortalLinkNotUpdated          = errors.New("portal link could not be updated")
+	ErrPortalLinkNotDeleted          = errors.New("portal link could not be deleted")
+	ErrPortalLinkAuthTokenNotCreated = errors.New("portal link auth token could not be created")
 )
 
 const (
 	createPortalLink = `
-	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, can_manage_endpoint, token_expires_at, token_hash, token_salt, token_mask_id)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);
+	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, can_manage_endpoint)
+	VALUES ($1, $2, $3, $4, $5, $6, $7);
+	`
+
+	createPortalLinkAuthToken = `
+	insert into convoy.portal_tokens (id, portal_link_id, token_mask_id, token_hash, token_salt, token_expires_at) 
+	VALUES ($1, $2, $3, $4, $5, $6);
+	`
+
+	bulkWritePortalAuthTokens = `
+	INSERT INTO convoy.portal_tokens (id, portal_link_id, token_mask_id, token_hash, token_salt, token_expires_at)
+	VALUES (:id, :portal_link_id, :mask_id, :hash, :salt, :expires_at)
 	`
 
 	createPortalLinkEndpoints = `
@@ -44,11 +57,7 @@ const (
 		endpoints = $3,
 		owner_id = $4,
 		can_manage_endpoint = $5,
-		token_salt = $6,
-		token_mask_id = $7,
-		token_expires_at = $8,
-		token_hash = $9,
-		name = $10,
+		name = $6,
 		updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
@@ -65,10 +74,6 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	p.token_salt,
-	p.token_mask_id,
-	p.token_expires_at,
-	p.token_hash,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -94,10 +99,6 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	p.token_salt,
-	p.token_mask_id,
-	p.token_expires_at,
-	p.token_hash,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -123,10 +124,6 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	p.token_salt,
-	p.token_mask_id,
-	p.token_expires_at,
-	p.token_hash,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -146,8 +143,10 @@ const (
 	`
 
 	fetchPortalLinkByMaskId = `
-	SELECT id, project_id, token_salt, token_mask_id, token_expires_at, token_hash FROM convoy.portal_links 
-	WHERE token_mask_id = $1 AND deleted_at IS NULL;
+	SELECT pl.id, pl.project_id, pt.token_salt, pt.token_mask_id, pt.token_expires_at, pt.token_hash 
+	FROM convoy.portal_tokens pt
+	join convoy.portal_links pl on pl.id = pt.portal_link_id
+	WHERE pt.token_mask_id = $1;
 	`
 
 	countPrevPortalLinks = `
@@ -168,10 +167,6 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
-	p.token_salt,
-	p.token_mask_id,
-	p.token_expires_at,
-	p.token_hash,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -195,10 +190,6 @@ const (
 		p.name,
 		p.token,
 		p.endpoints,
-		p.token_salt,
-		p.token_mask_id,
-		p.token_expires_at,
-		p.token_hash,
 		COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 		COALESCE(p.owner_id, '') AS "owner_id",
 		CASE
@@ -269,11 +260,6 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 	}
 	defer rollbackTx(tx)
 
-	err = generateToken(portal)
-	if err != nil {
-		return err
-	}
-
 	r, err := tx.ExecContext(ctx, createPortalLink,
 		portal.UID,
 		portal.ProjectID,
@@ -282,10 +268,6 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		portal.Endpoints,
 		portal.OwnerID,
 		portal.CanManageEndpoint,
-		portal.TokenExpiresAt,
-		portal.TokenHash,
-		portal.TokenSalt,
-		portal.TokenMaskId,
 	)
 	if err != nil {
 		return err
@@ -299,6 +281,34 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 	if rowsAffected < 1 {
 		return ErrPortalLinkNotCreated
 	}
+
+	portalAuth, err := generateToken(portal.UID)
+	if err != nil {
+		return err
+	}
+
+	r, err = tx.ExecContext(ctx, createPortalLinkAuthToken,
+		portalAuth.UID,
+		portal.UID,
+		portalAuth.MaskId,
+		portalAuth.Hash,
+		portalAuth.Salt,
+		portalAuth.ExpiresAt,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err = r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return ErrPortalLinkAuthTokenNotCreated
+	}
+
+	portal.AuthKey = portalAuth.AuthKey
 
 	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
 	if err != nil {
@@ -321,10 +331,6 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		portal.Endpoints,
 		portal.OwnerID,
 		portal.CanManageEndpoint,
-		portal.TokenSalt,
-		portal.TokenMaskId,
-		portal.TokenExpiresAt,
-		portal.TokenHash,
 		portal.Name,
 	)
 	if err != nil {
@@ -348,20 +354,43 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 	return tx.Commit()
 }
 
-func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, id string) (*datastore.PortalLink, error) {
+func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
+	authToken, err := generateToken(portalLinkId)
+	if err != nil {
+		return nil, err
+	}
+
+	// create auth token
+	r, err := p.db.GetDB().ExecContext(ctx, createPortalLinkAuthToken,
+		authToken.UID,
+		portalLinkId,
+		authToken.MaskId,
+		authToken.Hash,
+		authToken.Salt,
+		authToken.ExpiresAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	rowsAffected, err := r.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+
+	if rowsAffected < 1 {
+		return nil, ErrPortalLinkAuthTokenNotCreated
+	}
+
 	portalLink := &datastore.PortalLink{}
-	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, id, projectID).StructScan(portalLink)
+	err = p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(portalLink)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
 		}
 		return nil, err
 	}
-
-	err = generateToken(portalLink)
-	if err != nil {
-		return nil, err
-	}
+	portalLink.AuthKey = authToken.AuthKey
 
 	return portalLink, nil
 }
@@ -376,11 +405,6 @@ func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID 
 		return nil, err
 	}
 
-	err = generateToken(portalLink)
-	if err != nil {
-		return nil, err
-	}
-
 	return portalLink, nil
 }
 
@@ -391,11 +415,6 @@ func (p *portalLinkRepo) FindPortalLinkByToken(ctx context.Context, token string
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
 		}
-		return nil, err
-	}
-
-	err = generateToken(portalLink)
-	if err != nil {
 		return nil, err
 	}
 
@@ -508,19 +527,35 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	pagination := &datastore.PaginationData{PrevRowCount: count}
 	pagination = pagination.Build(pageable, ids)
 
+	authTokens := make([]datastore.PortalToken, len(portalLinks))
 	for i := range portalLinks {
-		err = generateToken(&portalLinks[i])
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
+		authToken, getTokenErr := generateToken(portalLinks[i].UID)
+		if getTokenErr != nil {
+			return nil, datastore.PaginationData{}, getTokenErr
 		}
+		authTokens[i] = *authToken
 	}
 
-	// todo: we should bulk update the portal links
+	res, err := p.db.GetDB().NamedExecContext(ctx, bulkWritePortalAuthTokens, authTokens)
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return nil, datastore.PaginationData{}, err
+	}
+
+	if rowsAffected != int64(len(authTokens)) {
+		return nil, datastore.PaginationData{}, errors.New("failed to bulk write portal auth tokens")
+	}
+
 	for i := range portalLinks {
-		err = p.UpdatePortalLink(ctx, portalLinks[i].ProjectID, &portalLinks[i])
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
+		portalLinks[i].AuthKey = authTokens[i].AuthKey
+		portalLinks[i].TokenMaskId = authTokens[i].MaskId
+		portalLinks[i].TokenHash = authTokens[i].Hash
+		portalLinks[i].TokenSalt = authTokens[i].Salt
+		portalLinks[i].TokenExpiresAt = authTokens[i].ExpiresAt
 	}
 
 	return portalLinks, *pagination, nil
@@ -564,11 +599,6 @@ func (p *portalLinkRepo) FindPortalLinkByMaskId(ctx context.Context, maskId stri
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
 		}
-		return nil, err
-	}
-
-	err = generateToken(portalLink)
-	if err != nil {
 		return nil, err
 	}
 
@@ -673,27 +703,29 @@ type PortalLinkPaginated struct {
 	datastore.PortalLink
 }
 
-func generateToken(p *datastore.PortalLink) error {
-	if time.Now().Before(p.TokenExpiresAt.Time) {
-		return nil
-	}
-
+func generateToken(portalLinkId string) (*datastore.PortalToken, error) {
 	maskId, key := generateAuthKey()
 	salt, err := util.GenerateSecret()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
-	p.AuthKey = key
-	p.TokenSalt = salt
-	p.TokenMaskId = maskId
-	p.TokenHash = encodedKey
-	p.TokenExpiresAt = null.NewTime(time.Now().Add(time.Hour), true)
+	portalToken := &datastore.PortalToken{
+		UID:          ulid.Make().String(),
+		PortalLinkID: portalLinkId,
+		MaskId:       maskId,
+		Hash:         encodedKey,
+		Salt:         salt,
+		AuthKey:      key,
+		ExpiresAt:    null.NewTime(time.Now().Add(time.Hour), true),
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
 
-	return nil
+	return portalToken, nil
 }
 
 func generateAuthKey() (string, string) {

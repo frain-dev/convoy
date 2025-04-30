@@ -79,7 +79,7 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 		return nil, errors.New("invalid portal link auth token")
 	}
 
-	// if the current time is after the specified expiry date then the key has expired
+	// if the current time is after the specified expiry date, then the key has expired
 	if !pLink.TokenExpiresAt.IsZero() && time.Now().After(pLink.TokenExpiresAt.ValueOrZero()) {
 		return nil, errors.New("portal link auth token has expired")
 	}
