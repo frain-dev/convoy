@@ -68,6 +68,66 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Portal link created successfully", pl, http.StatusCreated))
 }
 
+// GeneratePortalToken
+//
+//	@Summary		Updates a portal link auth token
+//	@Description	This endpoint retrieves a portal link by its id.
+//	@Tags			Portal Links
+//	@Id				GeneratePortalToken
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID		path		string	true	"Project ID"
+//	@Param			portalLinkID	path		string	true	"portal link id"
+//	@Success		200				{object}	util.ServerResponse{data=models.PortalLinkResponse}
+//	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [post]
+func (h *Handler) GeneratePortalToken(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	var pLink *datastore.PortalLink
+	authUser := middleware.GetAuthUserFromContext(r.Context())
+	if h.IsReqWithPortalLinkToken(authUser) {
+		pLink, err = h.retrievePortalLinkFromToken(r)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
+			return
+		}
+	} else {
+		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+		pLink, err = portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
+		if err != nil {
+			if err == datastore.ErrPortalLinkNotFound {
+				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+				return
+			}
+
+			_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
+			return
+		}
+	}
+
+	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+	err = portalLinkRepo.UpdatePortalLink(r.Context(), project.UID, pLink)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	baseUrl, err := h.retrieveHost()
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	pl := portalLinkResponse(pLink, baseUrl)
+	_ = render.Render(w, r, util.NewServerResponse("Portal link fetched successfully", pl, http.StatusOK))
+}
+
 // GetPortalLink
 //
 //	@Summary		Retrieve a portal link
@@ -90,14 +150,8 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var pLink *datastore.PortalLink
-	authUser := middleware.GetAuthUserFromContext(r.Context())
-	if h.IsReqWithPortalLinkToken(authUser) {
-		pLink, err = h.retrievePortalLinkFromToken(r)
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
-			return
-		}
-	} else {
+	pLink, err = h.retrievePortalLinkFromToken(r)
+	if err != nil {
 		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
 		pLink, err = portalLinkRepo.FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 		if err != nil {
@@ -185,6 +239,44 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Portal link updated successfully", pl, http.StatusAccepted))
 }
 
+// RefreshPortalLinkAuthToken
+//
+//	@Summary		Get a portal link auth token
+//	@Description	This endpoint retrieves a portal link auth token
+//	@Id				RefreshPortalLinkAuthToken
+//	@Tags			Portal Links
+//	@Accept			json
+//	@Produce		json
+//	@Param			projectID		path		string				true	"Project ID"
+//	@Param			portalLinkID	path		string				true	"portal link id"
+//	@Success		200				{object}	util.ServerResponse{data=string}
+//	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
+//	@Security		ApiKeyAuth
+//	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID}/refresh_token [get]
+func (h *Handler) RefreshPortalLinkAuthToken(w http.ResponseWriter, r *http.Request) {
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	var pLink *datastore.PortalLink
+
+	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+	pLink, err = portalLinkRepo.RefreshPortalLinkAuthToken(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
+	if err != nil {
+		if err == datastore.ErrPortalLinkNotFound {
+			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			return
+		}
+
+		_ = render.Render(w, r, util.NewErrorResponse("error retrieving portal link", http.StatusBadRequest))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Portal link fetched successfully", pLink.AuthKey, http.StatusOK))
+}
+
 // RevokePortalLink
 //
 //	@Summary		Revoke a portal link
@@ -260,7 +352,7 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	plResponse := []*models.PortalLinkResponse{}
+	var plResponse []models.PortalLinkResponse
 	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -272,15 +364,23 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		plResponse = append(plResponse, pl)
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", models.PagedResponse{Content: plResponse, Pagination: &paginationData}, http.StatusOK))
+	resp := models.NewListResponse(plResponse, func(p models.PortalLinkResponse) models.PortalLinkResponse {
+		return p
+	})
+	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
-func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.PortalLinkResponse {
-	return &models.PortalLinkResponse{
+func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) models.PortalLinkResponse {
+	url := fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token)
+	if len(pl.AuthKey) > 0 {
+		url = fmt.Sprintf("%s&auth_token=%s", url, pl.AuthKey)
+	}
+
+	return models.PortalLinkResponse{
 		UID:               pl.UID,
 		ProjectID:         pl.ProjectID,
 		Name:              pl.Name,
-		URL:               fmt.Sprintf("%s/portal?token=%s", baseUrl, pl.Token),
+		URL:               url,
 		Token:             pl.Token,
 		OwnerID:           pl.OwnerID,
 		Endpoints:         pl.Endpoints,
@@ -289,6 +389,7 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) *models.Portal
 		CanManageEndpoint: pl.CanManageEndpoint,
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,
+		AuthKey:           pl.AuthKey,
 	}
 }
 

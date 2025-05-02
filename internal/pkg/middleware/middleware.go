@@ -241,6 +241,8 @@ func RequirePersonalAccessToken() func(next http.Handler) http.Handler {
 
 func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 	val := r.Header.Get("Authorization")
+
+	// authInfo is the token and the type of token based on the header (Bearer or Basic)
 	authInfo := strings.Split(val, " ")
 
 	if len(authInfo) != 2 {
@@ -270,19 +272,28 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 		}, nil
 	case auth.CredentialTypeAPIKey:
 		authToken := authInfo[1]
-
 		if util.IsStringEmpty(authToken) {
-			return nil, errors.New("empty api key or token")
+			return nil, errors.New("empty api key")
 		}
 
-		prefix := fmt.Sprintf("%s%s", util.Prefix, util.Seperator)
-		if strings.HasPrefix(authToken, prefix) {
+		// the key is an API key or PAT
+		apiKeyPrefix := fmt.Sprintf("%s%s", util.APIKeyPrefix, util.Separator)
+		if strings.HasPrefix(authToken, apiKeyPrefix) {
 			return &auth.Credential{
 				Type:   auth.CredentialTypeAPIKey,
 				APIKey: authToken,
 			}, nil
 		}
 
+		portalTokenPrefix := fmt.Sprintf("%s%s", util.PortalAuthTokenPrefix, util.Separator)
+		if strings.HasPrefix(authToken, portalTokenPrefix) {
+			return &auth.Credential{
+				Type:   auth.CredentialTypeToken,
+				APIKey: authToken,
+			}, nil
+		}
+
+		// the key is a jwt
 		parts := strings.Split(authToken, ".")
 		if len(parts) == 3 {
 			return &auth.Credential{
@@ -295,7 +306,6 @@ func GetAuthFromRequest(r *http.Request) (*auth.Credential, error) {
 			Type:  auth.CredentialTypeToken,
 			Token: authToken,
 		}, nil
-
 	default:
 		return nil, fmt.Errorf("unknown credential type: %s", credType.String())
 	}

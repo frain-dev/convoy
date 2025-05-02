@@ -149,6 +149,7 @@ type PortalLinkResponse struct {
 	Token             string                     `json:"token"`
 	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`
 	URL               string                     `json:"url"`
+	AuthKey           string                     `json:"auth_key"`
 	CreatedAt         time.Time                  `json:"created_at,omitempty"`
 	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
 	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`

@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {CommonModule, NgOptimizedImage} from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 
 @Component({
 	selector: 'convoy-portal',
 	standalone: true,
-	imports: [CommonModule, RouterModule],
+	imports: [CommonModule, RouterModule, NgOptimizedImage],
 	templateUrl: './portal.component.html',
 	styleUrls: ['./portal.component.scss']
 })
@@ -30,11 +30,20 @@ export class PortalComponent implements OnInit {
 
 	constructor(private route: ActivatedRoute) {}
 
-	ngOnInit(): void {}
+	ngOnInit(): void {
+		this.getAuthToken();
+	}
 
 	get activeTab(): any {
 		const element = document.querySelector('.nav-tab.on') as any;
 		if (element) this.activeNavTab = element;
 		return element || this.activeNavTab;
+	}
+
+	private getAuthToken() {
+		const authToken = this.route.snapshot.queryParams.auth_token;
+		if (authToken) {
+			localStorage.setItem('CONVOY_PORTAL_LINK_AUTH_TOKEN', authToken);
+		}
 	}
 }

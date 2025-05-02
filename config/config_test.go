@@ -154,6 +154,9 @@ func TestLoadConfig(t *testing.T) {
 					Jwt: JwtRealmOptions{
 						Enabled: true,
 					},
+					Portal: PortalRealmOptions{
+						Enabled: true,
+					},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -246,6 +249,9 @@ func TestLoadConfig(t *testing.T) {
 					Jwt: JwtRealmOptions{
 						Enabled: true,
 					},
+					Portal: PortalRealmOptions{
+						Enabled: true,
+					},
 					IsSignupEnabled: true,
 				},
 				Analytics: AnalyticsConfiguration{
@@ -335,6 +341,9 @@ func TestLoadConfig(t *testing.T) {
 						Enabled: true,
 					},
 					Jwt: JwtRealmOptions{
+						Enabled: true,
+					},
+					Portal: PortalRealmOptions{
 						Enabled: true,
 					},
 					IsSignupEnabled: true,

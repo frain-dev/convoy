@@ -78,25 +78,40 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 			return nil, err
 		}
 	case h.IsReqWithPortalLinkToken(authUser):
-		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
-		pLink, err2 := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
-		if err2 != nil {
-			//  authUser.Credential.Token should be the owner id at this point
-			pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
-			if innerErr != nil {
-				return nil, innerErr
+		if len(authUser.Credential.Token) > 0 { // this is the legacy static token type
+			portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+			pLink, err2 := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
+			if err2 != nil {
+				//  authUser.Credential.Token should be the owner id at this point
+				pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
+				if innerErr != nil {
+					return nil, innerErr
+				}
+
+				if len(pLinks) == 0 {
+					return nil, err2
+				}
+
+				pLink = &pLinks[0]
 			}
 
-			if len(pLinks) == 0 {
+			project, err2 = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
+			if err2 != nil {
 				return nil, err2
 			}
+		} else {
+			portalLink, ok := authUser.PortalLink.(*datastore.PortalLink)
+			if !ok {
+				return nil, errors.New("invalid auth object")
+			}
 
-			pLink = &pLinks[0]
-		}
+			projectID := portalLink.ProjectID
+			project, err = projectRepo.FetchProjectByID(r.Context(), projectID)
+			if err != nil {
+				return nil, err
+			}
 
-		project, err2 = projectRepo.FetchProjectByID(r.Context(), pLink.ProjectID)
-		if err2 != nil {
-			return nil, err2
+			return project, nil
 		}
 
 	default: // No auth, this is an impossible scenario, but fail anyways.
@@ -153,22 +168,32 @@ func (h *Handler) retrieveUser(r *http.Request) (*datastore.User, error) {
 
 func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.PortalLink, error) {
 	var pLink *datastore.PortalLink
-	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+	var err error
 
 	authUser := middleware.GetAuthUserFromContext(r.Context())
-	pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
-	if err != nil {
-		//  authUser.Credential.Token should be the owner id at this point
-		pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
-		if innerErr != nil {
-			return nil, innerErr
+	if len(authUser.Credential.Token) > 0 { // this is the legacy static token type
+		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+		pLink, err = portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
+		if err != nil {
+			//  authUser.Credential.Token should be the owner id at this point
+			pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
+			if innerErr != nil {
+				return nil, innerErr
+			}
+
+			if len(pLinks) == 0 {
+				return nil, err
+			}
+
+			pLink = &pLinks[0]
+		}
+	} else {
+		portalLink, ok := authUser.PortalLink.(*datastore.PortalLink)
+		if !ok {
+			return nil, errors.New("invalid auth object")
 		}
 
-		if len(pLinks) == 0 {
-			return nil, err
-		}
-
-		pLink = &pLinks[0]
+		return portalLink, nil
 	}
 
 	return pLink, nil

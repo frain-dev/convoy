@@ -55,7 +55,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p := datastore.PeriodValues[period]
-	if err := middleware.EnsurePeriod(startT, endT); err != nil {
+	if err = middleware.EnsurePeriod(startT, endT); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("invalid period '%s': %s", period, err.Error()), http.StatusBadRequest))
 		return
 	}
@@ -75,16 +75,16 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	pLQ := ""
 	if h.IsReqWithPortalLinkToken(authUser) {
-		portalLink, err := h.retrievePortalLinkFromToken(r)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		portalLink, innerErr := h.retrievePortalLinkFromToken(r)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
 			return
 		}
 		pLQ = ":" + portalLink.UID
 
-		eIDs, err := h.getEndpoints(r, portalLink)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		eIDs, innerErr := h.getEndpoints(r, portalLink)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
 			return
 		}
 

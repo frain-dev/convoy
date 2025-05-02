@@ -2,7 +2,9 @@ package datastore
 
 import (
 	"context"
+
 	"database/sql/driver"
+
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1542,9 +1544,56 @@ type PortalLink struct {
 	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
+	// portal auth token
+	TokenExpiresAt null.Time `json:"token_expires_at" db:"token_expires_at"`
+	TokenMaskId    string    `json:"token_mask_id" db:"token_mask_id"`
+	TokenHash      string    `json:"token_hash" db:"token_hash"`
+	TokenSalt      string    `json:"token_salt" db:"token_salt"`
+	AuthKey        string    `json:"auth_key" db:"-"`
+
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at,omitempty" swaggertype:"string"`
+}
+
+type PortalToken struct {
+	UID          string `json:"uid" db:"id"`
+	PortalLinkID string `json:"portal_link_id" db:"portal_link_id"`
+	MaskId       string `json:"mask_id" db:"mask_id"`
+	Hash         string `json:"hash" db:"hash"`
+	Salt         string `json:"salt" db:"salt"`
+	AuthKey      string `json:"-" db:"-"`
+
+	ExpiresAt null.Time `json:"expires_at" db:"expires_at" swaggertype:"string"`
+	CreatedAt time.Time `json:"created_at" db:"created_at" swaggertype:"string"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at" swaggertype:"string"`
+	DeletedAt null.Time `json:"deleted_at" db:"deleted_at" swaggertype:"string"`
+}
+
+type PortalTokens []PortalToken
+
+func (p *PortalTokens) Scan(v interface{}) error {
+	if v == nil {
+		return nil
+	}
+
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", v)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tokens []PortalToken
+	err := json.Unmarshal(b, &tokens)
+	if err != nil {
+		return err
+	}
+
+	*p = tokens
+	return nil
 }
 
 // Deprecated

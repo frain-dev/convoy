@@ -212,6 +212,8 @@ type PortalLinkRepository interface {
 	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
 	RevokePortalLink(ctx context.Context, projectID string, id string) error
 	FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]PortalLink, error)
+	FindPortalLinkByMaskId(ctx context.Context, maskId string) (*PortalLink, error)
+	RefreshPortalLinkAuthToken(ctx context.Context, projectID string, portalLinkId string) (*PortalLink, error)
 }
 
 type MetaEventRepository interface {

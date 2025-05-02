@@ -67,10 +67,9 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.IsReqWithPortalLinkToken(authUser) {
-		portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
-		pLink, err := portalLinkRepo.FindPortalLinkByToken(r.Context(), authUser.Credential.Token)
-		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		pLink, innerErr := h.retrievePortalLinkFromToken(r)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
 			return
 		}
 
@@ -187,15 +186,15 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	if h.IsReqWithPortalLinkToken(authUser) {
-		portalLink, err := h.retrievePortalLinkFromToken(r)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		portalLink, innerErr := h.retrievePortalLinkFromToken(r)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
 			return
 		}
 
-		endpointIDs, err := h.getEndpoints(r, portalLink)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		endpointIDs, innerErr := h.getEndpoints(r, portalLink)
+		if innerErr != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(innerErr))
 			return
 		}
 

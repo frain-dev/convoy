@@ -28,35 +28,11 @@ func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
 }
 
 func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
-	if cred.Type == auth.CredentialTypeToken {
-		pLink, err := n.portalLinkRepo.FindPortalLinkByToken(ctx, cred.Token)
-		if err != nil {
-			// cred.Token should be the owner id at this point
-			pLinks, innerErr := n.portalLinkRepo.FindPortalLinksByOwnerID(ctx, cred.Token)
-			if innerErr != nil {
-				return nil, innerErr
-			}
-
-			if len(pLinks) == 0 {
-				return nil, err
-			}
-
-			pLink = &pLinks[0]
-		}
-
-		return &auth.AuthenticatedUser{
-			AuthenticatedByRealm: n.GetName(),
-			Credential:           *cred,
-			PortalLink:           pLink,
-		}, nil
-	}
-
 	if cred.Type != auth.CredentialTypeAPIKey {
 		return nil, fmt.Errorf("%s only authenticates credential type %s", n.GetName(), auth.CredentialTypeAPIKey.String())
 	}
 
-	key := cred.APIKey
-	keySplit := strings.Split(key, ".")
+	keySplit := strings.Split(cred.APIKey, ".")
 
 	if len(keySplit) != 3 {
 		return nil, errors.New("invalid api key format")
@@ -98,9 +74,9 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	}
 
 	if apiKey.Type == datastore.PersonalKey {
-		user, err := n.userRepo.FindUserByID(ctx, apiKey.UserID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch user: %v", err)
+		user, innerErr := n.userRepo.FindUserByID(ctx, apiKey.UserID)
+		if innerErr != nil {
+			return nil, fmt.Errorf("failed to fetch user: %v", innerErr)
 		}
 
 		authUser.Metadata = user

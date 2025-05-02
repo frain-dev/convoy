@@ -14,11 +14,10 @@ export class HttpService {
 	APP_PORTAL_APIURL = `${environment.production ? location.origin : 'http://localhost:5005'}/portal-api`;
 	token = this.route.snapshot.queryParams?.token;
 	ownerId = this.route.snapshot.queryParams?.owner_id;
-	checkTokenTimeout: any;
 
 	constructor(private router: Router, private generalService: GeneralService, private route: ActivatedRoute, private projectService: ProjectService) {}
 
-	authDetails() {
+	authDetails(): { access_token?: string; refresh_token?: string; authState: boolean } {
 		const authDetails = localStorage.getItem('CONVOY_AUTH_TOKENS');
 		if (authDetails && authDetails !== 'undefined') {
 			const token = JSON.parse(authDetails);
@@ -76,6 +75,10 @@ export class HttpService {
 		return org ? JSON.parse(org) : null;
 	}
 
+	getPortalLinkAuthToken() {
+		return localStorage.getItem('CONVOY_PORTAL_LINK_AUTH_TOKEN');
+	}
+
 	getProject() {
 		let project = localStorage.getItem('CONVOY_PROJECT');
 		return project ? JSON.parse(project) : null;
@@ -99,39 +102,39 @@ export class HttpService {
 		}
 	}
 
-buildURL(requestDetails: any): string {
-	if (requestDetails.isOut) return requestDetails.url;
+	buildURL(requestDetails: any): string {
+		if (requestDetails.isOut) return requestDetails.url;
 
-	// Make sure we have a query object
-	const query = requestDetails.query || {};
+		// Make sure we have a query object
+		const query = requestDetails.query || {};
 
-	// Add token and owner_id to query if they exist
-	if (this.token) {
-		query.token = this.token;
+		// Add token and owner_id to query if they exist
+		if (this.token) {
+			query['token'] = this.token;
+		}
+		if (this.ownerId) {
+			query['owner_id'] = this.ownerId;
+		}
+
+		// Format query string if we have any query params
+		const queryString = Object.keys(query).length > 0 ? '?' + this.buildRequestQuery(query) : '';
+
+		// When token or ownerId is present, use the Portal API URL regardless of other parameters
+		if (this.token || this.ownerId) {
+			return `${this.APP_PORTAL_APIURL}${requestDetails.url}${queryString}`;
+		}
+
+		// Handle regular UI paths
+		if (!requestDetails.level) {
+			return `${this.APIURL}${requestDetails.url}${queryString}`;
+		}
+
+		const requestPath = this.buildRequestPath(requestDetails.level);
+		if (requestPath === 'error') return 'error';
+
+		return `${this.APIURL}${requestPath}${requestDetails.url}${queryString}`;
 	}
-	if (this.ownerId) {
-		query.owner_id = this.ownerId;
-	}
 
-	// Format query string if we have any query params
-	const queryString = Object.keys(query).length > 0 ? '?' + this.buildRequestQuery(query) : '';
-
-	// When token or ownerId is present, use the Portal API URL regardless of other parameters
-	if (this.token || this.ownerId) {
-		return `${this.APP_PORTAL_APIURL}${requestDetails.url}${queryString}`;
-	}
-
-	// Handle regular UI paths
-	if (!requestDetails.level) {
-		return `${this.APIURL}${requestDetails.url}${queryString}`;
-	}
-
-	const requestPath = this.buildRequestPath(requestDetails.level);
-	if (requestPath === 'error') return 'error';
-
-	return `${this.APIURL}${requestPath}${requestDetails.url}${queryString}`;
-}
-  
 	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
 
@@ -140,7 +143,10 @@ buildURL(requestDetails: any): string {
 				const http = this.setupAxios({ hideNotification: requestDetails.hideNotification });
 
 				// Use token for authorization if available, otherwise use ownerId or access_token
-				const authToken = this.token || this.ownerId || this.authDetails()?.access_token;
+				let authToken = this.getPortalLinkAuthToken() || this.token || this.ownerId
+				if (!(this.token || this.ownerId)) {
+					authToken = this.authDetails()?.access_token;
+				}
 
 				const requestHeader = {
 					Authorization: `Bearer ${authToken}`,

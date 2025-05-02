@@ -1309,7 +1309,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
-	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
+	require.Contains(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, []string(pl.Endpoints))
 }
@@ -1355,7 +1355,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPorta
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
-	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
+	require.Contains(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, []string(pl.Endpoints))
 	require.Equal(s.T(), 1, resp.EndpointCount)
@@ -1456,7 +1456,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
-	require.Equal(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
+	require.Contains(s.T(), resp.URL, fmt.Sprintf("https://app.convoy.io/portal?token=%s", pl.Token))
 	require.Equal(s.T(), resp.Name, pl.Name)
 	require.Equal(s.T(), resp.Endpoints, []string(pl.Endpoints))
 }
