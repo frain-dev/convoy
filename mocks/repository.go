@@ -3074,3 +3074,84 @@ func (mr *MockEventTypesRepositoryMockRecorder) UpdateEventType(arg0, arg1 any) 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEventType", reflect.TypeOf((*MockEventTypesRepository)(nil).UpdateEventType), arg0, arg1)
 }
+
+// MockBatchRetryRepository is a mock of BatchRetryRepository interface.
+type MockBatchRetryRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockBatchRetryRepositoryMockRecorder
+}
+
+// MockBatchRetryRepositoryMockRecorder is the mock recorder for MockBatchRetryRepository.
+type MockBatchRetryRepositoryMockRecorder struct {
+	mock *MockBatchRetryRepository
+}
+
+// NewMockBatchRetryRepository creates a new mock instance.
+func NewMockBatchRetryRepository(ctrl *gomock.Controller) *MockBatchRetryRepository {
+	mock := &MockBatchRetryRepository{ctrl: ctrl}
+	mock.recorder = &MockBatchRetryRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockBatchRetryRepository) EXPECT() *MockBatchRetryRepositoryMockRecorder {
+	return m.recorder
+}
+
+// CreateBatchRetry mocks base method.
+func (m *MockBatchRetryRepository) CreateBatchRetry(ctx context.Context, batchRetry *datastore.BatchRetry) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateBatchRetry", ctx, batchRetry)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateBatchRetry indicates an expected call of CreateBatchRetry.
+func (mr *MockBatchRetryRepositoryMockRecorder) CreateBatchRetry(ctx, batchRetry any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBatchRetry", reflect.TypeOf((*MockBatchRetryRepository)(nil).CreateBatchRetry), ctx, batchRetry)
+}
+
+// FindActiveBatchRetry mocks base method.
+func (m *MockBatchRetryRepository) FindActiveBatchRetry(ctx context.Context, projectID string) (*datastore.BatchRetry, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindActiveBatchRetry", ctx, projectID)
+	ret0, _ := ret[0].(*datastore.BatchRetry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindActiveBatchRetry indicates an expected call of FindActiveBatchRetry.
+func (mr *MockBatchRetryRepositoryMockRecorder) FindActiveBatchRetry(ctx, projectID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindActiveBatchRetry", reflect.TypeOf((*MockBatchRetryRepository)(nil).FindActiveBatchRetry), ctx, projectID)
+}
+
+// FindBatchRetryByID mocks base method.
+func (m *MockBatchRetryRepository) FindBatchRetryByID(ctx context.Context, id string) (*datastore.BatchRetry, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindBatchRetryByID", ctx, id)
+	ret0, _ := ret[0].(*datastore.BatchRetry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindBatchRetryByID indicates an expected call of FindBatchRetryByID.
+func (mr *MockBatchRetryRepositoryMockRecorder) FindBatchRetryByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindBatchRetryByID", reflect.TypeOf((*MockBatchRetryRepository)(nil).FindBatchRetryByID), ctx, id)
+}
+
+// UpdateBatchRetry mocks base method.
+func (m *MockBatchRetryRepository) UpdateBatchRetry(ctx context.Context, batchRetry *datastore.BatchRetry) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateBatchRetry", ctx, batchRetry)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateBatchRetry indicates an expected call of UpdateBatchRetry.
+func (mr *MockBatchRetryRepositoryMockRecorder) UpdateBatchRetry(ctx, batchRetry any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBatchRetry", reflect.TypeOf((*MockBatchRetryRepository)(nil).UpdateBatchRetry), ctx, batchRetry)
+}

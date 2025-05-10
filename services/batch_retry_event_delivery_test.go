@@ -14,10 +14,11 @@ import (
 
 func provideBatchRetryEventDeliveryService(ctrl *gomock.Controller, f *datastore.Filter) *BatchRetryEventDeliveryService {
 	return &BatchRetryEventDeliveryService{
+		BatchRetryRepo:    mocks.NewMockBatchRetryRepository(ctrl),
 		EventDeliveryRepo: mocks.NewMockEventDeliveryRepository(ctrl),
-		EndpointRepo:      mocks.NewMockEndpointRepository(ctrl),
 		Queue:             mocks.NewMockQueuer(ctrl),
 		Filter:            f,
+		ProjectID:         "123",
 	}
 }
 
@@ -60,52 +61,17 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 			wantFailures:  0,
 			dbFn: func(es *BatchRetryEventDeliveryService) {
 				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ss, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
+				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
 
-				ss.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "123").
-					Return(&datastore.Endpoint{
-						Status: datastore.ActiveEndpointStatus,
-					}, nil).Times(2)
+				br.EXPECT().FindActiveBatchRetry(gomock.Any(), gomock.Any()).
+					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
 
-				ed.EXPECT().LoadEventDeliveriesPaged(
-					gomock.Any(),
-					"123",
-					[]string{"abc"},
-					"13429", "",
-					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
-					datastore.SearchParams{
-						CreatedAtStart: 1342,
-						CreatedAtEnd:   1332,
-					},
-					datastore.Pageable{
-						PerPage:    10,
-						Direction:  datastore.Next,
-						NextCursor: datastore.DefaultCursor,
-					},
-					gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(
-						[]datastore.EventDelivery{
-							{
-								UID:            "ref",
-								SubscriptionID: "sub-1",
-							},
-							{
-								UID:            "oop",
-								SubscriptionID: "sub-2",
-								Status:         datastore.FailureEventStatus,
-							},
-						},
-						datastore.PaginationData{},
-						nil,
-					)
+				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(2).Return(nil)
+				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(2).Return(nil)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{
@@ -131,49 +97,14 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 			},
 			dbFn: func(es *BatchRetryEventDeliveryService) {
 				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ss, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
+				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
 
-				ss.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "123").
-					Return(&datastore.Endpoint{
-						Status: datastore.ActiveEndpointStatus,
-					}, nil).Times(1)
+				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
+					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
 
-				ed.EXPECT().LoadEventDeliveriesPaged(
-					gomock.Any(),
-					"123",
-					[]string{"abc"},
-					"13429", "sub-1",
-					[]datastore.EventDeliveryStatus{datastore.SuccessEventStatus, datastore.RetryEventStatus},
-					datastore.SearchParams{
-						CreatedAtStart: 1342,
-						CreatedAtEnd:   1332,
-					},
-					datastore.Pageable{
-						PerPage:    10,
-						Direction:  datastore.Next,
-						NextCursor: datastore.DefaultCursor,
-					},
-					gomock.Any(), gomock.Any()).
-					Times(1).
-					Return(
-						[]datastore.EventDelivery{
-							{
-								UID:            "ref",
-								SubscriptionID: "sub-1",
-								Status:         datastore.SuccessEventStatus,
-							},
-							{
-								UID:            "oop",
-								SubscriptionID: "sub-2",
-								Status:         datastore.FailureEventStatus,
-							},
-						},
-						datastore.PaginationData{},
-						nil,
-					)
+				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil)
+				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
@@ -199,11 +130,12 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 			err = es.Run(tc.args.ctx)
 			if tc.wantErr {
-				require.NotNil(t, err)
-				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
+				require.Error(t, err)
+				require.Equal(t, tc.wantErrMsg, err.Error())
 				return
 			}
-			require.Nil(t, err)
+
+			require.NoError(t, err)
 		})
 	}
 }

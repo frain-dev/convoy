@@ -148,7 +148,6 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 	br := services.BatchRetryEventDeliveryService{
 		BatchRetryRepo:    postgres.NewBatchRetryRepo(h.A.DB),
 		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
 		Queue:             h.A.Queue,
 		Filter:            data.Filter,
 		ProjectID:         project.UID,

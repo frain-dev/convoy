@@ -19,7 +19,6 @@ type BatchRetryEventDeliveryService struct {
 	Queue             queue.Queuer
 	Filter            *datastore.Filter
 	ProjectID         string
-	EndpointRepo      datastore.EndpointRepository
 }
 
 func (e *BatchRetryEventDeliveryService) Run(ctx context.Context) error {
