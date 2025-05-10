@@ -17,7 +17,6 @@ func provideBatchRetryEventDeliveryService(ctrl *gomock.Controller, f *datastore
 		EventDeliveryRepo: mocks.NewMockEventDeliveryRepository(ctrl),
 		EndpointRepo:      mocks.NewMockEndpointRepository(ctrl),
 		Queue:             mocks.NewMockQueuer(ctrl),
-		EventRepo:         mocks.NewMockEventRepository(ctrl),
 		Filter:            f,
 	}
 }
@@ -198,16 +197,13 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 				tc.dbFn(es)
 			}
 
-			successes, failures, err := es.Run(tc.args.ctx)
+			err = es.Run(tc.args.ctx)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				require.Equal(t, tc.wantErrMsg, err.(*ServiceError).Error())
 				return
 			}
-
 			require.Nil(t, err)
-			require.Equal(t, tc.wantSuccesses, successes)
-			require.Equal(t, tc.wantFailures, failures)
 		})
 	}
 }
