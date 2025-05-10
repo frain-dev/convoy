@@ -249,6 +249,13 @@ type EventTypesRepository interface {
 	CheckEventTypeExists(context.Context, string, string) (bool, error)
 }
 
+type BatchRetryRepository interface {
+	CreateBatchRetry(ctx context.Context, batchRetry *BatchRetry) error
+	UpdateBatchRetry(ctx context.Context, batchRetry *BatchRetry) error
+	FindBatchRetryByID(ctx context.Context, id string) (*BatchRetry, error)
+	FindActiveBatchRetry(ctx context.Context, projectID string) (*BatchRetry, error)
+}
+
 // Filter errors
 var (
 	ErrFilterNotFound  = errors.New("filter not found")

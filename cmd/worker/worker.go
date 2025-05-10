@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
-	"net/http"
-	"strings"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -172,6 +173,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		string(convoy.ScheduleQueue):      1,
 		string(convoy.DefaultQueue):       1,
 		string(convoy.MetaEventQueue):     1,
+		string(convoy.BatchRetryQueue):    5,
 		string(convoy.EventWorkflowQueue): 4,
 	}
 
@@ -182,6 +184,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		string(convoy.ScheduleQueue):      1,
 		string(convoy.DefaultQueue):       1,
 		string(convoy.MetaEventQueue):     1,
+		string(convoy.BatchRetryQueue):    2,
 		string(convoy.EventWorkflowQueue): 3,
 	}
 
@@ -229,6 +232,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	configRepo := postgres.NewConfigRepo(a.DB)
 	attemptRepo := postgres.NewDeliveryAttemptRepo(a.DB)
 	filterRepo := postgres.NewFilterRepo(a.DB)
+	batchRetryRepo := postgres.NewBatchRetryRepo(a.DB)
 
 	rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	if err != nil {
@@ -457,6 +461,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
+
+	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
 
