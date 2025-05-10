@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/frain-dev/convoy/config"
@@ -68,7 +69,8 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
-				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(10), nil)
 
 				q, _ := es.Queue.(*mocks.MockQueuer)
 				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
@@ -102,7 +104,8 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
 					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
 
-				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(10), nil)
 
 				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
 
@@ -112,6 +115,150 @@ func TestBatchRetryEventDeliveryService_Run(t *testing.T) {
 			},
 			wantSuccesses: 1,
 			wantFailures:  1,
+		},
+		{
+			name: "should_fail_when_active_batch_retry_exists",
+			args: args{
+				ctx: ctx,
+				filter: &datastore.Filter{
+					Project:     &datastore.Project{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "13429",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "an active batch retry already exists",
+			dbFn: func(es *BatchRetryEventDeliveryService) {
+				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
+					Return(&datastore.BatchRetry{
+						ID:        "active-retry",
+						ProjectID: "123",
+						Status:    datastore.BatchRetryStatusProcessing,
+					}, nil).Times(1)
+			},
+		},
+		{
+			name: "should_fail_when_counting_events_fails",
+			args: args{
+				ctx: ctx,
+				filter: &datastore.Filter{
+					Project:     &datastore.Project{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "13429",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to count events",
+			dbFn: func(es *BatchRetryEventDeliveryService) {
+				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+
+				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
+					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
+
+				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(0), errors.New("failed to count events"))
+			},
+		},
+		{
+			name: "should_fail_when_creating_batch_retry_fails",
+			args: args{
+				ctx: ctx,
+				filter: &datastore.Filter{
+					Project:     &datastore.Project{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "13429",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to create batch retry",
+			dbFn: func(es *BatchRetryEventDeliveryService) {
+				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+
+				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
+					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
+
+				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(10), nil)
+
+				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any()).
+					Return(errors.New("failed to create batch retry"))
+			},
+		},
+		{
+			name: "should_fail_when_queueing_batch_retry_fails",
+			args: args{
+				ctx: ctx,
+				filter: &datastore.Filter{
+					Project:     &datastore.Project{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "13429",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to queue batch retry job",
+			dbFn: func(es *BatchRetryEventDeliveryService) {
+				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+				q, _ := es.Queue.(*mocks.MockQueuer)
+
+				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
+					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
+
+				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(10), nil)
+
+				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
+
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(errors.New("failed to queue batch retry job"))
+			},
+		},
+		{
+			name: "should_fail_when_finding_active_batch_retry_fails",
+			args: args{
+				ctx: ctx,
+				filter: &datastore.Filter{
+					Project:     &datastore.Project{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "13429",
+				},
+			},
+			wantErr:    true,
+			wantErrMsg: "failed to check for active batch retry",
+			dbFn: func(es *BatchRetryEventDeliveryService) {
+				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
+					Return(nil, errors.New("failed to check for active batch retry"))
+			},
+		},
+		{
+			name: "should_succeed_with_zero_events",
+			args: args{
+				ctx: ctx,
+				filter: &datastore.Filter{
+					Project:     &datastore.Project{UID: "123"},
+					EndpointIDs: []string{"abc"},
+					EventID:     "13429",
+				},
+			},
+			dbFn: func(es *BatchRetryEventDeliveryService) {
+				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
+				br, _ := es.BatchRetryRepo.(*mocks.MockBatchRetryRepository)
+				q, _ := es.Queue.(*mocks.MockQueuer)
+
+				br.EXPECT().FindActiveBatchRetry(gomock.Any(), "123").
+					Return(nil, datastore.ErrBatchRetryNotFound).Times(1)
+
+				ed.EXPECT().CountEventDeliveries(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(int64(0), nil)
+
+				br.EXPECT().CreateBatchRetry(gomock.Any(), gomock.Any())
+
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+			},
 		},
 	}
 	for _, tc := range tests {
