@@ -139,27 +139,27 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 		data.Filter.EndpointIDs = endpointIDs
 	}
 
-	data.Filter.Project = project
+	data.Filter.ProjectID = project.UID
 	ep := datastore.Pageable{}
 	if data.Filter.Pageable == ep {
-		data.Filter.Pageable.PerPage = 2000000000
+		data.Filter.Pageable.PerPage = 1000
 	}
 
 	br := services.BatchRetryEventDeliveryService{
+		BatchRetryRepo:    postgres.NewBatchRetryRepo(h.A.DB),
 		EventDeliveryRepo: postgres.NewEventDeliveryRepo(h.A.DB),
-		EndpointRepo:      postgres.NewEndpointRepo(h.A.DB),
 		Queue:             h.A.Queue,
-		EventRepo:         postgres.NewEventRepo(h.A.DB),
 		Filter:            data.Filter,
+		ProjectID:         project.UID,
 	}
 
-	successes, failures, err := br.Run(r.Context())
+	err = br.Run(r.Context())
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("%d successful, %d failed", successes, failures), nil, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Batch retry processing", nil, http.StatusOK))
 }
 
 // ForceResendEventDeliveries

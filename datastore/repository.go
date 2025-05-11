@@ -228,3 +228,10 @@ type EventTypesRepository interface {
 	FetchEventTypeById(context.Context, string, string) (*ProjectEventType, error)
 	FetchAllEventTypes(context.Context, string) ([]ProjectEventType, error)
 }
+
+type BatchRetryRepository interface {
+	CreateBatchRetry(ctx context.Context, batchRetry *BatchRetry) error
+	UpdateBatchRetry(ctx context.Context, batchRetry *BatchRetry) error
+	FindBatchRetryByID(ctx context.Context, id string) (*BatchRetry, error)
+	FindActiveBatchRetry(ctx context.Context, projectID string) (*BatchRetry, error)
+}

@@ -1,6 +1,7 @@
 package datastore
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -9,6 +10,7 @@ type Filter struct {
 	Query          string
 	OwnerID        string
 	Project        *Project
+	ProjectID      string
 	EndpointID     string
 	EndpointIDs    []string
 	SubscriptionID string
@@ -20,6 +22,24 @@ type Filter struct {
 	IdempotencyKey string
 	Status         []EventDeliveryStatus
 	SearchParams   SearchParams
+}
+
+func (f *Filter) Scan(v interface{}) error {
+	b, ok := v.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", v)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	err := json.Unmarshal(b, &f)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type SourceFilter struct {
