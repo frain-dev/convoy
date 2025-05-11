@@ -99,6 +99,7 @@ const (
 	ExpireSecretsProcessor           TaskName = "ExpireSecretsProcessor"
 	DeleteArchivedTasksProcessor     TaskName = "DeleteArchivedTasksProcessor"
 	MatchEventSubscriptionsProcessor TaskName = "MatchEventSubscriptionsProcessor"
+	BatchRetryProcessor              TaskName = "BatchRetryProcessor"
 
 	TokenCacheKey CacheKey = "tokens"
 )
@@ -113,6 +114,7 @@ const (
 	ScheduleQueue      QueueName = "ScheduleQueue"
 	DefaultQueue       QueueName = "DefaultQueue"
 	EventWorkflowQueue QueueName = "EventWorkflowQueue"
+	BatchRetryQueue    QueueName = "BatchRetryQueue"
 )
 
 // Exports dir
