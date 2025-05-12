@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
+	// "fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/net"
@@ -89,19 +89,19 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			return "", innerErr
 		}
 
-		dispatcher, innerErr := net.NewDispatcher(
-			a.Licenser,
-			a.FeatureFlag,
-			net.LoggerOption(a.Logger),
-			net.ProxyOption(cfg.Server.HTTP.HttpProxy),
-			net.AllowListOption(cfg.Dispatcher.AllowList),
-			net.BlockListOption(cfg.Dispatcher.BlockList),
-			net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
-		)
-		if innerErr != nil {
-			return "", innerErr
-		}
-
+		// dispatcher, innerErr := net.NewDispatcher(
+		// 	a.Licenser,
+		// 	a.FeatureFlag,
+		// 	net.LoggerOption(a.Logger),
+		// 	net.ProxyOption(cfg.Server.HTTP.HttpProxy),
+		// 	net.AllowListOption(cfg.Dispatcher.AllowList),
+		// 	net.BlockListOption(cfg.Dispatcher.BlockList),
+		// 	net.TLSConfigOption(cfg.Dispatcher.InsecureSkipVerify, a.Licenser, caCertTLSCfg),
+		// )
+		// if innerErr != nil {
+		// 	return "", innerErr
+		// }
+		//
 		// // TODO: this does a GET, but the endpoint needs a POST!
 		// pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second)
 		// if pingErr != nil {
