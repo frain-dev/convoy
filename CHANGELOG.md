@@ -1,18 +1,60 @@
+# 25.5.1
+
+### Enhancements
+
+-   Run batch event delivery retry in a background job #2299
+
+# 25.4.2
+
+### Bug Fixes
+
+-   Fixed an issue where read replicas environment variable wasn't being parsed correctly #2298
+
+# 25.4.1
+
+### Enhancements
+
+-   Use webhook dispatcher when creating and updating endpoints #2280
+
+# 25.3.5
+
+### Bug Fixes
+
+-   Fixed an issue where the retention policies job crashes
+
+# 25.3.4
+
+### Bug Fixes
+
+-   Fixed an issue where the filter wasn't properly being saved
+
+# 25.3.3
+
+### Bug Fixes
+
+-   Fixed pagination issue #2273
+
+# 25.3.2
+
+### Bug Fixes
+
+-   Fixed CA certificate issues #2270
+
 # 25.3.1
 
 ### Features
 
--  Added custom Certificate Authority support in dispatcher and server for secure TLS connections #2266
+-   Added custom Certificate Authority support in dispatcher and server for secure TLS connections #2266
 
 # 25.2.2
 
 ### Enhancements
 
--  Portal links can now be authenticated using the owner id #2256
+-   Portal links can now be authenticated using the owner id #2256
 
 ### Bug Fixes
- 
-- Fixed a bug where the rate-limit setting was not being deleted when updating projects and endpoints #2246
+
+-   Fixed a bug where the rate-limit setting was not being deleted when updating projects and endpoints #2246
 
 # 25.2.1
 
@@ -399,6 +441,8 @@
 -   [Bugfix] The copy button on the project details page has been fixed #1722
 -   [Bugfix] Events with active deliveries are now ignored in retention policies #1723
 -   [Bugfix] Fixed an issue where the organization modal fails to open and the project page keeps loading after creating the first organization #1727
+-   [Bugfix] Update navbar on creating project on new organisation #1250
+-   [Bugfix] Update validation check for create project form #1248
 
 # 23.06.3
 
