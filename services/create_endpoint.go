@@ -7,7 +7,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/net"
+	// "github.com/frain-dev/convoy/net"
 	"net/http"
 	"net/url"
 	"time"
@@ -147,17 +147,17 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			return "", errors.New("only https endpoints allowed")
 		}
 	case "https":
-		cfg, innerErr := config.Get()
-		if innerErr != nil {
-			return "", innerErr
-		}
-
-		caCertTLSCfg, innerErr := config.GetCaCert()
-		if innerErr != nil {
-			return "", innerErr
-		}
-
 		// // TODO: this does a GET, but the endpoint needs a POST!
+		// cfg, innerErr := config.Get()
+		// if innerErr != nil {
+		// 	return "", innerErr
+		// }
+		//
+		// caCertTLSCfg, innerErr := config.GetCaCert()
+		// if innerErr != nil {
+		// 	return "", innerErr
+		// }
+		//
 		// dispatcher, innerErr := net.NewDispatcher(
 		// 	a.Licenser,
 		// 	a.FeatureFlag,
