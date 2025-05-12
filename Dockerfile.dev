@@ -1,12 +1,12 @@
 # syntax=docker/dockerfile:1
-FROM node:14 as node-env
+FROM node:14 AS node-env
 WORKDIR /app
 COPY ./web/ui/dashboard .
 RUN git config --global url."https://".insteadOf git://
 RUN npm install
 RUN npm run build
 
-FROM golang:1.23 as build-env
+FROM golang:1.23 AS build-env
 WORKDIR /go/src/frain-dev/convoy
 
 COPY ./go.mod /go/src/frain-dev/convoy

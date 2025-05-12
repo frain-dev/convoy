@@ -105,8 +105,7 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		// TODO: this does a GET, but the endpoint needs a POST!
 		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second)
 		if pingErr != nil {
-			// TODO: log this
-			fmt.Errorf("failed to ping tls endpoint: %v", pingErr)
+			log.Warn(fmt.Errorf("failed to ping tls endpoint: %v", pingErr))
 		}
 	default:
 		return "", errors.New("invalid endpoint scheme")

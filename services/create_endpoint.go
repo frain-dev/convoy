@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 	"errors"
-	// "fmt"
+	"fmt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -173,8 +173,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		// TODO: this does a GET, but the endpoint needs a POST!
 		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second)
 		if pingErr != nil {
-			// TODO: log this
-			fmt.Errorf("failed to ping tls endpoint: %v", pingErr)
+			log.Warn(fmt.Errorf("failed to ping tls endpoint: %v", pingErr))
 		}
 	default:
 		return "", errors.New("invalid endpoint scheme")
