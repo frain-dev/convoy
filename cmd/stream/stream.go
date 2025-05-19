@@ -22,7 +22,6 @@ import (
 
 func AddStreamCommand(a *cli.App) *cobra.Command {
 	var socketPort uint32
-	var logLevel string
 
 	cmd := &cobra.Command{
 		Use:   "stream",
@@ -136,7 +135,6 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 	}
 
 	cmd.Flags().Uint32Var(&socketPort, "socket-port", 5008, "Socket port")
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 
 	return cmd
 }

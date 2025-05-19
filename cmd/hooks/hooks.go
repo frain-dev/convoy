@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"io"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
@@ -67,21 +68,32 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		postgresDB, err := postgres.NewDB(cfg)
+		cfg, err = config.Get() // updated
 		if err != nil {
 			return err
 		}
-
-		*db = *postgresDB
 
 		if _, ok := skipHook[cmd.Use]; ok {
 			return nil
 		}
 
-		cfg, err = config.Get() // updated
+		lo := log.NewLogger(os.Stdout)
+
+		lvl, err := log.ParseLevel(cfg.Logger.Level)
 		if err != nil {
 			return err
 		}
+		lo.SetLevel(lvl)
+
+		lo.Debugf("redis dsn: %s", cfg.Redis.BuildDsn())
+		lo.Debugf("postgres dsn: %s", cfg.Database.BuildDsn())
+
+		postgresDB, err := postgres.NewDB(cfg)
+		if err != nil {
+			return errors.New("failed to connect to postgres with err: " + err.Error())
+		}
+
+		*db = *postgresDB
 
 		err = config.LoadCaCert(cfg.Dispatcher.CACertString, cfg.Dispatcher.CACertPath)
 		if err != nil {
@@ -93,8 +105,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
 		if err != nil {
-			return err
+			return errors.New("failed to connect to redis with err: " + err.Error())
 		}
+
 		queueNames := map[string]int{
 			string(convoy.EventQueue):         5,
 			string(convoy.CreateEventQueue):   2,
@@ -121,20 +134,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		q = redisQueue.NewQueue(opts)
 
-		lo := log.NewLogger(os.Stdout)
-
-		rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
-		if err != nil {
-			return err
-		}
-
 		ca, err = cache.NewCache(cfg.Redis)
 		if err != nil {
-			return err
+			return errors.New("failed to create cache with err: " + err.Error())
 		}
+
 		err = ca.Set(context.Background(), "ping", "pong", 10*time.Second)
 		if err != nil {
-			return err
+			return errors.New("failed to ping redis with err: " + err.Error())
 		}
 
 		hooks := dbhook.Init()
@@ -157,11 +164,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		if ok := shouldCheckMigration(cmd); ok {
 			err = checkPendingMigrations(lo, db)
 			if err != nil {
-				return err
+				return errors.New("pending migrations check failed: " + err.Error())
 			}
 		}
 
-		app.Redis = rd.Client()
+		app.Redis = redis.Client()
 		app.DB = postgresDB
 		app.Queue = q
 		app.Logger = lo
@@ -213,7 +220,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		lo.Info("Read replicas: ", db.ReplicaSize())
+		lo.Debugf("Read replicas: %d", db.ReplicaSize())
 		if db.ReplicaSize() > 0 && !app.Licenser.ReadReplica() {
 			lo.Error("your instance does not have access to use read replicas, upgrade to access this feature")
 			db.UnsetReplicas()
@@ -224,7 +231,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			configRepo := postgres.NewConfigRepo(app.DB)
 			instCfg, err := configRepo.LoadConfiguration(cmd.Context())
 			if err != nil {
-				log.WithError(err).Error("Failed to load configuration")
+				lo.WithError(err).Error("Failed to load configuration")
 			} else {
 				cfg.InstanceId = instCfg.UID
 				if err = config.Override(&cfg); err != nil {
@@ -266,15 +273,19 @@ var skipConfigLoadCmd = map[string]struct{}{
 // commands dont need the hooks
 var skipHook = map[string]struct{}{
 	// migrate commands
-	"up":     {},
-	"down":   {},
-	"create": {},
-
+	"up":      {},
+	"down":    {},
+	"create":  {},
+	"config":  {},
 	"version": {},
 }
 
 func PostRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
+		if db == nil || db.GetDB() == nil {
+			os.Exit(0)
+		}
+
 		err := db.Close()
 		if err == nil {
 			os.Exit(0)
@@ -393,6 +404,16 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 
 func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
+
+	// CONVOY_LOGGER_LEVEL
+	logLevel, err := cmd.Flags().GetString("log-level")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(logLevel) {
+		c.Logger.Level = logLevel
+	}
 
 	// CONVOY_INSTANCE_INGEST_RATE
 	instanceIngestRate, err := cmd.Flags().GetInt("instance-ingest-rate")
@@ -558,8 +579,8 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	}
 
 	// CONVOY_RETENTION_POLICY_ENABLED
-	isretentionPolicyEnabledSet := cmd.Flags().Changed("retention-policy-enabled")
-	if isretentionPolicyEnabledSet {
+	isRetentionPolicyEnabledSet := cmd.Flags().Changed("retention-policy-enabled")
+	if isRetentionPolicyEnabledSet {
 		retentionPolicyEnabled, err := cmd.Flags().GetBool("retention-policy-enabled")
 		if err != nil {
 			return nil, err
