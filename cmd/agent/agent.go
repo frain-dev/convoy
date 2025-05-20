@@ -25,7 +25,6 @@ import (
 
 func AddAgentCommand(a *cli.App) *cobra.Command {
 	var agentPort uint32
-	var logLevel string
 	var consumerPoolSize int
 	var interval int
 
@@ -109,7 +108,6 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 
 	cmd.Flags().Uint32Var(&agentPort, "port", 0, "Agent port")
 
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
 	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")

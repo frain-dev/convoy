@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -22,7 +21,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
@@ -31,102 +29,9 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/spf13/cobra"
 )
-
-func AddWorkerCommand(a *cli.App) *cobra.Command {
-	var workerPort uint32
-	var logLevel string
-	var consumerPoolSize int
-	var interval int
-
-	var smtpSSL bool
-	var smtpUsername string
-	var smtpPassword string
-	var smtpReplyTo string
-	var smtpFrom string
-	var smtpProvider string
-	var executionMode string
-	var smtpUrl string
-	var smtpPort uint32
-
-	cmd := &cobra.Command{
-		Use:   "worker",
-		Short: "Start worker instance",
-		Annotations: map[string]string{
-			"ShouldBootstrap": "false",
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancel := context.WithCancel(cmd.Context())
-			defer cancel()
-
-			// override config with cli Flags
-			cliConfig, err := buildWorkerCliConfiguration(cmd)
-			if err != nil {
-				return err
-			}
-
-			if err = config.Override(cliConfig); err != nil {
-				return err
-			}
-
-			cfg, err := config.Get()
-			if err != nil {
-				a.Logger.WithError(err).Fatal("Failed to load configuration")
-			}
-
-			err = StartWorker(ctx, a, cfg, interval)
-			if err != nil {
-				return err
-			}
-
-			router := chi.NewRouter()
-			router.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{}))
-			router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-				render.JSON(w, r, "Convoy")
-			})
-
-			srv := server.NewServer(cfg.Server.HTTP.WorkerPort, func() {})
-			srv.SetHandler(router)
-
-			httpConfig := cfg.Server.HTTP
-			if httpConfig.SSL {
-				a.Logger.Infof("Worker started with SSL: cert_file: %s, key_file: %s", httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
-
-				srv.ListenAndServeTLS(httpConfig.SSLCertFile, httpConfig.SSLKeyFile)
-				return nil
-			}
-
-			fmt.Printf("Starting Convoy Worker on port %v\n", cfg.Server.HTTP.WorkerPort)
-			srv.Listen()
-
-			return nil
-		},
-	}
-
-	cmd.Flags().BoolVar(&smtpSSL, "smtp-ssl", false, "Enable SMTP SSL")
-	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP authentication username")
-	cmd.Flags().StringVar(&smtpPassword, "smtp-password", "", "SMTP authentication password")
-	cmd.Flags().StringVar(&smtpFrom, "smtp-from", "", "Sender email address")
-	cmd.Flags().StringVar(&smtpReplyTo, "smtp-reply-to", "", "Email address to reply to")
-	cmd.Flags().StringVar(&smtpProvider, "smtp-provider", "", "SMTP provider")
-	cmd.Flags().StringVar(&smtpUrl, "smtp-url", "", "SMTP provider URL")
-	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "SMTP Port")
-
-	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
-	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
-	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
-	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")
-
-	return cmd
-}
 
 func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
 	lo := a.Logger.(*log.Logger)
@@ -471,119 +376,4 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	lo.Println("Starting Convoy Consumer Pool")
 
 	return ctx.Err()
-}
-
-func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
-	c := &config.Configuration{}
-
-	logLevel, err := cmd.Flags().GetString("log-level")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(logLevel) {
-		c.Logger.Level = logLevel
-	}
-
-	// CONVOY_WORKER_POOL_SIZE
-	consumerPoolSize, err := cmd.Flags().GetInt("consumers")
-	if err != nil {
-		return nil, err
-	}
-
-	if consumerPoolSize >= 0 {
-		c.ConsumerPoolSize = consumerPoolSize
-	}
-
-	// CONVOY_WORKER_PORT
-	workerPort, err := cmd.Flags().GetUint32("worker-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if workerPort != 0 {
-		c.Server.HTTP.WorkerPort = workerPort
-	}
-
-	// CONVOY_SMTP_PROVIDER
-	smtpProvider, err := cmd.Flags().GetString("smtp-provider")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpProvider) {
-		c.SMTP.Provider = smtpProvider
-	}
-
-	// CONVOY_SMTP_URL
-	smtpUrl, err := cmd.Flags().GetString("smtp-url")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpUrl) {
-		c.SMTP.URL = smtpUrl
-	}
-
-	// CONVOY_SMTP_USERNAME
-	smtpUsername, err := cmd.Flags().GetString("smtp-username")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpUsername) {
-		c.SMTP.Username = smtpUsername
-	}
-
-	// CONVOY_SMTP_PASSWORD
-	smtpPassword, err := cmd.Flags().GetString("smtp-password")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpPassword) {
-		c.SMTP.Password = smtpPassword
-	}
-
-	// CONVOY_SMTP_FROM
-	smtpFrom, err := cmd.Flags().GetString("smtp-from")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpFrom) {
-		c.SMTP.From = smtpFrom
-	}
-
-	// CONVOY_SMTP_REPLY_TO
-	smtpReplyTo, err := cmd.Flags().GetString("smtp-reply-to")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(smtpReplyTo) {
-		c.SMTP.ReplyTo = smtpReplyTo
-	}
-
-	// CONVOY_SMTP_PORT
-	smtpPort, err := cmd.Flags().GetUint32("smtp-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if smtpPort != 0 {
-		c.SMTP.Port = smtpPort
-	}
-
-	// CONVOY_WORKER_EXECUTION_MODE
-	executionMode, err := cmd.Flags().GetString("mode")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(executionMode) {
-		c.WorkerExecutionMode = config.ExecutionMode(executionMode)
-	}
-
-	return c, nil
 }

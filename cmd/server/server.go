@@ -33,7 +33,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var limiter string
 	var cache string
 	var logger string
-	var logLevel string
 	var sslKeyFile string
 	var sslCertFile string
 	var promaddr string
@@ -73,7 +72,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 
 	cmd.Flags().StringVar(&apiKeyAuthConfig, "api-auth", "", "API-Key authentication credentials")
 	cmd.Flags().StringVar(&basicAuthConfig, "basic-auth", "", "Basic authentication credentials")
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	cmd.Flags().StringVar(&logger, "logger", "info", "Logger")
 	cmd.Flags().StringVar(&proxy, "proxy", "", "HTTP Proxy")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")

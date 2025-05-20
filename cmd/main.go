@@ -13,13 +13,11 @@ import (
 
 	configCmd "github.com/frain-dev/convoy/cmd/config"
 	"github.com/frain-dev/convoy/cmd/hooks"
-	"github.com/frain-dev/convoy/cmd/ingest"
 	"github.com/frain-dev/convoy/cmd/migrate"
 	"github.com/frain-dev/convoy/cmd/retry"
 	"github.com/frain-dev/convoy/cmd/server"
 	"github.com/frain-dev/convoy/cmd/stream"
 	"github.com/frain-dev/convoy/cmd/version"
-	"github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/sirupsen/logrus"
 
@@ -85,11 +83,13 @@ func main() {
 	var apiRateLimit int
 
 	var licenseKey string
+	var logLevel string
 
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 	c.Flags().StringVar(&licenseKey, "license-key", "", "Convoy license key")
+	c.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 
 	// db config
 	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")
@@ -145,12 +145,10 @@ func main() {
 
 	c.AddCommand(version.AddVersionCommand())
 	c.AddCommand(server.AddServerCommand(app))
-	c.AddCommand(worker.AddWorkerCommand(app))
 	c.AddCommand(retry.AddRetryCommand(app))
 	c.AddCommand(migrate.AddMigrateCommand(app))
 	c.AddCommand(configCmd.AddConfigCommand(app))
 	c.AddCommand(stream.AddStreamCommand(app))
-	c.AddCommand(ingest.AddIngestCommand(app))
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())
