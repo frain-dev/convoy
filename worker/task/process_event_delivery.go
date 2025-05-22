@@ -35,7 +35,7 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, tracerBackend tracer.Backend, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		// Start a new trace span for event delivery
 		traceStartTime := time.Now()
@@ -245,14 +245,40 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
 
-			eventDelivery.Status = datastore.RetryEventStatus
+			// Get subscription to check delivery mode
+			subscription, err := subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
+			if err != nil {
+				log.FromContext(ctx).WithError(err).Error("failed to find subscription")
+				return &DeliveryError{Err: err}
+			}
 
-			nextTime := time.Now().Add(delayDuration)
-			eventDelivery.Metadata.NextSendTime = nextTime
-			attempts := eventDelivery.Metadata.NumTrials + 1
+			// For at-most-once delivery, only retry on network failures
+			if subscription.DeliveryMode == datastore.AtMostOnceDeliveryMode {
+				if resp.StatusCode < 100 {
+					// Network error - retry
+					eventDelivery.Status = datastore.RetryEventStatus
+					nextTime := time.Now().Add(delayDuration)
+					eventDelivery.Metadata.NextSendTime = nextTime
+					attempts := eventDelivery.Metadata.NumTrials + 1
 
-			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
-				nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+					log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
+						nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+				} else {
+					// Got a response (even if it's an error status code) - mark as failed
+					eventDelivery.Status = datastore.FailureEventStatus
+					eventDelivery.Description = fmt.Sprintf("Endpoint returned status code %d", statusCode)
+					done = true
+				}
+			} else {
+				// At-least-once delivery - retry on any failure
+				eventDelivery.Status = datastore.RetryEventStatus
+				nextTime := time.Now().Add(delayDuration)
+				eventDelivery.Metadata.NextSendTime = nextTime
+				attempts := eventDelivery.Metadata.NumTrials + 1
+
+				log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
+					nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+			}
 		}
 
 		// Update attributes with response info

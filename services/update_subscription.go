@@ -93,6 +93,10 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		subscription.Function = null.StringFrom(s.Update.Function)
 	}
 
+	if !util.IsStringEmpty(string(s.Update.DeliveryMode)) {
+		subscription.DeliveryMode = s.Update.DeliveryMode
+	}
+
 	if s.Update.AlertConfig != nil && s.Update.AlertConfig.Count > 0 {
 		if subscription.AlertConfig == nil {
 			subscription.AlertConfig = &datastore.AlertConfiguration{}
