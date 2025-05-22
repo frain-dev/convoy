@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/bcrypt"
 	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 
@@ -781,6 +782,12 @@ type (
 	EventStatus         string
 	EventDeliveryStatus string
 	HttpHeader          map[string]string
+	DeliveryMode        string
+)
+
+const (
+	AtLeastOnceDeliveryMode DeliveryMode = "at_least_once"
+	AtMostOnceDeliveryMode  DeliveryMode = "at_most_once"
 )
 
 func (h *HttpHeader) Scan(value interface{}) error {
@@ -1068,6 +1075,8 @@ type Subscription struct {
 	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" db:"retry_config"`
 	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" db:"filter_config"`
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" db:"rate_limit_config"`
+
+	DeliveryMode DeliveryMode `json:"delivery_mode,omitempty" db:"delivery_mode"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`

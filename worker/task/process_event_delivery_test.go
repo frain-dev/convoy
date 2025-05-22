@@ -3,10 +3,11 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
+
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
@@ -34,7 +35,7 @@ func TestProcessEventDelivery(t *testing.T) {
 		cfgPath       string
 		expectedError error
 		msg           *datastore.EventDelivery
-		dbFn          func(*mocks.MockEndpointRepository, *mocks.MockProjectRepository, *mocks.MockEventDeliveryRepository, *mocks.MockQueuer, *mocks.MockRateLimiter, *mocks.MockDeliveryAttemptsRepository, *mocks.MockLicenser, *mocks.MockBackend)
+		dbFn          func(*mocks.MockEndpointRepository, *mocks.MockProjectRepository, *mocks.MockEventDeliveryRepository, *mocks.MockQueuer, *mocks.MockRateLimiter, *mocks.MockDeliveryAttemptsRepository, *mocks.MockLicenser, *mocks.MockBackend, *mocks.MockSubscriptionRepository)
 		nFn           func() func()
 	}{
 		{
@@ -44,7 +45,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
@@ -79,7 +80,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						RateLimit:         10,
@@ -93,6 +94,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
+						SubscriptionID: "sub-id-1",
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							NumTrials:       0,
@@ -120,7 +122,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID:         "123",
@@ -137,6 +139,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
+						SubscriptionID: "sub-id-1",
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							Raw:             `{"event": "invoice.completed"}`,
@@ -188,6 +191,12 @@ func TestProcessEventDelivery(t *testing.T) {
 
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(true)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
+					}, nil).Times(1)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -207,7 +216,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						Secrets: []datastore.Secret{
@@ -232,6 +241,12 @@ func TestProcessEventDelivery(t *testing.T) {
 							IntervalSeconds: 20,
 						},
 						Status: datastore.ScheduledEventStatus,
+					}, nil).Times(1)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -299,7 +314,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
@@ -312,6 +327,12 @@ func TestProcessEventDelivery(t *testing.T) {
 					}, nil)
 
 				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
+					}, nil).Times(1)
 
 				a.EXPECT().
 					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.InactiveEndpointStatus).
@@ -391,7 +412,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
@@ -416,6 +437,12 @@ func TestProcessEventDelivery(t *testing.T) {
 							IntervalSeconds: 20,
 						},
 						Status: datastore.ScheduledEventStatus,
+					}, nil).Times(1)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -483,7 +510,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
@@ -501,6 +528,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
+						SubscriptionID: "sub-id-1",
 						Status:         datastore.ScheduledEventStatus,
 						URLQueryParams: "name=ref&category=food",
 						Metadata: &datastore.Metadata{
@@ -510,6 +538,12 @@ func TestProcessEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
+					}, nil).Times(1)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				a.EXPECT().
@@ -577,7 +611,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
@@ -602,6 +636,12 @@ func TestProcessEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
+					}, nil).Times(1)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -634,7 +674,8 @@ func TestProcessEventDelivery(t *testing.T) {
 						},
 					}, nil).Times(1)
 
-				a.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+				a.EXPECT().
+					UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
@@ -668,7 +709,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID: "123",
@@ -685,7 +726,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
-						Status: datastore.ScheduledEventStatus,
+						SubscriptionID: "sub-id-1",
+						Status:         datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							Raw:             `{"event": "invoice.completed"}`,
@@ -740,6 +782,12 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(false)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
+					}, nil).Times(1)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -759,7 +807,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID:    "123",
@@ -777,7 +825,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
-						Status: datastore.ScheduledEventStatus,
+						SubscriptionID: "sub-id-1",
+						Status:         datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							Raw:             `{"event": "invoice.completed"}`,
@@ -836,6 +885,12 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().IpRules().Times(3).Return(true)
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
+					}, nil).Times(1)
 			},
 			nFn: func() func() {
 				httpmock.Activate()
@@ -855,7 +910,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
-			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
 						ProjectID:    "123",
@@ -874,7 +929,8 @@ func TestProcessEventDelivery(t *testing.T) {
 				m.EXPECT().
 					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.EventDelivery{
-						Status: datastore.ScheduledEventStatus,
+						SubscriptionID: "sub-id-1",
+						Status:         datastore.ScheduledEventStatus,
 						Metadata: &datastore.Metadata{
 							Data:            []byte(`{"event": "invoice.completed"}`),
 							Raw:             `{"event": "invoice.completed"}`,
@@ -882,6 +938,12 @@ func TestProcessEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
+					}, nil).Times(1)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -945,6 +1007,98 @@ func TestProcessEventDelivery(t *testing.T) {
 				}
 			},
 		},
+		{
+			name:          "At-most-once delivery - non-2xx response - should not retry",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
+			expectedError: nil,
+			msg: &datastore.EventDelivery{
+				UID: "",
+			},
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend, s *mocks.MockSubscriptionRepository) {
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Endpoint{
+						Url:       "https://google.com?source=convoy",
+						ProjectID: "123",
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
+						RateLimit:         10,
+						RateLimitDuration: 60,
+						Status:            datastore.ActiveEndpointStatus,
+					}, nil)
+
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+				m.EXPECT().
+					FindEventDeliveryByIDSlim(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.EventDelivery{
+						Metadata: &datastore.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
+							NumTrials:       0,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						Status: datastore.ScheduledEventStatus,
+					}, nil).Times(1)
+
+				o.EXPECT().
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
+						LogoURL: "",
+						Config: &datastore.ProjectConfig{
+							Signature: &datastore.SignatureConfiguration{
+								Header: "X-Convoy-Signature",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
+									},
+								},
+							},
+							SSL: &datastore.DefaultSSLConfig,
+							Strategy: &datastore.StrategyConfiguration{
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
+							},
+							RateLimit: &datastore.DefaultRateLimitConfig,
+						},
+					}, nil).Times(1)
+
+				s.EXPECT().
+					FindSubscriptionByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Subscription{
+						DeliveryMode: datastore.AtMostOnceDeliveryMode,
+					}, nil).Times(1)
+
+				m.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
+				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
+
+				m.EXPECT().
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
+				mt.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+
+				l.EXPECT().UseForwardProxy().Times(1).Return(true)
+				l.EXPECT().IpRules().Times(3).Return(false)
+			},
+			nFn: func() func() {
+				httpmock.Activate()
+
+				httpmock.RegisterResponder("POST", "https://google.com",
+					httpmock.NewStringResponder(400, ``))
+
+				return func() {
+					httpmock.DeactivateAndReset()
+				}
+			},
+		},
 	}
 
 	for _, tc := range tt {
@@ -964,6 +1118,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			attemptsRepo := mocks.NewMockDeliveryAttemptsRepository(ctrl)
 			licenser := mocks.NewMockLicenser(ctrl)
 			mt := mocks.NewMockBackend(ctrl)
+			subscriptionRepo := mocks.NewMockSubscriptionRepository(ctrl)
 
 			err := config.LoadConfig(tc.cfgPath)
 			if err != nil {
@@ -986,7 +1141,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			}
 
 			if tc.dbFn != nil {
-				tc.dbFn(endpointRepo, projectRepo, msgRepo, q, rateLimiter, attemptsRepo, licenser, mt)
+				tc.dbFn(endpointRepo, projectRepo, msgRepo, q, rateLimiter, attemptsRepo, licenser, mt, subscriptionRepo)
 			}
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
@@ -1020,7 +1175,20 @@ func TestProcessEventDelivery(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			processFn := ProcessEventDelivery(endpointRepo, msgRepo, licenser, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, mt)
+			processor := ProcessEventDelivery(
+				endpointRepo,
+				msgRepo,
+				licenser,
+				projectRepo,
+				q,
+				rateLimiter,
+				dispatcher,
+				attemptsRepo,
+				manager,
+				featureFlag,
+				mt,
+				subscriptionRepo,
+			)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,
@@ -1038,7 +1206,7 @@ func TestProcessEventDelivery(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			err = processFn(context.Background(), task)
+			err = processor(context.Background(), task)
 
 			// Assert.
 			assert.Equal(t, tc.expectedError, err)

@@ -281,7 +281,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
-		a.TracerBackend),
+		a.TracerBackend,
+		subRepo),
 		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
