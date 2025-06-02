@@ -63,7 +63,7 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 
@@ -468,7 +468,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_AllowHTTP() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: project.UID,
 	}
 
@@ -681,7 +681,7 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 
@@ -1258,7 +1258,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 
@@ -1679,7 +1679,7 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey(
 	require.Equal(s.T(), "test-project", respProject.Project.Name)
 	require.Equal(s.T(), "test-project's default key", respProject.APIKey.Name)
 
-	require.Equal(s.T(), auth.RoleAdmin, respProject.APIKey.Role.Type)
+	require.Equal(s.T(), auth.RoleProjectAdmin, respProject.APIKey.Role.Type)
 	require.Equal(s.T(), respProject.Project.UID, respProject.APIKey.Role.Project)
 	require.Equal(s.T(), "test-project's default key", respProject.APIKey.Name)
 	require.NotEmpty(s.T(), respProject.APIKey.Key)
@@ -1859,7 +1859,7 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 
@@ -2191,7 +2191,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 
@@ -2274,7 +2274,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Incomin
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: project.UID,
 	}
 
@@ -2499,7 +2499,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_GetOneSubscription_Incomin
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: project.UID,
 	}
 
@@ -2703,7 +2703,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Creates
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
 
 	// Verify event types were created
-	query := `SELECT COUNT(*) FROM convoy.event_types 
+	query := `SELECT COUNT(*) FROM convoy.event_types
               WHERE project_id = $1 AND name IN ('user.created', 'user.updated')`
 	var count int
 	err = s.ConvoyApp.A.DB.GetDB().QueryRowxContext(context.Background(), query, s.DefaultProject.UID).Scan(&count)
@@ -2805,7 +2805,7 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 
@@ -2919,7 +2919,7 @@ func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 

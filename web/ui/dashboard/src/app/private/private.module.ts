@@ -13,6 +13,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { InputFieldDirective, InputErrorComponent, InputDirective, LabelComponent } from '../components/input/input.component';
 import { DialogDirective } from '../components/dialog/dialog.directive';
 import { EmptyStateComponent } from '../components/empty-state/empty-state.component';
+import { PermissionDirective } from './components/permission/permission.directive';
 
 @NgModule({
 	declarations: [PrivateComponent],
@@ -33,7 +34,8 @@ import { EmptyStateComponent } from '../components/empty-state/empty-state.compo
 		InputDirective,
 		LabelComponent,
 		DialogDirective,
-		EmptyStateComponent
+		EmptyStateComponent,
+		PermissionDirective
 	]
 })
 export class PrivateModule {}

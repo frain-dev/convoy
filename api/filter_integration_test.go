@@ -60,7 +60,7 @@ func (s *FilterIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 

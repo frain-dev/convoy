@@ -74,7 +74,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -151,7 +151,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -212,7 +212,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -273,7 +273,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -349,7 +349,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(gs *ProjectService) {
@@ -454,7 +454,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 		//		member: &datastore.OrganisationMember{
 		//			UID:            "abc",
 		//			OrganisationID: "1234",
-		//			Role:           auth.Role{Type: auth.RoleSuperUser},
+		//			Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 		//		},
 		//	},
 		//	dbFn: func(gs *ProjectService) {
@@ -572,7 +572,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 			require.Equal(t, project.Name+"'s default key", apiKey.Name)
 			require.Equal(t, project.UID, apiKey.Role.Project)
-			require.Equal(t, auth.RoleAdmin, apiKey.Role.Type)
+			require.Equal(t, auth.RoleProjectAdmin, apiKey.Role.Type)
 			require.Empty(t, apiKey.ExpiresAt)
 			require.NotEmpty(t, apiKey.UID)
 			require.NotEmpty(t, apiKey.Key)

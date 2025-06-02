@@ -28,6 +28,7 @@ import {DialogDirective} from 'src/app/components/dialog/dialog.directive';
 import {TeamsModule} from './teams/teams.module';
 import {ConfigButtonComponent} from '../../components/config-button/config-button.component';
 import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
+import { PermissionDirective } from '../../components/permission/permission.directive';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
@@ -45,7 +46,7 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		RadioComponent,
 		ToggleComponent,
 		ButtonComponent,
-        ConfigButtonComponent,
+		ConfigButtonComponent,
 		SkeletonLoaderComponent,
 		TagComponent,
 		CopyButtonComponent,
@@ -58,7 +59,8 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		LabelComponent,
 		DialogDirective,
 		TeamsModule,
-        TooltipComponent
+		TooltipComponent,
+		PermissionDirective
 	]
 })
 export class SettingsModule {}

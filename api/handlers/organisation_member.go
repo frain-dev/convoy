@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/frain-dev/convoy/auth"
 	"net/http"
 
 	"github.com/frain-dev/convoy/pkg/log"
@@ -78,6 +79,13 @@ func (h *Handler) UpdateOrganisationMember(w http.ResponseWriter, r *http.Reques
 	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
+	}
+
+	if roleUpdate.Role.Type == auth.RoleInstanceAdmin {
+		if err = h.A.Authz.Authorize(r.Context(), "organisation.manage.all", org); err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+			return
+		}
 	}
 
 	member, err := postgres.NewOrgMemberRepo(h.A.DB).FetchOrganisationMemberByID(r.Context(), memberID, org.UID)

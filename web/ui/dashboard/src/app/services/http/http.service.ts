@@ -162,6 +162,10 @@ export class HttpService {
 				resolve(data);
 			} catch (error) {
 				if (axios.isAxiosError(error)) {
+                    const msg = error.response?.data?.message;
+                    if ('project not found' === msg) {
+                        localStorage.removeItem('CONVOY_PROJECT');
+                    }
 					return reject(error.message);
 				} else {
 					console.log('unexpected error: ', error);

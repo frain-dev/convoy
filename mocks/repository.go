@@ -1280,6 +1280,51 @@ func (mr *MockOrganisationMemberRepositoryMockRecorder) UpdateOrganisationMember
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisationMember", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).UpdateOrganisationMember), ctx, member)
 }
 
+// CountInstanceAdminUsers mocks base method.
+func (m *MockOrganisationMemberRepository) CountInstanceAdminUsers(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountInstanceAdminUsers", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountInstanceAdminUsers indicates an expected call of CountInstanceAdminUsers.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) CountInstanceAdminUsers(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountInstanceAdminUsers", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CountInstanceAdminUsers), ctx)
+}
+
+// CountOrganisationAdminUsers mocks base method.
+func (m *MockOrganisationMemberRepository) CountOrganisationAdminUsers(ctx context.Context) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountOrganisationAdminUsers", ctx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountOrganisationAdminUsers indicates an expected call of CountOrganisationAdminUsers.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) CountOrganisationAdminUsers(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountOrganisationAdminUsers", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).CountOrganisationAdminUsers), ctx)
+}
+
+// FetchInstanceAdminUserID mocks base method.
+func (m *MockOrganisationMemberRepository) FetchInstanceAdminUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchInstanceAdminUserID", ctx, userID)
+	ret0, _ := ret[0].(*datastore.OrganisationMember)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchInstanceAdminUserID indicates an expected call of FetchInstanceAdminUserID.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchInstanceAdminUserID(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchInstanceAdminUserID", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).FetchInstanceAdminUserID), ctx, userID)
+}
+
 // MockEndpointRepository is a mock of EndpointRepository interface.
 type MockEndpointRepository struct {
 	ctrl     *gomock.Controller

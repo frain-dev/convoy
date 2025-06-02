@@ -49,7 +49,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:    auth.RoleAdmin,
+						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
 					},
 					ExpiresAt: expires,
@@ -57,14 +57,14 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			wantAPIKey: &datastore.APIKey{
 				Name: "test_api_key",
 				Type: "api",
 				Role: auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "1234",
 				},
 				ExpiresAt: expires,
@@ -86,7 +86,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:    auth.RoleAdmin,
+						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
 						App:     "1234",
 					},
@@ -95,7 +95,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			wantErr:    true,
@@ -128,7 +128,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:    auth.RoleAdmin,
+						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
 						App:     "1234",
 					},
@@ -137,7 +137,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(ss *CreateAPIKeyService) {
@@ -156,7 +156,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:    auth.RoleAdmin,
+						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
 						App:     "1234",
 					},
@@ -165,7 +165,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(ss *CreateAPIKeyService) {
@@ -184,7 +184,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:    auth.RoleAdmin,
+						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
 						App:     "1234",
 					},
@@ -193,7 +193,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "555",
-					Role:           auth.Role{Type: auth.RoleAdmin},
+					Role:           auth.Role{Type: auth.RoleProjectAdmin},
 				},
 			},
 			dbFn: func(ss *CreateAPIKeyService) {
@@ -212,7 +212,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 					Name: "test_api_key",
 					Type: "api",
 					Role: models.Role{
-						Type:    auth.RoleAdmin,
+						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
 						App:     "1234",
 					},
@@ -221,7 +221,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "1234",
-					Role:           auth.Role{Type: auth.RoleSuperUser},
+					Role:           auth.Role{Type: auth.RoleOrganisationAdmin},
 				},
 			},
 			dbFn: func(ss *CreateAPIKeyService) {

@@ -39,13 +39,17 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		}
 		member, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 		if err != nil {
+			m, err := pp.OrganisationMemberRepo.FetchInstanceAdminUserID(ctx, user.UID)
+			if err == nil && isInstanceAdmin(m) {
+				return nil
+			}
 			return ErrNotAllowed
 		}
 
 		// to allow admin roles, MultiPlayerMode must be enabled
-		adminAllowed := isAdmin(member) && pp.Licenser.MultiPlayerMode()
+		adminAllowed := isProjectAdmin(member) && pp.Licenser.MultiPlayerMode()
 
-		if isSuperAdmin(member) || adminAllowed {
+		if isOrganisationAdmin(member) || adminAllowed {
 			return nil
 		}
 
@@ -68,10 +72,14 @@ func (pp *ProjectPolicy) GetName() string {
 	return "project"
 }
 
-func isAdmin(m *datastore.OrganisationMember) bool {
-	return m.Role.Type == auth.RoleAdmin
+func isProjectAdmin(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleProjectAdmin || isInstanceAdmin(m)
 }
 
-func isSuperAdmin(m *datastore.OrganisationMember) bool {
-	return m.Role.Type == auth.RoleSuperUser
+func isOrganisationAdmin(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleOrganisationAdmin || isInstanceAdmin(m)
+}
+
+func isInstanceAdmin(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleInstanceAdmin
 }
