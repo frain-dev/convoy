@@ -423,26 +423,25 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
     }
 
     headers := e.GetRawHeaders()
-    var s *datastore.Subscription
 
     for i := range subscriptions {
-        s = &subscriptions[i]
-        if len(s.FilterConfig.Filter.Body) == 0 && len(s.FilterConfig.Filter.Headers) == 0 {
-            matched = append(matched, *s)
+        sub := &subscriptions[i]
+        if len(sub.FilterConfig.Filter.Body) == 0 && len(sub.FilterConfig.Filter.Headers) == 0 {
+            matched = append(matched, *sub)
             continue
         }
 
-        isBodyMatched, filterErr := subRepo.CompareFlattenedPayload(ctx, flatPayload, s.FilterConfig.Filter.Body, s.FilterConfig.Filter.IsFlattened)
+        isBodyMatched, filterErr := subRepo.CompareFlattenedPayload(ctx, flatPayload, sub.FilterConfig.Filter.Body, sub.FilterConfig.Filter.IsFlattened)
         if filterErr != nil && soft {
-            log.WithError(filterErr).Errorf("subcription (%s) failed to match body", s.UID)
+            log.WithError(filterErr).Errorf("subcription (%s) failed to match body", sub.UID)
             continue
         } else if filterErr != nil {
             return nil, filterErr
         }
 
-        isHeaderMatched, filterErr := subRepo.CompareFlattenedPayload(ctx, headers, s.FilterConfig.Filter.Headers, s.FilterConfig.Filter.IsFlattened)
+        isHeaderMatched, filterErr := subRepo.CompareFlattenedPayload(ctx, headers, sub.FilterConfig.Filter.Headers, sub.FilterConfig.Filter.IsFlattened)
         if filterErr != nil && soft {
-            log.WithError(filterErr).Errorf("subscription (%s) failed to match header", s.UID)
+            log.WithError(filterErr).Errorf("subscription (%s) failed to match header", sub.UID)
             continue
         } else if filterErr != nil {
             return nil, filterErr
@@ -451,9 +450,9 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
         isMatched := isHeaderMatched && isBodyMatched
 
         if isMatched {
-            matched = append(matched, *s)
+            matched = append(matched, *sub)
         } else {
-            log.Errorf("sub_id: %s, event_id: %s, filter: %+v", s.UID, e.UID, s.FilterConfig.Filter)
+            log.Errorf("sub_id: %s, event_id: %s, filter: %+v", sub.UID, e.UID, sub.FilterConfig.Filter)
         }
     }
 
