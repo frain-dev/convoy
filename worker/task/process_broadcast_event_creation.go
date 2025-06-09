@@ -149,10 +149,10 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
     subscriptions := make([]datastore.Subscription, 0, len(matchAllSubs)+len(eventTypeSubs))
     subscriptions = append(subscriptions, eventTypeSubs...)
     subscriptions = append(subscriptions, matchAllSubs...)
-    log.Errorf("subscriptions before filter match: %v", mapSubIds(subscriptions))
+    log.Errorf("subscriptions before filter match: %v, event_id; %s", mapSubIds(subscriptions), broadcastEvent.UID)
 
     subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, args.subRepo, args.licenser, subscriptions, true)
-    log.Errorf("subscriptions after filter match: %v", mapSubIds(subscriptions))
+    log.Errorf("subscriptions after filter match: %v, event_id; %s", mapSubIds(subscriptions), broadcastEvent.UID)
     if err != nil {
         log.Errorf("subscriptions err after filter match: %v", fmt.Errorf("failed to match subscriptions using filter, err: %s", err.Error()))
         args.tracerBackend.Capture(ctx, "broadcast.subscription.matching.error", attributes, startTime, time.Now())
