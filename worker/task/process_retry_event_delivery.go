@@ -42,7 +42,7 @@ var (
 	defaultEventDelay        = 120 * time.Second
 )
 
-func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, tracerBackend tracer2.Backend, subRepo datastore.SubscriptionRepository) func(context.Context, *asynq.Task) error {
+func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, tracerBackend tracer2.Backend) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		// Start a new trace span for retry event delivery
 		traceStartTime := time.Now()
@@ -238,15 +238,8 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
 
-			// Get subscription to check delivery mode
-			subscription, err := subRepo.FindSubscriptionByID(ctx, eventDelivery.ProjectID, eventDelivery.SubscriptionID)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to find subscription")
-				return &EndpointError{Err: err}
-			}
-
 			// For at-most-once delivery, only retry on network failures
-			if subscription.DeliveryMode == datastore.AtMostOnceDeliveryMode {
+			if eventDelivery.DeliveryMode == datastore.AtMostOnceDeliveryMode {
 				if retryableForAtMostOnceDeliveryMode(resp.StatusCode) {
 					// Network error - retry
 					eventDelivery.Status = datastore.RetryEventStatus
