@@ -115,6 +115,7 @@ const (
         COALESCE(event_type,'') AS "event_type",
         COALESCE(device_id,'') AS "device_id",
         COALESCE(endpoint_id,'') AS "endpoint_id",
+        COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode AS "delivery_mode",
         acknowledged_at
     FROM convoy.event_deliveries
 	WHERE deleted_at IS NULL
