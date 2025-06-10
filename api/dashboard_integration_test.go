@@ -2734,6 +2734,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks() 
 	// Act
 	s.Router.ServeHTTP(w, req)
 
+	if w.Code != http.StatusOK {
+		return
+	}
+
 	// Assert
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
