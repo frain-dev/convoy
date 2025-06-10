@@ -78,6 +78,13 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		UpdatedAt: time.Now(),
 	}
 
+	// Set default delivery mode if empty
+	if subscription.DeliveryMode == "" {
+		subscription.DeliveryMode = datastore.AtLeastOnceDeliveryMode
+	} else if subscription.DeliveryMode != datastore.AtLeastOnceDeliveryMode && subscription.DeliveryMode != datastore.AtMostOnceDeliveryMode {
+		return nil, &ServiceError{ErrMsg: "invalid delivery mode value, must be either 'at_least_once' or 'at_most_once'"}
+	}
+
 	if s.Licenser.AdvancedSubscriptions() {
 		subscription.FilterConfig = s.NewSubscription.FilterConfig.Transform()
 	}

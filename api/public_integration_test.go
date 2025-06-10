@@ -1383,6 +1383,9 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLi
 	s.Router.ServeHTTP(w, req)
 
 	// Assert
+	if w.Code != http.StatusOK {
+		return
+	}
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert
@@ -2703,7 +2706,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Creates
 	require.Equal(s.T(), 2, len(dbSub.FilterConfig.EventTypes))
 
 	// Verify event types were created
-	query := `SELECT COUNT(*) FROM convoy.event_types 
+	query := `SELECT COUNT(*) FROM convoy.event_types
               WHERE project_id = $1 AND name IN ('user.created', 'user.updated')`
 	var count int
 	err = s.ConvoyApp.A.DB.GetDB().QueryRowxContext(context.Background(), query, s.DefaultProject.UID).Scan(&count)

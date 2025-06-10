@@ -975,9 +975,10 @@ type EventDelivery struct {
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 
 	// Deprecated: Latency is deprecated.
-	Latency        string    `json:"latency" db:"latency"`
-	LatencySeconds float64   `json:"latency_seconds" db:"latency_seconds"`
-	EventType      EventType `json:"event_type,omitempty" db:"event_type"`
+	Latency        string       `json:"latency" db:"latency"`
+	LatencySeconds float64      `json:"latency_seconds" db:"latency_seconds"`
+	EventType      EventType    `json:"event_type,omitempty" db:"event_type"`
+	DeliveryMode   DeliveryMode `json:"delivery_mode" db:"delivery_mode"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`

@@ -132,6 +132,8 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByIDs(t *testing.T) {
 
 		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 
+		ed.DeliveryMode = datastore.AtLeastOnceDeliveryMode
+
 		require.Equal(t, ed.Headers, dbEventDelivery.Headers)
 		require.Equal(t, ed, dbEventDelivery)
 	}
@@ -186,6 +188,8 @@ func Test_eventDeliveryRepo_FindEventDeliveriesByEventID(t *testing.T) {
 		dbEventDelivery.Metadata.NextSendTime = time.Time{}
 
 		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
+
+		ed.DeliveryMode = datastore.AtLeastOnceDeliveryMode
 		require.Equal(t, ed, dbEventDelivery)
 	}
 }
@@ -487,6 +491,8 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		ed.CreatedAt, ed.UpdatedAt, ed.AcknowledgedAt = time.Time{}, time.Time{}, null.Time{}
 		ed.Latency = ""
 		dbEventDelivery.Latency = ""
+
+		ed.DeliveryMode = datastore.AtLeastOnceDeliveryMode
 
 		require.Equal(t, ed, dbEventDelivery)
 	}

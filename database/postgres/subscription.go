@@ -34,7 +34,12 @@ const (
 	filter_config_filter_raw_headers, filter_config_filter_raw_body,
 	delivery_mode
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
+        CASE 
+            WHEN $22 = '' OR $22 IS NULL THEN 'at_least_once'::convoy.delivery_mode 
+            ELSE $22::convoy.delivery_mode 
+        END
+    );
     `
 
 	updateSubscription = `
@@ -56,7 +61,10 @@ const (
 	function=$17,
 	filter_config_filter_raw_headers=$18,
 	filter_config_filter_raw_body=$19,
-	delivery_mode=$20,
+	delivery_mode=CASE 
+        WHEN $20 = '' OR $20 IS NULL THEN COALESCE(delivery_mode, 'at_least_once'::convoy.delivery_mode)
+        ELSE $20::convoy.delivery_mode 
+    END,
     updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
@@ -68,7 +76,7 @@ const (
 	s.project_id,
 	s.created_at,
 	s.updated_at, s.function,
-	s.delivery_mode,
+	COALESCE(s.delivery_mode, 'at_least_once'::convoy.delivery_mode) AS "delivery_mode",
 
 	COALESCE(s.endpoint_id,'') AS "endpoint_id",
 	COALESCE(s.device_id,'') AS "device_id",

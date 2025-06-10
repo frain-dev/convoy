@@ -254,7 +254,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 			// For at-most-once delivery, only retry on network failures
 			if subscription.DeliveryMode == datastore.AtMostOnceDeliveryMode {
-				if resp.StatusCode < 100 {
+				if retryableForAtMostOnceDeliveryMode(resp.StatusCode) {
 					// Network error - retry
 					eventDelivery.Status = datastore.RetryEventStatus
 					nextTime := time.Now().Add(delayDuration)
@@ -387,4 +387,8 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 
 		return nil
 	}
+}
+
+func retryableForAtMostOnceDeliveryMode(statusCode int) bool {
+	return statusCode < 100
 }
