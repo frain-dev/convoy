@@ -702,6 +702,8 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 	}
 
 	query = e.db.GetReadDB().Rebind(query)
+	// Replace single colons with double colons to handle PostgreSQL type casting
+	// This is needed because sqlx.Named() generates :param but PostgreSQL expects ::param for type casting
 	query = strings.ReplaceAll(query, ":", "::")
 
 	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)

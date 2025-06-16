@@ -3,6 +3,8 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -30,6 +32,10 @@ import (
 )
 
 func TestProcessEventDelivery(t *testing.T) {
+	badRequestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+	}))
+	defer badRequestServer.Close()
 	tt := []struct {
 		name          string
 		cfgPath       string
@@ -973,7 +979,7 @@ func TestProcessEventDelivery(t *testing.T) {
 			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&datastore.Endpoint{
-						Url:       "https://google.com?source=convoy",
+						Url:       badRequestServer.URL,
 						ProjectID: "123",
 						Secrets: []datastore.Secret{
 							{Value: "secret"},
@@ -1031,7 +1037,11 @@ func TestProcessEventDelivery(t *testing.T) {
 				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
 
 				m.EXPECT().
-					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(&datastore.EventDelivery{})).
+					DoAndReturn(func(ctx context.Context, projectID string, delivery *datastore.EventDelivery) error {
+						assert.Equal(t, "Endpoint returned status code 400", delivery.Description)
+						return nil
+					}).
 					Return(nil).Times(1)
 
 				mt.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
@@ -1039,16 +1049,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				l.EXPECT().UseForwardProxy().Times(1).Return(true)
 				l.EXPECT().IpRules().Times(3).Return(false)
 			},
-			nFn: func() func() {
-				httpmock.Activate()
-
-				httpmock.RegisterResponder("POST", "https://google.com",
-					httpmock.NewStringResponder(400, ``))
-
-				return func() {
-					httpmock.DeactivateAndReset()
-				}
-			},
+			nFn: nil,
 		},
 	}
 

@@ -1383,9 +1383,6 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLi
 	s.Router.ServeHTTP(w, req)
 
 	// Assert
-	if w.Code != http.StatusOK {
-		return
-	}
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert
