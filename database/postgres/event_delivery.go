@@ -155,6 +155,8 @@ const (
         %s
     GROUP BY
         "data.group_only", "data.index";
+	ORDER BY
+        "data.group_only"
     `
 
 	fetchEventDeliveries = `
