@@ -757,7 +757,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 				l.EXPECT().CircuitBreaking().Times(1).Return(false)
 				l.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
-				l.EXPECT().UseForwardProxy().Times(1).Return(true)
+				l.EXPECT().UseForwardProxy().Times(1).Return(false)
 				l.EXPECT().IpRules().Times(3).Return(true)
 			},
 			nFn: func() func() {
