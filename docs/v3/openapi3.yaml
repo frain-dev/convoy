@@ -756,7 +756,9 @@ components:
           description: Description is used to describe what the event type does
           type: string
         json_schema:
+          additionalProperties: true
           description: JSONSchema is the JSON structure of the event type
+          type: object
         name:
           description: Name is the event type name. E.g., invoice.created
           type: string
@@ -1283,6 +1285,8 @@ components:
       type: object
     models.PortalLinkResponse:
       properties:
+        auth_key:
+          type: string
         can_manage_endpoint:
           type: boolean
         created_at:
@@ -1545,7 +1549,9 @@ components:
           description: Description is used to describe what the event type does
           type: string
         json_schema:
+          additionalProperties: true
           description: JSONSchema is the JSON structure of the event type
+          type: object
       type: object
     models.UpdateFilterRequest:
       properties:
@@ -4397,6 +4403,72 @@ paths:
       summary: Retrieve a portal link
       tags:
       - Portal Links
+    post:
+      description: This endpoint retrieves a portal link by its id.
+      operationId: GeneratePortalToken
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: portal link id
+        in: path
+        name: portalLinkID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.PortalLinkResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Updates a portal link auth token
+      tags:
+      - Portal Links
     put:
       description: This endpoint updates a portal link
       operationId: UpdatePortalLink
@@ -4469,6 +4541,73 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update a portal link
+      tags:
+      - Portal Links
+  /v1/projects/{projectID}/portal-links/{portalLinkID}/refresh_token:
+    get:
+      description: This endpoint retrieves a portal link auth token
+      operationId: RefreshPortalLinkAuthToken
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: portal link id
+        in: path
+        name: portalLinkID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      type: string
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Get a portal link auth token
       tags:
       - Portal Links
   /v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:

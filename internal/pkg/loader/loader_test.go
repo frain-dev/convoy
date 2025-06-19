@@ -3,6 +3,7 @@ package loader
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -454,5 +455,148 @@ func TestSyncChanges(t *testing.T) {
 
 		// assert.
 		require.Equal(t, uniqueEventTypes, len(table.GetKeys()))
+	})
+
+	t.Run("should accurately reflect subscription updates in the table", func(t *testing.T) {
+		table := memorystore.NewTable()
+		ctx := context.Background()
+		projectID := ulid.Make().String()
+		endpointID := "test-endpoint"
+		batchSize := int64(5)
+
+		ctrl := gomock.NewController(t)
+		subRepo := mocks.NewMockSubscriptionRepository(ctrl)
+		projectRepo := mocks.NewMockProjectRepository(ctrl)
+		logger := log.NewLogger(os.Stdout)
+
+		baseTime := time.Now().Add(-10 * time.Minute)
+
+		// Create subscription UIDs that we can reference later
+		updateSub2UID := ulid.Make().String()
+
+		// First batch of subscriptions
+		subscriptions := []datastore.Subscription{
+			{
+				UID:        ulid.Make().String(),
+				Name:       "update-subscription-1",
+				ProjectID:  projectID,
+				EndpointID: endpointID,
+				FilterConfig: &datastore.FilterConfiguration{
+					EventTypes: []string{"batch.event.1"},
+				},
+				UpdatedAt: baseTime.Add(1 * time.Second),
+			},
+			{
+				UID:        updateSub2UID,
+				Name:       "update-subscription-2",
+				ProjectID:  projectID,
+				EndpointID: endpointID,
+				FilterConfig: &datastore.FilterConfiguration{
+					EventTypes: []string{"batch.event.2"},
+				},
+				UpdatedAt: baseTime.Add(2 * time.Second),
+			},
+			{
+				UID:        ulid.Make().String(),
+				Name:       "update-subscription-3",
+				ProjectID:  projectID,
+				EndpointID: endpointID,
+				FilterConfig: &datastore.FilterConfiguration{
+					EventTypes: []string{"batch.event.3"},
+				},
+				UpdatedAt: baseTime.Add(5 * time.Second),
+			},
+		}
+
+		projects := []*datastore.Project{
+			{
+				UID:  projectID,
+				Name: "test-project",
+			},
+		}
+
+		// Setup initial load
+		subRepo.EXPECT().
+			LoadAllSubscriptionConfig(ctx, []string{projectID}, batchSize).
+			Times(1).
+			Return(subscriptions, nil)
+
+		projectRepo.EXPECT().
+			LoadProjects(ctx, gomock.Any()).
+			Times(3). // Initial + 2 sync cycles (each does 3 calls: projects, updates, deletes)
+			Return(projects, nil)
+
+		loader := NewSubscriptionLoader(subRepo, projectRepo, logger, batchSize)
+
+		// Perform initial load
+		err := loader.SyncChanges(ctx, table)
+		require.NoError(t, err)
+		require.Equal(t, 3, len(table.GetKeys())) // Only initial subscription
+
+		// Retrieve the second item in the subscriptions array and update the updated time to baseTime.Add(4 * time.Second)
+		updatedSubscriptions := append(make([]datastore.Subscription, 0, len(subscriptions)), subscriptions...)
+		updatedSubscriptions[1].FilterConfig = &datastore.FilterConfiguration{
+			EventTypes: []string{"updated.batch.event.2"},
+		}
+		updatedSubscriptions[1].UpdatedAt = baseTime.Add(4 * time.Second)
+
+		// First sync after initial load - returns empty because the last updated time is after the second subscription updated time.
+		subRepo.EXPECT().
+			FetchUpdatedSubscriptions(ctx, []string{projectID}, baseTime.Add(5*time.Second), batchSize).
+			Times(1).
+			Return([]datastore.Subscription{}, nil)
+
+		subRepo.EXPECT().
+			FetchDeletedSubscriptions(ctx, []string{projectID}, time.Time{}, batchSize).
+			Times(1).
+			Return([]datastore.Subscription{}, nil)
+
+		// First sync - processes the batch
+		err = loader.SyncChanges(ctx, table)
+		require.NoError(t, err)
+		require.Equal(t, 3, len(table.GetKeys())) // Initial + 3 batch subscriptions
+
+		// Retrieve all items from the table and assert that the filter event types match each subscription
+		allKeys := table.GetKeys()
+		for _, key := range allKeys {
+			row := table.Get(key)
+			if row == nil {
+				continue
+			}
+
+			var dbSubs []datastore.Subscription
+			if row.Value() != nil {
+				var ok bool
+				dbSubs, ok = row.Value().([]datastore.Subscription)
+				if !ok {
+					t.Errorf("malformed data in subscriptions memory store with key: %s", key.String())
+					continue
+				}
+			}
+
+			for _, sub := range dbSubs {
+				// Find the equivalent subscription in the predefined subscriptions array
+				var equivalentSub *datastore.Subscription
+				for _, predefinedSub := range updatedSubscriptions {
+					if predefinedSub.UID == sub.UID {
+						equivalentSub = &predefinedSub
+						break
+					}
+				}
+
+				if equivalentSub == nil {
+					t.Errorf("no equivalent subscription found for UID: %s", sub.UID)
+					continue
+				}
+
+				// Verify the event types match
+				for _, eventType := range sub.FilterConfig.EventTypes {
+					if eventType != strings.Join(equivalentSub.FilterConfig.EventTypes, "") {
+						t.Errorf("subscription event type does not match the predefined event type for UID: %s", sub.UID)
+					}
+				}
+			}
+		}
+
 	})
 }

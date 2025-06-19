@@ -2,6 +2,7 @@ package loader
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -59,6 +60,8 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		s.log.Infof("syncing subscriptions completed in %fs", time.Since(startTime).Seconds())
 		return nil
 	}
+
+	fmt.Println("table keys", table.GetKeys())
 
 	// fetch subscriptions.
 	updatedSubs, err := s.fetchUpdatedSubscriptions(ctx)
