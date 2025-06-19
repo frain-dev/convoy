@@ -200,12 +200,6 @@ const (
             AND project_id IN (?)
     ) AS distinct_ids`
 
-	newCountUpdatedSubscriptions = `
-	SELECT COUNT(*)
-	FROM convoy.subscriptions
-	WHERE deleted_at IS NULL
-	AND project_id IN (?)`
-
 	fetchDeletedSubscriptions = `
     select  id,deleted_at, project_id,
     filter_config_event_types AS "filter_config.event_types"
@@ -357,9 +351,9 @@ func NewSubscriptionRepo(db database.Database) datastore.SubscriptionRepository 
 //	return s.fetchChangedSubscriptionConfig(ctx, countUpdatedSubscriptions, fetchUpdatedSubscriptions, projectIDs, t, pageSize)
 //}
 
-func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	return s.fetchChangedSubscriptionConfig(ctx, countDeletedSubscriptions, fetchDeletedSubscriptions, projectIDs, t, pageSize)
-}
+//func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+//	return s.fetchChangedSubscriptionConfig(ctx, countDeletedSubscriptions, fetchDeletedSubscriptions, projectIDs, t, pageSize)
+//}
 
 func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]datastore.Subscription, error) {
 	if len(projectIDs) == 0 {
@@ -452,68 +446,72 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 	return _subs, nil
 }
 
-func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, countQuery, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	if len(projectIDs) == 0 {
-		return []datastore.Subscription{}, nil
-	}
+//func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, countQuery, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+//	if len(projectIDs) == 0 {
+//		return []datastore.Subscription{}, nil
+//	}
+//
+//	q, args, err := sqlx.In(countQuery, t, projectIDs)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	var subCount int64
+//	err = s.db.GetReadDB().GetContext(ctx, &subCount, s.db.GetReadDB().Rebind(q), args...)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	if subCount == 0 {
+//		return []datastore.Subscription{}, nil
+//	}
+//
+//	subs := make([]datastore.Subscription, subCount)
+//	cursor := "0"
+//	var rows *sqlx.Rows // reuse the mem
+//	counter := 0
+//	numBatches := int64(math.Ceil(float64(subCount) / float64(pageSize)))
+//
+//	for i := int64(0); i < numBatches; i++ {
+//		q, args, err = sqlx.In(query, t, cursor, projectIDs, pageSize)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		rows, err = s.db.GetReadDB().QueryxContext(ctx, s.db.GetReadDB().Rebind(q), args...)
+//		if err != nil {
+//			return nil, err
+//		}
+//
+//		// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
+//		func() {
+//			defer closeWithError(rows)
+//			for rows.Next() {
+//				sub := datastore.Subscription{}
+//				if err = rows.StructScan(&sub); err != nil {
+//					return
+//				}
+//
+//				nullifyEmptyConfig(&sub)
+//				subs[counter] = sub
+//				counter++
+//			}
+//
+//			if counter > 0 {
+//				cursor = subs[counter-1].UID
+//			}
+//		}()
+//
+//		if err != nil {
+//			return nil, err
+//		}
+//	}
+//
+//	return subs[:counter], nil
+//}
 
-	q, args, err := sqlx.In(countQuery, t, projectIDs)
-	if err != nil {
-		return nil, err
-	}
-
-	var subCount int64
-	err = s.db.GetReadDB().GetContext(ctx, &subCount, s.db.GetReadDB().Rebind(q), args...)
-	if err != nil {
-		return nil, err
-	}
-
-	if subCount == 0 {
-		return []datastore.Subscription{}, nil
-	}
-
-	subs := make([]datastore.Subscription, subCount)
-	cursor := "0"
-	var rows *sqlx.Rows // reuse the mem
-	counter := 0
-	numBatches := int64(math.Ceil(float64(subCount) / float64(pageSize)))
-
-	for i := int64(0); i < numBatches; i++ {
-		q, args, err = sqlx.In(query, t, cursor, projectIDs, pageSize)
-		if err != nil {
-			return nil, err
-		}
-
-		rows, err = s.db.GetReadDB().QueryxContext(ctx, s.db.GetReadDB().Rebind(q), args...)
-		if err != nil {
-			return nil, err
-		}
-
-		// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
-		func() {
-			defer closeWithError(rows)
-			for rows.Next() {
-				sub := datastore.Subscription{}
-				if err = rows.StructScan(&sub); err != nil {
-					return
-				}
-
-				nullifyEmptyConfig(&sub)
-				subs[counter] = sub
-				counter++
-			}
-
-			if counter > 0 {
-				cursor = subs[counter-1].UID
-			}
-		}()
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return subs[:counter], nil
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+	return []datastore.Subscription{}, nil
 }
 
 func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate) ([]datastore.Subscription, error) {
@@ -565,6 +563,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 		return nil, err
 	}
 
+	fmt.Println("updated subs", subs)
 	return subs, nil
 }
 

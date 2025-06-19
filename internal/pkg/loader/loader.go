@@ -3,6 +3,7 @@ package loader
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/datastore"
@@ -21,7 +22,6 @@ type SubscriptionLoader struct {
 	loaded              bool
 	batchSize           int64
 	lastUpdatedAt       time.Time
-	lastUpdatedAtMap    map[string]time.Time
 	subscriptionUpdates []datastore.SubscriptionUpdate
 	lastDelete          time.Time
 	log                 log.StdLogger
@@ -34,7 +34,6 @@ func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo
 
 	return &SubscriptionLoader{
 		log:                 log,
-		lastUpdatedAtMap:    make(map[string]time.Time),
 		subscriptionUpdates: make([]datastore.SubscriptionUpdate, 0),
 		batchSize:           batchSize,
 		subRepo:             subRepo,
@@ -67,7 +66,15 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 
 	for _, key := range table.GetKeys() {
 		value := table.Get(key)
-		fmt.Printf("Key: %s, Value: %v\n", key, value)
+		subs, ok := value.Value().([]datastore.Subscription)
+		if !ok {
+			continue
+		}
+		subIDs := make([]string, len(subs))
+		for i, sub := range subs {
+			subIDs[i] = sub.UID
+		}
+		fmt.Printf("Key: %s, Subscription IDs: %s\n", key, strings.Join(subIDs, ", "))
 	}
 
 	// fetch subscriptions.
@@ -78,10 +85,12 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	}
 
 	for _, sub := range updatedSubs {
-		s.subscriptionUpdates = append(s.subscriptionUpdates, datastore.SubscriptionUpdate{
-			UID:       sub.UID,
-			UpdatedAt: sub.UpdatedAt,
-		})
+		for i, update := range s.subscriptionUpdates {
+			if update.UID == sub.UID {
+				s.subscriptionUpdates[i].UpdatedAt = sub.UpdatedAt
+				break
+			}
+		}
 		s.addSubscriptionToTable(sub, table)
 	}
 
@@ -113,6 +122,13 @@ func (s *SubscriptionLoader) addSubscriptionToTable(sub datastore.Subscription, 
 		return
 	}
 
+	// If this is an update (not initial load), first remove the subscription from all event types
+	// for this project to handle cases where event types have changed
+	if s.loaded {
+		s.removeSubscriptionFromAllEventTypes(sub, table)
+	}
+
+	// Now add the subscription to its current event types
 	for _, ev := range eventTypes {
 		key := memorystore.NewKey(sub.ProjectID, ev)
 		row := table.Get(key)
@@ -131,19 +147,65 @@ func (s *SubscriptionLoader) addSubscriptionToTable(sub datastore.Subscription, 
 			values = make([]datastore.Subscription, 0)
 		}
 
-		if s.loaded {
-			for id, v := range values {
-				if v.UID == sub.UID {
-					b := values[:id]
-					a := values[id+1:]
-					values = append(b, a...)
-					break
-				}
+		// Remove the subscription if it already exists (shouldn't happen after the above removal, but just in case)
+		for id, v := range values {
+			if v.UID == sub.UID {
+				b := values[:id]
+				a := values[id+1:]
+				values = append(b, a...)
+				break
 			}
 		}
 
 		values = append(values, sub)
 		table.Upsert(key, values)
+	}
+}
+
+// removeSubscriptionFromAllEventTypes removes a subscription from all event types in the table for a given project
+func (s *SubscriptionLoader) removeSubscriptionFromAllEventTypes(sub datastore.Subscription, table *memorystore.Table) {
+	// Get all keys in the table for this project
+	keys := table.GetKeys()
+
+	for _, key := range keys {
+		// Only process keys for this project
+		if !key.HasPrefix(sub.ProjectID) {
+			continue
+		}
+
+		row := table.Get(key)
+		if row == nil {
+			continue
+		}
+
+		var values []datastore.Subscription
+		var ok bool
+		values, ok = row.Value().([]datastore.Subscription)
+		if !ok {
+			log.Errorf("malformed data in subscriptions memory store with key: %s", key)
+			continue
+		}
+
+		// Remove the subscription if it exists in this event type
+		found := false
+		for id, v := range values {
+			if v.UID == sub.UID {
+				b := values[:id]
+				a := values[id+1:]
+				values = append(b, a...)
+				found = true
+				break
+			}
+		}
+
+		// Update or delete the key based on whether any subscriptions remain
+		if found {
+			if len(values) == 0 {
+				table.Delete(key)
+			} else {
+				table.Upsert(key, values)
+			}
+		}
 	}
 }
 
