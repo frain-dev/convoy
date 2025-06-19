@@ -171,20 +171,38 @@ const (
 	fetchUpdatedSubscriptions = `
 	WITH input_map(id, last_updated_at) AS (
 		VALUES %s
+	),
+	updated_existing AS (
+		SELECT s.name, s.id, s.type, s.project_id, s.endpoint_id, s.function, s.updated_at,
+		s.filter_config_event_types AS "filter_config.event_types",
+		s.filter_config_filter_headers AS "filter_config.filter.headers",
+		s.filter_config_filter_body AS "filter_config.filter.body",
+		s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
+		s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+		s.filter_config_filter_raw_body AS "filter_config.filter.raw_body"
+		FROM convoy.subscriptions s
+		JOIN input_map m ON s.id = m.id
+		WHERE s.updated_at > m.last_updated_at
+		AND s.project_id IN (:project_ids)
+		AND s.deleted_at IS NULL
+	),
+	new_subscriptions AS (
+		SELECT s.name, s.id, s.type, s.project_id, s.endpoint_id, s.function, s.updated_at,
+		s.filter_config_event_types AS "filter_config.event_types",
+		s.filter_config_filter_headers AS "filter_config.filter.headers",
+		s.filter_config_filter_body AS "filter_config.filter.body",
+		s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
+		s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+		s.filter_config_filter_raw_body AS "filter_config.filter.raw_body"
+		FROM convoy.subscriptions s
+		WHERE s.id NOT IN (SELECT id FROM input_map)
+		AND s.project_id IN (:project_ids)
+		AND s.deleted_at IS NULL
 	)
-	SELECT s.name, s.id, s.type, s.project_id, s.endpoint_id, s.function, s.updated_at,
-	s.filter_config_event_types AS "filter_config.event_types",
-	s.filter_config_filter_headers AS "filter_config.filter.headers",
-	s.filter_config_filter_body AS "filter_config.filter.body",
-	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
-	s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
-	s.filter_config_filter_raw_body AS "filter_config.filter.raw_body"
-	FROM convoy.subscriptions s
-	JOIN input_map m ON s.id = m.id
-	WHERE s.updated_at > m.last_updated_at
-	AND s.project_id IN (:project_ids)
-	AND s.deleted_at IS NULL
-	ORDER BY s.id LIMIT :limit
+	SELECT * FROM updated_existing
+	UNION ALL
+	SELECT * FROM new_subscriptions
+	ORDER BY id LIMIT :limit
 	`
 
 	//countDeletedSubscriptions = `

@@ -83,11 +83,19 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	}
 
 	for _, sub := range updatedSubs {
+		exists := false
 		for i, update := range s.subscriptionUpdates {
 			if update.UID == sub.UID {
 				s.subscriptionUpdates[i].UpdatedAt = sub.UpdatedAt
+				exists = true
 				break
 			}
+		}
+		if !exists {
+			s.subscriptionUpdates = append(s.subscriptionUpdates, datastore.SubscriptionUpdate{
+				UID:       sub.UID,
+				UpdatedAt: sub.UpdatedAt,
+			})
 		}
 		s.addSubscriptionToTable(sub, table)
 	}
