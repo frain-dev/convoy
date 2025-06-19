@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"strings"
-	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -182,13 +181,16 @@ const (
 	s.filter_config_filter_raw_body AS "filter_config.filter.raw_body"
 	FROM convoy.subscriptions s
 	JOIN input_map m ON s.id = m.id
-	WHERE s.updated_at > m.last_updated_at;
+	WHERE s.updated_at > m.last_updated_at
+	AND s.project_id IN (:project_ids)
+	AND s.deleted_at IS NULL
+	ORDER BY s.id LIMIT :limit
 	`
 
-	countDeletedSubscriptions = `
-    select COUNT(id) from convoy.subscriptions
-    where (deleted_at IS NOT NULL AND deleted_at > ?)
-    AND project_id IN (?)`
+	//countDeletedSubscriptions = `
+	//select COUNT(id) from convoy.subscriptions
+	//where (deleted_at IS NOT NULL AND deleted_at > ?)
+	//AND project_id IN (?)`
 
 	countUpdatedSubscriptions = `
     SELECT COUNT(*)
@@ -201,11 +203,11 @@ const (
     ) AS distinct_ids`
 
 	fetchDeletedSubscriptions = `
-    select  id,deleted_at, project_id,
+    select id, deleted_at, project_id,
     filter_config_event_types AS "filter_config.event_types"
     from convoy.subscriptions
-    where (deleted_at IS NOT NULL AND deleted_at > ?)
-    AND id > ?
+    where (deleted_at IS NOT NULL)
+    AND id IN (?)
     AND project_id IN (?)
     ORDER BY id LIMIT ?`
 
@@ -510,14 +512,47 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 //	return subs[:counter], nil
 //}
 
-func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	return []datastore.Subscription{}, nil
-}
-
-func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
 	if len(projectIDs) == 0 {
 		return []datastore.Subscription{}, nil
 	}
+
+	ids := make([]string, 0)
+	for _, sub := range subscriptionUpdates {
+		ids = append(ids, sub.UID)
+	}
+
+	query, args, err := sqlx.In(fetchDeletedSubscriptions, ids, projectIDs, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := s.db.GetReadDB().QueryxContext(ctx, s.db.GetReadDB().Rebind(query), args...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer closeWithError(rows)
+	subs := make([]datastore.Subscription, 0)
+	for rows.Next() {
+		sub := datastore.Subscription{}
+		if err = rows.StructScan(&sub); err != nil {
+			return nil, err
+		}
+
+		nullifyEmptyConfig(&sub)
+		subs = append(subs, sub)
+	}
+
+	fmt.Println("deleted subs", subs)
+	return subs, nil
+}
+
+func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 {
+		return []datastore.Subscription{}, nil
+	}
+
 	valuesSQL := ""
 	for i, _ := range subscriptionUpdates {
 		valuesSQL += fmt.Sprintf("(:id%d, CAST(:last_updated_at%d AS timestamptz))", i, i)
@@ -535,13 +570,23 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 		args[fmt.Sprintf("last_updated_at%d", i)] = e.UpdatedAt
 	}
 
+	args["project_ids"] = projectIDs
+	args["limit"] = pageSize
+
 	// Use sqlx.Named to bind the named parameters
 	query, finalArgs, err := sqlx.Named(query, args)
 	if err != nil {
-		log.Fatalf("named error: %v", err)
+		return nil, err
 	}
 
-	rows, err := s.db.GetReadDB().QueryxContext(ctx, s.db.GetReadDB().Rebind(query), finalArgs...)
+	query, finalArgs, err = sqlx.In(query, finalArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	query = s.db.GetReadDB().Rebind(query)
+
+	rows, err := s.db.GetReadDB().QueryxContext(ctx, query, finalArgs...)
 	if err != nil {
 		return nil, err
 	}

@@ -21,9 +21,7 @@ type SubscriptionLoader struct {
 
 	loaded              bool
 	batchSize           int64
-	lastUpdatedAt       time.Time
 	subscriptionUpdates []datastore.SubscriptionUpdate
-	lastDelete          time.Time
 	log                 log.StdLogger
 }
 
@@ -102,11 +100,13 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	}
 
 	for _, sub := range deletedSubs {
-		if sub.DeletedAt.Time.After(s.lastDelete) {
-			s.lastDelete = sub.DeletedAt.Time
-		}
-
 		s.deleteSubscriptionFromTable(sub, table)
+		for i, update := range s.subscriptionUpdates {
+			if update.UID == sub.UID {
+				s.subscriptionUpdates = append(s.subscriptionUpdates[:i], s.subscriptionUpdates[i+1:]...)
+				break
+			}
+		}
 	}
 
 	return nil
@@ -210,53 +210,53 @@ func (s *SubscriptionLoader) removeSubscriptionFromAllEventTypes(sub datastore.S
 }
 
 func (s *SubscriptionLoader) deleteSubscriptionFromTable(sub datastore.Subscription, table *memorystore.Table) {
-	if sub.FilterConfig == nil {
-		return
-	}
+	// When deleting a subscription, we need to remove it from ALL event types
+	// in the table for this project, not just the ones specified in FilterConfig.EventTypes
+	// This is because the subscription might have been associated with other event types
+	// that are no longer reflected in the current FilterConfig
 
-	eventTypes := sub.FilterConfig.EventTypes
-	if len(eventTypes) == 0 {
-		return
-	}
+	// Get all keys in the table for this project
+	keys := table.GetKeys()
 
-	for _, ev := range eventTypes {
-		key := memorystore.NewKey(sub.ProjectID, ev)
+	for _, key := range keys {
+		// Only process keys for this project
+		if !key.HasPrefix(sub.ProjectID) {
+			continue
+		}
+
 		row := table.Get(key)
-
 		if row == nil {
 			continue
 		}
 
 		var values []datastore.Subscription
-		if row.Value() != nil {
-			var ok bool
-			values, ok = row.Value().([]datastore.Subscription)
-			if !ok {
-				log.Errorf("malformed data in subscriptions memory store with event type: %s", ev)
-				continue
-			}
+		var ok bool
+		values, ok = row.Value().([]datastore.Subscription)
+		if !ok {
+			log.Errorf("malformed data in subscriptions memory store with key: %s", key)
+			continue
 		}
 
-		if len(values) == 1 {
-			// set slice to nil, range below will skip and the key will be deleted from the table
-			values = nil
-		}
-
+		// Remove the subscription if it exists in this event type
+		found := false
 		for id, v := range values {
 			if v.UID == sub.UID {
 				b := values[:id]
 				a := values[id+1:]
 				values = append(b, a...)
+				found = true
 				break
 			}
 		}
 
-		if len(values) == 0 {
-			table.Delete(key)
-			continue
+		// Update or delete the key based on whether any subscriptions remain
+		if found {
+			if len(values) == 0 {
+				table.Delete(key)
+			} else {
+				table.Upsert(key, values)
+			}
 		}
-
-		table.Upsert(key, values)
 	}
 }
 
@@ -299,7 +299,7 @@ func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]d
 		ids[i] = projects[i].UID
 	}
 
-	subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, ids, s.subscriptionUpdates)
+	subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, ids, s.subscriptionUpdates, s.batchSize)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to load updated subscriptions of all projects")
 		return nil, err
@@ -323,7 +323,7 @@ func (s *SubscriptionLoader) fetchDeletedSubscriptions(ctx context.Context) ([]d
 		ids[i] = projects[i].UID
 	}
 
-	subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, ids, s.lastDelete, s.batchSize)
+	subscriptions, err := s.subRepo.FetchDeletedSubscriptions(ctx, ids, s.subscriptionUpdates, s.batchSize)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to load deleted subscriptions of all projects")
 		return nil, err
