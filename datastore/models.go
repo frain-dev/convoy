@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/bcrypt"
 	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 
@@ -27,6 +28,11 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
 )
+
+type SubscriptionUpdate struct {
+	UID       string
+	UpdatedAt time.Time
+}
 
 type Pageable struct {
 	PerPage    int           `json:"per_page"`

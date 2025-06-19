@@ -2,6 +2,7 @@ package ingest
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -34,8 +35,6 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	if err != nil {
 		return err
 	}
-
-	go memorystore.DefaultStore.Sync(ctx, interval)
 
 	instCfg, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {

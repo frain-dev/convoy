@@ -18,11 +18,13 @@ type SubscriptionLoader struct {
 	subRepo     datastore.SubscriptionRepository
 	projectRepo datastore.ProjectRepository
 
-	loaded        bool
-	batchSize     int64
-	lastUpdatedAt time.Time
-	lastDelete    time.Time
-	log           log.StdLogger
+	loaded              bool
+	batchSize           int64
+	lastUpdatedAt       time.Time
+	lastUpdatedAtMap    map[string]time.Time
+	subscriptionUpdates []datastore.SubscriptionUpdate
+	lastDelete          time.Time
+	log                 log.StdLogger
 }
 
 func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo datastore.ProjectRepository, log log.StdLogger, batchSize int64) *SubscriptionLoader {
@@ -31,10 +33,12 @@ func NewSubscriptionLoader(subRepo datastore.SubscriptionRepository, projectRepo
 	}
 
 	return &SubscriptionLoader{
-		log:         log,
-		batchSize:   batchSize,
-		subRepo:     subRepo,
-		projectRepo: projectRepo,
+		log:                 log,
+		lastUpdatedAtMap:    make(map[string]time.Time),
+		subscriptionUpdates: make([]datastore.SubscriptionUpdate, 0),
+		batchSize:           batchSize,
+		subRepo:             subRepo,
+		projectRepo:         projectRepo,
 	}
 }
 
@@ -49,10 +53,10 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		}
 
 		for _, sub := range subscriptions {
-			if sub.UpdatedAt.After(s.lastUpdatedAt) {
-				s.lastUpdatedAt = sub.UpdatedAt
-			}
-
+			s.subscriptionUpdates = append(s.subscriptionUpdates, datastore.SubscriptionUpdate{
+				UID:       sub.UID,
+				UpdatedAt: sub.UpdatedAt,
+			})
 			s.addSubscriptionToTable(sub, table)
 		}
 
@@ -61,7 +65,10 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 		return nil
 	}
 
-	fmt.Println("table keys", table.GetKeys())
+	for _, key := range table.GetKeys() {
+		value := table.Get(key)
+		fmt.Printf("Key: %s, Value: %v\n", key, value)
+	}
 
 	// fetch subscriptions.
 	updatedSubs, err := s.fetchUpdatedSubscriptions(ctx)
@@ -71,10 +78,10 @@ func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore
 	}
 
 	for _, sub := range updatedSubs {
-		if sub.UpdatedAt.After(s.lastUpdatedAt) {
-			s.lastUpdatedAt = sub.UpdatedAt
-		}
-
+		s.subscriptionUpdates = append(s.subscriptionUpdates, datastore.SubscriptionUpdate{
+			UID:       sub.UID,
+			UpdatedAt: sub.UpdatedAt,
+		})
 		s.addSubscriptionToTable(sub, table)
 	}
 
@@ -230,7 +237,7 @@ func (s *SubscriptionLoader) fetchUpdatedSubscriptions(ctx context.Context) ([]d
 		ids[i] = projects[i].UID
 	}
 
-	subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, ids, s.lastUpdatedAt, s.batchSize)
+	subscriptions, err := s.subRepo.FetchUpdatedSubscriptions(ctx, ids, s.subscriptionUpdates)
 	if err != nil {
 		s.log.WithError(err).Errorf("failed to load updated subscriptions of all projects")
 		return nil, err
