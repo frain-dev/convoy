@@ -87,6 +87,7 @@ func (s *SubscriptionLoader) processUpdatedSubscriptions(ctx context.Context, ta
 	}
 
 	for _, sub := range updatedSubs {
+		s.tableManager.RemoveSubscriptionFromAllEventTypes(sub, table)
 		s.subscriptionCollection.AddOrUpdate(sub)
 		s.tableManager.AddSubscription(sub, table)
 	}
@@ -104,6 +105,7 @@ func (s *SubscriptionLoader) processDeletedSubscriptions(ctx context.Context, ta
 	for _, sub := range deletedSubs {
 		s.tableManager.RemoveSubscriptionFromAllEventTypes(sub, table)
 		s.subscriptionCollection.Remove(sub.UID)
+		s.tableManager.RemoveSubscription(sub, table)
 	}
 
 	return nil

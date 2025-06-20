@@ -524,7 +524,6 @@ func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projec
 		subs = append(subs, sub)
 	}
 
-	fmt.Println("deleted subs", subs)
 	return subs, nil
 }
 
@@ -588,7 +587,6 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 		return nil, err
 	}
 
-	fmt.Println("updated subs", subs)
 	return subs, nil
 }
 
