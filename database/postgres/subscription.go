@@ -153,21 +153,6 @@ const (
     AND deleted_at is null
     ORDER BY id LIMIT ?`
 
-	//fetchUpdatedSubscriptions = `
-	//select name, id, type, project_id, endpoint_id, function, updated_at,
-	//filter_config_event_types AS "filter_config.event_types",
-	//filter_config_filter_headers AS "filter_config.filter.headers",
-	//filter_config_filter_body AS "filter_config.filter.body",
-	//filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
-	//filter_config_filter_raw_body AS "filter_config.filter.raw_body",
-	//filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
-	//from convoy.subscriptions
-	//where updated_at > ?
-	//AND id > ?
-	//AND project_id IN (?)
-	//AND deleted_at is null
-	//ORDER BY id LIMIT ?`
-
 	fetchUpdatedSubscriptions = `
 	WITH input_map(id, last_updated_at) AS (
 		VALUES %s
@@ -204,21 +189,6 @@ const (
 	SELECT * FROM new_subscriptions
 	ORDER BY id LIMIT :limit
 	`
-
-	//countDeletedSubscriptions = `
-	//select COUNT(id) from convoy.subscriptions
-	//where (deleted_at IS NOT NULL AND deleted_at > ?)
-	//AND project_id IN (?)`
-
-	countUpdatedSubscriptions = `
-    SELECT COUNT(*)
-    FROM (
-        SELECT DISTINCT id
-        FROM convoy.subscriptions
-        WHERE deleted_at IS NULL
-            AND updated_at > ?
-            AND project_id IN (?)
-    ) AS distinct_ids`
 
 	fetchDeletedSubscriptions = `
     select id, deleted_at, project_id,
@@ -366,14 +336,6 @@ func NewSubscriptionRepo(db database.Database) datastore.SubscriptionRepository 
 	}
 	return &subscriptionRepo{db: db, km: km}
 }
-
-//func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-//	return s.fetchChangedSubscriptionConfig(ctx, countUpdatedSubscriptions, fetchUpdatedSubscriptions, projectIDs, t, pageSize)
-//}
-
-//func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-//	return s.fetchChangedSubscriptionConfig(ctx, countDeletedSubscriptions, fetchDeletedSubscriptions, projectIDs, t, pageSize)
-//}
 
 func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]datastore.Subscription, error) {
 	if len(projectIDs) == 0 {
