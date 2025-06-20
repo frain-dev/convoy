@@ -533,7 +533,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 	}
 
 	valuesSQL := ""
-	for i, _ := range subscriptionUpdates {
+	for i := range subscriptionUpdates {
 		valuesSQL += fmt.Sprintf("(:id%d, CAST(:last_updated_at%d AS timestamptz))", i, i)
 		if i < len(subscriptionUpdates)-1 {
 			valuesSQL += ", "
