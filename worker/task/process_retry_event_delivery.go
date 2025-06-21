@@ -238,14 +238,33 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 			requestLogger.Errorf("%s", eventDelivery.UID)
 			done = false
 
-			eventDelivery.Status = datastore.RetryEventStatus
+			// For at-most-once delivery, only retry on network failures
+			if eventDelivery.DeliveryMode == datastore.AtMostOnceDeliveryMode {
+				if retryableForAtMostOnceDeliveryMode(resp.StatusCode) {
+					// Network error - retry
+					eventDelivery.Status = datastore.RetryEventStatus
+					nextTime := time.Now().Add(delayDuration)
+					eventDelivery.Metadata.NextSendTime = nextTime
+					attempts := eventDelivery.Metadata.NumTrials + 1
 
-			nextTime := time.Now().Add(delayDuration)
-			eventDelivery.Metadata.NextSendTime = nextTime
-			attempts := eventDelivery.Metadata.NumTrials + 1
+					log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
+						nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+				} else {
+					// Got a response (even if it's an error status code) - mark as failed
+					eventDelivery.Status = datastore.FailureEventStatus
+					eventDelivery.Description = fmt.Sprintf("Endpoint returned status code %d", statusCode)
+					done = true
+				}
+			} else {
+				// At-least-once delivery - retry on any failure
+				eventDelivery.Status = datastore.RetryEventStatus
+				nextTime := time.Now().Add(delayDuration)
+				eventDelivery.Metadata.NextSendTime = nextTime
+				attempts := eventDelivery.Metadata.NumTrials + 1
 
-			log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
-				nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+				log.FromContext(ctx).Errorf("%s next retry time is %s (strategy = %s, delay = %d, attempts = %d/%d)\n", eventDelivery.UID,
+					nextTime.Format(time.ANSIC), eventDelivery.Metadata.Strategy, eventDelivery.Metadata.IntervalSeconds, attempts, eventDelivery.Metadata.RetryLimit)
+			}
 		}
 
 		// Update attributes with response info

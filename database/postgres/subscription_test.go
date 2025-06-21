@@ -542,6 +542,75 @@ func Test_FindCLISubscriptions(t *testing.T) {
 	require.Equal(t, 8, len(dbSubs))
 }
 
+func Test_DeliveryModes(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	subRepo := NewSubscriptionRepo(db)
+	project := seedProject(t, db)
+	source := seedSource(t, db)
+	endpoint := seedEndpoint(t, db)
+
+	testCases := []struct {
+		name                string
+		deliveryMode        datastore.DeliveryMode
+		expectedInitial     datastore.DeliveryMode
+		updateTo            datastore.DeliveryMode
+		expectedAfterUpdate datastore.DeliveryMode
+	}{
+		{
+			name:                "At Least Once",
+			deliveryMode:        datastore.AtLeastOnceDeliveryMode,
+			expectedInitial:     datastore.AtLeastOnceDeliveryMode,
+			updateTo:            datastore.AtMostOnceDeliveryMode,
+			expectedAfterUpdate: datastore.AtMostOnceDeliveryMode,
+		},
+		{
+			name:                "At Most Once",
+			deliveryMode:        datastore.AtMostOnceDeliveryMode,
+			expectedInitial:     datastore.AtMostOnceDeliveryMode,
+			updateTo:            datastore.AtLeastOnceDeliveryMode,
+			expectedAfterUpdate: datastore.AtLeastOnceDeliveryMode,
+		},
+		{
+			name:                "Empty String",
+			deliveryMode:        "",
+			expectedInitial:     datastore.AtLeastOnceDeliveryMode, // default value
+			updateTo:            datastore.AtMostOnceDeliveryMode,
+			expectedAfterUpdate: datastore.AtMostOnceDeliveryMode,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a subscription with the test delivery mode
+			sub := generateSubscription(project, source, endpoint, &datastore.Device{})
+			sub.DeliveryMode = tc.deliveryMode
+
+			// Create the subscription
+			err := subRepo.CreateSubscription(context.Background(), project.UID, sub)
+			require.NoError(t, err)
+
+			// Retrieve the subscription
+			dbSub, err := subRepo.FindSubscriptionByID(context.Background(), project.UID, sub.UID)
+			require.NoError(t, err)
+
+			// Verify the initial delivery mode
+			require.Equal(t, tc.expectedInitial, dbSub.DeliveryMode)
+
+			// Update the subscription with a different delivery mode
+			sub.DeliveryMode = tc.updateTo
+			err = subRepo.UpdateSubscription(context.Background(), project.UID, sub)
+			require.NoError(t, err)
+
+			// Verify the update
+			dbSub, err = subRepo.FindSubscriptionByID(context.Background(), project.UID, sub.UID)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedAfterUpdate, dbSub.DeliveryMode)
+		})
+	}
+}
+
 func seedDevice(t *testing.T, db database.Database) *datastore.Device {
 	project := seedProject(t, db)
 	endpoint := seedEndpoint(t, db)

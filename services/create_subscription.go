@@ -63,18 +63,26 @@ func (s *CreateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 	}
 
 	subscription := &datastore.Subscription{
-		UID:        ulid.Make().String(),
-		ProjectID:  s.Project.UID,
-		Name:       s.NewSubscription.Name,
-		Type:       datastore.SubscriptionTypeAPI,
-		SourceID:   s.NewSubscription.SourceID,
-		EndpointID: s.NewSubscription.EndpointID,
+		UID:          ulid.Make().String(),
+		ProjectID:    s.Project.UID,
+		Name:         s.NewSubscription.Name,
+		Type:         datastore.SubscriptionTypeAPI,
+		SourceID:     s.NewSubscription.SourceID,
+		EndpointID:   s.NewSubscription.EndpointID,
+		DeliveryMode: s.NewSubscription.DeliveryMode,
 
 		AlertConfig:     s.NewSubscription.AlertConfig.Transform(),
 		RateLimitConfig: s.NewSubscription.RateLimitConfig.Transform(),
 
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
+	}
+
+	// Set default delivery mode if empty
+	if subscription.DeliveryMode == "" {
+		subscription.DeliveryMode = datastore.AtLeastOnceDeliveryMode
+	} else if subscription.DeliveryMode != datastore.AtLeastOnceDeliveryMode && subscription.DeliveryMode != datastore.AtMostOnceDeliveryMode {
+		return nil, &ServiceError{ErrMsg: "invalid delivery mode value, must be either 'at_least_once' or 'at_most_once'"}
 	}
 
 	if s.Licenser.AdvancedSubscriptions() {
