@@ -30,9 +30,15 @@ const (
 	filter_config_filter_headers,filter_config_filter_body,
 	filter_config_filter_is_flattened,
 	rate_limit_config_count,rate_limit_config_duration,function,
-	filter_config_filter_raw_headers, filter_config_filter_raw_body
+	filter_config_filter_raw_headers, filter_config_filter_raw_body,
+	delivery_mode
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
+        CASE 
+            WHEN $22 = '' OR $22 IS NULL THEN 'at_least_once'::convoy.delivery_mode 
+            ELSE $22::convoy.delivery_mode 
+        END
+    );
     `
 
 	updateSubscription = `
@@ -54,6 +60,10 @@ const (
 	function=$17,
 	filter_config_filter_raw_headers=$18,
 	filter_config_filter_raw_body=$19,
+	delivery_mode=CASE 
+        WHEN $20 = '' OR $20 IS NULL THEN COALESCE(delivery_mode, 'at_least_once'::convoy.delivery_mode)
+        ELSE $20::convoy.delivery_mode 
+    END,
     updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
@@ -65,6 +75,7 @@ const (
 	s.project_id,
 	s.created_at,
 	s.updated_at, s.function,
+	COALESCE(s.delivery_mode, 'at_least_once'::convoy.delivery_mode) AS "delivery_mode",
 
 	COALESCE(s.endpoint_id,'') AS "endpoint_id",
 	COALESCE(s.device_id,'') AS "device_id",
@@ -584,6 +595,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 		subscription.FilterConfig.Filter.RawHeaders, subscription.FilterConfig.Filter.RawBody,
+		subscription.DeliveryMode,
 	)
 	if err != nil {
 		return err
@@ -685,6 +697,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 		fc.Filter.RawHeaders, fc.Filter.RawBody,
+		subscription.DeliveryMode,
 	)
 	if err != nil {
 		return err

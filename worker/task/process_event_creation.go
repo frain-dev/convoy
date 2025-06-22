@@ -287,6 +287,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			URLQueryParams: event.URLQueryParams,
 			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
 			AcknowledgedAt: null.TimeFrom(time.Now()),
+			DeliveryMode:   s.DeliveryMode,
 		}
 
 		if s.Type == datastore.SubscriptionTypeCLI {

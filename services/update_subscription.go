@@ -93,6 +93,13 @@ func (s *UpdateSubscriptionService) Run(ctx context.Context) (*datastore.Subscri
 		subscription.Function = null.StringFrom(s.Update.Function)
 	}
 
+	if !util.IsStringEmpty(string(s.Update.DeliveryMode)) {
+		if s.Update.DeliveryMode != datastore.AtLeastOnceDeliveryMode && s.Update.DeliveryMode != datastore.AtMostOnceDeliveryMode {
+			return nil, &ServiceError{ErrMsg: "invalid delivery mode value, must be either 'at_least_once' or 'at_most_once'"}
+		}
+		subscription.DeliveryMode = s.Update.DeliveryMode
+	}
+
 	if s.Update.AlertConfig != nil && s.Update.AlertConfig.Count > 0 {
 		if subscription.AlertConfig == nil {
 			subscription.AlertConfig = &datastore.AlertConfiguration{}
