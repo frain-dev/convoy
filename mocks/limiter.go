@@ -20,6 +20,7 @@ import (
 type MockRateLimiter struct {
 	ctrl     *gomock.Controller
 	recorder *MockRateLimiterMockRecorder
+	isgomock struct{}
 }
 
 // MockRateLimiterMockRecorder is the mock recorder for MockRateLimiter.

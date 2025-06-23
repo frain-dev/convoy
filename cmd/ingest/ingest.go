@@ -2,88 +2,15 @@ package ingest
 
 import (
 	"context"
-	"errors"
-	"fmt"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub"
-	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/spf13/cobra"
 )
-
-func AddIngestCommand(a *cli.App) *cobra.Command {
-	var ingestPort uint32
-	var logLevel string
-	var interval int
-
-	cmd := &cobra.Command{
-		Use:   "ingest",
-		Short: "Ingest webhook events from Pub/Sub streams",
-		Annotations: map[string]string{
-			"ShouldBootstrap": "false",
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			// override config with cli flags
-			cliConfig, err := buildCliFlagConfiguration(cmd)
-			if err != nil {
-				return err
-			}
-
-			if err = config.Override(cliConfig); err != nil {
-				return err
-			}
-
-			cfg, err := config.Get()
-			if err != nil {
-				a.Logger.Errorf("Failed to retrieve config: %v", err)
-				return err
-			}
-
-			km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
-			if km.IsSet() {
-				if _, err = km.GetCurrentKeyFromCache(); err != nil {
-					if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
-						return err
-					}
-					km.Unset()
-				}
-			}
-			if err = keys.Set(km); err != nil {
-				return err
-			}
-
-			err = StartIngest(cmd.Context(), a, cfg, interval)
-			if err != nil {
-				return err
-			}
-
-			srv := server.NewServer(cfg.Server.HTTP.IngestPort, func() {})
-			mux := chi.NewMux()
-			mux.Handle("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}))
-			srv.SetHandler(mux)
-
-			fmt.Printf("Starting Convoy Message Broker Ingester on port %v\n", cfg.Server.HTTP.IngestPort)
-			srv.Listen()
-
-			return nil
-		},
-	}
-
-	cmd.Flags().Uint32Var(&ingestPort, "ingest-port", 0, "Ingest port")
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
-	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds, at which the database should be polled for new pub sub sources")
-
-	return cmd
-}
 
 func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
 	sourceRepo := postgres.NewSourceRepo(a.DB)
@@ -108,8 +35,6 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	if err != nil {
 		return err
 	}
-
-	go memorystore.DefaultStore.Sync(ctx, interval)
 
 	instCfg, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
@@ -136,28 +61,4 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	log.Println("Starting Convoy Ingester")
 
 	return nil
-}
-
-func buildCliFlagConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
-	c := &config.Configuration{}
-
-	logLevel, err := cmd.Flags().GetString("log-level")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(logLevel) {
-		c.Logger.Level = logLevel
-	}
-
-	ingestPort, err := cmd.Flags().GetUint32("ingest-port")
-	if err != nil {
-		return nil, err
-	}
-
-	if ingestPort != 0 {
-		c.Server.HTTP.IngestPort = ingestPort
-	}
-
-	return c, nil
 }

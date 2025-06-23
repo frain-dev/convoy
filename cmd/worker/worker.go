@@ -267,8 +267,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	go memorystore.DefaultStore.Sync(ctx, interval)
-
 	featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 	newTelemetry := telemetry.NewTelemetry(lo, configuration,
 		telemetry.OptionTracker(counter),

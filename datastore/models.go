@@ -26,6 +26,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type SubscriptionUpdate struct {
+	UID       string
+	UpdatedAt time.Time
+}
+
 type Pageable struct {
 	PerPage    int           `json:"per_page"`
 	Direction  PageDirection `json:"direction"`
