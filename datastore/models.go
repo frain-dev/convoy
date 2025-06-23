@@ -29,6 +29,11 @@ import (
 	"github.com/lib/pq"
 )
 
+type SubscriptionUpdate struct {
+	UID       string
+	UpdatedAt time.Time
+}
+
 type Pageable struct {
 	PerPage    int           `json:"per_page"`
 	Direction  PageDirection `json:"direction"`
