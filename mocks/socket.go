@@ -19,7 +19,6 @@ import (
 type MockWebSocketConnection struct {
 	ctrl     *gomock.Controller
 	recorder *MockWebSocketConnectionMockRecorder
-	isgomock struct{}
 }
 
 // MockWebSocketConnectionMockRecorder is the mock recorder for MockWebSocketConnection.

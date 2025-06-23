@@ -21,7 +21,6 @@ import (
 type MockITable struct {
 	ctrl     *gomock.Controller
 	recorder *MockITableMockRecorder
-	isgomock struct{}
 }
 
 // MockITableMockRecorder is the mock recorder for MockITable.
@@ -73,7 +72,6 @@ func (mr *MockITableMockRecorder) GetItems(prefix any) *gomock.Call {
 type MockSyncer struct {
 	ctrl     *gomock.Controller
 	recorder *MockSyncerMockRecorder
-	isgomock struct{}
 }
 
 // MockSyncerMockRecorder is the mock recorder for MockSyncer.
