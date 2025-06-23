@@ -440,7 +440,7 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 }
 
 func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
-	if len(projectIDs) == 0 {
+	if len(projectIDs) == 0 || len(subscriptionUpdates) == 0 {
 		return []datastore.Subscription{}, nil
 	}
 
@@ -475,7 +475,7 @@ func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projec
 }
 
 func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
-	if len(projectIDs) == 0 {
+	if len(projectIDs) == 0 || len(subscriptionUpdates) == 0 {
 		return []datastore.Subscription{}, nil
 	}
 
