@@ -25,6 +25,7 @@ import (
 type MockAPIKeyRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockAPIKeyRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockAPIKeyRepositoryMockRecorder is the mock recorder for MockAPIKeyRepository.
@@ -166,6 +167,7 @@ func (mr *MockAPIKeyRepositoryMockRecorder) UpdateAPIKey(arg0, arg1 any) *gomock
 type MockEventDeliveryRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockEventDeliveryRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockEventDeliveryRepositoryMockRecorder is the mock recorder for MockEventDeliveryRepository.
@@ -467,6 +469,7 @@ func (mr *MockEventDeliveryRepositoryMockRecorder) UpdateStatusOfEventDelivery(c
 type MockEventRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockEventRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockEventRepositoryMockRecorder is the mock recorder for MockEventRepository.
@@ -751,6 +754,7 @@ func (mr *MockEventRepositoryMockRecorder) UpdateEventStatus(arg0, arg1, arg2 an
 type MockProjectRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockProjectRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockProjectRepositoryMockRecorder is the mock recorder for MockProjectRepository.
@@ -890,6 +894,7 @@ func (mr *MockProjectRepositoryMockRecorder) UpdateProject(arg0, arg1 any) *gomo
 type MockOrganisationRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockOrganisationRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockOrganisationRepositoryMockRecorder is the mock recorder for MockOrganisationRepository.
@@ -1031,6 +1036,7 @@ func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(arg0, arg1 
 type MockOrganisationInviteRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockOrganisationInviteRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockOrganisationInviteRepositoryMockRecorder is the mock recorder for MockOrganisationInviteRepository.
@@ -1142,6 +1148,7 @@ func (mr *MockOrganisationInviteRepositoryMockRecorder) UpdateOrganisationInvite
 type MockOrganisationMemberRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockOrganisationMemberRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockOrganisationMemberRepositoryMockRecorder is the mock recorder for MockOrganisationMemberRepository.
@@ -1359,6 +1366,7 @@ func (mr *MockOrganisationMemberRepositoryMockRecorder) FetchInstanceAdminByUser
 type MockEndpointRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockEndpointRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockEndpointRepositoryMockRecorder is the mock recorder for MockEndpointRepository.
@@ -1572,6 +1580,7 @@ func (mr *MockEndpointRepositoryMockRecorder) UpdateSecrets(ctx, endpointID, pro
 type MockSubscriptionRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockSubscriptionRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockSubscriptionRepositoryMockRecorder is the mock recorder for MockSubscriptionRepository.
@@ -1650,33 +1659,33 @@ func (mr *MockSubscriptionRepositoryMockRecorder) DeleteSubscription(ctx, projec
 }
 
 // FetchDeletedSubscriptions mocks base method.
-func (m *MockSubscriptionRepository) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+func (m *MockSubscriptionRepository) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchDeletedSubscriptions", ctx, projectIDs, t, pageSize)
+	ret := m.ctrl.Call(m, "FetchDeletedSubscriptions", ctx, projectIDs, subscriptionUpdates, pageSize)
 	ret0, _ := ret[0].([]datastore.Subscription)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchDeletedSubscriptions indicates an expected call of FetchDeletedSubscriptions.
-func (mr *MockSubscriptionRepositoryMockRecorder) FetchDeletedSubscriptions(ctx, projectIDs, t, pageSize any) *gomock.Call {
+func (mr *MockSubscriptionRepositoryMockRecorder) FetchDeletedSubscriptions(ctx, projectIDs, subscriptionUpdates, pageSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchDeletedSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).FetchDeletedSubscriptions), ctx, projectIDs, t, pageSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchDeletedSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).FetchDeletedSubscriptions), ctx, projectIDs, subscriptionUpdates, pageSize)
 }
 
 // FetchUpdatedSubscriptions mocks base method.
-func (m *MockSubscriptionRepository) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
+func (m *MockSubscriptionRepository) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchUpdatedSubscriptions", ctx, projectIDs, t, pageSize)
+	ret := m.ctrl.Call(m, "FetchUpdatedSubscriptions", ctx, projectIDs, subscriptionUpdates, pageSize)
 	ret0, _ := ret[0].([]datastore.Subscription)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchUpdatedSubscriptions indicates an expected call of FetchUpdatedSubscriptions.
-func (mr *MockSubscriptionRepositoryMockRecorder) FetchUpdatedSubscriptions(ctx, projectIDs, t, pageSize any) *gomock.Call {
+func (mr *MockSubscriptionRepositoryMockRecorder) FetchUpdatedSubscriptions(ctx, projectIDs, subscriptionUpdates, pageSize any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchUpdatedSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).FetchUpdatedSubscriptions), ctx, projectIDs, t, pageSize)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchUpdatedSubscriptions", reflect.TypeOf((*MockSubscriptionRepository)(nil).FetchUpdatedSubscriptions), ctx, projectIDs, subscriptionUpdates, pageSize)
 }
 
 // FindCLISubscriptions mocks base method.
@@ -1818,6 +1827,7 @@ func (mr *MockSubscriptionRepositoryMockRecorder) UpdateSubscription(ctx, projec
 type MockFilterRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockFilterRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockFilterRepositoryMockRecorder is the mock recorder for MockFilterRepository.
@@ -1971,6 +1981,7 @@ func (mr *MockFilterRepositoryMockRecorder) UpdateFilters(ctx, filters any) *gom
 type MockSourceRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockSourceRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockSourceRepositoryMockRecorder is the mock recorder for MockSourceRepository.
@@ -2113,6 +2124,7 @@ func (mr *MockSourceRepositoryMockRecorder) UpdateSource(ctx, projectId, source 
 type MockDeviceRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockDeviceRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockDeviceRepositoryMockRecorder is the mock recorder for MockDeviceRepository.
@@ -2238,6 +2250,7 @@ func (mr *MockDeviceRepositoryMockRecorder) UpdateDeviceLastSeen(ctx, device, ap
 type MockJobRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockJobRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockJobRepositoryMockRecorder is the mock recorder for MockJobRepository.
@@ -2392,6 +2405,7 @@ func (mr *MockJobRepositoryMockRecorder) MarkJobAsStarted(ctx, uid, projectID an
 type MockUserRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockUserRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockUserRepositoryMockRecorder is the mock recorder for MockUserRepository.
@@ -2518,6 +2532,7 @@ func (mr *MockUserRepositoryMockRecorder) UpdateUser(ctx, user any) *gomock.Call
 type MockConfigurationRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockConfigurationRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockConfigurationRepositoryMockRecorder is the mock recorder for MockConfigurationRepository.
@@ -2584,6 +2599,7 @@ func (mr *MockConfigurationRepositoryMockRecorder) UpdateConfiguration(arg0, arg
 type MockPortalLinkRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockPortalLinkRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockPortalLinkRepositoryMockRecorder is the mock recorder for MockPortalLinkRepository.
@@ -2755,6 +2771,7 @@ func (mr *MockPortalLinkRepositoryMockRecorder) UpdatePortalLink(ctx, projectID,
 type MockMetaEventRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockMetaEventRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockMetaEventRepositoryMockRecorder is the mock recorder for MockMetaEventRepository.
@@ -2837,6 +2854,7 @@ func (mr *MockMetaEventRepositoryMockRecorder) UpdateMetaEvent(ctx, projectID, m
 type MockExportRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockExportRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockExportRepositoryMockRecorder is the mock recorder for MockExportRepository.
@@ -2875,6 +2893,7 @@ func (mr *MockExportRepositoryMockRecorder) ExportRecords(ctx, projectID, create
 type MockDeliveryAttemptsRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockDeliveryAttemptsRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockDeliveryAttemptsRepositoryMockRecorder is the mock recorder for MockDeliveryAttemptsRepository.
@@ -3014,6 +3033,7 @@ func (mr *MockDeliveryAttemptsRepositoryMockRecorder) UnPartitionDeliveryAttempt
 type MockEventTypesRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockEventTypesRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockEventTypesRepositoryMockRecorder is the mock recorder for MockEventTypesRepository.
@@ -3154,6 +3174,7 @@ func (mr *MockEventTypesRepositoryMockRecorder) UpdateEventType(arg0, arg1 any) 
 type MockBatchRetryRepository struct {
 	ctrl     *gomock.Controller
 	recorder *MockBatchRetryRepositoryMockRecorder
+	isgomock struct{}
 }
 
 // MockBatchRetryRepositoryMockRecorder is the mock recorder for MockBatchRetryRepository.

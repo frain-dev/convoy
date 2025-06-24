@@ -143,8 +143,8 @@ type SubscriptionRepository interface {
 	TestSubscriptionFilter(ctx context.Context, payload, filter interface{}, isFlattened bool) (bool, error)
 	CompareFlattenedPayload(_ context.Context, payload, filter flatten.M, isFlattened bool) (bool, error)
 	LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]Subscription, error)
-	FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]Subscription, error)
-	FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]Subscription, error)
+	FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []SubscriptionUpdate, pageSize int64) ([]Subscription, error)
+	FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []SubscriptionUpdate, pageSize int64) ([]Subscription, error)
 }
 
 type FilterRepository interface {

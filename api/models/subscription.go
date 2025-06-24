@@ -37,6 +37,9 @@ type CreateSubscription struct {
 
 	// Rate limit configuration
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty"`
+
+	// Delivery mode configuration
+	DeliveryMode datastore.DeliveryMode `json:"delivery_mode,omitempty"`
 }
 
 func (cs *CreateSubscription) Validate() error {
@@ -71,6 +74,9 @@ type UpdateSubscription struct {
 
 	// Rate limit configuration
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty"`
+
+	// Delivery mode configuration
+	DeliveryMode datastore.DeliveryMode `json:"delivery_mode,omitempty"`
 }
 
 func (us *UpdateSubscription) Validate() error {

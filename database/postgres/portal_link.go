@@ -38,7 +38,7 @@ const (
 	`
 
 	createPortalLinkAuthToken = `
-	insert into convoy.portal_tokens (id, portal_link_id, token_mask_id, token_hash, token_salt, token_expires_at) 
+	insert into convoy.portal_tokens (id, portal_link_id, token_mask_id, token_hash, token_salt, token_expires_at)
 	VALUES ($1, $2, $3, $4, $5, $6);
 	`
 
@@ -143,7 +143,7 @@ const (
 	`
 
 	fetchPortalLinkByMaskId = `
-	SELECT 
+	SELECT
 	    pl.id, pl.project_id, pt.token_salt, pt.token_mask_id, pt.token_expires_at, pt.token_hash, pl.name, pl.token, pl.endpoints,
 		COALESCE(pl.can_manage_endpoint, FALSE) AS "can_manage_endpoint", COALESCE(pl.owner_id, '') AS "owner_id",
 		CASE
@@ -534,35 +534,37 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	pagination := &datastore.PaginationData{PrevRowCount: count}
 	pagination = pagination.Build(pageable, ids)
 
-	authTokens := make([]datastore.PortalToken, len(portalLinks))
-	for i := range portalLinks {
-		authToken, getTokenErr := generateToken(portalLinks[i].UID)
-		if getTokenErr != nil {
-			return nil, datastore.PaginationData{}, getTokenErr
+	if len(portalLinks) > 0 {
+		authTokens := make([]datastore.PortalToken, len(portalLinks))
+		for i := range portalLinks {
+			authToken, getTokenErr := generateToken(portalLinks[i].UID)
+			if getTokenErr != nil {
+				return nil, datastore.PaginationData{}, getTokenErr
+			}
+			authTokens[i] = *authToken
 		}
-		authTokens[i] = *authToken
-	}
 
-	res, err := p.db.GetDB().NamedExecContext(ctx, bulkWritePortalAuthTokens, authTokens)
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
+		res, err := p.db.GetDB().NamedExecContext(ctx, bulkWritePortalAuthTokens, authTokens)
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
 
-	rowsAffected, err := res.RowsAffected()
-	if err != nil {
-		return nil, datastore.PaginationData{}, err
-	}
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			return nil, datastore.PaginationData{}, err
+		}
 
-	if rowsAffected != int64(len(authTokens)) {
-		return nil, datastore.PaginationData{}, errors.New("failed to bulk write portal auth tokens")
-	}
+		if rowsAffected != int64(len(authTokens)) {
+			return nil, datastore.PaginationData{}, errors.New("failed to bulk write portal auth tokens")
+		}
 
-	for i := range portalLinks {
-		portalLinks[i].AuthKey = authTokens[i].AuthKey
-		portalLinks[i].TokenMaskId = authTokens[i].MaskId
-		portalLinks[i].TokenHash = authTokens[i].Hash
-		portalLinks[i].TokenSalt = authTokens[i].Salt
-		portalLinks[i].TokenExpiresAt = authTokens[i].ExpiresAt
+		for i := range portalLinks {
+			portalLinks[i].AuthKey = authTokens[i].AuthKey
+			portalLinks[i].TokenMaskId = authTokens[i].MaskId
+			portalLinks[i].TokenHash = authTokens[i].Hash
+			portalLinks[i].TokenSalt = authTokens[i].Salt
+			portalLinks[i].TokenExpiresAt = authTokens[i].ExpiresAt
+		}
 	}
 
 	return portalLinks, *pagination, nil

@@ -125,12 +125,13 @@ func TestCreateSubscriptionService_Run(t *testing.T) {
 					sub.CreatedAt, sub.UpdatedAt = time.Time{}, time.Time{}
 
 					c := &datastore.Subscription{
-						Name:       "sub 1",
-						SourceID:   "source-id-1",
-						EndpointID: "endpoint-id-1",
-						ProjectID:  "12345",
-						Function:   null.String{},
-						Type:       datastore.SubscriptionTypeAPI,
+						Name:         "sub 1",
+						SourceID:     "source-id-1",
+						EndpointID:   "endpoint-id-1",
+						ProjectID:    "12345",
+						Function:     null.String{},
+						Type:         datastore.SubscriptionTypeAPI,
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 						FilterConfig: &datastore.FilterConfiguration{
 							EventTypes: []string{"*"},
 							Filter: datastore.FilterSchema{

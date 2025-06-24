@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/bcrypt"
 	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 
@@ -27,6 +28,11 @@ import (
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/lib/pq"
 )
+
+type SubscriptionUpdate struct {
+	UID       string
+	UpdatedAt time.Time
+}
 
 type Pageable struct {
 	PerPage    int           `json:"per_page"`
@@ -781,6 +787,12 @@ type (
 	EventStatus         string
 	EventDeliveryStatus string
 	HttpHeader          map[string]string
+	DeliveryMode        string
+)
+
+const (
+	AtLeastOnceDeliveryMode DeliveryMode = "at_least_once"
+	AtMostOnceDeliveryMode  DeliveryMode = "at_most_once"
 )
 
 func (h *HttpHeader) Scan(value interface{}) error {
@@ -968,9 +980,10 @@ type EventDelivery struct {
 	IdempotencyKey string                `json:"idempotency_key" db:"idempotency_key"`
 
 	// Deprecated: Latency is deprecated.
-	Latency        string    `json:"latency" db:"latency"`
-	LatencySeconds float64   `json:"latency_seconds" db:"latency_seconds"`
-	EventType      EventType `json:"event_type,omitempty" db:"event_type"`
+	Latency        string       `json:"latency" db:"latency"`
+	LatencySeconds float64      `json:"latency_seconds" db:"latency_seconds"`
+	EventType      EventType    `json:"event_type,omitempty" db:"event_type"`
+	DeliveryMode   DeliveryMode `json:"delivery_mode" db:"delivery_mode"`
 
 	Endpoint *Endpoint `json:"endpoint_metadata,omitempty" db:"endpoint_metadata"`
 	Event    *Event    `json:"event_metadata,omitempty" db:"event_metadata"`
@@ -1068,6 +1081,8 @@ type Subscription struct {
 	RetryConfig     *RetryConfiguration     `json:"retry_config,omitempty" db:"retry_config"`
 	FilterConfig    *FilterConfiguration    `json:"filter_config,omitempty" db:"filter_config"`
 	RateLimitConfig *RateLimitConfiguration `json:"rate_limit_config,omitempty" db:"rate_limit_config"`
+
+	DeliveryMode DeliveryMode `json:"delivery_mode,omitempty" db:"delivery_mode"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at" swaggertype:"string"`

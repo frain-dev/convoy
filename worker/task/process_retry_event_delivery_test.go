@@ -4,16 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
+
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/log"
+
+	"time"
 
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/stretchr/testify/require"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -29,6 +33,10 @@ import (
 )
 
 func TestProcessRetryEventDelivery(t *testing.T) {
+	badRequestServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+	}))
+	defer badRequestServer.Close()
 	tt := []struct {
 		name          string
 		cfgPath       string
@@ -99,6 +107,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
+						Status:       datastore.ScheduledEventStatus,
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.DiscardedEventStatus).Times(1).Return(nil)
@@ -144,7 +154,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						Status: datastore.ScheduledEventStatus,
+						Status:       datastore.ScheduledEventStatus,
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				o.EXPECT().
@@ -229,7 +240,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						Status: datastore.ScheduledEventStatus,
+						Status:       datastore.ScheduledEventStatus,
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -325,7 +337,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						Status: datastore.ScheduledEventStatus,
+						Status:       datastore.ScheduledEventStatus,
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				o.EXPECT().
@@ -413,7 +426,8 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
-						Status: datastore.ScheduledEventStatus,
+						Status:       datastore.ScheduledEventStatus,
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -696,6 +710,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				a.EXPECT().
@@ -788,6 +803,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -880,6 +896,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -977,6 +994,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 							RetryLimit:      3,
 							IntervalSeconds: 20,
 						},
+						DeliveryMode: datastore.AtLeastOnceDeliveryMode,
 					}, nil).Times(1)
 
 				m.EXPECT().
@@ -1039,6 +1057,88 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					httpmock.DeactivateAndReset()
 				}
 			},
+		},
+		{
+			name:          "At-most-once delivery - non-2xx response - should not retry",
+			cfgPath:       "./testdata/Config/basic-convoy.json",
+			expectedError: nil, // Changed from EndpointError since we don't retry
+			msg: &datastore.EventDelivery{
+				UID: "",
+			},
+			dbFn: func(a *mocks.MockEndpointRepository, o *mocks.MockProjectRepository, m *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer, r *mocks.MockRateLimiter, d *mocks.MockDeliveryAttemptsRepository, l *mocks.MockLicenser, mt *mocks.MockBackend) {
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.Endpoint{
+						Url:               badRequestServer.URL,
+						ProjectID:         "123",
+						RateLimit:         10,
+						RateLimitDuration: 60,
+						Secrets: []datastore.Secret{
+							{Value: "secret"},
+						},
+						Status: datastore.ActiveEndpointStatus,
+					}, nil)
+
+				r.EXPECT().AllowWithDuration(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+				m.EXPECT().
+					FindEventDeliveryByID(gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(&datastore.EventDelivery{
+						Metadata: &datastore.Metadata{
+							Data:            []byte(`{"event": "invoice.completed"}`),
+							Raw:             `{"event": "invoice.completed"}`,
+							NumTrials:       0,
+							RetryLimit:      3,
+							IntervalSeconds: 20,
+						},
+						Status:       datastore.ScheduledEventStatus,
+						DeliveryMode: datastore.AtMostOnceDeliveryMode, // Changed to at-most-once
+					}, nil).Times(1)
+
+				o.EXPECT().
+					FetchProjectByID(gomock.Any(), gomock.Any()).
+					Return(&datastore.Project{
+						LogoURL: "",
+						Config: &datastore.ProjectConfig{
+							Signature: &datastore.SignatureConfiguration{
+								Header: "X-Convoy-Signature",
+								Versions: []datastore.SignatureVersion{
+									{
+										UID:      "abc",
+										Hash:     "SHA256",
+										Encoding: datastore.HexEncoding,
+									},
+								},
+							},
+							SSL: &datastore.DefaultSSLConfig,
+							Strategy: &datastore.StrategyConfiguration{
+								Type:       datastore.LinearStrategyProvider,
+								Duration:   60,
+								RetryCount: 1,
+							},
+							RateLimit: &datastore.DefaultRateLimitConfig,
+						},
+					}, nil).Times(1)
+
+				d.EXPECT().CreateDeliveryAttempt(gomock.Any(), gomock.Any()).Times(1)
+
+				mt.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+
+				l.EXPECT().UseForwardProxy().Times(1).Return(true)
+				l.EXPECT().IpRules().Times(3).Return(false)
+
+				m.EXPECT().
+					UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil).Times(1)
+
+				m.EXPECT().
+					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.AssignableToTypeOf(&datastore.EventDelivery{})).
+					DoAndReturn(func(ctx context.Context, projectID string, delivery *datastore.EventDelivery) error {
+						assert.Equal(t, "Endpoint returned status code 400", delivery.Description)
+						return nil
+					}).
+					Return(nil).Times(1)
+			},
+			nFn: nil,
 		},
 	}
 

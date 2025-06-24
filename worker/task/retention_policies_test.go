@@ -400,6 +400,7 @@ func seedEventDelivery(db database.Database, eventID string, endpointID string, 
 		Description:    "test",
 		AcknowledgedAt: null.TimeFrom(filter.AcknowledgedAt),
 		CreatedAt:      filter.CreatedAt,
+		DeliveryMode:   datastore.AtLeastOnceDeliveryMode,
 	}
 
 	// Seed Data.

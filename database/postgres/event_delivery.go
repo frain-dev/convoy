@@ -35,12 +35,12 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at,delivery_mode)
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
     `
 	createEventDeliveries = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at)
-    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at);
+    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at,delivery_mode)
+    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at, :delivery_mode);
     `
 
 	baseFetchEventDelivery = `
@@ -53,6 +53,7 @@ const (
         COALESCE(ed.event_type,'') AS "event_type",
         COALESCE(ed.device_id,'') AS "device_id",
         COALESCE(ed.endpoint_id,'') AS "endpoint_id",
+        COALESCE(ed.delivery_mode, 'at_least_once')::convoy.delivery_mode AS "delivery_mode",
         COALESCE(ep.id, '') AS "endpoint_metadata.id",
         COALESCE(ep.name, '') AS "endpoint_metadata.name",
         COALESCE(ep.project_id, '') AS "endpoint_metadata.project_id",
@@ -114,6 +115,7 @@ const (
         COALESCE(event_type,'') AS "event_type",
         COALESCE(device_id,'') AS "device_id",
         COALESCE(endpoint_id,'') AS "endpoint_id",
+        COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode AS "delivery_mode",
         acknowledged_at
     FROM convoy.event_deliveries
 	WHERE deleted_at IS NULL
@@ -167,6 +169,7 @@ const (
         COALESCE(event_type,'') AS "event_type",
         COALESCE(device_id,'') AS "device_id",
         COALESCE(endpoint_id,'') AS "endpoint_id",
+        COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode AS "delivery_mode",
         acknowledged_at
     FROM convoy.event_deliveries ed
     `
@@ -180,6 +183,7 @@ const (
         description,created_at,updated_at,
         COALESCE(event_type,'') AS "event_type",
         COALESCE(device_id,'') AS "device_id",
+        COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode AS "delivery_mode",
         acknowledged_at
     FROM convoy.event_deliveries
 	WHERE status=$1 AND project_id = $2 AND device_id = $3
@@ -238,6 +242,10 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		deviceID = &delivery.DeviceID
 	}
 
+	if delivery.DeliveryMode == "" {
+		delivery.DeliveryMode = datastore.AtLeastOnceDeliveryMode
+	}
+
 	tx, isWrapped, err := GetTx(ctx, e.db.GetDB())
 	if err != nil {
 		return err
@@ -252,7 +260,7 @@ func (e *eventDeliveryRepo) CreateEventDelivery(ctx context.Context, delivery *d
 		delivery.EventID, endpointID, deviceID,
 		delivery.SubscriptionID, delivery.Headers, delivery.Status,
 		delivery.Metadata, delivery.CLIMetadata, delivery.Description, delivery.URLQueryParams, delivery.IdempotencyKey, delivery.EventType,
-		delivery.AcknowledgedAt,
+		delivery.AcknowledgedAt, delivery.DeliveryMode,
 	)
 	if err != nil {
 		return err
@@ -290,6 +298,10 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 			deviceID = &delivery.DeviceID
 		}
 
+		if delivery.DeliveryMode == "" {
+			delivery.DeliveryMode = datastore.AtLeastOnceDeliveryMode
+		}
+
 		values = append(values, map[string]interface{}{
 			"id":               delivery.UID,
 			"project_id":       delivery.ProjectID,
@@ -306,6 +318,7 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 			"idempotency_key":  delivery.IdempotencyKey,
 			"event_type":       delivery.EventType,
 			"acknowledged_at":  delivery.AcknowledgedAt,
+			"delivery_mode":    delivery.DeliveryMode,
 		})
 	}
 
@@ -689,6 +702,9 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 	}
 
 	query = e.db.GetReadDB().Rebind(query)
+	// Replace single colons with double colons to handle PostgreSQL type casting
+	// This is needed because sqlx.Named() generates :param but PostgreSQL expects ::param for type casting
+	query = strings.ReplaceAll(query, ":", "::")
 
 	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)
 	if err != nil {
@@ -754,6 +770,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 			CLIMetadata:    cli,
 			Description:    ev.Description,
 			AcknowledgedAt: ev.AcknowledgedAt,
+			DeliveryMode:   ev.DeliveryMode,
 			CreatedAt:      ev.CreatedAt,
 			UpdatedAt:      ev.UpdatedAt,
 			DeletedAt:      ev.DeletedAt,
@@ -1004,6 +1021,7 @@ type EventDeliveryPaginated struct {
 	CreatedAt        time.Time                     `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt        time.Time                     `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt        null.Time                     `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
+	DeliveryMode     datastore.DeliveryMode        `json:"delivery_mode" db:"delivery_mode"`
 }
 
 func (m *CLIMetadata) Scan(value interface{}) error {
@@ -1127,6 +1145,7 @@ BEGIN
         event_type       TEXT,
         acknowledged_at  TIMESTAMP WITH TIME ZONE,
         latency_seconds  NUMERIC,
+        delivery_mode    convoy.delivery_mode NOT NULL DEFAULT 'at_least_once',
         PRIMARY KEY (id, created_at, project_id)
     ) PARTITION BY RANGE (project_id, created_at);
 
@@ -1154,11 +1173,11 @@ BEGIN
     INSERT INTO convoy.event_deliveries_new (
         id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
         attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-        latency_seconds
+        latency_seconds, delivery_mode
     )
     SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
            attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-           latency_seconds
+           latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode
     FROM convoy.event_deliveries;
 
     -- Manage table renaming
@@ -1223,18 +1242,19 @@ begin
         latency          TEXT,
         event_type       TEXT,
         acknowledged_at  TIMESTAMP WITH TIME ZONE,
-        latency_seconds  NUMERIC
+        latency_seconds  NUMERIC,
+        delivery_mode    convoy.delivery_mode NOT NULL DEFAULT 'at_least_once'
     );
 
     RAISE NOTICE 'Migrating data...';
     INSERT INTO convoy.event_deliveries_new (
         id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
         attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-        latency_seconds
+        latency_seconds, delivery_mode
     )
     SELECT id, status, description, project_id, created_at, updated_at, endpoint_id, event_id, device_id, subscription_id, metadata, headers,
            attempts, cli_metadata, deleted_at, url_query_params, idempotency_key, latency, event_type, acknowledged_at,
-           latency_seconds
+           latency_seconds, COALESCE(delivery_mode, 'at_least_once')::convoy.delivery_mode
     FROM convoy.event_deliveries;
 
     ALTER TABLE convoy.delivery_attempts DROP CONSTRAINT if exists delivery_attempts_event_delivery_id_fkey;

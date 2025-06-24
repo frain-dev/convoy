@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
+	"strings"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -14,9 +17,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
-	"math"
-	"strings"
-	"time"
 )
 
 const (
@@ -30,9 +30,15 @@ const (
 	filter_config_filter_headers,filter_config_filter_body,
 	filter_config_filter_is_flattened,
 	rate_limit_config_count,rate_limit_config_duration,function,
-	filter_config_filter_raw_headers, filter_config_filter_raw_body
+	filter_config_filter_raw_headers, filter_config_filter_raw_body,
+	delivery_mode
 	)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21);
+    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
+        CASE 
+            WHEN $22 = '' OR $22 IS NULL THEN 'at_least_once'::convoy.delivery_mode 
+            ELSE $22::convoy.delivery_mode 
+        END
+    );
     `
 
 	updateSubscription = `
@@ -54,6 +60,10 @@ const (
 	function=$17,
 	filter_config_filter_raw_headers=$18,
 	filter_config_filter_raw_body=$19,
+	delivery_mode=CASE 
+        WHEN $20 = '' OR $20 IS NULL THEN COALESCE(delivery_mode, 'at_least_once'::convoy.delivery_mode)
+        ELSE $20::convoy.delivery_mode 
+    END,
     updated_at=now()
     WHERE id = $1 AND project_id = $2
 	AND deleted_at IS NULL;
@@ -65,6 +75,7 @@ const (
 	s.project_id,
 	s.created_at,
 	s.updated_at, s.function,
+	COALESCE(s.delivery_mode, 'at_least_once'::convoy.delivery_mode) AS "delivery_mode",
 
 	COALESCE(s.endpoint_id,'') AS "endpoint_id",
 	COALESCE(s.device_id,'') AS "device_id",
@@ -154,41 +165,48 @@ const (
     ORDER BY id LIMIT ?`
 
 	fetchUpdatedSubscriptions = `
-    select name, id, type, project_id, endpoint_id, function, updated_at,
-    filter_config_event_types AS "filter_config.event_types",
-    filter_config_filter_headers AS "filter_config.filter.headers",
-	filter_config_filter_body AS "filter_config.filter.body",
-	filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
-	filter_config_filter_raw_body AS "filter_config.filter.raw_body",
-	filter_config_filter_is_flattened AS "filter_config.filter.is_flattened"
-    from convoy.subscriptions
-    where updated_at > ?
-    AND id > ?
-    AND project_id IN (?)
-    AND deleted_at is null
-    ORDER BY id LIMIT ?`
-
-	countDeletedSubscriptions = `
-    select COUNT(id) from convoy.subscriptions
-    where (deleted_at IS NOT NULL AND deleted_at > ?)
-    AND project_id IN (?)`
-
-	countUpdatedSubscriptions = `
-    SELECT COUNT(*)
-    FROM (
-        SELECT DISTINCT id
-        FROM convoy.subscriptions
-        WHERE deleted_at IS NULL
-            AND updated_at > ?
-            AND project_id IN (?)
-    ) AS distinct_ids`
+	WITH input_map(id, last_updated_at) AS (
+		VALUES %s
+	),
+	updated_existing AS (
+		SELECT s.name, s.id, s.type, s.project_id, s.endpoint_id, s.function, s.updated_at,
+		s.filter_config_event_types AS "filter_config.event_types",
+		s.filter_config_filter_headers AS "filter_config.filter.headers",
+		s.filter_config_filter_body AS "filter_config.filter.body",
+		s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
+		s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+		s.filter_config_filter_raw_body AS "filter_config.filter.raw_body"
+		FROM convoy.subscriptions s
+		JOIN input_map m ON s.id = m.id
+		WHERE s.updated_at > m.last_updated_at
+		AND s.project_id IN (:project_ids)
+		AND s.deleted_at IS NULL
+	),
+	new_subscriptions AS (
+		SELECT s.name, s.id, s.type, s.project_id, s.endpoint_id, s.function, s.updated_at,
+		s.filter_config_event_types AS "filter_config.event_types",
+		s.filter_config_filter_headers AS "filter_config.filter.headers",
+		s.filter_config_filter_body AS "filter_config.filter.body",
+		s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
+		s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+		s.filter_config_filter_raw_body AS "filter_config.filter.raw_body"
+		FROM convoy.subscriptions s
+		WHERE s.id NOT IN (SELECT id FROM input_map)
+		AND s.project_id IN (:project_ids)
+		AND s.deleted_at IS NULL
+	)
+	SELECT * FROM updated_existing
+	UNION ALL
+	SELECT * FROM new_subscriptions
+	ORDER BY id LIMIT :limit
+	`
 
 	fetchDeletedSubscriptions = `
-    select  id,deleted_at, project_id,
+    select id, deleted_at, project_id,
     filter_config_event_types AS "filter_config.event_types"
     from convoy.subscriptions
-    where (deleted_at IS NOT NULL AND deleted_at > ?)
-    AND id > ?
+    where (deleted_at IS NOT NULL)
+    AND id IN (?)
     AND project_id IN (?)
     ORDER BY id LIMIT ?`
 
@@ -330,14 +348,6 @@ func NewSubscriptionRepo(db database.Database) datastore.SubscriptionRepository 
 	return &subscriptionRepo{db: db, km: km}
 }
 
-func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	return s.fetchChangedSubscriptionConfig(ctx, countUpdatedSubscriptions, fetchUpdatedSubscriptions, projectIDs, t, pageSize)
-}
-
-func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	return s.fetchChangedSubscriptionConfig(ctx, countDeletedSubscriptions, fetchDeletedSubscriptions, projectIDs, t, pageSize)
-}
-
 func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projectIDs []string, pageSize int64) ([]datastore.Subscription, error) {
 	if len(projectIDs) == 0 {
 		return []datastore.Subscription{}, nil
@@ -429,68 +439,102 @@ func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, p
 	return _subs, nil
 }
 
-func (s *subscriptionRepo) fetchChangedSubscriptionConfig(ctx context.Context, countQuery, query string, projectIDs []string, t time.Time, pageSize int64) ([]datastore.Subscription, error) {
-	if len(projectIDs) == 0 {
+func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 || len(subscriptionUpdates) == 0 {
 		return []datastore.Subscription{}, nil
 	}
 
-	q, args, err := sqlx.In(countQuery, t, projectIDs)
+	ids := make([]string, 0)
+	for _, sub := range subscriptionUpdates {
+		ids = append(ids, sub.UID)
+	}
+
+	query, args, err := sqlx.In(fetchDeletedSubscriptions, ids, projectIDs, pageSize)
 	if err != nil {
 		return nil, err
 	}
 
-	var subCount int64
-	err = s.db.GetReadDB().GetContext(ctx, &subCount, s.db.GetReadDB().Rebind(q), args...)
+	rows, err := s.db.GetReadDB().QueryxContext(ctx, s.db.GetReadDB().Rebind(query), args...)
 	if err != nil {
 		return nil, err
 	}
 
-	if subCount == 0 {
+	defer closeWithError(rows)
+	subs := make([]datastore.Subscription, 0)
+	for rows.Next() {
+		sub := datastore.Subscription{}
+		if err = rows.StructScan(&sub); err != nil {
+			return nil, err
+		}
+
+		nullifyEmptyConfig(&sub)
+		subs = append(subs, sub)
+	}
+
+	return subs, nil
+}
+
+func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projectIDs []string, subscriptionUpdates []datastore.SubscriptionUpdate, pageSize int64) ([]datastore.Subscription, error) {
+	if len(projectIDs) == 0 || len(subscriptionUpdates) == 0 {
 		return []datastore.Subscription{}, nil
 	}
 
-	subs := make([]datastore.Subscription, subCount)
-	cursor := "0"
-	var rows *sqlx.Rows // reuse the mem
-	counter := 0
-	numBatches := int64(math.Ceil(float64(subCount) / float64(pageSize)))
-
-	for i := int64(0); i < numBatches; i++ {
-		q, args, err = sqlx.In(query, t, cursor, projectIDs, pageSize)
-		if err != nil {
-			return nil, err
-		}
-
-		rows, err = s.db.GetReadDB().QueryxContext(ctx, s.db.GetReadDB().Rebind(q), args...)
-		if err != nil {
-			return nil, err
-		}
-
-		// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
-		func() {
-			defer closeWithError(rows)
-			for rows.Next() {
-				sub := datastore.Subscription{}
-				if err = rows.StructScan(&sub); err != nil {
-					return
-				}
-
-				nullifyEmptyConfig(&sub)
-				subs[counter] = sub
-				counter++
-			}
-
-			if counter > 0 {
-				cursor = subs[counter-1].UID
-			}
-		}()
-
-		if err != nil {
-			return nil, err
+	valuesSQL := ""
+	for i := range subscriptionUpdates {
+		valuesSQL += fmt.Sprintf("(:id%d, CAST(:last_updated_at%d AS timestamptz))", i, i)
+		if i < len(subscriptionUpdates)-1 {
+			valuesSQL += ", "
 		}
 	}
 
-	return subs[:counter], nil
+	query := fmt.Sprintf(fetchUpdatedSubscriptions, valuesSQL)
+
+	//Flatten named params into a single map
+	args := map[string]interface{}{}
+	for i, e := range subscriptionUpdates {
+		args[fmt.Sprintf("id%d", i)] = e.UID
+		args[fmt.Sprintf("last_updated_at%d", i)] = e.UpdatedAt
+	}
+
+	args["project_ids"] = projectIDs
+	args["limit"] = pageSize
+
+	// Use sqlx.Named to bind the named parameters
+	query, finalArgs, err := sqlx.Named(query, args)
+	if err != nil {
+		return nil, err
+	}
+
+	query, finalArgs, err = sqlx.In(query, finalArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	query = s.db.GetReadDB().Rebind(query)
+
+	rows, err := s.db.GetReadDB().QueryxContext(ctx, query, finalArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	subs := make([]datastore.Subscription, 0)
+	// using func to avoid calling defer in a loop, that can easily fill up function stack and cause a crash
+	defer closeWithError(rows)
+	for rows.Next() {
+		sub := datastore.Subscription{}
+		if err = rows.StructScan(&sub); err != nil {
+			return nil, err
+		}
+
+		nullifyEmptyConfig(&sub)
+		subs = append(subs, sub)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return subs, nil
 }
 
 func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID string, subscription *datastore.Subscription) error {
@@ -551,6 +595,7 @@ func (s *subscriptionRepo) CreateSubscription(ctx context.Context, projectID str
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 		subscription.FilterConfig.Filter.RawHeaders, subscription.FilterConfig.Filter.RawBody,
+		subscription.DeliveryMode,
 	)
 	if err != nil {
 		return err
@@ -652,6 +697,7 @@ func (s *subscriptionRepo) UpdateSubscription(ctx context.Context, projectID str
 		fc.EventTypes, fc.Filter.Headers, fc.Filter.Body, fc.Filter.IsFlattened,
 		rlc.Count, rlc.Duration, subscription.Function,
 		fc.Filter.RawHeaders, fc.Filter.RawBody,
+		subscription.DeliveryMode,
 	)
 	if err != nil {
 		return err

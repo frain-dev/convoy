@@ -19,6 +19,7 @@ import (
 type MockIdempotency struct {
 	ctrl     *gomock.Controller
 	recorder *MockIdempotencyMockRecorder
+	isgomock struct{}
 }
 
 // MockIdempotencyMockRecorder is the mock recorder for MockIdempotency.
