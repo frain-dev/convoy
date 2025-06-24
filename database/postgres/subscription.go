@@ -34,110 +34,110 @@ const (
 	delivery_mode
 	)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,
-        CASE 
-            WHEN $22 = '' OR $22 IS NULL THEN 'at_least_once'::convoy.delivery_mode 
-            ELSE $22::convoy.delivery_mode 
+        CASE
+            WHEN $22 = '' OR $22 IS NULL THEN 'at_least_once'::convoy.delivery_mode
+            ELSE $22::convoy.delivery_mode
         END
     );
     `
 
 	updateSubscription = `
-    UPDATE convoy.subscriptions SET
-    name=$3,
-  	endpoint_id=$4,
- 	source_id=$5,
-	alert_config_count=$6,
-	alert_config_threshold=$7,
-	retry_config_type=$8,
-	retry_config_duration=$9,
-	retry_config_retry_count=$10,
-	filter_config_event_types=$11,
-	filter_config_filter_headers=$12,
-	filter_config_filter_body=$13,
-	filter_config_filter_is_flattened=$14,
-	rate_limit_config_count=$15,
-	rate_limit_config_duration=$16,
-	function=$17,
-	filter_config_filter_raw_headers=$18,
-	filter_config_filter_raw_body=$19,
-	delivery_mode=CASE 
-        WHEN $20 = '' OR $20 IS NULL THEN COALESCE(delivery_mode, 'at_least_once'::convoy.delivery_mode)
-        ELSE $20::convoy.delivery_mode 
-    END,
-    updated_at=now()
-    WHERE id = $1 AND project_id = $2
-	AND deleted_at IS NULL;
-    `
+        UPDATE convoy.subscriptions SET
+        name=$3,
+          endpoint_id=$4,
+         source_id=$5,
+        alert_config_count=$6,
+        alert_config_threshold=$7,
+        retry_config_type=$8,
+        retry_config_duration=$9,
+        retry_config_retry_count=$10,
+        filter_config_event_types=$11,
+        filter_config_filter_headers=$12,
+        filter_config_filter_body=$13,
+        filter_config_filter_is_flattened=$14,
+        rate_limit_config_count=$15,
+        rate_limit_config_duration=$16,
+        function=$17,
+        filter_config_filter_raw_headers=$18,
+        filter_config_filter_raw_body=$19,
+        delivery_mode=CASE
+            WHEN $20 = '' OR $20 IS NULL THEN 'at_least_once'::convoy.delivery_mode
+            ELSE $20::convoy.delivery_mode
+        END,
+        updated_at=now()
+        WHERE id = $1 AND project_id = $2
+        AND deleted_at IS NULL;
+        `
 
 	baseFetchSubscription = `
-    SELECT
-    s.id,s.name,s.type,
-	s.project_id,
-	s.created_at,
-	s.updated_at, s.function,
-	COALESCE(s.delivery_mode, 'at_least_once'::convoy.delivery_mode) AS "delivery_mode",
+        SELECT
+        s.id,s.name,s.type,
+        s.project_id,
+        s.created_at,
+        s.updated_at, s.function,
+        s.delivery_mode AS "delivery_mode",
 
-	COALESCE(s.endpoint_id,'') AS "endpoint_id",
-	COALESCE(s.device_id,'') AS "device_id",
-	COALESCE(s.source_id,'') AS "source_id",
+        COALESCE(s.endpoint_id,'') AS "endpoint_id",
+        COALESCE(s.device_id,'') AS "device_id",
+        COALESCE(s.source_id,'') AS "source_id",
 
-	s.alert_config_count AS "alert_config.count",
-	s.alert_config_threshold AS "alert_config.threshold",
-	s.retry_config_type AS "retry_config.type",
-	s.retry_config_duration AS "retry_config.duration",
-	s.retry_config_retry_count AS "retry_config.retry_count",
-	s.filter_config_event_types AS "filter_config.event_types",
+        s.alert_config_count AS "alert_config.count",
+        s.alert_config_threshold AS "alert_config.threshold",
+        s.retry_config_type AS "retry_config.type",
+        s.retry_config_duration AS "retry_config.duration",
+        s.retry_config_retry_count AS "retry_config.retry_count",
+        s.filter_config_event_types AS "filter_config.event_types",
 
-	s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
-	s.filter_config_filter_raw_body AS "filter_config.filter.raw_body",
-	s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
-	s.filter_config_filter_headers AS "filter_config.filter.headers",
-	s.filter_config_filter_body AS "filter_config.filter.body",
+        s.filter_config_filter_raw_headers AS "filter_config.filter.raw_headers",
+        s.filter_config_filter_raw_body AS "filter_config.filter.raw_body",
+        s.filter_config_filter_is_flattened AS "filter_config.filter.is_flattened",
+        s.filter_config_filter_headers AS "filter_config.filter.headers",
+        s.filter_config_filter_body AS "filter_config.filter.body",
 
-	s.rate_limit_config_count AS "rate_limit_config.count",
-	s.rate_limit_config_duration AS "rate_limit_config.duration",
+        s.rate_limit_config_count AS "rate_limit_config.count",
+        s.rate_limit_config_duration AS "rate_limit_config.duration",
 
-	CASE
-    WHEN em.is_encrypted THEN
-        COALESCE(pgp_sym_decrypt(em.secrets_cipher::bytea, '%s')::jsonb, '[]'::jsonb)
-    ELSE
-        COALESCE(em.secrets, '[]'::jsonb)
-    END AS "endpoint_metadata.secrets",
-	COALESCE(em.id,'') AS "endpoint_metadata.id",
-	COALESCE(em.name,'') AS "endpoint_metadata.name",
-	COALESCE(em.project_id,'') AS "endpoint_metadata.project_id",
-	COALESCE(em.support_email,'') AS "endpoint_metadata.support_email",
-	COALESCE(em.url,'') AS "endpoint_metadata.url",
-	COALESCE(em.status, '') AS "endpoint_metadata.status",
-	COALESCE(em.owner_id, '') AS "endpoint_metadata.owner_id",
+        CASE
+        WHEN em.is_encrypted THEN
+            COALESCE(pgp_sym_decrypt(em.secrets_cipher::bytea, '%s')::jsonb, '[]'::jsonb)
+        ELSE
+            COALESCE(em.secrets, '[]'::jsonb)
+        END AS "endpoint_metadata.secrets",
+        COALESCE(em.id,'') AS "endpoint_metadata.id",
+        COALESCE(em.name,'') AS "endpoint_metadata.name",
+        COALESCE(em.project_id,'') AS "endpoint_metadata.project_id",
+        COALESCE(em.support_email,'') AS "endpoint_metadata.support_email",
+        COALESCE(em.url,'') AS "endpoint_metadata.url",
+        COALESCE(em.status, '') AS "endpoint_metadata.status",
+        COALESCE(em.owner_id, '') AS "endpoint_metadata.owner_id",
 
-	COALESCE(d.id,'') AS "device_metadata.id",
-	COALESCE(d.status,'') AS "device_metadata.status",
-	COALESCE(d.host_name,'') AS "device_metadata.host_name",
+        COALESCE(d.id,'') AS "device_metadata.id",
+        COALESCE(d.status,'') AS "device_metadata.status",
+        COALESCE(d.host_name,'') AS "device_metadata.host_name",
 
-	COALESCE(sm.id,'') AS "source_metadata.id",
-	COALESCE(sm.name,'') AS "source_metadata.name",
-	COALESCE(sm.type,'') AS "source_metadata.type",
-	COALESCE(sm.mask_id,'') AS "source_metadata.mask_id",
-	COALESCE(sm.project_id,'') AS "source_metadata.project_id",
- 	COALESCE(sm.is_disabled,FALSE) AS "source_metadata.is_disabled",
+        COALESCE(sm.id,'') AS "source_metadata.id",
+        COALESCE(sm.name,'') AS "source_metadata.name",
+        COALESCE(sm.type,'') AS "source_metadata.type",
+        COALESCE(sm.mask_id,'') AS "source_metadata.mask_id",
+        COALESCE(sm.project_id,'') AS "source_metadata.project_id",
+         COALESCE(sm.is_disabled,FALSE) AS "source_metadata.is_disabled",
 
-	COALESCE(sv.type, '') AS "source_metadata.verifier.type",
-	COALESCE(sv.basic_username, '') AS "source_metadata.verifier.basic_auth.username",
-	COALESCE(sv.basic_password, '') AS "source_metadata.verifier.basic_auth.password",
-	COALESCE(sv.api_key_header_name, '') AS "source_metadata.verifier.api_key.header_name",
-	COALESCE(sv.api_key_header_value, '') AS "source_metadata.verifier.api_key.header_value",
-	COALESCE(sv.hmac_hash, '') AS "source_metadata.verifier.hmac.hash",
-	COALESCE(sv.hmac_header, '') AS "source_metadata.verifier.hmac.header",
-	COALESCE(sv.hmac_secret, '') AS "source_metadata.verifier.hmac.secret",
-	COALESCE(sv.hmac_encoding, '') AS "source_metadata.verifier.hmac.encoding"
+        COALESCE(sv.type, '') AS "source_metadata.verifier.type",
+        COALESCE(sv.basic_username, '') AS "source_metadata.verifier.basic_auth.username",
+        COALESCE(sv.basic_password, '') AS "source_metadata.verifier.basic_auth.password",
+        COALESCE(sv.api_key_header_name, '') AS "source_metadata.verifier.api_key.header_name",
+        COALESCE(sv.api_key_header_value, '') AS "source_metadata.verifier.api_key.header_value",
+        COALESCE(sv.hmac_hash, '') AS "source_metadata.verifier.hmac.hash",
+        COALESCE(sv.hmac_header, '') AS "source_metadata.verifier.hmac.header",
+        COALESCE(sv.hmac_secret, '') AS "source_metadata.verifier.hmac.secret",
+        COALESCE(sv.hmac_encoding, '') AS "source_metadata.verifier.hmac.encoding"
 
-	FROM convoy.subscriptions s
-	LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
-	LEFT JOIN convoy.sources sm ON s.source_id = sm.id
-	LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
-	LEFT JOIN convoy.devices d ON s.device_id = d.id
-	WHERE s.deleted_at IS NULL `
+        FROM convoy.subscriptions s
+        LEFT JOIN convoy.endpoints em ON s.endpoint_id = em.id
+        LEFT JOIN convoy.sources sm ON s.source_id = sm.id
+        LEFT JOIN convoy.source_verifiers sv ON sv.id = sm.source_verifier_id
+        LEFT JOIN convoy.devices d ON s.device_id = d.id
+        WHERE s.deleted_at IS NULL `
 
 	fetchSubscriptionsForBroadcast = `
     select id, type, project_id, endpoint_id, function,
@@ -292,8 +292,8 @@ const (
 	`
 
 	upsertSubscriptionEventTypes = `
-	INSERT INTO convoy.event_types (id, name, project_id, description, category) 
-	VALUES (:id, :name, :project_id, :description, :category) 
+	INSERT INTO convoy.event_types (id, name, project_id, description, category)
+	VALUES (:id, :name, :project_id, :description, :category)
 	on conflict do nothing;`
 
 	insertSubscriptionEventTypeFilters = `
