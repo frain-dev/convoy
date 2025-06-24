@@ -423,26 +423,25 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	}
 
 	headers := e.GetRawHeaders()
-	var s *datastore.Subscription
 
 	for i := range subscriptions {
-		s = &subscriptions[i]
-		if len(s.FilterConfig.Filter.Body) == 0 && len(s.FilterConfig.Filter.Headers) == 0 {
-			matched = append(matched, *s)
+		sub := &subscriptions[i]
+		if len(sub.FilterConfig.Filter.Body) == 0 && len(sub.FilterConfig.Filter.Headers) == 0 {
+			matched = append(matched, *sub)
 			continue
 		}
 
-		isBodyMatched, err := subRepo.CompareFlattenedPayload(ctx, flatPayload, s.FilterConfig.Filter.Body, s.FilterConfig.Filter.IsFlattened)
+		isBodyMatched, err := subRepo.CompareFlattenedPayload(ctx, flatPayload, sub.FilterConfig.Filter.Body, sub.FilterConfig.Filter.IsFlattened)
 		if err != nil && soft {
-			log.WithError(err).Errorf("subcription (%s) failed to match body", s.UID)
+			log.WithError(err).Errorf("subcription (%s) failed to match body", sub.UID)
 			continue
 		} else if err != nil {
 			return nil, err
 		}
 
-		isHeaderMatched, err := subRepo.CompareFlattenedPayload(ctx, headers, s.FilterConfig.Filter.Headers, s.FilterConfig.Filter.IsFlattened)
+		isHeaderMatched, err := subRepo.CompareFlattenedPayload(ctx, headers, sub.FilterConfig.Filter.Headers, sub.FilterConfig.Filter.IsFlattened)
 		if err != nil && soft {
-			log.WithError(err).Errorf("subscription (%s) failed to match header", s.UID)
+			log.WithError(err).Errorf("subscription (%s) failed to match header", sub.UID)
 			continue
 		} else if err != nil {
 			return nil, err
@@ -451,7 +450,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		isMatched := isHeaderMatched && isBodyMatched
 
 		if isMatched {
-			matched = append(matched, *s)
+			matched = append(matched, *sub)
 		}
 	}
 
