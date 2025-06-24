@@ -8,10 +8,10 @@ import { PrivateService } from 'src/app/private/private.service';
 export class RbacService {
 	permissions = {
 		PROJECT_VIEWER: ['Event Deliveries|VIEW', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW'],
-		PROJECT_ADMIN: ['Event Deliveries|MANAGE', 'Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Events|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE', 'Event Types|MANAGE'],
-		ORGANISATION_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE'],
+		PROJECT_ADMIN: ['Event Deliveries|MANAGE', 'Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Events|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE', 'Event Types|MANAGE', 'Project Setup|MANAGE'],
+		ORGANISATION_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE', 'Project Setup|MANAGE'],
 		BILLING_ADMIN: ['Billing|MANAGE'],
-		INSTANCE_ADMIN: ['Instance|MANAGE']
+		INSTANCE_ADMIN: ['Instance|MANAGE', 'Project Setup|MANAGE']
 	};
 
 	constructor(private privateService: PrivateService, private route: ActivatedRoute) {}
@@ -103,6 +103,7 @@ export type PERMISSION =
 	| 'Organisations|MANAGE'
 	| 'Billing|MANAGE'
 	| 'Instance|MANAGE'
-	| 'Event Types|MANAGE';
+	| 'Event Types|MANAGE'
+	| 'Project Setup|MANAGE';
 
 export type ROLE = 'PROJECT_VIEWER' | 'PROJECT_ADMIN' | 'ORGANISATION_ADMIN' | 'BILLING_ADMIN' | 'INSTANCE_ADMIN';

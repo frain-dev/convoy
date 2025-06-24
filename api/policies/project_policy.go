@@ -19,6 +19,20 @@ type ProjectPolicy struct {
 }
 
 func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
+	return pp.checkAccess(ctx, res, func(member *datastore.OrganisationMember) bool {
+		adminAllowed := isProjectAdmin(member) && pp.Licenser.MultiPlayerMode()
+		return isOrganisationAdmin(member) || adminAllowed
+	})
+}
+
+func (pp *ProjectPolicy) View(ctx context.Context, res interface{}) error {
+	return pp.checkAccess(ctx, res, func(member *datastore.OrganisationMember) bool {
+		viewerAllowed := isProjectViewer(member) && pp.Licenser.MultiPlayerMode()
+		return isOrganisationAdmin(member) || viewerAllowed
+	})
+}
+
+func (pp *ProjectPolicy) checkAccess(ctx context.Context, res interface{}, checkMember func(*datastore.OrganisationMember) bool) error {
 	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
 
 	project, ok := res.(*datastore.Project)
@@ -39,17 +53,14 @@ func (pp *ProjectPolicy) Manage(ctx context.Context, res interface{}) error {
 		}
 		member, err := pp.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 		if err != nil {
-			m, err := pp.OrganisationMemberRepo.FetchInstanceAdminUserID(ctx, user.UID)
+			m, err := pp.OrganisationMemberRepo.FetchInstanceAdminByUserID(ctx, user.UID)
 			if err == nil && isInstanceAdmin(m) {
 				return nil
 			}
 			return ErrNotAllowed
 		}
 
-		// to allow admin roles, MultiPlayerMode must be enabled
-		adminAllowed := isProjectAdmin(member) && pp.Licenser.MultiPlayerMode()
-
-		if isOrganisationAdmin(member) || adminAllowed {
+		if checkMember(member) {
 			return nil
 		}
 
@@ -72,8 +83,12 @@ func (pp *ProjectPolicy) GetName() string {
 	return "project"
 }
 
+func isProjectViewer(m *datastore.OrganisationMember) bool {
+	return m.Role.Type == auth.RoleProjectViewer || isProjectAdmin(m)
+}
+
 func isProjectAdmin(m *datastore.OrganisationMember) bool {
-	return m.Role.Type == auth.RoleProjectAdmin || isInstanceAdmin(m)
+	return m.Role.Type == auth.RoleProjectAdmin || isOrganisationAdmin(m)
 }
 
 func isOrganisationAdmin(m *datastore.OrganisationMember) bool {

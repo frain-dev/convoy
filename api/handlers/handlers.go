@@ -63,7 +63,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 			return nil, err
 		}
 
-		if err = h.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		if err = h.A.Authz.Authorize(r.Context(), "project.view", project); err != nil {
 			return nil, err
 		}
 	case h.IsReqWithProjectAPIKey(authUser):

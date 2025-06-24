@@ -74,7 +74,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 						Return(nil, errors.New("rejected"))
 
 					orgMemberRepo.EXPECT().
-						FetchInstanceAdminUserID(gomock.Any(), gomock.Any()).
+						FetchInstanceAdminByUserID(gomock.Any(), gomock.Any()).
 						Return(nil, sql.ErrNoRows)
 				},
 			},
@@ -169,10 +169,13 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
 						Return(&datastore.OrganisationMember{UID: "randomstring", Role: auth.Role{
-							Type:     auth.RoleOrganisationAdmin,
+							Type:     auth.RoleInstanceAdmin,
 							Project:  "",
 							Endpoint: "",
 						}}, nil)
+					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
+					licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+
 				},
 			},
 		},
@@ -204,7 +207,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil, errors.New("rejected"))
 					orgMemberRepo.EXPECT().
-						FetchInstanceAdminUserID(gomock.Any(), gomock.Any()).
+						FetchInstanceAdminByUserID(gomock.Any(), gomock.Any()).
 						Return(nil, sql.ErrNoRows)
 				},
 			},
@@ -239,6 +242,8 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 								Type: auth.RoleOrganisationAdmin,
 							},
 						}, nil)
+					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
+					licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 				},
 			},
 		},
@@ -259,6 +264,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					}
 
 					policy.SetRule("manage", authz.RuleFunc(policy.Manage))
+					policy.SetRule("view", authz.RuleFunc(policy.View))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)

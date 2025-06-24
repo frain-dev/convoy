@@ -193,7 +193,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				member: &datastore.OrganisationMember{
 					UID:            "abc",
 					OrganisationID: "555",
-					Role:           auth.Role{Type: auth.RoleProjectAdmin},
+					Role:           auth.Role{Type: auth.RoleAPI},
 				},
 			},
 			dbFn: func(ss *CreateAPIKeyService) {

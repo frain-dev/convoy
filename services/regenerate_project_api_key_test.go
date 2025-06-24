@@ -135,7 +135,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleProjectAdmin,
+						Type:     auth.RoleAPI,
 						Project:  "1234",
 						Endpoint: "",
 					},

@@ -772,6 +772,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 		}
 
 		po.SetRule("manage", authz.RuleFunc(po.Manage))
+		po.SetRule("view", authz.RuleFunc(po.View))
 
 		return po
 	}())

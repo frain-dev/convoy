@@ -44,7 +44,7 @@ func Test_OrganisationPolicy_Manage(t *testing.T) {
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil, errors.New("Failed"))
 					orgMem.EXPECT().
-						FetchInstanceAdminUserID(gomock.Any(), gomock.Any()).
+						FetchInstanceAdminByUserID(gomock.Any(), gomock.Any()).
 						Return(nil, sql.ErrNoRows)
 				},
 			},

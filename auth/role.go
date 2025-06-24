@@ -45,8 +45,27 @@ func (r RoleType) String() string {
 	return string(r)
 }
 
-func (r RoleType) Is(rt RoleType) bool {
-	return r == rt
+func roleRank(rt RoleType) int {
+	switch rt {
+	case RoleInstanceAdmin:
+		return 5
+	case RoleOrganisationAdmin:
+		return 4
+	case RoleBillingAdmin:
+		return 3
+	case RoleProjectAdmin:
+		return 2
+	case RoleProjectViewer:
+		return 1
+	case RoleAPI:
+		return 0 // deprecated or lowest
+	default:
+		return -1 // unknown role
+	}
+}
+
+func (r RoleType) IsAtLeast(rt RoleType) bool {
+	return roleRank(r) >= roleRank(rt)
 }
 
 func (r *Role) Validate(credType string) error {

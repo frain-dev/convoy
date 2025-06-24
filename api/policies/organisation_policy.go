@@ -3,7 +3,6 @@ package policies
 import (
 	"context"
 	"errors"
-
 	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
@@ -22,7 +21,7 @@ func (op *OrganisationPolicy) ManageAll(ctx context.Context, res interface{}) er
 		return ErrNotAllowed
 	}
 
-	member, err := op.OrganisationMemberRepo.FetchInstanceAdminUserID(ctx, user.UID)
+	member, err := op.OrganisationMemberRepo.FetchInstanceAdminByUserID(ctx, user.UID)
 	if err != nil {
 		return ErrNotAllowed
 	}
@@ -49,7 +48,7 @@ func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error
 
 	member, err := op.OrganisationMemberRepo.FetchOrganisationMemberByUserID(ctx, user.UID, org.UID)
 	if err != nil {
-		m, err := op.OrganisationMemberRepo.FetchInstanceAdminUserID(ctx, user.UID)
+		m, err := op.OrganisationMemberRepo.FetchInstanceAdminByUserID(ctx, user.UID)
 		if err == nil && isInstanceAdmin(m) {
 			return nil
 		}

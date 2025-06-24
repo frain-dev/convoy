@@ -26,7 +26,7 @@ func NewOrganisationMemberService(orgMemberRepo datastore.OrganisationMemberRepo
 
 func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Context, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
 	if !om.licenser.MultiPlayerMode() {
-		role.Type = auth.RoleOrganisationAdmin
+		role.Type = auth.RoleInstanceAdmin
 	}
 
 	err := role.Validate("organisation member")
