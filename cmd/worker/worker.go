@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
-	"net/http"
-	"strings"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
@@ -41,7 +42,6 @@ import (
 
 func AddWorkerCommand(a *cli.App) *cobra.Command {
 	var workerPort uint32
-	var logLevel string
 	var consumerPoolSize int
 	var interval int
 
@@ -119,7 +119,6 @@ func AddWorkerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().Uint32Var(&smtpPort, "smtp-port", 0, "SMTP Port")
 
 	cmd.Flags().Uint32Var(&workerPort, "worker-port", 0, "Worker port")
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "scheduler log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
 	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")
@@ -131,22 +130,16 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("worker")
 
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-	lo.SetLevel(lvl)
-
 	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
 	if km.IsSet() {
-		if _, err = km.GetCurrentKeyFromCache(); err != nil {
+		if _, err := km.GetCurrentKeyFromCache(); err != nil {
 			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
 				return err
 			}
 			km.Unset()
 		}
 	}
-	if err = keys.Set(km); err != nil {
+	if err := keys.Set(km); err != nil {
 		return err
 	}
 
@@ -218,8 +211,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	q := redisQueue.NewQueue(opts)
 
+	ctx = log.NewContext(ctx, lo, log.Fields{})
+	lvl, err := log.ParseLevel(cfg.Logger.Level)
+	if err != nil {
+		return err
+	}
+
 	// register worker.
-	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo)
+	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo, lvl)
 	projectRepo := postgres.NewProjectRepo(a.DB)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)

@@ -38,9 +38,11 @@ func NewSubscriptionLoader(
 
 func (s *SubscriptionLoader) SyncChanges(ctx context.Context, table *memorystore.Table) error {
 	if !s.loaded {
+		s.log.Debug("performing initial load")
 		return s.performInitialLoad(ctx, table)
 	}
 
+	s.log.Debug("performing incremental sync")
 	return s.performIncrementalSync(ctx, table)
 }
 

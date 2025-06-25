@@ -414,36 +414,65 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	var payload interface{}
 	err := json.Unmarshal(e.Data, &payload) // TODO(all): find a way to stop doing this repeatedly, json.Unmarshal is slow and costly
 	if err != nil {
+		log.FromContext(ctx).WithFields(log.Fields{
+			"event.id": e.UID,
+		}).WithError(err).Error("failed to unmarshal event data")
 		return nil, err
 	}
 
 	flatPayload, err := flatten.Flatten(payload)
 	if err != nil {
+		log.FromContext(ctx).WithFields(log.Fields{
+			"event.id": e.UID,
+		}).WithError(err).Error("failed to flatten event data")
 		return nil, err
 	}
 
 	headers := e.GetRawHeaders()
 
 	for i := range subscriptions {
+		log.FromContext(ctx).WithFields(log.Fields{
+			"event.id":        e.UID,
+			"subscription.id": subscriptions[i].UID,
+		}).Debug("matching subscription")
+
 		sub := &subscriptions[i]
 		if len(sub.FilterConfig.Filter.Body) == 0 && len(sub.FilterConfig.Filter.Headers) == 0 {
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).Debug("subscription matched")
 			matched = append(matched, *sub)
 			continue
 		}
 
 		isBodyMatched, err := subRepo.CompareFlattenedPayload(ctx, flatPayload, sub.FilterConfig.Filter.Body, sub.FilterConfig.Filter.IsFlattened)
 		if err != nil && soft {
-			log.WithError(err).Errorf("subcription (%s) failed to match body", sub.UID)
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).WithError(err).Errorf("subcription (%s) failed to match body", sub.UID)
 			continue
 		} else if err != nil {
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).WithError(err).Error("subscription failed to match body")
 			return nil, err
 		}
 
 		isHeaderMatched, err := subRepo.CompareFlattenedPayload(ctx, headers, sub.FilterConfig.Filter.Headers, sub.FilterConfig.Filter.IsFlattened)
 		if err != nil && soft {
-			log.WithError(err).Errorf("subscription (%s) failed to match header", sub.UID)
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).WithError(err).Errorf("subscription (%s) failed to match header", sub.UID)
 			continue
 		} else if err != nil {
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).WithError(err).Error("subscription failed to match header")
 			return nil, err
 		}
 
@@ -452,6 +481,11 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		if isMatched {
 			matched = append(matched, *sub)
 		}
+
+		log.FromContext(ctx).WithFields(log.Fields{
+			"event.id":        e.UID,
+			"subscription.id": sub.UID,
+		}).Debug("subscription matched passed")
 	}
 
 	return matched, nil

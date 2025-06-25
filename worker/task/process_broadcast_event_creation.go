@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"gopkg.in/guregu/null.v4"
 
@@ -148,6 +149,11 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	subscriptions := make([]datastore.Subscription, 0, len(matchAllSubs)+len(eventTypeSubs))
 	subscriptions = append(subscriptions, eventTypeSubs...)
 	subscriptions = append(subscriptions, matchAllSubs...)
+
+	log.FromContext(ctx).WithFields(log.Fields{
+		"event.id":      broadcastEvent.UID,
+		"subscriptions": subscriptions,
+	}).Debug("matching subscriptions using filter")
 
 	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, args.subRepo, args.licenser, subscriptions, true)
 	if err != nil {

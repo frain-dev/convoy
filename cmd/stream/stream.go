@@ -85,12 +85,6 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			lo := a.Logger.(*log.Logger)
 			lo.SetPrefix("stream server")
 
-			lvl, err := log.ParseLevel(cfg.Logger.Level)
-			if err != nil {
-				return err
-			}
-			lo.SetLevel(lvl)
-
 			h := socket.NewHub()
 			h.Start(context.Background())
 
@@ -113,7 +107,11 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			}
 			q := redisQueue.NewQueue(opts)
 
-			consumer := worker.NewConsumer(ctx, 100, q, lo)
+			lvl, err := log.ParseLevel(cfg.Logger.Level)
+			if err != nil {
+				return err
+			}
+			consumer := worker.NewConsumer(ctx, 100, q, lo, lvl)
 			consumer.RegisterHandlers(convoy.StreamCliEventsProcessor, h.EventDeliveryCLiHandler(r), nil)
 
 			// start worker
