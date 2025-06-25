@@ -137,12 +137,6 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-	lo.SetLevel(lvl)
-
 	// start events handler
 	srv := server.NewServer(cfg.Server.HTTP.AgentPort, func() {})
 

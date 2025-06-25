@@ -453,7 +453,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		// First check if there's a specific filter for this event type
 		filter, innerErr := filterRepo.FindFilterBySubscriptionAndEventType(ctx, s.UID, string(e.EventType))
 		if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
-			log.WithError(innerErr).Errorf("failed to find filter for subscription (%s) and event type (%s)", s.UID, e.EventType)
+			log.FromContext(ctx).WithError(innerErr).Errorf("failed to find filter for subscription (%s) and event type (%s)", s.UID, e.EventType)
 			continue
 		} else if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() {
 			return nil, innerErr
@@ -463,7 +463,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		if filter == nil {
 			filter, innerErr = filterRepo.FindFilterBySubscriptionAndEventType(ctx, s.UID, "*")
 			if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
-				log.WithError(innerErr).Errorf("failed to find catch-all filter for subscription (%s)", s.UID)
+				log.FromContext(ctx).WithError(innerErr).Errorf("failed to find catch-all filter for subscription (%s)", s.UID)
 				continue
 			} else if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) {
 				return nil, innerErr
@@ -478,7 +478,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 
 		isBodyMatched, innerErr := subRepo.CompareFlattenedPayload(ctx, flatPayload, filter.Body, true)
 		if innerErr != nil && soft {
-			log.WithError(innerErr).Errorf("subcription (%s) failed to match body", s.UID)
+			log.FromContext(ctx).WithError(innerErr).Errorf("subcription (%s) failed to match body", s.UID)
 			continue
 		} else if innerErr != nil {
 			return nil, innerErr
@@ -486,7 +486,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 
 		isHeaderMatched, innerErr := subRepo.CompareFlattenedPayload(ctx, headers, filter.Headers, true)
 		if innerErr != nil && soft {
-			log.WithError(innerErr).Errorf("subscription (%s) failed to match header", s.UID)
+			log.FromContext(ctx).WithError(innerErr).Errorf("subscription (%s) failed to match header", s.UID)
 			continue
 		} else if innerErr != nil {
 			return nil, innerErr

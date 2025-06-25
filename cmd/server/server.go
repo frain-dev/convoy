@@ -3,11 +3,12 @@ package server
 import (
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	_ "net/http/pprof"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 
@@ -32,7 +33,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	var proxy string
 	var limiter string
 	var cache string
-	var logger string
 	var sslKeyFile string
 	var sslCertFile string
 	var promaddr string
@@ -72,7 +72,6 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 
 	cmd.Flags().StringVar(&apiKeyAuthConfig, "api-auth", "", "API-Key authentication credentials")
 	cmd.Flags().StringVar(&basicAuthConfig, "basic-auth", "", "Basic authentication credentials")
-	cmd.Flags().StringVar(&logger, "logger", "info", "Logger")
 	cmd.Flags().StringVar(&proxy, "proxy", "", "HTTP Proxy")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
 	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
@@ -129,12 +128,6 @@ func startConvoyServer(a *cli.App) error {
 
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("api server")
-
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-	lo.SetLevel(lvl)
 
 	srv := server.NewServer(cfg.Server.HTTP.Port, func() {})
 

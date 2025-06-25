@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -12,6 +13,13 @@ import (
 	"go.opentelemetry.io/otel/codes"
 )
 
+type ConsumerConfig struct {
+	ConsumerPoolSize int
+	Queue            queue.Queuer
+	Logger           log.StdLogger
+	LogLevel         log.Level
+}
+
 type Consumer struct {
 	queue queue.Queuer
 	mux   *asynq.ServeMux
@@ -19,27 +27,27 @@ type Consumer struct {
 	log   log.StdLogger
 }
 
-func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consumer {
-	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
+func NewConsumer(ctx context.Context, cfg ConsumerConfig) *Consumer {
+	cfg.Logger.Infof("The consumer pool size has been set to %d.", cfg.ConsumerPoolSize)
 
 	var opts asynq.RedisConnOpt
 
-	if len(q.Options().RedisAddress) == 1 {
-		opts = q.Options().RedisClient
+	if len(cfg.Queue.Options().RedisAddress) == 1 {
+		opts = cfg.Queue.Options().RedisClient
 	} else {
 		opts = asynq.RedisClusterClientOpt{
-			Addrs: q.Options().RedisAddress,
+			Addrs: cfg.Queue.Options().RedisAddress,
 		}
 	}
 
 	srv := asynq.NewServer(
 		opts,
 		asynq.Config{
-			Concurrency: consumerPoolSize,
+			Concurrency: cfg.ConsumerPoolSize,
 			BaseContext: func() context.Context {
 				return ctx
 			},
-			Queues: q.Options().Names,
+			Queues: cfg.Queue.Options().Names,
 			IsFailure: func(err error) bool {
 				if _, ok := err.(*task.RateLimitError); ok {
 					return false
@@ -52,15 +60,16 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 				return true
 			},
 			RetryDelayFunc: task.GetRetryDelay,
-			Logger:         lo,
+			Logger:         cfg.Logger,
+			LogLevel:       getLogLevel(cfg.LogLevel),
 		},
 	)
 
 	mux := asynq.NewServeMux()
 
 	return &Consumer{
-		queue: q,
-		log:   lo,
+		queue: cfg.Queue,
+		log:   cfg.Logger,
 		mux:   mux,
 		srv:   srv,
 	}
@@ -107,4 +116,21 @@ func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) 
 
 		return nil
 	})
+}
+
+func getLogLevel(lvl log.Level) asynq.LogLevel {
+	switch lvl {
+	case log.DebugLevel:
+		return asynq.DebugLevel
+	case log.InfoLevel:
+		return asynq.InfoLevel
+	case log.WarnLevel:
+		return asynq.WarnLevel
+	case log.ErrorLevel:
+		return asynq.ErrorLevel
+	case log.FatalLevel:
+		return asynq.FatalLevel
+	default:
+		return asynq.InfoLevel
+	}
 }
