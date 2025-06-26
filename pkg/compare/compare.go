@@ -238,21 +238,23 @@ func in(payload, filter interface{}) (bool, error) {
 		}
 	}
 
-	sort.SliceStable(p, func(i, j int) bool {
-		switch pi := p[i].(type) {
+	pCopy := make([]interface{}, len(p))
+	copy(pCopy, p)
+	sort.SliceStable(pCopy, func(i, j int) bool {
+		switch pi := pCopy[i].(type) {
 		case string:
-			return pi < p[j].(string)
+			return pi < pCopy[j].(string)
 		case float64:
-			return pi < p[j].(float64)
+			return pi < pCopy[j].(float64)
 		case int:
-			return pi < p[j].(int)
+			return pi < pCopy[j].(int)
 		}
 
 		return false
 	})
 
 	found := false
-	for _, v := range p {
+	for _, v := range pCopy {
 		if v == filter {
 			found = true
 		}
