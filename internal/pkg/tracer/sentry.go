@@ -29,11 +29,17 @@ func NewSentryTracer(cfg config.SentryConfiguration) *SentryTracer {
 }
 
 func (st *SentryTracer) Init(componentName string) error {
+	// Set default sample rate if not configured
+	sampleRate := st.cfg.SampleRate
+	if sampleRate == 0 {
+		sampleRate = 1.0 // Default to 100% sampling if not specified
+	}
+
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              st.cfg.DSN,
 		ServerName:       componentName,
 		EnableTracing:    true,
-		TracesSampleRate: 1.0,
+		TracesSampleRate: sampleRate,
 		Debug:            true,
 	})
 	if err != nil {
