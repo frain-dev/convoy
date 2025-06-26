@@ -1077,6 +1077,43 @@ type Subscription struct {
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
+func stringSliceContains(sl []string, s string) bool {
+	for _, v := range sl {
+		if v == s {
+			return true
+		}
+	}
+
+	return false
+}
+
+func CountSubscriptionFilter(ids []string, s *Subscription) int {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("panic recovered: ", r)
+		}
+	}()
+
+	if !stringSliceContains(ids, s.UID) {
+		return -1
+	}
+
+	ors := s.FilterConfig.Filter.Body["$or"].([]interface{})
+
+	for _, or := range ors {
+		and := or.(map[string]interface{})["$and"].([]interface{})
+
+		// Check if type is reaction.created
+		if and[0].(map[string]interface{})["type"] == "reaction.created" {
+			// Now get the $in list
+			in := and[1].(map[string]interface{})["$or"].([]interface{})[0].(map[string]interface{})["data.user.fid"].(map[string]interface{})["$in"].([]interface{})
+			return len(in)
+		}
+	}
+
+	return 0
+}
+
 // For DB access
 func (s *Subscription) GetAlertConfig() AlertConfiguration {
 	if s.AlertConfig != nil {

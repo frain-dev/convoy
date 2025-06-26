@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -61,8 +62,8 @@ func (s *SubscriptionLoader) performInitialLoad(ctx context.Context, table *memo
 
 		s.log.WithFields(log.Fields{
 			"subscription.id": sub.UID,
-			"filter":          sub.FilterConfig,
-		}).Debug("adding subscription to collection on initial load")
+			"filter.count":    datastore.CountSubscriptionFilter(s.getDebugIDs(), &sub),
+		}).Debug("adding subscription to in-memory cache")
 	}
 
 	s.loaded = true
@@ -100,8 +101,8 @@ func (s *SubscriptionLoader) processUpdatedSubscriptions(ctx context.Context, ta
 
 		s.log.WithFields(log.Fields{
 			"subscription.id": sub.UID,
-			"filter":          sub.FilterConfig,
-		}).Debug("processing updated subscription")
+			"filter.count":    datastore.CountSubscriptionFilter(s.getDebugIDs(), &sub),
+		}).Debug("updating subscription in in-memory cache")
 	}
 
 	return nil
@@ -121,4 +122,14 @@ func (s *SubscriptionLoader) processDeletedSubscriptions(ctx context.Context, ta
 	}
 
 	return nil
+}
+
+func (s *SubscriptionLoader) getDebugIDs() []string {
+	cfg, err := config.Get()
+	if err != nil {
+		s.log.WithError(err).Error("failed to get config")
+		return []string{}
+	}
+
+	return cfg.DebugIDs
 }

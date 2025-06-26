@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/flatten"
@@ -430,18 +431,21 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 
 	headers := e.GetRawHeaders()
 
+	cfg, err := config.Get()
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to get config")
+		return nil, err
+	}
+
 	for i := range subscriptions {
 		log.FromContext(ctx).WithFields(log.Fields{
 			"event.id":        e.UID,
 			"subscription.id": subscriptions[i].UID,
+			"filter.count":    datastore.CountSubscriptionFilter(cfg.DebugIDs, &subscriptions[i]),
 		}).Debug("matching subscription")
 
 		sub := &subscriptions[i]
 		if len(sub.FilterConfig.Filter.Body) == 0 && len(sub.FilterConfig.Filter.Headers) == 0 {
-			log.FromContext(ctx).WithFields(log.Fields{
-				"event.id":        e.UID,
-				"subscription.id": sub.UID,
-			}).Debug("subscription matched")
 			matched = append(matched, *sub)
 			continue
 		}
@@ -484,6 +488,7 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 			log.FromContext(ctx).WithFields(log.Fields{
 				"event.id":        e.UID,
 				"subscription.id": sub.UID,
+				"filter.count":    datastore.CountSubscriptionFilter(cfg.DebugIDs, sub),
 			}).Debug("subscription matched passed")
 		}
 

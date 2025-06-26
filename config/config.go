@@ -423,6 +423,7 @@ type Configuration struct {
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
 	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
 	HCPVault            HCPVaultConfig               `json:"hcp_vault"`
+	DebugIDs            []string                     `json:"debug_ids" envconfig:"CONVOY_DEBUG_IDS"`
 }
 
 type DispatcherConfiguration struct {
