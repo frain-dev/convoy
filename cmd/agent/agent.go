@@ -25,7 +25,6 @@ import (
 
 func AddAgentCommand(a *cli.App) *cobra.Command {
 	var agentPort uint32
-	var logLevel string
 	var consumerPoolSize int
 	var interval int
 
@@ -67,9 +66,6 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				a.Logger.WithError(err).Fatal("Failed to load configuration")
 			}
 
-			// start sync configuration from the database.
-			go memorystore.DefaultStore.Sync(ctx, interval)
-
 			err = workerSrv.StartWorker(ctx, a, cfg, interval)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
@@ -81,6 +77,9 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 				a.Logger.Errorf("Error starting data plane ingest component: %v", err)
 				return err
 			}
+
+			// start sync configuration from the database.
+			go memorystore.DefaultStore.Sync(ctx, interval)
 
 			err = startServerComponent(ctx, a)
 			if err != nil {
@@ -109,7 +108,6 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 
 	cmd.Flags().Uint32Var(&agentPort, "port", 0, "Agent port")
 
-	cmd.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	cmd.Flags().IntVar(&consumerPoolSize, "consumers", -1, "Size of the consumers pool.")
 	cmd.Flags().IntVar(&interval, "interval", 10, "the time interval, measured in seconds to update the in-memory store from the database")
 	cmd.Flags().StringVar(&executionMode, "mode", "", "Execution Mode (one of events, retry and default)")
@@ -189,15 +187,6 @@ func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, erro
 
 	if port != 0 {
 		c.Server.HTTP.AgentPort = port
-	}
-
-	logLevel, err := cmd.Flags().GetString("log-level")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(logLevel) {
-		c.Logger.Level = logLevel
 	}
 
 	// CONVOY_WORKER_POOL_SIZE

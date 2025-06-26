@@ -475,15 +475,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 func buildWorkerCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 	c := &config.Configuration{}
 
-	logLevel, err := cmd.Flags().GetString("log-level")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(logLevel) {
-		c.Logger.Level = logLevel
-	}
-
 	// CONVOY_WORKER_POOL_SIZE
 	consumerPoolSize, err := cmd.Flags().GetInt("consumers")
 	if err != nil {

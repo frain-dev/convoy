@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/frain-dev/convoy/cmd/ff"
-	"github.com/frain-dev/convoy/cmd/utils"
 	"os"
 	"time"
 	_ "time/tzdata"
+
+	"github.com/frain-dev/convoy/cmd/ff"
+	"github.com/frain-dev/convoy/cmd/utils"
 
 	"github.com/frain-dev/convoy/cmd/agent"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
@@ -80,11 +81,13 @@ func main() {
 	var apiRateLimit int
 
 	var licenseKey string
+	var logLevel string
 
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 	c.Flags().StringVar(&licenseKey, "license-key", "", "Convoy license key")
+	c.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 
 	// db config
 	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")

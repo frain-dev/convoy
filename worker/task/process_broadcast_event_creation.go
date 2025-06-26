@@ -153,6 +153,8 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	log.FromContext(ctx).WithFields(log.Fields{
 		"event.id":      broadcastEvent.UID,
 		"subscriptions": subscriptions,
+		"matchAllSubs":  matchAllSubs,
+		"eventTypeSubs": eventTypeSubs,
 	}).Debug("matching subscriptions using filter")
 
 	subscriptions, err = matchSubscriptionsUsingFilter(ctx, broadcastEvent, args.subRepo, args.licenser, subscriptions, true)

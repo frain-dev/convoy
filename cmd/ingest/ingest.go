@@ -21,17 +21,10 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("ingester")
 
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-
-	lo.SetLevel(lvl)
-
 	sourceLoader := pubsub.NewSourceLoader(endpointRepo, sourceRepo, projectRepo, lo)
 	sourceTable := memorystore.NewTable(memorystore.OptionSyncer(sourceLoader))
 
-	err = memorystore.DefaultStore.Register("sources", sourceTable)
+	err := memorystore.DefaultStore.Register("sources", sourceTable)
 	if err != nil {
 		return err
 	}

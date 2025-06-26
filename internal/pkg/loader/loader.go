@@ -58,6 +58,11 @@ func (s *SubscriptionLoader) performInitialLoad(ctx context.Context, table *memo
 	for _, sub := range subscriptions {
 		s.subscriptionCollection.AddOrUpdate(sub)
 		s.tableManager.AddSubscription(sub, table)
+
+		s.log.WithFields(log.Fields{
+			"subscription.id": sub.UID,
+			"filter":          sub.FilterConfig,
+		}).Debug("adding subscription to collection on initial load")
 	}
 
 	s.loaded = true
@@ -92,6 +97,11 @@ func (s *SubscriptionLoader) processUpdatedSubscriptions(ctx context.Context, ta
 		s.tableManager.RemoveSubscriptionFromAllEventTypes(sub, table)
 		s.subscriptionCollection.AddOrUpdate(sub)
 		s.tableManager.AddSubscription(sub, table)
+
+		s.log.WithFields(log.Fields{
+			"subscription.id": sub.UID,
+			"filter":          sub.FilterConfig,
+		}).Debug("processing updated subscription")
 	}
 
 	return nil

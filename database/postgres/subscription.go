@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
+	"strings"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -14,8 +17,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
-	"math"
-	"strings"
 )
 
 const (

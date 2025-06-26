@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"io"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
@@ -122,6 +123,11 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		q = redisQueue.NewQueue(opts)
 
 		lo := log.NewLogger(os.Stdout)
+		lvl, err := log.ParseLevel(cfg.Logger.Level)
+		if err != nil {
+			return err
+		}
+		lo.SetLevel(lvl)
 
 		rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 		if err != nil {

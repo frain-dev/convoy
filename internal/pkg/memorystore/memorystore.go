@@ -3,7 +3,6 @@ package memorystore
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -40,7 +39,6 @@ func (s *Store) Register(name string, table *Table) error {
 
 // TODO(subomi): Improve to have table specific sync intervals.
 func (s *Store) Sync(ctx context.Context, interval int) {
-	fmt.Println("syncing tables", len(s.tables))
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)
 
 	for range ticker.C {

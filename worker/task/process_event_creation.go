@@ -480,12 +480,13 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 
 		if isMatched {
 			matched = append(matched, *sub)
+
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).Debug("subscription matched passed")
 		}
 
-		log.FromContext(ctx).WithFields(log.Fields{
-			"event.id":        e.UID,
-			"subscription.id": sub.UID,
-		}).Debug("subscription matched passed")
 	}
 
 	return matched, nil
