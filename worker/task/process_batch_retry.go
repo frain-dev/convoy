@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/hibiken/asynq"
 	"gopkg.in/guregu/null.v4"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -19,9 +20,10 @@ func ProcessBatchRetry(
 	batchRetryRepo datastore.BatchRetryRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
 	queuer queue.Queuer,
-	lo *log.Logger,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
+		lo := log.FromContext(ctx)
+
 		var batchRetry *datastore.BatchRetry
 		err := msgpack.DecodeMsgPack(t.Payload(), &batchRetry)
 		if err != nil {

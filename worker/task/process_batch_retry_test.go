@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
@@ -374,13 +372,12 @@ func TestProcessBatchRetry(t *testing.T) {
 			batchRetryRepo := mocks.NewMockBatchRetryRepository(ctrl)
 			eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
 			queuer := mocks.NewMockQueuer(ctrl)
-			logger := log.NewLogger(os.Stdout)
 
 			if tc.dbFn != nil {
 				tc.dbFn(batchRetryRepo, eventDeliveryRepo, queuer)
 			}
 
-			processFn := ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, queuer, logger)
+			processFn := ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, queuer)
 
 			data, err := msgpack.EncodeMsgPack(tc.batchRetry)
 			require.NoError(t, err)

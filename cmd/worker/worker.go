@@ -123,15 +123,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	ctx = log.NewContext(ctx, lo, log.Fields{})
-
-	// register worker.
-	consumer := worker.NewConsumer(ctx, worker.ConsumerConfig{
-		ConsumerPoolSize: cfg.ConsumerPoolSize,
-		Queue:            q,
-		Logger:           lo,
-		LogLevel:         lvl,
-	})
 	projectRepo := postgres.NewProjectRepo(a.DB)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
@@ -274,6 +265,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
+	// register worker.
+	consumer := worker.NewConsumer(a.BaseCtx, worker.ConsumerConfig{
+		ConsumerPoolSize: cfg.ConsumerPoolSize,
+		Queue:            q,
+		Logger:           lo,
+		LogLevel:         lvl,
+	})
+
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
@@ -371,13 +370,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
-	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
+	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue), nil)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
 
 	// start worker
 	consumer.Start()
-	lo.Println("Starting Convoy Consumer Pool")
+	lo.Info("Starting Convoy Consumer Pool")
 
 	return ctx.Err()
 }

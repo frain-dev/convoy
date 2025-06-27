@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/go-redsync/redsync/v4"
@@ -24,6 +25,8 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 	rs := redsync.New(pool)
 
 	return func(ctx context.Context, t *asynq.Task) error {
+		lo := log.FromContext(ctx)
+
 		const mutexName = "convoy:backup-project-data:mutex"
 		mutex := rs.NewMutex(mutexName, redsync.WithExpiry(time.Second), redsync.WithTries(1))
 
@@ -41,7 +44,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 
 			ok, _err := mutex.UnlockContext(_ctx)
 			if !ok || _err != nil {
-				log.WithError(_err).Error("failed to release lock")
+				lo.WithError(_err).Error("failed to release lock")
 			}
 		}()
 
@@ -61,7 +64,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 		}
 
 		if len(projects) == 0 {
-			log.Warn("no existing projects, retention policy job exiting")
+			lo.Warn("no existing projects, retention policy job exiting")
 			return nil
 		}
 
@@ -73,7 +76,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 
 			result, innerErr := e.Export(ctx)
 			if innerErr != nil {
-				log.WithError(innerErr).Errorf("Failed to archive project id's (%s) events ", p.UID)
+				lo.WithError(innerErr).Errorf("Failed to archive project id's (%s) events ", p.UID)
 			}
 
 			// upload to object storage.
@@ -92,7 +95,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 			}
 		}
 
-		log.Printf("Backup Project Data job took %f minutes to run", time.Since(c).Minutes())
+		lo.Info("Backup Project Data job took %f minutes to run", time.Since(c).Minutes())
 		return nil
 	}
 }
