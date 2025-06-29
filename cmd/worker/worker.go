@@ -37,22 +37,16 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("worker")
 
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-	lo.SetLevel(lvl)
-
 	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
 	if km.IsSet() {
-		if _, err = km.GetCurrentKeyFromCache(); err != nil {
+		if _, err := km.GetCurrentKeyFromCache(); err != nil {
 			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
 				return err
 			}
 			km.Unset()
 		}
 	}
-	if err = keys.Set(km); err != nil {
+	if err := keys.Set(km); err != nil {
 		return err
 	}
 
@@ -124,8 +118,11 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	q := redisQueue.NewQueue(opts)
 
-	// register worker.
-	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo)
+	lvl, err := log.ParseLevel(cfg.Logger.Level)
+	if err != nil {
+		return err
+	}
+
 	projectRepo := postgres.NewProjectRepo(a.DB)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
@@ -268,6 +265,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
+	// register worker.
+	consumer := worker.NewConsumer(a.BaseCtx, worker.ConsumerConfig{
+		ConsumerPoolSize: cfg.ConsumerPoolSize,
+		Queue:            q,
+		Logger:           lo,
+		LogLevel:         lvl,
+	})
+
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
@@ -365,13 +370,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend), nil)
 	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
 
-	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
+	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue), nil)
 
 	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
 
 	// start worker
 	consumer.Start()
-	lo.Println("Starting Convoy Consumer Pool")
+	lo.Info("Starting Convoy Consumer Pool")
 
 	return ctx.Err()
 }

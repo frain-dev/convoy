@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"context"
+
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/redis/go-redis/v9"
 
@@ -18,6 +20,7 @@ import (
 // App is the core dependency of the entire binary.
 type App struct {
 	Version  string
+	BaseCtx  context.Context
 	DB       database.Database
 	Redis    redis.UniversalClient
 	Queue    queue.Queuer

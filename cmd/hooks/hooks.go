@@ -78,6 +78,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		lo := log.NewLogger(os.Stdout)
+		baseCtx := log.NewContext(context.Background(), lo, log.Fields{})
 
 		lvl, err := log.ParseLevel(cfg.Logger.Level)
 		if err != nil {
@@ -173,6 +174,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		app.Queue = q
 		app.Logger = lo
 		app.Cache = ca
+		app.BaseCtx = baseCtx
 
 		if ok := shouldBootstrap(cmd); ok {
 			err = ensureDefaultUser(context.Background(), app)

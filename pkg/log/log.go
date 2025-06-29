@@ -4,29 +4,25 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	_         StdLogger = &Logger{}
-	stdLogger           = NewLogger(os.Stdout)
-)
+var _ StdLogger = &Logger{}
 
 type StdLogger interface {
-	Info(args ...interface{})
-	Debug(args ...interface{})
-	Warn(args ...interface{})
-	Error(args ...interface{})
-	Fatal(args ...interface{})
+	Info(args ...any)
+	Debug(args ...any)
+	Warn(args ...any)
+	Error(args ...any)
+	Fatal(args ...any)
 
-	Debugf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
-	Fatalf(format string, args ...interface{})
+	Debugf(format string, args ...any)
+	Infof(format string, args ...any)
+	Warnf(format string, args ...any)
+	Errorf(format string, args ...any)
+	Fatalf(format string, args ...any)
 
 	WithFields(f Fields) *logrus.Entry
 	WithError(err error) *logrus.Entry

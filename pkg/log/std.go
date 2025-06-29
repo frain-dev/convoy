@@ -2,9 +2,12 @@ package log
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/sirupsen/logrus"
 )
+
+var stdLogger = NewLogger(os.Stdout)
 
 func Debug(args ...interface{}) {
 	stdLogger.entry.Debug(args...)

@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"strconv"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/email"

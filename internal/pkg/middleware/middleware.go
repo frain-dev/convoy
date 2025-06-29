@@ -171,10 +171,10 @@ func SetupCORS(next http.Handler) http.Handler {
 			return
 		}
 
-		if env := cfg.Environment; string(env) == "development" {
-			w.Header().Set("Access-Control-Allow-Origin", cfg.Host)
+		if strings.TrimSpace(cfg.Environment) == "development" {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Convoy-Version")
 		}
 
 		if r.Method == "OPTIONS" {
