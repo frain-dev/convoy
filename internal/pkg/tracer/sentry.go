@@ -32,7 +32,7 @@ func (st *SentryTracer) Init(componentName string) error {
 	// Set default sample rate if not configured
 	sampleRate := st.cfg.SampleRate
 	if sampleRate == 0 {
-		sampleRate = 1.0 // Default to 100% sampling if not specified
+		sampleRate = 0.1 // Default to 10% sampling if not specified
 	}
 
 	err := sentry.Init(sentry.ClientOptions{
