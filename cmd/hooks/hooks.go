@@ -653,8 +653,14 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			return nil, err
 		}
 
+		sampleRate, err := cmd.Flags().GetFloat64("sentry-sample-rate")
+		if err != nil {
+			return nil, err
+		}
+
 		c.Tracer.Sentry = config.SentryConfiguration{
-			DSN: dsn,
+			DSN:        dsn,
+			SampleRate: sampleRate,
 		}
 
 	}

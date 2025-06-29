@@ -64,6 +64,7 @@ func main() {
 
 	var tracerType string
 	var sentryDSN string
+	var sentrySampleRate float64
 	var otelSampleRate float64
 	var otelCollectorURL string
 	var otelAuthHeaderName string
@@ -121,6 +122,7 @@ func main() {
 	// tracing
 	c.Flags().StringVar(&tracerType, "tracer-type", "", "Tracer backend, e.g. sentry, datadog or otel")
 	c.Flags().StringVar(&sentryDSN, "sentry-dsn", "", "Sentry backend dsn")
+	c.Flags().Float64Var(&sentrySampleRate, "sentry-sample-rate", 1.0, "Sentry tracing sample rate")
 	c.Flags().Float64Var(&otelSampleRate, "otel-sample-rate", 1.0, "OTel tracing sample rate")
 	c.Flags().StringVar(&otelCollectorURL, "otel-collector-url", "", "OTel collector URL")
 	c.Flags().StringVar(&otelAuthHeaderName, "otel-auth-header-name", "", "OTel backend auth header name")
