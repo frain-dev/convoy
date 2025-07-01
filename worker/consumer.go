@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -19,7 +20,7 @@ type Consumer struct {
 	log   log.StdLogger
 }
 
-func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.StdLogger) *Consumer {
+func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.StdLogger, level log.Level) *Consumer {
 	lo.Infof("The consumer pool size has been set to %d.", consumerPoolSize)
 
 	var opts asynq.RedisConnOpt
@@ -53,6 +54,7 @@ func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo l
 			},
 			RetryDelayFunc: task.GetRetryDelay,
 			Logger:         lo,
+			LogLevel:       getLogLevel(level),
 		},
 	)
 
@@ -107,4 +109,21 @@ func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) 
 
 		return nil
 	})
+}
+
+func getLogLevel(lvl log.Level) asynq.LogLevel {
+	switch lvl {
+	case log.DebugLevel:
+		return asynq.DebugLevel
+	case log.InfoLevel:
+		return asynq.InfoLevel
+	case log.WarnLevel:
+		return asynq.WarnLevel
+	case log.ErrorLevel:
+		return asynq.ErrorLevel
+	case log.FatalLevel:
+		return asynq.FatalLevel
+	default:
+		return asynq.InfoLevel
+	}
 }

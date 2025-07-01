@@ -37,22 +37,17 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("worker")
 
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-	lo.SetLevel(lvl)
-
 	km := keys.NewHCPVaultKeyManagerFromConfig(cfg.HCPVault, a.Licenser, a.Cache)
 	if km.IsSet() {
-		if _, err = km.GetCurrentKeyFromCache(); err != nil {
+		if _, err := km.GetCurrentKeyFromCache(); err != nil {
 			if !errors.Is(err, keys.ErrCredentialEncryptionFeatureUnavailable) {
 				return err
 			}
 			km.Unset()
 		}
 	}
-	if err = keys.Set(km); err != nil {
+
+	if err := keys.Set(km); err != nil {
 		return err
 	}
 
@@ -124,8 +119,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	q := redisQueue.NewQueue(opts)
 
+	ctx = log.NewContext(ctx, lo, log.Fields{})
+	lvl, err := log.ParseLevel(cfg.Logger.Level)
+	if err != nil {
+		return err
+	}
+
 	// register worker.
-	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo)
+	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo, lvl)
 	projectRepo := postgres.NewProjectRepo(a.DB)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
