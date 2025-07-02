@@ -137,12 +137,6 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-	lo.SetLevel(lvl)
-
 	// start events handler
 	srv := server.NewServer(cfg.Server.HTTP.AgentPort, func() {})
 
@@ -193,15 +187,6 @@ func buildAgentCliConfiguration(cmd *cobra.Command) (*config.Configuration, erro
 
 	if port != 0 {
 		c.Server.HTTP.AgentPort = port
-	}
-
-	logLevel, err := cmd.Flags().GetString("log-level")
-	if err != nil {
-		return nil, err
-	}
-
-	if !util.IsStringEmpty(logLevel) {
-		c.Logger.Level = logLevel
 	}
 
 	// CONVOY_WORKER_POOL_SIZE

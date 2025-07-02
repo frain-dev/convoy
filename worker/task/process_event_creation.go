@@ -445,57 +445,102 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	}
 
 	headers := e.GetRawHeaders()
-	var s *datastore.Subscription
 
 	for i := range subscriptions {
-		s = &subscriptions[i]
+		sub := &subscriptions[i]
+
+		log.FromContext(ctx).WithFields(log.Fields{
+			"event.id":        e.UID,
+			"subscription.id": sub.UID,
+		}).Debug("matching subscription")
 
 		// First check if there's a specific filter for this event type
-		filter, innerErr := filterRepo.FindFilterBySubscriptionAndEventType(ctx, s.UID, string(e.EventType))
+		filter, innerErr := filterRepo.FindFilterBySubscriptionAndEventType(ctx, sub.UID, string(e.EventType))
 		if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
-			log.WithError(innerErr).Errorf("failed to find filter for subscription (%s) and event type (%s)", s.UID, e.EventType)
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).WithError(innerErr).Error("failed to find filter subscription")
 			continue
 		} else if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() {
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).WithError(innerErr).Error("fiter not found")
 			return nil, innerErr
 		}
 
 		// If no specific filter found, try to find a catch-all filter
 		if filter == nil {
-			filter, innerErr = filterRepo.FindFilterBySubscriptionAndEventType(ctx, s.UID, "*")
+			filter, innerErr = filterRepo.FindFilterBySubscriptionAndEventType(ctx, sub.UID, "*")
 			if innerErr != nil && innerErr.Error() != datastore.ErrFilterNotFound.Error() && soft {
-				log.WithError(innerErr).Errorf("failed to find catch-all filter for subscription (%s)", s.UID)
+				log.FromContext(ctx).WithFields(log.Fields{
+					"event.id":        e.UID,
+					"subscription.id": sub.UID,
+				}).WithError(innerErr).Error("failed to find catch-all filter")
 				continue
 			} else if innerErr != nil && !errors.Is(innerErr, datastore.ErrFilterNotFound) {
+				log.FromContext(ctx).WithFields(log.Fields{
+					"event.id":        e.UID,
+					"subscription.id": sub.UID,
+				}).WithError(innerErr).Error("catch-all filter not found")
 				return nil, innerErr
 			}
 		}
 
 		// If no filter found at all, or filter has no conditions, match the subscription
 		if filter == nil || (len(filter.Body) == 0 && len(filter.Headers) == 0) {
-			matched = append(matched, *s)
+			matched = append(matched, *sub)
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).Debug("subscription event type matched passed")
 			continue
 		}
 
 		isBodyMatched, innerErr := subRepo.CompareFlattenedPayload(ctx, flatPayload, filter.Body, true)
 		if innerErr != nil && soft {
-			log.WithError(innerErr).Errorf("subcription (%s) failed to match body", s.UID)
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+				"soft":            soft,
+			}).WithError(innerErr).Error("subscription failed to match body")
 			continue
 		} else if innerErr != nil {
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+				"soft":            soft,
+			}).WithError(innerErr).Error("subscription failed to match body")
 			return nil, innerErr
 		}
 
 		isHeaderMatched, innerErr := subRepo.CompareFlattenedPayload(ctx, headers, filter.Headers, true)
 		if innerErr != nil && soft {
-			log.WithError(innerErr).Errorf("subscription (%s) failed to match header", s.UID)
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+				"soft":            soft,
+			}).WithError(innerErr).Error("subscription failed to match header")
 			continue
 		} else if innerErr != nil {
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+				"soft":            soft,
+			}).WithError(innerErr).Error("subscription failed to match header")
 			return nil, innerErr
 		}
 
 		isMatched := isHeaderMatched && isBodyMatched
 
 		if isMatched {
-			matched = append(matched, *s)
+			matched = append(matched, *sub)
+
+			log.FromContext(ctx).WithFields(log.Fields{
+				"event.id":        e.UID,
+				"subscription.id": sub.UID,
+			}).Debug("subscription filter matched passed")
 		}
 
 	}
