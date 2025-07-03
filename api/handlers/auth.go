@@ -125,10 +125,12 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	lu := services.LoginUserService{
-		UserRepo: postgres.NewUserRepo(h.A.DB),
-		Cache:    h.A.Cache,
-		JWT:      jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
-		Data:     &newUser,
+		UserRepo:      postgres.NewUserRepo(h.A.DB),
+		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
+		Cache:         h.A.Cache,
+		JWT:           jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		Data:          &newUser,
+		Licenser:      h.A.Licenser,
 	}
 
 	user, token, err := lu.Run(r.Context())

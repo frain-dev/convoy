@@ -63,7 +63,7 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				Name: "api-key-1",
 				Type: datastore.AppPortalKey,
 				Role: auth.Role{
-					Type:     auth.RoleAdmin,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "1234",
 					Endpoint: "abc",
 				},
@@ -94,7 +94,7 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				Name: "api-key-1",
 				Type: datastore.CLIKey,
 				Role: auth.Role{
-					Type:     auth.RoleAdmin,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "1234",
 					Endpoint: "abc",
 				},

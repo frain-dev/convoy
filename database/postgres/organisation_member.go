@@ -77,6 +77,64 @@ const (
 	WHERE o.user_id = $1 AND o.organisation_id = $2 AND o.deleted_at IS NULL;
 	`
 
+	fetchInstanceAdminByUserID = `
+	SELECT
+		o.id AS id,
+		o.organisation_id AS "organisation_id",
+		o.role_type AS "role.type",
+	    COALESCE(o.role_project,'') AS "role.project",
+	    COALESCE(o.role_endpoint,'') AS "role.endpoint",
+		u.id AS "user_id",
+		u.id AS "user_metadata.user_id",
+		u.first_name AS "user_metadata.first_name",
+		u.last_name AS "user_metadata.last_name",
+		u.email AS "user_metadata.email"
+	FROM convoy.organisation_members o
+	LEFT JOIN convoy.users u
+		ON o.user_id = u.id
+	WHERE o.user_id = $1 AND o.role_type='instance_admin' AND o.deleted_at IS NULL LIMIT 1;
+	`
+
+	countInstanceAdminUsers = `
+    SELECT COUNT(*) FROM (
+        SELECT
+            o.id AS id
+        FROM convoy.organisation_members o
+        LEFT JOIN convoy.users u
+            ON o.user_id = u.id
+        WHERE o.role_type='instance_admin' AND o.deleted_at IS NULL LIMIT 1
+    ) ou;
+	`
+
+	fetchOrganisationAdminByUserID = `
+	SELECT
+		o.id AS id,
+		o.organisation_id AS "organisation_id",
+		o.role_type AS "role.type",
+	    COALESCE(o.role_project,'') AS "role.project",
+	    COALESCE(o.role_endpoint,'') AS "role.endpoint",
+		u.id AS "user_id",
+		u.id AS "user_metadata.user_id",
+		u.first_name AS "user_metadata.first_name",
+		u.last_name AS "user_metadata.last_name",
+		u.email AS "user_metadata.email"
+	FROM convoy.organisation_members o
+	LEFT JOIN convoy.users u
+		ON o.user_id = u.id
+	WHERE o.user_id = $1 AND o.role_type='organisation_admin' AND o.deleted_at IS NULL LIMIT 1;
+	`
+
+	countOrganisationAdminUsers = `
+    SELECT COUNT(*) FROM (
+        SELECT
+            o.id AS id
+        FROM convoy.organisation_members o
+        LEFT JOIN convoy.users u
+            ON o.user_id = u.id
+        WHERE o.role_type='organisation_admin' AND o.deleted_at IS NULL LIMIT 1
+    ) ou;
+	`
+
 	fetchOrganisationMembersPaged = `
 	SELECT
 		o.id AS id,
@@ -173,6 +231,20 @@ const (
 	p.updated_at FROM convoy.organisation_members m
 	RIGHT JOIN convoy.projects p ON p.organisation_id = m.organisation_id
 	WHERE m.user_id = $1 AND m.deleted_at IS NULL AND p.deleted_at IS NULL
+	`
+
+	checkUserInstanceAdminAccess = `
+	SELECT EXISTS (
+		SELECT 1 FROM convoy.organisation_members o
+		WHERE o.user_id = $1 
+		AND o.role_type = 'instance_admin' 
+		AND o.deleted_at IS NULL
+	) OR NOT EXISTS (
+		SELECT 1 FROM convoy.organisation_members o
+		WHERE o.role_type = 'instance_admin' 
+		AND o.deleted_at IS NULL
+		AND o.user_id != $1
+	);
 	`
 )
 
@@ -496,4 +568,59 @@ func (o *orgMemberRepo) FetchOrganisationMemberByUserID(ctx context.Context, use
 	}
 
 	return member, nil
+}
+
+func (o *orgMemberRepo) FetchInstanceAdminByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
+	member := &datastore.OrganisationMember{}
+	err := o.db.GetDB().QueryRowxContext(ctx, fetchInstanceAdminByUserID, userID).StructScan(member)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgMemberNotFound
+		}
+		return nil, err
+	}
+
+	return member, nil
+}
+
+func (o *orgMemberRepo) CountInstanceAdminUsers(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetReadDB().GetContext(ctx, &count, countInstanceAdminUsers)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (o *orgMemberRepo) FetchAnyOrganisationAdminByUserID(ctx context.Context, userID string) (*datastore.OrganisationMember, error) {
+	member := &datastore.OrganisationMember{}
+	err := o.db.GetDB().QueryRowxContext(ctx, fetchOrganisationAdminByUserID, userID).StructScan(member)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, datastore.ErrOrgMemberNotFound
+		}
+		return nil, err
+	}
+
+	return member, nil
+}
+
+func (o *orgMemberRepo) CountOrganisationAdminUsers(ctx context.Context) (int64, error) {
+	var count int64
+	err := o.db.GetReadDB().GetContext(ctx, &count, countOrganisationAdminUsers)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (o *orgMemberRepo) HasInstanceAdminAccess(ctx context.Context, userID string) (bool, error) {
+	var hasAccess bool
+	err := o.db.GetDB().GetContext(ctx, &hasAccess, checkUserInstanceAdminAccess, userID)
+	if err != nil {
+		return false, err
+	}
+	return hasAccess, nil
 }

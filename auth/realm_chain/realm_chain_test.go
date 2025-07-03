@@ -70,7 +70,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username1",
 			Password: "password1",
 			Role: auth.Role{
-				Type:    auth.RoleAdmin,
+				Type:    auth.RoleProjectAdmin,
 				Project: "sendcash-pay",
 			},
 		},
@@ -78,7 +78,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username2",
 			Password: "password2",
 			Role: auth.Role{
-				Type:    auth.RoleAdmin,
+				Type:    auth.RoleProjectAdmin,
 				Project: "buycoins",
 			},
 		},
@@ -86,7 +86,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username3",
 			Password: "password3",
 			Role: auth.Role{
-				Type:    auth.RoleSuperUser,
+				Type:    auth.RoleOrganisationAdmin,
 				Project: "paystack",
 			},
 		},
@@ -94,7 +94,7 @@ var fileRealmOpt = &config.FileRealmOption{
 			Username: "username4",
 			Password: "password4",
 			Role: auth.Role{
-				Type:    auth.RoleAPI,
+				Type:    auth.RoleProjectAdmin,
 				Project: "termii",
 			},
 		},
@@ -103,7 +103,7 @@ var fileRealmOpt = &config.FileRealmOption{
 		{
 			APIKey: "avcbajbwrohw@##Q39uekvsmbvxc.fdjhd",
 			Role: auth.Role{
-				Type:    auth.RoleAdmin,
+				Type:    auth.RoleProjectAdmin,
 				Project: "sendcash-pay",
 			},
 		},
@@ -158,7 +158,7 @@ func TestRealmChain_Authenticate(t *testing.T) {
 					Password: "password1",
 				},
 				Role: auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "sendcash-pay",
 				},
 			},
@@ -295,7 +295,7 @@ func TestInit(t *testing.T) {
 								Username: "test",
 								Password: "test",
 								Role: auth.Role{
-									Type:    auth.RoleAPI,
+									Type:    auth.RoleProjectAdmin,
 									Project: "paystack",
 								},
 							},

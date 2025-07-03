@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy/auth"
 	"net/http"
 	"strconv"
 
@@ -41,6 +42,13 @@ func (h *Handler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Reques
 	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
+	}
+
+	if newIV.Role.Type == auth.RoleInstanceAdmin {
+		if err = h.A.Authz.Authorize(r.Context(), "organisation.manage.all", org); err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+			return
+		}
 	}
 
 	inviteService := &services.InviteUserService{

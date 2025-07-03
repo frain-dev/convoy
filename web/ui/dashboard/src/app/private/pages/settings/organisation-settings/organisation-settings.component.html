@@ -1,7 +1,7 @@
 <div class="flex justify-between items-center mb-28px">
 	<h3 class="font-semibold">Organisation Info</h3>
 
-	<button convoy-button size="sm" [disabled]="isEditingOrganisation || editOrganisationForm.disabled" (click)="updateOrganisation()">Save Changes</button>
+	<button convoy-button convoy-permission="Organisations|MANAGE" size="sm" [disabled]="isEditingOrganisation || editOrganisationForm.disabled" (click)="updateOrganisation()">Save Changes</button>
 </div>
 
 <form [formGroup]="editOrganisationForm">
@@ -23,7 +23,7 @@
 <div convoy-card color="error" class="p-26px my-24px">
 	<h2 class="text-error-9 font-semibold mb-20px">Danger zone</h2>
 	<p class="text-14">Deleting your organisation means you will lose all workspaces created by you and all your every other organisation information.</p>
-	<button convoy-button color="error" size="sm" class="mt-32px" [disabled]="editOrganisationForm.disabled" (click)="deleteDialog.showModal()">
+	<button convoy-button convoy-permission="Organisations|MANAGE" color="error" size="sm" class="mt-32px" [disabled]="editOrganisationForm.disabled" (click)="deleteDialog.showModal()">
 		<svg width="18" height="18" class="mr-2 fill-white-100">
 			<use xlink:href="#delete-icon"></use>
 		</svg>

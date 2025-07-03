@@ -24,6 +24,7 @@ func provideLoginUserService(ctrl *gomock.Controller, t *testing.T, loginUser *m
 		Cache:    c,
 		JWT:      jwt.NewJwt(&config.Auth.Jwt, c),
 		Data:     loginUser,
+		Licenser: mocks.NewMockLicenser(ctrl),
 	}
 }
 
@@ -71,6 +72,8 @@ func TestLoginUserService_Run(t *testing.T) {
 					Email:     "test@test.com",
 					Password:  string(p.Hash),
 				}, nil)
+				licenser, _ := u.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 			},
 			wantConfig: true,
 		},

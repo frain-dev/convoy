@@ -64,7 +64,7 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@example.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -80,7 +80,7 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 				OrganisationID: "123",
 				InviteeEmail:   "test@example.com",
 				Role: auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "ref",
 				},
 				Status: datastore.InviteStatusPending,

@@ -46,7 +46,7 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
-					Type:     auth.RoleAdmin,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "123",
 					Endpoint: "abc",
 				},
@@ -64,7 +64,7 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 				OrganisationID: "1234",
 				UserID:         "1234",
 				Role: auth.Role{
-					Type:     auth.RoleAdmin,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "123",
 					Endpoint: "abc",
 				},
@@ -77,7 +77,7 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
-					Type:     auth.RoleAdmin,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "123",
 					Endpoint: "abc",
 				},
@@ -95,7 +95,7 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 				OrganisationID: "1234",
 				UserID:         "1234",
 				Role: auth.Role{
-					Type:     auth.RoleSuperUser,
+					Type:     auth.RoleInstanceAdmin,
 					Project:  "123",
 					Endpoint: "abc",
 				},
@@ -108,7 +108,7 @@ func TestOrganisationMemberService_CreateOrgaTnisationMember(t *testing.T) {
 				ctx: ctx,
 				org: &datastore.Organisation{UID: "1234"},
 				role: &auth.Role{
-					Type:     auth.RoleAdmin,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "123",
 					Endpoint: "abc",
 				},
@@ -179,13 +179,13 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					OrganisationID: "abc",
 					UserID:         "def",
 					Role: auth.Role{
-						Type:     auth.RoleAdmin,
+						Type:     auth.RoleProjectAdmin,
 						Project:  "111",
 						Endpoint: "",
 					},
 				},
 				role: &auth.Role{
-					Type:     auth.RoleAPI,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "333",
 					Endpoint: "",
 				},
@@ -195,7 +195,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				OrganisationID: "abc",
 				UserID:         "def",
 				Role: auth.Role{
-					Type:     auth.RoleAPI,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "333",
 					Endpoint: "",
 				},
@@ -219,13 +219,13 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					OrganisationID: "abc",
 					UserID:         "def",
 					Role: auth.Role{
-						Type:     auth.RoleAdmin,
+						Type:     auth.RoleProjectAdmin,
 						Project:  "111",
 						Endpoint: "",
 					},
 				},
 				role: &auth.Role{
-					Type:     auth.RoleAPI,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "333",
 					Endpoint: "",
 				},
@@ -235,7 +235,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				OrganisationID: "abc",
 				UserID:         "def",
 				Role: auth.Role{
-					Type:     auth.RoleSuperUser,
+					Type:     auth.RoleOrganisationAdmin,
 					Project:  "333",
 					Endpoint: "",
 				},
@@ -259,13 +259,13 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 					OrganisationID: "abc",
 					UserID:         "def",
 					Role: auth.Role{
-						Type:     auth.RoleAdmin,
+						Type:     auth.RoleProjectAdmin,
 						Project:  "111",
 						Endpoint: "",
 					},
 				},
 				role: &auth.Role{
-					Type:     auth.RoleAPI,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "333",
 					Endpoint: "",
 				},

@@ -34,7 +34,7 @@ func TestLoadOrganisationMembersPaged(t *testing.T) {
 			UID:            ulid.Make().String(),
 			OrganisationID: org.UID,
 			UserID:         user.UID,
-			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+			Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 		}
 
 		userMap[user.UID] = &datastore.UserMetadata{
@@ -84,7 +84,7 @@ func TestLoadUserOrganisationsPaged(t *testing.T) {
 			UID:            ulid.Make().String(),
 			OrganisationID: org.UID,
 			UserID:         user.UID,
-			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+			Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 		}
 
 		err = organisationMemberRepo.CreateOrganisationMember(context.Background(), member)
@@ -114,7 +114,7 @@ func TestCreateOrganisationMember(t *testing.T) {
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+		Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -148,14 +148,14 @@ func TestUpdateOrganisationMember(t *testing.T) {
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+		Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:     auth.RoleSuperUser,
+		Type:     auth.RoleOrganisationAdmin,
 		Project:  project.UID,
 		Endpoint: "",
 	}
@@ -189,7 +189,7 @@ func TestDeleteOrganisationMember(t *testing.T) {
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         org.OwnerID,
-		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+		Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -217,7 +217,7 @@ func TestFetchOrganisationMemberByID(t *testing.T) {
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+		Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -252,7 +252,7 @@ func TestFetchOrganisationMemberByUserID(t *testing.T) {
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+		Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)
@@ -290,7 +290,7 @@ func TestFetchUserProjects(t *testing.T) {
 		UID:            ulid.Make().String(),
 		OrganisationID: org.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+		Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 	}
 
 	err := organisationMemberRepo.CreateOrganisationMember(context.Background(), m)

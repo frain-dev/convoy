@@ -14,6 +14,7 @@ import { BadgeComponent } from 'src/app/components/badge/badge.component';
 import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
 import { DropdownContainerComponent } from 'src/app/components/dropdown-container/dropdown-container.component';
 import { LoaderModule } from '../../components/loader/loader.module';
+import { PermissionDirective } from '../../components/permission/permission.directive';
 
 export const projectResolver = async (route: ActivatedRouteSnapshot, _state: RouterStateSnapshot, privateService = inject(PrivateService), projectService = inject(ProjectService), router = inject(Router)) => {
 	try {
@@ -108,7 +109,8 @@ const routes: Routes = [
 		DropdownComponent,
 		DropdownContainerComponent,
 		DropdownOptionDirective,
-		LoaderModule
+		LoaderModule,
+		PermissionDirective
 	]
 })
 export class ProjectModule {}

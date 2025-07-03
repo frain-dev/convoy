@@ -29,7 +29,7 @@ func (ss *CreateEndpointAPIKeyService) Run(ctx context.Context) (*datastore.APIK
 	}
 
 	role := auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  ss.D.Project.UID,
 		Endpoint: ss.D.Endpoint.UID,
 	}

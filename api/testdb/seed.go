@@ -172,7 +172,7 @@ func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastor
 const DefaultUserPassword = "password"
 
 // seed default user
-func SeedDefaultUser(db database.Database) (*datastore.User, error) {
+func SeedDefaultUser(db database.Database, isAdmin ...bool) (*datastore.User, error) {
 	p := datastore.Password{Plaintext: DefaultUserPassword}
 	err := p.GenerateHash()
 	if err != nil {
@@ -188,6 +188,11 @@ func SeedDefaultUser(db database.Database) (*datastore.User, error) {
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
+	if len(isAdmin) > 0 {
+		defaultUser.FirstName = "instance"
+		defaultUser.LastName = "admin"
+		defaultUser.Email = "instance.admin@user.com"
+	}
 
 	// Seed Data.
 	userRepo := postgres.NewUserRepo(db)
@@ -201,6 +206,9 @@ func SeedDefaultUser(db database.Database) (*datastore.User, error) {
 
 // seed default organisation
 func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datastore.Organisation, error) {
+	return SeedDefaultOrganisationWithRole(db, user, auth.RoleOrganisationAdmin)
+}
+func SeedDefaultOrganisationWithRole(db database.Database, user *datastore.User, roleType auth.RoleType) (*datastore.Organisation, error) {
 	defaultOrg := &datastore.Organisation{
 		UID:       ulid.Make().String(),
 		OwnerID:   user.UID,
@@ -220,7 +228,7 @@ func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datas
 		UID:            ulid.Make().String(),
 		OrganisationID: defaultOrg.UID,
 		UserID:         user.UID,
-		Role:           auth.Role{Type: auth.RoleSuperUser},
+		Role:           auth.Role{Type: roleType},
 		CreatedAt:      time.Now(),
 		UpdatedAt:      time.Now(),
 	}

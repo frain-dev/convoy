@@ -16,30 +16,32 @@ import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.
 import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
 import { TagComponent } from 'src/app/components/tag/tag.component';
 import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
+import {PermissionDirective} from "../../../components/permission/permission.directive";
 
 const routes: Routes = [{ path: '', component: EventsComponent }];
 
 @NgModule({
 	declarations: [EventsComponent],
-	imports: [
-		CommonModule,
-		ReactiveFormsModule,
-		RouterModule.forChild(routes),
-		EventDeliveriesModule,
-		DropdownComponent,
-		ButtonComponent,
-		ListItemComponent,
-		CardComponent,
-		ChartComponent,
-		SkeletonLoaderComponent,
-		EmptyStateComponent,
-		LoaderModule,
-		DatePickerComponent,
-		DropdownOptionDirective,
-		CopyButtonComponent,
-		TagComponent,
-		StatusColorModule
-	],
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        RouterModule.forChild(routes),
+        EventDeliveriesModule,
+        DropdownComponent,
+        ButtonComponent,
+        ListItemComponent,
+        CardComponent,
+        ChartComponent,
+        SkeletonLoaderComponent,
+        EmptyStateComponent,
+        LoaderModule,
+        DatePickerComponent,
+        DropdownOptionDirective,
+        CopyButtonComponent,
+        TagComponent,
+        StatusColorModule,
+        PermissionDirective
+    ],
 	providers: [DatePipe]
 })
 export class EventsModule {}

@@ -54,12 +54,24 @@ export class LoginComponent implements OnInit {
 		this.disableLoginBtn = true;
 		try {
 			const response: any = await this.loginService.login(this.loginForm.value);
+
+			const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+
+            let refresh = true;
+            if (lastUserId && lastUserId !== response.data.uid) {
+				localStorage.clear();
+                refresh = true;
+			}
+
+			localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
 			this.isLoadingProject = true;
 			await this.getOrganisations();
-			return this.router.navigateByUrl('/');
+			await this.router.navigateByUrl('/');
+            if (refresh)
+                window.location.reload();
 		} catch {
 			return (this.disableLoginBtn = false);
 		}

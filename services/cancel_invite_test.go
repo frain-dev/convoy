@@ -56,7 +56,7 @@ func TestCancelOrgMemberService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@example.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -70,7 +70,7 @@ func TestCancelOrgMemberService_Run(t *testing.T) {
 				Status:         datastore.InviteStatusCancelled,
 				InviteeEmail:   "test@example.com",
 				Role: auth.Role{
-					Type:     auth.RoleAdmin,
+					Type:     auth.RoleProjectAdmin,
 					Project:  "ref",
 					Endpoint: "",
 				},

@@ -375,13 +375,13 @@
 									</td>
 									<td convoy-table-cell>
 										<div class="flex items-center gap-12px">
-											<button convoy-button color="neutral" fill="text" type="button" [disabled]="event.deprecated_at || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" (click)="openEditEventTypeModal(event)">
+											<button convoy-button color="neutral" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" (click)="openEditEventTypeModal(event)">
 												<svg width="14" height="14" class="fill-transparent stroke-neutral-9 mr-8px">
 													<use xlink:href="#edit-icon"></use>
 												</svg>
 												Edit
 											</button>
-											<button convoy-button color="error" fill="text" type="button" [disabled]="event.deprecated_at || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" (click)="deprecateEventType(event.uid)">
+											<button convoy-button color="error" fill="text" type="button" convoy-permission="Event Types|MANAGE" [disabled]="event.deprecated_at || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')" (click)="deprecateEventType(event.uid)">
 												<svg width="14" height="14" class="fill-transparent stroke-error-9 mr-8px">
 													<use xlink:href="#delete-icon2"></use>
 												</svg>
