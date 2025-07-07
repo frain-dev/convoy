@@ -1687,25 +1687,6 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
 	require.Equal(s.T(), "new_org", org.Name)
 }
 
-func (s *OrganisationIntegrationTestSuite) Test_CannotCreateOrganisation() {
-	expectedStatusCode := http.StatusForbidden
-
-	body := strings.NewReader(`{"name":"new_org"}`)
-	// Arrange.
-	url := "/ui/organisations"
-	req := createRequest(http.MethodPost, url, "", body)
-	err := s.AuthenticatorFn(req, s.Router)
-	require.NoError(s.T(), err)
-
-	w := httptest.NewRecorder()
-
-	// Act.
-	s.Router.ServeHTTP(w, req)
-
-	// Assert.
-	require.Equal(s.T(), expectedStatusCode, w.Code)
-}
-
 func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisationName() {
 	expectedStatusCode := http.StatusBadRequest
 

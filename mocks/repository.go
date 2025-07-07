@@ -1256,6 +1256,21 @@ func (mr *MockOrganisationMemberRepositoryMockRecorder) HasInstanceAdminAccess(c
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasInstanceAdminAccess", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).HasInstanceAdminAccess), ctx, userID)
 }
 
+// IsFirstInstanceAdmin mocks base method.
+func (m *MockOrganisationMemberRepository) IsFirstInstanceAdmin(ctx context.Context, userID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsFirstInstanceAdmin", ctx, userID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// IsFirstInstanceAdmin indicates an expected call of IsFirstInstanceAdmin.
+func (mr *MockOrganisationMemberRepositoryMockRecorder) IsFirstInstanceAdmin(ctx, userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsFirstInstanceAdmin", reflect.TypeOf((*MockOrganisationMemberRepository)(nil).IsFirstInstanceAdmin), ctx, userID)
+}
+
 // FindUserProjects mocks base method.
 func (m *MockOrganisationMemberRepository) FindUserProjects(ctx context.Context, userID string) ([]datastore.Project, error) {
 	m.ctrl.T.Helper()

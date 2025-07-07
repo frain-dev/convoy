@@ -71,12 +71,6 @@ export class TeamsComponent implements OnInit {
 	async ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
 		if (!(await this.rbacService.userCanAccess('Team|MANAGE'))) this.inviteUserForm.disable();
-
-		// Check if user is instance admin and add the role if they are
-		const userRole = await this.rbacService.getUserRole();
-		if (userRole === 'INSTANCE_ADMIN') {
-			this.roles.unshift({ name: 'Instance Admin', uid: 'instance_admin' });
-		}
 	}
 
 	async fetchTeamMembers(requestDetails?: { searchString?: string; page?: number }) {

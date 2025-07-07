@@ -111,6 +111,7 @@ type OrganisationMemberRepository interface {
 	CountInstanceAdminUsers(ctx context.Context) (int64, error)
 	CountOrganisationAdminUsers(ctx context.Context) (int64, error)
 	HasInstanceAdminAccess(ctx context.Context, userID string) (bool, error)
+	IsFirstInstanceAdmin(ctx context.Context, userID string) (bool, error)
 }
 
 type EndpointRepository interface {

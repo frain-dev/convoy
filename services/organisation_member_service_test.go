@@ -235,7 +235,7 @@ func TestOrganisationMemberService_UpdateOrganisationMember(t *testing.T) {
 				OrganisationID: "abc",
 				UserID:         "def",
 				Role: auth.Role{
-					Type:     auth.RoleOrganisationAdmin,
+					Type:     auth.RoleInstanceAdmin,
 					Project:  "333",
 					Endpoint: "",
 				},

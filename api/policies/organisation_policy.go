@@ -63,6 +63,18 @@ func (op *OrganisationPolicy) Manage(ctx context.Context, res interface{}) error
 	return nil
 }
 
+func (op *OrganisationPolicy) Add(ctx context.Context, res interface{}) error {
+	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+
+	// Allow any authenticated user to create organizations
+	_, ok := authCtx.User.(*datastore.User)
+	if !ok {
+		return ErrNotAllowed
+	}
+
+	return nil
+}
+
 func (op *OrganisationPolicy) GetName() string {
 	return "organisation"
 }

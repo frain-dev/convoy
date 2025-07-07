@@ -236,14 +236,29 @@ const (
 	checkUserInstanceAdminAccess = `
 	SELECT EXISTS (
 		SELECT 1 FROM convoy.organisation_members o
-		WHERE o.user_id = $1 
-		AND o.role_type = 'instance_admin' 
+		WHERE o.user_id = $1
+		AND o.role_type = 'instance_admin'
 		AND o.deleted_at IS NULL
 	) OR NOT EXISTS (
 		SELECT 1 FROM convoy.organisation_members o
-		WHERE o.role_type = 'instance_admin' 
+		WHERE o.role_type = 'instance_admin'
 		AND o.deleted_at IS NULL
 		AND o.user_id != $1
+	);
+	`
+
+	checkFirstInstanceAdmin = `
+	SELECT EXISTS (
+		SELECT 1 FROM convoy.organisation_members o1
+		WHERE o1.user_id = $1
+		AND o1.role_type = 'instance_admin'
+		AND o1.deleted_at IS NULL
+		AND o1.created_at = (
+			SELECT MIN(o2.created_at)
+			FROM convoy.organisation_members o2
+			WHERE o2.role_type = 'instance_admin'
+			AND o2.deleted_at IS NULL
+		)
 	);
 	`
 )
@@ -623,4 +638,13 @@ func (o *orgMemberRepo) HasInstanceAdminAccess(ctx context.Context, userID strin
 		return false, err
 	}
 	return hasAccess, nil
+}
+
+func (o *orgMemberRepo) IsFirstInstanceAdmin(ctx context.Context, userID string) (bool, error) {
+	var isFirst bool
+	err := o.db.GetDB().GetContext(ctx, &isFirst, checkFirstInstanceAdmin, userID)
+	if err != nil {
+		return false, err
+	}
+	return isFirst, nil
 }

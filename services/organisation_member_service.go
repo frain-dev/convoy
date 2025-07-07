@@ -25,7 +25,8 @@ func NewOrganisationMemberService(orgMemberRepo datastore.OrganisationMemberRepo
 }
 
 func (om *OrganisationMemberService) CreateOrganisationMember(ctx context.Context, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
-	if !om.licenser.MultiPlayerMode() {
+	// Only override to RoleInstanceAdmin if not in multiplayer mode AND role is not already RoleInstanceAdmin
+	if !om.licenser.MultiPlayerMode() && role.Type != auth.RoleInstanceAdmin {
 		role.Type = auth.RoleInstanceAdmin
 	}
 
@@ -57,8 +58,9 @@ func (om *OrganisationMemberService) UpdateOrganisationMember(ctx context.Contex
 	organisationMember.UpdatedAt = time.Now()
 	organisationMember.Role = *role
 
-	if !om.licenser.MultiPlayerMode() {
-		organisationMember.Role.Type = auth.RoleOrganisationAdmin
+	// Only override to RoleInstanceAdmin if not in multiplayer mode AND role is not already RoleInstanceAdmin
+	if !om.licenser.MultiPlayerMode() && role.Type != auth.RoleInstanceAdmin {
+		organisationMember.Role.Type = auth.RoleInstanceAdmin
 	}
 
 	err := organisationMember.Role.Validate("organisation member")

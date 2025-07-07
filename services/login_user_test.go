@@ -73,7 +73,7 @@ func TestLoginUserService_Run(t *testing.T) {
 					Password:  string(p.Hash),
 				}, nil)
 				licenser, _ := u.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+				licenser.EXPECT().MultiPlayerMode().Times(2).Return(true)
 			},
 			wantConfig: true,
 		},

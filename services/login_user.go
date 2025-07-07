@@ -21,6 +21,28 @@ type LoginUserService struct {
 	Licenser      license.Licenser
 }
 
+func (u *LoginUserService) isPrimaryInstanceAdmin(ctx context.Context, userID string) (bool, error) {
+	if u.Licenser.MultiPlayerMode() {
+		// If licensed, all users can access
+		return true, nil
+	}
+
+	count, err := u.OrgMemberRepo.CountInstanceAdminUsers(ctx)
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return true, nil
+	}
+
+	isFirst, err := u.OrgMemberRepo.IsFirstInstanceAdmin(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+
+	return isFirst, nil
+}
+
 func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
 	user, err := u.UserRepo.FindUserByEmail(ctx, u.Data.Username)
 	if err != nil {
@@ -40,20 +62,19 @@ func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token
 		return nil, nil, &ServiceError{ErrMsg: "invalid username or password"}
 	}
 
-	token, err := u.JWT.GenerateToken(user)
+	// Check if user can access based on license status and get instance admin count
+	canAccess, err := u.isPrimaryInstanceAdmin(ctx, user.UID)
 	if err != nil {
 		return nil, nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
-	if !u.Licenser.MultiPlayerMode() {
-		hasAccess, err := u.OrgMemberRepo.HasInstanceAdminAccess(ctx, user.UID)
-		if err != nil {
-			return nil, nil, &ServiceError{ErrMsg: err.Error()}
-		}
+	if !canAccess {
+		return nil, nil, &ServiceError{ErrMsg: "License expired. Only the primary instance administrator can access the system"}
+	}
 
-		if !hasAccess {
-			return nil, nil, &ServiceError{ErrMsg: "License expired. Only instance admins can access the system"}
-		}
+	token, err := u.JWT.GenerateToken(user)
+	if err != nil {
+		return nil, nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	return user, &token, nil

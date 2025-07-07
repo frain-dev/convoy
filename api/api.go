@@ -755,6 +755,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 
 		po.SetRule("manage.all", authz.RuleFunc(po.ManageAll))
 		po.SetRule("manage", authz.RuleFunc(po.Manage))
+		po.SetRule("add", authz.RuleFunc(po.Add))
 
 		return po
 	}())
