@@ -46,7 +46,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "1234",
 				},
 			},
@@ -62,7 +62,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					&datastore.APIKey{
 						UID: "ref",
 						Role: auth.Role{
-							Type:     auth.RoleAPI,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "avs",
 							Endpoint: "",
 						},
@@ -74,7 +74,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 			wantAPIKey: &datastore.APIKey{
 				UID: "ref",
 				Role: auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "1234",
 				},
 			},
@@ -85,7 +85,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 				ctx: ctx,
 				uid: "",
 				role: &auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "1234",
 				},
 			},
@@ -110,7 +110,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "1234",
 				},
 			},
@@ -128,7 +128,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "1234",
 				},
 			},
@@ -151,7 +151,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 				ctx: ctx,
 				uid: "1234",
 				role: &auth.Role{
-					Type:    auth.RoleAdmin,
+					Type:    auth.RoleProjectAdmin,
 					Project: "1234",
 				},
 			},
@@ -167,7 +167,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					&datastore.APIKey{
 						UID: "ref",
 						Role: auth.Role{
-							Type:     auth.RoleAPI,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "avs",
 							Endpoint: "",
 						},

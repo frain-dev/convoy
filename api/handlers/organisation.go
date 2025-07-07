@@ -62,6 +62,15 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orgMemberRepo := postgres.NewOrgMemberRepo(h.A.DB)
+
+	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage.all", user); err != nil {
+		if count, err2 := orgMemberRepo.CountOrganisationAdminUsers(r.Context()); count > 0 || err2 != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+			return
+		}
+	}
+
 	co := services.CreateOrganisationService{
 		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
@@ -121,7 +130,7 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage.all", org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}

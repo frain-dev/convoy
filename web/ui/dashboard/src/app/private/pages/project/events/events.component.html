@@ -63,7 +63,7 @@
 				</ng-container>
 			</ng-container>
 
-			<button convoy-button size="sm" *ngIf="!isProjectConfigurationComplete" class="!py-12px mt-48px" (click)="router.navigateByUrl('/projects/' + privateService.getProjectDetails?.uid + '/setup')">
+			<button convoy-button size="sm" *ngIf="!isProjectConfigurationComplete" class="!py-12px mt-48px" convoy-permission="Project Setup|MANAGE" (click)="router.navigateByUrl('/projects/' + privateService.getProjectDetails?.uid + '/setup')">
 				Complete project setup
 				<svg width="24" height="24" class="ml-8px fill-white-100">
 					<use xlink:href="#arrow-right-icon"></use>

@@ -55,9 +55,10 @@ export class TeamsComponent implements OnInit {
 		})
 	});
 	roles = [
-		{ name: 'Super User', uid: 'super_user' },
-		{ name: 'Admin', uid: 'admin' }
-		// { name: 'Member', uid: 'member' }
+		{ name: 'Organisation Admin', uid: 'organisation_admin' },
+		{ name: 'Billing Admin', uid: 'billing_admin' },
+		{ name: 'Project Admin', uid: 'project_admin' },
+		{ name: 'Project Viewer', uid: 'project_viewer' }
 	];
 	showUpdateMember = false;
 	userDetails = this.privateService.getUserProfile;
@@ -70,6 +71,12 @@ export class TeamsComponent implements OnInit {
 	async ngOnInit() {
 		this.toggleFilter(this.route.snapshot.queryParams?.inviteType ?? 'active');
 		if (!(await this.rbacService.userCanAccess('Team|MANAGE'))) this.inviteUserForm.disable();
+
+		// Check if user is instance admin and add the role if they are
+		const userRole = await this.rbacService.getUserRole();
+		if (userRole === 'INSTANCE_ADMIN') {
+			this.roles.unshift({ name: 'Instance Admin', uid: 'instance_admin' });
+		}
 	}
 
 	async fetchTeamMembers(requestDetails?: { searchString?: string; page?: number }) {

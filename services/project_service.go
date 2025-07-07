@@ -120,7 +120,7 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 	newAPIKey := &models.APIKey{
 		Name: fmt.Sprintf("%s's default key", project.Name),
 		Role: models.Role{
-			Type:    auth.RoleAdmin,
+			Type:    auth.RoleProjectAdmin,
 			Project: project.UID,
 		},
 	}
