@@ -127,7 +127,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	// TODO(subomi): left this here temporarily till the data plane is stable.
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -172,10 +172,26 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
 							// TODO(all): should the InstrumentPath change?
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/", handler.CreateEndpointEvent)
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/fanout", handler.CreateEndpointFanoutEvent)
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/broadcast", handler.CreateBroadcastEvent)
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/dynamic", handler.CreateDynamicEvent)
+							eventRouter.With(handler.RequireEnabledProject(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
+								Post("/", handler.CreateEndpointEvent)
+
+							eventRouter.With(handler.RequireEnabledProject(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
+								Post("/fanout", handler.CreateEndpointFanoutEvent)
+
+							eventRouter.With(handler.RequireEnabledProject(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
+								Post("/broadcast", handler.CreateBroadcastEvent)
+
+							eventRouter.With(handler.RequireEnabledProject(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
+								Post("/dynamic", handler.CreateDynamicEvent)
+
 							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -562,6 +578,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
+						eventRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
 						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/", handler.CreateEndpointEvent)
 						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/fanout", handler.CreateEndpointFanoutEvent)
 						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/broadcast", handler.CreateBroadcastEvent)
