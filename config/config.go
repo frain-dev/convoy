@@ -115,8 +115,8 @@ var DefaultConfiguration = Configuration{
 		AllowList:          []string{"0.0.0.0/0", "::/0"},
 		BlockList:          []string{"127.0.0.0/8", "::1/128"},
 	},
-	InstanceIngestRate:  25,
-	ApiRateLimit:        25,
+	InstanceIngestRate:  1000,
+	ApiRateLimit:        1000,
 	WorkerExecutionMode: DefaultExecutionMode,
 }
 
