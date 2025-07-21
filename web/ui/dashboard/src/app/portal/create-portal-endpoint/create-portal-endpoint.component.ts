@@ -863,13 +863,21 @@ function transform(payload) {
         }
     }
 
-    // Helper method to generate a UUID v4
+    // Helper method to generate a UUID v4 using cryptographically secure random values
     private generateUUID(): string {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            const r = (Math.random() * 16) | 0,
-                v = c == 'x' ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-        });
+        const randomValues = new Uint8Array(16);
+        window.crypto.getRandomValues(randomValues);
+
+        // Set version and variant bits according to UUID v4 spec
+        randomValues[6] = (randomValues[6] & 0x0f) | 0x40; // Version 4
+        randomValues[8] = (randomValues[8] & 0x3f) | 0x80; // Variant 1
+
+        return Array.from(randomValues)
+            .map((value, index) => {
+                const hex = value.toString(16).padStart(2, '0');
+                return [4, 6, 8, 10].includes(index) ? `-${hex}` : hex;
+            })
+            .join('');
     }
 
     get shouldShowBorder(): number {
