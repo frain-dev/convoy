@@ -106,6 +106,12 @@ type OrganisationMemberRepository interface {
 	DeleteOrganisationMember(ctx context.Context, memberID string, orgID string) error
 	FetchOrganisationMemberByID(ctx context.Context, memberID string, organisationID string) (*OrganisationMember, error)
 	FetchOrganisationMemberByUserID(ctx context.Context, userID string, organisationID string) (*OrganisationMember, error)
+	FetchInstanceAdminByUserID(ctx context.Context, userID string) (*OrganisationMember, error)
+	FetchAnyOrganisationAdminByUserID(ctx context.Context, userID string) (*OrganisationMember, error)
+	CountInstanceAdminUsers(ctx context.Context) (int64, error)
+	CountOrganisationAdminUsers(ctx context.Context) (int64, error)
+	HasInstanceAdminAccess(ctx context.Context, userID string) (bool, error)
+	IsFirstInstanceAdmin(ctx context.Context, userID string) (bool, error)
 }
 
 type EndpointRepository interface {

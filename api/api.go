@@ -753,7 +753,9 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
 		}
 
+		po.SetRule("manage.all", authz.RuleFunc(po.ManageAll))
 		po.SetRule("manage", authz.RuleFunc(po.Manage))
+		po.SetRule("add", authz.RuleFunc(po.Add))
 
 		return po
 	}())
@@ -771,6 +773,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 		}
 
 		po.SetRule("manage", authz.RuleFunc(po.Manage))
+		po.SetRule("view", authz.RuleFunc(po.View))
 
 		return po
 	}())

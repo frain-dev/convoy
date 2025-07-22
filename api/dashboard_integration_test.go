@@ -1595,13 +1595,15 @@ func TestEventIntegrationTestSuite(t *testing.T) {
 
 type OrganisationIntegrationTestSuite struct {
 	suite.Suite
-	DB              database.Database
-	Router          http.Handler
-	ConvoyApp       *ApplicationHandler
-	AuthenticatorFn AuthenticatorFn
-	DefaultOrg      *datastore.Organisation
-	DefaultProject  *datastore.Project
-	DefaultUser     *datastore.User
+	DB                database.Database
+	Router            http.Handler
+	ConvoyApp         *ApplicationHandler
+	AuthenticatorFn   AuthenticatorFn
+	AuthenticatorIAFn AuthenticatorFn
+	DefaultOrg        *datastore.Organisation
+	DefaultProject    *datastore.Project
+	DefaultUser       *datastore.User
+	InstanceAdminUser *datastore.User
 }
 
 func (s *OrganisationIntegrationTestSuite) SetupSuite() {
@@ -1618,15 +1620,27 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
+	instanceAdmin, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB, true)
+	require.NoError(s.T(), err)
+	s.InstanceAdminUser = instanceAdmin
+
 	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
+
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, instanceAdmin, auth.RoleInstanceAdmin)
+	require.NoError(s.T(), err)
 
 	// Setup Default Project.
 	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+
+	s.AuthenticatorIAFn = authenticateRequest(&models.LoginUser{
+		Username: instanceAdmin.Email,
 		Password: testdb.DefaultUserPassword,
 	})
 
@@ -1652,7 +1666,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
 	// Arrange.
 	url := "/ui/organisations"
 	req := createRequest(http.MethodPost, url, "", body)
-	err := s.AuthenticatorFn(req, s.Router)
+	err := s.AuthenticatorIAFn(req, s.Router)
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
@@ -1680,7 +1694,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation_EmptyOrganisa
 	// Arrange.
 	url := "/ui/organisations"
 	req := createRequest(http.MethodPost, url, "", body)
-	err := s.AuthenticatorFn(req, s.Router)
+	err := s.AuthenticatorIAFn(req, s.Router)
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
@@ -1699,7 +1713,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation_CustomDomain(
 	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	require.NoError(s.T(), err)
 
 	body := strings.NewReader(`{"custom_domain":"https://abc.com"}`)
@@ -1732,7 +1746,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser, Project: s.DefaultProject.UID})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin, Project: s.DefaultProject.UID})
 	require.NoError(s.T(), err)
 
 	body := strings.NewReader(`{"name":"update_org"}`)
@@ -1764,7 +1778,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 	seedOrg, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -1798,7 +1812,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations() {
 	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, ulid.Make().String(), s.DefaultUser.UID, "test-org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleAdmin})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleProjectAdmin})
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -1834,7 +1848,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisations_WithPersonalAPI
 	//	org, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, ulid.Make().String(), s.DefaultUser.UID, "test-org")
 	//	require.NoError(s.T(), err)
 	//
-	//	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
+	//	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, org, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	//	require.NoError(s.T(), err)
 	//
 	//	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
@@ -1872,13 +1886,13 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 	seedOrg, err := testdb.SeedOrganisation(s.ConvoyApp.A.DB, uid, s.DefaultUser.UID, "new_org")
 	require.NoError(s.T(), err)
 
-	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleSuperUser})
+	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, seedOrg, s.DefaultUser, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	require.NoError(s.T(), err)
 
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s", uid)
 	req := createRequest(http.MethodDelete, url, "", nil)
-	err = s.AuthenticatorFn(req, s.Router)
+	err = s.AuthenticatorIAFn(req, s.Router)
 	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
@@ -2039,14 +2053,14 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_GetPendingOrganisationInvi
 	expectedStatusCode := http.StatusOK
 
 	_, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite2@test.com", &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2082,7 +2096,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	require.NoError(s.T(), err)
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2109,7 +2123,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	require.NoError(s.T(), err)
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(-time.Hour), datastore.InviteStatusPending)
@@ -2133,7 +2147,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	expectedStatusCode := http.StatusOK
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "test@invite.com", &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2159,7 +2173,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	expectedStatusCode := http.StatusBadRequest
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "test@invite.com", &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2185,7 +2199,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ProcessOrganisationMemberI
 	expectedStatusCode := http.StatusOK
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "test@invite.com", &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2212,7 +2226,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_Exis
 	require.NoError(s.T(), err)
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, user.Email, &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2247,7 +2261,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 	expectedStatusCode := http.StatusOK
 
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite@test.com", &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2276,7 +2290,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_FindUserByInviteToken_NewU
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_ResendInvite() {
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2298,7 +2312,7 @@ func (s *OrganisationInviteIntegrationTestSuite) Test_ResendInvite() {
 
 func (s *OrganisationInviteIntegrationTestSuite) Test_CancelInvite() {
 	iv, err := testdb.SeedOrganisationInvite(s.ConvoyApp.A.DB, s.DefaultOrg, "invite1@test.com", &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	}, time.Now().Add(time.Hour), datastore.InviteStatusPending)
@@ -2328,13 +2342,15 @@ func TestOrganisationInviteIntegrationTestSuite(t *testing.T) {
 
 type OrganisationMemberIntegrationTestSuite struct {
 	suite.Suite
-	DB              database.Database
-	Router          http.Handler
-	ConvoyApp       *ApplicationHandler
-	AuthenticatorFn AuthenticatorFn
-	DefaultOrg      *datastore.Organisation
-	DefaultProject  *datastore.Project
-	DefaultUser     *datastore.User
+	DB                database.Database
+	Router            http.Handler
+	ConvoyApp         *ApplicationHandler
+	AuthenticatorFn   AuthenticatorFn
+	AuthenticatorIAFn AuthenticatorFn
+	DefaultOrg        *datastore.Organisation
+	DefaultProject    *datastore.Project
+	DefaultUser       *datastore.User
+	InstanceAdminUser *datastore.User
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) SetupSuite() {
@@ -2351,16 +2367,27 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
 
+	instanceAdmin, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB, true)
+	require.NoError(s.T(), err)
+	s.InstanceAdminUser = instanceAdmin
+
 	org, err := testdb.SeedDefaultOrganisation(s.ConvoyApp.A.DB, user)
 	require.NoError(s.T(), err)
 	s.DefaultOrg = org
 
-	// Setup Default Project.
-	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
+	_, err = testdb.SeedDefaultOrganisationWithRole(s.ConvoyApp.A.DB, instanceAdmin, auth.RoleInstanceAdmin)
 	require.NoError(s.T(), err)
+
+	// Setup Default Project.
+	s.DefaultProject, _ = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
 		Username: user.Email,
+		Password: testdb.DefaultUserPassword,
+	})
+
+	s.AuthenticatorIAFn = authenticateRequest(&models.LoginUser{
+		Username: instanceAdmin.Email,
 		Password: testdb.DefaultUserPassword,
 	})
 
@@ -2386,7 +2413,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	})
@@ -2437,7 +2464,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
 	require.NoError(s.T(), err)
 
-	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleAdmin})
+	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleProjectAdmin})
 	require.NoError(s.T(), err)
 
 	// Arrange.
@@ -2477,7 +2504,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleOrganisationAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	})
@@ -2486,7 +2513,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	// Arrange.
 	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
 
-	body := serialize(`{"role":{ "type":"api", "project":"%s"}}`, s.DefaultProject.UID)
+	body := serialize(`{"role":{ "type":"project_admin", "project":"%s"}}`, s.DefaultProject.UID)
 	req := createRequest(http.MethodPut, url, "", body)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -2505,7 +2532,76 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 	parseResponse(s.T(), w.Result(), &m)
 
 	require.Equal(s.T(), member.UID, m.UID)
-	require.Equal(s.T(), auth.Role{Type: auth.RoleAPI, Project: s.DefaultProject.UID}, m.Role)
+	require.Equal(s.T(), auth.Role{Type: auth.RoleProjectAdmin, Project: s.DefaultProject.UID}, m.Role)
+}
+
+func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember_IA() {
+	expectedStatusCode := http.StatusAccepted
+
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
+	require.NoError(s.T(), err)
+
+	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
+		Type:     auth.RoleProjectViewer,
+		Project:  s.DefaultProject.UID,
+		Endpoint: "",
+	})
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
+
+	body := serialize(`{"role":{ "type":"instance_admin", "project":"%s"}}`, s.DefaultProject.UID)
+	req := createRequest(http.MethodPut, url, "", body)
+
+	err = s.AuthenticatorIAFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var m datastore.OrganisationMember
+	parseResponse(s.T(), w.Result(), &m)
+
+	require.Equal(s.T(), member.UID, m.UID)
+	require.Equal(s.T(), auth.Role{Type: auth.RoleInstanceAdmin, Project: s.DefaultProject.UID}, m.Role)
+}
+
+func (s *OrganisationMemberIntegrationTestSuite) Test_CannotUpdateOrganisationMember_IA() {
+	expectedStatusCode := http.StatusForbidden
+
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
+	require.NoError(s.T(), err)
+
+	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
+		Type:     auth.RoleProjectViewer,
+		Project:  s.DefaultProject.UID,
+		Endpoint: "",
+	})
+	require.NoError(s.T(), err)
+
+	// Arrange.
+	url := fmt.Sprintf("/ui/organisations/%s/members/%s", s.DefaultOrg.UID, member.UID)
+
+	body := serialize(`{"role":{ "type":"instance_admin", "project":"%s"}}`, s.DefaultProject.UID)
+	req := createRequest(http.MethodPut, url, "", body)
+
+	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
+
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
 }
 
 func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember() {
@@ -2515,7 +2611,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember()
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
-		Type:     auth.RoleAdmin,
+		Type:     auth.RoleProjectAdmin,
 		Project:  s.DefaultProject.UID,
 		Endpoint: "",
 	})
@@ -3023,7 +3119,7 @@ func (s *ProjectIntegrationTestSuite) TestCreateProject() {
 	require.Equal(s.T(), "test-project", respProject.Project.Name)
 	require.Equal(s.T(), "test-project's default key", respProject.APIKey.Name)
 
-	require.Equal(s.T(), auth.RoleAdmin, respProject.APIKey.Role.Type)
+	require.Equal(s.T(), auth.RoleProjectAdmin, respProject.APIKey.Role.Type)
 	require.Equal(s.T(), respProject.Project.UID, respProject.APIKey.Role.Project)
 	require.Equal(s.T(), "test-project's default key", respProject.APIKey.Name)
 	require.NotEmpty(s.T(), respProject.APIKey.Key)
@@ -3808,7 +3904,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_GetOneSubscription_IncomingProje
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: project.UID,
 	}
 

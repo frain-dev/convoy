@@ -447,7 +447,7 @@ export class CreateProjectComponent implements OnInit {
 	}
 
 	async getEventTypes() {
-		if (this.privateService.getProjectDetails?.type === 'incoming') return;
+		if (this.privateService.getProjectDetailsHideNotification()?.type === 'incoming') return;
 
 		try {
 			const response = await this.privateService.getEventTypes();

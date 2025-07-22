@@ -58,7 +58,7 @@ func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 
@@ -203,7 +203,7 @@ func (s *PortalEventIntegrationTestSuite) SetupTest() {
 
 	// Seed Auth
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: s.DefaultProject.UID,
 	}
 

@@ -30,7 +30,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 			InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
 			Token:          ulid.Make().String(),
 			OrganisationID: org.UID,
-			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+			Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 			Status:         datastore.InviteStatusPending,
 		}
 		uids = append(uids, iv.UID)
@@ -44,7 +44,7 @@ func TestLoadOrganisationsInvitesPaged(t *testing.T) {
 			InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
 			Token:          ulid.Make().String(),
 			OrganisationID: org.UID,
-			Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+			Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 			Status:         datastore.InviteStatusDeclined,
 		}
 
@@ -76,7 +76,7 @@ func TestCreateOrganisationInvite(t *testing.T) {
 		InviteeEmail:   fmt.Sprintf("%s@gmail.com", ulid.Make().String()),
 		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
-		Role:           auth.Role{Type: auth.RoleAdmin, Project: project.UID},
+		Role:           auth.Role{Type: auth.RoleProjectAdmin, Project: project.UID},
 		Status:         datastore.InviteStatusPending,
 	}
 
@@ -104,7 +104,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role: auth.Role{
-			Type:    auth.RoleAdmin,
+			Type:    auth.RoleProjectAdmin,
 			Project: project.UID,
 		},
 		Status: datastore.InviteStatusPending,
@@ -114,7 +114,7 @@ func TestUpdateOrganisationInvite(t *testing.T) {
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:     auth.RoleSuperUser,
+		Type:     auth.RoleOrganisationAdmin,
 		Project:  seedProject(t, db).UID,
 		Endpoint: "",
 	}
@@ -148,7 +148,7 @@ func TestDeleteOrganisationInvite(t *testing.T) {
 		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role: auth.Role{
-			Type:    auth.RoleAdmin,
+			Type:    auth.RoleProjectAdmin,
 			Project: project.UID,
 		},
 		Status: datastore.InviteStatusPending,
@@ -178,7 +178,7 @@ func TestFetchOrganisationInviteByID(t *testing.T) {
 		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role: auth.Role{
-			Type:    auth.RoleAdmin,
+			Type:    auth.RoleProjectAdmin,
 			Project: project.UID,
 		},
 		Status: datastore.InviteStatusPending,
@@ -209,7 +209,7 @@ func TestFetchOrganisationInviteByToken(t *testing.T) {
 		Token:          ulid.Make().String(),
 		OrganisationID: org.UID,
 		Role: auth.Role{
-			Type:    auth.RoleAdmin,
+			Type:    auth.RoleProjectAdmin,
 			Project: project.UID,
 		},
 		Status: datastore.InviteStatusPending,

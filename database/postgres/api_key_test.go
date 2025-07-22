@@ -135,7 +135,7 @@ func Test_UpdateAPIKey(t *testing.T) {
 
 	apiKey.Name = "Updated-Test-Api-Key"
 	apiKey.Role = auth.Role{
-		Type:    auth.RoleSuperUser,
+		Type:    auth.RoleOrganisationAdmin,
 		Project: project.UID,
 	}
 
@@ -234,7 +234,7 @@ func Test_LoadAPIKeysPaged(t *testing.T) {
 					Name:   "Test Api Key",
 					Type:   datastore.ProjectKey,
 					Role: auth.Role{
-						Type:    auth.RoleAdmin,
+						Type:    auth.RoleProjectAdmin,
 						Project: project.UID,
 					},
 					Hash:      ulid.Make().String(),
@@ -260,7 +260,7 @@ func generateApiKey(project *datastore.Project, endpoint *datastore.Endpoint) *d
 		Name:   "Test Api Key",
 		Type:   datastore.ProjectKey,
 		Role: auth.Role{
-			Type:     auth.RoleAdmin,
+			Type:     auth.RoleProjectAdmin,
 			Project:  project.UID,
 			Endpoint: endpoint.UID,
 		},
