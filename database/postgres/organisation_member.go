@@ -247,6 +247,8 @@ const (
 	);
 	`
 
+	// Note: ORDER BY is not needed here because MIN() is deterministic and always returns the same value for the same data.
+	// The query checks if the given user is the first instance admin by created_at timestamp.
 	checkFirstInstanceAdmin = `
 	SELECT EXISTS (
 		SELECT 1 FROM convoy.organisation_members o1

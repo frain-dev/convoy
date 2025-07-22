@@ -263,8 +263,8 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
 
-					policy.SetRule("manage", authz.RuleFunc(policy.Manage))
-					policy.SetRule("view", authz.RuleFunc(policy.View))
+					policy.SetRule(string(PermissionManage), authz.RuleFunc(policy.Manage))
+					policy.SetRule(string(PermissionView), authz.RuleFunc(policy.View))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
@@ -276,7 +276,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					_ = az.RegisterPolicy(policy)
 
 					// Act.
-					err := az.Authorize(ctx, "project.manage", tc.project)
+					err := az.Authorize(ctx, string(PermissionProjectManage), tc.project)
 
 					// Assert.
 					tc.assertion(t, err)

@@ -88,9 +88,9 @@ func Test_OrganisationPolicy_Manage(t *testing.T) {
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
 
-					policy.SetRule("manage.all", authz.RuleFunc(policy.ManageAll))
-					policy.SetRule("manage", authz.RuleFunc(policy.Manage))
-					policy.SetRule("add", authz.RuleFunc(policy.Add))
+					policy.SetRule(string(PermissionManageAll), authz.RuleFunc(policy.ManageAll))
+					policy.SetRule(string(PermissionManage), authz.RuleFunc(policy.Manage))
+					policy.SetRule(string(PermissionAdd), authz.RuleFunc(policy.Add))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
@@ -102,7 +102,7 @@ func Test_OrganisationPolicy_Manage(t *testing.T) {
 					_ = az.RegisterPolicy(policy)
 
 					// Act.
-					err := az.Authorize(ctx, "organisation.manage", tc.organisation)
+					err := az.Authorize(ctx, string(PermissionOrganisationManage), tc.organisation)
 
 					// Assert.
 					tc.assertion(t, err)
@@ -163,9 +163,9 @@ func Test_OrganisationPolicy_Add(t *testing.T) {
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
 
-					policy.SetRule("manage.all", authz.RuleFunc(policy.ManageAll))
-					policy.SetRule("manage", authz.RuleFunc(policy.Manage))
-					policy.SetRule("add", authz.RuleFunc(policy.Add))
+					policy.SetRule(string(PermissionManageAll), authz.RuleFunc(policy.ManageAll))
+					policy.SetRule(string(PermissionManage), authz.RuleFunc(policy.Manage))
+					policy.SetRule(string(PermissionAdd), authz.RuleFunc(policy.Add))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
@@ -177,7 +177,7 @@ func Test_OrganisationPolicy_Add(t *testing.T) {
 					_ = az.RegisterPolicy(policy)
 
 					// Act.
-					err := az.Authorize(ctx, "organisation.add", nil)
+					err := az.Authorize(ctx, string(PermissionOrganisationAdd), nil)
 
 					// Assert.
 					tc.assertion(t, err)
