@@ -619,7 +619,7 @@ function transform(payload) {
     }
 
     openFilterDialog(index: number) {
-        const eventType = this.eventTypes[index].name;
+        const eventType = this.toEventTypesString()[index];
         this.selectedEventType = eventType || '';
         this.selectedIndex = index;
 

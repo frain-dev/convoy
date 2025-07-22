@@ -448,7 +448,7 @@
         <convoy-create-subscription-filter
                 [action]="action"
                 [selectedEventType]="selectedEventType"
-                [schema]="filters[selectedIndex]"
+                [schema]="filtersMap.get(selectedEventType)"
                 (filterSchema)="onSaveFilter($event)"
                 (close)="showFilterDialog = false">
         </convoy-create-subscription-filter>
