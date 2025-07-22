@@ -141,11 +141,11 @@ export class CreatePortalEndpointComponent implements OnInit {
     // Endpoint Types
     endpointTypes = [
         {id: 'webhook', name: 'Webhook', icon: 'endpoint-webhook-icon'},
-        {id: 'slack', name: 'Slack', icon: 'endpoint-slack-icon'},
-        {id: 'telegram', name: 'Telegram', icon: 'endpoint-telegram-icon'},
-        {id: 'zapier', name: 'Zapier', icon: 'endpoint-zapier-icon'},
-        {id: 'hubspot', name: 'Hubspot', icon: 'endpoint-hubspot-icon'},
-        {id: 'discord', name: 'Discord', icon: 'endpoint-discord-icon'}
+        // {id: 'slack', name: 'Slack', icon: 'endpoint-slack-icon'},
+        // {id: 'telegram', name: 'Telegram', icon: 'endpoint-telegram-icon'},
+        // {id: 'zapier', name: 'Zapier', icon: 'endpoint-zapier-icon'},
+        // {id: 'hubspot', name: 'Hubspot', icon: 'endpoint-hubspot-icon'},
+        // {id: 'discord', name: 'Discord', icon: 'endpoint-discord-icon'}
     ];
     selectedEndpointType = 'webhook';
 

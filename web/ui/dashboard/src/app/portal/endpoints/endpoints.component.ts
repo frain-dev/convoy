@@ -265,13 +265,9 @@ export class EndpointsComponent implements OnInit {
     }
 
     onEventTypesFetched(eventTypes: EventType[]) {
-        this.eventTypes = eventTypes;
-        if (!this.selectedEventType && eventTypes.length > 0) {
-            this.selectedEventType = eventTypes[0];
+        this.eventTypes = eventTypes.filter(e => e.name !== '*');
+        if (!this.selectedEventType && this.eventTypes.length > 0) {
+            this.selectedEventType = this.eventTypes[0];
         }
     }
-
-	toEventTypesString(){
-		return this.eventTypes.filter(e=> e.name !== '*')
-	}
 }
