@@ -97,7 +97,7 @@
                         Business
                     </div>
 					<div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-						<div *ngFor="let eventType of eventTypes" class="flex items-center justify-between mb-12px border border-neutral-4 p-12px rounded-6px">
+						<div *ngFor="let eventType of validEventTypes()" class="flex items-center justify-between mb-12px border border-neutral-4 p-12px rounded-6px">
 							<div class="flex items-center">
 								<div class="relative mr-12px">
 									<div 
