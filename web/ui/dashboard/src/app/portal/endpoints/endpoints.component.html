@@ -69,14 +69,6 @@
 								Edit
 							</button>
 						</li>
-						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px">
-							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="goToSubscriptionsPage(endpoint)">
-								<svg width="16" height="16" class="mr-8px stroke-neutral-12 scale-90">
-									<use xlink:href="#subscriptions-icon"></use>
-								</svg>
-								View Subscriptions
-							</button>
-						</li>
 						<li class="mb-10px hover:bg-new.primary-25 transition-all duration-300 rounded-8px" *ngIf="portalDetails?.can_manage_endpoint">
 							<button convoy-dropdown-option convoy-button size="sm" fill="text" class="w-full !justify-start px-8px py-4px text-neutral-12" color="neutral" (click)="activeEndpoint = endpoint; secretDialog.showModal()">
 								<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" class="mr-8px">
@@ -191,14 +183,15 @@
         <div class="flex-1 overflow-y-auto min-h-0">
             <label class="text-neutral-11 mb-2 block text-12">Select Event Type:</label>
             <div convoy-dropdown size="full" position="center">
-            <button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px w-full p-8px !border-primary-400 flex items-center justify-between">
+                <button dropdownTrigger convoy-button size="sm" fill="outline" class="px-10px w-full p-8px !border-primary-400 flex items-center justify-between">
                     <span class="text-primary-100 capitalize"> {{ selectedEventType?.name || 'None' }}</span>
-                    <img src="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-14px h-14px ml-10px" />
+                    <img ngSrc="/assets/img/angle-arrow-down.svg" alt="arrow down icon" class="w-14px h-14px ml-10px"
+                         height="24" width="24"/>
                 </button>
 
                 <ul dropdownOptions>
                     <li convoy-dropdown-option convoy-list-item
-                        *ngFor="let eventType of toEventTypesString()"
+                        *ngFor="let eventType of eventTypes"
                         class="text-14 px-20px w-full min-w-max"
                         [active]="selectedEventType == eventType ? 'true' : 'false'"
                         [hasBorder]="true">
