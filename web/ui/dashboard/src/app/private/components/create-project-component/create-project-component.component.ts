@@ -433,7 +433,7 @@ export class CreateProjectComponent implements OnInit {
             await this.createProjectService.updateEventType(payload);
             this.newEventTypeForm.reset();
             this.newEventTypeDialog.nativeElement.close();
-            this.getEventTypes();
+            await this.getEventTypes();
         } catch (error) {
             console.error("Error updating event type:", error);
         }
@@ -442,8 +442,12 @@ export class CreateProjectComponent implements OnInit {
 	async deprecateEventType(eventTypeId: string) {
 		try {
 			await this.createProjectService.deprecateEventType(eventTypeId);
-			this.getEventTypes();
+			await this.getEventTypes();
 		} catch {}
+	}
+
+	validEventTypes(): EVENT_TYPE[] {
+		return this.eventTypes.filter(it => it.name !== '*')
 	}
 
 	async getEventTypes() {

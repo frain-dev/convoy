@@ -18,13 +18,13 @@ import { ButtonComponent } from '../button/button.component';
 
 					<button convoy-button size="sm" fill="soft" class="px-8px !py-8px"
 							[class]="fullscreen !== 'false' ? 'order-1 mr-2' : 'order-2'" (click)="closeDialog.emit()">
-						<img ngSrc="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon" fill/>
+						<img src="/assets/img/modal-close-icon.svg" class="w-12px h-12px" alt="close icon"/>
 					</button>
 				</div>
 
 				<a *ngIf="fullscreen === 'true'" convoy-button fill="text" target="_blank"
 				   href="https://docs.getconvoy.io" rel="noreferrer">
-					<img ngSrc="/assets/img/doc-icon-primary.svg" alt="doc icon" fill/>
+					<img src="/assets/img/doc-icon-primary.svg" alt="doc icon"/>
 					<span class="font-medium text-12 text-primary-100 ml-2 whitespace-nowrap">Go to docs</span>
 				</a>
 			</div>

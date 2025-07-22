@@ -985,6 +985,10 @@ export class CreateSubscriptionComponent implements OnInit {
 		}
 	}
 
+	validEventTypes(): EVENT_TYPE[] {
+		return this.eventTypes.filter(type => type.name !== '*')
+	}
+
 	// Helper method to sync filters array with filtersMap
 	private _syncFiltersArrayWithMap(): void {
 		// Convert the map values to an array and assign to filters
