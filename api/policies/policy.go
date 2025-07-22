@@ -15,12 +15,18 @@ var ErrNotAllowed = errors.New("unauthorized to process request")
 type Permission string
 
 const (
-	PermissionManageAll          Permission = "manage.all"
-	PermissionManage             Permission = "manage"
-	PermissionAdd                Permission = "add"
-	PermissionView               Permission = "view"
-	PermissionOrganisationManage Permission = "organisation.manage"
-	PermissionOrganisationAdd    Permission = "organisation.add"
-	PermissionProjectManage      Permission = "project.manage"
-	PermissionProjectView        Permission = "project.view"
+	PermissionOrganisationBase Permission = "organisation"
+	PermissionProjectBase      Permission = "project"
+	PermissionManage           Permission = "manage"
+	PermissionAdd              Permission = "add"
+	PermissionView             Permission = "view"
+	PermissionAll              Permission = "all"
+
+	PermissionManageAll = PermissionManage + "." + PermissionAll
+
+	PermissionOrganisationManage    = PermissionOrganisationBase + "." + PermissionManage
+	PermissionOrganisationAdd       = PermissionOrganisationBase + "." + PermissionAdd
+	PermissionOrganisationManageAll = PermissionOrganisationBase + "." + PermissionManageAll
+	PermissionProjectManage         = PermissionProjectBase + "." + PermissionManage
+	PermissionProjectView           = PermissionProjectBase + "." + PermissionView
 )
