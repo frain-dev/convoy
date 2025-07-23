@@ -17,28 +17,30 @@ import { META_EVENT } from 'src/app/models/project.model';
 import { CURSOR, PAGINATION } from 'src/app/models/global.model';
 import { Router } from '@angular/router';
 import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
+import { PermissionDirective } from '../../../components/permission/permission.directive';
 
 @Component({
 	selector: 'convoy-meta-events',
 	standalone: true,
-	imports: [
-		CommonModule,
-		CardComponent,
-		EmptyStateComponent,
-		ButtonComponent,
-		TooltipComponent,
-		DialogHeaderComponent,
-		TableLoaderModule,
-		TableCellComponent,
-		TableComponent,
-		TableHeadComponent,
-		TableHeadCellComponent,
-		TableRowComponent,
-		TagComponent,
-		StatusColorModule,
-		PrismModule,
-		PaginationComponent
-	],
+    imports: [
+        CommonModule,
+        CardComponent,
+        EmptyStateComponent,
+        ButtonComponent,
+        TooltipComponent,
+        DialogHeaderComponent,
+        TableLoaderModule,
+        TableCellComponent,
+        TableComponent,
+        TableHeadComponent,
+        TableHeadCellComponent,
+        TableRowComponent,
+        TagComponent,
+        StatusColorModule,
+        PrismModule,
+        PaginationComponent,
+        PermissionDirective
+    ],
 	templateUrl: './meta-events.component.html',
 	styleUrls: ['./meta-events.component.scss']
 })

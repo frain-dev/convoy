@@ -7,6 +7,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/services"
@@ -102,7 +103,7 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err = h.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionProjectManage), project); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}

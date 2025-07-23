@@ -55,9 +55,10 @@ export class TeamsComponent implements OnInit {
 		})
 	});
 	roles = [
-		{ name: 'Super User', uid: 'super_user' },
-		{ name: 'Admin', uid: 'admin' }
-		// { name: 'Member', uid: 'member' }
+		{ name: 'Organisation Admin', uid: 'organisation_admin' },
+		{ name: 'Billing Admin', uid: 'billing_admin' },
+		{ name: 'Project Admin', uid: 'project_admin' },
+		{ name: 'Project Viewer', uid: 'project_viewer' }
 	];
 	showUpdateMember = false;
 	userDetails = this.privateService.getUserProfile;

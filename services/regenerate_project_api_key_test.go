@@ -47,7 +47,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 				a.EXPECT().FindAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
 					UID: "45678",
 					Role: auth.Role{
-						Type:     auth.RoleAdmin,
+						Type:     auth.RoleProjectAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -76,7 +76,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleSuperUser,
+						Type:     auth.RoleOrganisationAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -85,7 +85,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 			wantAPIKey: &datastore.APIKey{
 				Name: "test_project's key",
 				Role: auth.Role{
-					Type:     "admin",
+					Type:     "project_admin",
 					Project:  "1234",
 					Endpoint: "",
 				},
@@ -111,7 +111,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleSuperUser,
+						Type:     auth.RoleOrganisationAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -135,7 +135,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleAdmin,
+						Type:     auth.RoleAPI,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -152,7 +152,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 				a.EXPECT().FindAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
 					UID: "45678",
 					Role: auth.Role{
-						Type:     auth.RoleAdmin,
+						Type:     auth.RoleProjectAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -171,7 +171,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleSuperUser,
+						Type:     auth.RoleOrganisationAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -188,7 +188,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 				a.EXPECT().FindAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
 					UID: "45678",
 					Role: auth.Role{
-						Type:     auth.RoleAdmin,
+						Type:     auth.RoleProjectAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},
@@ -217,7 +217,7 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 					UID:            "abc",
 					OrganisationID: "org1",
 					Role: auth.Role{
-						Type:     auth.RoleSuperUser,
+						Type:     auth.RoleOrganisationAdmin,
 						Project:  "1234",
 						Endpoint: "",
 					},

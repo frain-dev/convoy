@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/frain-dev/convoy/internal/pkg/license"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/cache"
@@ -11,10 +13,34 @@ import (
 )
 
 type LoginUserService struct {
-	UserRepo datastore.UserRepository
-	Cache    cache.Cache
-	JWT      *jwt.Jwt
-	Data     *models.LoginUser
+	UserRepo      datastore.UserRepository
+	OrgMemberRepo datastore.OrganisationMemberRepository
+	Cache         cache.Cache
+	JWT           *jwt.Jwt
+	Data          *models.LoginUser
+	Licenser      license.Licenser
+}
+
+func (u *LoginUserService) isPrimaryInstanceAdmin(ctx context.Context, userID string) (bool, error) {
+	if u.Licenser.MultiPlayerMode() {
+		// If licensed, all users can access
+		return true, nil
+	}
+
+	count, err := u.OrgMemberRepo.CountInstanceAdminUsers(ctx)
+	if err != nil {
+		return false, err
+	}
+	if count == 0 {
+		return true, nil
+	}
+
+	isFirst, err := u.OrgMemberRepo.IsFirstInstanceAdmin(ctx, userID)
+	if err != nil {
+		return false, err
+	}
+
+	return isFirst, nil
 }
 
 func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
@@ -34,6 +60,16 @@ func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token
 	}
 	if !match {
 		return nil, nil, &ServiceError{ErrMsg: "invalid username or password"}
+	}
+
+	// Check if user can access based on license status and get instance admin count
+	canAccess, err := u.isPrimaryInstanceAdmin(ctx, user.UID)
+	if err != nil {
+		return nil, nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	if !canAccess {
+		return nil, nil, &ServiceError{ErrMsg: "License expired. Only the primary instance administrator can access the system"}
 	}
 
 	token, err := u.JWT.GenerateToken(user)

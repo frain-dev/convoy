@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -63,7 +64,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 			return nil, err
 		}
 
-		if err = h.A.Authz.Authorize(r.Context(), "project.manage", project); err != nil {
+		if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionProjectView), project); err != nil {
 			return nil, err
 		}
 	case h.IsReqWithProjectAPIKey(authUser):

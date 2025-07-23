@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"github.com/frain-dev/convoy/auth"
 	"net/http"
 	"strconv"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
+	"github.com/frain-dev/convoy/api/policies"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
@@ -38,9 +40,16 @@ func (h *Handler) InviteUserToOrganisation(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
+	}
+
+	if newIV.Role.Type == auth.RoleInstanceAdmin {
+		if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManageAll), org); err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+			return
+		}
 	}
 
 	inviteService := &services.InviteUserService{
@@ -157,7 +166,7 @@ func (h *Handler) ResendOrganizationInvite(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}
@@ -187,7 +196,7 @@ func (h *Handler) CancelOrganizationInvite(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err = h.A.Authz.Authorize(r.Context(), "organisation.manage", org); err != nil {
+	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
 		return
 	}

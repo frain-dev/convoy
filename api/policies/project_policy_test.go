@@ -2,6 +2,7 @@ package policies
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -71,6 +72,10 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
 						Return(nil, errors.New("rejected"))
+
+					orgMemberRepo.EXPECT().
+						FetchInstanceAdminByUserID(gomock.Any(), gomock.Any()).
+						Return(nil, sql.ErrNoRows)
 				},
 			},
 			{
@@ -100,7 +105,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
 						Return(&datastore.OrganisationMember{UID: "randomstring", Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "",
 							Endpoint: "",
 						}}, nil)
@@ -133,7 +138,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
 						Return(&datastore.OrganisationMember{UID: "randomstring", Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "",
 							Endpoint: "",
 						}}, nil)
@@ -164,10 +169,13 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), "user-1", "randomstring").
 						Return(&datastore.OrganisationMember{UID: "randomstring", Role: auth.Role{
-							Type:     auth.RoleSuperUser,
+							Type:     auth.RoleInstanceAdmin,
 							Project:  "",
 							Endpoint: "",
 						}}, nil)
+					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
+					licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
+
 				},
 			},
 		},
@@ -198,6 +206,9 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					orgMemberRepo.EXPECT().
 						FetchOrganisationMemberByUserID(gomock.Any(), gomock.Any(), gomock.Any()).
 						Return(nil, errors.New("rejected"))
+					orgMemberRepo.EXPECT().
+						FetchInstanceAdminByUserID(gomock.Any(), gomock.Any()).
+						Return(nil, sql.ErrNoRows)
 				},
 			},
 			{
@@ -228,9 +239,11 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 						Return(&datastore.OrganisationMember{
 							UID: "randomstring",
 							Role: auth.Role{
-								Type: auth.RoleSuperUser,
+								Type: auth.RoleOrganisationAdmin,
 							},
 						}, nil)
+					licenser, _ := pp.Licenser.(*mocks.MockLicenser)
+					licenser.EXPECT().MultiPlayerMode().Times(1).Return(true)
 				},
 			},
 		},
@@ -250,7 +263,8 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 						OrganisationMemberRepo: mocks.NewMockOrganisationMemberRepository(ctrl),
 					}
 
-					policy.SetRule("manage", authz.RuleFunc(policy.Manage))
+					policy.SetRule(string(PermissionManage), authz.RuleFunc(policy.Manage))
+					policy.SetRule(string(PermissionView), authz.RuleFunc(policy.View))
 
 					if tc.storeFn != nil {
 						tc.storeFn(policy)
@@ -262,7 +276,7 @@ func Test_ProjectPolicy_Manage(t *testing.T) {
 					_ = az.RegisterPolicy(policy)
 
 					// Act.
-					err := az.Authorize(ctx, "project.manage", tc.project)
+					err := az.Authorize(ctx, string(PermissionProjectManage), tc.project)
 
 					// Assert.
 					tc.assertion(t, err)
