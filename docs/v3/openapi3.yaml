@@ -835,10 +835,6 @@ components:
           allOf:
           - $ref: '#/components/schemas/models.RateLimitConfiguration'
           description: Rate limit configuration
-        retry_config:
-          allOf:
-          - $ref: '#/components/schemas/models.RetryConfiguration'
-          description: Retry configuration
         source_id:
           description: Source Id
           type: string
@@ -1388,6 +1384,8 @@ components:
         function:
           type: string
         name:
+          type: string
+        project_id:
           type: string
         rate_limit_config:
           $ref: '#/components/schemas/datastore.RateLimitConfiguration'

@@ -7350,14 +7350,6 @@
                         }
                     ]
                 },
-                "retry_config": {
-                    "description": "Retry configuration",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.RetryConfiguration"
-                        }
-                    ]
-                },
                 "source_id": {
                     "description": "Source Id",
                     "type": "string"
@@ -8156,6 +8148,9 @@
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "project_id": {
                     "type": "string"
                 },
                 "rate_limit_config": {

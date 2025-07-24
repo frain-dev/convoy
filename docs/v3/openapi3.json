@@ -1191,14 +1191,6 @@
 						],
 						"description": "Rate limit configuration"
 					},
-					"retry_config": {
-						"allOf": [
-							{
-								"$ref": "#/components/schemas/models.RetryConfiguration"
-							}
-						],
-						"description": "Retry configuration"
-					},
 					"source_id": {
 						"description": "Source Id",
 						"type": "string"
@@ -1997,6 +1989,9 @@
 						"type": "string"
 					},
 					"name": {
+						"type": "string"
+					},
+					"project_id": {
 						"type": "string"
 					},
 					"rate_limit_config": {

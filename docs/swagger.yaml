@@ -890,10 +890,6 @@ definitions:
         allOf:
         - $ref: '#/definitions/models.RateLimitConfiguration'
         description: Rate limit configuration
-      retry_config:
-        allOf:
-        - $ref: '#/definitions/models.RetryConfiguration'
-        description: Retry configuration
       source_id:
         description: Source Id
         type: string
@@ -1443,6 +1439,8 @@ definitions:
       function:
         type: string
       name:
+        type: string
+      project_id:
         type: string
       rate_limit_config:
         $ref: '#/definitions/datastore.RateLimitConfiguration'

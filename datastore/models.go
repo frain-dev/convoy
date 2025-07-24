@@ -1499,6 +1499,7 @@ type ProjectEventType struct {
 	ProjectId    string    `json:"-" db:"project_id"`
 	CreatedAt    time.Time `json:"-" db:"created_at"`
 	UpdatedAt    time.Time `json:"-" db:"updated_at"`
+	JsonSchema   string    `json:"-" db:"json_schema"`
 	Description  string    `json:"description" db:"description"`
 	DeprecatedAt null.Time `json:"deprecated_at" db:"deprecated_at"`
 }
