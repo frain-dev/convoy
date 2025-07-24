@@ -10,9 +10,9 @@ import (
 
 var ErrCircuitBreakerNotEnabled = errors.New("[feature flag] circuit breaker is not enabled")
 var ErrFullTextSearchNotEnabled = errors.New("[feature flag] full text search is not enabled")
-var ErrRetentionPolicyNotEnabled = errors.New("[feature flag] retention policy is not enabled")
 var ErrPrometheusMetricsNotEnabled = errors.New("[feature flag] prometheus metrics is not enabled")
 var ErrCredentialEncryptionNotEnabled = errors.New("[feature flag] credential encryption is not enabled")
+var ErrRetentionPolicyNotEnabled = errors.New("[feature flag] partition retention policy is not enabled")
 
 type (
 	FeatureFlagKey string
@@ -113,7 +113,7 @@ func (c *FFlag) ListFeatures() error {
 	w := tabwriter.NewWriter(os.Stdout, 1, 1, 1, ' ', 0)
 	_, err := fmt.Fprintln(w, "Features\tState")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write feature flag: %w", err)
 	}
 
 	for _, k := range keys {
@@ -125,9 +125,9 @@ func (c *FFlag) ListFeatures() error {
 
 		_, err = fmt.Fprintf(w, "%s\t%s\n", k, state)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to write feature flag: %w", err)
 		}
 	}
 
-	return w.Flush()
+	return fmt.Errorf("an error occurred listing features: %s", w.Flush())
 }

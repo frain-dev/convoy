@@ -1,0 +1,235 @@
+# Tiger Style golangci-lint configuration
+# Enforces safety, performance, and developer experience principles
+# Based on https://tigerstyle.dev/
+
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.23"
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+  allow-serial-runners: true
+
+linters-settings:
+  # Safety: Control flow and limits
+  cyclop:
+    max-complexity: 10 # Keep functions simple and explicit
+    package-average: 5.0
+    max-functions: 15 # Limit function count per package
+
+  # Safety: Function length limits (Tiger Style: under 70 lines)
+  funlen:
+    lines: 70
+    statements: 50
+
+  # Safety: Error handling
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+    exclude-functions: "Close"
+
+  # Safety: Treat warnings as errors
+  govet:
+    check-unreachable: true
+    check-unsafeptr: true
+
+  # Safety: Memory and types
+  gosimple:
+  # go version is now set globally in run.go
+
+  # Safety: Explicit types and sizes
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - "dupImport" # Allow if needed for clarity
+      - "ifElseChain" # Allow explicit if-else chains
+      - "unnecessaryDefer" # Allow if it improves error handling
+      - "wrapperFunc" # Allow wrapper functions for clarity
+
+  # Performance: Resource optimization
+  gosec:
+    excludes:
+      - G404 # Allow crypto/rand for non-crypto purposes
+      - G601 # Allow implicit memory aliasing in loops
+
+  # Developer Experience: Naming and style
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
+      - name: package-comments
+        disabled: true # Allow package comments to be optional
+      - name: var-naming
+        arguments:
+          - idNamingConvention
+          - "ID"
+      - name: function-result-limit
+        arguments:
+          - maxRes: 3
+      - name: function-length
+        arguments:
+          - maxStmt: 50
+          - maxLines: 70
+
+  # Developer Experience: Code organization
+  gocognit:
+    min-complexity: 10
+
+  # Developer Experience: Consistency
+  gofmt:
+    simplify: true
+
+  # Developer Experience: Line length limits
+  lll:
+    line-length: 200 # Tiger Style: reasonable line length
+
+  # Safety: Avoid off-by-one errors
+  staticcheck:
+    # go version is now set globally in run.go
+    checks:
+      - "all"
+    initialisms:
+      - ACL
+      - API
+      - ASCII
+      - CPU
+      - CSS
+      - DNS
+      - EOF
+      - GUID
+      - HTML
+      - HTTP
+      - HTTPS
+      - ID
+      - IP
+      - JSON
+      - QPS
+      - RAM
+      - RPC
+      - SLA
+      - SMTP
+      - SQL
+      - SSH
+      - TCP
+      - TLS
+      - TTL
+      - UDP
+      - UI
+      - UID
+      - UUID
+      - URI
+      - URL
+      - UTF8
+      - VM
+      - XML
+      - XMPP
+      - XSRF
+      - XSS
+
+linters:
+  enable:
+    # Safety: Control flow and limits
+    - cyclop
+    - funlen
+
+    # Safety: Error handling
+    - errcheck
+    - govet
+    - gosimple
+    - staticcheck
+
+    # Safety: Memory and types
+    - gocritic
+    - gosec
+
+    # Performance: Resource optimization
+    - prealloc
+    - unparam
+    - wastedassign
+
+    # Developer Experience: Naming and style
+    - revive
+    - gofmt
+    - goimports
+    - gomnd
+    - lll
+    - misspell
+    - unconvert
+    - whitespace
+
+    # Developer Experience: Code organization
+    - dupl
+    - goprintffuncname
+    - ineffassign
+    - nakedret
+    - nolintlint
+    - rowserrcheck
+    - scopelint
+    - structcheck
+    - stylecheck
+    - thelper
+    - tparallel
+    - typecheck
+    - unused
+    - varcheck
+    - wrapcheck
+
+  disable:
+    # Disable linters that conflict with Tiger Style principles
+    - depguard # Allow external dependencies when needed
+    - forbidigo # Allow specific patterns when justified
+    - gochecknoinits # Allow init functions when necessary
+    - gochecknoglobals # Allow global variables when justified
+    - gocyclo # Redundant with cyclop
+    - godox # Allow TODO comments
+    - err113 # Allow error wrapping patterns
+    - noctx # Allow context-less functions when appropriate
+    - testpackage # Allow test packages
+    - wsl # Allow single-line statements when appropriate
+
+issues:
+  # Treat all warnings as errors (Tiger Style principle)
+  fix: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  # Exclude specific patterns that are acceptable
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - funlen
+        - gocognit
+        - cyclop
+
+    - path: cmd/
+      linters:
+        - funlen # Allow longer functions in main commands
+
+    - path: migrations/
+      linters:
+        - funlen
+        - gocognit
+
+    - path: testdata/
+      linters:
+        - all
+
+    - path: mocks/
+      linters:
+        - all
+
+    # Allow specific patterns for generated code
+    - text: "generated"
+      linters:
+        - all
+
+  # Include all issues
+  include:
+    - EXC0002 # disable excluding of issues about comments from golint
+
