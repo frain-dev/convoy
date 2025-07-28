@@ -4,26 +4,23 @@
 
 -   Add owner ID filtering in the event log
 
+# 25.6.8
+
 ### Enhancements
 
 -   Increase the default API and ingest rate limits
 
-# 25.6.8
+# 25.6.7
 
 ### Bug Fixes
 
 -   Make Sentry tracer sample rate configurable
 
-# 25.6.7
+# 25.6.6
 
 ### Enhancements
 
 - Fixed race condition in the compare package
-
-# 25.6.6
-
-### Enhancements
-- make sentry sample rate configurable (#2311)
 
 # 25.6.3, 25.6.4, 25.6.5
 
