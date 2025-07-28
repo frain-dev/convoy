@@ -13,7 +13,7 @@ type Response struct {
 	StatusCode int `json:"-"`
 }
 
-func (res Response) Render(w http.ResponseWriter, r *http.Request) error {
+func (res Response) Render(_ http.ResponseWriter, r *http.Request) error {
 	render.Status(r, res.StatusCode)
 	return nil
 }

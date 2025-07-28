@@ -7,20 +7,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/pkg/retention"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
@@ -33,7 +32,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 )
 
-func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
+func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) error {
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("worker")
 
@@ -243,25 +242,12 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		lo.Warn(fflag.ErrCircuitBreakerNotEnabled)
 	}
 
-	var ret retention.Retentioner
-	if featureFlag.CanAccessFeature(fflag.RetentionPolicy) && a.Licenser.RetentionPolicy() {
-		policy, _err := time.ParseDuration(cfg.RetentionPolicy.Policy)
-		if _err != nil {
-			lo.WithError(_err).Fatal("Failed to parse retention policy")
-			return _err
-		}
-
-		ret, err = retention.NewPartitionRetentionPolicy(a.DB, lo, policy)
-		if err != nil {
-			lo.WithError(err).Fatal("Failed to create retention policy")
-		}
-
-		ret.Start(ctx, time.Minute)
-	} else {
-		lo.Warn(fflag.ErrRetentionPolicyNotEnabled)
-
-		ret = retention.NewDeleteRetentionPolicy(a.DB, lo)
+	ret, err := retention.NewRetentioner(ctx, cfg.RetentionPolicy, a.DB, a.Licenser, featureFlag, a.Logger)
+	if err != nil {
+		lo.WithError(err).Fatal("Failed to create retentioner")
+		return fmt.Errorf("failed to create retentioner: %w", err)
 	}
+	ret.Start(ctx, time.Minute)
 
 	channels := make(map[string]task.EventChannel)
 	defaultCh, broadcastCh, dynamicCh := task.NewDefaultEventChannel(), task.NewBroadcastEventChannel(subscriptionsTable), task.NewDynamicEventChannel()

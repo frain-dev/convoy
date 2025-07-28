@@ -35,7 +35,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 			return fmt.Errorf("failed to obtain lock: %v", err)
 		}
 
-		defer func() {
+		defer func(mu *redsync.Mutex) {
 			_ctx, _cancel := context.WithTimeout(ctx, time.Second*2)
 			defer _cancel()
 
@@ -43,7 +43,7 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 			if !ok || _err != nil {
 				log.WithError(_err).Error("failed to release lock")
 			}
-		}()
+		}(mutex)
 
 		c := time.Now()
 		config, err := configRepo.LoadConfiguration(ctx)
@@ -113,18 +113,18 @@ func RetentionPolicies(rd *rdb.Redis, ret retention.Retentioner) func(context.Co
 			return fmt.Errorf("failed to obtain lock: %v", err)
 		}
 
-		defer func() {
+		defer func(mu *redsync.Mutex) {
 			_lockCtx, _cancel := context.WithTimeout(ctx, time.Second*2)
 			defer _cancel()
 
-			ok, _err := mutex.UnlockContext(_lockCtx)
+			ok, _err := mu.UnlockContext(_lockCtx)
 			if !ok || _err != nil {
 				log.FromContext(ctx).WithError(_err).Error("failed to release lock")
 			}
-		}()
+		}(mutex)
 
 		c := time.Now()
-		err = ret.Perform(ctx)
+		err = ret.Maintain(ctx)
 		if err != nil {
 			return err
 		}
