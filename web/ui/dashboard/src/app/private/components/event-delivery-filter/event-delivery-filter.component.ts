@@ -24,7 +24,6 @@ import { LicensesService } from 'src/app/services/licenses/licenses.service';
 })
 export class EventDeliveryFilterComponent implements OnInit {
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-	// @ViewChild('eventTypeFilter', { static: false }) eventTypeFilter?: any;
 
 	@Input('type') type: 'deliveries' | 'logs' = 'deliveries';
 

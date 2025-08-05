@@ -93,6 +93,7 @@ const (
 	AND ev.created_at >= :start_date AND ev.created_at <= :end_date AND ev.deleted_at IS NULL;
 	`
 
+	// if there's no owner_id, we remove the initial CTE
 	baseEventsPaged = `
 	with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id), events as (
 	SELECT ev.id, ev.project_id,
@@ -517,6 +518,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		filterQuery += endpointFilter
 	}
 
+	// if there's no owner_id, we remove the initial CTE
 	if len(filter.OwnerID) == 0 {
 		base = strings.Replace(base, "with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id),", "with ", 1)
 		base = strings.Replace(base, "endpoint_ids", "convoy.endpoints", 1)

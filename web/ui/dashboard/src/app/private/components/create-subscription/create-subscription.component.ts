@@ -409,7 +409,6 @@ export class CreateSubscriptionComponent implements OnInit {
 
 		// Validate form before submitting
 		if (this.subscriptionForm.invalid) {
-			console.log(this.subscriptionForm);
 			console.error('Form is invalid:', this.subscriptionForm.errors);
 			return;
 		}
