@@ -111,6 +111,7 @@ func (qs *QueryListEvent) Transform(r *http.Request) (*QueryListEventResponse, e
 
 	return &QueryListEventResponse{
 		Filter: &datastore.Filter{
+			OwnerID:        r.URL.Query().Get("ownerId"),
 			Query:          r.URL.Query().Get("query"),
 			IdempotencyKey: r.URL.Query().Get("idempotencyKey"),
 			EndpointIDs:    getEndpointIDs(r),

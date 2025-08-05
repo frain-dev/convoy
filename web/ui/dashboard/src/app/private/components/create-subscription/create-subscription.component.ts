@@ -402,6 +402,11 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async saveSubscription(setup?: boolean) {
+		// create the endpoint and source first
+		this.toggleFormsLoaders(true);
+		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
+		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
+
 		// Validate form before submitting
 		if (this.subscriptionForm.invalid) {
 			console.error('Form is invalid:', this.subscriptionForm.errors);
@@ -462,16 +467,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		await this.runSubscriptionValidation();
 
 		// Clean up the duplicate code above and consolidate event type handling
-		this.toggleFormsLoaders(true);
-
 		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
 			this.toggleFormsLoaders(false);
 			this.subscriptionForm.markAllAsTouched();
 			return;
 		}
-
-		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
-		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
 
 		if (!this.showAction && this.endpoints.length) this.subscriptionForm.patchValue({ name: this.endpoints?.find(endpoint => endpoint.uid == this.subscriptionForm.value.endpoint_id)?.name + ' Subscription' });
 

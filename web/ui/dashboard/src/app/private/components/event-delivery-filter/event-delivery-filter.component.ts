@@ -24,7 +24,6 @@ import { LicensesService } from 'src/app/services/licenses/licenses.service';
 })
 export class EventDeliveryFilterComponent implements OnInit {
 	@ViewChild('datePicker', { static: true }) datePicker!: DatePickerComponent;
-	@ViewChild('eventTypeFilter', { static: false }) eventTypeFilter?: any;
 
 	@Input('type') type: 'deliveries' | 'logs' = 'deliveries';
 
@@ -49,6 +48,7 @@ export class EventDeliveryFilterComponent implements OnInit {
 	eventsTypeSearchString!: string;
 
 	eventsSearchString!: string;
+	eventOwnerIdString!: string;
 
 	portalToken = this.route.snapshot.queryParams?.token;
 
@@ -56,10 +56,11 @@ export class EventDeliveryFilterComponent implements OnInit {
 	enableTailMode = false;
 	filterOptions = [
 		{ name: 'Date', id: 'date', show: false },
+		{ name: 'Owner ID', id: 'ownerId', show: false },
+		{ name: 'Event type', id: 'eventType', show: false },
 		{ name: 'Status', id: 'status', show: false },
 		{ name: 'Source', id: 'source', show: false },
 		{ name: 'Endpoint', id: 'endpoint', show: false },
-		{ name: 'Event type', id: 'eventType', show: false }
 	];
 
     eventTypes: EVENT_TYPE[] = [];
@@ -70,22 +71,18 @@ export class EventDeliveryFilterComponent implements OnInit {
 		if (this.checkIfTailModeIsEnabled()) this.tail.emit({ data: this.queryParams, tailModeConfig: this.checkIfTailModeIsEnabled() });
 		this.filter.emit(data);
 
-		if (this.type === 'logs') this.projectService.activeProjectDetails?.type == 'outgoing' ? this.filterOptions.splice(1, 4) : this.filterOptions.splice(1, 4, { name: 'Source', id: 'source', show: false });
+		if (this.type === 'logs') this.projectService.activeProjectDetails?.type === 'outgoing' ? this.filterOptions.splice(3, 4) : this.filterOptions.splice(3, 4, { name: 'Source', id: 'source', show: false });
 		else this.projectService.activeProjectDetails?.type == 'incoming' ? this.filterOptions.splice(3, 2) : this.filterOptions.splice(2, 1);
-
-		if (this.portalToken) this.filterOptions = this.filterOptions.filter(key => key.id !== 'endpoint');
-
-		// if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();
-
-		if (this.eventDeliveriesEndpoint) this.eventDeliveriesEndpointData = await this.getSelectedEndpointData();
-
-		// if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
-
+        if (this.portalToken) this.filterOptions = this.filterOptions.filter(key => key.id !== 'endpoint');
+        if (this.eventDeliveriesSource) this.eventDeliveriesSourceData = await this.getSelectedSourceData();
+        if (this.eventDeliveriesEndpoint) this.eventDeliveriesEndpointData = await this.getSelectedEndpointData();
+        if (!this.portalToken || this.projectService.activeProjectDetails?.type == 'incoming') this.getSourcesForFilter();
         this.getEventTypesForFilter();
 	}
 
 	getFiltersFromURL() {
 		this.queryParams = { ...this.queryParams, ...this.route.snapshot.queryParams };
+		console.log("[query params]:", this.queryParams);
 
 		// set filter status if any exists in URL
 		this.eventDeliveryFilteredByStatus = this.queryParams.status ? JSON.parse(this.queryParams.status) : [];
@@ -99,10 +96,12 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 		this.eventsSearchString = this.queryParams?.query || '';
 
+		this.eventOwnerIdString = this.queryParams?.ownerId || '';
+
 		return this.queryParams;
 	}
 
-	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction' | 'eventType') {
+	clearFilters(filterType?: 'startDate' | 'endDate' | 'eventId' | 'endpointId' | 'status' | 'sourceId' | 'next_page_cursor' | 'prev_page_cursor' | 'direction' | 'eventType' | 'ownerId') {
 		if (filterType && this.queryParams) {
 			// if filter to clear start date or end date, it means clear date filter. :)
 			if (filterType === 'startDate' || filterType === 'endDate') {
@@ -122,6 +121,9 @@ export class EventDeliveryFilterComponent implements OnInit {
 			} else if (filterType === 'eventId') {
 				delete this.queryParams['eventId'];
 				delete this.queryParams['idempotencyKey'];
+			} else if (filterType === 'ownerId') {
+                this.eventOwnerIdString = '';
+				delete this.queryParams['ownerId'];
 			} else delete this.queryParams[filterType];
 
 			const cleanedQuery: any = Object.fromEntries(Object.entries(this.queryParams).filter(([_, q]) => q !== '' && q !== undefined && q !== null));
@@ -132,6 +134,8 @@ export class EventDeliveryFilterComponent implements OnInit {
 			this.eventsTypeSearchString = '';
 			this.eventDeliveriesSource = '';
 			this.eventDeliveriesEndpoint = '';
+			this.eventOwnerIdString = '';
+
 			this.eventDeliveryFilteredByStatus = [];
 			this.datePicker?.clearDate();
 			const sortParam = this.queryParams.sort;
@@ -185,6 +189,12 @@ export class EventDeliveryFilterComponent implements OnInit {
 
 	searchEvents() {
 		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, query: this.eventsSearchString });
+		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
+		this.filter.emit(this.queryParams);
+	}
+
+	searchOwnerId() {
+		this.queryParams = this.generalService.addFilterToURL({ ...this.queryParams, ownerId: this.eventOwnerIdString });
 		this.checkIfTailModeIsEnabled() ? this.toggleTailMode(false, 'on') : this.toggleTailMode(false, 'off');
 		this.filter.emit(this.queryParams);
 	}

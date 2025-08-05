@@ -85,6 +85,7 @@ export interface FILTER_QUERY_PARAM {
 	name?: string;
 	sort?: string;
 	eventType?: string;
+	ownerId?: string;
 }
 
 
