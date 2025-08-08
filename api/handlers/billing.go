@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
@@ -31,13 +35,86 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := h.BillingClient.GetUsage(r.Context(), orgID)
+	// Calculate usage from actual Convoy data instead of external billing service
+	usage, err := h.calculateUsageFromConvoy(r.Context(), orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
 		return
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", resp.Data, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", usage, http.StatusOK))
+}
+
+func (h *BillingHandler) calculateUsageFromConvoy(ctx context.Context, orgID string) (map[string]interface{}, error) {
+	// Get all projects for the organization
+	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projects, err := projectRepo.LoadProjects(ctx, &datastore.ProjectFilter{OrgID: orgID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to load projects: %w", err)
+	}
+
+	var totalEvents int64
+	var totalDeliveries int64
+	var totalBandwidth int64
+
+	eventRepo := postgres.NewEventRepo(h.A.DB)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
+
+	// Calculate current month period
+	now := time.Now()
+	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
+
+	searchParams := datastore.SearchParams{
+		CreatedAtStart: startOfMonth.Unix(),
+		CreatedAtEnd:   endOfMonth.Unix(),
+	}
+
+	for _, project := range projects {
+		// Count events for this project in current month
+		events, err := eventRepo.CountEvents(ctx, project.UID, &datastore.Filter{SearchParams: searchParams})
+		if err != nil {
+			continue // Skip this project if there's an error
+		}
+		totalEvents += events
+
+		// Count successful deliveries for this project in current month
+		deliveries, err := eventDeliveryRepo.CountEventDeliveries(ctx, project.UID, nil, "", []datastore.EventDeliveryStatus{datastore.SuccessEventStatus}, searchParams)
+		if err != nil {
+			continue // Skip this project if there's an error
+		}
+		totalDeliveries += deliveries
+
+		// Calculate actual bandwidth from event data size
+		// Get events for this project in current month to calculate actual data size
+		eventFilter := &datastore.Filter{SearchParams: searchParams}
+		eventsList, _, err := eventRepo.LoadEventsPaged(ctx, project.UID, eventFilter)
+		if err != nil {
+			continue // Skip this project if there's an error
+		}
+
+		// Calculate actual data size from events
+		for _, event := range eventsList {
+			// Add size of raw data
+			totalBandwidth += int64(len(event.Raw))
+			// Add size of processed data
+			totalBandwidth += int64(len(event.Data))
+		}
+	}
+
+	// Format period as YYYY-MM
+	period := now.Format("2006-01")
+
+	usage := map[string]interface{}{
+		"organisation_id": orgID,
+		"period":          period,
+		"events":          totalEvents,
+		"deliveries":      totalDeliveries,
+		"bandwidth":       totalBandwidth,
+		"created_at":      now,
+	}
+
+	return usage, nil
 }
 
 func (h *BillingHandler) GetInvoices(w http.ResponseWriter, r *http.Request) {
