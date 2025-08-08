@@ -100,6 +100,11 @@ components:
         url:
           type: string
       type: object
+    datastore.DeliveryMode:
+      enum:
+      - at_least_once
+      - at_most_once
+      type: string
     datastore.Device:
       properties:
         created_at:
@@ -390,6 +395,13 @@ components:
         prev_page_cursor:
           type: string
       type: object
+    datastore.PortalAuthType:
+      enum:
+      - refresh_token
+      - owner_id
+      - static_token
+      - none
+      type: string
     datastore.ProviderConfig:
       properties:
         twitter:
@@ -661,7 +673,7 @@ components:
       properties:
         advanced_signatures:
           description: |-
-            Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+            Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
             -- simple or advanced. If left unspecified, we default to false.
           type: boolean
         appID:
@@ -756,7 +768,9 @@ components:
           description: Description is used to describe what the event type does
           type: string
         json_schema:
+          additionalProperties: true
           description: JSONSchema is the JSON structure of the event type
+          type: object
         name:
           description: Name is the event type name. E.g., invoice.created
           type: string
@@ -836,6 +850,10 @@ components:
         app_id:
           description: Deprecated but necessary for backward compatibility
           type: string
+        delivery_mode:
+          allOf:
+          - $ref: '#/components/schemas/datastore.DeliveryMode'
+          description: Delivery mode configuration
         endpoint_id:
           description: Destination endpoint ID
           type: string
@@ -962,6 +980,8 @@ components:
           type: string
         deleted_at:
           type: string
+        delivery_mode:
+          $ref: '#/components/schemas/datastore.DeliveryMode'
         description:
           type: string
         device_id:
@@ -1264,12 +1284,18 @@ components:
       type: object
     models.PortalLink:
       properties:
+        auth_key:
+          type: string
+        auth_type:
+          type: string
         can_manage_endpoint:
           description: Specify whether endpoint management can be done through the
             Portal Link UI
           type: boolean
         endpoints:
-          description: IDs of endpoints in this portal link
+          description: |-
+            Deprecated
+            IDs of endpoints in this portal link
           items:
             type: string
           type: array
@@ -1277,12 +1303,16 @@ components:
           description: Portal Link Name
           type: string
         owner_id:
-          description: Alternatively specify OwnerID, the portal link will inherit
-            all the endpoints with this owner ID
+          description: OwnerID, the portal link will inherit all the endpoints with
+            this owner ID
           type: string
       type: object
     models.PortalLinkResponse:
       properties:
+        auth_key:
+          type: string
+        auth_type:
+          $ref: '#/components/schemas/datastore.PortalAuthType'
         can_manage_endpoint:
           type: boolean
         created_at:
@@ -1420,6 +1450,8 @@ components:
           type: string
         deleted_at:
           type: string
+        delivery_mode:
+          $ref: '#/components/schemas/datastore.DeliveryMode'
         device_metadata:
           $ref: '#/components/schemas/datastore.Device'
         endpoint_metadata:
@@ -1480,7 +1512,7 @@ components:
       properties:
         advanced_signatures:
           description: |-
-            Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)
+            Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)
             -- simple or advanced. If left unspecified, we default to false.
           type: boolean
         authentication:
@@ -1545,7 +1577,9 @@ components:
           description: Description is used to describe what the event type does
           type: string
         json_schema:
+          additionalProperties: true
           description: JSONSchema is the JSON structure of the event type
+          type: object
       type: object
     models.UpdateFilterRequest:
       properties:
@@ -1628,6 +1662,10 @@ components:
         app_id:
           description: Deprecated but necessary for backward compatibility
           type: string
+        delivery_mode:
+          allOf:
+          - $ref: '#/components/schemas/datastore.DeliveryMode'
+          description: Delivery mode configuration
         endpoint_id:
           description: Destination endpoint ID
           type: string
@@ -4397,6 +4435,72 @@ paths:
       summary: Retrieve a portal link
       tags:
       - Portal Links
+    post:
+      description: This endpoint retrieves a portal link by its id.
+      operationId: GeneratePortalToken
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: portal link id
+        in: path
+        name: portalLinkID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/models.PortalLinkResponse'
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Updates a portal link auth token
+      tags:
+      - Portal Links
     put:
       description: This endpoint updates a portal link
       operationId: UpdatePortalLink
@@ -4469,6 +4573,73 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update a portal link
+      tags:
+      - Portal Links
+  /v1/projects/{projectID}/portal-links/{portalLinkID}/refresh_token:
+    get:
+      description: This endpoint retrieves a portal link auth token
+      operationId: RefreshPortalLinkAuthToken
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        schema:
+          type: string
+      - description: portal link id
+        in: path
+        name: portalLinkID
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      type: string
+                  type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Bad Request
+        "401":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Unauthorized
+        "404":
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/util.ServerResponse'
+                - properties:
+                    data:
+                      $ref: '#/components/schemas/handlers.Stub'
+                  type: object
+          description: Not Found
+      security:
+      - ApiKeyAuth: []
+      summary: Get a portal link auth token
       tags:
       - Portal Links
   /v1/projects/{projectID}/portal-links/{portalLinkID}/revoke:

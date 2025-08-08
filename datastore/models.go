@@ -1551,64 +1551,11 @@ type OrganisationInvite struct {
 type PortalAuthType string
 
 const (
-	PortalAuthTypeRefresh PortalAuthType = "refresh"
-	PortalAuthTypeBasic   PortalAuthType = "basic"
-	PortalAuthTypeToken   PortalAuthType = "token"
+	PortalAuthTypeRefresh PortalAuthType = "refresh_token"
+	PortalOwnerIdType     PortalAuthType = "owner_id"
+	PortalAuthTypeToken   PortalAuthType = "static_token"
 	PortalAuthTypeNone    PortalAuthType = "none"
 )
-
-type PortalAuther interface {
-	Authenticate(ctx context.Context) error
-}
-
-type PortalAuth struct {
-	AuthType           string                `json:"auth_type"`
-	NoopTokenType      NoopPortalAuth        `json:"noop_token_type"`
-	StaticTokenType    StaticTokenPortalAuth `json:"static_token_type"`
-	OwnerIDTokenType   OwnerIDPortalAuth     `json:"owner_id_token_type"`
-	BasicAuthTokenType BasicAuthPortalAuth   `json:"basic_auth_token_type"`
-}
-
-type StaticTokenPortalAuth struct {
-	Token string `json:"token"`
-}
-
-func (s *StaticTokenPortalAuth) Authenticate(_ context.Context) error {
-	return nil
-}
-
-// OwnerIDPortalAuth deprecated
-type OwnerIDPortalAuth struct {
-	OwnerID string `json:"owner_id"`
-}
-
-func (o *OwnerIDPortalAuth) Authenticate(_ context.Context) error {
-	return nil
-}
-
-type NoopPortalAuth struct {
-}
-
-func (n *NoopPortalAuth) Authenticate(_ context.Context) error {
-	return nil
-}
-
-type RefreshTokenPortalAuth struct {
-	RefreshToken string `json:"refresh_token"`
-}
-
-func (r *RefreshTokenPortalAuth) Authenticate(_ context.Context) error {
-	return nil
-}
-
-type BasicAuthPortalAuth struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-func (b *BasicAuthPortalAuth) Authenticate(_ context.Context) error {
-	return nil
-}
 
 type PortalLink struct {
 	UID               string           `json:"uid" db:"id"`
@@ -1620,14 +1567,14 @@ type PortalLink struct {
 	EndpointsMetadata EndpointMetadata `json:"endpoints_metadata" db:"endpoints_metadata"`
 	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
-	PortalAuth        PortalAuth       `json:"portal_auth" db:"-"`
 
-	// portal auth token
-	TokenExpiresAt null.Time `json:"token_expires_at" db:"token_expires_at"`
-	TokenMaskId    string    `json:"token_mask_id" db:"token_mask_id"`
-	TokenHash      string    `json:"token_hash" db:"token_hash"`
-	TokenSalt      string    `json:"token_salt" db:"token_salt"`
-	AuthKey        string    `json:"auth_key" db:"-"`
+	// portal auth stuff
+	TokenExpiresAt null.Time      `json:"token_expires_at" db:"token_expires_at"`
+	TokenMaskId    string         `json:"token_mask_id" db:"token_mask_id"`
+	TokenHash      string         `json:"token_hash" db:"token_hash"`
+	TokenSalt      string         `json:"token_salt" db:"token_salt"`
+	AuthKey        string         `json:"auth_key" db:"-"`
+	AuthType       PortalAuthType `json:"auth_type" db:"auth_type"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

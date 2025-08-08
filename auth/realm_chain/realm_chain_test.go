@@ -3,6 +3,8 @@ package realm_chain
 import (
 	"context"
 	"fmt"
+	"github.com/frain-dev/convoy/pkg/log"
+	"os"
 	"sync/atomic"
 	"testing"
 
@@ -315,7 +317,10 @@ func TestInit(t *testing.T) {
 			userRepo := mocks.NewMockUserRepository(ctrl)
 			portalLinkRepo := mocks.NewMockPortalLinkRepository(ctrl)
 			cache := mocks.NewMockCache(ctrl)
-			err := Init(tt.args.authConfig, mockAPIKeyRepo, userRepo, portalLinkRepo, cache)
+			logger := log.NewLogger(os.Stderr)
+			logger.SetLevel(log.FatalLevel)
+
+			err := Init(tt.args.authConfig, mockAPIKeyRepo, userRepo, portalLinkRepo, cache, logger)
 			if tt.wantErr {
 				require.Equal(t, tt.wantErrMsg, err.Error())
 				return

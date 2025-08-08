@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/auth/realm/portal"
 	"sync/atomic"
+
+	"github.com/frain-dev/convoy/auth/realm/portal"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
@@ -44,7 +46,7 @@ func Init(authConfig *config.AuthConfiguration,
 	apiKeyRepo datastore.APIKeyRepository,
 	userRepo datastore.UserRepository,
 	portalLinkRepo datastore.PortalLinkRepository,
-	cache cache.Cache) error {
+	cache cache.Cache, logger log.StdLogger) error {
 	rc := newRealmChain()
 
 	// validate authentication realms
@@ -67,7 +69,7 @@ func Init(authConfig *config.AuthConfiguration,
 	}
 
 	if authConfig.Portal.Enabled {
-		pr := portal.NewPortalRealm(portalLinkRepo)
+		pr := portal.NewPortalRealm(portalLinkRepo, logger)
 		err = rc.RegisterRealm(pr)
 		if err != nil {
 			return errors.New("failed to register portal realm in realm chain")

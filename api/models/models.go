@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/auth"
@@ -128,14 +129,56 @@ type PortalLink struct {
 	// Portal Link Name
 	Name string `json:"name" valid:"required~please provide the name field"`
 
+	// Deprecated
 	// IDs of endpoints in this portal link
 	Endpoints []string `json:"endpoints"`
 
-	// Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID
+	AuthType string `json:"auth_type"`
+
+	// OwnerID, the portal link will inherit all the endpoints with this owner ID
 	OwnerID string `json:"owner_id"`
+
+	AuthKey string `json:"auth_key"`
 
 	// Specify whether endpoint management can be done through the Portal Link UI
 	CanManageEndpoint bool `json:"can_manage_endpoint"`
+}
+
+func (p *PortalLink) Validate() error {
+	validAuthTypes := []datastore.PortalAuthType{
+		datastore.PortalAuthTypeRefresh,
+		datastore.PortalOwnerIdType,
+		datastore.PortalAuthTypeToken,
+		datastore.PortalAuthTypeNone,
+	}
+
+	// Check if the auth type is valid
+	for _, validType := range validAuthTypes {
+		if validType == datastore.PortalAuthType(p.AuthType) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid auth type: %s", p.AuthType)
+}
+
+func (p *PortalLink) SetDefaultAuthType() {
+	validAuthTypes := []datastore.PortalAuthType{
+		datastore.PortalAuthTypeRefresh,
+		datastore.PortalOwnerIdType,
+		datastore.PortalAuthTypeToken,
+		datastore.PortalAuthTypeNone,
+	}
+
+	// Check if the auth type is valid
+	for _, validType := range validAuthTypes {
+		if validType == datastore.PortalAuthType(p.AuthType) {
+			return
+		}
+	}
+
+	// Default to refresh token
+	p.AuthType = string(datastore.PortalAuthTypeRefresh)
 }
 
 type PortalLinkResponse struct {
@@ -149,6 +192,7 @@ type PortalLinkResponse struct {
 	Token             string                     `json:"token"`
 	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`
 	URL               string                     `json:"url"`
+	AuthType          datastore.PortalAuthType   `json:"auth_type"`
 	AuthKey           string                     `json:"auth_key"`
 	CreatedAt         time.Time                  `json:"created_at,omitempty"`
 	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
