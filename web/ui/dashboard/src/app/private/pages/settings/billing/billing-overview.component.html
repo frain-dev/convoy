@@ -7,7 +7,7 @@
         <div class="billing-card-label">Your plan</div>
         <div class="billing-card-value">{{ overview?.plan?.name || 'Loading...' }}</div>
       </div>
-      <a class="billing-card-link" href="#">Manage plan</a>
+      <a class="billing-card-link" href="#" (click)="onManagePlan($event)">Manage plan</a>
     </div>
 
     <!-- Card 2: Usage period -->

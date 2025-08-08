@@ -12,128 +12,268 @@
   </div>
 
   <div class="h-full w-full">
-    <!-- Payment Method Section -->
     <div class="p-20px">
-      <h3 class="billing-section-title">Payment method</h3>
-      
-      <form [formGroup]="paymentMethodForm" class="mb-32px">
-        <div class="flex gap-12px">
-          <convoy-input-field>
-            <label for="cardholderName" convoy-label required="true">Cardholder name</label>
-            <input type="text" id="cardholderName" convoy-input formControlName="cardholderName" placeholder="Enter cardholder name" />
-            <convoy-input-error *ngIf="paymentMethodForm.get('cardholderName')?.touched && paymentMethodForm.get('cardholderName')?.invalid">Please enter cardholder name</convoy-input-error>
-          </convoy-input-field>
-
-          <convoy-input-field>
-            <label for="cardNumber" convoy-label required="true">Card number</label>
-            <input type="text" id="cardNumber" convoy-input formControlName="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" (input)="formatCardNumber($event)" />
-            <convoy-input-error *ngIf="apiError || (paymentMethodForm.get('cardNumber')?.touched && paymentMethodForm.get('cardNumber')?.invalid)">{{ apiError || 'Please enter a valid card number' }}</convoy-input-error>
-          </convoy-input-field>
-        </div>
-
-        <div class="flex gap-12px">
-          <convoy-input-field>
-            <label for="expiryMonth" convoy-label required="true">MM/YY</label>
-            <div class="flex gap-6px">
-              <input type="number" id="expiryMonth" convoy-input formControlName="expiryMonth" placeholder="MM" min="1" max="12" />
-              <span class="text-neutral-11 text-14 self-center">/</span>
-              <input type="number" id="expiryYear" convoy-input formControlName="expiryYear" placeholder="YY" [min]="currentYear" />
-            </div>
-            <convoy-input-error *ngIf="(paymentMethodForm.get('expiryMonth')?.touched || paymentMethodForm.get('expiryYear')?.touched) && (paymentMethodForm.get('expiryMonth')?.invalid || paymentMethodForm.get('expiryYear')?.invalid)">Please enter valid expiry date</convoy-input-error>
-          </convoy-input-field>
-
-          <convoy-input-field>
-            <label for="cvv" convoy-label required="true">CVV</label>
-            <input type="text" id="cvv" convoy-input formControlName="cvv" placeholder="123" maxlength="4" />
-            <convoy-input-error *ngIf="paymentMethodForm.get('cvv')?.touched && paymentMethodForm.get('cvv')?.invalid">Please enter valid CVV</convoy-input-error>
-          </convoy-input-field>
-        </div>
-
-        <div class="flex justify-end pt-24px">
-          <button convoy-button [disabled]="!paymentMethodForm.valid" (click)="onUpdatePaymentMethod()">
-            Update
+      <!-- Payment Method Section -->
+      <div class="mb-32px">
+        <div class="flex items-center justify-between mb-16px">
+          <h3 class="billing-section-title">Payment method</h3>
+          <button 
+            *ngIf="!isEditingPaymentMethod" 
+            class="text-primary-600 hover:text-primary-700"
+            (click)="startEditingPaymentMethod()">
+            <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
           </button>
         </div>
-      </form>
 
+        <!-- Show existing payment method details -->
+        <div *ngIf="!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethodDetails" class="billing-details-display">
+          <div class="flex items-center gap-8px">
+            <div [innerHTML]="getCardIconSvg()"></div>
+            <div class="text-14 font-medium" style="margin-top: 5px;">{{ paymentMethodDetails.last4 }}</div>
+          </div>
+        </div>
+
+        <!-- Show loading state -->
+        <div *ngIf="isLoadingPaymentMethod" class="billing-details-display">
+          <div class="animate-pulse">
+            <div class="h-20px bg-neutral-8 rounded mb-8px"></div>
+            <div class="h-12px bg-neutral-8 rounded w-1/2"></div>
+          </div>
+        </div>
+
+        <!-- Show edit form -->
+        <form *ngIf="isEditingPaymentMethod" [formGroup]="paymentMethodForm" class="mb-16px">
+          <div class="flex gap-12px">
+            <convoy-input-field>
+              <label for="cardholderName" convoy-label required="true">Cardholder name</label>
+              <input type="text" id="cardholderName" convoy-input formControlName="cardholderName" placeholder="Enter cardholder name" />
+              <convoy-input-error *ngIf="paymentMethodForm.get('cardholderName')?.touched && paymentMethodForm.get('cardholderName')?.invalid">
+              <span *ngIf="paymentMethodForm.get('cardholderName')?.errors?.['required']">Please enter cardholder name</span>
+              <span *ngIf="paymentMethodForm.get('cardholderName')?.errors?.['minlength']">Cardholder name must be at least 2 characters</span>
+              <span *ngIf="paymentMethodForm.get('cardholderName')?.errors?.['maxlength']">Cardholder name must be less than 100 characters</span>
+            </convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="cardNumber" convoy-label required="true">Card number</label>
+              <input type="text" id="cardNumber" convoy-input formControlName="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" (input)="formatCardNumber($event)" />
+              <convoy-input-error *ngIf="apiError || (paymentMethodForm.get('cardNumber')?.touched && paymentMethodForm.get('cardNumber')?.invalid)">{{ apiError || 'Please enter a valid card number' }}</convoy-input-error>
+            </convoy-input-field>
+          </div>
+
+          <div class="flex gap-12px">
+            <convoy-input-field>
+              <label for="expiryMonth" convoy-label required="true">MM/YY</label>
+              <div class="flex gap-6px">
+                <input type="number" id="expiryMonth" convoy-input formControlName="expiryMonth" placeholder="MM" min="1" max="12" />
+                <span class="text-neutral-11 text-14 self-center">/</span>
+                <input type="number" id="expiryYear" convoy-input formControlName="expiryYear" placeholder="YY" [min]="currentYear" />
+              </div>
+              <convoy-input-error *ngIf="(paymentMethodForm.get('expiryMonth')?.touched || paymentMethodForm.get('expiryYear')?.touched) && (paymentMethodForm.get('expiryMonth')?.invalid || paymentMethodForm.get('expiryYear')?.invalid)">Please enter valid expiry date</convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="cvv" convoy-label required="true">CVV</label>
+              <input type="text" id="cvv" convoy-input formControlName="cvv" placeholder="123" maxlength="4" />
+              <convoy-input-error *ngIf="paymentMethodForm.get('cvv')?.touched && paymentMethodForm.get('cvv')?.invalid">Please enter valid CVV</convoy-input-error>
+            </convoy-input-field>
+          </div>
+
+          <div class="flex gap-12px justify-end pt-24px">
+            <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()">
+              Cancel
+            </button>
+            <button convoy-button [disabled]="!paymentMethodForm.valid" (click)="onUpdatePaymentMethod()">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="border-b border-neutral-4"></div>
+
+    <div class="p-20px">
       <!-- Billing Address Section -->
-      <h3 class="billing-section-title">Billing address</h3>
-      
-      <form [formGroup]="billingAddressForm" class="mb-32px">
-        <convoy-input-field>
-          <label for="billingName" convoy-label required="true">Name</label>
-          <input type="text" id="billingName" convoy-input formControlName="name" placeholder="Enter full name" />
-          <convoy-input-error *ngIf="billingAddressForm.get('name')?.touched && billingAddressForm.get('name')?.invalid">Please enter full name</convoy-input-error>
-        </convoy-input-field>
-
-        <convoy-input-field>
-          <label for="addressLine1" convoy-label required="true">Address line 1</label>
-          <input type="text" id="addressLine1" convoy-input formControlName="addressLine1" placeholder="Enter address" />
-          <convoy-input-error *ngIf="billingAddressForm.get('addressLine1')?.touched && billingAddressForm.get('addressLine1')?.invalid">Please enter address</convoy-input-error>
-        </convoy-input-field>
-
-        <convoy-input-field>
-          <label for="addressLine2" convoy-label>Address line 2</label>
-          <input type="text" id="addressLine2" convoy-input formControlName="addressLine2" placeholder="Apartment, suite, etc. (optional)" />
-        </convoy-input-field>
-
-        <div class="flex gap-12px">
-          <convoy-input-field>
-            <label for="city" convoy-label required="true">City</label>
-            <select id="city" convoy-input formControlName="city">
-              <option value="">Select city</option>
-              <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
-            </select>
-            <convoy-input-error *ngIf="billingAddressForm.get('city')?.touched && billingAddressForm.get('city')?.invalid">Please select city</convoy-input-error>
-          </convoy-input-field>
-
-          <convoy-input-field>
-            <label for="zipCode" convoy-label required="true">Zip Code</label>
-            <input type="text" id="zipCode" convoy-input formControlName="zipCode" placeholder="Enter zip code" />
-            <convoy-input-error *ngIf="billingAddressForm.get('zipCode')?.touched && billingAddressForm.get('zipCode')?.invalid">Please enter zip code</convoy-input-error>
-          </convoy-input-field>
-        </div>
-
-        <div class="flex justify-end pt-24px">
-          <button convoy-button [disabled]="!billingAddressForm.valid" (click)="onUpdateBillingAddress()">
-            Update
+      <div class="mb-32px">
+        <div class="flex items-center justify-between mb-16px">
+          <h3 class="billing-section-title">Billing address</h3>
+          <button 
+            *ngIf="!isEditingBillingAddress" 
+            class="text-primary-600 hover:text-primary-700"
+            (click)="startEditingBillingAddress()">
+            <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
           </button>
         </div>
-      </form>
 
+        <!-- Show existing billing address -->
+        <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && billingAddressDetails" class="billing-details-display">
+          <div class="text-14 font-medium mb-8px">{{ billingAddressDetails.name }}</div>
+          <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
+          <div *ngIf="billingAddressDetails.addressLine2" class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine2 }}</div>
+          <div class="text-12 text-neutral-11">{{ billingAddressDetails.city }}, {{ billingAddressDetails.zipCode }}</div>
+        </div>
+
+        <!-- Show loading state -->
+        <div *ngIf="isLoadingBillingAddress" class="billing-details-display">
+          <div class="animate-pulse">
+            <div class="h-14px bg-neutral-8 rounded mb-8px"></div>
+            <div class="h-12px bg-neutral-8 rounded mb-4px"></div>
+            <div class="h-12px bg-neutral-8 rounded w-2/3"></div>
+          </div>
+        </div>
+
+        <!-- Show edit form -->
+        <form *ngIf="isEditingBillingAddress" [formGroup]="billingAddressForm" class="mb-16px">
+          <convoy-input-field>
+            <label for="billingName" convoy-label required="true">Name</label>
+            <input type="text" id="billingName" convoy-input formControlName="name" placeholder="Enter full name" />
+            <convoy-input-error *ngIf="billingAddressForm.get('name')?.touched && billingAddressForm.get('name')?.invalid">
+              <span *ngIf="billingAddressForm.get('name')?.errors?.['required']">Please enter full name</span>
+              <span *ngIf="billingAddressForm.get('name')?.errors?.['minlength']">Name must be at least 2 characters</span>
+              <span *ngIf="billingAddressForm.get('name')?.errors?.['maxlength']">Name must be less than 100 characters</span>
+            </convoy-input-error>
+          </convoy-input-field>
+
+          <convoy-input-field>
+            <label for="addressLine1" convoy-label required="true">Address line 1</label>
+            <input type="text" id="addressLine1" convoy-input formControlName="addressLine1" placeholder="Enter address" />
+            <convoy-input-error *ngIf="billingAddressForm.get('addressLine1')?.touched && billingAddressForm.get('addressLine1')?.invalid">
+              <span *ngIf="billingAddressForm.get('addressLine1')?.errors?.['required']">Please enter address</span>
+              <span *ngIf="billingAddressForm.get('addressLine1')?.errors?.['minlength']">Address must be at least 5 characters</span>
+              <span *ngIf="billingAddressForm.get('addressLine1')?.errors?.['maxlength']">Address must be less than 200 characters</span>
+            </convoy-input-error>
+          </convoy-input-field>
+
+          <convoy-input-field>
+            <label for="addressLine2" convoy-label>Address line 2</label>
+            <input type="text" id="addressLine2" convoy-input formControlName="addressLine2" placeholder="Apartment, suite, etc. (optional)" />
+          </convoy-input-field>
+
+          <div class="flex gap-12px">
+            <convoy-input-field>
+              <label for="country" convoy-label required="true">Country</label>
+              <select id="country" convoy-input formControlName="country" [disabled]="isLoadingCountries">
+                <option value="">{{ isLoadingCountries ? 'Loading countries...' : (countries.length === 0 ? 'No countries available' : 'Select country') }}</option>
+                <option *ngFor="let country of countries" [value]="country.name">{{ country.name }}</option>
+              </select>
+              <convoy-input-error *ngIf="billingAddressForm.get('country')?.touched && billingAddressForm.get('country')?.invalid">Please select country</convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="city" convoy-label required="true">City</label>
+              <select id="city" convoy-input formControlName="city" [disabled]="isLoadingCities">
+                <option value="">{{ isLoadingCities ? 'Loading cities...' : (cities.length === 0 ? 'Select country first' : 'Select city') }}</option>
+                <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
+              </select>
+              <convoy-input-error *ngIf="billingAddressForm.get('city')?.touched && billingAddressForm.get('city')?.invalid">Please select city</convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="zipCode" convoy-label required="true">Zip Code</label>
+              <input type="text" id="zipCode" convoy-input formControlName="zipCode" placeholder="Enter zip code" />
+              <convoy-input-error *ngIf="billingAddressForm.get('zipCode')?.touched && billingAddressForm.get('zipCode')?.invalid">
+              <span *ngIf="billingAddressForm.get('zipCode')?.errors?.['required']">Please enter zip code</span>
+              <span *ngIf="billingAddressForm.get('zipCode')?.errors?.['minlength']">Zip code must be at least 3 characters</span>
+              <span *ngIf="billingAddressForm.get('zipCode')?.errors?.['maxlength']">Zip code must be less than 20 characters</span>
+              <span *ngIf="billingAddressForm.get('zipCode')?.errors?.['invalidZipCode']">Please enter a valid zip code format</span>
+            </convoy-input-error>
+            </convoy-input-field>
+          </div>
+
+          <div class="flex gap-12px justify-end pt-24px">
+            <button type="button" convoy-button variant="secondary" (click)="cancelEditingBillingAddress()">
+              Cancel
+            </button>
+            <button convoy-button [disabled]="!billingAddressForm.valid" (click)="onUpdateBillingAddress()">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="border-b border-neutral-4"></div>
+
+    <div class="p-20px">
       <!-- VAT Section -->
-      <h3 class="billing-section-title">VAT</h3>
-      
-      <form [formGroup]="vatForm">
-        <convoy-input-field>
-          <label for="businessName" convoy-label required="true">Business name</label>
-          <input type="text" id="businessName" convoy-input formControlName="businessName" placeholder="Enter business name" />
-          <convoy-input-error *ngIf="vatForm.get('businessName')?.touched && vatForm.get('businessName')?.invalid">Please enter business name</convoy-input-error>
-        </convoy-input-field>
-
-        <div class="flex gap-12px">
-          <convoy-input-field>
-            <label for="country" convoy-label required="true">Select country</label>
-            <select id="country" convoy-input formControlName="country">
-              <option value="">Select country</option>
-              <option *ngFor="let country of countries" [value]="country.code">{{ country.name }}</option>
-            </select>
-            <convoy-input-error *ngIf="vatForm.get('country')?.touched && vatForm.get('country')?.invalid">Please select country</convoy-input-error>
-          </convoy-input-field>
-
-          <convoy-input-field>
-            <label for="vatNumber" convoy-label required="true">VAT number</label>
-            <input type="text" id="vatNumber" convoy-input formControlName="vatNumber" placeholder="Enter VAT number" />
-            <convoy-input-error *ngIf="vatForm.get('vatNumber')?.touched && vatForm.get('vatNumber')?.invalid">Please enter VAT number</convoy-input-error>
-          </convoy-input-field>
-        </div>
-
-        <div class="flex justify-end pt-24px pb-40px">
-          <button convoy-button [disabled]="!vatForm.valid" (click)="onUpdateVatInfo()">
-            Update
+      <div class="mb-32px">
+        <div class="flex items-center justify-between mb-16px">
+          <h3 class="billing-section-title">VAT</h3>
+          <button 
+            *ngIf="!isEditingVat" 
+            class="text-primary-600 hover:text-primary-700"
+            (click)="startEditingVat()">
+            <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
           </button>
         </div>
-      </form>
+
+        <!-- Show existing VAT info -->
+        <div *ngIf="!isEditingVat && !isLoadingVat && vatInfoDetails" class="billing-details-display">
+          <div class="text-14 font-medium mb-8px">{{ vatInfoDetails.businessName }}</div>
+          <div class="text-12 text-neutral-11 mb-4px">{{ getCountryName(vatInfoDetails.country) }}</div>
+          <div class="text-12 text-neutral-11">{{ vatInfoDetails.vatNumber }}</div>
+        </div>
+
+        <!-- Show loading state -->
+        <div *ngIf="isLoadingVat" class="billing-details-display">
+          <div class="animate-pulse">
+            <div class="h-14px bg-neutral-8 rounded mb-8px"></div>
+            <div class="h-12px bg-neutral-8 rounded mb-4px"></div>
+            <div class="h-12px bg-neutral-8 rounded w-1/2"></div>
+          </div>
+        </div>
+
+        <!-- Show edit form -->
+        <form *ngIf="isEditingVat" [formGroup]="vatForm">
+          <convoy-input-field>
+            <label for="businessName" convoy-label required="true">Business name</label>
+            <input type="text" id="businessName" convoy-input formControlName="businessName" placeholder="Enter business name" />
+            <convoy-input-error *ngIf="vatForm.get('businessName')?.touched && vatForm.get('businessName')?.invalid">
+              <span *ngIf="vatForm.get('businessName')?.errors?.['required']">Please enter business name</span>
+              <span *ngIf="vatForm.get('businessName')?.errors?.['minlength']">Business name must be at least 2 characters</span>
+              <span *ngIf="vatForm.get('businessName')?.errors?.['maxlength']">Business name must be less than 200 characters</span>
+            </convoy-input-error>
+          </convoy-input-field>
+
+          <div class="flex gap-12px">
+            <convoy-input-field>
+              <label for="country" convoy-label required="true">Select country</label>
+              <select id="country" convoy-input formControlName="country" [disabled]="isLoadingCountries">
+                <option value="">{{ isLoadingCountries ? 'Loading countries...' : (countries.length === 0 ? 'No countries available' : 'Select country') }}</option>
+                <option *ngFor="let country of countries" [value]="country.code">{{ country.name }}</option>
+              </select>
+              <convoy-input-error *ngIf="vatForm.get('country')?.touched && vatForm.get('country')?.invalid">Please select country</convoy-input-error>
+            </convoy-input-field>
+
+            <convoy-input-field>
+              <label for="vatNumber" convoy-label required="true">VAT number</label>
+              <input type="text" id="vatNumber" convoy-input formControlName="vatNumber" placeholder="Enter VAT number" />
+              <convoy-input-error *ngIf="vatForm.get('vatNumber')?.touched && vatForm.get('vatNumber')?.invalid">
+              <span *ngIf="vatForm.get('vatNumber')?.errors?.['required']">Please enter VAT number</span>
+              <span *ngIf="vatForm.get('vatNumber')?.errors?.['invalidVatNumber']">Please enter a valid VAT number format</span>
+            </convoy-input-error>
+            </convoy-input-field>
+          </div>
+
+          <div class="flex gap-12px justify-end pt-24px pb-40px">
+            <button type="button" convoy-button variant="secondary" (click)="cancelEditingVat()">
+              Cancel
+            </button>
+            <button convoy-button [disabled]="!vatForm.valid" (click)="onUpdateVatInfo()">
+              Update
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </dialog>

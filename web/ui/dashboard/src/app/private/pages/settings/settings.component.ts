@@ -1,8 +1,7 @@
-import { Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { HttpService } from 'src/app/services/http/http.service';
+import {Component, OnInit} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {HttpService} from 'src/app/services/http/http.service';
 
 export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing';
 
@@ -20,15 +19,17 @@ export class SettingsComponent implements OnInit {
 	];
 
 	constructor(
-		private router: Router, 
-		private route: ActivatedRoute, 
+		private router: Router,
+		private route: ActivatedRoute,
 		public licenseService: LicensesService,
 		private httpService: HttpService
 	) {}
 
 	ngOnInit() {
 		this.checkBillingStatus();
-		if (this.licenseService.hasLicense('CREATE_ORG_MEMBER')) this.toggleActivePage(this.route.snapshot.queryParams?.activePage ?? 'organisation settings');
+		// Set active page from URL query parameter with license validation
+		const requestedPage = this.route.snapshot.queryParams?.activePage ?? 'organisation settings';
+		this.setActivePageWithLicenseCheck(requestedPage);
 	}
 
 	private async checkBillingStatus() {
@@ -63,6 +64,18 @@ export class SettingsComponent implements OnInit {
 		if (this.activePage === 'usage and billing' && !this.billingEnabled) {
 			this.toggleActivePage('organisation settings');
 		}
+	}
+
+	setActivePageWithLicenseCheck(requestedPage: string) {
+		// Validate license requirements for specific pages
+		if (requestedPage === 'team' && !this.licenseService.hasLicense('CREATE_USER')) {
+			// Redirect to organisation settings if user doesn't have team management license
+			this.toggleActivePage('organisation settings');
+			return;
+		}
+
+		// For other pages, allow navigation (they have their own license checks)
+		this.toggleActivePage(requestedPage as SETTINGS);
 	}
 
 	toggleActivePage(activePage: SETTINGS) {

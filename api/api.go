@@ -519,7 +519,8 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			uiRouter.Delete("/organisations/{orgID}/payment_methods/{pmID}", billingHandler.DeletePaymentMethod)
 
 			// Invoices
-			uiRouter.Get("/organisations/{orgID}/invoices/{invoiceID}", billingHandler.GetInvoice)
+			uiRouter.Get("/organisations/{orgID}/billing/invoices/{invoiceID}/download", billingHandler.DownloadInvoice)
+			uiRouter.Get("/organisations/{orgID}/billing/invoices/{invoiceID}", billingHandler.GetInvoice)
 
 			// Public billing endpoints
 			uiRouter.Post("/billing/payment-method", billingHandler.CreateBillingPaymentMethod)

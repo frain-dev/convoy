@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/frain-dev/convoy/internal/pkg/billing"
@@ -361,6 +362,30 @@ func (h *BillingHandler) GetInvoice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Invoice retrieved successfully", resp.Data, http.StatusOK))
+}
+
+func (h *BillingHandler) DownloadInvoice(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	invoiceID := chi.URLParam(r, "invoiceID")
+
+	if orgID == "" || invoiceID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and invoice ID are required", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.DownloadInvoice(r.Context(), orgID, invoiceID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	// Set response headers for PDF download
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=invoice-%s.pdf", invoiceID))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(resp)))
+
+	// Write PDF content
+	w.Write(resp)
 }
 
 // Public billing handlers

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -141,6 +142,41 @@ func (c *Client) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*
 // Invoice methods
 func (c *Client) GetInvoice(ctx context.Context, orgID, invoiceID string) (*BillingResponse, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/invoices/%s", orgID, invoiceID), nil)
+}
+
+func (c *Client) DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error) {
+	if !c.config.Enabled {
+		return nil, fmt.Errorf("billing is not enabled")
+	}
+
+	url := fmt.Sprintf("%s/organisations/%s/invoices/%s/download", c.config.URL, orgID, invoiceID)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create download request: %w", err)
+	}
+
+	if c.config.APIKey != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download invoice: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("download failed with status: %d", resp.StatusCode)
+	}
+
+	// Read the PDF content
+	pdfContent, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read PDF content: %w", err)
+	}
+
+	return pdfContent, nil
 }
 
 // Public billing methods

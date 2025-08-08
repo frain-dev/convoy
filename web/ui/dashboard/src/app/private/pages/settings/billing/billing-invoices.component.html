@@ -17,10 +17,15 @@
           <tr convoy-table-row class="border border-primary-500" *ngFor="let row of invoiceRows">
             <td convoy-table-cell class="pl-20px">{{ row.issuedOn }}</td>
             <td convoy-table-cell>{{ row.amount }}</td>
-            <td convoy-table-cell><span class="status-paid">{{ row.status }}</span></td>
+            <td convoy-table-cell><span [class]="'status-' + (row.status | statuscolor)">{{ row.status }}</span></td>
             <td convoy-table-cell>{{ row.dueDate }}</td>
             <td convoy-table-cell>
-              <button class="download-btn" aria-label="Download Invoice" title="Download invoice">
+              <button 
+                class="download-btn" 
+                aria-label="Download Invoice" 
+                title="Download invoice"
+                (click)="downloadInvoice(row.id)"
+                [disabled]="!row.id || row.status === 'No data'">
                 <svg class="icon" width="16" height="16" aria-hidden="true" focusable="false">
                   <use xlink:href="#download"></use>
                 </svg>
