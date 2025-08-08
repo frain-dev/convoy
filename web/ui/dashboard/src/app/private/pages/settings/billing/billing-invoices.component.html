@@ -1,0 +1,39 @@
+<div class="billing-invoices">
+  <h2 class="billing-section-title">Invoice history</h2>
+
+  <ng-container *ngIf="isFetchingInvoices">
+    <div convoy-card>
+      <convoy-table-loader [withDate]="false" [tableHead]="tableHead"></convoy-table-loader>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="!isFetchingInvoices">
+    <div convoy-card>
+      <table convoy-table>
+        <thead convoy-table-head>
+          <th convoy-table-head-cell [ngClass]="{ 'pl-20px': i === 0 }" *ngFor="let head of tableHead; let i = index">{{ head }}</th>
+        </thead>
+        <tbody>
+          <tr convoy-table-row class="border border-primary-500" *ngFor="let row of invoiceRows">
+            <td convoy-table-cell class="pl-20px">{{ row.issuedOn }}</td>
+            <td convoy-table-cell>{{ row.amount }}</td>
+            <td convoy-table-cell><span [class]="'status-' + (row.status | statuscolor)">{{ row.status }}</span></td>
+            <td convoy-table-cell>{{ row.dueDate }}</td>
+            <td convoy-table-cell>
+              <button 
+                class="download-btn" 
+                aria-label="Download Invoice" 
+                title="Download invoice"
+                (click)="downloadInvoice(row.id)"
+                [disabled]="!row.id || row.status === 'No data'">
+                <svg class="icon" width="16" height="16" aria-hidden="true" focusable="false">
+                  <use xlink:href="#download"></use>
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>

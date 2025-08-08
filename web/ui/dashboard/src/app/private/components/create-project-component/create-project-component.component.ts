@@ -1,14 +1,21 @@
-import { Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { PROJECT, VERSIONS } from 'src/app/models/project.model';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { PrivateService } from '../../private.service';
-import { CreateProjectComponentService } from './create-project-component.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { EVENT_TYPE } from 'src/app/models/event.model';
-import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import {Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {
+    AbstractControl,
+    FormArray,
+    FormBuilder,
+    FormGroup,
+    ValidationErrors,
+    ValidatorFn,
+    Validators
+} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
+import {PROJECT, VERSIONS} from 'src/app/models/project.model';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {PrivateService} from '../../private.service';
+import {CreateProjectComponentService} from './create-project-component.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {EVENT_TYPE} from 'src/app/models/event.model';
 
 
 interface TAB {
