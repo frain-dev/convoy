@@ -43,7 +43,7 @@
 				<app-teams></app-teams>
 			</ng-container>
 
-			<ng-container *ngIf="activePage === 'usage and billing'">
+			<ng-container *ngIf="activePage === 'usage and billing' && billingEnabled">
 				<app-billing-page></app-billing-page>
 			</ng-container>
 

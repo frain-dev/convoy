@@ -135,7 +135,7 @@ export class HttpService {
 		return `${this.APIURL}${requestPath}${requestDetails.url}${queryString}`;
 	}
 
-	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
+	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean; returnFullError?: boolean }): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
 
 		return new Promise(async (resolve, reject) => {
@@ -162,7 +162,11 @@ export class HttpService {
 				resolve(data);
 			} catch (error) {
 				if (axios.isAxiosError(error)) {
-					return reject(error.message);
+					if (requestDetails.returnFullError) {
+						return reject(error);
+					} else {
+						return reject(error.message);
+					}
 				} else {
 					console.log('unexpected error: ', error);
 					return reject('An unexpected error occurred');

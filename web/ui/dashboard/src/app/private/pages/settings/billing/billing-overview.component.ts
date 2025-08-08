@@ -1,23 +1,69 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { BillingOverviewService, BillingOverview } from './billing-overview.service';
 
 @Component({
   selector: 'app-billing-overview',
   templateUrl: './billing-overview.component.html',
   styleUrls: ['./billing-overview.component.scss']
 })
-export class BillingOverviewComponent {
-  cardNumber: string = '5105105105105100'; // Mastercard test card
-  maskedCardNumber: string = '5100'; // Last 4 digits
+export class BillingOverviewComponent implements OnInit, OnChanges {
+  @Output() openPaymentDetails = new EventEmitter<void>();
+  @Input() refreshTrigger: number = 0;
   
-  constructor(private sanitizer: DomSanitizer) {}
+  overview: BillingOverview | null = null;
+  isLoading = true;
+  
+  constructor(
+    private sanitizer: DomSanitizer,
+    private overviewService: BillingOverviewService
+  ) {}
+  
+  ngOnInit() {
+    this.loadOverview();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['refreshTrigger'] && !changes['refreshTrigger'].firstChange) {
+      this.refreshOverview();
+    }
+  }
+  
+  private loadOverview() {
+    this.overviewService.getOverview().subscribe({
+      next: (data) => {
+        this.overview = data;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.warn('Failed to load overview:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+
+  refreshOverview() {
+    this.loadOverview();
+  }
   
   getCardIconSvg(): SafeHtml {
-    // Detect card type by number pattern
-    const cleanNumber = this.cardNumber.replace(/[\s-]/g, '');
+    if (!this.overview?.payment?.brand) {
+      return this.sanitizer.bypassSecurityTrustHtml('');
+    }
     
-    if (/^5[1-5]/.test(cleanNumber)) {
-      // Mastercard
+    const brand = this.overview.payment.brand.toLowerCase();
+    
+    if (brand === 'visa') {
+      const svg = `<svg width="32" height="20" viewBox="0 0 262.3 85" style="enable-background:new 0 0 262.3 85;">
+        <path fill="#1434CB" d="M170.9,0c-18.6,0-35.3,9.7-35.3,27.5
+	c0,20.5,29.5,21.9,29.5,32.1c0,4.3-5,8.2-13.4,8.2c-12,0-21-5.4-21-5.4l-3.8,18c0,0,10.3,4.6,24.1,4.6c20.4,0,36.4-10.1,36.4-28.3
+	c0-21.6-29.6-23-29.6-32.5c0-3.4,4.1-7.1,12.5-7.1c9.5,0,17.3,3.9,17.3,3.9l3.8-17.4C191.3,3.6,182.8,0,170.9,0L170.9,0z M0.5,1.3
+	L0,3.9c0,0,7.8,1.4,14.9,4.3c9.1,3.3,9.7,5.2,11.3,11.1l16.7,64.3h22.4L99.6,1.3H77.3l-22.1,56l-9-47.5c-0.8-5.4-5-8.5-10.2-8.5
+	C36,1.3,0.5,1.3,0.5,1.3z M108.6,1.3L91.1,83.6h21.3l17.4-82.3L108.6,1.3L108.6,1.3z M227.2,1.3c-5.1,0-7.8,2.7-9.8,7.5l-31.2,74.8
+	h22.3l4.3-12.5H240l2.6,12.5h19.7L245.2,1.3L227.2,1.3L227.2,1.3z M230.1,23.6l6.6,30.9H219L230.1,23.6L230.1,23.6z"/>
+      </svg>`;
+      return this.sanitizer.bypassSecurityTrustHtml(svg);
+    } else if (brand === 'mastercard') {
       const svg = `<svg width="32" height="20" viewBox="0 0 116.5 72" style="enable-background:new 0 0 116.5 72;">
         <g>
           <g>
@@ -32,29 +78,12 @@ export class BillingOverviewComponent {
         </g>
       </svg>`;
       return this.sanitizer.bypassSecurityTrustHtml(svg);
-    } else if (/^4/.test(cleanNumber)) {
-      // Visa
-      const svg = `<svg width="32" height="20" viewBox="0 0 48 16">
-        <path fill="#1A1F71" d="M45.5,0H2.5C1.1,0,0,1.1,0,2.5v11C0,14.9,1.1,16,2.5,16h43C46.9,16,48,14.9,48,13.5v-11C48,1.1,46.9,0,45.5,0z"/>
-        <text x="24" y="11" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="8" font-weight="bold">VISA</text>
-      </svg>`;
-      return this.sanitizer.bypassSecurityTrustHtml(svg);
-    } else if (/^3[47]/.test(cleanNumber)) {
-      // American Express
-      const svg = `<svg width="32" height="20" viewBox="0 0 48 16">
-        <path fill="#006FCF" d="M45.5,0H2.5C1.1,0,0,1.1,0,2.5v11C0,14.9,1.1,16,2.5,16h43C46.9,16,48,14.9,48,13.5v-11C48,1.1,46.9,0,45.5,0z"/>
-        <text x="24" y="11" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="6" font-weight="bold">AMEX</text>
-      </svg>`;
-      return this.sanitizer.bypassSecurityTrustHtml(svg);
-    } else if (/^6(?:011|5)/.test(cleanNumber)) {
-      // Discover
-      const svg = `<svg width="32" height="20" viewBox="0 0 48 16">
-        <path fill="#FF6600" d="M45.5,0H2.5C1.1,0,0,1.1,0,2.5v11C0,14.9,1.1,16,2.5,16h43C46.9,16,48,14.9,48,13.5v-11C48,1.1,46.9,0,45.5,0z"/>
-        <text x="24" y="11" text-anchor="middle" fill="#FFFFFF" font-family="Arial" font-size="6" font-weight="bold">DISCOVER</text>
-      </svg>`;
-      return this.sanitizer.bypassSecurityTrustHtml(svg);
     }
     
     return this.sanitizer.bypassSecurityTrustHtml(''); // Default empty if no match
+  }
+
+  onOpenPaymentDetails() {
+    this.openPaymentDetails.emit();
   }
 } 

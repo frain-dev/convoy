@@ -5,7 +5,7 @@
     <div class="billing-card">
       <div class="billing-card-header">
         <div class="billing-card-label">Your plan</div>
-        <div class="billing-card-value">Pro</div>
+        <div class="billing-card-value">{{ overview?.plan?.name || 'Loading...' }}</div>
       </div>
       <a class="billing-card-link" href="#">Manage plan</a>
     </div>
@@ -14,9 +14,11 @@
     <div class="billing-card">
       <div class="billing-card-header">
         <div class="billing-card-label">Usage period</div>
-        <div class="billing-card-value">Jul 07 - Aug 07</div>
+        <div class="billing-card-value">{{ overview?.usage?.period || 'Loading...' }}</div>
       </div>
-      <div class="billing-card-subtext billing-card-reset-text">Resets in [X] days</div>
+      <div class="billing-card-subtext billing-card-reset-text" *ngIf="overview?.usage?.daysUntilReset !== undefined">
+        Resets in {{ overview?.usage?.daysUntilReset }} days
+      </div>
     </div>
 
     <!-- Card 3: Payment details -->
@@ -25,10 +27,10 @@
         <div class="billing-card-label">Payment details</div>
         <div class="billing-card-payment flex items-center gap-8px">
           <div [innerHTML]="getCardIconSvg()"></div>
-          <div class="billing-card-value">{{ maskedCardNumber }}</div>
+          <div class="billing-card-value">{{ overview?.payment?.last4 || 'Loading...' }}</div>
         </div>
       </div>
-      <a class="billing-card-link" href="#">Manage</a>
+      <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">Manage</a>
     </div>
   </div>
 </div> 
