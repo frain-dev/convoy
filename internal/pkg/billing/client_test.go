@@ -36,25 +36,6 @@ func setupTestClient(t *testing.T) (*HTTPClient, *httptest.Server) {
 	return client, server
 }
 
-func setupTestClientWithResponse(t *testing.T, response Response, statusCode int) (*HTTPClient, *httptest.Server) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(statusCode)
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			t.Errorf("failed to encode response: %v", err)
-		}
-	}))
-
-	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
-	}
-
-	client := NewClient(cfg)
-	return client, server
-}
-
 func TestNewClient(t *testing.T) {
 	cfg := config.BillingConfiguration{
 		Enabled: true,

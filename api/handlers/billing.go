@@ -474,7 +474,10 @@ func (h *BillingHandler) DownloadInvoice(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(resp)))
 
 	// Write PDF content
-	w.Write(resp)
+	if _, err := w.Write(resp); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("failed to write response", http.StatusInternalServerError))
+		return
+	}
 }
 
 // Public billing handlers

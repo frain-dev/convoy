@@ -807,7 +807,7 @@ func TestBillingHandler_DownloadInvoice(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
 	assert.Equal(t, "attachment; filename=invoice-inv-1.pdf", w.Header().Get("Content-Disposition"))
-	assert.Equal(t, "fake pdf content", string(w.Body.Bytes()))
+	assert.Equal(t, "fake pdf content", w.Body.String())
 }
 
 func TestBillingHandler_GetSubscriptions(t *testing.T) {
