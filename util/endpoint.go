@@ -50,7 +50,7 @@ func ValidateEndpoint(s string, enforceSecure bool, customCA bool) (string, erro
 			},
 		}
 
-		_, err = client.Get(s)
+		_, err = client.Head(s)
 		if err != nil {
 			return "", fmt.Errorf("failed to ping tls endpoint: %v", err)
 		}
