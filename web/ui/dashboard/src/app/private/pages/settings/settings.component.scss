@@ -1,0 +1,12 @@
+// Prevent text wrapping in sidebar navigation
+.settings-sidebar h3,
+.settings-sidebar span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Ensure the sidebar has enough width for the text
+.settings-sidebar {
+  min-width: 200px;
+}

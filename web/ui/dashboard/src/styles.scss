@@ -100,4 +100,24 @@
 	.disabled {
 		@apply opacity-50 pointer-events-none;
 	}
+
+	.billing-section-title {
+// 		color: var(--Zinc-950, #09090B);
+// 		font-family: 'Open Sauce Sans', Arial, sans-serif;
+// 		font-size: 20px;
+// 		font-style: normal;
+// 		font-weight: 500;
+// 		line-height: 28px;
+// 		align-self: stretch;
+// 		margin-bottom: 24px;
+
+  color: var(--Zinc-600, #52525B);
+  font-family: 'Open Sauce Sans', Arial, sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+  align-self: stretch;
+  margin-bottom: 16px;
+	}
 }

@@ -1,0 +1,25 @@
+.billing-page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.billing-overview-cards {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.billing-card {
+  min-width: 220px;
+  flex: 1 1 0;
+  padding: 12px;
+  background: #fff;
+  border-radius: 6px;
+  border: 1px solid #E7E7E7;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  outline-offset: -1px;
+} 

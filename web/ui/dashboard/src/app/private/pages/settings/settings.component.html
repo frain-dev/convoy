@@ -1,6 +1,6 @@
 <div class="max-w-[1000px] mt-24px mx-auto">
 	<div class="flex gap-100px">
-		<div class="w-full max-w-[200px]">
+		<div class="w-full max-w-[200px] settings-sidebar">
 			<div class="flex gap-8px items-center mb-24px">
 				<a routerLink="/projects" class="block p-2px rounded-100px border border-new.primary-50">
 					<svg width="24" height="24" class="fill-neutral-10 scale-75">
@@ -41,6 +41,10 @@
 
 			<ng-container *ngIf="activePage === 'team'">
 				<app-teams></app-teams>
+			</ng-container>
+
+			<ng-container *ngIf="activePage === 'usage and billing'">
+				<app-billing-page></app-billing-page>
 			</ng-container>
 
 			<!-- <ng-container *ngIf="activePage === 'configuration settings'">
