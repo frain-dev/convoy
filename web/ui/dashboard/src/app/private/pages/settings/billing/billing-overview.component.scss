@@ -63,25 +63,7 @@
     align-items: center;
     gap: 8px;
   }
-
-  .billing-card-icon {
-    width: 38.88px;
-    height: 24px;
-    background: url('/assets/mastercard.svg') no-repeat center/contain;
-    display: inline-block;
-  }
 }
-
-// :host ::ng-deep .billing-section-title {
-//   color: var(--Zinc-950, #09090B);
-//   font-family: 'Open Sauce Sans', Arial, sans-serif;
-//   font-size: 20px;
-//   font-style: normal;
-//   font-weight: 500;
-//   line-height: 28px;
-//   align-self: stretch;
-//   margin-bottom: 24px;
-// }
 
 :host ::ng-deep .billing-card-reset-text {
   color: var(--Gray-700, #314155) !important;

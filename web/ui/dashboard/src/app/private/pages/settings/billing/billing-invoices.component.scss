@@ -1,54 +1,5 @@
 .billing-invoices {
-//   h2 {
-//     font-size: 20px;
-//     font-weight: 500;
-//     margin-bottom: 16px;
-//   }
-  .invoices-table {
-    width: 100%;
-    border-collapse: collapse;
-    th, td {
-      border: 1px solid #e7e7e7;
-      padding: 8px 12px;
-      text-align: left;
-    }
-    th {
-      background: #f3f4f6;
-      font-weight: 400;
-    }
-    .status-paid {
-      background: #dcfce7;
-      color: #166534;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 400;
-    }
-    .download-btn {
-      display: flex;
-      padding: 4px;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      align-self: stretch;
-      background: none;
-      border: none;
-      cursor: pointer;
-
-      svg {
-        color: #09090B;
-        stroke: #09090B;
-        width: 16px;
-        height: 16px;
-        display: block;
-      }
-
-      &:hover {
-        background: #f3f4f6;
-        border-radius: 4px;
-      }
-    }
-  }
+  margin-top: 24px;
 }
 
 :host ::ng-deep .status-paid {
