@@ -1,10 +1,10 @@
-import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
+import {Injectable} from '@angular/core';
+import {environment} from 'src/environments/environment';
 import axios from 'axios';
-import { ActivatedRoute, Router } from '@angular/router';
-import { GeneralService } from '../general/general.service';
-import { ProjectService } from 'src/app/private/pages/project/project.service';
-import { HTTP_RESPONSE } from 'src/app/models/global.model';
+import {ActivatedRoute, Router} from '@angular/router';
+import {GeneralService} from '../general/general.service';
+import {ProjectService} from 'src/app/private/pages/project/project.service';
+import {HTTP_RESPONSE} from 'src/app/models/global.model';
 
 @Injectable({
 	providedIn: 'root'
@@ -160,8 +160,12 @@ export class HttpService {
 				// make request
 				const { data } = await http.request({ method: requestDetails.method, headers: requestHeader, url, data: requestDetails.body });
 				resolve(data);
-			} catch (error) {
+			} catch (error: any) {
 				if (axios.isAxiosError(error)) {
+					const msg = error.response?.data?.message;
+					if ('project not found' === msg) {
+						localStorage.removeItem('CONVOY_PROJECT');
+					}
 					if (requestDetails.returnFullError) {
 						return reject(error);
 					} else {

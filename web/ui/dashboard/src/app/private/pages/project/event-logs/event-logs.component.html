@@ -243,7 +243,7 @@
 
 <convoy-pagination *ngIf="events?.pagination?.has_next_page || events?.pagination?.has_prev_page" [pagination]="events?.pagination" (paginate)="paginateEvents($event)"></convoy-pagination>
 
-<!-- bacth retry modal -->
+<!-- batch retry modal -->
 <dialog #batchDialog convoy-dialog position="center" size="sm">
 	<div class="text-center py-30px">
 		<img src="/assets/img/filter.gif" alt="filter icon" class="w-50px m-auto mb-16px" />

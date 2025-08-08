@@ -1089,7 +1089,6 @@ type Subscription struct {
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
-// For DB access
 func (s *Subscription) GetAlertConfig() AlertConfiguration {
 	if s.AlertConfig != nil {
 		return *s.AlertConfig

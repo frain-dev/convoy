@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	_ "net/http/pprof"
 	"strings"
 	"time"
 

@@ -1,14 +1,21 @@
-import { Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { PROJECT, VERSIONS } from 'src/app/models/project.model';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { PrivateService } from '../../private.service';
-import { CreateProjectComponentService } from './create-project-component.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { EVENT_TYPE } from 'src/app/models/event.model';
-import { AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
+import {Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {
+    AbstractControl,
+    FormArray,
+    FormBuilder,
+    FormGroup,
+    ValidationErrors,
+    ValidatorFn,
+    Validators
+} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
+import {PROJECT, VERSIONS} from 'src/app/models/project.model';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {PrivateService} from '../../private.service';
+import {CreateProjectComponentService} from './create-project-component.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {EVENT_TYPE} from 'src/app/models/event.model';
 
 
 interface TAB {
@@ -433,7 +440,7 @@ export class CreateProjectComponent implements OnInit {
             await this.createProjectService.updateEventType(payload);
             this.newEventTypeForm.reset();
             this.newEventTypeDialog.nativeElement.close();
-            this.getEventTypes();
+            await this.getEventTypes();
         } catch (error) {
             console.error("Error updating event type:", error);
         }
@@ -442,12 +449,16 @@ export class CreateProjectComponent implements OnInit {
 	async deprecateEventType(eventTypeId: string) {
 		try {
 			await this.createProjectService.deprecateEventType(eventTypeId);
-			this.getEventTypes();
+			await this.getEventTypes();
 		} catch {}
 	}
 
+	validEventTypes(): EVENT_TYPE[] {
+		return this.eventTypes.filter(it => it.name !== '*')
+	}
+
 	async getEventTypes() {
-		if (this.privateService.getProjectDetails?.type === 'incoming') return;
+		if (this.privateService.getProjectDetailsHideNotification()?.type === 'incoming') return;
 
 		try {
 			const response = await this.privateService.getEventTypes();

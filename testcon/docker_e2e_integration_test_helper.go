@@ -105,7 +105,7 @@ func seedTestData(t *testing.T) *TestData {
 	require.NoError(t, err)
 
 	role := auth.Role{
-		Type:    auth.RoleAdmin,
+		Type:    auth.RoleProjectAdmin,
 		Project: project.UID,
 	}
 	_, apiKey, err := testdb.SeedAPIKey(db, role, "", "test", "", "")

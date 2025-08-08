@@ -1,29 +1,30 @@
 <div [class]="showAction === 'true' ? 'pt-40px' : 'pt-20px'">
     <convoy-loader *ngIf="isLoadingForm"></convoy-loader>
     <div *ngIf="showAction === 'true'" class="flex justify-between items-center mb-24px">
-    <div class="flex items-center gap-8px">
-      <h2 class="font-semibold text-16 text-neutral-11">
-          {{ isUpdateAction || editMode ? 'Update ' + endpointForm.get('name')?.getRawValue() : 'Create Endpoint' }}
-      </h2>
+        <div class="flex items-center gap-8px">
+            <h2 class="font-semibold text-16 text-neutral-11">
+                {{ isUpdateAction || editMode ? 'Update ' + endpointForm.get('name')?.getRawValue() : 'Create Endpoint' }}
+            </h2>
+        </div>
+
+        <a href="https://getconvoy.io/docs" class="text-new.primary-400 text-14 flex items-center" target="_blank">
+            <svg width="16" height="16" class="mr-8px fill-transparent stroke-new.primary-400">
+                <use xlink:href="#document-icon"></use>
+            </svg>
+            Go to Docs
+        </a>
     </div>
 
-    <a href="https://getconvoy.io/docs" class="text-new.primary-400 text-14 flex items-center" target="_blank">
-      <svg width="16" height="16" class="mr-8px fill-transparent stroke-new.primary-400">
-        <use xlink:href="#document-icon"></use>
-      </svg>
-      Go to Docs
-    </a>
-  </div>
-
-  <div *ngIf="isLoadingEndpointDetails" class="flex justify-center items-center py-80px">
-    <div class="w-36px h-36px border-t-2 border-r-2 border-new.primary-300 rounded-full animate-spin"></div>
-  </div>
+    <div *ngIf="isLoadingEndpointDetails" class="flex justify-center items-center py-80px">
+        <div class="w-36px h-36px border-t-2 border-r-2 border-new.primary-300 rounded-full animate-spin"></div>
+    </div>
 
     <!-- Endpoint Type Selection -->
     <div class="mb-32px">
         <p class="text-12 text-neutral-9 mb-16px">
             Select the type of endpoint you're trying to create.
-            <a href="https://getconvoy.io/docs/endpoints" class="text-new.primary-400" target="_blank">View all supported destinations</a>
+            <a href="https://getconvoy.io/docs/endpoints" class="text-new.primary-400" target="_blank">View all
+                supported destinations</a>
         </p>
 
         <div class="flex flex-wrap items-center gap-8px">
@@ -33,7 +34,8 @@
                     [color]="selectedEndpointType === type.id ? 'primary' : 'neutral'"
                     size="sm"
                     (click)="selectEndpointType(type.id)">
-                <img ngSrc="assets/img/{{type.icon}}.svg" width="14" height="14" class="mr-4px fill-transparent" alt="{{type.name}}"/>
+                <img ngSrc="assets/img/{{type.icon}}.svg" width="14" height="14" class="mr-4px fill-transparent"
+                     alt="{{type.name}}"/>
                 {{ type.name }}
             </button>
         </div>
@@ -42,330 +44,401 @@
     <div id="#formContainer" *ngIf="!isLoadingEndpointDetails" convoy-card class="p-24px relative">
         <!-- Form content -->
         <form [formGroup]="endpointForm">
-          <div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
-            <convoy-input-field>
-              <label for="name" convoy-label required="true">Endpoint Name</label>
-              <input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoint name here" />
-              <convoy-input-error *ngIf="endpointForm.get('name')?.touched && endpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
-            </convoy-input-field>
+            <div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
+                <convoy-input-field>
+                    <label for="name" convoy-label required="true">Endpoint Name</label>
+                    <input id="name" convoy-input autocomplete="name" formControlName="name"
+                           placeholder="Enter endpoint name here"/>
+                    <convoy-input-error *ngIf="endpointForm.get('name')?.touched && endpointForm.get('name')?.invalid">
+                        Please provide a name
+                    </convoy-input-error>
+                </convoy-input-field>
 
-            <convoy-input-field>
-              <label for="url" convoy-label required="true">Enter URL</label>
-              <input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
-              <convoy-input-error *ngIf="endpointForm.get('url')?.touched && endpointForm.get('url')?.invalid">Invalid endpoint URL</convoy-input-error>
-            </convoy-input-field>
-          </div>
-
-          <convoy-input-field className="mb-24px">
-            <label for="secret" convoy-label>Endpoint Secret</label>
-            <div class="flex items-center justify-between w-full h-46px border border-new.gray-200 bg-[#F7F9FC] rounded-[6px] px-16px mb-12px" *ngIf="editMode && endpointSecret">
-              <span class="text-12 text-new.gray-600 font-normal truncate">{{ endpointSecret.value || '' }}</span>
-                <div class="ml-8px" convoy-copy-button [text]="endpointSecret.value || ''" notificationText="Endpoint secret copied to clipboard."></div>
+                <convoy-input-field>
+                    <label for="url" convoy-label required="true">Enter URL</label>
+                    <input type="url" id="url" convoy-input autocomplete="url" formControlName="url"
+                           placeholder="Enter endpoint URL here"/>
+                    <convoy-input-error *ngIf="endpointForm.get('url')?.touched && endpointForm.get('url')?.invalid">
+                        Invalid endpoint URL
+                    </convoy-input-error>
+                </convoy-input-field>
             </div>
-            <input *ngIf="!editMode || !endpointSecret" type="secret" id="secret" convoy-input formControlName="secret" placeholder="Enter endpoint secret here" />
-          </convoy-input-field>
 
-        <!-- Event types Configuration -->
-        <ng-container *ngIf="showConfig('events')">
-            <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-                <div class="flex justify-between items-center mb-16px">
-                    <p class="text-12 font-medium text-neutral-9 flex items-center" >
-                        Event Types
-                        <convoy-tooltip size="sm" position="top-right" class="ml-4px">
-                            These are the event types that this endpoint will receive. You can add filters to each event type to control which events are delivered.
-                        </convoy-tooltip>
-                    </p>
-                    <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
-                        <svg width="14" height="14" class="fill-transparent stroke-neutral-9">
-                            <use xlink:href="#delete-icon2"></use>
-                        </svg>
-                    </button>
+            <convoy-input-field className="mb-24px">
+                <label for="secret" convoy-label>Endpoint Secret</label>
+                <div class="flex items-center justify-between w-full h-46px border border-new.gray-200 bg-[#F7F9FC] rounded-[6px] px-16px mb-12px"
+                     *ngIf="editMode && endpointSecret">
+                    <span class="text-12 text-new.gray-600 font-normal truncate">{{ endpointSecret.value || '' }}</span>
+                    <div class="ml-8px" convoy-copy-button [text]="endpointSecret.value || ''"
+                         notificationText="Endpoint secret copied to clipboard."></div>
                 </div>
+                <input *ngIf="!editMode || !endpointSecret" type="secret" id="secret" convoy-input
+                       formControlName="secret" placeholder="Enter endpoint secret here"/>
+            </convoy-input-field>
 
-                <div class="mt-16px">
-                    <div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-                        <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                            <use xlink:href="#lock-icon"></use>
-                        </svg>
-                        Business
+            <!-- Event types Configuration -->
+            <ng-container *ngIf="showConfig('events')">
+                <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+                    <div class="flex justify-between items-center mb-16px">
+                        <p class="text-12 font-medium text-neutral-9 flex items-center">
+                            Event Types
+                            <convoy-tooltip size="sm" position="top-right" class="ml-4px">
+                                These are the event types that this endpoint will receive. You can add filters to each
+                                event type to control which events are delivered.
+                            </convoy-tooltip>
+                        </p>
+                        <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral"
+                                *ngIf="action !== 'view'" (click)="toggleConfigForm('events')">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-9">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
                     </div>
-                    <div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-                        <div *ngFor="let eventType of validEventTypes(); let i = index" class="flex items-center justify-between my-12px rounded-6px">
-                            <div class="flex items-center">
-                                <div class="relative mr-12px">
-                                    <div
-                                            class="border border-neutral-5 w-16px h-16px flex items-center justify-center rounded-sm"
-                                            [class.border-primary-600]="isEventTypeSelected(eventType.name)"
-                                            [class.bg-primary-50]="isEventTypeSelected(eventType.name)"
-                                    >
-                                        <span *ngIf="isEventTypeSelected(eventType.name)" class="text-primary-600 text-12 font-bold leading-none">✓</span>
+
+                    <div class="mt-16px">
+                        <div convoy-tag size="sm" color="primary"
+                             *ngIf="!licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                            <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                                <use xlink:href="#lock-icon"></use>
+                            </svg>
+                            Business
+                        </div>
+                        <div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
+                            <div *ngFor="let eventType of validEventTypes(); let i = index"
+                                 class="flex items-center justify-between my-12px rounded-6px">
+                                <div class="flex items-center">
+                                    <div class="relative mr-12px">
+                                        <div class="border border-neutral-5 w-16px h-16px flex items-center justify-center rounded-sm"
+                                             [class.border-primary-600]="isEventTypeSelected(eventType.name)"
+                                             [class.bg-primary-50]="isEventTypeSelected(eventType.name)">
+                                            <span *ngIf="isEventTypeSelected(eventType.name)"
+                                                  class="text-primary-600 text-12 font-bold leading-none">✓</span>
+                                        </div>
+                                        <input type="checkbox"
+                                               [id]="'event_type_' + eventType.name + '_box'"
+                                               [checked]="selectedEventTypes.includes(eventType.name)"
+                                               (change)="toggleEventTypeSelection(eventType.name)"
+                                               [disabled]="action === 'view'"
+                                               class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"/>
                                     </div>
-                                    <input
-                                            type="checkbox"
-                                            [id]="'event_type_' + eventType.name + '_box'"
-                                            [checked]="selectedEventTypes.includes(eventType.name)"
-                                            (change)="toggleEventTypeSelection(eventType.name)"
-                                            [disabled]="action === 'view'"
-                                            class="absolute opacity-0 w-16px h-16px cursor-pointer top-0 left-0"
-                                    />
+                                    <label [for]="'event_type_' + eventType.name + '_box'"
+                                           class="text-12 cursor-pointer">
+                                        {{ eventType.name }}
+                                    </label>
                                 </div>
-                                <label [for]="'event_type_' + eventType.name + '_box'" class="text-12 cursor-pointer">
-                                    {{ eventType.name }}
-                                </label>
+                                <div class="flex items-center">
+                                    <button convoy-button
+                                            type="button"
+                                            size="xs"
+                                            fill="soft-outline"
+                                            color="primary"
+                                            class="flex items-center"
+                                            (click)="openFilterDialog(i)"
+                                            [disabled]="action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS') || !selectedEventTypes.includes(eventType.name)">
+                                        <span *ngIf="!filtersMap.has(eventType.name)">Add Filter</span>
+                                        <span *ngIf="filtersMap.has(eventType.name)">Edit Filter</span>
+                                        <svg *ngIf="!filtersMap.has(eventType.name)" width="10" height="10"
+                                             class="ml-4px fill-new.primary-400">
+                                            <use xlink:href="#plus-icon"></use>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
-                            <div class="flex items-center">
-                                <button convoy-button
-                                        type="button"
-                                        size="xs"
-                                        fill="soft-outline"
-                                        color="primary"
-                                        class="flex items-center"
-                                        (click)="openFilterDialog(i)"
-                                        [disabled]="action === 'view' || !licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS') || !selectedEventTypes.includes(eventType.name)">
-                                    <span *ngIf="!filtersMap.has(eventType.name)">Add Filter</span>
-                                    <span *ngIf="filtersMap.has(eventType.name)">Edit Filter</span>
-                                    <svg *ngIf="!filtersMap.has(eventType.name)" width="10" height="10" class="ml-4px fill-new.primary-400">
-                                        <use xlink:href="#plus-icon"></use>
-                                    </svg>
-                                </button>
+                            <p *ngIf="eventTypes.length === 0" class="text-12 text-neutral-7 italic">No event types
+                                available</p>
+                        </div>
+                    </div>
+                </div>
+            </ng-container>
+
+            <ng-container *ngIf="showConfig('transform')">
+                <div id="transform-section" class="mt-16px mb-32px">
+                    <div class="flex justify-between items-center cursor-pointer">
+                        <h3 class="font-semibold text-14 mt-20px">Payload Transformation</h3>
+                        <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral"
+                                *ngIf="action !== 'view'" (click)="toggleConfigForm('transform')">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-9">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <p class="text-12 text-neutral-10 mt-6px mb-24px">
+                        Configure how you want to test and apply transformation logic to webhook events.
+                    </p>
+
+                    <convoy-create-portal-transform-function
+                            [showTitle]="false"
+                            [titleClass]="'font-semibold text-14 capitalize pb-16px'"
+                            (updatedTransformFunction)="getFunction($event)"
+                            [defaultOption]="'Select Event Type'"
+                            [options]="validEventTypes()"
+                            [transformFunction]="subscriptionForm.get('function')?.value">
+                    </convoy-create-portal-transform-function>
+                </div>
+            </ng-container>
+
+            <!-- Owner ID Configuration -->
+            <ng-container *ngIf="showConfig('owner_id')">
+                <div class="border-l-2 border-new.primary-25 pl-16px mb-40px hidden">
+                    <div class="flex justify-between items-center mb-16px">
+                        <label for="owner_id" convoy-label>
+                            Owner ID
+                            <convoy-tooltip
+                                    class="ml-4px"
+                                    size="sm"
+                                    tooltipContent="A unique id for identifying a group of endpoints."
+                                    position="top-right"
+                            ></convoy-tooltip>
+                        </label>
+                        <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs"
+                                fill="soft-outline" color="neutral" (click)="toggleConfigForm('owner_id', true)">
+                            <svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <convoy-input-field>
+                        <input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id"
+                               placeholder="Enter owner id here"/>
+                    </convoy-input-field>
+                </div>
+            </ng-container>
+
+            <!-- Rate Limit Configuration -->
+            <ng-container *ngIf="showConfig('rate_limit')">
+                <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+                    <div class="flex justify-between items-center mb-16px">
+                        <p class="text-12 text-neutral-11 font-medium flex items-center">Rate Limit</p>
+                        <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs"
+                                fill="soft-outline" color="neutral" (click)="toggleConfigForm('rate_limit', true)">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-24px">
+                        <convoy-input-field className="mb-0">
+                            <label for="rate-limit-duration" convoy-label>Duration</label>
+                            <div class="relative">
+                                <input type="number" id="rate-limit-duration" convoy-input
+                                       formControlName="rate_limit_duration" placeholder="e.g 50"/>
+                                <div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">
+                                    sec
+                                </div>
+                            </div>
+                            <convoy-input-error
+                                    *ngIf="endpointForm.get('rate_limit_duration')?.touched && endpointForm.get('rate_limit_duration')?.invalid">
+                                Please enter a rate limit duration
+                            </convoy-input-error>
+                        </convoy-input-field>
+                        <convoy-input-field className="mb-0">
+                            <label for="rate-limit-count" convoy-label>Limit</label>
+                            <input type="number" id="rate-limit-count" convoy-input formControlName="rate_limit"
+                                   placeholder="e.g 10"/>
+                            <convoy-input-error
+                                    *ngIf="endpointForm.get('rate_limit')?.touched && endpointForm.get('rate_limit')?.invalid">
+                                Please enter a rate limit
+                            </convoy-input-error>
+                        </convoy-input-field>
+                    </div>
+                </div>
+            </ng-container>
+
+            <!-- Authentication Configuration -->
+            <ng-container *ngIf="showConfig('auth')">
+                <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+                    <div class="flex justify-between items-center mb-16px">
+                        <p class="flex items-center text-12 font-medium text-neutral-11">
+                            Endpoint Authentication
+                            <convoy-tooltip size="sm" position="top-right" class="ml-4px">You can set your provided
+                                endpoint authentication if any is required
+                            </convoy-tooltip>
+                        </p>
+                        <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs"
+                                fill="soft-outline" color="neutral" (click)="toggleConfigForm('auth', true)">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <ng-container formGroupName="authentication">
+                        <div class="grid grid-cols-2 gap-24px" formGroupName="api_key">
+                            <convoy-input-field className="mb-0">
+                                <label for="header_name" convoy-label>API Key Name</label>
+                                <input id="header_name" convoy-input formControlName="header_name" placeholder="Name"/>
+                                <convoy-input-error
+                                        *ngIf="endpointForm.get('authentication.api_key.header_name')?.touched && endpointForm.get('authentication.api_key.header_name')?.invalid">
+                                    Endpoint auth API key is required
+                                </convoy-input-error>
+                            </convoy-input-field>
+
+                            <convoy-input-field className="mb-0">
+                                <label for="header_value" convoy-label>API Key Value</label>
+                                <input id="header_value" convoy-input formControlName="header_value"
+                                       placeholder="Value"/>
+                                <convoy-input-error
+                                        *ngIf="endpointForm.get('authentication.api_key.header_value')?.touched && endpointForm.get('authentication.api_key.header_value')?.invalid">
+                                    Endpoint auth API key value is required
+                                </convoy-input-error>
+                            </convoy-input-field>
+                        </div>
+                    </ng-container>
+                </div>
+            </ng-container>
+
+            <!-- HTTP Timeout Configuration -->
+            <ng-container *ngIf="showConfig('http_timeout')">
+                <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+                    <div class="flex justify-between items-center mb-16px">
+                        <div class="flex items-center gap-8px">
+                            <p class="flex items-center text-12 font-medium text-neutral-11">
+                                Endpoint Timeout
+                                <convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should
+                                    Convoy wait for a response from this endpoint before timing out?
+                                </convoy-tooltip>
+                            </p>
+                            <div convoy-tag size="sm" color="primary"
+                                 *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+                                <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                                    <use xlink:href="#lock-icon"></use>
+                                </svg>
+                                Business
                             </div>
                         </div>
-                        <p *ngIf="eventTypes.length === 0" class="text-12 text-neutral-7 italic">No event types available</p>
+                        <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs"
+                                fill="soft-outline" color="neutral" (click)="toggleConfigForm('http_timeout', true)">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
+                    </div>
+                    <convoy-input-field>
+                        <label for="http_timeout" convoy-label>Timeout Value</label>
+                        <div class="relative">
+                            <input id="http_timeout" type="number" convoy-input formControlName="http_timeout"
+                                   placeholder="e.g 60"
+                                   [readonly]="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')"/>
+                            <div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">
+                                sec
+                            </div>
+                        </div>
+                        <convoy-input-error
+                                *ngIf="endpointForm.get('http_timeout')?.touched && endpointForm.get('http_timeout')?.invalid">
+                            Timeout value must be a whole number
+                        </convoy-input-error>
+                    </convoy-input-field>
+                </div>
+            </ng-container>
+
+            <!-- Alert Configuration -->
+            <ng-container *ngIf="showConfig('alert_config')">
+                <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+                    <div class="flex justify-between items-center mb-16px">
+                        <div class="flex items-center gap-12px">
+                            <p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
+                            <div convoy-tag size="sm" color="primary"
+                                 *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+                                <svg width="10" height="10" class="fill-new.primary-400 scale-150">
+                                    <use xlink:href="#lock-icon"></use>
+                                </svg>
+                                Business
+                            </div>
+                        </div>
+                        <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs"
+                                fill="soft-outline" color="neutral" (click)="toggleConfigForm('alert_config', true)">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-24px"
+                         *ngIf="licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
+                        <convoy-input-field className="mb-0">
+                            <label for="support-email" convoy-label
+                                   tooltip="We use this to send an email notifcation for when a failure happens">Support
+                                Email</label>
+                            <input id="support-email" convoy-input formControlName="support_email"
+                                   placeholder="Enter support email"/>
+                            <convoy-input-error
+                                    *ngIf="endpointForm.get('support_email')?.touched && endpointForm.get('support_email')?.invalid">
+                                Email is invalid
+                            </convoy-input-error>
+                        </convoy-input-field>
+
+                        <convoy-input-field className="mb-0">
+                            <label for="slack-url" convoy-label
+                                   tooltip="We use this to send notifications to your slack channel when a failure happens">Slack
+                                webhook url</label>
+                            <input id="slack-url" convoy-input formControlName="slack_webhook_url"
+                                   placeholder="Enter slack webhook URL"/>
+                            <convoy-input-error
+                                    *ngIf="endpointForm.get('slack_webhook_url')?.touched && endpointForm.get('slack_webhook_url')?.invalid">
+                                URL is invalid
+                            </convoy-input-error>
+                        </convoy-input-field>
                     </div>
                 </div>
-            </div>
-        </ng-container>
-
-        <ng-container *ngIf="showConfig('transform')">
-            <div id="transform-section" class="mt-16px mb-32px">
-                <div class="flex justify-between items-center cursor-pointer">
-                    <h3 class="font-semibold text-14 mt-20px">Payload Transformation</h3>
-                    <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" *ngIf="action !== 'view'" (click)="toggleConfigForm('transform')">
-                        <svg width="14" height="14" class="fill-transparent stroke-neutral-9">
-                            <use xlink:href="#delete-icon2"></use>
-                        </svg>
-                    </button>
-                </div>
-
-                <p class="text-12 text-neutral-10 mt-6px mb-24px">
-                    Configure how you want to test and apply transformation logic to webhook events.
-                </p>
-
-                <convoy-create-portal-transform-function
-                        [showTitle]="false"
-                        [titleClass]="'font-semibold text-14 capitalize pb-16px'"
-                        (updatedTransformFunction)="getFunction($event)"
-                        [defaultOption]="'Select Event Type'"
-                        [options]="validEventTypes()"
-                        [transformFunction]="subscriptionForm.get('function')?.value">
-                </convoy-create-portal-transform-function>
-            </div>
-        </ng-container>
-
-          <!-- Owner ID Configuration -->
-          <ng-container *ngIf="showConfig('owner_id')">
-            <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-              <div class="flex justify-between items-center mb-16px">
-                <label for="owner_id" convoy-label>
-                  Owner ID
-                  <convoy-tooltip
-                    class="ml-4px"
-                    size="sm"
-                    tooltipContent="A unique id for identifying a group of endpoints."
-                    position="top-right"
-                  ></convoy-tooltip>
-                </label>
-                <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('owner_id', true)">
-                  <svg width="14" height="14" class="fill-transparent stroke-new.gray-400">
-                    <use xlink:href="#delete-icon2"></use>
-                  </svg>
-                </button>
-              </div>
-
-              <convoy-input-field>
-                <input type="text" id="owner_id" convoy-input autocomplete="owner_id" formControlName="owner_id" placeholder="Enter owner id here" />
-              </convoy-input-field>
-            </div>
-          </ng-container>
-
-          <!-- Rate Limit Configuration -->
-          <ng-container *ngIf="showConfig('rate_limit')">
-            <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-              <div class="flex justify-between items-center mb-16px">
-                <p class="text-12 text-neutral-11 font-medium flex items-center">Rate Limit</p>
-                <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('rate_limit', true)">
-                  <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                    <use xlink:href="#delete-icon2"></use>
-                  </svg>
-                </button>
-              </div>
-
-              <div class="grid grid-cols-2 gap-24px">
-                <convoy-input-field className="mb-0">
-                  <label for="rate-limit-duration" convoy-label>Duration</label>
-                  <div class="relative">
-                    <input type="number" id="rate-limit-duration" convoy-input formControlName="rate_limit_duration" placeholder="e.g 50" />
-                    <div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
-                  </div>
-                  <convoy-input-error *ngIf="endpointForm.get('rate_limit_duration')?.touched && endpointForm.get('rate_limit_duration')?.invalid">Please enter a rate limit duration</convoy-input-error>
-                </convoy-input-field>
-                <convoy-input-field className="mb-0">
-                  <label for="rate-limit-count" convoy-label>Limit</label>
-                  <input type="number" id="rate-limit-count" convoy-input formControlName="rate_limit" placeholder="e.g 10" />
-                  <convoy-input-error *ngIf="endpointForm.get('rate_limit')?.touched && endpointForm.get('rate_limit')?.invalid">Please enter a rate limit</convoy-input-error>
-                </convoy-input-field>
-              </div>
-            </div>
-          </ng-container>
-
-          <!-- Authentication Configuration -->
-          <ng-container *ngIf="showConfig('auth')">
-            <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-              <div class="flex justify-between items-center mb-16px">
-                <p class="flex items-center text-12 font-medium text-neutral-11">
-                  Endpoint Authentication
-                  <convoy-tooltip size="sm" position="top-right" class="ml-4px">You can set your provided endpoint authentication if any is required</convoy-tooltip>
-                </p>
-                <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('auth', true)">
-                  <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                    <use xlink:href="#delete-icon2"></use>
-                  </svg>
-                </button>
-              </div>
-
-              <ng-container formGroupName="authentication">
-                <div class="grid grid-cols-2 gap-24px" formGroupName="api_key">
-                  <convoy-input-field className="mb-0">
-                    <label for="header_name" convoy-label>API Key Name</label>
-                    <input id="header_name" convoy-input formControlName="header_name" placeholder="Name" />
-                    <convoy-input-error *ngIf="endpointForm.get('authentication.api_key.header_name')?.touched && endpointForm.get('authentication.api_key.header_name')?.invalid">Endpoint auth API key is required</convoy-input-error>
-                  </convoy-input-field>
-
-                  <convoy-input-field className="mb-0">
-                    <label for="header_value" convoy-label>API Key Value</label>
-                    <input id="header_value" convoy-input formControlName="header_value" placeholder="Value" />
-                    <convoy-input-error *ngIf="endpointForm.get('authentication.api_key.header_value')?.touched && endpointForm.get('authentication.api_key.header_value')?.invalid">Endpoint auth API key value is required</convoy-input-error>
-                  </convoy-input-field>
-                </div>
-              </ng-container>
-            </div>
-          </ng-container>
-
-          <!-- HTTP Timeout Configuration -->
-          <ng-container *ngIf="showConfig('http_timeout')">
-            <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-              <div class="flex justify-between items-center mb-16px">
-                <div class="flex items-center gap-8px">
-                  <p class="flex items-center text-12 font-medium text-neutral-11">
-                    Endpoint Timeout
-                    <convoy-tooltip size="sm" position="top-right" class="ml-4px">How many seconds should Convoy wait for a response from this endpoint before timing out?</convoy-tooltip>
-                  </p>
-                  <div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
-                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                      <use xlink:href="#lock-icon"></use>
-                    </svg>
-                    Business
-                  </div>
-                </div>
-                <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('http_timeout', true)">
-                  <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                    <use xlink:href="#delete-icon2"></use>
-                  </svg>
-                </button>
-              </div>
-              <convoy-input-field>
-                <label for="http_timeout" convoy-label>Timeout Value</label>
-                <div class="relative">
-                  <input id="http_timeout" type="number" convoy-input formControlName="http_timeout" placeholder="e.g 60" [readonly]="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')" />
-                  <div class="absolute top-[50%] right-14px text-16 text-neutral-a30 opacity-40 translate-y-[-50%]">sec</div>
-                </div>
-                <convoy-input-error *ngIf="endpointForm.get('http_timeout')?.touched && endpointForm.get('http_timeout')?.invalid">Timeout value must be a whole number</convoy-input-error>
-              </convoy-input-field>
-            </div>
-          </ng-container>
-
-          <!-- Alert Configuration -->
-          <ng-container *ngIf="showConfig('alert_config')">
-            <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-              <div class="flex justify-between items-center mb-16px">
-                <div class="flex items-center gap-12px">
-                  <p class="text-12 text-neutral-11 font-medium flex items-center">Alert Configuration</p>
-                  <div convoy-tag size="sm" color="primary" *ngIf="!licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
-                    <svg width="10" height="10" class="fill-new.primary-400 scale-150">
-                      <use xlink:href="#lock-icon"></use>
-                    </svg>
-                    Business
-                  </div>
-                </div>
-                <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('alert_config', true)">
-                  <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                    <use xlink:href="#delete-icon2"></use>
-                  </svg>
-                </button>
-              </div>
-
-              <div class="grid grid-cols-2 gap-24px" *ngIf="licenseService.hasLicense('ADVANCED_ENDPOINT_MANAGEMENT')">
-                <convoy-input-field className="mb-0">
-                  <label for="support-email" convoy-label tooltip="We use this to send an email notifcation for when a failure happens">Support Email</label>
-                  <input id="support-email" convoy-input formControlName="support_email" placeholder="Enter support email" />
-                  <convoy-input-error *ngIf="endpointForm.get('support_email')?.touched && endpointForm.get('support_email')?.invalid">Email is invalid</convoy-input-error>
-                </convoy-input-field>
-
-                <convoy-input-field className="mb-0">
-                  <label for="slack-url" convoy-label tooltip="We use this to send notifications to your slack channel when a failure happens">Slack webhook url</label>
-                  <input id="slack-url" convoy-input formControlName="slack_webhook_url" placeholder="Enter slack webhook URL" />
-                  <convoy-input-error *ngIf="endpointForm.get('slack_webhook_url')?.touched && endpointForm.get('slack_webhook_url')?.invalid">URL is invalid</convoy-input-error>
-                </convoy-input-field>
-              </div>
-            </div>
-          </ng-container>
-
-          <!-- Signature Format Configuration -->
-          <ng-container *ngIf="showConfig('signature')">
-            <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
-              <div class="flex justify-between items-center mb-16px">
-                <p class="text-12 font-medium text-neutral-11 flex items-center">
-                  Signature Format
-                  <convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your signature format for your project.</convoy-tooltip>
-                </p>
-                <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('signature', true)">
-                  <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
-                    <use xlink:href="#delete-icon2"></use>
-                  </svg>
-                </button>
-              </div>
-              <div class="grid grid-cols-2 gap-6 mb-50px">
-                <convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature" [value]="false" _id="simple"></convoy-radio>
-                <convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature" [value]="true" _id="advanced"></convoy-radio>
-              </div>
-            </div>
-          </ng-container>
-
-          <div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
-            <ng-container *ngFor="let config of configurations">
-              <ng-container *ngIf="!config.show">
-                <convoy-config-button convoy-permission="Endpoints|MANAGE" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
-              </ng-container>
             </ng-container>
-          </div>
+
+            <!-- Signature Format Configuration -->
+            <ng-container *ngIf="showConfig('signature')">
+                <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+                    <div class="flex justify-between items-center mb-16px">
+                        <p class="text-12 font-medium text-neutral-11 flex items-center">
+                            Signature Format
+                            <convoy-tooltip size="sm" position="top-right" class="ml-4px">This specifies your signature
+                                format for your project.
+                            </convoy-tooltip>
+                        </p>
+                        <button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs"
+                                fill="soft-outline" color="neutral" (click)="toggleConfigForm('signature', true)">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-6 mb-50px">
+                        <convoy-radio formControlName="advanced_signatures" label="Simple" _name="signature"
+                                      [value]="false" _id="simple"></convoy-radio>
+                        <convoy-radio formControlName="advanced_signatures" label="Advanced" _name="signature"
+                                      [value]="true" _id="advanced"></convoy-radio>
+                    </div>
+                </div>
+            </ng-container>
+
+            <div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
+                <ng-container *ngFor="let config of configurations">
+                    <ng-container *ngIf="!config.show">
+                        <convoy-config-button convoy-permission="Endpoints|MANAGE"
+                                              (onClick)="toggleConfigForm(config.uid)">{{ config.name }}
+                        </convoy-config-button>
+                    </ng-container>
+                </ng-container>
+            </div>
         </form>
     </div>
 
     <div *ngIf="savingEndpoint" convoy-form-loader [loading]="!endpointCreated"></div>
 
-  <div class="flex justify-end mt-32px">
-    <button
-        convoy-button
-        type="button"
-        fill="solid"
-        color="primary"
-        class="h-40px px-24px py-8px w-auto text-white"
-        [disabled]="savingEndpoint"
-        (click)="saveEndpointAndSubscription()">
-        <div *ngIf="savingEndpoint" class="w-20px h-20px border-t-2 border-r-2 border-white rounded-full animate-spin mr-8px"></div>
-        {{ isUpdateAction || editMode ? 'Update' : 'Create' }} Endpoint
-    </button>
-  </div>
+    <div class="flex justify-end mt-32px">
+        <button
+                convoy-button
+                type="button"
+                fill="solid"
+                color="primary"
+                class="h-40px px-24px py-8px w-auto text-white"
+                [disabled]="savingEndpoint"
+                (click)="saveEndpointAndSubscription()">
+            <div *ngIf="savingEndpoint"
+                 class="w-20px h-20px border-t-2 border-r-2 border-white rounded-full animate-spin mr-8px"></div>
+            {{ isUpdateAction || editMode ? 'Update' : 'Create' }} Endpoint
+        </button>
+    </div>
 </div>
 
 
@@ -375,7 +448,7 @@
         <convoy-create-subscription-filter
                 [action]="action"
                 [selectedEventType]="selectedEventType"
-                [schema]="filters[selectedIndex]"
+                [schema]="filtersMap.get(selectedEventType)"
                 (filterSchema)="onSaveFilter($event)"
                 (close)="showFilterDialog = false">
         </convoy-create-subscription-filter>

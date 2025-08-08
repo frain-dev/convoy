@@ -68,7 +68,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -86,7 +86,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -137,7 +137,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						Status:         datastore.InviteStatusAccepted,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -184,7 +184,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						Status:         datastore.InviteStatusDeclined,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -216,7 +216,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      time.Now().Add(-time.Minute),
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -267,7 +267,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -284,7 +284,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -317,7 +317,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -357,7 +357,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -373,7 +373,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -422,7 +422,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -462,7 +462,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -503,7 +503,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -541,7 +541,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -586,7 +586,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 		//				ExpiresAt:      expiry,
 		//				InviteeEmail:   "test@email.com",
 		//				Role: auth.Role{
-		//					Type:     auth.RoleAdmin,
+		//					Type:     auth.RoleProjectAdmin,
 		//					Project:  "ref",
 		//					Endpoint: "",
 		//				},
@@ -633,7 +633,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},
@@ -649,7 +649,7 @@ func TestProcessInviteService_Run(t *testing.T) {
 						ExpiresAt:      expiry,
 						InviteeEmail:   "test@email.com",
 						Role: auth.Role{
-							Type:     auth.RoleAdmin,
+							Type:     auth.RoleProjectAdmin,
 							Project:  "ref",
 							Endpoint: "",
 						},

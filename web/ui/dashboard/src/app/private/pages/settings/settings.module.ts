@@ -28,7 +28,8 @@ import {DialogDirective} from 'src/app/components/dialog/dialog.directive';
 import {TeamsModule} from './teams/teams.module';
 import {ConfigButtonComponent} from '../../components/config-button/config-button.component';
 import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
-import { BillingModule } from './billing/billing.module';
+import {PermissionDirective} from '../../components/permission/permission.directive';
+import {BillingModule} from './billing/billing.module';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
@@ -46,7 +47,7 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		RadioComponent,
 		ToggleComponent,
 		ButtonComponent,
-        ConfigButtonComponent,
+		ConfigButtonComponent,
 		SkeletonLoaderComponent,
 		TagComponent,
 		CopyButtonComponent,
@@ -59,7 +60,8 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		LabelComponent,
 		DialogDirective,
 		TeamsModule,
-        TooltipComponent,
+		TooltipComponent,
+		PermissionDirective,
 		BillingModule
 	]
 })

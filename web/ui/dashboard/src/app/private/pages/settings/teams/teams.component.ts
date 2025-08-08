@@ -1,14 +1,14 @@
-import { Component, OnInit, ViewChild, inject, ElementRef } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { PAGINATION } from 'src/app/models/global.model';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { DropdownComponent } from 'src/app/components/dropdown/dropdown.component';
-import { TeamsService } from './teams.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { PrivateService } from '../../../private.service';
-import { TEAM } from 'src/app/models/organisation.model';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import {Component, ElementRef, inject, OnInit, ViewChild} from '@angular/core';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
+import {PAGINATION} from 'src/app/models/global.model';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {DropdownComponent} from 'src/app/components/dropdown/dropdown.component';
+import {TeamsService} from './teams.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {PrivateService} from '../../../private.service';
+import {TEAM} from 'src/app/models/organisation.model';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-teams',
@@ -55,9 +55,10 @@ export class TeamsComponent implements OnInit {
 		})
 	});
 	roles = [
-		{ name: 'Super User', uid: 'super_user' },
-		{ name: 'Admin', uid: 'admin' }
-		// { name: 'Member', uid: 'member' }
+		{ name: 'Organisation Admin', uid: 'organisation_admin' },
+		{ name: 'Billing Admin', uid: 'billing_admin' },
+		{ name: 'Project Admin', uid: 'project_admin' },
+		{ name: 'Project Viewer', uid: 'project_viewer' }
 	];
 	showUpdateMember = false;
 	userDetails = this.privateService.getUserProfile;

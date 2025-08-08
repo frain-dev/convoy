@@ -1,33 +1,39 @@
-import { Injectable } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { PrivateService } from 'src/app/private/private.service';
+import {Injectable} from '@angular/core';
+import {ActivatedRoute} from '@angular/router';
+import {PrivateService} from 'src/app/private/private.service';
 
 @Injectable({
 	providedIn: 'root'
 })
 export class RbacService {
 	permissions = {
-		MEMBER: ['Event Deliveries|VIEW', 'Event Deliveries|MANAGE', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Events|MANAGE', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW'],
-		SUPER_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE'],
-		ADMIN: ['Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE']
+		PROJECT_VIEWER: ['Event Deliveries|VIEW', 'Sources|VIEW', 'Subscriptions|VIEW', 'Endpoints|VIEW', 'Portal Links|VIEW', 'Events|VIEW', 'Meta Events|VIEW', 'Project Settings|VIEW', 'Projects|VIEW', 'Team|VIEW', 'Organisations|VIEW', 'Organisations|ADD'],
+		PROJECT_ADMIN: ['Event Deliveries|MANAGE', 'Sources|MANAGE', 'Subscriptions|MANAGE', 'Endpoints|MANAGE', 'Portal Links|MANAGE', 'Events|MANAGE', 'Meta Events|MANAGE', 'Project Settings|MANAGE', 'Projects|MANAGE', 'Event Types|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD'],
+		ORGANISATION_ADMIN: ['Team|MANAGE', 'Organisations|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD'],
+		BILLING_ADMIN: ['Billing|MANAGE', 'Organisations|ADD'],
+		INSTANCE_ADMIN: ['Instance|MANAGE', 'Project Setup|MANAGE', 'Organisations|ADD']
 	};
 
 	constructor(private privateService: PrivateService, private route: ActivatedRoute) {}
 
 	async getUserRole(): Promise<ROLE> {
 		try {
-			const member = await this.privateService.getOrganizationMembership();
+			const member = await this.privateService.getOrganizationMembership({ refresh: true });
 			const role = member.data.content[0].role.type;
 			switch (role) {
-				case 'super_user':
-					return 'SUPER_ADMIN';
-				case 'admin':
-					return 'ADMIN';
+				case 'instance_admin':
+					return 'INSTANCE_ADMIN';
+				case 'organisation_admin':
+					return 'ORGANISATION_ADMIN';
+				case 'billing_admin':
+					return 'BILLING_ADMIN';
+				case 'project_admin':
+					return 'PROJECT_ADMIN';
 				default:
-					return 'MEMBER';
+					return 'PROJECT_VIEWER';
 			}
 		} catch (error) {
-			return 'MEMBER';
+			return 'PROJECT_VIEWER';
 		}
 	}
 
@@ -43,14 +49,28 @@ export class RbacService {
 
 		let permissions;
 		switch (role) {
-			case 'SUPER_ADMIN':
-				permissions = this.permissions[role].concat(this.permissions.ADMIN, this.permissions.MEMBER);
+			case 'INSTANCE_ADMIN':
+				permissions = this.permissions[role].concat(
+					this.permissions.ORGANISATION_ADMIN,
+					this.permissions.BILLING_ADMIN,
+					this.permissions.PROJECT_ADMIN,
+					this.permissions.PROJECT_VIEWER
+				);
 				break;
-			case 'ADMIN':
-				permissions = this.permissions[role].concat(this.permissions.MEMBER);
+			case 'ORGANISATION_ADMIN':
+				permissions = this.permissions[role].concat(
+					this.permissions.PROJECT_ADMIN,
+					this.permissions.PROJECT_VIEWER
+				);
+				break;
+			case 'BILLING_ADMIN':
+				permissions = this.permissions[role];
+				break;
+			case 'PROJECT_ADMIN':
+				permissions = this.permissions[role].concat(this.permissions.PROJECT_VIEWER);
 				break;
 			default:
-				permissions = this.permissions.MEMBER;
+				permissions = this.permissions.PROJECT_VIEWER;
 				break;
 		}
 
@@ -80,6 +100,11 @@ export type PERMISSION =
 	| 'Team|VIEW'
 	| 'Team|MANAGE'
 	| 'Organisations|VIEW'
-	| 'Organisations|MANAGE';
+	| 'Organisations|MANAGE'
+	| 'Organisations|ADD'
+	| 'Billing|MANAGE'
+	| 'Instance|MANAGE'
+	| 'Event Types|MANAGE'
+	| 'Project Setup|MANAGE';
 
-export type ROLE = 'MEMBER' | 'ADMIN' | 'SUPER_ADMIN';
+export type ROLE = 'PROJECT_VIEWER' | 'PROJECT_ADMIN' | 'ORGANISATION_ADMIN' | 'BILLING_ADMIN' | 'INSTANCE_ADMIN';

@@ -97,7 +97,7 @@
                         Business
                     </div>
 					<div *ngIf="licenseService.hasLicense('ADVANCED_SUBSCRIPTIONS')">
-						<div *ngFor="let eventType of eventTypes" class="flex items-center justify-between mb-12px border border-neutral-4 p-12px rounded-6px">
+						<div *ngFor="let eventType of validEventTypes()" class="flex items-center justify-between mb-12px border border-neutral-4 p-12px rounded-6px">
 							<div class="flex items-center">
 								<div class="relative mr-12px">
 									<div 
@@ -171,7 +171,7 @@
 
 		<div class="flex flex-wrap items-center gap-24px" *ngIf="shouldShowBorder < configurations.length">
 			<ng-container *ngFor="let config of configurations">
-				<convoy-config-button *ngIf="!config.show" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
+				<convoy-config-button *ngIf="!config.show" convoy-permission="Subscriptions|MANAGE" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
 			</ng-container>
 		</div>
 
@@ -179,7 +179,7 @@
 	</div>
 
 	<div class="flex justify-end mt-40px pb-40px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button size="sm" [disabled]="isCreatingSubscription || subscriptionForm.disabled">
+		<button convoy-button convoy-permission="Subscriptions|MANAGE" size="sm" [disabled]="isCreatingSubscription || subscriptionForm.disabled">
 			{{ action == 'update' || isUpdateAction ? 'Updat' : 'Creat' }}{{ isCreatingSubscription ? 'ing Subscription...' : 'e Subscription' }}
 			<svg width="24" height="24" class="ml-8px" class="fill-white-100" *ngIf="action === 'create'">
 				<use xlink:href="#arrow-right-icon"></use>

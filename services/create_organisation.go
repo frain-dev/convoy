@@ -25,6 +25,7 @@ type CreateOrganisationService struct {
 	NewOrg        *models.Organisation
 	User          *datastore.User
 	Licenser      license.Licenser
+	RoleType      auth.RoleType
 }
 
 var ErrOrgLimit = errors.New("your instance has reached it's organisation limit, upgrade to create new organisations")
@@ -72,7 +73,23 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 		log.FromContext(ctx).WithError(err).Error("failed to create organisation")
 		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
 	}
-	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleSuperUser})
+
+	// Check if this is the first user (no instance admins exist yet)
+	count, err := co.OrgMemberRepo.CountInstanceAdminUsers(ctx)
+	if err != nil {
+		log.FromContext(ctx).WithError(err).Error("failed to count instance admin users")
+		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
+	}
+
+	// Only assign RoleInstanceAdmin to the first user, otherwise assign RoleOrganisationAdmin
+	var roleType auth.RoleType
+	if count == 0 {
+		roleType = auth.RoleInstanceAdmin
+	} else {
+		roleType = auth.RoleOrganisationAdmin
+	}
+
+	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: roleType})
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create super_user member for organisation owner")
 	}

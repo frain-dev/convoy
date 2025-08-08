@@ -1,18 +1,28 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, QueryList, ViewChild, ViewChildren } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
-import { SOURCE } from 'src/app/models/source.model';
-import { PrivateService } from '../../private.service';
-import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
-import { CreateSourceComponent } from '../create-source/create-source.component';
-import { CreateSubscriptionService } from './create-subscription.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { SUBSCRIPTION, SUBSCRIPTION_CONFIG } from 'src/app/models/subscription';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { EVENT_TYPE } from 'src/app/models/event.model';
-import { FILTER } from 'src/app/models/filter.model';
-import { FilterService } from './filter.service';
+import {
+    ChangeDetectorRef,
+    Component,
+    ElementRef,
+    EventEmitter,
+    inject,
+    Input,
+    OnInit,
+    Output,
+    ViewChild
+} from '@angular/core';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
+import {APP, ENDPOINT} from 'src/app/models/endpoint.model';
+import {SOURCE} from 'src/app/models/source.model';
+import {PrivateService} from '../../private.service';
+import {CreateEndpointComponent} from '../create-endpoint/create-endpoint.component';
+import {CreateSourceComponent} from '../create-source/create-source.component';
+import {CreateSubscriptionService} from './create-subscription.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {SUBSCRIPTION, SUBSCRIPTION_CONFIG} from 'src/app/models/subscription';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {EVENT_TYPE} from 'src/app/models/event.model';
+import {FILTER} from 'src/app/models/filter.model';
+import {FilterService} from './filter.service';
 
 @Component({
 	selector: 'convoy-create-subscription',
@@ -402,6 +412,11 @@ export class CreateSubscriptionComponent implements OnInit {
 	}
 
 	async saveSubscription(setup?: boolean) {
+		// create the endpoint and source first
+		this.toggleFormsLoaders(true);
+		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
+		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
+
 		// Validate form before submitting
 		if (this.subscriptionForm.invalid) {
 			console.error('Form is invalid:', this.subscriptionForm.errors);
@@ -462,16 +477,11 @@ export class CreateSubscriptionComponent implements OnInit {
 		await this.runSubscriptionValidation();
 
 		// Clean up the duplicate code above and consolidate event type handling
-		this.toggleFormsLoaders(true);
-
 		if (this.subscriptionForm.get('name')?.invalid || this.subscriptionForm.get('filter_config')?.invalid) {
 			this.toggleFormsLoaders(false);
 			this.subscriptionForm.markAllAsTouched();
 			return;
 		}
-
-		if (this.createEndpointForm && !this.createEndpointForm.endpointCreated) await this.createEndpointForm.saveEndpoint();
-		if (this.createSourceForm && !this.createSourceForm.sourceCreated) await this.createSourceForm.saveSource();
 
 		if (!this.showAction && this.endpoints.length) this.subscriptionForm.patchValue({ name: this.endpoints?.find(endpoint => endpoint.uid == this.subscriptionForm.value.endpoint_id)?.name + ' Subscription' });
 
@@ -983,6 +993,10 @@ export class CreateSubscriptionComponent implements OnInit {
 		} finally {
 			this._isTogglingEventType = false;
 		}
+	}
+
+	validEventTypes(): EVENT_TYPE[] {
+		return this.eventTypes.filter(type => type.name !== '*')
 	}
 
 	// Helper method to sync filters array with filtersMap

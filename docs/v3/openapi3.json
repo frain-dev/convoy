@@ -155,6 +155,13 @@
 				},
 				"type": "object"
 			},
+			"datastore.DeliveryMode": {
+				"enum": [
+					"at_least_once",
+					"at_most_once"
+				],
+				"type": "string"
+			},
 			"datastore.Device": {
 				"properties": {
 					"created_at": {
@@ -976,7 +983,7 @@
 			"models.CreateEndpoint": {
 				"properties": {
 					"advanced_signatures": {
-						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
 						"type": "boolean"
 					},
 					"appID": {
@@ -1081,7 +1088,9 @@
 						"type": "string"
 					},
 					"json_schema": {
-						"description": "JSONSchema is the JSON structure of the event type"
+						"additionalProperties": true,
+						"description": "JSONSchema is the JSON structure of the event type",
+						"type": "object"
 					},
 					"name": {
 						"description": "Name is the event type name. E.g., invoice.created",
@@ -1195,6 +1204,14 @@
 					"app_id": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
+					},
+					"delivery_mode": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.DeliveryMode"
+							}
+						],
+						"description": "Delivery mode configuration"
 					},
 					"endpoint_id": {
 						"description": "Destination endpoint ID",
@@ -1373,6 +1390,9 @@
 					},
 					"deleted_at": {
 						"type": "string"
+					},
+					"delivery_mode": {
+						"$ref": "#/components/schemas/datastore.DeliveryMode"
 					},
 					"description": {
 						"type": "string"
@@ -1839,6 +1859,9 @@
 			},
 			"models.PortalLinkResponse": {
 				"properties": {
+					"auth_key": {
+						"type": "string"
+					},
 					"can_manage_endpoint": {
 						"type": "boolean"
 					},
@@ -2047,6 +2070,9 @@
 					"deleted_at": {
 						"type": "string"
 					},
+					"delivery_mode": {
+						"$ref": "#/components/schemas/datastore.DeliveryMode"
+					},
 					"device_metadata": {
 						"$ref": "#/components/schemas/datastore.Device"
 					},
@@ -2141,7 +2167,7 @@
 			"models.UpdateEndpoint": {
 				"properties": {
 					"advanced_signatures": {
-						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
+						"description": "Convoy supports two [signature formats](https://getconvoy.io/docs/product-manual/signatures)\n-- simple or advanced. If left unspecified, we default to false.",
 						"type": "boolean"
 					},
 					"authentication": {
@@ -2209,7 +2235,9 @@
 						"type": "string"
 					},
 					"json_schema": {
-						"description": "JSONSchema is the JSON structure of the event type"
+						"additionalProperties": true,
+						"description": "JSONSchema is the JSON structure of the event type",
+						"type": "object"
 					}
 				},
 				"type": "object"
@@ -2323,6 +2351,14 @@
 					"app_id": {
 						"description": "Deprecated but necessary for backward compatibility",
 						"type": "string"
+					},
+					"delivery_mode": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.DeliveryMode"
+							}
+						],
+						"description": "Delivery mode configuration"
 					},
 					"endpoint_id": {
 						"description": "Destination endpoint ID",
@@ -7349,6 +7385,129 @@
 					"Portal Links"
 				]
 			},
+			"post": {
+				"description": "This endpoint retrieves a portal link by its id.",
+				"operationId": "GeneratePortalToken",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "portal link id",
+						"in": "path",
+						"name": "portalLinkID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.PortalLinkResponse"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Updates a portal link auth token",
+				"tags": [
+					"Portal Links"
+				]
+			},
 			"put": {
 				"description": "This endpoint updates a portal link",
 				"operationId": "UpdatePortalLink",
@@ -7480,6 +7639,131 @@
 					}
 				],
 				"summary": "Update a portal link",
+				"tags": [
+					"Portal Links"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/portal-links/{portalLinkID}/refresh_token": {
+			"get": {
+				"description": "This endpoint retrieves a portal link auth token",
+				"operationId": "RefreshPortalLinkAuthToken",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"description": "portal link id",
+						"in": "path",
+						"name": "portalLinkID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"type": "string"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Get a portal link auth token",
 				"tags": [
 					"Portal Links"
 				]

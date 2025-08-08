@@ -93,7 +93,9 @@ const (
 	AND ev.created_at >= :start_date AND ev.created_at <= :end_date AND ev.deleted_at IS NULL;
 	`
 
+	// if there's no owner_id, we remove the initial CTE
 	baseEventsPaged = `
+	with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id), events as (
 	SELECT ev.id, ev.project_id,
 	ev.id AS event_type, ev.is_duplicate_event,
 	COALESCE(ev.source_id, '') AS source_id,
@@ -105,7 +107,7 @@ const (
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
+	JOIN endpoint_ids e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
     WHERE ev.deleted_at IS NULL`
 
@@ -121,13 +123,14 @@ const (
 	COALESCE(s.name, '') AS "source_metadata.name"
     FROM convoy.events_search ev
 	LEFT JOIN convoy.events_endpoints ee ON ee.event_id = ev.id
-	LEFT JOIN convoy.endpoints e ON e.id = ee.endpoint_id
 	LEFT JOIN convoy.sources s ON s.id = ev.source_id
+	JOIN convoy.endpoints e ON e.id = ee.endpoint_id
     WHERE ev.deleted_at IS NULL`
 
 	baseEventsPagedForward = `
-	WITH events AS (
+
         %s %s AND ev.id <= :cursor
+		GROUP BY ev.id, s.id
 	    ORDER BY ev.created_at %s
 	    LIMIT :limit
 	)
@@ -136,8 +139,9 @@ const (
 	`
 
 	baseEventsPagedBackward = `
-	WITH events AS (
+
         %s %s AND ev.id >= :cursor
+		GROUP BY ev.id, s.id
 		ORDER BY ev.created_at %s
 		LIMIT :limit
 	)
@@ -490,6 +494,7 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		"limit":           filter.Pageable.Limit(),
 		"start_date":      startDate,
 		"end_date":        endDate,
+		"owner_id":        filter.OwnerID,
 		"query":           filter.Query,
 		"cursor":          filter.Pageable.Cursor(),
 		"idempotency_key": filter.IdempotencyKey,
@@ -513,6 +518,12 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 		filterQuery += endpointFilter
 	}
 
+	// if there's no owner_id, we remove the initial CTE
+	if len(filter.OwnerID) == 0 {
+		base = strings.Replace(base, "with endpoint_ids as (select id from convoy.endpoints where owner_id = :owner_id),", "with ", 1)
+		base = strings.Replace(base, "endpoint_ids", "convoy.endpoints", 1)
+	}
+
 	if !util.IsStringEmpty(filter.Query) {
 		filterQuery += searchFilter
 		base = baseEventsSearch
@@ -533,6 +544,8 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
+
+	// fmt.Printf("%+v\nargs:%+v\n", query, args)
 
 	query = e.db.GetReadDB().Rebind(query)
 	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)

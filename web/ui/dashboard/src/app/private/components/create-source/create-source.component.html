@@ -393,7 +393,7 @@
 		<div class="border-l-2 border-new.primary-25 pl-16px mb-40px" *ngIf="showConfig('idempotency')">
 			<div class="flex justify-between items-end mb-24px">
 				<p class="text-12 font-semibold text-neutral-10 flex items-center">Idempotency Config</p>
-				<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('idempotency')">
+				<button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" convoy-permission="Sources|MANAGE" (click)="toggleConfigForm('idempotency')">
 					<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
 						<use xlink:href="#delete-icon2"></use>
 					</svg>
@@ -451,7 +451,7 @@
 	</div>
 
 	<div class="flex justify-end mt-32px" [ngClass]="{ hidden: showAction === 'false' }">
-		<button convoy-button [disabled]="isloading || sourceForm.disabled">
+		<button convoy-button convoy-permission="Sources|MANAGE" [disabled]="isloading || sourceForm.disabled">
 			{{ action === 'update' ? 'Update Source' : 'Create Source' }}
 			<svg width="24" height="24" class="ml-8px fill-white-100">
 				<use xlink:href="#arrow-right-icon"></use>

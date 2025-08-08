@@ -1,15 +1,21 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, PasswordInputFieldComponent } from 'src/app/components/input/input.component';
-import { LoginService } from './login.service';
-import { LoaderModule } from 'src/app/private/components/loader/loader.module';
-import { PrivateService } from 'src/app/private/private.service';
-import { ORGANIZATION_DATA } from 'src/app/models/organisation.model';
-import { SignupService } from '../signup/signup.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import {CommonModule} from '@angular/common';
+import {Component, OnInit} from '@angular/core';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {Router} from '@angular/router';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {
+    InputDirective,
+    InputErrorComponent,
+    InputFieldDirective,
+    LabelComponent,
+    PasswordInputFieldComponent
+} from 'src/app/components/input/input.component';
+import {LoginService} from './login.service';
+import {LoaderModule} from 'src/app/private/components/loader/loader.module';
+import {PrivateService} from 'src/app/private/private.service';
+import {ORGANIZATION_DATA} from 'src/app/models/organisation.model';
+import {SignupService} from '../signup/signup.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'app-login',
@@ -54,12 +60,24 @@ export class LoginComponent implements OnInit {
 		this.disableLoginBtn = true;
 		try {
 			const response: any = await this.loginService.login(this.loginForm.value);
+
+			const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+
+            let refresh = true;
+            if (lastUserId && lastUserId !== response.data.uid) {
+				localStorage.clear();
+                refresh = true;
+			}
+
+			localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 			localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 			localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
 
 			this.isLoadingProject = true;
 			await this.getOrganisations();
-			return this.router.navigateByUrl('/');
+			await this.router.navigateByUrl('/');
+            if (refresh)
+                window.location.reload();
 		} catch {
 			return (this.disableLoginBtn = false);
 		}
