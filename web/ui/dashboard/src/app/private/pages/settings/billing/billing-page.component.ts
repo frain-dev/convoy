@@ -88,8 +88,13 @@ export class BillingPageComponent implements OnInit {
   onCountryChange(countryName: string) {
     if (!countryName) {
       this.cities = [];
+      this.billingAddressForm.get('city')?.setValue('');
       return;
     }
+
+    // Reset city selection when country changes
+    this.billingAddressForm.get('city')?.setValue('');
+    this.cities = [];
 
     this.isLoadingCities = true;
     this.countriesService.getCitiesForCountry(countryName).subscribe({
@@ -306,6 +311,13 @@ export class BillingPageComponent implements OnInit {
   }
 
   onUpdateBillingAddress() {
+    const cityControl = this.billingAddressForm.get('city');
+    if (!cityControl || !cityControl.value || !this.cities.includes(cityControl.value)) {
+      cityControl?.setErrors({ required: true });
+      this.markFormGroupTouched(this.billingAddressForm);
+      return;
+    }
+
     if (this.billingAddressForm.valid) {
       console.log('Updating billing address:', this.billingAddressForm.value);
 
