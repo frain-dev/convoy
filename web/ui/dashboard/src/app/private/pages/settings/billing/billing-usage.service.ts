@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
-import { Observable, from } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { HttpService } from 'src/app/services/http/http.service';
+import {Injectable} from '@angular/core';
+import {from, Observable} from 'rxjs';
+import {map} from 'rxjs/operators';
+import {HttpService} from 'src/app/services/http/http.service';
 
 export interface UsageRow {
   name: string;
@@ -15,9 +15,7 @@ export class BillingUsageService {
   constructor(private httpService: HttpService) {}
 
   getUsage(): Observable<UsageRow[]> {
-    return from(this.getUsageData()).pipe(
-      map(usage => this.formatUsageData(usage))
-    );
+    return from(this.getUsageData()).pipe(map(usage => this.formatUsageData(usage)));
   }
 
   private async getUsageData() {
@@ -35,26 +33,39 @@ export class BillingUsageService {
     }
   }
 
-  private formatUsageData(usage: any): UsageRow[] {
-    if (!usage) {
-      return [
-        { name: 'Webhook event volume', sent: '0', received: '0', total: '0' },
-        { name: 'Webhook event size', sent: '0 GB', received: '0 GB', total: '0 GB' }
-      ];
+  private formatBytes(bytes: number): string {
+    if (!bytes || bytes <= 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let idx = 0;
+    let value = bytes;
+
+    while (value >= 1024 && idx < units.length - 1) {
+      value = value / 1024;
+      idx++;
     }
 
+    const fixed = value >= 100 ? value.toFixed(0) : value.toFixed(1);
+    return `${fixed} ${units[idx]}`;
+  }
+
+  private formatUsageData(usage: any): UsageRow[] {
+    const sentVolume = Number(usage?.sent?.volume || 0);       // outgoing deliveries count
+    const receivedVolume = Number(usage?.received?.volume || 0); // incoming events count
+    const sentBytes = Number(usage?.sent?.bytes || 0);         // outgoing bytes (egress)
+    const receivedBytes = Number(usage?.received?.bytes || 0); // incoming bytes (ingress)
+
     return [
-      { 
-        name: 'Webhook event volume', 
-        sent: usage.events?.toLocaleString() || '0', 
-        received: usage.deliveries?.toLocaleString() || '0', 
-        total: ((usage.events || 0) + (usage.deliveries || 0)).toLocaleString() 
+      {
+        name: 'Webhook event volume',
+        sent: sentVolume.toLocaleString(),
+        received: receivedVolume.toLocaleString(),
+        total: (sentVolume + receivedVolume).toLocaleString()
       },
-      { 
-        name: 'Webhook event size', 
-        sent: `${((usage.bandwidth || 0) / 1024 / 1024).toFixed(1)} GB`, 
-        received: `${((usage.bandwidth || 0) / 1024 / 1024).toFixed(1)} GB`, 
-        total: `${(((usage.bandwidth || 0) * 2) / 1024 / 1024).toFixed(1)} GB` 
+      {
+        name: 'Webhook event size',
+        sent: this.formatBytes(sentBytes),
+        received: this.formatBytes(receivedBytes),
+        total: this.formatBytes(sentBytes + receivedBytes)
       }
     ];
   }
@@ -63,4 +74,4 @@ export class BillingUsageService {
     const org = localStorage.getItem('CONVOY_ORG');
     return org ? JSON.parse(org).uid : '';
   }
-} 
+}

@@ -12,19 +12,46 @@ import (
 	"github.com/frain-dev/convoy/config"
 )
 
-type Client struct {
+type Client interface {
+	HealthCheck(ctx context.Context) error
+	GetUsage(ctx context.Context, orgID string) (*Response, error)
+	GetInvoices(ctx context.Context, orgID string) (*Response, error)
+	GetPaymentMethods(ctx context.Context, orgID string) (*Response, error)
+	GetSubscription(ctx context.Context, orgID string) (*Response, error)
+	GetPlans(ctx context.Context) (*Response, error)
+	GetTaxIDTypes(ctx context.Context) (*Response, error)
+	CreateOrganisation(ctx context.Context, orgData interface{}) (*Response, error)
+	GetOrganisation(ctx context.Context, orgID string) (*Response, error)
+	UpdateOrganisation(ctx context.Context, orgID string, orgData interface{}) (*Response, error)
+	UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData interface{}) (*Response, error)
+	UpdateOrganisationAddress(ctx context.Context, orgID string, addressData interface{}) (*Response, error)
+	GetSubscriptions(ctx context.Context, orgID string) (*Response, error)
+	CreateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error)
+	UpdateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error)
+	DeleteSubscription(ctx context.Context, orgID string) (*Response, error)
+	GetSetupIntent(ctx context.Context, orgID string) (*Response, error)
+	CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*Response, error)
+	DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error)
+	GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error)
+	DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error)
+	CreateBillingPaymentMethod(ctx context.Context, pmData interface{}) (*Response, error)
+	UpdateBillingAddress(ctx context.Context, addressData interface{}) (*Response, error)
+	UpdateBillingTaxID(ctx context.Context, taxData interface{}) (*Response, error)
+}
+
+type HTTPClient struct {
 	httpClient *http.Client
 	config     config.BillingConfiguration
 }
 
-type BillingResponse struct {
+type Response struct {
 	Status  bool        `json:"status"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
 }
 
-func NewClient(cfg config.BillingConfiguration) *Client {
-	return &Client{
+func NewClient(cfg config.BillingConfiguration) *HTTPClient {
+	return &HTTPClient{
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -32,7 +59,7 @@ func NewClient(cfg config.BillingConfiguration) *Client {
 	}
 }
 
-func (c *Client) HealthCheck(ctx context.Context) error {
+func (c *HTTPClient) HealthCheck(ctx context.Context) error {
 	if !c.config.Enabled {
 		return fmt.Errorf("billing is not enabled")
 	}
@@ -64,87 +91,87 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) GetUsage(ctx context.Context, orgID string) (*BillingResponse, error) {
+func (c *HTTPClient) GetUsage(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/usage", orgID), nil)
 }
 
-func (c *Client) GetInvoices(ctx context.Context, orgID string) (*BillingResponse, error) {
+func (c *HTTPClient) GetInvoices(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/invoices", orgID), nil)
 }
 
-func (c *Client) GetPaymentMethods(ctx context.Context, orgID string) (*BillingResponse, error) {
+func (c *HTTPClient) GetPaymentMethods(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/payment_methods", orgID), nil)
 }
 
-func (c *Client) GetSubscription(ctx context.Context, orgID string) (*BillingResponse, error) {
+func (c *HTTPClient) GetSubscription(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/subscription", orgID), nil)
 }
 
-func (c *Client) GetPlans(ctx context.Context) (*BillingResponse, error) {
+func (c *HTTPClient) GetPlans(ctx context.Context) (*Response, error) {
 	return c.makeRequest(ctx, "GET", "/plans", nil)
 }
 
-func (c *Client) GetTaxIDTypes(ctx context.Context) (*BillingResponse, error) {
+func (c *HTTPClient) GetTaxIDTypes(ctx context.Context) (*Response, error) {
 	return c.makeRequest(ctx, "GET", "/tax_id_types", nil)
 }
 
 // Organisation methods
-func (c *Client) CreateOrganisation(ctx context.Context, orgData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) CreateOrganisation(ctx context.Context, orgData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", "/organisations", orgData)
 }
 
-func (c *Client) GetOrganisation(ctx context.Context, orgID string) (*BillingResponse, error) {
+func (c *HTTPClient) GetOrganisation(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s", orgID), nil)
 }
 
-func (c *Client) UpdateOrganisation(ctx context.Context, orgID string, orgData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) UpdateOrganisation(ctx context.Context, orgID string, orgData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "PUT", fmt.Sprintf("/organisations/%s", orgID), orgData)
 }
 
-func (c *Client) UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/tax_id", orgID), taxData)
 }
 
-func (c *Client) UpdateOrganisationAddress(ctx context.Context, orgID string, addressData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) UpdateOrganisationAddress(ctx context.Context, orgID string, addressData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/address", orgID), addressData)
 }
 
 // Subscription methods
-func (c *Client) GetSubscriptions(ctx context.Context, orgID string) (*BillingResponse, error) {
+func (c *HTTPClient) GetSubscriptions(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
 }
 
-func (c *Client) CreateSubscription(ctx context.Context, orgID string, subData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) CreateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/subscriptions", orgID), subData)
 }
 
-func (c *Client) UpdateSubscription(ctx context.Context, orgID string, subData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) UpdateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "PUT", fmt.Sprintf("/organisations/%s/subscriptions", orgID), subData)
 }
 
-func (c *Client) DeleteSubscription(ctx context.Context, orgID string) (*BillingResponse, error) {
+func (c *HTTPClient) DeleteSubscription(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "DELETE", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
 }
 
 // Payment method methods
-func (c *Client) GetSetupIntent(ctx context.Context, orgID string) (*BillingResponse, error) {
+func (c *HTTPClient) GetSetupIntent(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/payment_methods/setup_intent", orgID), nil)
 }
 
-func (c *Client) CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/payment_methods", orgID), pmData)
 }
 
-func (c *Client) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*BillingResponse, error) {
+func (c *HTTPClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error) {
 	return c.makeRequest(ctx, "DELETE", fmt.Sprintf("/organisations/%s/payment_methods/%s", orgID, pmID), nil)
 }
 
 // Invoice methods
-func (c *Client) GetInvoice(ctx context.Context, orgID, invoiceID string) (*BillingResponse, error) {
+func (c *HTTPClient) GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/invoices/%s", orgID, invoiceID), nil)
 }
 
-func (c *Client) DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error) {
+func (c *HTTPClient) DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error) {
 	if !c.config.Enabled {
 		return nil, fmt.Errorf("billing is not enabled")
 	}
@@ -180,19 +207,19 @@ func (c *Client) DownloadInvoice(ctx context.Context, orgID, invoiceID string) (
 }
 
 // Public billing methods
-func (c *Client) CreateBillingPaymentMethod(ctx context.Context, pmData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) CreateBillingPaymentMethod(ctx context.Context, pmData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", "/billing/payment-method", pmData)
 }
 
-func (c *Client) UpdateBillingAddress(ctx context.Context, addressData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) UpdateBillingAddress(ctx context.Context, addressData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", "/billing/address", addressData)
 }
 
-func (c *Client) UpdateBillingTaxID(ctx context.Context, taxData interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) UpdateBillingTaxID(ctx context.Context, taxData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", "/billing/tax-id", taxData)
 }
 
-func (c *Client) makeRequest(ctx context.Context, method, path string, body interface{}) (*BillingResponse, error) {
+func (c *HTTPClient) makeRequest(ctx context.Context, method, path string, body interface{}) (*Response, error) {
 	if !c.config.Enabled {
 		return nil, fmt.Errorf("billing is not enabled")
 	}
@@ -227,7 +254,7 @@ func (c *Client) makeRequest(ctx context.Context, method, path string, body inte
 	}
 	defer resp.Body.Close()
 
-	var billingResp BillingResponse
+	var billingResp Response
 	if err := json.NewDecoder(resp.Body).Decode(&billingResp); err != nil {
 		return nil, fmt.Errorf("failed to read billing response: %w", err)
 	}

@@ -1,0 +1,1794 @@
+package handlers
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/go-chi/chi/v5"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestBillingHandler_Simple(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+	}
+
+	req := httptest.NewRequest("GET", "/billing/enabled", nil)
+	w := httptest.NewRecorder()
+
+	handler.GetBillingEnabled(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Billing status retrieved", response["message"])
+	assert.True(t, response["status"].(bool))
+
+	data := response["data"].(map[string]interface{})
+	assert.True(t, data["enabled"].(bool))
+}
+
+func TestBillingHandler_GetPlans(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/billing/plans", nil)
+	w := httptest.NewRecorder()
+
+	handler.GetPlans(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Plans retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_GetTaxIDTypes(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/billing/tax_id_types", nil)
+	w := httptest.NewRecorder()
+
+	handler.GetTaxIDTypes(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Tax ID types retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_GetInvoices(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/organisations/test-org/billing/invoices", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "test-org")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.GetInvoices(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Invoices retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_GetSubscription(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/organisations/test-org/billing/subscription", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "test-org")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.GetSubscription(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Subscription retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_CreateOrganisation(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	orgData := map[string]interface{}{
+		"name":          "Test Org",
+		"billing_email": "test@example.com",
+	}
+
+	body, _ := json.Marshal(orgData)
+	req := httptest.NewRequest("POST", "/organisations", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.CreateOrganisation(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Organisation created successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_GetOrganisation(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/organisations/org-1", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.GetOrganisation(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Organisation retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_UpdateOrganisation(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	orgData := map[string]interface{}{
+		"name": "Updated Org",
+	}
+
+	body, _ := json.Marshal(orgData)
+	req := httptest.NewRequest("PUT", "/organisations/org-1", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.UpdateOrganisation(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Organisation updated successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_GetPaymentMethods(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/organisations/test-org/billing/payment_methods", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "test-org")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.GetPaymentMethods(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Payment methods retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_CreateSubscription(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	subData := map[string]interface{}{
+		"plan_id": "plan-1",
+	}
+
+	body, _ := json.Marshal(subData)
+	req := httptest.NewRequest("POST", "/organisations/org-1/subscriptions", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.CreateSubscription(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Subscription created successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_UpdateSubscription(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	subData := map[string]interface{}{
+		"plan_id": "plan-2",
+	}
+
+	body, _ := json.Marshal(subData)
+	req := httptest.NewRequest("PUT", "/organisations/org-1/subscriptions", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.UpdateSubscription(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Subscription updated successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_DeleteSubscription(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("DELETE", "/organisations/org-1/subscriptions", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.DeleteSubscription(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Subscription deleted successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_CreatePaymentMethod(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	pmData := map[string]interface{}{
+		"payment_method_id": "pm_test_123",
+	}
+
+	body, _ := json.Marshal(pmData)
+	req := httptest.NewRequest("POST", "/organisations/org-1/payment_methods", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.CreatePaymentMethod(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Payment method created successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_DeletePaymentMethod(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("DELETE", "/organisations/org-1/payment_methods/pm-1", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	chiCtx.URLParams.Add("pmID", "pm-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.DeletePaymentMethod(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Payment method deleted successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_GetInvoice(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/organisations/org-1/billing/invoices/inv-1", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	chiCtx.URLParams.Add("invoiceID", "inv-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.GetInvoice(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Invoice retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_CreateBillingPaymentMethod(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	pmData := map[string]interface{}{
+		"payment_method_id": "pm_test_123",
+	}
+
+	body, _ := json.Marshal(pmData)
+	req := httptest.NewRequest("POST", "/billing/payment-method", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.CreateBillingPaymentMethod(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Payment method created successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_UpdateBillingAddress(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	addressData := map[string]interface{}{
+		"billing_address": "123 Main St",
+		"billing_city":    "New York",
+		"billing_state":   "NY",
+		"billing_zip":     "10001",
+		"billing_country": "US",
+	}
+
+	body, _ := json.Marshal(addressData)
+	req := httptest.NewRequest("POST", "/billing/address", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.UpdateBillingAddress(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Address updated successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_UpdateBillingTaxID(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	taxData := map[string]interface{}{
+		"tax_id_type": "ein",
+		"tax_number":  "12-3456789",
+	}
+
+	body, _ := json.Marshal(taxData)
+	req := httptest.NewRequest("POST", "/billing/tax-id", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.UpdateBillingTaxID(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Tax ID updated successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_GetSetupIntent(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/organisations/org-1/payment_methods/setup_intent", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.GetSetupIntent(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Setup intent retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_DownloadInvoice(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/organisations/org-1/billing/invoices/inv-1/download", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	chiCtx.URLParams.Add("invoiceID", "inv-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.DownloadInvoice(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+	assert.Equal(t, "attachment; filename=invoice-inv-1.pdf", w.Header().Get("Content-Disposition"))
+	assert.Equal(t, "fake pdf content", string(w.Body.Bytes()))
+}
+
+func TestBillingHandler_GetSubscriptions(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	req := httptest.NewRequest("GET", "/organisations/org-1/subscriptions", nil)
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.GetSubscriptions(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Subscriptions retrieved successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_UpdateOrganisationTaxID(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	taxData := map[string]interface{}{
+		"tax_id_type": "ein",
+		"tax_number":  "12-3456789",
+	}
+
+	body, _ := json.Marshal(taxData)
+	req := httptest.NewRequest("POST", "/organisations/org-1/tax_id", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.UpdateOrganisationTaxID(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Tax ID updated successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+func TestBillingHandler_UpdateOrganisationAddress(t *testing.T) {
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     "http://localhost:8080",
+		APIKey:  "test-key",
+	}
+
+	apiOptions := &types.APIOptions{
+		Cfg: config.Configuration{
+			Billing: cfg,
+		},
+	}
+
+	handler := &BillingHandler{
+		Handler: &Handler{
+			A: apiOptions,
+		},
+		BillingClient: &billing.MockBillingClient{},
+	}
+
+	addressData := map[string]interface{}{
+		"billing_address": "123 Main St",
+		"billing_city":    "New York",
+		"billing_state":   "NY",
+		"billing_zip":     "10001",
+		"billing_country": "US",
+	}
+
+	body, _ := json.Marshal(addressData)
+	req := httptest.NewRequest("POST", "/organisations/org-1/address", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	chiCtx := chi.NewRouteContext()
+	chiCtx.URLParams.Add("orgID", "org-1")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+	w := httptest.NewRecorder()
+
+	handler.UpdateOrganisationAddress(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	require.NoError(t, err)
+
+	assert.Equal(t, "Address updated successfully", response["message"])
+	assert.True(t, response["status"].(bool))
+}
+
+//
+//func (m *MockBillingClient) GetUsage(ctx context.Context, orgID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetInvoices(ctx context.Context, orgID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetPaymentMethods(ctx context.Context, orgID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetSubscription(ctx context.Context, orgID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetPlans(ctx context.Context) (*billing.Response, error) {
+//	args := m.Called(ctx)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetTaxIDTypes(ctx context.Context) (*billing.Response, error) {
+//	args := m.Called(ctx)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) CreateOrganisation(ctx context.Context, orgData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, orgData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetOrganisation(ctx context.Context, orgID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) UpdateOrganisation(ctx context.Context, orgID string, orgData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID, orgData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) UpdateOrganisationTaxID(ctx context.Context, orgID string, taxData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID, taxData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) UpdateOrganisationAddress(ctx context.Context, orgID string, addressData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID, addressData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetSubscriptions(ctx context.Context, orgID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) CreateSubscription(ctx context.Context, orgID string, subData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID, subData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) UpdateSubscription(ctx context.Context, orgID string, subData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID, subData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) DeleteSubscription(ctx context.Context, orgID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetSetupIntent(ctx context.Context, orgID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID, pmData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID, pmID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) GetInvoice(ctx context.Context, orgID, invoiceID string) (*billing.Response, error) {
+//	args := m.Called(ctx, orgID, invoiceID)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error) {
+//	args := m.Called(ctx, orgID, invoiceID)
+//	return args.Get(0).([]byte), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) CreateBillingPaymentMethod(ctx context.Context, pmData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, pmData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) UpdateBillingAddress(ctx context.Context, addressData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, addressData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func (m *MockBillingClient) UpdateBillingTaxID(ctx context.Context, taxData interface{}) (*billing.Response, error) {
+//	args := m.Called(ctx, taxData)
+//	return args.Get(0).(*billing.Response), args.Error(1)
+//}
+//
+//func setupBillingTest(t *testing.T) (*BillingHandler, *MockBillingClient) {
+//	mockClient := &MockBillingClient{}
+//
+//	handler := &BillingHandler{
+//		Handler: &Handler{
+//			A: &types.APIOptions{
+//				Cfg: config.Configuration{
+//					Billing: config.BillingConfiguration{
+//						Enabled: true,
+//						URL:     "http://localhost:8080",
+//						APIKey:  "test-key",
+//					},
+//				},
+//			},
+//		},
+//		Client: mockClient,
+//	}
+//
+//	return handler, mockClient
+//}
+//
+//func TestBillingHandler_GetBillingEnabled(t *testing.T) {
+//	handler, _ := setupBillingTest(t)
+//
+//	req := httptest.NewRequest("GET", "/billing/enabled", nil)
+//	w := httptest.NewRecorder()
+//
+//	handler.GetBillingEnabled(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//
+//	var response map[string]interface{}
+//	err := json.Unmarshal(w.Body.Bytes(), &response)
+//	require.NoError(t, err)
+//
+//	assert.True(t, response["status"].(bool))
+//	assert.Equal(t, "Billing status retrieved", response["message"])
+//
+//	data := response["data"].(map[string]interface{})
+//	assert.True(t, data["enabled"].(bool))
+//}
+//
+//func TestBillingHandler_GetUsage(t *testing.T) {
+//	t.Skip("Skipping GetUsage test due to database dependency - requires proper database setup")
+//}
+//
+//func TestBillingHandler_GetUsage_MissingOrgID(t *testing.T) {
+//	t.Skip("Skipping GetUsage_MissingOrgID test due to database dependency - requires proper database setup")
+//}
+//
+//func TestBillingHandler_GetInvoices(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedInvoices := []map[string]interface{}{
+//		{
+//			"id":     "inv-1",
+//			"number": "INV-001",
+//			"amount": 99.99,
+//		},
+//	}
+//
+//	mockClient.On("GetInvoices", mock.Anything, "test-org").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Invoices retrieved successfully",
+//		Data:    expectedInvoices,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/organisations/test-org/billing/invoices", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "test-org")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.GetInvoices(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_GetSubscription(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedSubscription := map[string]interface{}{
+//		"id":       "sub-1",
+//		"plan_id":  "plan-1",
+//		"status":   "active",
+//		"amount":   99.99,
+//		"currency": "USD",
+//	}
+//
+//	mockClient.On("GetSubscription", mock.Anything, "test-org").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Subscription retrieved successfully",
+//		Data:    expectedSubscription,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/organisations/test-org/billing/subscription", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "test-org")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.GetSubscription(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_GetPaymentMethods(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedPaymentMethods := []map[string]interface{}{
+//		{
+//			"id":        "pm-1",
+//			"type":      "card",
+//			"last4":     "4242",
+//			"brand":     "visa",
+//			"exp_month": 12,
+//			"exp_year":  2025,
+//		},
+//	}
+//
+//	mockClient.On("GetPaymentMethods", mock.Anything, "test-org").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Payment methods retrieved successfully",
+//		Data:    expectedPaymentMethods,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/organisations/test-org/billing/payment_methods", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "test-org")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.GetPaymentMethods(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_GetPlans(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedPlans := []map[string]interface{}{
+//		{
+//			"id":          "plan-1",
+//			"name":        "Basic",
+//			"description": "Basic plan",
+//			"price":       29.99,
+//			"currency":    "USD",
+//		},
+//	}
+//
+//	mockClient.On("GetPlans", mock.Anything).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Plans retrieved successfully",
+//		Data:    expectedPlans,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/billing/plans", nil)
+//	w := httptest.NewRecorder()
+//
+//	handler.GetPlans(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_GetTaxIDTypes(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedTaxIDTypes := []map[string]interface{}{
+//		{
+//			"id":          "ein",
+//			"name":        "EIN",
+//			"description": "Employer Identification Number",
+//			"country":     "US",
+//		},
+//	}
+//
+//	mockClient.On("GetTaxIDTypes", mock.Anything).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Tax ID types retrieved successfully",
+//		Data:    expectedTaxIDTypes,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/billing/tax_id_types", nil)
+//	w := httptest.NewRecorder()
+//
+//	handler.GetTaxIDTypes(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_CreateOrganisation(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	orgData := map[string]interface{}{
+//		"name":          "Test Org",
+//		"billing_email": "test@example.com",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":   "org-1",
+//		"name": "Test Org",
+//	}
+//
+//	mockClient.On("CreateOrganisation", mock.Anything, orgData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Organisation created successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(orgData)
+//	req := httptest.NewRequest("POST", "/organisations", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	w := httptest.NewRecorder()
+//
+//	handler.CreateOrganisation(w, req)
+//
+//	assert.Equal(t, http.StatusCreated, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_GetOrganisation(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedOrg := map[string]interface{}{
+//		"id":   "org-1",
+//		"name": "Test Org",
+//	}
+//
+//	mockClient.On("GetOrganisation", mock.Anything, "org-1").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Organisation retrieved successfully",
+//		Data:    expectedOrg,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/organisations/org-1", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.GetOrganisation(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_UpdateOrganisation(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	orgData := map[string]interface{}{
+//		"name": "Updated Org",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":   "org-1",
+//		"name": "Updated Org",
+//	}
+//
+//	mockClient.On("UpdateOrganisation", mock.Anything, "org-1", orgData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Organisation updated successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(orgData)
+//	req := httptest.NewRequest("PUT", "/organisations/org-1", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.UpdateOrganisation(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_UpdateOrganisationTaxID(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	taxData := map[string]interface{}{
+//		"tax_id_type": "ein",
+//		"tax_number":  "12-3456789",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":          "org-1",
+//		"tax_id_type": "ein",
+//		"tax_number":  "12-3456789",
+//	}
+//
+//	mockClient.On("UpdateOrganisationTaxID", mock.Anything, "org-1", taxData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Tax ID updated successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(taxData)
+//	req := httptest.NewRequest("POST", "/organisations/org-1/tax_id", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.UpdateOrganisationTaxID(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_UpdateOrganisationAddress(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	addressData := map[string]interface{}{
+//		"billing_address": "123 Main St",
+//		"billing_city":    "New York",
+//		"billing_state":   "NY",
+//		"billing_zip":     "10001",
+//		"billing_country": "US",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":              "org-1",
+//		"billing_address": "123 Main St",
+//		"billing_city":    "New York",
+//		"billing_state":   "NY",
+//		"billing_zip":     "10001",
+//		"billing_country": "US",
+//	}
+//
+//	mockClient.On("UpdateOrganisationAddress", mock.Anything, "org-1", addressData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Address updated successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(addressData)
+//	req := httptest.NewRequest("POST", "/organisations/org-1/address", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.UpdateOrganisationAddress(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_GetSubscriptions(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedSubscriptions := []map[string]interface{}{
+//		{
+//			"id":       "sub-1",
+//			"plan_id":  "plan-1",
+//			"status":   "active",
+//			"amount":   99.99,
+//			"currency": "USD",
+//		},
+//	}
+//
+//	mockClient.On("GetSubscriptions", mock.Anything, "org-1").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Subscriptions retrieved successfully",
+//		Data:    expectedSubscriptions,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/organisations/org-1/subscriptions", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.GetSubscriptions(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_CreateSubscription(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	subData := map[string]interface{}{
+//		"plan_id": "plan-1",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":      "sub-1",
+//		"plan_id": "plan-1",
+//		"status":  "active",
+//	}
+//
+//	mockClient.On("CreateSubscription", mock.Anything, "org-1", subData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Subscription created successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(subData)
+//	req := httptest.NewRequest("POST", "/organisations/org-1/subscriptions", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.CreateSubscription(w, req)
+//
+//	assert.Equal(t, http.StatusCreated, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_UpdateSubscription(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	subData := map[string]interface{}{
+//		"plan_id": "plan-2",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":      "sub-1",
+//		"plan_id": "plan-2",
+//		"status":  "active",
+//	}
+//
+//	mockClient.On("UpdateSubscription", mock.Anything, "org-1", subData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Subscription updated successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(subData)
+//	req := httptest.NewRequest("PUT", "/organisations/org-1/subscriptions", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.UpdateSubscription(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_DeleteSubscription(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":     "sub-1",
+//		"status": "cancelled",
+//	}
+//
+//	mockClient.On("DeleteSubscription", mock.Anything, "org-1").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Subscription deleted successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	req := httptest.NewRequest("DELETE", "/organisations/org-1/subscriptions", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.DeleteSubscription(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_GetSetupIntent(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedResponse := map[string]interface{}{
+//		"client_secret": "seti_test_secret",
+//	}
+//
+//	mockClient.On("GetSetupIntent", mock.Anything, "org-1").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Setup intent retrieved successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/organisations/org-1/payment_methods/setup_intent", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.GetSetupIntent(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_CreatePaymentMethod(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	pmData := map[string]interface{}{
+//		"payment_method_id": "pm_test_123",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":    "pm-1",
+//		"type":  "card",
+//		"last4": "4242",
+//		"brand": "visa",
+//	}
+//
+//	mockClient.On("CreatePaymentMethod", mock.Anything, "org-1", pmData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Payment method created successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(pmData)
+//	req := httptest.NewRequest("POST", "/organisations/org-1/payment_methods", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.CreatePaymentMethod(w, req)
+//
+//	assert.Equal(t, http.StatusCreated, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_DeletePaymentMethod(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":     "pm-1",
+//		"status": "deleted",
+//	}
+//
+//	mockClient.On("DeletePaymentMethod", mock.Anything, "org-1", "pm-1").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Payment method deleted successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	req := httptest.NewRequest("DELETE", "/organisations/org-1/payment_methods/pm-1", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	chiCtx.URLParams.Add("pmID", "pm-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.DeletePaymentMethod(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_GetInvoice(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	expectedInvoice := map[string]interface{}{
+//		"id":     "inv-1",
+//		"number": "INV-001",
+//		"amount": 99.99,
+//		"status": "paid",
+//	}
+//
+//	mockClient.On("GetInvoice", mock.Anything, "org-1", "inv-1").Return(&billing.Response{
+//		Status:  true,
+//		Message: "Invoice retrieved successfully",
+//		Data:    expectedInvoice,
+//	}, nil)
+//
+//	req := httptest.NewRequest("GET", "/organisations/org-1/billing/invoices/inv-1", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	chiCtx.URLParams.Add("invoiceID", "inv-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.GetInvoice(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_DownloadInvoice(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	pdfContent := []byte("fake pdf content")
+//
+//	mockClient.On("DownloadInvoice", mock.Anything, "org-1", "inv-1").Return(pdfContent, nil)
+//
+//	req := httptest.NewRequest("GET", "/organisations/org-1/billing/invoices/inv-1/download", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "org-1")
+//	chiCtx.URLParams.Add("invoiceID", "inv-1")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.DownloadInvoice(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+//	assert.Equal(t, "attachment; filename=invoice-inv-1.pdf", w.Header().Get("Content-Disposition"))
+//	assert.Equal(t, fmt.Sprintf("%d", len(pdfContent)), w.Header().Get("Content-Length"))
+//	assert.Equal(t, pdfContent, w.Body.Bytes())
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_CreateBillingPaymentMethod(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	pmData := map[string]interface{}{
+//		"payment_method_id": "pm_test_123",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"id":    "pm-1",
+//		"type":  "card",
+//		"last4": "4242",
+//		"brand": "visa",
+//	}
+//
+//	mockClient.On("CreateBillingPaymentMethod", mock.Anything, pmData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Payment method created successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(pmData)
+//	req := httptest.NewRequest("POST", "/billing/payment-method", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	w := httptest.NewRecorder()
+//
+//	handler.CreateBillingPaymentMethod(w, req)
+//
+//	assert.Equal(t, http.StatusCreated, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_UpdateBillingAddress(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	addressData := map[string]interface{}{
+//		"billing_address": "123 Main St",
+//		"billing_city":    "New York",
+//		"billing_state":   "NY",
+//		"billing_zip":     "10001",
+//		"billing_country": "US",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"billing_address": "123 Main St",
+//		"billing_city":    "New York",
+//		"billing_state":   "NY",
+//		"billing_zip":     "10001",
+//		"billing_country": "US",
+//	}
+//
+//	mockClient.On("UpdateBillingAddress", mock.Anything, addressData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Address updated successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(addressData)
+//	req := httptest.NewRequest("POST", "/billing/address", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	w := httptest.NewRecorder()
+//
+//	handler.UpdateBillingAddress(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_UpdateBillingTaxID(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	taxData := map[string]interface{}{
+//		"tax_id_type": "ein",
+//		"tax_number":  "12-3456789",
+//	}
+//
+//	expectedResponse := map[string]interface{}{
+//		"tax_id_type": "ein",
+//		"tax_number":  "12-3456789",
+//	}
+//
+//	mockClient.On("UpdateBillingTaxID", mock.Anything, taxData).Return(&billing.Response{
+//		Status:  true,
+//		Message: "Tax ID updated successfully",
+//		Data:    expectedResponse,
+//	}, nil)
+//
+//	body, _ := json.Marshal(taxData)
+//	req := httptest.NewRequest("POST", "/billing/tax-id", bytes.NewReader(body))
+//	req.Header.Set("Content-Type", "application/json")
+//	w := httptest.NewRecorder()
+//
+//	handler.UpdateBillingTaxID(w, req)
+//
+//	assert.Equal(t, http.StatusOK, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
+//
+//func TestBillingHandler_ErrorHandling(t *testing.T) {
+//	handler, mockClient := setupBillingTest(t)
+//
+//	mockClient.On("GetInvoices", mock.Anything, "test-org").Return(&billing.Response{
+//		Status:  false,
+//		Message: "Billing service error",
+//	}, fmt.Errorf("billing service error"))
+//
+//	req := httptest.NewRequest("GET", "/organisations/test-org/billing/invoices", nil)
+//	chiCtx := chi.NewRouteContext()
+//	chiCtx.URLParams.Add("orgID", "test-org")
+//	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
+//	w := httptest.NewRecorder()
+//
+//	handler.GetInvoices(w, req)
+//
+//	assert.Equal(t, http.StatusInternalServerError, w.Code)
+//	mockClient.AssertExpectations(t)
+//}
