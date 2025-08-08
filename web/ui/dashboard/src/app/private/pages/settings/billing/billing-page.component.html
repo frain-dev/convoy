@@ -5,7 +5,6 @@
 <app-billing-usage></app-billing-usage>
 <app-billing-invoices></app-billing-invoices>
 
-<!-- Payment Details Sidebar -->
 <dialog #paymentDetailsDialog convoy-dialog>
   <div convoy-dialog-header (closeDialog)="closePaymentDetails()">
     <h2 class="font-semibold text-14">Update payment details</h2>
@@ -13,7 +12,6 @@
 
   <div class="h-full w-full">
     <div class="p-20px">
-      <!-- Payment Method Section -->
       <div class="mb-32px">
         <div class="flex items-center justify-between mb-16px">
           <h3 class="billing-section-title">Payment method</h3>
@@ -27,7 +25,6 @@
           </button>
         </div>
 
-        <!-- Show existing payment method details -->
         <div *ngIf="!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethodDetails" class="billing-details-display">
           <div class="flex items-center gap-8px">
             <div [innerHTML]="getCardIconSvg()"></div>
@@ -35,7 +32,6 @@
           </div>
         </div>
 
-        <!-- Show loading state -->
         <div *ngIf="isLoadingPaymentMethod" class="billing-details-display">
           <div class="animate-pulse">
             <div class="h-20px bg-neutral-8 rounded mb-8px"></div>
@@ -43,7 +39,6 @@
           </div>
         </div>
 
-        <!-- Show edit form -->
         <form *ngIf="isEditingPaymentMethod" [formGroup]="paymentMethodForm" class="mb-16px">
           <div class="flex gap-12px">
             <convoy-input-field>
@@ -93,11 +88,9 @@
       </div>
     </div>
 
-    <!-- Divider -->
     <div class="border-b border-neutral-4"></div>
 
     <div class="p-20px">
-      <!-- Billing Address Section -->
       <div class="mb-32px">
         <div class="flex items-center justify-between mb-16px">
           <h3 class="billing-section-title">Billing address</h3>
@@ -111,7 +104,6 @@
           </button>
         </div>
 
-        <!-- Show existing billing address -->
         <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && billingAddressDetails" class="billing-details-display">
           <div class="text-14 font-medium mb-8px">{{ billingAddressDetails.name }}</div>
           <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
@@ -119,7 +111,6 @@
           <div class="text-12 text-neutral-11">{{ billingAddressDetails.city }}, {{ billingAddressDetails.zipCode }}</div>
         </div>
 
-        <!-- Show loading state -->
         <div *ngIf="isLoadingBillingAddress" class="billing-details-display">
           <div class="animate-pulse">
             <div class="h-14px bg-neutral-8 rounded mb-8px"></div>
@@ -128,7 +119,6 @@
           </div>
         </div>
 
-        <!-- Show edit form -->
         <form *ngIf="isEditingBillingAddress" [formGroup]="billingAddressForm" class="mb-16px">
           <convoy-input-field>
             <label for="billingName" convoy-label required="true">Name</label>
@@ -198,11 +188,9 @@
       </div>
     </div>
 
-    <!-- Divider -->
     <div class="border-b border-neutral-4"></div>
 
     <div class="p-20px">
-      <!-- VAT Section -->
       <div class="mb-32px">
         <div class="flex items-center justify-between mb-16px">
           <h3 class="billing-section-title">VAT</h3>
@@ -211,19 +199,17 @@
             class="text-primary-600 hover:text-primary-700"
             (click)="startEditingVat()">
             <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5m-1.414-9.414a2 2 0 1 1 2.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
             </svg>
           </button>
         </div>
 
-        <!-- Show existing VAT info -->
         <div *ngIf="!isEditingVat && !isLoadingVat && vatInfoDetails" class="billing-details-display">
           <div class="text-14 font-medium mb-8px">{{ vatInfoDetails.businessName }}</div>
           <div class="text-12 text-neutral-11 mb-4px">{{ getCountryName(vatInfoDetails.country) }}</div>
           <div class="text-12 text-neutral-11">{{ vatInfoDetails.vatNumber }}</div>
         </div>
 
-        <!-- Show loading state -->
         <div *ngIf="isLoadingVat" class="billing-details-display">
           <div class="animate-pulse">
             <div class="h-14px bg-neutral-8 rounded mb-8px"></div>
@@ -232,7 +218,6 @@
           </div>
         </div>
 
-        <!-- Show edit form -->
         <form *ngIf="isEditingVat" [formGroup]="vatForm">
           <convoy-input-field>
             <label for="businessName" convoy-label required="true">Business name</label>

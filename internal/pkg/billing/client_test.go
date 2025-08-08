@@ -17,11 +17,13 @@ func setupTestClient(t *testing.T) (*HTTPClient, *httptest.Server) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(Response{
+		if err := json.NewEncoder(w).Encode(Response{
 			Status:  true,
 			Message: "Success",
 			Data:    map[string]interface{}{"test": "data"},
-		})
+		}); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
 	}))
 
 	cfg := config.BillingConfiguration{
@@ -38,7 +40,9 @@ func setupTestClientWithResponse(t *testing.T, response Response, statusCode int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
 	}))
 
 	cfg := config.BillingConfiguration{
@@ -380,7 +384,9 @@ func TestClient_DownloadInvoice_Success(t *testing.T) {
 		assert.Equal(t, "/organisations/test-org/invoices/inv-1/download", r.URL.Path)
 		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
 		w.Header().Set("Content-Type", "application/pdf")
-		w.Write(pdfContent)
+		if _, err := w.Write(pdfContent); err != nil {
+			t.Errorf("failed to write response: %v", err)
+		}
 	}))
 
 	cfg := config.BillingConfiguration{
@@ -497,10 +503,12 @@ func TestClient_makeRequest_Disabled(t *testing.T) {
 func TestClient_makeRequest_ServerError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(Response{
+		if err := json.NewEncoder(w).Encode(Response{
 			Status:  false,
 			Message: "Server error",
-		})
+		}); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
 	}))
 
 	cfg := config.BillingConfiguration{
@@ -523,7 +531,9 @@ func TestClient_makeRequest_InvalidJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("invalid json"))
+		if _, err := w.Write([]byte("invalid json")); err != nil {
+			t.Errorf("failed to write response: %v", err)
+		}
 	}))
 
 	cfg := config.BillingConfiguration{
@@ -548,16 +558,20 @@ func TestClient_makeRequest_WithBody(t *testing.T) {
 		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
 
 		var body map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&body)
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Errorf("failed to decode request body: %v", err)
+		}
 		assert.Equal(t, "test value", body["test"])
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(Response{
+		if err := json.NewEncoder(w).Encode(Response{
 			Status:  true,
 			Message: "Success",
 			Data:    body,
-		})
+		}); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
 	}))
 
 	cfg := config.BillingConfiguration{

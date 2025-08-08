@@ -3,13 +3,9 @@
   background: transparent;
   border: none;
   border-radius: 0;
-  margin-bottom: 0; // Removed margin completely
+  margin-bottom: 0;
 }
 
-// Modal title styling
-// Removed custom styling as it now uses standard classes in HTML
-
-// Section headers styling - use the same as main billing page
 .billing-section-title {
   color: var(--Zinc-600, #52525B);
   font-family: 'Open Sauce Sans', Arial, sans-serif;
@@ -18,61 +14,53 @@
   font-weight: 400;
   line-height: 20px;
   align-self: stretch;
-  margin-bottom: 0; // Removed margin completely
+  margin-bottom: 0;
 }
 
-// Content alignment - remove padding from billing-details-display and add proper spacing
 .billing-details-display {
   padding: 0 0 0 0;
   margin-bottom: 32px;
 }
 
-// Add dividers between sections
 .billing-details-display:not(:last-child) {
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 32px;
 }
 
-// Section content alignment
 .billing-details-display .text-14,
 .billing-details-display .text-12 {
   margin: 0;
   padding: 0;
 }
 
-// Card last4 styling - match main billing page
 .billing-details-display .text-14.font-medium {
   color: #030712;
   font-size: 18px;
   font-weight: 400;
   line-height: 28px;
-  margin-bottom: 8px; // Added spacing below card number
+  margin-bottom: 8px;
 }
 
-// Name and VAT name styling - smaller than section title
 .billing-details-display .text-14.font-medium:first-child {
   color: #374151;
   font-size: 12px;
   font-weight: 400;
   line-height: 16px;
-  margin-bottom: 8px; // Added spacing below names
+  margin-bottom: 8px;
 }
 
-// All sub-text styling - consistent for address lines, expiry date, etc.
 .billing-details-display .text-12.text-neutral-11 {
   color: #6b7280;
   font-size: 12px;
   font-weight: 400;
   line-height: 16px;
-  margin-bottom: 4px; // Added spacing between address lines
+  margin-bottom: 4px;
 }
 
-// Remove margin from last sub-text element to avoid extra spacing
 .billing-details-display .text-12.text-neutral-11:last-child {
   margin-bottom: 0;
 }
 
-// Edit button alignment
 button.text-primary-600 {
   transition: color 0.2s ease;
   
@@ -89,14 +77,12 @@ button.text-primary-600 {
   }
 }
 
-// Form button spacing
 .flex.gap-12px.justify-end {
   button {
     min-width: 80px;
   }
 }
 
-// Loading skeleton styles
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   

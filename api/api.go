@@ -515,7 +515,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 				orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
 			})
 
-			// NEW: POST/PUT/DELETE billing endpoints
 			// Organisations
 			uiRouter.Post("/organisations", billingHandler.CreateOrganisation)
 			uiRouter.Get("/organisations/{orgID}", billingHandler.GetOrganisation)

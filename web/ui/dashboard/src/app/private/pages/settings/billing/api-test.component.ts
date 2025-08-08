@@ -79,15 +79,12 @@ export class ApiTestComponent implements OnInit {
   private analyzeResponse(response: CountriesResponse) {
     if (!response.data) return;
 
-    // Get unique countries
     const countrySet = new Set<string>();
     response.data.forEach(city => countrySet.add(city.country));
     this.uniqueCountries = Array.from(countrySet).sort();
 
-    // Get sample city
     this.sampleCity = response.data[0];
 
-    // Count cities per country
     const countryCounts = new Map<string, number>();
     response.data.forEach(city => {
       const count = countryCounts.get(city.country) || 0;

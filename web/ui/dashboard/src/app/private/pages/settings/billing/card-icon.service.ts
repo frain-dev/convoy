@@ -41,6 +41,6 @@ export class CardIconService {
       return this.sanitizer.bypassSecurityTrustHtml(svg);
     }
 
-    return this.sanitizer.bypassSecurityTrustHtml(''); // Default empty if no match
+    return this.sanitizer.bypassSecurityTrustHtml('');
   }
 }
