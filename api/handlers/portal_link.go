@@ -267,8 +267,8 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID		path		string				true	"Project ID"
-//	@Param			portalLinkID	path		string				true	"portal link id"
+//	@Param			projectID		path		string	true	"Project ID"
+//	@Param			portalLinkID	path		string	true	"portal link id"
 //	@Success		200				{object}	util.ServerResponse{data=string}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
