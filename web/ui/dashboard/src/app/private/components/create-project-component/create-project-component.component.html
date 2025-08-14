@@ -317,7 +317,7 @@
 
 			<ng-container *ngIf="activeTab.label === 'circuit breaker'">
 				<h3 class="text-16 font-bold text-neutral-10 mb-24px" *ngIf="action === 'update'">Circuit Breaker Configuration</h3>
-				
+
 				<div class="text-12 text-neutral-11 mb-24px">
 					Circuit breaker settings control how endpoints are automatically disabled when they fail too frequently.
 					These settings are read-only and can only be modified via the CLI.
@@ -388,7 +388,7 @@
 						</svg>
 						<div class="text-12 text-blue-700">
 							<strong>Note:</strong> Circuit breaker configuration can only be modified using the CLI command:<br>
-							<code class="bg-blue-100 px-8px py-4px rounded text-10">convoy util circuit-breakers update [breaker-id] --cb_failure_threshold=70 --cb_success_threshold=5</code>
+							<code class="bg-blue-100 px-8px py-4px rounded text-10">convoy util circuit-breakers update [endpoint-id] --failure_threshold=70 --success_threshold=5</code>
 						</div>
 					</div>
 				</div>
