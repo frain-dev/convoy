@@ -36,7 +36,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				TotalEvents:     10,
 				ProcessedEvents: 0,
 				FailedEvents:    0,
-				Filter: &datastore.Filter{
+				Filter: datastore.FromFilterStruct(datastore.Filter{
 					Project:     &datastore.Project{UID: "project-1"},
 					EndpointIDs: []string{"endpoint-1"},
 					EventID:     "event-1",
@@ -45,7 +45,7 @@ func TestProcessBatchRetry(t *testing.T) {
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
-				},
+				}),
 			},
 			dbFn: func(br *mocks.MockBatchRetryRepository, ed *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer) {
 				// Check for active batch retry
@@ -153,7 +153,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				ID:        "batch-retry-1",
 				ProjectID: "project-1",
 				Status:    datastore.BatchRetryStatusPending,
-				Filter: &datastore.Filter{
+				Filter: datastore.FromFilterStruct(datastore.Filter{
 					Project:     &datastore.Project{UID: "project-1"},
 					EndpointIDs: []string{"endpoint-1"},
 					EventID:     "event-1",
@@ -162,7 +162,7 @@ func TestProcessBatchRetry(t *testing.T) {
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
-				},
+				}),
 			},
 			dbFn: func(br *mocks.MockBatchRetryRepository, ed *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer) {
 				// Check for active batch retry
@@ -202,7 +202,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				ID:        "batch-retry-1",
 				ProjectID: "project-1",
 				Status:    datastore.BatchRetryStatusPending,
-				Filter: &datastore.Filter{
+				Filter: datastore.FromFilterStruct(datastore.Filter{
 					Project:     &datastore.Project{UID: "project-1"},
 					EndpointIDs: []string{"endpoint-1"},
 					EventID:     "event-1",
@@ -211,7 +211,7 @@ func TestProcessBatchRetry(t *testing.T) {
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
-				},
+				}),
 			},
 			dbFn: func(br *mocks.MockBatchRetryRepository, ed *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer) {
 				br.EXPECT().
@@ -271,7 +271,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				ID:        "batch-retry-1",
 				ProjectID: "project-1",
 				Status:    datastore.BatchRetryStatusPending,
-				Filter: &datastore.Filter{
+				Filter: datastore.FromFilterStruct(datastore.Filter{
 					Project:     &datastore.Project{UID: "project-1"},
 					EndpointIDs: []string{"endpoint-1"},
 					EventID:     "event-1",
@@ -280,7 +280,7 @@ func TestProcessBatchRetry(t *testing.T) {
 						Direction:  datastore.Next,
 						NextCursor: datastore.DefaultCursor,
 					},
-				},
+				}),
 			},
 			dbFn: func(br *mocks.MockBatchRetryRepository, ed *mocks.MockEventDeliveryRepository, q *mocks.MockQueuer) {
 				br.EXPECT().
