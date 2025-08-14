@@ -79,13 +79,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	both := map[string]int{
 		string(convoy.EventQueue):         4,
-		string(convoy.CreateEventQueue):   3,
-		string(convoy.RetryEventQueue):    2,
+		string(convoy.CreateEventQueue):   4,
+		string(convoy.EventWorkflowQueue): 3,
+		string(convoy.RetryEventQueue):    1,
 		string(convoy.ScheduleQueue):      1,
 		string(convoy.DefaultQueue):       1,
 		string(convoy.MetaEventQueue):     1,
-		string(convoy.BatchRetryQueue):    2,
-		string(convoy.EventWorkflowQueue): 3,
+		string(convoy.BatchRetryQueue):    1,
 	}
 
 	if !a.Licenser.AgentExecutionMode() {
@@ -108,6 +108,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	default:
 		return fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
 	}
+
+	lo.Infof("queues: %+v\n", queueNames)
 
 	opts := queue.QueueOptions{
 		Names:             queueNames,
