@@ -35,7 +35,7 @@ func AddCircuitBreakersCommand(a *cli.App) *cobra.Command {
 
 func AddCircuitBreakersGetCommand(a *cli.App) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "get [breaker-id]",
+		Use:   "get [endpoint-id]",
 		Short: "get circuit breaker information",
 		Long:  "get detailed information about a specific circuit breaker",
 		Args:  cobra.ExactArgs(1),
@@ -109,15 +109,15 @@ func AddCircuitBreakersGetCommand(a *cli.App) *cobra.Command {
 
 func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 	var (
-		cbFailureThreshold            uint64
-		cbSuccessThreshold            uint64
-		cbMinimumRequestCount         uint64
-		cbObservabilityWindow         uint64
-		cbConsecutiveFailureThreshold uint64
+		failureThreshold            uint64
+		successThreshold            uint64
+		minimumRequestCount         uint64
+		observabilityWindow         uint64
+		consecutiveFailureThreshold uint64
 	)
 
 	cmd := &cobra.Command{
-		Use:   "update [breaker-id]",
+		Use:   "update [endpoint-id]",
 		Short: "update circuit breaker configuration",
 		Long:  "update circuit breaker configuration for a specific project",
 		Args:  cobra.ExactArgs(1),
@@ -128,19 +128,19 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 			breakerID = strings.TrimPrefix(breakerID, "breaker:")
 
 			// Validate flag ranges before any work
-			if cmd.Flags().Changed("cb_failure_threshold") {
-				if cbFailureThreshold > 100 {
-					return fmt.Errorf("cb_failure_threshold must be between 0 and 100")
+			if cmd.Flags().Changed("failure_threshold") {
+				if failureThreshold > 100 {
+					return fmt.Errorf("failure_threshold must be between 0 and 100")
 				}
 			}
-			if cmd.Flags().Changed("cb_success_threshold") {
-				if cbSuccessThreshold > 100 {
-					return fmt.Errorf("cb_success_threshold must be between 0 and 100")
+			if cmd.Flags().Changed("success_threshold") {
+				if successThreshold > 100 {
+					return fmt.Errorf("success_threshold must be between 0 and 100")
 				}
 			}
-			if cmd.Flags().Changed("cb_observability_window") {
-				if cbObservabilityWindow == 0 {
-					return fmt.Errorf("cb_observability_window must be greater than 0")
+			if cmd.Flags().Changed("observability_window") {
+				if observabilityWindow == 0 {
+					return fmt.Errorf("observability_window must be greater than 0")
 				}
 			}
 
@@ -198,24 +198,24 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 
 			// Update circuit breaker configuration if flags are provided
 			updated := false
-			if cmd.Flags().Changed("cb_failure_threshold") {
-				project.Config.CircuitBreaker.FailureThreshold = cbFailureThreshold
+			if cmd.Flags().Changed("failure_threshold") {
+				project.Config.CircuitBreaker.FailureThreshold = failureThreshold
 				updated = true
 			}
-			if cmd.Flags().Changed("cb_success_threshold") {
-				project.Config.CircuitBreaker.SuccessThreshold = cbSuccessThreshold
+			if cmd.Flags().Changed("success_threshold") {
+				project.Config.CircuitBreaker.SuccessThreshold = successThreshold
 				updated = true
 			}
-			if cmd.Flags().Changed("cb_minimum_request_count") {
-				project.Config.CircuitBreaker.MinimumRequestCount = cbMinimumRequestCount
+			if cmd.Flags().Changed("minimum_request_count") {
+				project.Config.CircuitBreaker.MinimumRequestCount = minimumRequestCount
 				updated = true
 			}
-			if cmd.Flags().Changed("cb_observability_window") {
-				project.Config.CircuitBreaker.ObservabilityWindow = cbObservabilityWindow
+			if cmd.Flags().Changed("observability_window") {
+				project.Config.CircuitBreaker.ObservabilityWindow = observabilityWindow
 				updated = true
 			}
-			if cmd.Flags().Changed("cb_consecutive_failure_threshold") {
-				project.Config.CircuitBreaker.ConsecutiveFailureThreshold = cbConsecutiveFailureThreshold
+			if cmd.Flags().Changed("consecutive_failure_threshold") {
+				project.Config.CircuitBreaker.ConsecutiveFailureThreshold = consecutiveFailureThreshold
 				updated = true
 			}
 
@@ -251,24 +251,24 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 
 			// Display current configuration
 			fmt.Println("\nCurrent circuit breaker configuration:")
-			fmt.Printf("cb_sample_rate                   | %d -- cannot be changed\n", project.Config.CircuitBreaker.SampleRate)
-			fmt.Printf("cb_error_timeout                 | %d -- cannot be changed\n", project.Config.CircuitBreaker.ErrorTimeout)
-			fmt.Printf("cb_failure_threshold             | %d\n", project.Config.CircuitBreaker.FailureThreshold)
-			fmt.Printf("cb_success_threshold             | %d\n", project.Config.CircuitBreaker.SuccessThreshold)
-			fmt.Printf("cb_observability_window          | %d\n", project.Config.CircuitBreaker.ObservabilityWindow)
-			fmt.Printf("cb_minimum_request_count         | %d\n", project.Config.CircuitBreaker.MinimumRequestCount)
-			fmt.Printf("cb_consecutive_failure_threshold | %d\n", project.Config.CircuitBreaker.ConsecutiveFailureThreshold)
+			fmt.Printf("sample_rate                   | %d -- cannot be changed\n", project.Config.CircuitBreaker.SampleRate)
+			fmt.Printf("error_timeout                 | %d -- cannot be changed\n", project.Config.CircuitBreaker.ErrorTimeout)
+			fmt.Printf("failure_threshold             | %d\n", project.Config.CircuitBreaker.FailureThreshold)
+			fmt.Printf("success_threshold             | %d\n", project.Config.CircuitBreaker.SuccessThreshold)
+			fmt.Printf("observability_window          | %d\n", project.Config.CircuitBreaker.ObservabilityWindow)
+			fmt.Printf("minimum_request_count         | %d\n", project.Config.CircuitBreaker.MinimumRequestCount)
+			fmt.Printf("consecutive_failure_threshold | %d\n", project.Config.CircuitBreaker.ConsecutiveFailureThreshold)
 
 			return nil
 		},
 	}
 
 	// Add flags for configurable parameters
-	cmd.Flags().Uint64Var(&cbFailureThreshold, "cb_failure_threshold", 0, "failure threshold percentage")
-	cmd.Flags().Uint64Var(&cbSuccessThreshold, "cb_success_threshold", 0, "success threshold percentage")
-	cmd.Flags().Uint64Var(&cbMinimumRequestCount, "cb_minimum_request_count", 0, "minimum request count")
-	cmd.Flags().Uint64Var(&cbObservabilityWindow, "cb_observability_window", 0, "observability window in minutes")
-	cmd.Flags().Uint64Var(&cbConsecutiveFailureThreshold, "cb_consecutive_failure_threshold", 0, "consecutive failure threshold")
+	cmd.Flags().Uint64Var(&failureThreshold, "failure_threshold", 0, "failure threshold percentage")
+	cmd.Flags().Uint64Var(&successThreshold, "success_threshold", 0, "success threshold percentage")
+	cmd.Flags().Uint64Var(&minimumRequestCount, "minimum_request_count", 0, "minimum request count")
+	cmd.Flags().Uint64Var(&observabilityWindow, "observability_window", 0, "observability window in minutes")
+	cmd.Flags().Uint64Var(&consecutiveFailureThreshold, "consecutive_failure_threshold", 0, "consecutive failure threshold")
 
 	return cmd
 }
