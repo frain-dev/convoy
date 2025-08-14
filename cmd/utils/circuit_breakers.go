@@ -1,0 +1,274 @@
+package utils
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/frain-dev/convoy/pkg/log"
+	"os"
+	"strings"
+
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/cli"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/spf13/cobra"
+)
+
+func AddCircuitBreakersCommand(a *cli.App) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "circuit-breakers",
+		Short: "manage circuit breakers",
+		Long:  "manage circuit breakers for endpoints",
+		Annotations: map[string]string{
+			"CheckMigration":  "true",
+			"ShouldBootstrap": "false",
+		},
+	}
+
+	cmd.AddCommand(AddCircuitBreakersGetCommand(a))
+	cmd.AddCommand(AddCircuitBreakersUpdateCommand(a))
+
+	return cmd
+}
+
+func AddCircuitBreakersGetCommand(a *cli.App) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "get [breaker-id]",
+		Short: "get circuit breaker information",
+		Long:  "get detailed information about a specific circuit breaker",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			breakerID := args[0]
+
+			// Remove the "breaker:" prefix if present
+			breakerID = strings.TrimPrefix(breakerID, "breaker:")
+
+			// Create circuit breaker manager with config provider
+			cbManager, err := cb.NewCircuitBreakerManager(
+				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
+					// For get command, we don't have projectID yet, so use defaults
+					// The actual project config will be fetched when needed
+					return &cb.CircuitBreakerConfig{
+						SampleRate:                  datastore.DefaultCircuitBreakerConfiguration.SampleRate,
+						BreakerTimeout:              datastore.DefaultCircuitBreakerConfiguration.ErrorTimeout,
+						FailureThreshold:            datastore.DefaultCircuitBreakerConfiguration.FailureThreshold,
+						SuccessThreshold:            datastore.DefaultCircuitBreakerConfiguration.SuccessThreshold,
+						ObservabilityWindow:         datastore.DefaultCircuitBreakerConfiguration.ObservabilityWindow,
+						MinimumRequestCount:         datastore.DefaultCircuitBreakerConfiguration.MinimumRequestCount,
+						ConsecutiveFailureThreshold: datastore.DefaultCircuitBreakerConfiguration.ConsecutiveFailureThreshold,
+					}
+				}),
+				cb.StoreOption(cb.NewRedisStore(a.Redis, clock.NewRealClock())),
+				cb.ClockOption(clock.NewRealClock()),
+				cb.LoggerOption(log.NewLogger(os.Stdout)),
+			)
+			if err != nil {
+				return fmt.Errorf("failed to create circuit breaker manager: %v", err)
+			}
+
+			// Get circuit breaker
+			breaker, err := cbManager.GetCircuitBreakerWithError(context.Background(), breakerID)
+			if err != nil {
+				return fmt.Errorf("failed to get circuit breaker: %v", err)
+			}
+
+			if breaker == nil {
+				return fmt.Errorf("circuit breaker not found")
+			}
+
+			// Format output
+			output := map[string]interface{}{
+				"key":                  fmt.Sprintf("breaker:%s", breakerID),
+				"tenant_id":            breaker.TenantId,
+				"state":                breaker.State,
+				"requests":             breaker.Requests,
+				"failure_rate":         breaker.FailureRate,
+				"success_rate":         breaker.SuccessRate,
+				"will_reset_at":        breaker.WillResetAt,
+				"total_failures":       breaker.TotalFailures,
+				"total_successes":      breaker.TotalSuccesses,
+				"consecutive_failures": breaker.ConsecutiveFailures,
+				"notifications_sent":   breaker.NotificationsSent,
+			}
+
+			// Print as JSON
+			jsonOutput, err := json.MarshalIndent(output, "", "  ")
+			if err != nil {
+				return fmt.Errorf("failed to marshal output: %v", err)
+			}
+
+			fmt.Println(string(jsonOutput))
+			return nil
+		},
+	}
+
+	return cmd
+}
+
+func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
+	var (
+		cbFailureThreshold            uint64
+		cbSuccessThreshold            uint64
+		cbMinimumRequestCount         uint64
+		cbObservabilityWindow         uint64
+		cbConsecutiveFailureThreshold uint64
+	)
+
+	cmd := &cobra.Command{
+		Use:   "update [breaker-id]",
+		Short: "update circuit breaker configuration",
+		Long:  "update circuit breaker configuration for a specific project",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			breakerID := args[0]
+
+			// Remove the "breaker:" prefix if present
+			breakerID = strings.TrimPrefix(breakerID, "breaker:")
+
+			// Validate flag ranges before any work
+			if cmd.Flags().Changed("cb_failure_threshold") {
+				if cbFailureThreshold > 100 {
+					return fmt.Errorf("cb_failure_threshold must be between 0 and 100")
+				}
+			}
+			if cmd.Flags().Changed("cb_success_threshold") {
+				if cbSuccessThreshold > 100 {
+					return fmt.Errorf("cb_success_threshold must be between 0 and 100")
+				}
+			}
+			if cmd.Flags().Changed("cb_observability_window") {
+				if cbObservabilityWindow == 0 {
+					return fmt.Errorf("cb_observability_window must be greater than 0")
+				}
+			}
+
+			// Create circuit breaker manager with config provider
+			cbManager, err := cb.NewCircuitBreakerManager(
+				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
+					// For now, use defaults since we don't have projectRepo yet
+					// The actual project config will be fetched later when updating
+					return &cb.CircuitBreakerConfig{
+						SampleRate:                  datastore.DefaultCircuitBreakerConfiguration.SampleRate,
+						BreakerTimeout:              datastore.DefaultCircuitBreakerConfiguration.ErrorTimeout,
+						FailureThreshold:            datastore.DefaultCircuitBreakerConfiguration.FailureThreshold,
+						SuccessThreshold:            datastore.DefaultCircuitBreakerConfiguration.SuccessThreshold,
+						ObservabilityWindow:         datastore.DefaultCircuitBreakerConfiguration.ObservabilityWindow,
+						MinimumRequestCount:         datastore.DefaultCircuitBreakerConfiguration.MinimumRequestCount,
+						ConsecutiveFailureThreshold: datastore.DefaultCircuitBreakerConfiguration.ConsecutiveFailureThreshold,
+					}
+				}),
+				cb.StoreOption(cb.NewRedisStore(a.Redis, clock.NewRealClock())),
+				cb.ClockOption(clock.NewRealClock()),
+				cb.LoggerOption(log.NewLogger(os.Stdout)),
+			)
+			if err != nil {
+				return fmt.Errorf("failed to create circuit breaker manager: %v", err)
+			}
+
+			// Get circuit breaker to find the project ID
+			breaker, err := cbManager.GetCircuitBreakerWithError(context.Background(), breakerID)
+			if err != nil {
+				return fmt.Errorf("failed to get circuit breaker: %v", err)
+			}
+
+			if breaker == nil {
+				return fmt.Errorf("circuit breaker not found")
+			}
+
+			projectID := breaker.TenantId
+
+			// Get current project configuration
+			projectRepo := postgres.NewProjectRepo(a.DB)
+			project, err := projectRepo.FetchProjectByID(context.Background(), projectID)
+			if err != nil {
+				return fmt.Errorf("failed to fetch project: %v", err)
+			}
+
+			// Initialize project config if it doesn't exist
+			if project.Config == nil {
+				project.Config = &datastore.ProjectConfig{}
+			}
+
+			// Initialize circuit breaker configuration if it doesn't exist
+			if project.Config.CircuitBreaker == nil {
+				project.Config.CircuitBreaker = &datastore.DefaultCircuitBreakerConfiguration
+			}
+
+			// Update circuit breaker configuration if flags are provided
+			updated := false
+			if cmd.Flags().Changed("cb_failure_threshold") {
+				project.Config.CircuitBreaker.FailureThreshold = cbFailureThreshold
+				updated = true
+			}
+			if cmd.Flags().Changed("cb_success_threshold") {
+				project.Config.CircuitBreaker.SuccessThreshold = cbSuccessThreshold
+				updated = true
+			}
+			if cmd.Flags().Changed("cb_minimum_request_count") {
+				project.Config.CircuitBreaker.MinimumRequestCount = cbMinimumRequestCount
+				updated = true
+			}
+			if cmd.Flags().Changed("cb_observability_window") {
+				project.Config.CircuitBreaker.ObservabilityWindow = cbObservabilityWindow
+				updated = true
+			}
+			if cmd.Flags().Changed("cb_consecutive_failure_threshold") {
+				project.Config.CircuitBreaker.ConsecutiveFailureThreshold = cbConsecutiveFailureThreshold
+				updated = true
+			}
+
+			if updated {
+				// Validate updated configuration using circuit breaker validation rules
+				validateCfg := cb.CircuitBreakerConfig{
+					SampleRate:                  project.Config.CircuitBreaker.SampleRate,
+					BreakerTimeout:              project.Config.CircuitBreaker.ErrorTimeout,
+					FailureThreshold:            project.Config.CircuitBreaker.FailureThreshold,
+					SuccessThreshold:            project.Config.CircuitBreaker.SuccessThreshold,
+					ObservabilityWindow:         project.Config.CircuitBreaker.ObservabilityWindow,
+					MinimumRequestCount:         project.Config.CircuitBreaker.MinimumRequestCount,
+					ConsecutiveFailureThreshold: project.Config.CircuitBreaker.ConsecutiveFailureThreshold,
+				}
+				if err := validateCfg.Validate(); err != nil {
+					return fmt.Errorf("invalid circuit breaker configuration: %v", err)
+				}
+
+				// Update project configuration
+				err = projectRepo.UpdateProject(context.Background(), project)
+				if err != nil {
+					return fmt.Errorf("failed to update project configuration: %v", err)
+				}
+
+				// Reset breaker state in Redis so new config takes immediate effect
+				// Ignore errors here; it's best-effort
+				_ = a.Redis.Del(context.Background(), "breaker:"+breakerID).Err()
+
+				fmt.Println("Circuit breaker configuration updated successfully")
+			} else {
+				fmt.Println("No changes made to circuit breaker configuration")
+			}
+
+			// Display current configuration
+			fmt.Println("\nCurrent circuit breaker configuration:")
+			fmt.Printf("cb_sample_rate                   | %d -- cannot be changed\n", project.Config.CircuitBreaker.SampleRate)
+			fmt.Printf("cb_error_timeout                 | %d -- cannot be changed\n", project.Config.CircuitBreaker.ErrorTimeout)
+			fmt.Printf("cb_failure_threshold             | %d\n", project.Config.CircuitBreaker.FailureThreshold)
+			fmt.Printf("cb_success_threshold             | %d\n", project.Config.CircuitBreaker.SuccessThreshold)
+			fmt.Printf("cb_observability_window          | %d\n", project.Config.CircuitBreaker.ObservabilityWindow)
+			fmt.Printf("cb_minimum_request_count         | %d\n", project.Config.CircuitBreaker.MinimumRequestCount)
+			fmt.Printf("cb_consecutive_failure_threshold | %d\n", project.Config.CircuitBreaker.ConsecutiveFailureThreshold)
+
+			return nil
+		},
+	}
+
+	// Add flags for configurable parameters
+	cmd.Flags().Uint64Var(&cbFailureThreshold, "cb_failure_threshold", 0, "failure threshold percentage")
+	cmd.Flags().Uint64Var(&cbSuccessThreshold, "cb_success_threshold", 0, "success threshold percentage")
+	cmd.Flags().Uint64Var(&cbMinimumRequestCount, "cb_minimum_request_count", 0, "minimum request count")
+	cmd.Flags().Uint64Var(&cbObservabilityWindow, "cb_observability_window", 0, "observability window in minutes")
+	cmd.Flags().Uint64Var(&cbConsecutiveFailureThreshold, "cb_consecutive_failure_threshold", 0, "consecutive failure threshold")
+
+	return cmd
+}

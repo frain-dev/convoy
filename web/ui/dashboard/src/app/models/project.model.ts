@@ -24,6 +24,15 @@ export interface PROJECT {
 			type: string;
 			url: string;
 		};
+		circuit_breaker?: {
+			sample_rate: number;
+			error_timeout: number;
+			failure_threshold: number;
+			success_threshold: number;
+			observability_window: number;
+			minimum_request_count: number;
+			consecutive_failure_threshold: number;
+		};
 		retention_policy: {
 			policy: string;
 			search_policy: string;

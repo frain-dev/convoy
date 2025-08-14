@@ -10,6 +10,7 @@ import (
 
 	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/redis/go-redis/v9"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -33,6 +34,37 @@ func pollResult(t *testing.T, key string, failureCount, successCount uint64) map
 			Failures:  failureCount,
 			Successes: successCount,
 		},
+	}
+}
+
+// createTestConfigProvider creates a config provider that returns different configs based on project ID
+// This simulates real project-specific configuration behavior for testing
+func createTestConfigProvider(baseConfig *CircuitBreakerConfig) func(projectID string) *CircuitBreakerConfig {
+	return func(projectID string) *CircuitBreakerConfig {
+		switch projectID {
+		case "test1", "endpoint-1":
+			return &CircuitBreakerConfig{
+				SampleRate:                  1,
+				BreakerTimeout:              25,
+				FailureThreshold:            45,
+				SuccessThreshold:            8,
+				MinimumRequestCount:         8,
+				ObservabilityWindow:         4,
+				ConsecutiveFailureThreshold: 2,
+			}
+		case "test2", "endpoint-2":
+			return &CircuitBreakerConfig{
+				SampleRate:                  2,
+				BreakerTimeout:              35,
+				FailureThreshold:            55,
+				SuccessThreshold:            12,
+				MinimumRequestCount:         12,
+				ObservabilityWindow:         6,
+				ConsecutiveFailureThreshold: 4,
+			}
+		default:
+			return baseConfig // fallback to the provided config
+		}
 	}
 }
 
@@ -67,7 +99,7 @@ func TestCircuitBreakerManager(t *testing.T) {
 	b, err := NewCircuitBreakerManager(
 		ClockOption(testClock),
 		StoreOption(store),
-		ConfigOption(c),
+		ConfigProviderOption(createTestConfigProvider(c)),
 		LoggerOption(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(t, err)
@@ -122,7 +154,7 @@ func TestCircuitBreakerManager_AddNewBreakerMidway(t *testing.T) {
 		ObservabilityWindow:         5,
 		ConsecutiveFailureThreshold: 10,
 	}
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c), LoggerOption(log.NewLogger(os.Stdout)))
+	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.NewLogger(os.Stdout)))
 	require.NoError(t, err)
 
 	endpoint1 := "endpoint-1"
@@ -176,7 +208,7 @@ func TestCircuitBreakerManager_Transitions(t *testing.T) {
 		ObservabilityWindow:         5,
 		ConsecutiveFailureThreshold: 10,
 	}
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c), LoggerOption(log.NewLogger(os.Stdout)))
+	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.NewLogger(os.Stdout)))
 	require.NoError(t, err)
 
 	endpointId := "endpoint-1"
@@ -241,7 +273,7 @@ func TestCircuitBreakerManager_ConsecutiveFailures(t *testing.T) {
 		ObservabilityWindow:         5,
 		ConsecutiveFailureThreshold: 3,
 	}
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c), LoggerOption(log.NewLogger(os.Stdout)))
+	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(func(projectID string) *CircuitBreakerConfig { return c }), LoggerOption(log.NewLogger(os.Stdout)))
 	require.NoError(t, err)
 
 	endpointId := "endpoint-1"
@@ -293,7 +325,7 @@ func TestCircuitBreakerManager_MultipleEndpoints(t *testing.T) {
 		MinimumRequestCount:         10,
 		ConsecutiveFailureThreshold: 10,
 	}
-	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigOption(c), LoggerOption(log.NewLogger(os.Stdout)))
+	b, err := NewCircuitBreakerManager(ClockOption(testClock), StoreOption(store), ConfigProviderOption(createTestConfigProvider(c)), LoggerOption(log.NewLogger(os.Stdout)))
 	require.NoError(t, err)
 
 	endpoint1 := "endpoint-1"
@@ -343,7 +375,9 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 		manager, err := NewCircuitBreakerManager(
 			StoreOption(mockStore),
 			ClockOption(mockClock),
-			ConfigOption(config),
+			ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
+				return config
+			}),
 			LoggerOption(log.NewLogger(os.Stdout)),
 		)
 
@@ -351,13 +385,14 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 		require.NotNil(t, manager)
 		require.Equal(t, mockStore, manager.store)
 		require.Equal(t, mockClock, manager.clock)
-		require.Equal(t, config, manager.config)
 	})
 
 	t.Run("Missing Store", func(t *testing.T) {
 		_, err := NewCircuitBreakerManager(
 			ClockOption(mockClock),
-			ConfigOption(config),
+			ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
+				return config
+			}),
 			LoggerOption(log.NewLogger(os.Stdout)),
 		)
 
@@ -368,7 +403,9 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 	t.Run("Missing Clock", func(t *testing.T) {
 		_, err := NewCircuitBreakerManager(
 			StoreOption(mockStore),
-			ConfigOption(config),
+			ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
+				return config
+			}),
 			LoggerOption(log.NewLogger(os.Stdout)),
 		)
 
@@ -376,7 +413,7 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 		require.Equal(t, ErrClockMustNotBeNil, err)
 	})
 
-	t.Run("Missing Config", func(t *testing.T) {
+	t.Run("Missing Config Provider", func(t *testing.T) {
 		_, err := NewCircuitBreakerManager(
 			StoreOption(mockStore),
 			ClockOption(mockClock),
@@ -384,7 +421,7 @@ func TestCircuitBreakerManager_Config(t *testing.T) {
 		)
 
 		require.Error(t, err)
-		require.Equal(t, ErrConfigMustNotBeNil, err)
+		require.Contains(t, err.Error(), "config provider must not be nil")
 	})
 }
 
@@ -400,7 +437,10 @@ func TestCircuitBreakerManager_GetCircuitBreakerError(t *testing.T) {
 	}
 
 	c := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
-	manager := &CircuitBreakerManager{config: config, clock: c}
+	manager := &CircuitBreakerManager{clock: c}
+	manager.configProvider = func(projectID string) *CircuitBreakerConfig {
+		return config
+	}
 
 	t.Run("Open State", func(t *testing.T) {
 		breaker := CircuitBreaker{State: StateOpen}
@@ -443,7 +483,9 @@ func TestCircuitBreakerManager_SampleStore(t *testing.T) {
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
 		ClockOption(mockClock),
-		ConfigOption(config),
+		ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
+			return config
+		}),
 		LoggerOption(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(t, err)
@@ -489,7 +531,9 @@ func TestCircuitBreakerManager_UpdateCircuitBreakers(t *testing.T) {
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
 		ClockOption(mockClock),
-		ConfigOption(config),
+		ConfigProviderOption(func(projectID string) *CircuitBreakerConfig {
+			return config
+		}),
 		LoggerOption(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(t, err)
@@ -547,7 +591,7 @@ func TestCircuitBreakerManager_LoadCircuitBreakers_TestStore(t *testing.T) {
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
 		ClockOption(mockClock),
-		ConfigOption(config),
+		ConfigProviderOption(createTestConfigProvider(config)),
 		LoggerOption(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(t, err)
@@ -618,7 +662,7 @@ func TestCircuitBreakerManager_LoadCircuitBreakers_RedisStore(t *testing.T) {
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(store),
 		ClockOption(mockClock),
-		ConfigOption(config),
+		ConfigProviderOption(createTestConfigProvider(config)),
 		LoggerOption(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(t, err)
@@ -674,7 +718,7 @@ func TestCircuitBreakerManager_CanExecute(t *testing.T) {
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
 		ClockOption(mockClock),
-		ConfigOption(config),
+		ConfigProviderOption(createTestConfigProvider(config)),
 		LoggerOption(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(t, err)
@@ -754,7 +798,7 @@ func TestCircuitBreakerManager_GetCircuitBreaker(t *testing.T) {
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
 		ClockOption(mockClock),
-		ConfigOption(config),
+		ConfigProviderOption(createTestConfigProvider(config)),
 		LoggerOption(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(t, err)
@@ -787,6 +831,79 @@ func TestCircuitBreakerManager_GetCircuitBreaker(t *testing.T) {
 	})
 }
 
+func TestCircuitBreakerManager_CanExecute_MultiProject(t *testing.T) {
+	ctx := context.Background()
+
+	mockStore := NewTestStore()
+	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
+
+	base := &CircuitBreakerConfig{
+		SampleRate:                  1,
+		BreakerTimeout:              30,
+		FailureThreshold:            50,
+		SuccessThreshold:            10,
+		MinimumRequestCount:         10,
+		ObservabilityWindow:         5,
+		ConsecutiveFailureThreshold: 3,
+	}
+
+	// Different projects with different failure thresholds
+	configProvider := func(projectID string) *CircuitBreakerConfig {
+		switch projectID {
+		case "projA":
+			cfg := *base
+			cfg.FailureThreshold = 50
+			return &cfg
+		case "projB":
+			cfg := *base
+			cfg.FailureThreshold = 60
+			return &cfg
+		default:
+			return base
+		}
+	}
+
+	logger := log.NewLogger(os.Stdout)
+
+	manager, err := NewCircuitBreakerManager(
+		StoreOption(mockStore),
+		ClockOption(mockClock),
+		ConfigProviderOption(configProvider),
+		LoggerOption(logger),
+	)
+	require.NoError(t, err)
+
+	// Seed two breakers in Half-Open with identical failure rate; outcome depends on project config
+	halfOpenReset := time.Date(2020, 1, 1, 0, 1, 0, 0, time.UTC) // in the future of mockClock
+
+	cbA := CircuitBreaker{
+		Key:         "projA-endpoint",
+		TenantId:    "projA",
+		State:       StateHalfOpen,
+		FailureRate: 55, // Above projA(50), below projB(60)
+		WillResetAt: halfOpenReset,
+	}
+	err = manager.store.SetOne(ctx, "breaker:projA-endpoint", cbA, time.Minute)
+	require.NoError(t, err)
+
+	cbB := CircuitBreaker{
+		Key:         "projB-endpoint",
+		TenantId:    "projB",
+		State:       StateHalfOpen,
+		FailureRate: 55,
+		WillResetAt: halfOpenReset,
+	}
+	err = manager.store.SetOne(ctx, "breaker:projB-endpoint", cbB, time.Minute)
+	require.NoError(t, err)
+
+	// projA should be blocked (too many requests), projB should be allowed
+	err = manager.CanExecute(ctx, "projA-endpoint")
+	require.Equal(t, ErrTooManyRequests, err)
+
+	err = manager.CanExecute(ctx, "projB-endpoint")
+	require.NoError(t, err)
+}
+
 func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 	mockStore := NewTestStore()
 	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
@@ -803,7 +920,7 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
 		ClockOption(mockClock),
-		ConfigOption(config),
+		ConfigProviderOption(createTestConfigProvider(config)),
 		LoggerOption(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(t, err)
@@ -860,7 +977,7 @@ func TestCircuitBreakerManager_SampleAndUpdate(t *testing.T) {
 
 func TestCircuitBreakerManager_Start(t *testing.T) {
 	mockStore := NewTestStore()
-	mockClock := clock.NewSimulatedClock(time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC))
+	mockClock := clock.NewRealClock()
 	config := &CircuitBreakerConfig{
 		SampleRate:                  1,
 		BreakerTimeout:              30,
@@ -871,22 +988,35 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 		ConsecutiveFailureThreshold: 3,
 	}
 
+	logger := log.NewLogger(os.Stdout)
+	logger.SetLevel(log.InfoLevel)
+
 	manager, err := NewCircuitBreakerManager(
 		StoreOption(mockStore),
 		ClockOption(mockClock),
-		ConfigOption(config),
-		LoggerOption(log.NewLogger(os.Stdout)),
+		ConfigProviderOption(createTestConfigProvider(config)),
+		LoggerOption(logger),
+		MasterConfigOption(CircuitBreakerConfig{
+			SampleRate:                  1, // Fast sample rate for testing
+			BreakerTimeout:              30,
+			FailureThreshold:            70,
+			SuccessThreshold:            5,
+			ObservabilityWindow:         5,
+			MinimumRequestCount:         10,
+			ConsecutiveFailureThreshold: 10,
+		}),
+		SkipSleepOption(true),
 	)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	pollCount := 0
 	pollFunc := func(ctx context.Context, lookBackDuration uint64, _ map[string]time.Time) (map[string]PollResult, error) {
 		pollCount++
 		return map[string]PollResult{
-			"test": {Key: "test", Failures: uint64(pollCount), Successes: 10 - uint64(pollCount)},
+			"test": {Key: "test", TenantId: "test-project", Failures: uint64(pollCount), Successes: 10 - uint64(pollCount)},
 		}, nil
 	}
 
@@ -905,4 +1035,99 @@ func TestCircuitBreakerManager_Start(t *testing.T) {
 
 	// Ensure the poll function was called multiple times
 	require.True(t, pollCount > 1)
+}
+
+func TestCircuitBreakerManager_ProjectSpecificConfig(t *testing.T) {
+	store := NewTestStore()
+	clockS := clock.NewSimulatedClock(time.Now())
+	logger := log.NewLogger(os.Stdout)
+
+	// Create custom project configuration
+	customConfig := &CircuitBreakerConfig{
+		SampleRate:                  15, // Different from default (30)
+		BreakerTimeout:              45, // Different from default (30)
+		FailureThreshold:            50, // Different from default (70)
+		SuccessThreshold:            8,  // Different from default (5)
+		ObservabilityWindow:         8,  // Different from default (5)
+		MinimumRequestCount:         15, // Different from default (10)
+		ConsecutiveFailureThreshold: 8,  // Different from default (10)
+	}
+
+	// Create config provider that returns different configs for different projects
+	configProvider := func(projectID string) *CircuitBreakerConfig {
+		switch projectID {
+		case "custom-project":
+			return customConfig
+		case "default-project":
+			return nil // This should use master config defaults
+		default:
+			return &CircuitBreakerConfig{
+				SampleRate:                  25,
+				BreakerTimeout:              35,
+				FailureThreshold:            60,
+				SuccessThreshold:            6,
+				ObservabilityWindow:         6,
+				MinimumRequestCount:         12,
+				ConsecutiveFailureThreshold: 6,
+			}
+		}
+	}
+
+	manager, err := NewCircuitBreakerManager(
+		StoreOption(store),
+		ClockOption(clockS),
+		LoggerOption(logger),
+		ConfigProviderOption(configProvider),
+	)
+	require.NoError(t, err)
+
+	t.Run("Custom Project Uses Custom Config", func(t *testing.T) {
+		config := manager.GetProjectConfig("custom-project")
+		require.NotNil(t, config)
+		require.Equal(t, uint64(15), config.SampleRate)
+		require.Equal(t, uint64(45), config.BreakerTimeout)
+		require.Equal(t, uint64(50), config.FailureThreshold)
+		require.Equal(t, uint64(8), config.SuccessThreshold)
+		require.Equal(t, uint64(8), config.ObservabilityWindow)
+		require.Equal(t, uint64(15), config.MinimumRequestCount)
+		require.Equal(t, uint64(8), config.ConsecutiveFailureThreshold)
+	})
+
+	t.Run("Default Project Uses Master Config", func(t *testing.T) {
+		config := manager.GetProjectConfig("default-project")
+		require.NotNil(t, config)
+		masterConfig := manager.GetMasterConfig()
+		require.Equal(t, masterConfig.SampleRate, config.SampleRate)
+		require.Equal(t, masterConfig.BreakerTimeout, config.BreakerTimeout)
+		require.Equal(t, masterConfig.FailureThreshold, config.FailureThreshold)
+		require.Equal(t, masterConfig.SuccessThreshold, config.SuccessThreshold)
+		require.Equal(t, masterConfig.ObservabilityWindow, config.ObservabilityWindow)
+		require.Equal(t, masterConfig.MinimumRequestCount, config.MinimumRequestCount)
+		require.Equal(t, masterConfig.ConsecutiveFailureThreshold, config.ConsecutiveFailureThreshold)
+	})
+
+	t.Run("Other Project Uses Mixed Config", func(t *testing.T) {
+		config := manager.GetProjectConfig("other-project")
+		require.NotNil(t, config)
+		require.Equal(t, uint64(25), config.SampleRate)
+		require.Equal(t, uint64(35), config.BreakerTimeout)
+		require.Equal(t, uint64(60), config.FailureThreshold)
+		require.Equal(t, uint64(6), config.SuccessThreshold)
+		require.Equal(t, uint64(6), config.ObservabilityWindow)
+		require.Equal(t, uint64(12), config.MinimumRequestCount)
+		require.Equal(t, uint64(6), config.ConsecutiveFailureThreshold)
+	})
+
+	t.Run("Circuit Breaker Creation Uses Project Config", func(t *testing.T) {
+		// Create a circuit breaker for custom project
+		breaker := &CircuitBreaker{
+			Key:      "test-breaker",
+			TenantId: "custom-project",
+		}
+
+		// Verify the manager uses project-specific config
+		config := manager.GetProjectConfig(breaker.TenantId)
+		require.Equal(t, customConfig.SampleRate, config.SampleRate)
+		require.Equal(t, customConfig.BreakerTimeout, config.BreakerTimeout)
+	})
 }
