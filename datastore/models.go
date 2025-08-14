@@ -15,8 +15,6 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
-
 	"github.com/frain-dev/convoy/pkg/flatten"
 
 	"github.com/oklog/ulid/v2"
@@ -334,13 +332,15 @@ var (
 		IsRetentionPolicyEnabled: false,
 		Policy:                   "720h",
 	}
-
-	DefaultCircuitBreakerConfiguration = CircuitBreakerConfig{
+	// DefaultCircuitBreakerConfiguration holds the non-zero defaults for
+	// project-level circuit breaker settings.
+	DefaultCircuitBreakerConfiguration = CircuitBreakerConfiguration{
 		SampleRate:                  30,
 		ErrorTimeout:                30,
 		FailureThreshold:            70,
 		SuccessThreshold:            5,
 		ObservabilityWindow:         5,
+		MinimumRequestCount:         10,
 		ConsecutiveFailureThreshold: 10,
 	}
 )
@@ -550,17 +550,18 @@ func (s SignatureVersions) Value() (driver.Value, error) {
 }
 
 type ProjectConfig struct {
-	MaxIngestSize                 uint64                  `json:"max_payload_read_size" db:"max_payload_read_size"`
-	ReplayAttacks                 bool                    `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
-	AddEventIDTraceHeaders        bool                    `json:"add_event_id_trace_headers"`
-	DisableEndpoint               bool                    `json:"disable_endpoint" db:"disable_endpoint"`
-	MultipleEndpointSubscriptions bool                    `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
-	SearchPolicy                  string                  `json:"search_policy" db:"search_policy"`
-	SSL                           *SSLConfiguration       `json:"ssl" db:"ssl"`
-	RateLimit                     *RateLimitConfiguration `json:"ratelimit" db:"ratelimit"`
-	Strategy                      *StrategyConfiguration  `json:"strategy" db:"strategy"`
-	Signature                     *SignatureConfiguration `json:"signature" db:"signature"`
-	MetaEvent                     *MetaEventConfiguration `json:"meta_event" db:"meta_event"`
+	MaxIngestSize                 uint64                       `json:"max_payload_read_size" db:"max_payload_read_size"`
+	ReplayAttacks                 bool                         `json:"replay_attacks_prevention_enabled" db:"replay_attacks_prevention_enabled"`
+	AddEventIDTraceHeaders        bool                         `json:"add_event_id_trace_headers"`
+	DisableEndpoint               bool                         `json:"disable_endpoint" db:"disable_endpoint"`
+	MultipleEndpointSubscriptions bool                         `json:"multiple_endpoint_subscriptions" db:"multiple_endpoint_subscriptions"`
+	SearchPolicy                  string                       `json:"search_policy" db:"search_policy"`
+	SSL                           *SSLConfiguration            `json:"ssl" db:"ssl"`
+	RateLimit                     *RateLimitConfiguration      `json:"ratelimit" db:"ratelimit"`
+	Strategy                      *StrategyConfiguration       `json:"strategy" db:"strategy"`
+	Signature                     *SignatureConfiguration      `json:"signature" db:"signature"`
+	MetaEvent                     *MetaEventConfiguration      `json:"meta_event" db:"meta_event"`
+	CircuitBreaker                *CircuitBreakerConfiguration `json:"circuit_breaker" db:"circuit_breaker"`
 }
 
 func (p *ProjectConfig) GetRateLimitConfig() RateLimitConfiguration {
@@ -599,6 +600,14 @@ func (p *ProjectConfig) GetMetaEventConfig() MetaEventConfiguration {
 	return MetaEventConfiguration{}
 }
 
+func (p *ProjectConfig) GetCircuitBreakerConfig() CircuitBreakerConfiguration {
+	if p.CircuitBreaker != nil {
+		return *p.CircuitBreaker
+	}
+
+	return DefaultCircuitBreakerConfiguration
+}
+
 type RateLimitConfiguration struct {
 	Count    int    `json:"count" db:"count"`
 	Duration uint64 `json:"duration" db:"duration"`
@@ -634,6 +643,16 @@ type MetaEventConfiguration struct {
 
 type SSLConfiguration struct {
 	EnforceSecureEndpoints bool `json:"enforce_secure_endpoints" db:"enforce_secure_endpoints"`
+}
+
+type CircuitBreakerConfiguration struct {
+	SampleRate                  uint64 `json:"sample_rate" db:"sample_rate"`
+	ErrorTimeout                uint64 `json:"error_timeout" db:"error_timeout"`
+	FailureThreshold            uint64 `json:"failure_threshold" db:"failure_threshold"`
+	SuccessThreshold            uint64 `json:"success_threshold" db:"success_threshold"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" db:"minimum_request_count"`
+	ObservabilityWindow         uint64 `json:"observability_window" db:"observability_window"`
+	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
 type RetentionPolicyConfiguration struct {
@@ -1383,32 +1402,12 @@ type Configuration struct {
 	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`
 	IsSignupEnabled    bool   `json:"is_signup_enabled" db:"is_signup_enabled"`
 
-	StoragePolicy        *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
-	RetentionPolicy      *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
-	CircuitBreakerConfig *CircuitBreakerConfig         `json:"circuit_breaker" db:"circuit_breaker"`
+	StoragePolicy   *StoragePolicyConfiguration   `json:"storage_policy" db:"storage_policy"`
+	RetentionPolicy *RetentionPolicyConfiguration `json:"retention_policy" db:"retention_policy"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
-}
-
-func (c *Configuration) GetCircuitBreakerConfig() CircuitBreakerConfig {
-	if c.CircuitBreakerConfig != nil {
-		return *c.CircuitBreakerConfig
-	}
-	return CircuitBreakerConfig{}
-}
-
-func (c *Configuration) ToCircuitBreakerConfig() *cb.CircuitBreakerConfig {
-	return &cb.CircuitBreakerConfig{
-		SampleRate:                  c.CircuitBreakerConfig.SampleRate,
-		BreakerTimeout:              c.CircuitBreakerConfig.ErrorTimeout,
-		FailureThreshold:            c.CircuitBreakerConfig.FailureThreshold,
-		SuccessThreshold:            c.CircuitBreakerConfig.SuccessThreshold,
-		ObservabilityWindow:         c.CircuitBreakerConfig.ObservabilityWindow,
-		MinimumRequestCount:         c.CircuitBreakerConfig.MinimumRequestCount,
-		ConsecutiveFailureThreshold: c.CircuitBreakerConfig.ConsecutiveFailureThreshold,
-	}
 }
 
 func (c *Configuration) GetRetentionPolicyConfig() RetentionPolicyConfiguration {
@@ -1436,16 +1435,6 @@ type S3Storage struct {
 
 type OnPremStorage struct {
 	Path null.String `json:"path" db:"path"`
-}
-
-type CircuitBreakerConfig struct {
-	SampleRate                  uint64 `json:"sample_rate" db:"sample_rate"`
-	ErrorTimeout                uint64 `json:"error_timeout" db:"error_timeout"`
-	FailureThreshold            uint64 `json:"failure_threshold" db:"failure_threshold"`
-	SuccessThreshold            uint64 `json:"success_threshold" db:"success_threshold"`
-	ObservabilityWindow         uint64 `json:"observability_window" db:"observability_window"`
-	MinimumRequestCount         uint64 `json:"minimum_request_count" db:"minimum_request_count"`
-	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" db:"consecutive_failure_threshold"`
 }
 
 type OrganisationMember struct {

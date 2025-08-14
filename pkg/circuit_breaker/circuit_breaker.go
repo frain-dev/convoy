@@ -117,3 +117,8 @@ func (b *CircuitBreaker) Reset(resetTime time.Time) {
 		b.logger.Debugf("[circuit breaker] circuit breaker state: %+v", b.asKeyValue())
 	}
 }
+
+// shouldTrip determines if the circuit breaker should trip based on the given configuration
+func (b *CircuitBreaker) shouldTrip(config *CircuitBreakerConfig) bool {
+	return b.Requests >= config.MinimumRequestCount && b.FailureRate >= float64(config.FailureThreshold)
+}

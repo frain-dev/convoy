@@ -112,13 +112,5 @@ func generateConfig() *datastore.Configuration {
 			Policy:                   "720h",
 			IsRetentionPolicyEnabled: true,
 		},
-		CircuitBreakerConfig: &datastore.CircuitBreakerConfig{
-			SampleRate:                  30,
-			ErrorTimeout:                30,
-			FailureThreshold:            10,
-			SuccessThreshold:            5,
-			ObservabilityWindow:         5,
-			ConsecutiveFailureThreshold: 10,
-		},
 	}
 }

@@ -58,6 +58,9 @@ func Test_FetchProjectByID(t *testing.T) {
 		version.CreatedAt = time.Time{}
 	}
 
+	// Set expected circuit breaker to match what database returns (defaults when not explicitly set)
+	newProject.Config.CircuitBreaker = &datastore.DefaultCircuitBreakerConfiguration
+
 	require.Equal(t, newProject, dbProject)
 }
 
@@ -220,6 +223,9 @@ func Test_UpdateProject(t *testing.T) {
 		require.NotEmpty(t, version.CreatedAt)
 		version.CreatedAt = time.Time{}
 	}
+
+	// Set expected circuit breaker to match what database returns (defaults when not explicitly set)
+	updatedProject.Config.CircuitBreaker = &datastore.DefaultCircuitBreakerConfiguration
 
 	require.Equal(t, updatedProject, dbProject)
 }

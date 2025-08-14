@@ -37,9 +37,7 @@ type PubSubSource struct {
 
 	licenser license.Licenser
 
-	// This is a hash for the source config used to
-	// track if an existing source config has been changed.
-	hash string
+	// hash string, NOTE: Previously used to track config changes; left removed to satisfy linters.
 }
 
 func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*PubSubSource, error) {

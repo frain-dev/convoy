@@ -18,13 +18,9 @@ const (
 		storage_policy_type, on_prem_path, s3_prefix,
 		s3_bucket, s3_access_key, s3_secret_key,
 		s3_region, s3_session_token, s3_endpoint,
-		retention_policy_policy, retention_policy_enabled,
-		cb_sample_rate,cb_error_timeout,
-		cb_failure_threshold, cb_success_threshold,
-		cb_observability_window,
-		cb_consecutive_failure_threshold, cb_minimum_request_count
+		retention_policy_policy, retention_policy_enabled
 	  )
-	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21);
+	  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14);
 	`
 
 	fetchConfiguration = `
@@ -43,13 +39,6 @@ const (
 		s3_session_token AS "storage_policy.s3.session_token",
 		s3_endpoint AS "storage_policy.s3.endpoint",
 		s3_prefix AS "storage_policy.s3.prefix",
-		cb_sample_rate AS "circuit_breaker.sample_rate",
-		cb_error_timeout AS "circuit_breaker.error_timeout",
-		cb_failure_threshold AS "circuit_breaker.failure_threshold",
-		cb_success_threshold AS "circuit_breaker.success_threshold",
-		cb_observability_window AS "circuit_breaker.observability_window",
-		cb_minimum_request_count as "circuit_breaker.minimum_request_count",
-		cb_consecutive_failure_threshold AS "circuit_breaker.consecutive_failure_threshold",
 		created_at,
 		updated_at,
 		deleted_at
@@ -74,13 +63,6 @@ const (
 		s3_prefix = $12,
 		retention_policy_policy = $13,
 		retention_policy_enabled = $14,
-		cb_sample_rate = $15,
-		cb_error_timeout = $16,
-		cb_failure_threshold = $17,
-		cb_success_threshold = $18,
-		cb_observability_window = $19,
-		cb_consecutive_failure_threshold = $20,
-		cb_minimum_request_count = $21,
 		updated_at = NOW()
 	WHERE id = $1 AND deleted_at IS NULL;
 	`
@@ -112,7 +94,6 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 	}
 
 	rc := config.GetRetentionPolicyConfig()
-	cb := config.GetCircuitBreakerConfig()
 
 	r, err := c.db.GetDB().ExecContext(ctx, createConfiguration,
 		config.UID,
@@ -129,13 +110,6 @@ func (c *configRepo) CreateConfiguration(ctx context.Context, config *datastore.
 		config.StoragePolicy.S3.Endpoint,
 		rc.Policy,
 		rc.IsRetentionPolicyEnabled,
-		cb.SampleRate,
-		cb.ErrorTimeout,
-		cb.FailureThreshold,
-		cb.SuccessThreshold,
-		cb.ObservabilityWindow,
-		cb.ConsecutiveFailureThreshold,
-		cb.MinimumRequestCount,
 	)
 	if err != nil {
 		return err
@@ -184,7 +158,6 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 	}
 
 	rc := cfg.GetRetentionPolicyConfig()
-	cb := cfg.GetCircuitBreakerConfig()
 
 	result, err := c.db.GetDB().ExecContext(ctx, updateConfiguration,
 		cfg.UID,
@@ -201,13 +174,6 @@ func (c *configRepo) UpdateConfiguration(ctx context.Context, cfg *datastore.Con
 		cfg.StoragePolicy.S3.Prefix,
 		rc.Policy,
 		rc.IsRetentionPolicyEnabled,
-		cb.SampleRate,
-		cb.ErrorTimeout,
-		cb.FailureThreshold,
-		cb.SuccessThreshold,
-		cb.ObservabilityWindow,
-		cb.ConsecutiveFailureThreshold,
-		cb.MinimumRequestCount,
 	)
 	if err != nil {
 		return err

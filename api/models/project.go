@@ -74,6 +74,9 @@ type ProjectConfig struct {
 	// MultipleEndpointSubscriptions is used to configure if multiple subscriptions
 	// can be created for the endpoint in a project
 	MultipleEndpointSubscriptions bool `json:"multiple_endpoint_subscriptions"`
+
+	// CircuitBreaker is used to configure the project's circuit breaker settings
+	CircuitBreaker *datastore.CircuitBreakerConfiguration `json:"circuit_breaker"`
 }
 
 func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
@@ -93,6 +96,7 @@ func (pc *ProjectConfig) Transform() *datastore.ProjectConfig {
 		Strategy:                      pc.Strategy.transform(),
 		Signature:                     pc.Signature.transform(),
 		MetaEvent:                     pc.MetaEvent.transform(),
+		CircuitBreaker:                pc.CircuitBreaker,
 	}
 }
 

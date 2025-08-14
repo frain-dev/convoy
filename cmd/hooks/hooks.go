@@ -361,29 +361,18 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 		IsRetentionPolicyEnabled: cfg.RetentionPolicy.IsRetentionPolicyEnabled,
 	}
 
-	circuitBreakerConfig := &datastore.CircuitBreakerConfig{
-		SampleRate:                  cfg.CircuitBreaker.SampleRate,
-		ErrorTimeout:                cfg.CircuitBreaker.ErrorTimeout,
-		FailureThreshold:            cfg.CircuitBreaker.FailureThreshold,
-		SuccessThreshold:            cfg.CircuitBreaker.SuccessThreshold,
-		ObservabilityWindow:         cfg.CircuitBreaker.ObservabilityWindow,
-		MinimumRequestCount:         cfg.CircuitBreaker.MinimumRequestCount,
-		ConsecutiveFailureThreshold: cfg.CircuitBreaker.ConsecutiveFailureThreshold,
-	}
-
 	configuration, err := configRepo.LoadConfiguration(ctx)
 	if err != nil {
 		if errors.Is(err, datastore.ErrConfigNotFound) {
 			a.Logger.Info("Creating Instance Config")
 			c := &datastore.Configuration{
-				UID:                  ulid.Make().String(),
-				StoragePolicy:        storagePolicy,
-				IsAnalyticsEnabled:   cfg.Analytics.IsEnabled,
-				IsSignupEnabled:      cfg.Auth.IsSignupEnabled,
-				RetentionPolicy:      retentionPolicy,
-				CircuitBreakerConfig: circuitBreakerConfig,
-				CreatedAt:            time.Now(),
-				UpdatedAt:            time.Now(),
+				UID:                ulid.Make().String(),
+				StoragePolicy:      storagePolicy,
+				IsAnalyticsEnabled: cfg.Analytics.IsEnabled,
+				IsSignupEnabled:    cfg.Auth.IsSignupEnabled,
+				RetentionPolicy:    retentionPolicy,
+				CreatedAt:          time.Now(),
+				UpdatedAt:          time.Now(),
 			}
 
 			return c, configRepo.CreateConfiguration(ctx, c)
@@ -395,7 +384,6 @@ func ensureInstanceConfig(ctx context.Context, a *cli.App, cfg config.Configurat
 	configuration.StoragePolicy = storagePolicy
 	configuration.IsSignupEnabled = cfg.Auth.IsSignupEnabled
 	configuration.IsAnalyticsEnabled = cfg.Analytics.IsEnabled
-	configuration.CircuitBreakerConfig = circuitBreakerConfig
 	configuration.RetentionPolicy = retentionPolicy
 	configuration.UpdatedAt = time.Now()
 

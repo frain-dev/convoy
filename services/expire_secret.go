@@ -76,7 +76,7 @@ func (a *ExpireSecretService) Run(ctx context.Context) (*datastore.Endpoint, err
 	if len(newSecret) == 0 {
 		newSecret, err = util.GenerateSecret()
 		if err != nil {
-			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf(fmt.Sprintf("could not generate secret...%v", err.Error())))
+			return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("could not generate secret...%v", err))
 		}
 	}
 

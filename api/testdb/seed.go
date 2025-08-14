@@ -588,12 +588,11 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 
 func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	c := &datastore.Configuration{
-		UID:                  ulid.Make().String(),
-		IsAnalyticsEnabled:   true,
-		IsSignupEnabled:      true,
-		StoragePolicy:        &datastore.DefaultStoragePolicy,
-		RetentionPolicy:      &datastore.DefaultRetentionPolicy,
-		CircuitBreakerConfig: &datastore.DefaultCircuitBreakerConfiguration,
+		UID:                ulid.Make().String(),
+		IsAnalyticsEnabled: true,
+		IsSignupEnabled:    true,
+		StoragePolicy:      &datastore.DefaultStoragePolicy,
+		RetentionPolicy:    &datastore.DefaultRetentionPolicy,
 	}
 
 	// Seed Data
