@@ -575,7 +575,7 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryMetadata(ctx context.Context, pro
 }
 
 func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
-	count := struct {
+	eventCount := struct {
 		Count int64
 	}{}
 
@@ -607,12 +607,12 @@ func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID 
 
 	query = e.db.GetReadDB().Rebind(query)
 
-	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).StructScan(&count)
+	err = e.db.GetReadDB().QueryRowxContext(ctx, query, args...).StructScan(&eventCount)
 	if err != nil {
 		return 0, err
 	}
 
-	return count.Count, nil
+	return eventCount.Count, nil
 }
 
 func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *datastore.EventDeliveryFilter, hardDelete bool) error {
