@@ -54,17 +54,18 @@ func FromFilterStruct(data Filter) RetryFilter {
 	if data.Query != "" {
 		filter["Query"] = data.Query
 	}
+
 	if data.OwnerID != "" {
 		filter["OwnerID"] = data.OwnerID
 	}
+
 	if data.SubscriptionID != "" {
 		filter["SubscriptionID"] = data.SubscriptionID
 	}
 
 	// Only add Project if it's not nil
 	if data.Project != nil {
-		// Skip Project field as it can cause marshaling issues
-		// filter["Project"] = data.Project
+		filter["ProjectID"] = data.Project.UID
 	}
 
 	// Only add EndpointID if it's not empty
