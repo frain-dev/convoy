@@ -39,32 +39,59 @@ type BatchRetry struct {
 type RetryFilter map[string]any
 
 func FromFilterStruct(data Filter) RetryFilter {
-	return RetryFilter{
-		"Query":          data.Query,
-		"OwnerID":        data.OwnerID,
-		"Project":        data.Project,
+	filter := RetryFilter{
 		"ProjectID":      data.ProjectID,
-		"EndpointID":     data.EndpointID,
 		"EndpointIDs":    data.EndpointIDs,
-		"SubscriptionID": data.SubscriptionID,
 		"EventID":        data.EventID,
 		"EventType":      data.EventType,
 		"SourceID":       data.SourceID,
 		"SourceIDs":      data.SourceIDs,
-		"Pageable": map[string]any{
+		"IdempotencyKey": data.IdempotencyKey,
+		"Status":         data.Status,
+	}
+
+	// Only add non-nil string fields
+	if data.Query != "" {
+		filter["Query"] = data.Query
+	}
+	if data.OwnerID != "" {
+		filter["OwnerID"] = data.OwnerID
+	}
+	if data.SubscriptionID != "" {
+		filter["SubscriptionID"] = data.SubscriptionID
+	}
+
+	// Only add Project if it's not nil
+	if data.Project != nil {
+		// Skip Project field as it can cause marshaling issues
+		// filter["Project"] = data.Project
+	}
+
+	// Only add EndpointID if it's not empty
+	if data.EndpointID != "" {
+		filter["EndpointID"] = data.EndpointID
+	}
+
+	// Only add Pageable if it has valid values
+	if data.Pageable.PerPage > 0 || data.Pageable.Direction != "" || data.Pageable.Sort != "" || data.Pageable.PrevCursor != "" || data.Pageable.NextCursor != "" {
+		filter["Pageable"] = map[string]any{
 			"per_page":         data.Pageable.PerPage,
 			"direction":        data.Pageable.Direction,
 			"sort":             data.Pageable.Sort,
 			"prev_page_cursor": data.Pageable.PrevCursor,
 			"next_page_cursor": data.Pageable.NextCursor,
-		},
-		"IdempotencyKey": data.IdempotencyKey,
-		"Status":         data.Status,
-		"SearchParams": map[string]any{
+		}
+	}
+
+	// Only add SearchParams if it has valid values
+	if data.SearchParams.CreatedAtStart != 0 || data.SearchParams.CreatedAtEnd != 0 {
+		filter["SearchParams"] = map[string]any{
 			"created_at_start": data.SearchParams.CreatedAtStart,
 			"created_at_end":   data.SearchParams.CreatedAtEnd,
-		},
+		}
 	}
+
+	return filter
 }
 
 func (f *RetryFilter) Scan(value any) error {
@@ -77,16 +104,20 @@ func (f *RetryFilter) Scan(value any) error {
 }
 
 func (b *BatchRetry) GetFilter() (*Filter, error) {
+	if b.Filter == nil {
+		return nil, fmt.Errorf("filter is nil")
+	}
+
 	bytes, err := json.Marshal(b.Filter)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal filter: %w", err)
 	}
 
 	filter := Filter{}
 	err = json.Unmarshal(bytes, &filter)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal filter: %w", err)
 	}
 
-	return &filter, err
+	return &filter, nil
 }

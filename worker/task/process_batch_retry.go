@@ -16,6 +16,15 @@ import (
 	"github.com/frain-dev/convoy/queue"
 )
 
+// getOrDefault returns the value if it's not the zero value, otherwise returns the default
+func getOrDefault[T comparable](value, defaultValue T) T {
+	var zero T
+	if value == zero {
+		return defaultValue
+	}
+	return value
+}
+
 func ProcessBatchRetry(
 	batchRetryRepo datastore.BatchRetryRepository,
 	eventDeliveryRepo datastore.EventDeliveryRepository,
@@ -37,8 +46,16 @@ func ProcessBatchRetry(
 			return err
 		}
 
-		if activeRetry != nil && activeRetry.ID != br.ID {
+		// If no active batch retry found, use the one from the task payload
+		if activeRetry == nil {
+			activeRetry = br
+		} else if activeRetry.ID != br.ID {
 			return fmt.Errorf("an active batch retry already exists")
+		}
+
+		// Ensure the batch retry has a valid filter
+		if activeRetry.Filter == nil {
+			return fmt.Errorf("batch retry has no filter")
 		}
 
 		// Update status to processing
@@ -78,11 +95,11 @@ func ProcessBatchRetry(
 				SourceID:       f.SourceID,
 				SourceIDs:      f.SourceIDs,
 				Pageable: datastore.Pageable{
-					PerPage:    f.Pageable.PerPage,
-					Direction:  f.Pageable.Direction,
+					PerPage:    getOrDefault(f.Pageable.PerPage, 1000),
+					Direction:  getOrDefault(f.Pageable.Direction, datastore.Next),
 					Sort:       f.Pageable.Sort,
 					PrevCursor: f.Pageable.PrevCursor,
-					NextCursor: f.Pageable.NextCursor,
+					NextCursor: getOrDefault(f.Pageable.NextCursor, datastore.DefaultCursor),
 				},
 				IdempotencyKey: f.IdempotencyKey,
 				Status:         f.Status,
