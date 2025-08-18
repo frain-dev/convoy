@@ -33,8 +33,8 @@ var (
 	// ErrStoreMustNotBeNil is returned when a nil store is passed to NewCircuitBreakerManager
 	ErrStoreMustNotBeNil = errors.New("[circuit breaker] store must not be nil")
 
-	// ErrConfigMustNotBeNil is returned when a nil config is passed to NewCircuitBreakerManager
-	ErrConfigMustNotBeNil = errors.New("[circuit breaker] config must not be nil")
+	// ErrConfigProviderMustNotBeNil is returned when a nil config provider is passed to NewCircuitBreakerManager
+	ErrConfigProviderMustNotBeNil = errors.New("[circuit breaker] config provider must not be nil")
 
 	// ErrLoggerMustNotBeNil is returned when a nil logger is passed to NewCircuitBreakerManager
 	ErrLoggerMustNotBeNil = errors.New("[circuit breaker] logger must not be nil")
@@ -79,11 +79,13 @@ type PollResult struct {
 }
 
 type CircuitBreakerManager struct {
-	config         *CircuitBreakerConfig
 	logger         *log.Logger
 	clock          clock.Clock
 	store          CircuitBreakerStore
 	notificationFn func(NotificationType, CircuitBreakerConfig, CircuitBreaker) error
+	configProvider func(projectID string) *CircuitBreakerConfig
+	masterConfig   CircuitBreakerConfig
+	skipSleep      bool
 }
 
 func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerManager, error) {
@@ -104,8 +106,8 @@ func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerM
 		return nil, ErrClockMustNotBeNil
 	}
 
-	if r.config == nil {
-		return nil, ErrConfigMustNotBeNil
+	if r.configProvider == nil {
+		return nil, ErrConfigProviderMustNotBeNil
 	}
 
 	if r.logger == nil {
@@ -137,17 +139,12 @@ func ClockOption(clock clock.Clock) CircuitBreakerOption {
 	}
 }
 
-func ConfigOption(config *CircuitBreakerConfig) CircuitBreakerOption {
+func ConfigProviderOption(provider func(projectID string) *CircuitBreakerConfig) CircuitBreakerOption {
 	return func(cb *CircuitBreakerManager) error {
-		if config == nil {
-			return ErrConfigMustNotBeNil
+		if provider == nil {
+			return errors.New("config provider must not be nil")
 		}
-
-		if err := config.Validate(); err != nil {
-			return err
-		}
-
-		cb.config = config
+		cb.configProvider = provider
 		return nil
 	}
 }
@@ -170,6 +167,20 @@ func NotificationFunctionOption(fn func(NotificationType, CircuitBreakerConfig, 
 		}
 
 		cb.notificationFn = fn
+		return nil
+	}
+}
+
+func MasterConfigOption(config CircuitBreakerConfig) CircuitBreakerOption {
+	return func(cb *CircuitBreakerManager) error {
+		cb.masterConfig = config
+		return nil
+	}
+}
+
+func SkipSleepOption(skipSleep bool) CircuitBreakerOption {
+	return func(cb *CircuitBreakerManager) error {
+		cb.skipSleep = skipSleep
 		return nil
 	}
 }
@@ -234,11 +245,13 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 			breaker.SuccessRate = float64(breaker.TotalSuccesses) / float64(breaker.Requests) * 100
 		}
 
-		if breaker.State == StateHalfOpen && breaker.SuccessRate >= float64(cb.config.SuccessThreshold) {
-			breaker.Reset(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
-		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= cb.config.MinimumRequestCount {
-			if breaker.FailureRate >= float64(cb.config.FailureThreshold) {
-				breaker.trip(cb.clock.Now().Add(time.Duration(cb.config.BreakerTimeout) * time.Second))
+		projectConfig := cb.GetProjectConfig(breaker.TenantId)
+
+		if breaker.State == StateHalfOpen && breaker.SuccessRate >= float64(projectConfig.SuccessThreshold) {
+			breaker.Reset(cb.clock.Now().Add(time.Duration(projectConfig.BreakerTimeout) * time.Second))
+		} else if (breaker.State == StateClosed || breaker.State == StateHalfOpen) && breaker.Requests >= projectConfig.MinimumRequestCount {
+			if breaker.FailureRate >= float64(projectConfig.FailureThreshold) {
+				breaker.trip(cb.clock.Now().Add(time.Duration(projectConfig.BreakerTimeout) * time.Second))
 			}
 		}
 
@@ -248,8 +261,8 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 
 		// send notifications for each circuit breaker
 		if cb.notificationFn != nil && breaker.State != StateOpen {
-			if breaker.ConsecutiveFailures >= cb.GetConfig().ConsecutiveFailureThreshold {
-				innerErr := cb.notificationFn(TypeDisableResource, *cb.config, breaker)
+			if breaker.ConsecutiveFailures >= projectConfig.ConsecutiveFailureThreshold {
+				innerErr := cb.notificationFn(TypeDisableResource, projectConfig, breaker)
 				if innerErr != nil {
 					cb.logger.WithError(innerErr).Errorf("[circuit breaker] failed to execute disable resource notification function")
 				}
@@ -271,7 +284,8 @@ func (cb *CircuitBreakerManager) sampleStore(ctx context.Context, pollResults ma
 func (cb *CircuitBreakerManager) updateCircuitBreakers(ctx context.Context, breakers map[string]CircuitBreaker) (err error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	return cb.store.SetMany(ctx, breakers, time.Duration(cb.config.ObservabilityWindow)*time.Minute)
+	masterConfig := cb.GetMasterConfig()
+	return cb.store.SetMany(ctx, breakers, time.Duration(masterConfig.ObservabilityWindow)*time.Minute)
 }
 
 func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]CircuitBreaker, error) {
@@ -324,7 +338,8 @@ func (cb *CircuitBreakerManager) getCircuitBreakerError(b CircuitBreaker) error 
 	case StateOpen:
 		return ErrOpenState
 	case StateHalfOpen:
-		if b.FailureRate > float64(cb.config.FailureThreshold) && b.WillResetAt.After(cb.clock.Now()) {
+		projectConfig := cb.GetProjectConfig(b.TenantId)
+		if b.FailureRate > float64(projectConfig.FailureThreshold) && b.WillResetAt.After(cb.clock.Now()) {
 			return ErrTooManyRequests
 		}
 		return nil
@@ -402,10 +417,11 @@ func (cb *CircuitBreakerManager) GetCircuitBreakerWithError(ctx context.Context,
 
 func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc PollFunc) error {
 	start := time.Now()
-	stopTime := time.Now().Add(time.Duration(cb.config.SampleRate-2) * time.Second)
+	masterConfig := cb.GetMasterConfig()
+	stopTime := time.Now().Add(time.Duration(masterConfig.SampleRate-2) * time.Second)
 	isLeader := true
 
-	mu, err := cb.store.Lock(ctx, mutexKey, cb.config.SampleRate)
+	mu, err := cb.store.Lock(ctx, mutexKey, masterConfig.SampleRate)
 	if err != nil {
 		isLeader = false
 		cb.logger.WithError(err).Debugf("[circuit breaker] failed to acquire lock")
@@ -417,9 +433,12 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 
 		// we are sleeping the rest of the duration because the sample might be done complete,
 		// but we don't want to release the lock until the next sample time window.
-		sleepTime := time.Until(stopTime)
-		if sleepTime.Seconds() > 1.0 {
-			time.Sleep(sleepTime)
+		// Skip sleep when skipSleep is set to true
+		if !cb.skipSleep {
+			sleepTime := time.Until(stopTime)
+			if sleepTime.Seconds() > 1.0 {
+				time.Sleep(sleepTime)
+			}
 		}
 
 		innerErr := cb.store.Unlock(ctx, mu)
@@ -454,7 +473,7 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 	}
 
 	// Get the failure and success counts from the last X minutes
-	pollResults, err := pollFunc(ctx, cb.config.ObservabilityWindow, resetMap)
+	pollResults, err := pollFunc(ctx, masterConfig.ObservabilityWindow, resetMap)
 	if err != nil {
 		return fmt.Errorf("poll function failed: %w", err)
 	}
@@ -471,11 +490,39 @@ func (cb *CircuitBreakerManager) sampleAndUpdate(ctx context.Context, pollFunc P
 }
 
 func (cb *CircuitBreakerManager) GetConfig() CircuitBreakerConfig {
-	return *cb.config
+	return cb.GetMasterConfig()
+}
+
+func (cb *CircuitBreakerManager) GetProjectConfig(projectID string) CircuitBreakerConfig {
+	if cb.configProvider != nil {
+		if config := cb.configProvider(projectID); config != nil {
+			return *config
+		}
+	}
+	return cb.GetMasterConfig()
+}
+
+func (cb *CircuitBreakerManager) GetMasterConfig() CircuitBreakerConfig {
+	// Return configured master config if set, otherwise return sensible defaults
+	if cb.masterConfig.SampleRate > 0 {
+		return cb.masterConfig
+	}
+
+	// Fallback to hardcoded defaults if no master config was provided
+	return CircuitBreakerConfig{
+		SampleRate:                  30,
+		BreakerTimeout:              30,
+		FailureThreshold:            70,
+		SuccessThreshold:            5,
+		ObservabilityWindow:         5,
+		MinimumRequestCount:         10,
+		ConsecutiveFailureThreshold: 10,
+	}
 }
 
 func (cb *CircuitBreakerManager) Start(ctx context.Context, pollFunc PollFunc) {
-	ticker := time.NewTicker(time.Duration(cb.config.SampleRate) * time.Second)
+	masterConfig := cb.GetMasterConfig()
+	ticker := time.NewTicker(time.Duration(masterConfig.SampleRate) * time.Second)
 	defer ticker.Stop()
 
 	for {
