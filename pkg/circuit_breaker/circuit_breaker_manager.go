@@ -33,6 +33,9 @@ var (
 	// ErrStoreMustNotBeNil is returned when a nil store is passed to NewCircuitBreakerManager
 	ErrStoreMustNotBeNil = errors.New("[circuit breaker] store must not be nil")
 
+	// ErrConfigProviderMustNotBeNil is returned when a nil config provider is passed to NewCircuitBreakerManager
+	ErrConfigProviderMustNotBeNil = errors.New("[circuit breaker] config provider must not be nil")
+
 	// ErrLoggerMustNotBeNil is returned when a nil logger is passed to NewCircuitBreakerManager
 	ErrLoggerMustNotBeNil = errors.New("[circuit breaker] logger must not be nil")
 
@@ -104,7 +107,7 @@ func NewCircuitBreakerManager(options ...CircuitBreakerOption) (*CircuitBreakerM
 	}
 
 	if r.configProvider == nil {
-		return nil, errors.New("config provider must not be nil")
+		return nil, ErrConfigProviderMustNotBeNil
 	}
 
 	if r.logger == nil {
