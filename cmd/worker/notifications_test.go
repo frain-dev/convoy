@@ -16,6 +16,12 @@ func (tq *testQueue) Write(_ convoy.TaskName, _ convoy.QueueName, job *queue.Job
 	tq.wrote = append(tq.wrote, job)
 	return nil
 }
+
+func (tq *testQueue) WriteWithoutTimeout(_ convoy.TaskName, _ convoy.QueueName, job *queue.Job) error {
+	tq.wrote = append(tq.wrote, job)
+	return nil
+}
+
 func (tq *testQueue) Options() queue.QueueOptions { return queue.QueueOptions{} }
 
 func TestEnqueueCircuitBreakerEmails(t *testing.T) {
