@@ -141,7 +141,7 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 
 	data.Filter.ProjectID = project.UID
 	pp := &datastore.Pageable{
-		PerPage:   2,
+		PerPage:   10000,
 		Sort:      "DESC",
 		Direction: datastore.Next,
 	}

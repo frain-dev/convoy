@@ -109,8 +109,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
 	}
 
-	lo.Infof("queues: %+v\n", queueNames)
-
 	opts := queue.QueueOptions{
 		Names:             queueNames,
 		RedisClient:       redis,
