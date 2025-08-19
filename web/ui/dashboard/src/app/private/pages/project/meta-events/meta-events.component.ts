@@ -1,23 +1,27 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { PrivateService } from 'src/app/private/private.service';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { EmptyStateComponent } from 'src/app/components/empty-state/empty-state.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
-import { MetaEventsService } from './meta-events.service';
-import { TableLoaderModule } from 'src/app/private/components/table-loader/table-loader.module';
-import { TableCellComponent, TableComponent, TableHeadCellComponent, TableHeadComponent, TableRowComponent } from 'src/app/components/table/table.component';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { TagComponent } from 'src/app/components/tag/tag.component';
-import { PrismModule } from 'src/app/private/components/prism/prism.module';
-import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
-import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
-import { META_EVENT } from 'src/app/models/project.model';
-import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import { Router } from '@angular/router';
-import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
-import { PermissionDirective } from '../../../components/permission/permission.directive';
+import {Component, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {PrivateService} from 'src/app/private/private.service';
+import {CardComponent} from 'src/app/components/card/card.component';
+import {EmptyStateComponent} from 'src/app/components/empty-state/empty-state.component';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {MetaEventsService} from './meta-events.service';
+import {TableLoaderModule} from 'src/app/private/components/table-loader/table-loader.module';
+import {
+    TableCellComponent,
+    TableComponent,
+    TableHeadCellComponent,
+    TableHeadComponent,
+    TableRowComponent
+} from 'src/app/components/table/table.component';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {TagComponent} from 'src/app/components/tag/tag.component';
+import {PrismModule} from 'src/app/private/components/prism/prism.module';
+import {StatusColorModule} from 'src/app/pipes/status-color/status-color.module';
+import {PaginationComponent} from 'src/app/private/components/pagination/pagination.component';
+import {META_EVENT} from 'src/app/models/project.model';
+import {CURSOR, PAGINATION} from 'src/app/models/global.model';
+import {Router} from '@angular/router';
+import {PermissionDirective} from '../../../components/permission/permission.directive';
 
 @Component({
 	selector: 'convoy-meta-events',
@@ -27,8 +31,6 @@ import { PermissionDirective } from '../../../components/permission/permission.d
         CardComponent,
         EmptyStateComponent,
         ButtonComponent,
-        TooltipComponent,
-        DialogHeaderComponent,
         TableLoaderModule,
         TableCellComponent,
         TableComponent,

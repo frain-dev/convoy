@@ -1,0 +1,105 @@
+.billing-details-display {
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  margin-bottom: 0;
+}
+
+.billing-section-title {
+  color: var(--Zinc-600, #52525B);
+  font-family: 'Open Sauce Sans', Arial, sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 20px;
+  align-self: stretch;
+  margin-bottom: 0;
+}
+
+.billing-details-display {
+  padding: 0 0 0 0;
+  margin-bottom: 32px;
+}
+
+.billing-details-display:not(:last-child) {
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 32px;
+}
+
+.billing-details-display .text-14,
+.billing-details-display .text-12 {
+  margin: 0;
+  padding: 0;
+}
+
+.billing-details-display .text-14.font-medium {
+  color: #030712;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+  margin-bottom: 8px;
+}
+
+.billing-details-display .text-14.font-medium:first-child {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  margin-bottom: 8px;
+}
+
+.billing-details-display .text-12.text-neutral-11 {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  margin-bottom: 4px;
+}
+
+.billing-details-display .text-12.text-neutral-11:last-child {
+  margin-bottom: 0;
+}
+
+button.text-primary-600 {
+  transition: color 0.2s ease;
+  
+  &:hover {
+    color: #2563eb;
+  }
+  
+  svg {
+    transition: transform 0.2s ease;
+  }
+  
+  &:hover svg {
+    transform: scale(1.1);
+  }
+}
+
+.flex.gap-12px.justify-end {
+  button {
+    min-width: 80px;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  
+  .bg-neutral-8 {
+    background-color: #e5e7eb;
+  }
+  
+  .rounded {
+    border-radius: 4px;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .5;
+  }
+} 

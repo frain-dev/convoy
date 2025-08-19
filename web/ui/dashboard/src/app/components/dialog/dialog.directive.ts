@@ -1,11 +1,11 @@
-import {CommonModule, NgOptimizedImage} from '@angular/common';
-import { Component, Directive, EventEmitter, Input, OnInit, Output } from '@angular/core';
-import { ButtonComponent } from '../button/button.component';
+import {CommonModule} from '@angular/common';
+import {Component, Directive, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {ButtonComponent} from '../button/button.component';
 
 // dialog header
 @Component({
 	selector: '[convoy-dialog-header]',
-	imports: [CommonModule, ButtonComponent, NgOptimizedImage],
+    imports: [CommonModule, ButtonComponent],
 	standalone: true,
 	template: `
 		<div
