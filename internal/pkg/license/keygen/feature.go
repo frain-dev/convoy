@@ -30,6 +30,7 @@ const (
 	AgentExecutionMode         Feature = "AGENT_EXECUTION_MODE"
 	IpRules                    Feature = "IP_RULES"
 	EnterpriseSSO              Feature = "ENTERPRISE_SSO"
+	GoogleOAuth                Feature = "GOOGLE_OAUTH"
 	DatadogTracing             Feature = "DATADOG_TRACING"
 	ReadReplica                Feature = "READ_REPLICA"
 	CredentialEncryption       Feature = "CREDENTIAL_ENCRYPTION"

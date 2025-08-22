@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
-import { HTTP_RESPONSE } from 'src/app/models/global.model';
-import { HttpService } from 'src/app/services/http/http.service';
+import {Injectable} from '@angular/core';
+import {HTTP_RESPONSE} from 'src/app/models/global.model';
+import {HttpService} from 'src/app/services/http/http.service';
 
 @Injectable({
 	providedIn: 'root'
@@ -29,6 +29,35 @@ export class LoginService {
 				const response = await this.http.request({
 					url: '/auth/sso',
 					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	loginWithGoogle(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: '/auth/google',
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	loginWithGoogleToken(idToken: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: '/auth/google/token',
+					body: { id_token: idToken },
+					method: 'post'
 				});
 				return resolve(response);
 			} catch (error) {

@@ -44,6 +44,7 @@
 	</section>
 
 	<button convoy-button fill="link" class="mt-34px w-full" (click)="router.navigateByUrl('/login')" size="sm">Log in if you already have an account</button>
+	<div *ngIf="isGoogleOAuthEnabled" class="text-center text-12 text-gray-600 mt-0px">Google sign-in available</div>
 </div>
 
 <convoy-loader [isTransparent]="false" *ngIf="isFetchingConfig"></convoy-loader>

@@ -94,6 +94,9 @@ var DefaultConfiguration = Configuration{
 		Portal: PortalRealmOptions{
 			Enabled: true,
 		},
+		GoogleOAuth: GoogleOAuthOptions{
+			Enabled: false,
+		},
 	},
 	ConsumerPoolSize: 100,
 	Tracer: TracerConfiguration{
@@ -245,6 +248,8 @@ type AuthConfiguration struct {
 	Native          NativeRealmOptions `json:"native"`
 	Jwt             JwtRealmOptions    `json:"jwt"`
 	Portal          PortalRealmOptions `json:"portal"`
+	GoogleOAuth     GoogleOAuthOptions `json:"google_oauth"`
+	SAML            SAMLOptions        `json:"saml"`
 	IsSignupEnabled bool               `json:"is_signup_enabled" envconfig:"CONVOY_SIGNUP_ENABLED"`
 }
 
@@ -458,6 +463,16 @@ type HCPVaultConfig struct {
 	ProjectID    string `json:"project_id" envconfig:"CONVOY_HCP_PROJECT_ID"`
 	AppName      string `json:"app_name" envconfig:"CONVOY_HCP_APP_NAME"`
 	SecretName   string `json:"secret_name" envconfig:"CONVOY_HCP_SECRET_NAME"`
+}
+
+type GoogleOAuthOptions struct {
+	Enabled     bool   `json:"enabled" envconfig:"CONVOY_GOOGLE_OAUTH_ENABLED"`
+	ClientID    string `json:"client_id" envconfig:"CONVOY_GOOGLE_OAUTH_CLIENT_ID"`
+	RedirectURL string `json:"redirect_url" envconfig:"CONVOY_GOOGLE_OAUTH_REDIRECT_URL"`
+}
+
+type SAMLOptions struct {
+	Enabled bool `json:"enabled" envconfig:"CONVOY_SAML_ENABLED"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

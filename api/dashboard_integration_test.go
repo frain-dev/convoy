@@ -110,7 +110,7 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/configuration/is_signup_enabled"
+	url := "/ui/configuration/auth"
 	req := createRequest(http.MethodGet, url, "", nil)
 	w := httptest.NewRecorder()
 
@@ -120,10 +120,10 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_False() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
-	var response bool
+	var response map[string]interface{}
 	parseResponse(u.T(), w.Result(), &response)
 
-	require.Equal(u.T(), false, response)
+	require.Equal(u.T(), false, response["is_signup_enabled"])
 }
 
 func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
@@ -131,7 +131,7 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 	require.NoError(u.T(), err)
 
 	// Arrange Request
-	url := "/ui/configuration/is_signup_enabled"
+	url := "/ui/configuration/auth"
 	req := createRequest(http.MethodGet, url, "", nil)
 	w := httptest.NewRecorder()
 
@@ -141,10 +141,10 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 	// Assert
 	require.Equal(u.T(), http.StatusOK, w.Code)
 
-	var response bool
+	var response map[string]interface{}
 	parseResponse(u.T(), w.Result(), &response)
 
-	require.Equal(u.T(), true, response)
+	require.Equal(u.T(), true, response["is_signup_enabled"])
 }
 
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {

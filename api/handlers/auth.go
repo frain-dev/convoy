@@ -2,15 +2,16 @@ package handlers
 
 import (
 	"errors"
-	"github.com/frain-dev/convoy/datastore"
 	"net/http"
 
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/services"
 
+	"encoding/json"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
@@ -206,4 +207,109 @@ func (h *Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Logout successful", nil, http.StatusOK))
+}
+
+// GoogleOAuthToken handles Google ID token authentication
+func (h *Handler) GoogleOAuthToken(w http.ResponseWriter, r *http.Request) {
+	configuration := h.A.Cfg
+
+	if !configuration.Auth.GoogleOAuth.Enabled {
+		_ = render.Render(w, r, util.NewErrorResponse("Google OAuth is not enabled", http.StatusForbidden))
+		return
+	}
+
+	var request struct {
+		IDToken string `json:"id_token"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("invalid request body", http.StatusBadRequest))
+		return
+	}
+
+	if request.IDToken == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("missing ID token", http.StatusBadRequest))
+		return
+	}
+
+	googleOAuthService := services.NewGoogleOAuthService(
+		postgres.NewUserRepo(h.A.DB),
+		postgres.NewOrgRepo(h.A.DB),
+		postgres.NewOrgMemberRepo(h.A.DB),
+		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		postgres.NewConfigRepo(h.A.DB),
+		h.A.Licenser,
+		nil,
+	)
+
+	user, token, err := googleOAuthService.HandleIDToken(r.Context(), request.IDToken, h.A)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+		return
+	}
+
+	// User exists but has no organization - redirect to setup
+	if token == nil {
+		u := &models.LoginUserResponse{
+			User:       user,
+			Token:      models.Token{},
+			NeedsSetup: true,
+		}
+		_ = render.Render(w, r, util.NewServerResponse("Google OAuth login successful", u, http.StatusOK))
+		return
+	}
+
+	u := &models.LoginUserResponse{
+		User:  user,
+		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Google OAuth login successful", u, http.StatusOK))
+}
+
+// GoogleOAuthSetup completes the user setup process for new Google OAuth users
+func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
+	var request struct {
+		BusinessName string `json:"business_name"`
+		IDToken      string `json:"id_token"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
+		return
+	}
+
+	if request.BusinessName == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("Business name is required", http.StatusBadRequest))
+		return
+	}
+
+	if request.IDToken == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("ID token is required", http.StatusBadRequest))
+		return
+	}
+
+	configuration := h.A.Cfg
+	googleOAuthService := services.NewGoogleOAuthService(
+		postgres.NewUserRepo(h.A.DB),
+		postgres.NewOrgRepo(h.A.DB),
+		postgres.NewOrgMemberRepo(h.A.DB),
+		jwt.NewJwt(&configuration.Auth.Jwt, h.A.Cache),
+		postgres.NewConfigRepo(h.A.DB),
+		h.A.Licenser,
+		nil,
+	)
+
+	user, token, err := googleOAuthService.CompleteGoogleOAuthSetup(r.Context(), request.IDToken, request.BusinessName, h.A)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Failed to complete setup: "+err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	u := &models.LoginUserResponse{
+		User:  user,
+		Token: models.Token{AccessToken: token.AccessToken, RefreshToken: token.RefreshToken},
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Setup completed successfully", u, http.StatusOK))
 }
