@@ -76,10 +76,6 @@ func (g *GoogleOAuthService) HandleIDToken(ctx context.Context, idToken string, 
 
 	if user != nil {
 		// User exists, authenticate them
-		if user.AuthType != string(datastore.GoogleOAuthUserType) {
-			return nil, nil, &ServiceError{ErrMsg: "user exists but was not created via Google OAuth"}
-		}
-
 		token, err := g.JWT.GenerateToken(user)
 		if err != nil {
 			return nil, nil, &ServiceError{ErrMsg: "failed to generate token", Err: err}
