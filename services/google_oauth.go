@@ -32,9 +32,6 @@ type GoogleOAuthService struct {
 	JWT           *jwt.Jwt
 	ConfigRepo    datastore.ConfigurationRepository
 	Licenser      license.Licenser
-	OAuthConfig   interface {
-		GetOAuthConfig() interface{}
-	}
 }
 
 func NewGoogleOAuthService(
@@ -44,9 +41,6 @@ func NewGoogleOAuthService(
 	jwt *jwt.Jwt,
 	configRepo datastore.ConfigurationRepository,
 	licenser license.Licenser,
-	oauthRealm interface {
-		GetOAuthConfig() interface{}
-	},
 ) *GoogleOAuthService {
 	return &GoogleOAuthService{
 		UserRepo:      userRepo,
@@ -55,7 +49,6 @@ func NewGoogleOAuthService(
 		JWT:           jwt,
 		ConfigRepo:    configRepo,
 		Licenser:      licenser,
-		OAuthConfig:   oauthRealm,
 	}
 }
 
