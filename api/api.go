@@ -301,6 +301,9 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
 			authRouter.Post("/logout", handler.LogoutUser)
+
+			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/token", handler.GoogleOAuthToken)
+			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/setup", handler.GoogleOAuthSetup)
 		})
 
 		uiRouter.Route("/saml", func(samlRouter chi.Router) {
@@ -481,7 +484,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
-			configRouter.Get("/is_signup_enabled", handler.IsSignUpEnabled)
+			configRouter.Get("/auth", handler.GetAuthConfiguration)
 		})
 	})
 
@@ -810,8 +813,10 @@ var guestRoutes = []string{
 	"/users/reset-password",
 	"/users/verify_email",
 	"/organisations/process_invite",
-	"/ui/configuration/is_signup_enabled",
+	"/ui/configuration/auth",
 	"/ui/license/features",
+	"/ui/auth/google/token",
+	"/ui/auth/google/setup",
 }
 
 func shouldAuthRoute(r *http.Request) bool {

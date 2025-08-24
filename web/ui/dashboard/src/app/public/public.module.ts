@@ -1,7 +1,8 @@
-import { NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { PublicComponent } from './public.component';
-import { RouterModule, Routes } from '@angular/router';
+import {NgModule} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {PublicComponent} from './public.component';
+import {RouterModule, Routes} from '@angular/router';
+import {GoogleOAuthSetupGuard} from '../guards/google-oauth-setup.guard';
 
 const routes: Routes = [
 	{
@@ -35,6 +36,12 @@ const routes: Routes = [
             {
 				path: 'saml',
 				loadComponent: () => import('./saml/saml.component').then(mod => mod.SamlComponent)
+			},
+
+			{
+				path: 'google-oauth-setup',
+				loadComponent: () => import('./google-oauth-setup/google-oauth-setup.component').then(mod => mod.GoogleOAuthSetupComponent),
+				canActivate: [GoogleOAuthSetupGuard]
 			},
 		]
 	}

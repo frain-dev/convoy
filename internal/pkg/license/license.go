@@ -27,6 +27,7 @@ type Licenser interface {
 	AgentExecutionMode() bool
 	IpRules() bool
 	EnterpriseSSO() bool
+	GoogleOAuth() bool
 	DatadogTracing() bool
 	ReadReplica() bool
 	CredentialEncryption() bool

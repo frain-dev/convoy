@@ -280,8 +280,9 @@ const (
 )
 
 const (
-	LocalUserType UserAuthType = "local"
-	SSOUserType   UserAuthType = "sso"
+	LocalUserType       UserAuthType = "local"
+	SSOUserType         UserAuthType = "sso"
+	GoogleOAuthUserType UserAuthType = "google_oauth"
 )
 
 var (

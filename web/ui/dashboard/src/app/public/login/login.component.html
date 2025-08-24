@@ -29,7 +29,18 @@
 				<img *ngIf="disableLoginBtn" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
 			</button>
 
-			<button convoy-button size="sm" type="button" fill="text" class="w-full" (click)="loginWithSAML()">Login with SAML</button>
+			<button *ngIf="isSAMLEnabled" convoy-button size="sm" type="button" fill="text" class="w-full" (click)="loginWithSAML()">Login with SAML</button>
+
+			<button *ngIf="isGoogleOAuthEnabled" convoy-button size="sm" type="button" fill="text" class="w-full mt-12px" (click)="loginWithGoogle()" [disabled]="isGoogleSigningIn">
+				<img *ngIf="!isGoogleSigningIn" src="/assets/img/svg/google.svg" alt="Google icon" class="w-16px h-16px inline mr-8px" />
+				<div *ngIf="isGoogleSigningIn" class="loading-dots inline mr-8px">
+					<span></span>
+					<span></span>
+					<span></span>
+				</div>
+				<span *ngIf="!isGoogleSigningIn">Sign in with Google</span>
+				<span *ngIf="isGoogleSigningIn">Signing in...</span>
+			</button>
 		</form>
 
 		<button *ngIf="isSignupEnabled && licenseService.hasLicense('CREATE_USER')" convoy-button fill="link" class="mt-12px w-full" (click)="router.navigateByUrl('/signup')" size="sm">Signup</button>

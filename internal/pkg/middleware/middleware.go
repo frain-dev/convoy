@@ -508,6 +508,18 @@ func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) htt
 	}
 }
 
+func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !l.GoogleOAuth() {
+				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

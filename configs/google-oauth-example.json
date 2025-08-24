@@ -11,11 +11,11 @@
         "port": 6379,
         "host": "redis_server"
     },
-    "host": "{host}",
+    "host": "http://localhost:5005",
     "logger": {
         "type": "console",
         "server_log": {
-            "level": "error"
+            "level": "info"
         }
     },
     "auth": {
@@ -24,15 +24,19 @@
             "enabled": true
         },
         "jwt": {
-            "enabled": true
+            "enabled": true,
+            "secret": "your-jwt-secret",
+            "expiry": 3600,
+            "refresh_secret": "your-refresh-secret",
+            "refresh_expiry": 604800
         },
         "portal": {
             "enabled": true
         },
         "google_oauth": {
-            "enabled": false,
-            "client_id": "",
-            "redirect_url": ""
+            "enabled": true,
+            "client_id": "your-google-client-id.apps.googleusercontent.com",
+            "redirect_url": "http://localhost:5005/ui/auth/google/callback"
         }
     },
     "smtp": {
