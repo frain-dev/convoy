@@ -35,6 +35,7 @@ func (p *UpdatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 	p.PortalLink.Name = p.Update.Name
 	p.PortalLink.OwnerID = p.Update.OwnerID
 	p.PortalLink.Endpoints = p.Update.Endpoints
+	p.PortalLink.AuthType = datastore.PortalAuthType(p.Update.AuthType)
 	p.PortalLink.CanManageEndpoint = p.Update.CanManageEndpoint
 	err := p.PortalLinkRepo.UpdatePortalLink(ctx, p.Project.UID, p.PortalLink)
 	if err != nil {

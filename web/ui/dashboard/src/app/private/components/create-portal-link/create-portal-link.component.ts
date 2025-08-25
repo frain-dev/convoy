@@ -28,13 +28,11 @@ export class CreatePortalLinkComponent implements OnInit {
 	@Input('action') action?: 'create' | 'update';
 	portalLinkForm: FormGroup = this.formBuilder.group({
 		name: [null, Validators.required],
-		endpoints: [null, Validators.required],
 		owner_id: [null, Validators.required],
 		can_manage_endpoint: [false, Validators.required],
+		auth_type: [null, Validators.required],
 		type: [null, Validators.required]
 	});
-	endpoints!: ENDPOINT[];
-	selectedEndpoints!: ENDPOINT[];
 	isCreatingPortalLink = false;
 	fetchingLinkDetails = false;
 	portalLink!: string;
@@ -44,7 +42,6 @@ export class CreatePortalLinkComponent implements OnInit {
 	constructor(private formBuilder: FormBuilder, private privateService: PrivateService, private generalService: GeneralService, private createPortalLinkService: CreatePortalLinkService, private router: Router, private route: ActivatedRoute) {}
 
 	async ngOnInit() {
-		this.getEndpoints();
 		if (this.action === 'update') await this.getPortalLink();
 		if (!(await this.rbacService.userCanAccess('Portal Links|MANAGE'))) this.portalLinkForm.disable();
 	}
@@ -71,22 +68,13 @@ export class CreatePortalLinkComponent implements OnInit {
 		}
 	}
 
-	async getEndpoints(searchString?: string) {
-		try {
-			const response = await this.privateService.getEndpoints({ q: searchString });
-			this.endpoints = response.data.content;
-		} catch {}
-	}
-
 	async getPortalLink() {
 		this.fetchingLinkDetails = true;
 
 		try {
 			const response = await this.createPortalLinkService.getPortalLink(this.linkUid);
 			const linkDetails = response.data;
-			this.selectedEndpoints = linkDetails.endpoints_metadata;
-			const endpoints = this.selectedEndpoints.map(endpoint => endpoint.uid);
-			this.portalLinkForm.patchValue({ ...linkDetails, endpoints, type: linkDetails.endpoints ? 'endpoint' : 'owner_id' });
+			this.portalLinkForm.patchValue({ ...linkDetails });
 			this.fetchingLinkDetails = false;
 		} catch {
 			this.fetchingLinkDetails = false;

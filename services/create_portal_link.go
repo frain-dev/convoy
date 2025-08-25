@@ -38,12 +38,18 @@ func (p *CreatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 		return nil, err
 	}
 
+	uid := ulid.Make().String()
+	if len(p.Portal.Endpoints) > 0 && util.IsStringEmpty(p.Portal.OwnerID) {
+		p.Portal.OwnerID = uid
+	}
+
 	portalLink := &datastore.PortalLink{
-		UID:               ulid.Make().String(),
+		UID:               uid,
 		ProjectID:         p.Project.UID,
 		Name:              p.Portal.Name,
 		Token:             uniuri.NewLen(24),
 		OwnerID:           p.Portal.OwnerID,
+		AuthType:          datastore.PortalAuthType(p.Portal.AuthType),
 		Endpoints:         p.Portal.Endpoints,
 		CanManageEndpoint: p.Portal.CanManageEndpoint,
 		CreatedAt:         time.Now(),

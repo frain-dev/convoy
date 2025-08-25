@@ -587,6 +587,15 @@
 				},
 				"type": "object"
 			},
+			"datastore.PortalAuthType": {
+				"enum": [
+					"refresh_token",
+					"owner_id",
+					"static_token",
+					"none"
+				],
+				"type": "string"
+			},
 			"datastore.ProviderConfig": {
 				"properties": {
 					"twitter": {
@@ -1835,12 +1844,18 @@
 			},
 			"models.PortalLink": {
 				"properties": {
+					"auth_key": {
+						"type": "string"
+					},
+					"auth_type": {
+						"type": "string"
+					},
 					"can_manage_endpoint": {
 						"description": "Specify whether endpoint management can be done through the Portal Link UI",
 						"type": "boolean"
 					},
 					"endpoints": {
-						"description": "IDs of endpoints in this portal link",
+						"description": "Deprecated\nIDs of endpoints in this portal link",
 						"items": {
 							"type": "string"
 						},
@@ -1851,7 +1866,7 @@
 						"type": "string"
 					},
 					"owner_id": {
-						"description": "Alternatively specify OwnerID, the portal link will inherit all the endpoints with this owner ID",
+						"description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
 						"type": "string"
 					}
 				},
@@ -1861,6 +1876,9 @@
 				"properties": {
 					"auth_key": {
 						"type": "string"
+					},
+					"auth_type": {
+						"$ref": "#/components/schemas/datastore.PortalAuthType"
 					},
 					"can_manage_endpoint": {
 						"type": "boolean"

@@ -130,7 +130,7 @@ func startServerComponent(_ context.Context, a *cli.App) error {
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
 	userRepo := postgres.NewUserRepo(a.DB)
 	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB)
-	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache)
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
 		lo.WithError(err).Fatal("failed to initialize realm chain")
 	}

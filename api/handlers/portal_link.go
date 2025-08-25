@@ -39,6 +39,16 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if util.IsStringEmpty(newPortalLink.AuthType) {
+		// makes sure that the auth type is set for backward compatibility
+		newPortalLink.SetDefaultAuthType()
+	}
+
+	if err := newPortalLink.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -198,6 +208,16 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if util.IsStringEmpty(updatePortalLink.AuthType) {
+		// makes sure that the auth type is set for backward compatibility
+		updatePortalLink.SetDefaultAuthType()
+	}
+
+	if err := updatePortalLink.Validate(); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
 	project, err := h.retrieveProject(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -206,7 +226,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 
 	portalLink, err := postgres.NewPortalLinkRepo(h.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -389,6 +409,7 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) models.PortalL
 		CanManageEndpoint: pl.CanManageEndpoint,
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,
+		AuthType:          pl.AuthType,
 		AuthKey:           pl.AuthKey,
 	}
 }

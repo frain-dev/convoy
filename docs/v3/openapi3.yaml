@@ -395,6 +395,13 @@ components:
         prev_page_cursor:
           type: string
       type: object
+    datastore.PortalAuthType:
+      enum:
+      - refresh_token
+      - owner_id
+      - static_token
+      - none
+      type: string
     datastore.ProviderConfig:
       properties:
         twitter:
@@ -1277,12 +1284,18 @@ components:
       type: object
     models.PortalLink:
       properties:
+        auth_key:
+          type: string
+        auth_type:
+          type: string
         can_manage_endpoint:
           description: Specify whether endpoint management can be done through the
             Portal Link UI
           type: boolean
         endpoints:
-          description: IDs of endpoints in this portal link
+          description: |-
+            Deprecated
+            IDs of endpoints in this portal link
           items:
             type: string
           type: array
@@ -1290,14 +1303,16 @@ components:
           description: Portal Link Name
           type: string
         owner_id:
-          description: Alternatively specify OwnerID, the portal link will inherit
-            all the endpoints with this owner ID
+          description: OwnerID, the portal link will inherit all the endpoints with
+            this owner ID
           type: string
       type: object
     models.PortalLinkResponse:
       properties:
         auth_key:
           type: string
+        auth_type:
+          $ref: '#/components/schemas/datastore.PortalAuthType'
         can_manage_endpoint:
           type: boolean
         created_at:
