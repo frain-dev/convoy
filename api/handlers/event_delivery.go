@@ -140,10 +140,14 @@ func (h *Handler) BatchRetryEventDelivery(w http.ResponseWriter, r *http.Request
 	}
 
 	data.Filter.ProjectID = project.UID
-	ep := datastore.Pageable{}
-	if data.Filter.Pageable == ep {
-		data.Filter.Pageable.PerPage = 1000
+	pp := &datastore.Pageable{
+		PerPage:   10000,
+		Sort:      "DESC",
+		Direction: datastore.Next,
 	}
+	pp.SetCursors()
+
+	data.Filter.Pageable = *pp
 
 	br := services.BatchRetryEventDeliveryService{
 		BatchRetryRepo:    postgres.NewBatchRetryRepo(h.A.DB),

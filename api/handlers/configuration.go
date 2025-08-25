@@ -2,10 +2,9 @@ package handlers
 
 import (
 	"errors"
-	"net/http"
-
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/log"
+	"net/http"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -106,13 +105,24 @@ func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Configuration updated successfully", c, http.StatusAccepted))
 }
 
-func (h *Handler) IsSignUpEnabled(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetAuthConfiguration(w http.ResponseWriter, r *http.Request) {
 	cfg, err := config.Get()
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load configuration")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load configuration", http.StatusBadRequest))
 		return
 	}
+	authConfig := map[string]interface{}{
+		"is_signup_enabled": cfg.Auth.IsSignupEnabled,
+		"google_oauth": map[string]interface{}{
+			"enabled":      cfg.Auth.GoogleOAuth.Enabled && h.A.Licenser.GoogleOAuth(),
+			"client_id":    cfg.Auth.GoogleOAuth.ClientID,
+			"redirect_url": cfg.Auth.GoogleOAuth.RedirectURL,
+		},
+		"saml": map[string]interface{}{
+			"enabled": h.A.Licenser.EnterpriseSSO(),
+		},
+	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Configuration loaded successfully", cfg.Auth.IsSignupEnabled, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Auth configuration fetched successfully", authConfig, http.StatusOK))
 }

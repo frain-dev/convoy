@@ -1124,7 +1124,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			manager, err := cb.NewCircuitBreakerManager(
 				cb.StoreOption(mockStore),
 				cb.ClockOption(mockClock),
-				cb.ConfigOption(breakerConfig),
+				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
+					return breakerConfig
+				}),
 				cb.LoggerOption(log.NewLogger(os.Stdout)),
 			)
 			require.NoError(t, err)

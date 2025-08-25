@@ -128,7 +128,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	// TODO(subomi): left this here temporarily till the data plane is stable.
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
-		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
+		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
@@ -173,10 +173,26 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 							eventRouter.Get("/countbatchreplayevents", handler.CountAffectedEvents)
 
 							// TODO(all): should the InstrumentPath change?
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/", handler.CreateEndpointEvent)
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/fanout", handler.CreateEndpointFanoutEvent)
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/broadcast", handler.CreateBroadcastEvent)
-							eventRouter.With(handler.RequireEnabledProject(), middleware.InstrumentPath(a.A.Licenser)).Post("/dynamic", handler.CreateDynamicEvent)
+							eventRouter.With(handler.RequireEnabledProject(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
+								Post("/", handler.CreateEndpointEvent)
+
+							eventRouter.With(handler.RequireEnabledProject(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
+								Post("/fanout", handler.CreateEndpointFanoutEvent)
+
+							eventRouter.With(handler.RequireEnabledProject(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
+								Post("/broadcast", handler.CreateBroadcastEvent)
+
+							eventRouter.With(handler.RequireEnabledProject(),
+								middleware.InstrumentPath(a.A.Licenser),
+								middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate)).
+								Post("/dynamic", handler.CreateDynamicEvent)
+
 							eventRouter.With(handler.RequireEnabledProject()).Post("/batchreplay", handler.BatchReplayEvents)
 
 							eventRouter.Route("/{eventID}", func(eventSubRouter chi.Router) {
@@ -285,6 +301,9 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			authRouter.Post("/register", handler.RegisterUser)
 			authRouter.Post("/token/refresh", handler.RefreshToken)
 			authRouter.Post("/logout", handler.LogoutUser)
+
+			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/token", handler.GoogleOAuthToken)
+			authRouter.With(middleware.RequireValidGoogleOAuthLicense(handler.A.Licenser)).Post("/google/setup", handler.GoogleOAuthSetup)
 		})
 
 		uiRouter.Route("/saml", func(samlRouter chi.Router) {
@@ -465,7 +484,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 		uiRouter.Route("/configuration", func(configRouter chi.Router) {
 			configRouter.Get("/", handler.GetConfiguration)
-			configRouter.Get("/is_signup_enabled", handler.IsSignUpEnabled)
+			configRouter.Get("/auth", handler.GetAuthConfiguration)
 		})
 	})
 
@@ -607,6 +626,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 				projectRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.ApiRateLimit))
 				projectRouter.Route("/{projectID}", func(projectSubRouter chi.Router) {
 					projectSubRouter.Route("/events", func(eventRouter chi.Router) {
+						eventRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
 						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/", handler.CreateEndpointEvent)
 						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/fanout", handler.CreateEndpointFanoutEvent)
 						eventRouter.With(middleware.InstrumentPath(a.A.Licenser)).Post("/broadcast", handler.CreateBroadcastEvent)
@@ -793,8 +813,10 @@ var guestRoutes = []string{
 	"/users/reset-password",
 	"/users/verify_email",
 	"/organisations/process_invite",
-	"/ui/configuration/is_signup_enabled",
+	"/ui/configuration/auth",
 	"/ui/license/features",
+	"/ui/auth/google/token",
+	"/ui/auth/google/setup",
 }
 
 func shouldAuthRoute(r *http.Request) bool {

@@ -34,6 +34,13 @@ type CircuitBreakerConfig struct {
 	// ConsecutiveFailureThreshold determines when we ultimately disable the endpoint.
 	// E.g., after 10 consecutive transitions from half-open → open we should disable it.
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold"`
+
+	// SkipSleep is a convenience/testing flag that disables real sleep/wait
+	// during breaker state transitions. When set to true, the breaker will
+	// transition immediately without waiting for timers. This should only be
+	// used in tests or CLI operations to speed up flows; do not enable in
+	// production as it bypasses timing guarantees.
+	SkipSleep bool `json:"skip_sleep"`
 }
 
 func (c *CircuitBreakerConfig) Validate() error {

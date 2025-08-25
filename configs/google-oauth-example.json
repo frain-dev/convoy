@@ -1,0 +1,58 @@
+{
+    "database": {
+        "host": "postgres",
+        "username": "convoy",
+        "password": "convoy",
+        "database": "convoy",
+        "options": "sslmode=disable&connect_timeout=30",
+        "port": 5432
+    },
+    "redis": {
+        "port": 6379,
+        "host": "redis_server"
+    },
+    "host": "http://localhost:5005",
+    "logger": {
+        "type": "console",
+        "server_log": {
+            "level": "info"
+        }
+    },
+    "auth": {
+        "is_signup_enabled": true,
+        "native": {
+            "enabled": true
+        },
+        "jwt": {
+            "enabled": true,
+            "secret": "your-jwt-secret",
+            "expiry": 3600,
+            "refresh_secret": "your-refresh-secret",
+            "refresh_expiry": 604800
+        },
+        "portal": {
+            "enabled": true
+        },
+        "google_oauth": {
+            "enabled": true,
+            "client_id": "your-google-client-id.apps.googleusercontent.com",
+            "redirect_url": "http://localhost:5005/ui/auth/google/callback"
+        }
+    },
+    "smtp": {
+        "provider": "sendgrid",
+        "url": "smtp.sendgrid.net",
+        "port": 2525,
+        "username": "apikey",
+        "password": "<api-key-from-sendgrid>",
+        "from": "support@frain.dev"
+    },
+    "server": {
+        "http": {
+            "ssl": false,
+            "ssl_cert_file": "",
+            "ssl_key_file": "",
+            "port": 5005
+        }
+    }
+}
