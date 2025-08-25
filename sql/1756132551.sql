@@ -12,7 +12,7 @@ where e.id = endpoint_id and (e.owner_id is null or length(trim(e.owner_id)) = 0
 update convoy.portal_links
 set owner_id = substr(encode(sha256(id::bytea), 'hex'), 1, 16)
 where length(endpoints) > 0
-and (owner_id is null or length(trim(owner_id)) = 0);
+  and (owner_id is null or length(trim(owner_id)) = 0);
 
 -- +migrate Down
 alter table convoy.portal_links drop column auth_type;
