@@ -14,6 +14,7 @@ import {EVENT_DELIVERY} from '../../models/event.model';
 import {FormBuilder, FormGroup} from '@angular/forms';
 import {EventsService} from '../../private/pages/project/events/events.service';
 import {Router} from '@angular/router';
+import {LicensesService} from "../../services/licenses/licenses.service";
 
 @Component({
     selector: 'convoy-event-deliveries',
@@ -39,7 +40,7 @@ export class EventDeliveriesComponent implements OnInit {
     chartData!: CHARTDATA[];
     isPageLoading = false;
 
-    constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public router: Router) {
+    constructor(private formBuilder: FormBuilder, private eventsService: EventsService, public licenseService: LicensesService, public router: Router) {
     }
 
 
@@ -47,6 +48,7 @@ export class EventDeliveriesComponent implements OnInit {
         this.isloadingDashboardData = true;
         this.isPageLoading = true;
         this.fetchDashboardData();
+        this.licenseService.setLicenses()
     }
 
     setDateForFilter(requestDetails: { startDate: Date; endDate: Date; startTime?: string; endTime?: string }) {
