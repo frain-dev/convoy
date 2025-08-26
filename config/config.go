@@ -94,6 +94,9 @@ var DefaultConfiguration = Configuration{
 		Portal: PortalRealmOptions{
 			Enabled: true,
 		},
+		GoogleOAuth: GoogleOAuthOptions{
+			Enabled: false,
+		},
 	},
 	ConsumerPoolSize: 100,
 	Tracer: TracerConfiguration{
@@ -250,6 +253,8 @@ type AuthConfiguration struct {
 	Native          NativeRealmOptions `json:"native"`
 	Jwt             JwtRealmOptions    `json:"jwt"`
 	Portal          PortalRealmOptions `json:"portal"`
+	GoogleOAuth     GoogleOAuthOptions `json:"google_oauth"`
+	SAML            SAMLOptions        `json:"saml"`
 	IsSignupEnabled bool               `json:"is_signup_enabled" envconfig:"CONVOY_SIGNUP_ENABLED"`
 }
 
@@ -325,6 +330,7 @@ type CircuitBreakerConfiguration struct {
 	MinimumRequestCount         uint64 `json:"minimum_request_count" envconfig:"CONVOY_CIRCUIT_BREAKER_MINIMUM_REQUEST_COUNT"`
 	ObservabilityWindow         uint64 `json:"observability_window" envconfig:"CONVOY_CIRCUIT_BREAKER_OBSERVABILITY_WINDOW"`
 	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" envconfig:"CONVOY_CIRCUIT_BREAKER_CONSECUTIVE_FAILURE_THRESHOLD"`
+	SkipSleep                   bool   `json:"skip_sleep" envconfig:"CONVOY_CIRCUIT_BREAKER_SKIP_SLEEP"`
 }
 
 type AnalyticsConfiguration struct {
@@ -486,6 +492,16 @@ func (b *BillingConfiguration) Validate() error {
 	}
 
 	return nil
+}
+
+type GoogleOAuthOptions struct {
+	Enabled     bool   `json:"enabled" envconfig:"CONVOY_GOOGLE_OAUTH_ENABLED"`
+	ClientID    string `json:"client_id" envconfig:"CONVOY_GOOGLE_OAUTH_CLIENT_ID"`
+	RedirectURL string `json:"redirect_url" envconfig:"CONVOY_GOOGLE_OAUTH_REDIRECT_URL"`
+}
+
+type SAMLOptions struct {
+	Enabled bool `json:"enabled" envconfig:"CONVOY_SAML_ENABLED"`
 }
 
 // Get fetches the application configuration. LoadConfig must have been called

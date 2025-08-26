@@ -124,7 +124,8 @@ export class CreateProjectComponent implements OnInit {
 		{ label: 'endpoints config', svg: 'stroke', icon: 'endpoints' },
 		{ label: 'meta events config', svg: 'stroke', icon: 'meta-events' },
 		{ label: 'event types', svg: 'stroke', icon: 'event-type' },
-		{ label: 'secrets', svg: 'stroke', icon: 'secret' }
+		{ label: 'secrets', svg: 'stroke', icon: 'secret' },
+		{ label: 'circuit breaker', svg: 'stroke', icon: 'shield' }
 	];
 	activeTab = this.tabs[0];
 	events = ['endpoint.created', 'endpoint.deleted', 'endpoint.updated', 'eventdelivery.success', 'eventdelivery.failed', 'project.updated'];
@@ -141,6 +142,30 @@ export class CreateProjectComponent implements OnInit {
 		private route: ActivatedRoute,
 		public licenseService: LicensesService
 	) {}
+
+	// Normalized view model for circuit breaker with hard defaults to 0
+	get circuitBreakerView() {
+		const cb = this.projectDetails?.config?.circuit_breaker as
+			| {
+					sample_rate?: number;
+					error_timeout?: number;
+					failure_threshold?: number;
+					success_threshold?: number;
+					observability_window?: number;
+					minimum_request_count?: number;
+					consecutive_failure_threshold?: number;
+			  }
+			| undefined;
+		return {
+			sample_rate: cb?.sample_rate ?? 0,
+			error_timeout: cb?.error_timeout ?? 0,
+			failure_threshold: cb?.failure_threshold ?? 0,
+			success_threshold: cb?.success_threshold ?? 0,
+			observability_window: cb?.observability_window ?? 0,
+			minimum_request_count: cb?.minimum_request_count ?? 0,
+			consecutive_failure_threshold: cb?.consecutive_failure_threshold ?? 0,
+		};
+	}
 
 	async ngOnInit() {
 		this.getEventTypes();

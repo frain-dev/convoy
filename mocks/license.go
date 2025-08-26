@@ -280,6 +280,20 @@ func (mr *MockLicenserMockRecorder) EnterpriseSSO() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EnterpriseSSO", reflect.TypeOf((*MockLicenser)(nil).EnterpriseSSO))
 }
 
+// GoogleOAuth mocks base method.
+func (m *MockLicenser) GoogleOAuth() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GoogleOAuth")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// GoogleOAuth indicates an expected call of GoogleOAuth.
+func (mr *MockLicenserMockRecorder) GoogleOAuth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GoogleOAuth", reflect.TypeOf((*MockLicenser)(nil).GoogleOAuth))
+}
+
 // FeatureListJSON mocks base method.
 func (m *MockLicenser) FeatureListJSON(ctx context.Context) (json.RawMessage, error) {
 	m.ctrl.T.Helper()

@@ -491,6 +491,14 @@ func (k *Licenser) EnterpriseSSO() bool {
 	return ok
 }
 
+func (k *Licenser) GoogleOAuth() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[GoogleOAuth]
+	return ok
+}
+
 func (k *Licenser) DatadogTracing() bool {
 	if checkExpiry(k.license) != nil {
 		return false

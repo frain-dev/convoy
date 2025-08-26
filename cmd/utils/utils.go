@@ -21,5 +21,6 @@ func AddUtilsCommand(app *cli.App) *cobra.Command {
 	utilsCmd.AddCommand(AddInitEncryptionCommand(app))
 	utilsCmd.AddCommand(AddRotateKeyCommand(app))
 	utilsCmd.AddCommand(AddRevertEncryptionCommand(app))
+	utilsCmd.AddCommand(AddCircuitBreakersCommand(app))
 	return utilsCmd
 }

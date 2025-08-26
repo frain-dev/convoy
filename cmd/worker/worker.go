@@ -79,13 +79,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	both := map[string]int{
 		string(convoy.EventQueue):         4,
-		string(convoy.CreateEventQueue):   3,
-		string(convoy.RetryEventQueue):    2,
+		string(convoy.CreateEventQueue):   4,
+		string(convoy.EventWorkflowQueue): 3,
+		string(convoy.RetryEventQueue):    1,
 		string(convoy.ScheduleQueue):      1,
 		string(convoy.DefaultQueue):       1,
 		string(convoy.MetaEventQueue):     1,
-		string(convoy.BatchRetryQueue):    2,
-		string(convoy.EventWorkflowQueue): 3,
+		string(convoy.BatchRetryQueue):    1,
 	}
 
 	if !a.Licenser.AgentExecutionMode() {
@@ -205,8 +205,42 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	var circuitBreakerManager *cb.CircuitBreakerManager
 
 	if featureFlag.CanAccessFeature(fflag.CircuitBreaker) {
+		// Use circuit breaker config from application configuration
+		masterDefaults := cb.CircuitBreakerConfig{
+			SampleRate:                  cfg.CircuitBreaker.SampleRate,
+			BreakerTimeout:              cfg.CircuitBreaker.ErrorTimeout,
+			FailureThreshold:            cfg.CircuitBreaker.FailureThreshold,
+			SuccessThreshold:            cfg.CircuitBreaker.SuccessThreshold,
+			ObservabilityWindow:         cfg.CircuitBreaker.ObservabilityWindow,
+			MinimumRequestCount:         cfg.CircuitBreaker.MinimumRequestCount,
+			ConsecutiveFailureThreshold: cfg.CircuitBreaker.ConsecutiveFailureThreshold,
+			SkipSleep:                   cfg.CircuitBreaker.SkipSleep,
+		}
+
 		circuitBreakerManager, err = cb.NewCircuitBreakerManager(
-			cb.ConfigOption(configuration.ToCircuitBreakerConfig()),
+			cb.SkipSleepOption(masterDefaults.SkipSleep),
+			cb.MasterConfigOption(masterDefaults),
+			cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
+				project, err := projectRepo.FetchProjectByID(ctx, projectID)
+				if err != nil {
+					lo.WithError(err).Warnf("Failed to fetch project %s for circuit breaker config, using default", projectID)
+					return &masterDefaults
+				}
+				if project.Config.CircuitBreaker == nil {
+					lo.Warnf("Project %s has no circuit breaker config, using default", projectID)
+					return &masterDefaults
+				}
+				// Convert config.CircuitBreakerConfiguration to cb.CircuitBreakerConfig
+				return &cb.CircuitBreakerConfig{
+					SampleRate:                  project.Config.CircuitBreaker.SampleRate,
+					BreakerTimeout:              project.Config.CircuitBreaker.ErrorTimeout,
+					FailureThreshold:            project.Config.CircuitBreaker.FailureThreshold,
+					SuccessThreshold:            project.Config.CircuitBreaker.SuccessThreshold,
+					MinimumRequestCount:         project.Config.CircuitBreaker.MinimumRequestCount,
+					ObservabilityWindow:         project.Config.CircuitBreaker.ObservabilityWindow,
+					ConsecutiveFailureThreshold: project.Config.CircuitBreaker.ConsecutiveFailureThreshold,
+				}
+			}),
 			cb.StoreOption(cb.NewRedisStore(rd.Client(), clock.NewRealClock())),
 			cb.ClockOption(clock.NewRealClock()),
 			cb.LoggerOption(lo),
@@ -224,10 +258,22 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 				switch n {
 				case cb.TypeDisableResource:
+					// Disable the endpoint
 					breakerErr := endpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, datastore.InactiveEndpointStatus)
 					if breakerErr != nil {
 						return breakerErr
 					}
+
+					// Send notification emails (support + owner)
+					orgRepo := postgres.NewOrgRepo(a.DB)
+					ownerEmail := ""
+					if org, err := orgRepo.FetchOrganisationByID(ctx, project.OrganisationID); err == nil {
+						if owner, err := postgres.NewUserRepo(a.DB).FindUserByID(ctx, org.OwnerID); err == nil {
+							ownerEmail = owner.Email
+						}
+					}
+					_ = EnqueueCircuitBreakerEmails(a.Queue, lo, project, endpoint, ownerEmail)
+
 				default:
 					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
 				}

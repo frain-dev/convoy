@@ -123,6 +123,10 @@ func (Licenser) EnterpriseSSO() bool {
 	return true
 }
 
+func (Licenser) GoogleOAuth() bool {
+	return true
+}
+
 func (k *Licenser) DatadogTracing() bool {
 	return true
 }

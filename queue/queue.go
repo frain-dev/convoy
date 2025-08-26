@@ -9,6 +9,7 @@ import (
 
 type Queuer interface {
 	Write(convoy.TaskName, convoy.QueueName, *Job) error
+	WriteWithoutTimeout(convoy.TaskName, convoy.QueueName, *Job) error
 	Options() QueueOptions
 }
 

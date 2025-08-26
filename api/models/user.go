@@ -95,5 +95,6 @@ func (t *Token) Validate() error {
 
 type LoginUserResponse struct {
 	*datastore.User
-	Token Token `json:"token"`
+	Token      Token `json:"token"`
+	NeedsSetup bool  `json:"needs_setup,omitempty"`
 }
