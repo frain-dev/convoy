@@ -136,7 +136,7 @@ type PortalLink struct {
 	AuthType string `json:"auth_type"`
 
 	// OwnerID, the portal link will inherit all the endpoints with this owner ID
-	OwnerID string `json:"owner_id"`
+	OwnerID string `json:"owner_id" valid:"required~please provide the owner id field"`
 
 	AuthKey string `json:"auth_key"`
 

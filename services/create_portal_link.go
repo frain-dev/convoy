@@ -39,7 +39,7 @@ func (p *CreatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 	}
 
 	uid := ulid.Make().String()
-	if len(p.Portal.Endpoints) > 0 && util.IsStringEmpty(p.Portal.OwnerID) {
+	if util.IsStringEmpty(p.Portal.OwnerID) {
 		p.Portal.OwnerID = uid
 	}
 
