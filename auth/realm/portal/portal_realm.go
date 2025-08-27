@@ -62,7 +62,6 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	keySplit := strings.Split(cred.APIKey, ".")
 
 	if len(keySplit) != 3 {
-		p.logger.Warnf("invalid api key format: %s", cred.APIKey)
 		return nil, errors.New("invalid api key format")
 	}
 
