@@ -1,6 +1,6 @@
 -- +migrate Up
-create type convoy.portal_auth_types as enum ('none', 'static_token', 'owner_id', 'refresh_token');
-alter table convoy.portal_links add column auth_type convoy.portal_auth_types not null default 'refresh_token';
+create type convoy.portal_auth_types as enum ('none', 'static_token', 'refresh_token');
+alter table convoy.portal_links add column auth_type convoy.portal_auth_types not null default 'static_token';
 
 -- convert portal links with endpoint arrays, for each endpoint in that array set the owner_id of the endpoints to the same value
 with portals_with_ids as (select id, endpoints from convoy.portal_links where length(endpoints) > 0)
@@ -13,6 +13,10 @@ update convoy.portal_links
 set owner_id = substr(encode(sha256(id::bytea), 'hex'), 1, 16)
 where length(endpoints) > 0
   and (owner_id is null or length(trim(owner_id)) = 0);
+
+update convoy.portal_links
+set auth_type = 'static_token'
+where deleted_at is null;
 
 -- +migrate Down
 alter table convoy.portal_links drop column auth_type;

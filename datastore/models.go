@@ -1540,10 +1540,8 @@ type OrganisationInvite struct {
 type PortalAuthType string
 
 const (
-	PortalAuthTypeRefresh PortalAuthType = "refresh_token"
-	PortalOwnerIdType     PortalAuthType = "owner_id"
-	PortalAuthTypeToken   PortalAuthType = "static_token"
-	PortalAuthTypeNone    PortalAuthType = "none"
+	PortalAuthTypeRefreshToken PortalAuthType = "refresh_token"
+	PortalAuthTypeStaticToken  PortalAuthType = "static_token"
 )
 
 type PortalLink struct {

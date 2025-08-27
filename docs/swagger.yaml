@@ -431,15 +431,11 @@ definitions:
   datastore.PortalAuthType:
     enum:
     - refresh_token
-    - owner_id
     - static_token
-    - none
     type: string
     x-enum-varnames:
-    - PortalAuthTypeRefresh
-    - PortalOwnerIdType
-    - PortalAuthTypeToken
-    - PortalAuthTypeNone
+    - PortalAuthTypeRefreshToken
+    - PortalAuthTypeStaticToken
   datastore.ProviderConfig:
     properties:
       twitter:

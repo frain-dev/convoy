@@ -8019,15 +8019,11 @@
             "type": "string",
             "enum": [
                 "refresh_token",
-                "owner_id",
-                "static_token",
-                "none"
+                "static_token"
             ],
             "x-enum-varnames": [
-                "PortalAuthTypeRefresh",
-                "PortalOwnerIdType",
-                "PortalAuthTypeToken",
-                "PortalAuthTypeNone"
+                "PortalAuthTypeRefreshToken",
+                "PortalAuthTypeStaticToken"
             ]
         },
         "datastore.ProviderConfig": {

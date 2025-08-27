@@ -590,9 +590,7 @@
 			"datastore.PortalAuthType": {
 				"enum": [
 					"refresh_token",
-					"owner_id",
-					"static_token",
-					"none"
+					"static_token"
 				],
 				"type": "string"
 			},

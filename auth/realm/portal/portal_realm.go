@@ -50,11 +50,13 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 			pLink = &pLinks[0]
 		}
 
-		return &auth.AuthenticatedUser{
-			AuthenticatedByRealm: p.GetName(),
-			Credential:           *cred,
-			PortalLink:           pLink,
-		}, nil
+		if pLink.AuthType == datastore.PortalAuthTypeStaticToken {
+			return &auth.AuthenticatedUser{
+				AuthenticatedByRealm: p.GetName(),
+				Credential:           *cred,
+				PortalLink:           pLink,
+			}, nil
+		}
 	}
 
 	keySplit := strings.Split(cred.APIKey, ".")
@@ -73,6 +75,10 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 		return nil, fmt.Errorf("failed to find portal link: %v", innerErr)
 	}
 
+	if pLink.AuthType != datastore.PortalAuthTypeRefreshToken {
+		return nil, errors.New("invalid portal link auth token type")
+	}
+
 	// if the portal link is found, use the token hash and salt
 	decodedKey, innerErr := base64.URLEncoding.DecodeString(pLink.TokenHash)
 	if innerErr != nil {
@@ -83,19 +89,15 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	// compute hash & compare.
 	dk := pbkdf2.Key([]byte(cred.APIKey), []byte(pLink.TokenSalt), 4096, 32, sha256.New)
 	if !bytes.Equal(dk, decodedKey) {
-		// Not Match.
-		p.logger.Warnf("invalid portal link auth token: %s", cred.APIKey)
 		return nil, errors.New("invalid portal link auth token")
 	}
 
 	// if the current time is after the specified expiry date, then the key has expired
 	if !pLink.TokenExpiresAt.IsZero() && time.Now().After(pLink.TokenExpiresAt.ValueOrZero()) {
-		p.logger.Warnf("portal link auth token has expired: %s", cred.APIKey)
 		return nil, errors.New("portal link auth token has expired")
 	}
 
 	if !pLink.DeletedAt.IsZero() {
-		p.logger.Warnf("portal link auth token has been revoked: %s", cred.APIKey)
 		return nil, errors.New("portal link auth token has been revoked")
 	}
 

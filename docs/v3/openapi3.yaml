@@ -398,9 +398,7 @@ components:
     datastore.PortalAuthType:
       enum:
       - refresh_token
-      - owner_id
       - static_token
-      - none
       type: string
     datastore.ProviderConfig:
       properties:

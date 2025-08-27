@@ -146,10 +146,8 @@ type PortalLink struct {
 
 func (p *PortalLink) Validate() error {
 	validAuthTypes := []datastore.PortalAuthType{
-		datastore.PortalAuthTypeRefresh,
-		datastore.PortalOwnerIdType,
-		datastore.PortalAuthTypeToken,
-		datastore.PortalAuthTypeNone,
+		datastore.PortalAuthTypeRefreshToken,
+		datastore.PortalAuthTypeStaticToken,
 	}
 
 	// Check if the auth type is valid
@@ -164,10 +162,8 @@ func (p *PortalLink) Validate() error {
 
 func (p *PortalLink) SetDefaultAuthType() {
 	validAuthTypes := []datastore.PortalAuthType{
-		datastore.PortalAuthTypeRefresh,
-		datastore.PortalOwnerIdType,
-		datastore.PortalAuthTypeToken,
-		datastore.PortalAuthTypeNone,
+		datastore.PortalAuthTypeRefreshToken,
+		datastore.PortalAuthTypeStaticToken,
 	}
 
 	// Check if the auth type is valid
@@ -178,7 +174,7 @@ func (p *PortalLink) SetDefaultAuthType() {
 	}
 
 	// Default to refresh token
-	p.AuthType = string(datastore.PortalAuthTypeRefresh)
+	p.AuthType = string(datastore.PortalAuthTypeRefreshToken)
 }
 
 type PortalLinkResponse struct {
