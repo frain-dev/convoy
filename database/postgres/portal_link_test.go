@@ -21,12 +21,12 @@ func Test_CreatePortalLink(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db)
+	repo := NewPortalLinkRepo(db)
 	portalLink := generatePortalLink(t, db)
 
-	require.NoError(t, portalLinkRepo.CreatePortalLink(context.Background(), portalLink))
+	require.NoError(t, repo.CreatePortalLink(context.Background(), portalLink))
 
-	newPortalLink, err := portalLinkRepo.FindPortalLinkByID(context.Background(), portalLink.ProjectID, portalLink.UID)
+	newPortalLink, err := repo.FindPortalLinkByID(context.Background(), portalLink.ProjectID, portalLink.UID)
 	require.NoError(t, err)
 
 	newPortalLink.CreatedAt = time.Time{}
@@ -41,17 +41,17 @@ func Test_FindPortalLinkByID(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db)
+	repo := NewPortalLinkRepo(db)
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
 
-	_, err := portalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
+	_, err := repo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrPortalLinkNotFound))
 
-	require.NoError(t, portalLinkRepo.CreatePortalLink(ctx, portalLink))
+	require.NoError(t, repo.CreatePortalLink(ctx, portalLink))
 
-	newPortalLink, err := portalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
+	newPortalLink, err := repo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
 	require.NoError(t, err)
 
 	newPortalLink.CreatedAt = time.Time{}
@@ -66,17 +66,17 @@ func Test_FindPortalLinkByToken(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db)
+	repo := NewPortalLinkRepo(db)
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
 
-	_, err := portalLinkRepo.FindPortalLinkByToken(ctx, portalLink.Token)
+	_, err := repo.FindPortalLinkByToken(ctx, portalLink.Token)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrPortalLinkNotFound))
 
-	require.NoError(t, portalLinkRepo.CreatePortalLink(ctx, portalLink))
+	require.NoError(t, repo.CreatePortalLink(ctx, portalLink))
 
-	newPortalLink, err := portalLinkRepo.FindPortalLinkByToken(ctx, portalLink.Token)
+	newPortalLink, err := repo.FindPortalLinkByToken(ctx, portalLink.Token)
 	require.NoError(t, err)
 
 	newPortalLink.CreatedAt = time.Time{}
@@ -91,31 +91,31 @@ func Test_UpdatePortalLink(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db)
-	projectRepo := NewProjectRepo(db)
-	endpointRepo := NewEndpointRepo(db)
+	linkRepo := NewPortalLinkRepo(db)
+	newProjectRepo := NewProjectRepo(db)
+	newEndpointRepo := NewEndpointRepo(db)
 
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
 
-	project, err := projectRepo.FetchProjectByID(ctx, portalLink.ProjectID)
+	project, err := newProjectRepo.FetchProjectByID(ctx, portalLink.ProjectID)
 	require.NoError(t, err)
 
-	require.NoError(t, portalLinkRepo.CreatePortalLink(ctx, portalLink))
+	require.NoError(t, linkRepo.CreatePortalLink(ctx, portalLink))
 
 	portalLink.Name = "Updated-Test-Portal-Token"
 	endpoint := generateEndpoint(project)
 
-	err = endpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
+	err = newEndpointRepo.CreateEndpoint(ctx, endpoint, project.UID)
 	require.NoError(t, err)
 
 	portalLink.Endpoints = []string{endpoint.UID}
-	require.NoError(t, portalLinkRepo.UpdatePortalLink(ctx, portalLink.ProjectID, portalLink))
+	require.NoError(t, linkRepo.UpdatePortalLink(ctx, portalLink.ProjectID, portalLink))
 
-	newPortalLink, err := portalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
+	newPortalLink, err := linkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
 	require.NoError(t, err)
 
-	total, _, err := portalLinkRepo.LoadPortalLinksPaged(ctx, project.UID, &datastore.FilterBy{EndpointIDs: []string{endpoint.UID}}, datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)})
+	total, _, err := linkRepo.LoadPortalLinksPaged(ctx, project.UID, &datastore.FilterBy{EndpointIDs: []string{endpoint.UID}}, datastore.Pageable{PerPage: 10, Direction: datastore.Next, NextCursor: fmt.Sprintf("%d", math.MaxInt)})
 	require.NoError(t, err)
 
 	require.Equal(t, 1, len(total))
@@ -133,18 +133,18 @@ func Test_RevokePortalLink(t *testing.T) {
 	db, closeFn := getDB(t)
 	defer closeFn()
 
-	portalLinkRepo := NewPortalLinkRepo(db)
+	newPortalLinkRepo := NewPortalLinkRepo(db)
 	portalLink := generatePortalLink(t, db)
 	ctx := context.Background()
 
-	require.NoError(t, portalLinkRepo.CreatePortalLink(ctx, portalLink))
+	require.NoError(t, newPortalLinkRepo.CreatePortalLink(ctx, portalLink))
 
-	_, err := portalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
+	_, err := newPortalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
 	require.NoError(t, err)
 
-	require.NoError(t, portalLinkRepo.RevokePortalLink(ctx, portalLink.ProjectID, portalLink.UID))
+	require.NoError(t, newPortalLinkRepo.RevokePortalLink(ctx, portalLink.ProjectID, portalLink.UID))
 
-	_, err = portalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
+	_, err = newPortalLinkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
 	require.Error(t, err)
 	require.True(t, errors.Is(err, datastore.ErrPortalLinkNotFound))
 }
@@ -201,7 +201,7 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 
 			project := seedProject(t, db)
 			endpoint := generateEndpoint(project)
-			portalLinkRepo := NewPortalLinkRepo(db)
+			repo := NewPortalLinkRepo(db)
 			err := NewEndpointRepo(db).CreateEndpoint(context.Background(), endpoint, project.UID)
 			require.NoError(t, err)
 
@@ -209,14 +209,15 @@ func Test_LoadPortalLinksPaged(t *testing.T) {
 				portalLink := &datastore.PortalLink{
 					UID:       ulid.Make().String(),
 					ProjectID: project.UID,
+					AuthType:  datastore.PortalAuthTypeStaticToken,
 					Name:      "Test-Portal-Link",
 					Token:     ulid.Make().String(),
 					Endpoints: []string{endpoint.UID},
 				}
-				require.NoError(t, portalLinkRepo.CreatePortalLink(context.Background(), portalLink))
+				require.NoError(t, repo.CreatePortalLink(context.Background(), portalLink))
 			}
 
-			_, pageable, err := portalLinkRepo.LoadPortalLinksPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointID: endpoint.UID}, tc.pageData)
+			_, pageable, err := repo.LoadPortalLinksPaged(context.Background(), project.UID, &datastore.FilterBy{EndpointID: endpoint.UID}, tc.pageData)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.expected.paginationData.PerPage, pageable.PerPage)
@@ -234,6 +235,7 @@ func generatePortalLink(t *testing.T, db database.Database) *datastore.PortalLin
 	return &datastore.PortalLink{
 		UID:       ulid.Make().String(),
 		ProjectID: project.UID,
+		AuthType:  datastore.PortalAuthTypeStaticToken,
 		Name:      "Test-Portal-Link",
 		Token:     ulid.Make().String(),
 		Endpoints: []string{endpoint.UID},

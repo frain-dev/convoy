@@ -629,6 +629,7 @@ func SeedPortalLink(db database.Database, g *datastore.Project, endpoints []stri
 		ProjectID: g.UID,
 		Name:      fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),
 		Token:     ulid.Make().String(),
+		AuthType:  datastore.PortalAuthTypeStaticToken,
 		Endpoints: endpoints,
 	}
 
