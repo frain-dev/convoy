@@ -15,7 +15,7 @@ type UpdatePortalLinkService struct {
 	EndpointRepo   datastore.EndpointRepository
 
 	Project    *datastore.Project
-	Update     *models.PortalLink
+	Update     *models.UpdatePortalLinkRequest
 	PortalLink *datastore.PortalLink
 }
 
@@ -24,17 +24,13 @@ func (p *UpdatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
-	if err := validateOwnerIdAndEndpoints(p.Update); err != nil {
-		return nil, &ServiceError{ErrMsg: ErrInvalidEndpoints.Error()}
-	}
-
-	if err := findEndpoints(ctx, p.Update.Endpoints, p.Project, p.EndpointRepo); err != nil {
-		return nil, err
+	if err := p.Update.Validate(); err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	p.PortalLink.Name = p.Update.Name
 	p.PortalLink.OwnerID = p.Update.OwnerID
-	p.PortalLink.Endpoints = p.Update.Endpoints
+	p.PortalLink.AuthType = datastore.PortalAuthType(p.Update.AuthType)
 	p.PortalLink.CanManageEndpoint = p.Update.CanManageEndpoint
 	err := p.PortalLinkRepo.UpdatePortalLink(ctx, p.Project.UID, p.PortalLink)
 	if err != nil {

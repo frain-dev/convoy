@@ -27,14 +27,24 @@ import (
 //	@Accept			json
 //	@Produce		json
 //	@Param			projectID	path		string				true	"Project ID"
-//	@Param			portallink	body		models.PortalLink	true	"Portal Link Details"
+//	@Param			portallink	body		models.CreatePortalLinkRequest	true	"Portal Link Details"
 //	@Success		201			{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
 func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
-	var newPortalLink models.PortalLink
+	var newPortalLink models.CreatePortalLinkRequest
 	if err := util.ReadJSON(r, &newPortalLink); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if util.IsStringEmpty(newPortalLink.AuthType) {
+		// makes sure that the auth type is set for backward compatibility
+		newPortalLink.SetDefaultAuthType()
+	}
+
+	if err := newPortalLink.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -185,15 +195,25 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			projectID		path		string				true	"Project ID"
 //	@Param			portalLinkID	path		string				true	"portal link id"
-//	@Param			portallink		body		models.PortalLink	true	"Portal Link Details"
+//	@Param			portallink		body		models.UpdatePortalLinkRequest	true	"Portal Link Details"
 //	@Success		202				{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
-	var updatePortalLink models.PortalLink
+	var updatePortalLink models.UpdatePortalLinkRequest
 	err := util.ReadJSON(r, &updatePortalLink)
 	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		return
+	}
+
+	if util.IsStringEmpty(updatePortalLink.AuthType) {
+		// makes sure that the auth type is set for backward compatibility
+		updatePortalLink.SetDefaultAuthType()
+	}
+
+	if err := updatePortalLink.Validate(); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
 		return
 	}
@@ -206,7 +226,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 
 	portalLink, err := postgres.NewPortalLinkRepo(h.A.DB).FindPortalLinkByID(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		if err == datastore.ErrPortalLinkNotFound {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
 			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
 			return
 		}
@@ -389,6 +409,7 @@ func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) models.PortalL
 		CanManageEndpoint: pl.CanManageEndpoint,
 		CreatedAt:         pl.CreatedAt,
 		UpdatedAt:         pl.UpdatedAt,
+		AuthType:          pl.AuthType,
 		AuthKey:           pl.AuthKey,
 	}
 }

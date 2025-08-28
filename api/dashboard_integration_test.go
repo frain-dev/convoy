@@ -2718,8 +2718,8 @@ func (s *PortalLinkIntegrationTestSuite) TearDownTest() {
 }
 
 func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
-	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request
@@ -2728,8 +2728,8 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 		s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "test_portal_link",
-		"endpoints": ["%s", "%s"]
-	}`, endpoint1.UID, endpoint2.UID)
+		"owner_id": "%s"
+	}`, "test")
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPost, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
@@ -2775,8 +2775,8 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_PortalLinkNotFou
 
 func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink() {
 	// Just Before
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "test", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/portal-links/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, portalLink.UID)
@@ -2813,10 +2813,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks() 
 
 	// Just Before
 	for i := 0; i < totalLinks; i++ {
-		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
 		require.NoError(s.T(), err)
 
-		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 		require.NoError(s.T(), err)
 	}
 
@@ -2845,15 +2845,15 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks_Fi
 
 	// Just Before
 	for i := 0; i < totalLinks; i++ {
-		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
 		require.NoError(s.T(), err)
 
-		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 		require.NoError(s.T(), err)
 	}
 
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	_, _ = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "test", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/portal-links?endpointId=%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, endpoint.UID)
@@ -2876,15 +2876,15 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLinks_Fi
 
 func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	// Just Before
-	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID})
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test1", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test1", false, datastore.ActiveEndpointStatus)
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, "test1")
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/portal-links/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, portalLink.UID)
 	bodyStr := fmt.Sprintf(`{
 		    "name": "test_portal_link",
-			"endpoints": ["%s"]
-		}`, endpoint2.UID)
+			"owner_id": "%s"
+		}`, "test1")
 
 	body := serialize(bodyStr)
 	req := createRequest(http.MethodPut, url, "", body)
@@ -2915,8 +2915,8 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 
 func (s *PortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	// Just Before
-	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID})
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, "test")
 
 	// Arrange Request.
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/portal-links/%s/revoke", s.DefaultProject.OrganisationID, s.DefaultProject.UID, portalLink.UID)

@@ -47,9 +47,7 @@
                 <div *ngIf="!isloadingDashboardData">
                     <div class="text-16 font-medium">{{ dashboardData.events_sent | number }}</div>
                     <div class="text-neutral-11 text-14">
-                        <span class="font-normal">Event</span>
-                        <span class="font-normal" *ngIf="dashboardData.events_sent > 1">s</span>
-                        {{ privateService.getProjectDetails?.type === 'incoming' ? 'Ingested' : 'Sent' }}
+                        <span class="font-normal">Events Sent</span>
                     </div>
                 </div>
             </li>

@@ -32,6 +32,7 @@ import { CreatePortalEndpointComponent } from '../create-portal-endpoint/create-
 import { EventCatalogComponent, EventType } from '../event-catalog/event-catalog.component';
 import { ListItemComponent } from '../../components/list-item/list-item.component';
 import { PrismModule } from '../../private/components/prism/prism.module';
+import {LicensesService} from "../../services/licenses/licenses.service";
 
 interface PORTAL_ENDPOINT extends ENDPOINT {
 	subscription?: SUBSCRIPTION;
@@ -85,7 +86,7 @@ export class EndpointsComponent implements OnInit {
     endpointUid: string | null = null; // Store the selected endpoint UID
     eventTypes: EventType[] = [];
 
-	constructor(private route: ActivatedRoute, protected generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, private location: Location, private router: Router, private formBuilder: FormBuilder) {
+	constructor(private route: ActivatedRoute, protected generalService: GeneralService, private endpointService: EndpointsService, private portalService: PortalService, private privateService: PrivateService, public licenseService: LicensesService, private location: Location, private router: Router, private formBuilder: FormBuilder) {
 		// Listen to route changes to handle browser back/forward
 		this.router.events.subscribe(event => {
 			if (event instanceof NavigationEnd) {
@@ -101,6 +102,7 @@ export class EndpointsComponent implements OnInit {
 	}
 
 	async ngOnInit(): Promise<void> {
+		this.licenseService.setLicenses();
 		await Promise.all([this.getPortalDetails(), this.getEndpoints()]);
 
 		// Check if we have an endpoint ID in the route params

@@ -65,7 +65,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				Native: config.NativeRealmOptions{Enabled: true},
 			}
 
-			err = realm_chain.Init(authCfg, apiKeyRepo, userRepo, portalLinkRepo, nil)
+			err = realm_chain.Init(authCfg, apiKeyRepo, userRepo, portalLinkRepo, nil, a.Logger)
 			if err != nil {
 				a.Logger.WithError(err).Fatal("failed to initialize realm chain")
 				return err
