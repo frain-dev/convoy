@@ -4190,7 +4190,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PortalLink"
+                            "$ref": "#/definitions/models.CreatePortalLinkRequest"
                         }
                     }
                 ],
@@ -4419,7 +4419,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.PortalLink"
+                            "$ref": "#/definitions/models.UpdatePortalLinkRequest"
                         }
                     }
                 ],
@@ -8597,6 +8597,33 @@
                 }
             }
         },
+        "models.CreatePortalLinkRequest": {
+            "type": "object",
+            "properties": {
+                "auth_type": {
+                    "type": "string"
+                },
+                "can_manage_endpoint": {
+                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
+                    "type": "boolean"
+                },
+                "endpoints": {
+                    "description": "Deprecated\nIDs of endpoints in this portal link",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "Portal Link Name",
+                    "type": "string"
+                },
+                "owner_id": {
+                    "description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
+                    "type": "string"
+                }
+            }
+        },
         "models.CreateSource": {
             "type": "object",
             "properties": {
@@ -9303,36 +9330,6 @@
                 }
             }
         },
-        "models.PortalLink": {
-            "type": "object",
-            "properties": {
-                "auth_key": {
-                    "type": "string"
-                },
-                "auth_type": {
-                    "type": "string"
-                },
-                "can_manage_endpoint": {
-                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
-                    "type": "boolean"
-                },
-                "endpoints": {
-                    "description": "Deprecated\nIDs of endpoints in this portal link",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "name": {
-                    "description": "Portal Link Name",
-                    "type": "string"
-                },
-                "owner_id": {
-                    "description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
-                    "type": "string"
-                }
-            }
-        },
         "models.PortalLinkResponse": {
             "type": "object",
             "properties": {
@@ -9747,6 +9744,33 @@
                 "is_flattened": {
                     "description": "Whether the filter uses flattened JSON paths (optional)",
                     "type": "boolean"
+                }
+            }
+        },
+        "models.UpdatePortalLinkRequest": {
+            "type": "object",
+            "properties": {
+                "auth_type": {
+                    "type": "string"
+                },
+                "can_manage_endpoint": {
+                    "description": "Specify whether endpoint management can be done through the Portal Link UI",
+                    "type": "boolean"
+                },
+                "endpoints": {
+                    "description": "Deprecated\nIDs of endpoints in this portal link",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "description": "Portal Link Name",
+                    "type": "string"
+                },
+                "owner_id": {
+                    "description": "OwnerID, the portal link will inherit all the endpoints with this owner ID",
+                    "type": "string"
                 }
             }
         },

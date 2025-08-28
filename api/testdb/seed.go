@@ -623,14 +623,14 @@ func SeedDevice(db database.Database, g *datastore.Project, endpointID string) e
 	return nil
 }
 
-func SeedPortalLink(db database.Database, g *datastore.Project, endpoints []string) (*datastore.PortalLink, error) {
+func SeedPortalLink(db database.Database, g *datastore.Project, ownerId string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{
 		UID:       ulid.Make().String(),
 		ProjectID: g.UID,
 		Name:      fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),
 		Token:     ulid.Make().String(),
 		AuthType:  datastore.PortalAuthTypeStaticToken,
-		Endpoints: endpoints,
+		OwnerID:   ownerId,
 	}
 
 	portalLinkRepo := postgres.NewPortalLinkRepo(db)

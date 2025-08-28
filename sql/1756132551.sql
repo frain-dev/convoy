@@ -1,5 +1,5 @@
 -- +migrate Up
-create type convoy.portal_auth_types as enum ('none', 'static_token', 'refresh_token');
+create type convoy.portal_auth_types as enum ('static_token', 'refresh_token');
 alter table convoy.portal_links add column auth_type convoy.portal_auth_types not null default 'static_token';
 
 -- Assigns deterministic owner IDs (16-char SHA256 hash) to endpoints based on their associated portal IDs

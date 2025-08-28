@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/frain-dev/convoy/mocks"
@@ -13,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideCreatePortalLinkService(ctrl *gomock.Controller, portal *models.PortalLink, project *datastore.Project) *CreatePortalLinkService {
+func provideCreatePortalLinkService(ctrl *gomock.Controller, portal *models.CreatePortalLinkRequest, project *datastore.Project) *CreatePortalLinkService {
 	return &CreatePortalLinkService{
 		PortalLinkRepo: mocks.NewMockPortalLinkRepository(ctrl),
 		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
@@ -27,7 +26,7 @@ func TestCreatePortalLinkService_Run(t *testing.T) {
 
 	type args struct {
 		ctx           context.Context
-		newPortalLink *models.PortalLink
+		newPortalLink *models.CreatePortalLinkRequest
 		project       *datastore.Project
 	}
 
@@ -43,69 +42,66 @@ func TestCreatePortalLinkService_Run(t *testing.T) {
 			name: "should_create_portal_link",
 			args: args{
 				ctx: ctx,
-				newPortalLink: &models.PortalLink{
-					Name:      "test_portal_link",
-					Endpoints: []string{"123", "1234"},
+				newPortalLink: &models.CreatePortalLinkRequest{
+					Name:     "test_portal_link",
+					OwnerID:  "1234",
+					AuthType: "static_token",
 				},
 				project: &datastore.Project{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
 				ProjectID: "12345",
-				Endpoints: []string{"123", "1234"},
+				Name:      "test_portal_link",
+				OwnerID:   "1234",
 			},
 			dbFn: func(pl *CreatePortalLinkService) {
 				p, _ := pl.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
 				p.EXPECT().CreatePortalLink(gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				e, _ := pl.EndpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:       "123",
-					ProjectID: "12345",
-				}, nil)
-
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:       "1234",
-					ProjectID: "12345",
-				}, nil)
 			},
 		},
 
 		{
-			name: "should_error_for_emtpy_endpoints_and_ownerID",
+			name: "should_error_for_empty_ownerID",
 			args: args{
 				ctx: ctx,
-				newPortalLink: &models.PortalLink{
-					Name:      "test_portal_link",
-					Endpoints: []string{},
+				newPortalLink: &models.CreatePortalLinkRequest{
+					Name: "test_portal_link",
 				},
 				project: &datastore.Project{UID: "12345"},
 			},
 			wantErr:    true,
-			wantErrMsg: ErrInvalidEndpoints.Error(),
+			wantErrMsg: "owner_id:please provide the owner id field",
 		},
 
 		{
-			name: "should_fail_to_create_portal_link",
+			name: "should_error_for_empty_auth_type",
 			args: args{
 				ctx: ctx,
-				newPortalLink: &models.PortalLink{
-					Name:      "test_portal_link",
-					Endpoints: []string{"123"},
+				newPortalLink: &models.CreatePortalLinkRequest{
+					Name:    "test_portal_link",
+					OwnerID: "foo",
 				},
 				project: &datastore.Project{UID: "12345"},
 			},
-			dbFn: func(pl *CreatePortalLinkService) {
-				p, _ := pl.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
-				p.EXPECT().CreatePortalLink(gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
-
-				e, _ := pl.EndpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:       "123",
-					ProjectID: "12345",
-				}, nil)
-			},
+			dbFn:       func(pl *CreatePortalLinkService) {},
 			wantErr:    true,
-			wantErrMsg: "failed to create portal link",
+			wantErrMsg: "invalid auth type: ",
+		},
+
+		{
+			name: "should_error_for_invalid_auth_type",
+			args: args{
+				ctx: ctx,
+				newPortalLink: &models.CreatePortalLinkRequest{
+					Name:     "test_portal_link",
+					OwnerID:  "foo",
+					AuthType: "foobar",
+				},
+				project: &datastore.Project{UID: "12345"},
+			},
+			dbFn:       func(pl *CreatePortalLinkService) {},
+			wantErr:    true,
+			wantErrMsg: "invalid auth type: foobar",
 		},
 	}
 

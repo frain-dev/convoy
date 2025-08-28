@@ -125,7 +125,7 @@ type CreateEndpointApiKey struct {
 	Expiration int               `json:"expiration"`
 }
 
-type PortalLink struct {
+type UpdatePortalLinkRequest struct {
 	// Portal Link Name
 	Name string `json:"name" valid:"required~please provide the name field"`
 
@@ -136,15 +136,13 @@ type PortalLink struct {
 	AuthType string `json:"auth_type"`
 
 	// OwnerID, the portal link will inherit all the endpoints with this owner ID
-	OwnerID string `json:"owner_id" valid:"required~please provide the owner id field"`
-
-	AuthKey string `json:"auth_key"`
+	OwnerID string `json:"owner_id"`
 
 	// Specify whether endpoint management can be done through the Portal Link UI
 	CanManageEndpoint bool `json:"can_manage_endpoint"`
 }
 
-func (p *PortalLink) Validate() error {
+func (p *UpdatePortalLinkRequest) Validate() error {
 	validAuthTypes := []datastore.PortalAuthType{
 		datastore.PortalAuthTypeRefreshToken,
 		datastore.PortalAuthTypeStaticToken,
@@ -160,7 +158,7 @@ func (p *PortalLink) Validate() error {
 	return fmt.Errorf("invalid auth type: %s", p.AuthType)
 }
 
-func (p *PortalLink) SetDefaultAuthType() {
+func (p *UpdatePortalLinkRequest) SetDefaultAuthType() {
 	validAuthTypes := []datastore.PortalAuthType{
 		datastore.PortalAuthTypeRefreshToken,
 		datastore.PortalAuthTypeStaticToken,
@@ -174,7 +172,57 @@ func (p *PortalLink) SetDefaultAuthType() {
 	}
 
 	// Default to refresh token
-	p.AuthType = string(datastore.PortalAuthTypeRefreshToken)
+	p.AuthType = string(datastore.PortalAuthTypeStaticToken)
+}
+
+type CreatePortalLinkRequest struct {
+	// Portal Link Name
+	Name string `json:"name" valid:"required~please provide the name field"`
+
+	// Deprecated
+	// IDs of endpoints in this portal link
+	Endpoints []string `json:"endpoints"`
+
+	AuthType string `json:"auth_type"`
+
+	// OwnerID, the portal link will inherit all the endpoints with this owner ID
+	OwnerID string `json:"owner_id" valid:"required~please provide the owner id field"`
+
+	// Specify whether endpoint management can be done through the Portal Link UI
+	CanManageEndpoint bool `json:"can_manage_endpoint"`
+}
+
+func (p *CreatePortalLinkRequest) Validate() error {
+	validAuthTypes := []datastore.PortalAuthType{
+		datastore.PortalAuthTypeRefreshToken,
+		datastore.PortalAuthTypeStaticToken,
+	}
+
+	// Check if the auth type is valid
+	for _, validType := range validAuthTypes {
+		if validType == datastore.PortalAuthType(p.AuthType) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("invalid auth type: %s", p.AuthType)
+}
+
+func (p *CreatePortalLinkRequest) SetDefaultAuthType() {
+	validAuthTypes := []datastore.PortalAuthType{
+		datastore.PortalAuthTypeRefreshToken,
+		datastore.PortalAuthTypeStaticToken,
+	}
+
+	// Check if the auth type is valid
+	for _, validType := range validAuthTypes {
+		if validType == datastore.PortalAuthType(p.AuthType) {
+			return
+		}
+	}
+
+	// Default to refresh token
+	p.AuthType = string(datastore.PortalAuthTypeStaticToken)
 }
 
 type PortalLinkResponse struct {
