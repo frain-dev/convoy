@@ -18,59 +18,76 @@ services:
         depends_on:
             - postgres
             - redis_server
+            - migrate
+        environment:
+            - CONVOY_ENV=development
+            - CONVOY_VERSION=v1.0.0
+            - CONVOY_COMPONENT=web
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "udp://localhost:1514"
+                syslog-format: rfc5424
+                tag: "web"
 
-    scheduler:
+    migrate:
         build:
-          context: ./
-          dockerfile: Dockerfile.dev
-        entrypoint: ["./cmd", "scheduler", "--config", "convoy.json"]
+            context: ./
+            dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "migrate", "up"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
         depends_on:
-            - postgres
-            - redis_server
+            postgres:
+                condition: service_healthy
 
-    worker:
+    agent:
         build:
-          context: ./
-          dockerfile: Dockerfile.dev
-        entrypoint: ["./cmd", "worker", "--config", "convoy.json"]
+            context: ./
+            dockerfile: Dockerfile.dev
+        entrypoint: ["./cmd", "agent", "--config", "convoy.json"]
         volumes:
             - ./convoy.json:/convoy.json
         restart: on-failure
+        ports:
+            - "5008:5008"
         depends_on:
             - postgres
             - redis_server
-
-    ingest:
-      build:
-        context: ./
-        dockerfile: Dockerfile.dev
-      entrypoint: ["./cmd", "ingest", "--config", "convoy.json"]
-      volumes:
-        - ./convoy.json:/convoy.json
-      restart: on-failure
-      depends_on:
-        - postgres
-        - redis_server
+            - migrate
+        environment:
+            - CONVOY_ENV=development
+            - CONVOY_VERSION=v1.0.0
+            - CONVOY_COMPONENT=agent
+        logging:
+            driver: syslog
+            options:
+                syslog-address: "udp://localhost:1514"
+                syslog-format: rfc5424
+                tag: "agent"
 
     postgres:
-      image: postgres:15.2-alpine
-      restart: unless-stopped
-      environment:
-        POSTGRES_DB: convoy
-        POSTGRES_USER: convoy
-        POSTGRES_PASSWORD: convoy
-        PGDATA: /data/postgres
-      volumes:
-        - ./postgres_data:/data/postgres
+        image: postgres:15.2-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: convoy
+            POSTGRES_USER: convoy
+            POSTGRES_PASSWORD: convoy
+            PGDATA: /data/postgres
+        volumes:
+            - postgres_data:/data/postgres
+        healthcheck:
+            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+            interval: 5s
+            timeout: 5s
+            retries: 5
 
     redis_server:
         image: redis:7-alpine
         restart: always
         volumes:
-          - ./redis_data:/data
+          - redis_data:/data
 
     prometheus:
         image: prom/prometheus:v2.24.0
@@ -79,4 +96,3 @@ services:
         ports:
             - 9090:9090
         restart: always
-
