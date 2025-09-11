@@ -46,7 +46,7 @@ require (
 	github.com/mixpanel/mixpanel-go v1.2.1
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/pkg/errors v0.9.1
-	github.com/posthog/posthog-go v1.4.10
+	github.com/posthog/posthog-go v1.6.8
 	github.com/prometheus/client_golang v1.22.0
 	github.com/r3labs/diff/v3 v3.0.1
 	github.com/rabbitmq/amqp091-go v1.10.0
@@ -179,6 +179,7 @@ require (
 	github.com/hashicorp/go-secure-stdlib/strutil v0.1.2 // indirect
 	github.com/hashicorp/go-sockaddr v1.0.7 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/in-toto/in-toto-golang v0.9.0 // indirect
