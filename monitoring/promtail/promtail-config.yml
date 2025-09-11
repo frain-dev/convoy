@@ -1,0 +1,75 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: ${LOKI_URL:-http://loki:3100}/loki/api/v1/push
+    # For remote Loki, use: http://your-central-server:3100/loki/api/v1/push
+
+scrape_configs:
+  # Convoy application logs via syslog (scalable for multiple instances)
+  - job_name: convoy-syslog
+    syslog:
+      listen_address: 0.0.0.0:1514
+      listen_protocol: udp
+      idle_timeout: 60s
+      label_structured_data: yes
+      labels:
+        job: convoy-syslog
+    relabel_configs:
+      - source_labels: [__syslog_message_hostname]
+        target_label: instance
+      - source_labels: [__syslog_message_app_name]
+        target_label: service
+    pipeline_stages:
+      - json:
+          expressions:
+            level: level
+            timestamp: time
+            message: msg
+            component: component
+            project_id: project_id
+            endpoint_id: endpoint_id
+            event_id: event_id
+            delivery_id: delivery_id
+            request_id: request_id
+            traceId: traceId
+            spanId: spanId
+            project: project
+            status: status
+            path: path
+            env: env
+            version: version
+            method: method
+            duration: duration
+      - labels:
+          level:
+          component:
+          project_id:
+          endpoint_id:
+          request_id:
+          traceId:
+          spanId:
+          project:
+          status:
+          path:
+          env:
+          version:
+          method:
+      - timestamp:
+          source: timestamp
+          format: RFC3339Nano
+      - output:
+          source: message
+
+  # System logs for infrastructure monitoring
+  - job_name: convoy-system
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: convoy-system
+          __path__: /var/log/*.log
