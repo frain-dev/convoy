@@ -11,32 +11,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/riandyrn/otelchi"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/frain-dev/convoy/pkg/log"
-
-	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-
 	"github.com/felixge/httpsnoop"
-	"github.com/frain-dev/convoy/api/types"
-	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"github.com/riandyrn/otelchi"
+	"github.com/sirupsen/logrus"
 	sdktrace "go.opentelemetry.io/otel/trace"
+
+	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 )
 
 const (
@@ -369,6 +363,10 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 					"httpResponse": responseFields,
 				}
 
+				if orgID := extractOrganisationID(r); orgID != "" {
+					logFields["organisation_id"] = orgID
+				}
+
 				if shouldSkipLogging(requestFields, responseFields) {
 					return
 				}
@@ -506,6 +504,22 @@ func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) htt
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func extractOrganisationID(r *http.Request) string {
+	if orgID := chi.URLParam(r, "orgID"); orgID != "" {
+		return orgID
+	}
+
+	if orgID := r.URL.Query().Get("orgID"); orgID != "" {
+		return orgID
+	}
+
+	if orgID := r.URL.Query().Get("organisation_id"); orgID != "" {
+		return orgID
+	}
+
+	return ""
 }
 
 func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.Handler {
