@@ -51,7 +51,7 @@ require (
 	github.com/r3labs/diff/v3 v3.0.1
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/extra/redisotel/v9 v9.7.3
-	github.com/redis/go-redis/v9 v9.7.3
+	github.com/redis/go-redis/v9 v9.14.0
 	github.com/riandyrn/otelchi v0.12.1
 	github.com/rubenv/sql-migrate v1.8.0
 	github.com/sebdah/goldie/v2 v2.5.5
