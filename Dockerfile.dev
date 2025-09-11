@@ -24,7 +24,7 @@ COPY . .
 RUN CGO_ENABLED=0
 RUN go install ./cmd
 
-FROM alpine:3.16.2
+FROM alpine:3.22.1
 COPY --from=build-env /go/bin/cmd /
 COPY --from=build-env /go/src/frain-dev/convoy/internal/email/templates/* templates/
 COPY --from=build-env /go/src/frain-dev/convoy/configs/local/start.sh /
