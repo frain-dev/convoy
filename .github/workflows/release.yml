@@ -44,7 +44,7 @@ jobs:
       - uses: docker/setup-qemu-action@v3
         name: Set up QEMU
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         name: Setup Python
         with:
           python-version: '3.9'
