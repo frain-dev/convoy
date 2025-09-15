@@ -490,8 +490,7 @@ func (s *PortalEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_
 
 	url := fmt.Sprintf("/portal-api/eventdeliveries/forceresend?token=%s", portalLink.Token)
 
-	bodyStr := `{"ids":["%s", "%s", "%s"]}`
-	body := serialize(bodyStr, e1.UID, e2.UID, e3.UID)
+	body := serialize(`{"ids":["%s", "%s", "%s"]}`, e1.UID, e2.UID, e3.UID)
 
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()

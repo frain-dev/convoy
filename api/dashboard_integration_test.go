@@ -77,12 +77,10 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser() {
 
 	// Arrange Request
 	url := "/ui/auth/login"
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"username": "%s",
 		"password": "%s"
 	}`, user.Email, password)
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
@@ -150,12 +148,10 @@ func (u *AuthIntegrationTestSuite) Test_IsSignupEnabled_True() {
 func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Username() {
 	// Arrange Request
 	url := "/ui/auth/login"
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 			"username": "%s",
 			"password": "%s"
 		}`, "random@test.com", "123456")
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
@@ -172,12 +168,10 @@ func (u *AuthIntegrationTestSuite) Test_LoginUser_Invalid_Password() {
 
 	// Arrange Request
 	url := "/ui/auth/login"
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 			"username": "%s",
 			"password": "%s"
 		}`, user.Email, "12345")
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
@@ -197,12 +191,10 @@ func (u *AuthIntegrationTestSuite) Test_RefreshToken() {
 
 	// Arrange Request
 	url := "/ui/auth/token/refresh"
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
 	}`, token.AccessToken, token.RefreshToken)
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
@@ -228,12 +220,10 @@ func (u *AuthIntegrationTestSuite) Test_RefreshToken_Invalid_Access_Token() {
 
 	// Arrange Request
 	url := "/ui/auth/token/refresh"
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
 	}`, ulid.Make().String(), token.RefreshToken)
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
@@ -253,12 +243,10 @@ func (u *AuthIntegrationTestSuite) Test_RefreshToken_Invalid_Refresh_Token() {
 
 	// Arrange Request
 	url := "/ui/auth/token/refresh"
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"access_token": "%s",
 		"refresh_token": "%s"
 	}`, token.AccessToken, ulid.Make().String())
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, "", body)
 	w := httptest.NewRecorder()
 
@@ -1101,8 +1089,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
-	bodyStr := `{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, endpointID)
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/events", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, "", body)
@@ -1140,9 +1127,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_Valid_E
 	err := postgres.NewEndpointRepo(s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
-	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, appID)
-
+	body := serialize(`{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`, appID)
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/events", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, "", body)
 
@@ -1164,9 +1149,7 @@ func (s *EventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_disable
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
 
-	bodyStr := `{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, endpointID)
-
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/events", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, "", body)
 
@@ -1450,9 +1433,7 @@ func (s *EventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_EventD
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/eventdeliveries/forceresend", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
 
-	bodyStr := `{"ids":["%s", "%s", "%s"]}`
-	body := serialize(bodyStr, e1.UID, e2.UID, e3.UID)
-
+	body := serialize(`{"ids":["%s", "%s", "%s"]}`, e1.UID, e2.UID, e3.UID)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -2881,12 +2862,10 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, "test1")
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/portal-links/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, portalLink.UID)
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		    "name": "test_portal_link",
 			"owner_id": "%s"
 		}`, "test1")
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPut, url, "", body)
 	err := s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
@@ -3074,30 +3053,28 @@ func (s *ProjectIntegrationTestSuite) TestDeleteProject_ProjectNotFound() {
 func (s *ProjectIntegrationTestSuite) TestCreateProject() {
 	expectedStatusCode := http.StatusCreated
 
-	bodyStr := `{
-    "name": "test-project",
+	body := serialize(`{
+	    "name": "test-project",
 	"type": "outgoing",
-    "logo_url": "",
-    "config": {
-        "strategy": {
-            "type": "linear",
-            "duration": 10,
-            "retry_count": 2
-        },
-        "signature": {
-            "header": "X-Convoy-Signature",
-            "hash": "SHA512"
-        },
-        "disable_endpoint": false,
-        "replay_attacks": false,
-        "ratelimit": {
-            "count": 8000,
-            "duration": 60
-        }
-    }
-}`
-
-	body := serialize(bodyStr)
+	    "logo_url": "",
+	    "config": {
+	        "strategy": {
+	            "type": "linear",
+	            "duration": 10,
+	            "retry_count": 2
+	        },
+	        "signature": {
+	            "header": "X-Convoy-Signature",
+	            "hash": "SHA512"
+	        },
+	        "disable_endpoint": false,
+	        "replay_attacks": false,
+	        "ratelimit": {
+	            "count": 8000,
+	            "duration": 60
+	        }
+	    }
+}`)
 	url := fmt.Sprintf("/ui/organisations/%s/projects", s.DefaultOrg.UID)
 
 	req := createRequest(http.MethodPost, url, "", body)
@@ -3135,32 +3112,31 @@ func (s *ProjectIntegrationTestSuite) TestUpdateProject() {
 
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s", s.DefaultOrg.UID, project.UID)
 
-	bodyStr := `{
-    "name": "project_1",
+	req := createRequest(http.MethodPut, url, "", serialize(`{
+	    "name": "project_1",
 	"type": "outgoing",
-    "config": {
-        "retention_policy":{"policy":"1h"},
-        "strategy": {
-            "type": "exponential",
-            "duration": 10,
-            "retry_count": 2
-        },
-         "ssl": {
-            "enforce_secure_endpoints": true
-        },
-        "signature": {
-            "header": "X-Convoy-Signature",
-            "hash": "SHA512"
-        },
-        "disable_endpoint": false,
-        "replay_attacks": false,
-        "ratelimit": {
-            "count": 8000,
-            "duration": 60
-        }
-    }
-}`
-	req := createRequest(http.MethodPut, url, "", serialize(bodyStr))
+	    "config": {
+	        "retention_policy":{"policy":"1h"},
+	        "strategy": {
+	            "type": "exponential",
+	            "duration": 10,
+	            "retry_count": 2
+	        },
+	         "ssl": {
+	            "enforce_secure_endpoints": true
+	        },
+	        "signature": {
+	            "header": "X-Convoy-Signature",
+	            "hash": "SHA512"
+	        },
+	        "disable_endpoint": false,
+	        "replay_attacks": false,
+	        "ratelimit": {
+	            "count": 8000,
+	            "duration": 60
+	        }
+	    }
+}`))
 	err = s.AuthenticatorFn(req, s.Router)
 	require.NoError(s.T(), err)
 	w := httptest.NewRecorder()
@@ -3392,14 +3368,15 @@ func (s *SourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 }
 
 func (s *SourceIntegrationTestSuite) Test_CreateSource() {
-	bodyStr := `{
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+	body := serialize(`{
 		"name": "convoy-prod",
 		"type": "http",
 		"is_disabled": false,
-        "custom_response": {
-            "body": "[accepted]",
-            "content_type": "text/plain"
-        },
+	       "custom_response": {
+	           "body": "[accepted]",
+	           "content_type": "text/plain"
+	       },
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
@@ -3409,10 +3386,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 				"secret": "convoy-secret"
 			}
 		}
-	}`
-
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
-	body := serialize(bodyStr)
+	}`)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
@@ -3438,7 +3412,8 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource() {
 }
 
 func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
-	bodyStr := `{
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+	body := serialize(`{
 		"type": "http",
 		"is_disabled": false,
 		"verifier": {
@@ -3450,10 +3425,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 				"secret": "convoy-secret"
 			}
 		}
-	}`
-
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
-	body := serialize(bodyStr)
+	}`)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
@@ -3469,7 +3441,9 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_NoName() {
 }
 
 func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
-	bodyStr := `{
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+
+	body := serialize(`{
 		"name": "convoy-prod",
 		"type": "some-random-source-type",
 		"is_disabled": false,
@@ -3482,11 +3456,7 @@ func (s *SourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
 				"secret": "convoy-secret"
 			}
 		}
-	}`
-
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
-
-	body := serialize(bodyStr)
+	}`)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
@@ -3511,14 +3481,15 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/sources/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, sourceID)
-	bodyStr := fmt.Sprintf(`{
+
+	body := serialize(`{
 		"name": "%s",
 		"type": "http",
 		"is_disabled": %t,
-        "custom_response": {
-            "body": "[tee]",
-            "content_type": "text/plain"
-        },
+	       "custom_response": {
+	           "body": "[tee]",
+	           "content_type": "text/plain"
+	       },
 		"verifier": {
 			"type": "hmac",
 			"hmac": {
@@ -3529,8 +3500,6 @@ func (s *SourceIntegrationTestSuite) Test_UpdateSource() {
 			}
 		}
 	}`, name, !isDisabled)
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPut, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
@@ -3800,7 +3769,9 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFo
 }
 
 func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidBody() {
-	bodyStr := `{
+	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/subscriptions", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
+
+	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
 		"alert_config": {
@@ -3818,10 +3789,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidBody()
 				"user.updated"
 			]
 		}
-	}`
-
-	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/subscriptions", s.DefaultProject.OrganisationID, s.DefaultProject.UID)
-	body := serialize(bodyStr)
+	}`)
 	req := createRequest(http.MethodPost, url, "", body)
 
 	err := s.AuthenticatorFn(req, s.Router)
@@ -4033,7 +4001,8 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/subscriptions/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, subscriptionId)
-	bodyStr := `{
+
+	body := serialize(`{
 		"alert_config": {
 			"threshold": "1h",
 			"count": 10
@@ -4050,9 +4019,7 @@ func (s *SubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 			]
 		},
 		"disable_endpoint": false
-	}`
-
-	body := serialize(bodyStr)
+	}`)
 	req := createRequest(http.MethodPut, url, "", body)
 
 	err = s.AuthenticatorFn(req, s.Router)
@@ -4131,15 +4098,13 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser() {
 		OrganisationName: "test",
 	}
 	// Arrange Request
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"first_name": "%s",
 		"last_name": "%s",
 		"email": "%s",
 		"password": "%s",
 		"org_name": "%s"
 	}`, r.FirstName, r.LastName, r.Email, r.Password, r.OrganisationName)
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
 	w := httptest.NewRecorder()
 
@@ -4184,15 +4149,13 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_RegistrationNotAllowed() {
 		OrganisationName: "test",
 	}
 	// Arrange Request
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"first_name": "%s",
 		"last_name": "%s",
 		"email": "%s",
 		"password": "%s",
 		"org_name": "%s"
 	}`, r.FirstName, r.LastName, r.Email, r.Password, r.OrganisationName)
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
 	w := httptest.NewRecorder()
 
@@ -4215,14 +4178,12 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 		OrganisationName: "test",
 	}
 	// Arrange Request
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"last_name": "%s",
 		"email": "%s",
 		"password": "%s",
 		"org_name": "%s"
 	}`, r.LastName, r.Email, r.Password, r.OrganisationName)
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
 	w := httptest.NewRecorder()
 
@@ -4245,14 +4206,12 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
 		OrganisationName: "test",
 	}
 	// Arrange Request
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"first_name": "%s",
 		"last_name": "%s",
 		"password": "%s",
 		"org_name": "%s"
 	}`, r.FirstName, r.LastName, r.Password, r.OrganisationName)
-
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, "/ui/auth/register", "", body)
 	w := httptest.NewRecorder()
 
@@ -4311,13 +4270,13 @@ func (u *UserIntegrationTestSuite) Test_UpdateUser() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/users/%s/profile", user.UID)
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"first_name": "%s",
 		"last_name": "%s",
 		"email": "%s"
 	}`, firstName, lastName, email)
 
-	req := httptest.NewRequest(http.MethodPut, url, serialize(bodyStr))
+	req := httptest.NewRequest(http.MethodPut, url, body)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -4357,13 +4316,13 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"current_password": "%s",
 		"password": "%s",
 		"password_confirmation": "%s"
 	}`, password, newPassword, newPassword)
 
-	req := httptest.NewRequest(http.MethodPut, url, serialize(bodyStr))
+	req := httptest.NewRequest(http.MethodPut, url, body)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -4404,13 +4363,13 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Current_Password(
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"current_password": "new-password",
 		"password": "%s",
 		"password_confirmation": "%s"
 	}`, password, password)
 
-	req := httptest.NewRequest(http.MethodPut, url, serialize(bodyStr))
+	req := httptest.NewRequest(http.MethodPut, url, body)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -4437,13 +4396,13 @@ func (u *UserIntegrationTestSuite) Test_UpdatePassword_Invalid_Password_Confirma
 
 	// Arrange Request
 	url := fmt.Sprintf("/ui/users/%s/password", user.UID)
-	bodyStr := fmt.Sprintf(`{
+	bodyStr := serialize(`{
 		"current_password": %s,
 		"password": "%s",
 		"password_confirmation": "new-password"
 	}`, password, password)
 
-	req := httptest.NewRequest(http.MethodPut, url, serialize(bodyStr))
+	req := httptest.NewRequest(http.MethodPut, url, bodyStr)
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -4463,9 +4422,8 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 
 	// Arrange Request
 	url := "/ui/users/forgot-password"
-	bodyStr := fmt.Sprintf(`{"email":"%s"}`, user.Email)
-
-	req := httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
+	bodyStr := serialize(`{"email":"%s"}`, user.Email)
+	req := httptest.NewRequest(http.MethodPost, url, bodyStr)
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -4483,12 +4441,12 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Valid_Token() {
 	parseResponse(u.T(), w.Result(), &response)
 	// Reset password
 	url = fmt.Sprintf("/ui/users/reset-password?token=%s", dbUser.ResetPasswordToken)
-	bodyStr = fmt.Sprintf(`{
+	bodyStr = serialize(`{
 		"password": "%s",
 		"password_confirmation": "%s"
 	}`, newPassword, newPassword)
 
-	req = httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
+	req = httptest.NewRequest(http.MethodPost, url, bodyStr)
 	req.Header.Add("Content-Type", "application/json")
 	w = httptest.NewRecorder()
 	u.Router.ServeHTTP(w, req)
@@ -4514,9 +4472,9 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 
 	// Arrange Request
 	url := "/ui/users/forgot-password"
-	bodyStr := fmt.Sprintf(`{"email":"%s"}`, user.Email)
+	bodyStr := serialize(`{"email":"%s"}`, user.Email)
 
-	req := httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
+	req := httptest.NewRequest(http.MethodPost, url, bodyStr)
 	req.Header.Add("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -4528,12 +4486,12 @@ func (u *UserIntegrationTestSuite) Test_Forgot_Password_Invalid_Token() {
 
 	// Reset password
 	url = fmt.Sprintf("/ui/users/reset-password?token=%s", "fake-token")
-	bodyStr = fmt.Sprintf(`{
+	bodyStr = serialize(`{
 		"password": "%s",
 		"password_confirmation": "%s"
 	}`, newPassword, newPassword)
 
-	req = httptest.NewRequest(http.MethodPost, url, serialize(bodyStr))
+	req = httptest.NewRequest(http.MethodPost, url, bodyStr)
 	req.Header.Add("Content-Type", "application/json")
 	w = httptest.NewRecorder()
 	u.Router.ServeHTTP(w, req)
