@@ -8,6 +8,8 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
+const MaxPasswordLength = 72
+
 type UpdatePasswordService struct {
 	UserRepo datastore.UserRepository
 
@@ -16,6 +18,10 @@ type UpdatePasswordService struct {
 }
 
 func (u *UpdatePasswordService) Run(ctx context.Context) (*datastore.User, error) {
+	if len(u.Data.Password) > MaxPasswordLength {
+		return nil, &ServiceError{ErrMsg: "password lenght too long"}
+	}
+
 	p := datastore.Password{Plaintext: u.Data.CurrentPassword, Hash: []byte(u.User.Password)}
 	match, err := p.Matches()
 	if err != nil {

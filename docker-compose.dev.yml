@@ -96,16 +96,3 @@ services:
         ports:
             - 9090:9090
         restart: always
-
-    promtail:
-        image: grafana/promtail:2.9.0
-        volumes:
-            - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
-        environment:
-            - LOKI_URL=${LOKI_URL:-http://host.docker.internal:3100}
-        command: -config.file=/etc/promtail/config.yml -config.expand-env=true
-        ports:
-            - "1514:1514/udp"  # Syslog UDP port
-        restart: always
-        extra_hosts:
-            - "host.docker.internal:host-gateway"
