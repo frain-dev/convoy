@@ -30,7 +30,7 @@ jobs:
                 options: --health-cmd pg_isready --health-interval 10ms --health-timeout 500ms --health-retries 15
         steps:
             - name: Start Redis v${{ matrix.redis-version }}
-              uses: supercharge/redis-github-action@1.4.0
+              uses: supercharge/redis-github-action@1.8.0
               with:
                   redis-version: ${{ matrix.redis-version }}
                   redis-port: 6379
