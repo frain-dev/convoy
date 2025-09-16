@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/frain-dev/convoy/config/algo"
-	"golang.org/x/crypto/sha3"
 )
 
 const (
