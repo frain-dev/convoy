@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +16,9 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/frain-dev/convoy/api/testdb"
@@ -28,10 +30,9 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testcon/manifest"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
 )
 
 var (
