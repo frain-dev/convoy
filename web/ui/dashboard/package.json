@@ -41,7 +41,7 @@
 		"@babel/core": "^7.18.5",
 		"@compodoc/compodoc": "^1.1.19",
 		"@types/jasmine": "^3.8.0",
-		"@types/node": "^12.11.1",
+		"@types/node": "^24.5.0",
 		"@types/prismjs": "^1.26.0",
 		"autoprefixer": "^10.4.7",
 		"babel-loader": "^8.2.5",
