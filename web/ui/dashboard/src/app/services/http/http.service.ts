@@ -158,7 +158,6 @@ export class HttpService {
 
                 // Use token for authorization if available, otherwise use ownerId or access_token
                 let authToken = this.getPortalLinkAuthToken() || this.token || this.ownerId;
-                console.log("auth token: ", {portal_token: authToken, token: this.token, owner_id: this.ownerId})
 
                 if (authToken !== undefined && authToken !== null) {
                     requestDetails.isPortal = true;

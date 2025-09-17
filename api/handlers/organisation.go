@@ -3,16 +3,15 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/database/postgres"
+	m "github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/render"
-
-	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func (h *Handler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +52,8 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var newOrg models.Organisation
 	err := util.ReadJSON(r, &newOrg)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to parse organisation creation request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
@@ -89,7 +89,8 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 	var orgUpdate models.Organisation
 	err := util.ReadJSON(r, &orgUpdate)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to parse organisation update request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
