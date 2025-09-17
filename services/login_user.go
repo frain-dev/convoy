@@ -69,7 +69,9 @@ func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token
 	}
 
 	if !canAccess {
-		return nil, nil, &ServiceError{ErrMsg: "License expired. Only the primary instance administrator can access the system"}
+		return nil, nil, &ServiceError{
+			Code:   ErrCodeLicenseExpired,
+			ErrMsg: "License expired. Only the primary instance administrator can access the system"}
 	}
 
 	token, err := u.JWT.GenerateToken(user)

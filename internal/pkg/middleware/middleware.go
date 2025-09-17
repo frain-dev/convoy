@@ -192,7 +192,7 @@ func RequireAuth() func(next http.Handler) http.Handler {
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
 				log.FromContext(r.Context()).WithError(err).Error("failed to get auth from request")
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 				return
 			}
 
@@ -498,7 +498,8 @@ func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) htt
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.EnterpriseSSO() {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				log.Warnf("Enterprise SSO access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -526,7 +527,8 @@ func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.GoogleOAuth() {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				log.Warnf("Google OAuth access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -538,7 +540,8 @@ func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.PortalLinks() {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				log.Warnf("Portal links access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
 			next.ServeHTTP(w, r)

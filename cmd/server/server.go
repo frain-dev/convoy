@@ -3,26 +3,25 @@ package server
 import (
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/worker"
-
 	"github.com/frain-dev/convoy/api"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/spf13/cobra"
+	"github.com/frain-dev/convoy/worker"
 )
 
 func AddServerCommand(a *cli.App) *cobra.Command {
