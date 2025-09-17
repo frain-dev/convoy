@@ -1799,10 +1799,10 @@ github.com/r3labs/sse v0.0.0-20210224172625-26fe804710bc/go.mod h1:S8xSOnV3CgpNr
 github.com/rabbitmq/amqp091-go v1.10.0 h1:STpn5XsHlHGcecLmMFCtg7mqq0RnD+zFr4uzukfVhBw=
 github.com/rabbitmq/amqp091-go v1.10.0/go.mod h1:Hy4jKW5kQART1u+JkDTF9YYOQUHXqMuhrgxOEeS7G4o=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
-github.com/redis/go-redis/extra/rediscmd/v9 v9.7.3 h1:1AXQZkJkFxGV3f78mSnUI70l0orO6FHnYoSmBos8SZM=
-github.com/redis/go-redis/extra/rediscmd/v9 v9.7.3/go.mod h1:OgkpkwJYex1oyVAabK+VhVUKhUXw8uZUfewJYH1wG90=
-github.com/redis/go-redis/extra/redisotel/v9 v9.7.3 h1:ICBA9xYh+SmZqMfBtjKpp1ohi/V5R1TEZglLZc8IxTc=
-github.com/redis/go-redis/extra/redisotel/v9 v9.7.3/go.mod h1:DMzxd0CDyZ9VFw9sEPIVpIgKTAaubfGuaPQSUaS7/fo=
+github.com/redis/go-redis/extra/rediscmd/v9 v9.14.0 h1:DF7JP9CeCIEWbvVKA3r7dxCB1cUvEm+cD8fgWCn7R0g=
+github.com/redis/go-redis/extra/rediscmd/v9 v9.14.0/go.mod h1:JCn91QtwR6qo3PEs35hcpBSirjqKpKwSSjnZX4kYgI0=
+github.com/redis/go-redis/extra/redisotel/v9 v9.14.0 h1:kXIdyUBHeXsR1foSU+qdZjo3tROk5Rb2HS1kp99YuPM=
+github.com/redis/go-redis/extra/redisotel/v9 v9.14.0/go.mod h1:LafdjmKxzRKYznKgcVeqS3vIiBCsY90JbB0pDgHt774=
 github.com/redis/go-redis/v9 v9.0.0-rc.4/go.mod h1:Vo3EsyWnicKnSKCA7HhgnvnyA74wOA69Cd2Meli5mmA=
 github.com/redis/go-redis/v9 v9.0.3/go.mod h1:WqMKv5vnQbRuZstUwxQI195wHy+t4PuXDOjzMvcuQHk=
 github.com/redis/go-redis/v9 v9.0.5/go.mod h1:WqMKv5vnQbRuZstUwxQI195wHy+t4PuXDOjzMvcuQHk=
