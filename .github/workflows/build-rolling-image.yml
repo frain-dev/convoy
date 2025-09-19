@@ -57,9 +57,9 @@ jobs:
           path: api/ui/build
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: 1.22
+          go-version: 1.24
 
       - name: Get and verify dependencies
         run: go mod tidy && go mod download && go mod verify
