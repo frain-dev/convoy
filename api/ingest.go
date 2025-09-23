@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -157,17 +158,46 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	// 3.1 On Failure
 	// Return 400 Bad Request.
-	payload, err := extractPayloadFromIngestEventReq(r, maxIngestSize)
+	// Read raw body for signature verification first (e.g., GitHub signs raw bytes)
+	rawPayload, err := io.ReadAll(io.LimitReader(r.Body, int64(maxIngestSize)))
 	if err != nil {
-		a.A.Logger.WithError(err).Error("Failed to extract payload")
+		a.A.Logger.WithError(err).Error("Failed to read request body")
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
-	if err = v.VerifyRequest(r, payload); err != nil {
-		a.A.Logger.WithError(err).Error("Request verification failed")
-		_ = render.Render(w, r, util.NewErrorResponse("Request verification failed", http.StatusBadRequest))
-		return
+	// Restore body for subsequent reads
+	r.Body = io.NopCloser(bytes.NewReader(rawPayload))
+
+	// Try raw-body verification first
+	rawVerifyErr := v.VerifyRequest(r, rawPayload)
+
+	var payload []byte
+	if rawVerifyErr != nil {
+		// Fallback: extract/convert payload (e.g., form -> JSON) and verify against that for backward compatibility
+		payload, err = extractPayloadFromIngestEventReq(r, maxIngestSize)
+		if err != nil {
+			a.A.Logger.WithError(err).Error("Failed to extract payload")
+			_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+			return
+		}
+
+		// Reset body before verification (some verifiers may inspect headers/body state)
+		r.Body = io.NopCloser(bytes.NewReader(rawPayload))
+
+		if err = v.VerifyRequest(r, payload); err != nil {
+			a.A.Logger.WithError(rawVerifyErr).Error("Request verification failed (raw and converted)")
+			_ = render.Render(w, r, util.NewErrorResponse("Request verification failed", http.StatusBadRequest))
+			return
+		}
+	} else {
+		// Raw verification succeeded; now convert for storage
+		payload, err = extractPayloadFromIngestEventReq(r, maxIngestSize)
+		if err != nil {
+			a.A.Logger.WithError(err).Error("Failed to extract payload")
+			_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+			return
+		}
 	}
 
 	if len(payload) == 0 {
