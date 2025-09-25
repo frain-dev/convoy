@@ -1,3 +1,23 @@
+# 25.9.1
+
+### Features
+
+- added google sso
+
+### Enhancements
+
+- bump pkgs version
+- update base docker image and add dependabot
+- add organization ID to log
+- update docker compose dev
+- Standardize PortalLink Auth Types
+- Batch retry improvement
+- moved circuit breaker config to project config
+- rbac refactor
+
+### Bug Fixes
+- fix returning of internal errors to client
+
 # 25.7.1
 
 ### Features
