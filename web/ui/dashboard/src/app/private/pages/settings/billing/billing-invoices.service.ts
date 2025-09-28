@@ -30,7 +30,7 @@ export class BillingInvoicesService {
     try {
       const orgId = this.getOrganisationId();
       const response = await this.httpService.request({
-        url: `/organisations/${orgId}/billing/invoices`,
+        url: `/billing/organisations/${orgId}/invoices`,
         method: 'get',
         hideNotification: true
       });

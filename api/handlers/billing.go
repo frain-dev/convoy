@@ -6,7 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/database/postgres"
 
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
@@ -25,6 +28,18 @@ func (h *BillingHandler) GetBillingEnabled(w http.ResponseWriter, r *http.Reques
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Billing status retrieved", response, http.StatusOK))
+}
+
+func (h *BillingHandler) GetBillingConfig(w http.ResponseWriter, r *http.Request) {
+	response := map[string]interface{}{
+		"enabled": h.A.Cfg.Billing.Enabled,
+		"payment_provider": map[string]interface{}{
+			"type":            h.A.Cfg.Billing.PaymentProvider.Type,
+			"publishable_key": h.A.Cfg.Billing.PaymentProvider.PublishableKey,
+		},
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Billing configuration retrieved", response, http.StatusOK))
 }
 
 func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
@@ -150,6 +165,29 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
 		return
+	}
+
+	_, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
+	if err != nil && strings.Contains(err.Error(), "Organisation not found") {
+		orgRepo := postgres.NewOrgRepo(h.A.DB)
+		org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation data", http.StatusInternalServerError))
+			return
+		}
+
+		orgData := map[string]interface{}{
+			"name":          org.Name,
+			"external_id":   orgID,
+			"billing_email": "",
+			"host":          org.AssignedDomain.String,
+		}
+
+		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
+		if createErr != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to create organisation in billing service", http.StatusInternalServerError))
+			return
+		}
 	}
 
 	resp, err := h.BillingClient.GetSubscription(r.Context(), orgID)
@@ -418,6 +456,29 @@ func (h *BillingHandler) CreatePaymentMethod(w http.ResponseWriter, r *http.Requ
 	_ = render.Render(w, r, util.NewServerResponse("Payment method created successfully", resp.Data, http.StatusCreated))
 }
 
+func (h *BillingHandler) UpdatePaymentMethod(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	pmID := chi.URLParam(r, "pmID")
+	if orgID == "" || pmID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and payment method ID are required", http.StatusBadRequest))
+		return
+	}
+
+	var pmData map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&pmData); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.UpdatePaymentMethod(r.Context(), orgID, pmID, pmData)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Payment method updated successfully", resp.Data, http.StatusOK))
+}
+
 func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "orgID")
 	pmID := chi.URLParam(r, "pmID")
@@ -527,4 +588,37 @@ func (h *BillingHandler) UpdateBillingTaxID(w http.ResponseWriter, r *http.Reque
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Tax ID updated successfully", resp.Data, http.StatusOK))
+}
+
+// GetInternalOrganisationID returns the internal organisation ID from Overwatch
+func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	if orgID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	// Extract just the internal ID from the response
+	var internalID string
+	if resp.Data != nil {
+		if data, ok := resp.Data.(map[string]interface{}); ok {
+			if id, exists := data["id"]; exists {
+				if idStr, ok := id.(string); ok {
+					internalID = idStr
+				}
+			}
+		}
+	}
+
+	responseData := map[string]interface{}{
+		"id": internalID,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Internal organisation ID retrieved successfully", responseData, http.StatusOK))
 }

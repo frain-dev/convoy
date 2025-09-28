@@ -22,7 +22,7 @@ export class BillingUsageService {
     try {
       const orgId = this.getOrganisationId();
       const response = await this.httpService.request({
-        url: `/organisations/${orgId}/billing/usage`,
+        url: `/billing/organisations/${orgId}/usage`,
         method: 'get',
         hideNotification: true
       });

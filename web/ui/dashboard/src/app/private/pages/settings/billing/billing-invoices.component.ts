@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {BillingInvoicesService, InvoiceRow} from './billing-invoices.service';
 import {GeneralService} from 'src/app/services/general/general.service';
+import {BillingOverviewService} from './billing-overview.service';
 
 @Component({
   selector: 'app-billing-invoices',
@@ -14,11 +15,14 @@ export class BillingInvoicesComponent implements OnInit {
 
   constructor(
     private invoicesService: BillingInvoicesService,
-    private generalService: GeneralService
+    private generalService: GeneralService,
+    private overviewService: BillingOverviewService
   ) {}
 
   ngOnInit() {
-    this.fetchInvoices();
+    this.overviewService.ensureBillingReady().then(() => {
+      this.fetchInvoices();
+    });
   }
 
   fetchInvoices() {

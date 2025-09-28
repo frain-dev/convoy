@@ -39,7 +39,8 @@
           </div>
         </div>
 
-        <form *ngIf="isEditingPaymentMethod" [formGroup]="paymentMethodForm" class="mb-16px">
+        <!-- Legacy form (hidden when using Stripe Elements) -->
+        <form *ngIf="isEditingPaymentMethod && useLegacyFlow" [formGroup]="paymentMethodForm" class="mb-16px">
           <div class="flex gap-12px">
             <convoy-input-field>
               <label for="cardholderName" convoy-label required="true">Cardholder name</label>
@@ -67,6 +68,7 @@
                 <input type="number" id="expiryYear" convoy-input formControlName="expiryYear" placeholder="YY" [min]="currentYear" />
               </div>
               <convoy-input-error *ngIf="(paymentMethodForm.get('expiryMonth')?.touched || paymentMethodForm.get('expiryYear')?.touched) && (paymentMethodForm.get('expiryMonth')?.invalid || paymentMethodForm.get('expiryYear')?.invalid)">Please enter valid expiry date</convoy-input-error>
+              <convoy-input-error *ngIf="paymentMethodForm.errors?.['expiredCard']">Card has expired. Please enter a valid expiry date.</convoy-input-error>
             </convoy-input-field>
 
             <convoy-input-field>
@@ -85,6 +87,49 @@
             </button>
           </div>
         </form>
+
+        <!-- Payment Provider Elements form -->
+        <div *ngIf="isEditingPaymentMethod && !useLegacyFlow" class="mb-16px">
+          <div *ngIf="isPaymentProviderLoading" class="text-center py-20px">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+            <p class="text-14 text-neutral-11 mt-8px">Loading payment form...</p>
+          </div>
+          
+          <div *ngIf="!isPaymentProviderLoading && setupIntentSecret && paymentProviderType === 'stripe' && internalOrganisationId">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Card Information</label>
+              <app-stripe-elements 
+                #stripeElements
+                [publishableKey]="paymentProviderPublishableKey"
+                [clientSecret]="setupIntentSecret"
+                [organisationId]="internalOrganisationId"
+                (paymentMethodCreated)="onPaymentMethodCreated()"
+                (error)="onPaymentProviderError($event)">
+              </app-stripe-elements>
+            </div>
+            
+            <div class="flex gap-12px justify-end pt-24px">
+              <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()" [disabled]="isSavingPaymentMethod">
+                Cancel
+              </button>
+              <button type="button" convoy-button (click)="onUpdatePaymentMethodWithProvider(stripeElements, $event)" [disabled]="isSavingPaymentMethod">
+                <span *ngIf="!isSavingPaymentMethod">Save Card</span>
+                <span *ngIf="isSavingPaymentMethod">Saving...</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Future: Add other payment providers here -->
+          <div *ngIf="!isPaymentProviderLoading && setupIntentSecret && paymentProviderType === 'stripe' && !internalOrganisationId" class="text-center py-20px">
+            <p class="text-14 text-neutral-11">Loading organisation data...</p>
+            <p class="text-12 text-neutral-11 mt-4px">Please wait while we prepare your payment form.</p>
+          </div>
+          
+          <div *ngIf="!isPaymentProviderLoading && setupIntentSecret && paymentProviderType !== 'stripe'" class="text-center py-20px">
+            <p class="text-14 text-neutral-11">Payment provider "{{ paymentProviderType }}" is not yet supported in the UI.</p>
+            <p class="text-12 text-neutral-11 mt-4px">Please use the legacy flow or contact support.</p>
+          </div>
+        </div>
       </div>
     </div>
 

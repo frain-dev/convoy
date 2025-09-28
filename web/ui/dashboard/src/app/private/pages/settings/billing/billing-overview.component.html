@@ -22,12 +22,15 @@
     <div class="billing-card">
       <div class="billing-card-header">
         <div class="billing-card-label">Payment details</div>
-        <div class="billing-card-payment flex items-center gap-8px">
+        <div class="billing-card-payment flex items-center gap-8px" *ngIf="overview?.payment as payment">
           <div [innerHTML]="getCardIconSvg()"></div>
-          <div class="billing-card-value">{{ overview?.payment?.last4 || 'Loading...' }}</div>
+          <div class="billing-card-value">{{ payment.last4 }}</div>
         </div>
+        <div class="billing-card-value" *ngIf="!overview?.payment">No payment method</div>
       </div>
-      <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">Manage</a>
+      <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">
+        {{ overview?.payment ? 'Manage' : 'Add payment method' }}
+      </a>
     </div>
   </div>
 </div> 

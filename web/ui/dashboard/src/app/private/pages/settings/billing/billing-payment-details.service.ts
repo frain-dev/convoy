@@ -53,11 +53,38 @@ export interface VatInfoDetails {
 export class BillingPaymentDetailsService {
   constructor(private httpService: HttpService) {}
 
+  // Get billing configuration including payment provider details
+  getBillingConfig(): Observable<any> {
+    return from(this.httpService.request({
+      url: '/billing/config',
+      method: 'get'
+    })).pipe(
+      catchError((error) => {
+        console.error('Failed to fetch billing configuration:', error);
+        throw error;
+      })
+    );
+  }
+
+
+  // Get internal organisation ID from Overwatch
+  getInternalOrganisationId(externalOrgId: string): Observable<any> {
+    return from(this.httpService.request({
+      url: `/billing/organisations/${externalOrgId}/internal_id`,
+      method: 'get'
+    })).pipe(
+      catchError((error) => {
+        console.error('Failed to fetch internal organisation ID:', error);
+        throw error;
+      })
+    );
+  }
+
   // Get existing payment details - this endpoint exists
   getPaymentMethodDetails(): Observable<PaymentMethodDetails> {
     const orgId = this.getOrganisationId();
     return from(this.httpService.request({
-      url: `/organisations/${orgId}/billing/payment_methods`,
+      url: `/billing/organisations/${orgId}/payment_methods`,
       method: 'get'
     })).pipe(
       map((response: any) => {
@@ -152,10 +179,18 @@ export class BillingPaymentDetailsService {
     );
   }
 
+  getSetupIntent(): Observable<any> {
+    const orgId = this.getOrganisationId();
+    return from(this.httpService.request({
+      url: `/billing/organisations/${orgId}/payment_methods/setup_intent`,
+      method: 'get'
+    }));
+  }
+
   updatePaymentMethod(paymentMethod: PaymentMethodUpdate, returnFullError: boolean = false): Observable<any> {
     const orgId = this.getOrganisationId();
     return from(this.httpService.request({
-      url: `/organisations/${orgId}/payment_methods`,
+      url: `/billing/organisations/${orgId}/payment_methods`,
       method: 'post',
       body: paymentMethod,
       returnFullError: returnFullError
@@ -177,7 +212,7 @@ export class BillingPaymentDetailsService {
     };
 
     return from(this.httpService.request({
-      url: `/organisations/${orgId}/address`,
+      url: `/billing/organisations/${orgId}/address`,
       method: 'post',
       body: addressData
     }));
@@ -210,14 +245,14 @@ export class BillingPaymentDetailsService {
     })).pipe(
       mergeMap(() => {
         return from(this.httpService.request({
-          url: `/organisations/${orgId}/tax_id`,
+          url: `/billing/organisations/${orgId}/tax_id`,
           method: 'post',
           body: taxData
         }));
       }),
       mergeMap(() => {
         return from(this.httpService.request({
-          url: `/organisations/${orgId}/address`,
+          url: `/billing/organisations/${orgId}/address`,
           method: 'post',
           body: addressData
         }));
@@ -227,6 +262,27 @@ export class BillingPaymentDetailsService {
 
   private getOrganisationId(): string {
     const org = localStorage.getItem('CONVOY_ORG');
-    return org ? JSON.parse(org).uid : '';
+    console.log('Raw org from localStorage:', org);
+    
+    if (!org) {
+      console.error('No organisation found in localStorage');
+      throw new Error('No organisation found. Please refresh the page and try again.');
+    }
+    
+    try {
+      const orgData = JSON.parse(org);
+      console.log('Parsed org data:', orgData);
+      
+      if (!orgData.uid) {
+        console.error('No organisation UID found in localStorage data:', orgData);
+        throw new Error('Invalid organisation data. Please refresh the page and try again.');
+      }
+      
+      console.log('Using organisation ID:', orgData.uid);
+      return orgData.uid;
+    } catch (error) {
+      console.error('Error parsing organisation data from localStorage:', error);
+      throw new Error('Invalid organisation data. Please refresh the page and try again.');
+    }
   }
 }

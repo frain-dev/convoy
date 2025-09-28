@@ -507,43 +507,51 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 			uiRouter.Route("/billing", func(billingRouter chi.Router) {
 				billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
+				billingRouter.Get("/config", billingHandler.GetBillingConfig)
 				billingRouter.Get("/plans", billingHandler.GetPlans)
 				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
+
+				billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
+					orgBillingRouter.Get("/usage", billingHandler.GetUsage)
+					orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
+					orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
+					orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
+					orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
+				})
+
+				billingRouter.Route("/organisations", func(billingOrgRouter chi.Router) {
+					billingOrgRouter.Post("/", billingHandler.CreateOrganisation)
+					billingOrgRouter.Get("/{orgID}", billingHandler.GetOrganisation)
+					billingOrgRouter.Put("/{orgID}", billingHandler.UpdateOrganisation)
+					billingOrgRouter.Post("/{orgID}/tax_id", billingHandler.UpdateOrganisationTaxID)
+					billingOrgRouter.Post("/{orgID}/address", billingHandler.UpdateOrganisationAddress)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
+					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
+					billingSubRouter.Post("/", billingHandler.CreateSubscription)
+					billingSubRouter.Put("/", billingHandler.UpdateSubscription)
+					billingSubRouter.Delete("/", billingHandler.DeleteSubscription)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
+					billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
+					billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
+					billingPmRouter.Post("/", billingHandler.CreatePaymentMethod)
+					billingPmRouter.Put("/{pmID}", billingHandler.UpdatePaymentMethod)
+					billingPmRouter.Delete("/{pmID}", billingHandler.DeletePaymentMethod)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
+					billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
+					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
+					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
+				})
+
+				billingRouter.Post("/payment-method", billingHandler.CreateBillingPaymentMethod)
+				billingRouter.Post("/address", billingHandler.UpdateBillingAddress)
+				billingRouter.Post("/tax-id", billingHandler.UpdateBillingTaxID)
 			})
-
-			uiRouter.Route("/organisations/{orgID}/billing", func(orgBillingRouter chi.Router) {
-				orgBillingRouter.Get("/usage", billingHandler.GetUsage)
-				orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
-				orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
-				orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
-			})
-
-			// Organisations
-			uiRouter.Post("/organisations", billingHandler.CreateOrganisation)
-			uiRouter.Get("/organisations/{orgID}", billingHandler.GetOrganisation)
-			uiRouter.Put("/organisations/{orgID}", billingHandler.UpdateOrganisation)
-			uiRouter.Post("/organisations/{orgID}/tax_id", billingHandler.UpdateOrganisationTaxID)
-			uiRouter.Post("/organisations/{orgID}/address", billingHandler.UpdateOrganisationAddress)
-
-			// Subscriptions
-			uiRouter.Get("/organisations/{orgID}/subscriptions", billingHandler.GetSubscriptions)
-			uiRouter.Post("/organisations/{orgID}/subscriptions", billingHandler.CreateSubscription)
-			uiRouter.Put("/organisations/{orgID}/subscriptions", billingHandler.UpdateSubscription)
-			uiRouter.Delete("/organisations/{orgID}/subscriptions", billingHandler.DeleteSubscription)
-
-			// Payment Methods
-			uiRouter.Get("/organisations/{orgID}/payment_methods/setup_intent", billingHandler.GetSetupIntent)
-			uiRouter.Post("/organisations/{orgID}/payment_methods", billingHandler.CreatePaymentMethod)
-			uiRouter.Delete("/organisations/{orgID}/payment_methods/{pmID}", billingHandler.DeletePaymentMethod)
-
-			// Invoices
-			uiRouter.Get("/organisations/{orgID}/billing/invoices/{invoiceID}/download", billingHandler.DownloadInvoice)
-			uiRouter.Get("/organisations/{orgID}/billing/invoices/{invoiceID}", billingHandler.GetInvoice)
-
-			// Public billing endpoints
-			uiRouter.Post("/billing/payment-method", billingHandler.CreateBillingPaymentMethod)
-			uiRouter.Post("/billing/address", billingHandler.UpdateBillingAddress)
-			uiRouter.Post("/billing/tax-id", billingHandler.UpdateBillingTaxID)
 		}
 	})
 

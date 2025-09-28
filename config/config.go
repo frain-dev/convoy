@@ -472,9 +472,15 @@ type HCPVaultConfig struct {
 }
 
 type BillingConfiguration struct {
-	Enabled bool   `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
-	URL     string `json:"url" envconfig:"CONVOY_BILLING_URL"`
-	APIKey  string `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
+	Enabled         bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
+	URL             string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
+	APIKey          string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
+	PaymentProvider PaymentProviderConfiguration `json:"payment_provider"`
+}
+
+type PaymentProviderConfiguration struct {
+	Type           string `json:"type" envconfig:"CONVOY_PAYMENT_PROVIDER_TYPE"`
+	PublishableKey string `json:"publishable_key" envconfig:"CONVOY_PAYMENT_PROVIDER_PUBLISHABLE_KEY"`
 }
 
 // Validate checks if the billing configuration is valid when enabled

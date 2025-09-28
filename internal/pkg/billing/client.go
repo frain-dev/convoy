@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/frain-dev/convoy/config"
@@ -30,7 +31,9 @@ type Client interface {
 	UpdateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error)
 	DeleteSubscription(ctx context.Context, orgID string) (*Response, error)
 	GetSetupIntent(ctx context.Context, orgID string) (*Response, error)
+	CreateSetupIntent(ctx context.Context, orgID string, setupIntentData interface{}) (*Response, error)
 	CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*Response, error)
+	UpdatePaymentMethod(ctx context.Context, orgID, pmID string, pmData interface{}) (*Response, error)
 	DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error)
 	GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error)
 	DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error)
@@ -69,7 +72,7 @@ func (c *HTTPClient) HealthCheck(ctx context.Context) error {
 	}
 
 	// Make a simple health check request to the billing service
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/health", c.config.URL), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/up", c.config.URL), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create health check request: %w", err)
 	}
@@ -104,7 +107,7 @@ func (c *HTTPClient) GetPaymentMethods(ctx context.Context, orgID string) (*Resp
 }
 
 func (c *HTTPClient) GetSubscription(ctx context.Context, orgID string) (*Response, error) {
-	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/subscription", orgID), nil)
+	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
 }
 
 func (c *HTTPClient) GetPlans(ctx context.Context) (*Response, error) {
@@ -158,8 +161,16 @@ func (c *HTTPClient) GetSetupIntent(ctx context.Context, orgID string) (*Respons
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/payment_methods/setup_intent", orgID), nil)
 }
 
+func (c *HTTPClient) CreateSetupIntent(ctx context.Context, orgID string, setupIntentData interface{}) (*Response, error) {
+	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/payment_methods/setup_intent", orgID), setupIntentData)
+}
+
 func (c *HTTPClient) CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*Response, error) {
 	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/payment_methods", orgID), pmData)
+}
+
+func (c *HTTPClient) UpdatePaymentMethod(ctx context.Context, orgID, pmID string, pmData interface{}) (*Response, error) {
+	return c.makeRequest(ctx, "PUT", fmt.Sprintf("/organisations/%s/payment_methods/%s", orgID, pmID), pmData)
 }
 
 func (c *HTTPClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error) {
@@ -222,6 +233,11 @@ func (c *HTTPClient) UpdateBillingTaxID(ctx context.Context, taxData interface{}
 func (c *HTTPClient) makeRequest(ctx context.Context, method, path string, body interface{}) (*Response, error) {
 	if !c.config.Enabled {
 		return nil, fmt.Errorf("billing is not enabled")
+	}
+
+	// Add /api/v1 prefix for Overwatch compatibility
+	if !strings.HasPrefix(path, "/api/v1") && !strings.HasPrefix(path, "/billing") {
+		path = "/api/v1" + path
 	}
 
 	url := fmt.Sprintf("%s%s", c.config.URL, path)

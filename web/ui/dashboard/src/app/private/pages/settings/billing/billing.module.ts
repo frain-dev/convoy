@@ -6,6 +6,7 @@ import {BillingPageComponent} from './billing-page.component';
 import {BillingOverviewComponent} from './billing-overview.component';
 import {BillingUsageComponent} from './billing-usage.component';
 import {BillingInvoicesComponent} from './billing-invoices.component';
+import {StripeElementsComponent} from './stripe-elements.component';
 import {CountriesService} from 'src/app/services/countries/countries.service';
 import {CardComponent} from "../../../../components/card/card.component";
 import {
@@ -35,7 +36,8 @@ import {DialogDirective, DialogHeaderComponent} from "../../../../components/dia
     BillingPageComponent,
     BillingOverviewComponent,
     BillingUsageComponent,
-    BillingInvoicesComponent
+    BillingInvoicesComponent,
+    StripeElementsComponent
   ],
     imports: [CommonModule, ReactiveFormsModule, HttpClientModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent],
   exports: [

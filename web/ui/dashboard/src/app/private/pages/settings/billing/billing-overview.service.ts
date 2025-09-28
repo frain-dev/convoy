@@ -1,7 +1,7 @@
-import { Injectable } from '@angular/core';
-import { Observable, from } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { HttpService } from 'src/app/services/http/http.service';
+import {Injectable} from '@angular/core';
+import {from, Observable} from 'rxjs';
+import {map} from 'rxjs/operators';
+import {HttpService} from 'src/app/services/http/http.service';
 
 export interface BillingOverview {
   plan: {
@@ -15,7 +15,7 @@ export interface BillingOverview {
   payment: {
     last4: string;
     brand: string;
-  };
+  } | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -28,15 +28,20 @@ export class BillingOverviewService {
     );
   }
 
+  async ensureBillingReady(): Promise<void> {
+    const orgId = this.getOrganisationId();
+    await this.httpService.request({ url: `/billing/organisations/${orgId}/subscription`, method: 'get', hideNotification: true });
+  }
+
   private async getOverviewData() {
     try {
       const orgId = this.getOrganisationId();
-      
-      // Get data in parallel
-      const [subscriptionResponse, usageResponse, paymentResponse] = await Promise.all([
-        this.httpService.request({ url: `/organisations/${orgId}/billing/subscription`, method: 'get', hideNotification: true }),
-        this.httpService.request({ url: `/organisations/${orgId}/billing/usage`, method: 'get', hideNotification: true }),
-        this.httpService.request({ url: `/organisations/${orgId}/billing/payment_methods`, method: 'get', hideNotification: true })
+
+      const subscriptionResponse = await this.httpService.request({ url: `/billing/organisations/${orgId}/subscription`, method: 'get', hideNotification: true });
+
+      const [usageResponse, paymentResponse] = await Promise.all([
+        this.httpService.request({ url: `/billing/organisations/${orgId}/usage`, method: 'get', hideNotification: true }),
+        this.httpService.request({ url: `/billing/organisations/${orgId}/payment_methods`, method: 'get', hideNotification: true })
       ]);
 
       return {
@@ -55,20 +60,20 @@ export class BillingOverviewService {
       return {
         plan: { name: 'No plan', price: '$0' },
         usage: { period: 'No data', daysUntilReset: 0 },
-        payment: { last4: '0000', brand: 'unknown' }
+        payment: null
       };
     }
 
     // Get current plan from subscription
     const currentPlan = data.subscription?.plan || { name: 'No plan', price: 0, currency: 'USD' };
-    
+
     // Get usage period
     const usage = data.usage || { period: '2024-01' };
     const usagePeriod = this.formatUsagePeriod(usage.period);
     const daysUntilReset = this.calculateDaysUntilReset(usage.period);
-    
+
     // Get payment method
-    const payment = data.payment?.[0] || { last4: '0000', brand: 'unknown' };
+    const payment = data.payment && data.payment.length > 0 ? data.payment[0] : null;
 
     return {
       plan: {
@@ -79,10 +84,10 @@ export class BillingOverviewService {
         period: usagePeriod,
         daysUntilReset
       },
-      payment: {
+      payment: payment ? {
         last4: payment.last4,
         brand: payment.brand
-      }
+      } : null
     };
   }
 
@@ -90,12 +95,12 @@ export class BillingOverviewService {
     const [year, month] = period.split('-');
     const currentDate = new Date(parseInt(year), parseInt(month) - 1, 1);
     const nextDate = new Date(parseInt(year), parseInt(month), 1);
-    
+
     const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'short' });
     const currentDay = currentDate.getDate();
     const nextMonth = nextDate.toLocaleDateString('en-US', { month: 'short' });
     const nextDay = nextDate.getDate();
-    
+
     return `${currentMonth} ${currentDay.toString().padStart(2, '0')} - ${nextMonth} ${nextDay.toString().padStart(2, '0')}`;
   }
 
@@ -104,14 +109,14 @@ export class BillingOverviewService {
     const currentDate = new Date();
     const currentPeriodStart = new Date(parseInt(year), parseInt(month) - 1, 1);
     const nextPeriodStart = new Date(parseInt(year), parseInt(month), 1);
-    
+
     // If we're in the current period, calculate days until next period
     if (currentDate >= currentPeriodStart && currentDate < nextPeriodStart) {
       const diffTime = nextPeriodStart.getTime() - currentDate.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return Math.max(0, diffDays);
     }
-    
+
     // If we're past this period, return 0
     return 0;
   }
@@ -120,4 +125,4 @@ export class BillingOverviewService {
     const org = localStorage.getItem('CONVOY_ORG');
     return org ? JSON.parse(org).uid : '';
   }
-} 
+}

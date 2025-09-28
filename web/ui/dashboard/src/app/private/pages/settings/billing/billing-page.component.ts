@@ -1,4 +1,5 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {StripeElementsComponent} from './stripe-elements.component';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {
     BillingAddressDetails,
@@ -21,6 +22,7 @@ export class BillingPageComponent implements OnInit {
   isPaymentDetailsOpen = false;
   refreshOverviewTrigger = 0;
   currentYear = new Date().getFullYear() - 2000; // 2-digit current year
+  currentMonth = new Date().getMonth() + 1; // Current month (1-12)
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
@@ -49,6 +51,16 @@ export class BillingPageComponent implements OnInit {
   // API error message
   apiError = '';
 
+  useLegacyFlow = false; // Use payment provider Elements instead of legacy flow
+
+  // Payment provider properties
+  paymentProviderType = '';
+  paymentProviderPublishableKey = '';
+  setupIntentSecret = '';
+  isPaymentProviderLoading = false;
+  isSavingPaymentMethod = false;
+  internalOrganisationId = ''; // Internal ID from Overwatch
+
   constructor(
     private fb: FormBuilder,
     private billingPaymentDetailsService: BillingPaymentDetailsService,
@@ -60,11 +72,79 @@ export class BillingPageComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.validateOrganisation();
+    this.loadBillingConfiguration();
     this.loadCountries();
 
     // Subscribe to country changes in the form
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryName => {
       this.onCountryChange(countryName);
+    });
+  }
+
+  private validateOrganisation() {
+    try {
+      const org = localStorage.getItem('CONVOY_ORG');
+      console.log('Validating organisation from localStorage:', org);
+
+      if (!org) {
+        throw new Error('No organisation found in localStorage');
+      }
+
+      const orgData = JSON.parse(org);
+      console.log('Organisation data:', orgData);
+
+      if (!orgData.uid) {
+        throw new Error('No organisation UID found');
+      }
+
+      console.log('Organisation validation passed. UID:', orgData.uid);
+    } catch (error) {
+      console.error('Organisation validation failed:', error);
+      this.generalService.showNotification({
+        message: 'Invalid organisation data. Please refresh the page and try again.',
+        style: 'error'
+      });
+    }
+  }
+
+  private loadBillingConfiguration() {
+    this.billingPaymentDetailsService.getBillingConfig().subscribe({
+      next: (config) => {
+        this.paymentProviderType = config.data.payment_provider.type;
+        this.paymentProviderPublishableKey = config.data.payment_provider.publishable_key;
+        console.log('Loaded billing config:', config.data);
+        console.log('Payment provider type:', this.paymentProviderType);
+        console.log('Publishable key:', this.paymentProviderPublishableKey ? 'Present' : 'Missing');
+
+        // Load internal organisation ID from Overwatch
+        this.loadInternalOrganisationId();
+      },
+      error: (error) => {
+        console.error('Failed to load billing configuration:', error);
+        this.generalService.showNotification({
+          message: 'Failed to load billing configuration. Please refresh the page.',
+          style: 'error'
+        });
+      }
+    });
+  }
+
+  private loadInternalOrganisationId() {
+    const externalOrgId = this.getOrganisationId();
+    this.billingPaymentDetailsService.getInternalOrganisationId(externalOrgId).subscribe({
+      next: (response) => {
+        this.internalOrganisationId = response.data.id;
+        console.log('Loaded internal organisation ID from billing service:', this.internalOrganisationId);
+      },
+      error: (error) => {
+        console.error('Failed to load internal organisation ID:', error);
+        this.generalService.showNotification({
+          message: 'Failed to load organisation data. Please refresh the page.',
+          style: 'error'
+        });
+        this.internalOrganisationId = '';
+      }
     });
   }
 
@@ -118,7 +198,7 @@ export class BillingPageComponent implements OnInit {
       expiryMonth: ['', [Validators.required, Validators.min(1), Validators.max(12)]],
       expiryYear: ['', [Validators.required, Validators.min(this.currentYear)]],
       cvv: ['', [Validators.required, Validators.pattern(/^\d{3,4}$/)]]
-    });
+    }, { validators: this.expiryDateValidator() });
 
     this.billingAddressForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -197,9 +277,50 @@ export class BillingPageComponent implements OnInit {
 
   // Edit mode methods
   startEditingPaymentMethod() {
-    this.isEditingPaymentMethod = true;
-    // Don't prefill sensitive payment information for security
-    this.paymentMethodForm.reset();
+    // Validate organisation before starting payment method flow
+    try {
+      const org = localStorage.getItem('CONVOY_ORG');
+      if (!org) {
+        throw new Error('No organisation found');
+      }
+
+      const orgData = JSON.parse(org);
+      if (!orgData.uid) {
+        throw new Error('Invalid organisation data');
+      }
+
+      console.log('Starting payment method flow with organisation:', orgData.uid);
+    } catch (error) {
+      console.error('Cannot start payment method flow - invalid organisation:', error);
+      this.generalService.showNotification({
+        message: 'Invalid organisation data. Please refresh the page and try again.',
+        style: 'error'
+      });
+      return;
+    }
+
+    if (this.useLegacyFlow) {
+      this.redirectToStripe();
+    } else {
+      this.isEditingPaymentMethod = true;
+      this.getSetupIntent();
+    }
+  }
+
+  private redirectToStripe() {
+    this.billingPaymentDetailsService.getSetupIntent().subscribe({
+      next: (setupIntentResponse) => {
+        const stripeUrl = `https://checkout.stripe.com/pay/${setupIntentResponse.data.intent_secret}`;
+        window.location.href = stripeUrl;
+      },
+      error: (error) => {
+        console.error('Failed to get setup intent:', error);
+        this.generalService.showNotification({
+          message: 'Failed to initialize payment. Please try again.',
+          style: 'error'
+        });
+      }
+    });
   }
 
   startEditingBillingAddress() {
@@ -218,7 +339,104 @@ export class BillingPageComponent implements OnInit {
 
   cancelEditingPaymentMethod() {
     this.isEditingPaymentMethod = false;
-    this.paymentMethodForm.reset();
+    this.setupIntentSecret = '';
+    if (this.useLegacyFlow) {
+      this.paymentMethodForm.reset();
+    }
+  }
+
+  // Payment provider Elements methods
+  getSetupIntent() {
+    this.isPaymentProviderLoading = true;
+    this.billingPaymentDetailsService.getSetupIntent().subscribe({
+      next: (setupIntentResponse) => {
+        this.setupIntentSecret = setupIntentResponse.data.intent_secret;
+        this.isPaymentProviderLoading = false;
+        console.log('Setup intent received:', this.setupIntentSecret ? 'Success' : 'Failed');
+      },
+      error: (error) => {
+        console.error('Failed to get setup intent:', error);
+        console.error('Error details:', error);
+        this.generalService.showNotification({
+          message: 'Failed to initialize payment form. Please try again.',
+          style: 'error'
+        });
+        this.isPaymentProviderLoading = false;
+        this.isEditingPaymentMethod = false;
+      }
+    });
+  }
+
+  onPaymentMethodCreated() {
+    this.generalService.showNotification({
+      message: 'Payment method saved successfully!',
+      style: 'success'
+    });
+    this.isEditingPaymentMethod = false;
+    this.setupIntentSecret = '';
+    this.loadPaymentMethodDetails();
+    this.refreshOverviewTrigger++;
+  }
+
+  onPaymentProviderError(errorMessage: string) {
+    this.apiError = errorMessage;
+  }
+
+  getOrganisationId(): string {
+    try {
+      const org = localStorage.getItem('CONVOY_ORG');
+      if (!org) {
+        return '';
+      }
+
+      const orgData = JSON.parse(org);
+      return orgData.uid || '';
+    } catch (error) {
+      console.error('Error getting organisation ID:', error);
+      return '';
+    }
+  }
+
+  async onUpdatePaymentMethodWithProvider(stripeElementsComponent: StripeElementsComponent, event?: Event) {
+    // This will be called from the template when using payment provider Elements
+    // The actual confirmation happens in the StripeElementsComponent
+    console.log('Save Card button clicked - triggering Stripe confirmation');
+    console.log('Event:', event);
+    console.log('stripeElementsComponent:', stripeElementsComponent);
+
+    // Prevent any default form submission behavior
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      console.log('Prevented default and stopped propagation');
+    }
+
+    this.isSavingPaymentMethod = true;
+    console.log('Set isSavingPaymentMethod to true');
+
+    // Add a small delay to see if the page reloads before this completes
+    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log('After 100ms delay - still here');
+
+    try {
+      // Confirm the payment method with the existing setup intent
+      console.log('Confirming payment method...');
+      const success = await stripeElementsComponent.confirmPaymentMethod();
+      if (success) {
+        console.log('Payment method confirmed successfully!');
+        this.onPaymentMethodCreated();
+      } else {
+        console.log('Payment method confirmation failed');
+      }
+    } catch (error) {
+      console.error('Error confirming payment method:', error);
+      this.generalService.showNotification({
+        message: 'Failed to save payment method. Please try again.',
+        style: 'error'
+      });
+    } finally {
+      this.isSavingPaymentMethod = false;
+    }
   }
 
   cancelEditingBillingAddress() {
@@ -266,42 +484,54 @@ export class BillingPageComponent implements OnInit {
 
       console.log('Processed form data:', formData);
 
-      this.billingPaymentDetailsService.updatePaymentMethod(formData, true).subscribe({
-        next: (response) => {
-          console.log('Payment method updated successfully:', response);
-          this.generalService.showNotification({
-            message: 'Payment method updated successfully!',
-            style: 'success'
+      // First get the setup intent
+      this.billingPaymentDetailsService.getSetupIntent().subscribe({
+        next: (setupIntentResponse) => {
+          console.log('Setup intent received:', setupIntentResponse);
+
+          // Now update the payment method with the setup intent
+          this.billingPaymentDetailsService.updatePaymentMethod(formData, true).subscribe({
+            next: (response) => {
+              console.log('Payment method updated successfully:', response);
+              this.generalService.showNotification({
+                message: 'Payment method updated successfully!',
+                style: 'success'
+              });
+              this.isEditingPaymentMethod = false;
+              this.loadPaymentMethodDetails(); // Refresh the data
+              this.refreshOverviewTrigger++;
+            },
+            error: (error) => {
+              console.error('Failed to update payment method:', error);
+
+              // Extract specific error message from the response
+              let errorMessage = 'Failed to update payment method. Please try again.';
+
+              if (error.response?.data?.message) {
+                const fullMessage = error.response.data.message;
+                // Extract the part after "billing service error: " if it exists
+                if (fullMessage.includes('billing service error: ')) {
+                  errorMessage = fullMessage.split('billing service error: ')[1];
+                } else {
+                  errorMessage = fullMessage;
+                }
+              } else if (error.error && error.error.message) {
+                errorMessage = error.error.message;
+              } else if (error.message) {
+                errorMessage = error.message;
+              } else if (error.status === 400) {
+                errorMessage = 'Invalid request data. Please check your card details.';
+              } else if (error.status === 500) {
+                errorMessage = 'Server error. Please try again later.';
+              }
+
+              this.apiError = errorMessage;
+            }
           });
-          this.isEditingPaymentMethod = false;
-          this.loadPaymentMethodDetails(); // Refresh the data
-          this.refreshOverviewTrigger++;
         },
         error: (error) => {
-          console.error('Failed to update payment method:', error);
-
-          // Extract specific error message from the response
-          let errorMessage = 'Failed to update payment method. Please try again.';
-
-          if (error.response?.data?.message) {
-            const fullMessage = error.response.data.message;
-            // Extract the part after "billing service error: " if it exists
-            if (fullMessage.includes('billing service error: ')) {
-              errorMessage = fullMessage.split('billing service error: ')[1];
-            } else {
-              errorMessage = fullMessage;
-            }
-          } else if (error.error && error.error.message) {
-            errorMessage = error.error.message;
-          } else if (error.message) {
-            errorMessage = error.message;
-          } else if (error.status === 400) {
-            errorMessage = 'Invalid request data. Please check your card details.';
-          } else if (error.status === 500) {
-            errorMessage = 'Server error. Please try again later.';
-          }
-
-          this.apiError = errorMessage;
+          console.error('Failed to get setup intent:', error);
+          this.apiError = 'Failed to initialize payment setup. Please try again.';
         }
       });
     } else {
@@ -407,6 +637,32 @@ export class BillingPageComponent implements OnInit {
       if (index !== 0 && !(index % 4)) seed += ' ';
       return seed + next;
     }, '');
+  }
+
+  private expiryDateValidator() {
+    return (formGroup: FormGroup) => {
+      const month = formGroup.get('expiryMonth')?.value;
+      const year = formGroup.get('expiryYear')?.value;
+
+      if (!month || !year) {
+        return null; // Let required validators handle empty values
+      }
+
+      const currentYear = this.currentYear;
+      const currentMonth = this.currentMonth;
+
+      // Check if year is in the past
+      if (year < currentYear) {
+        return { expiredCard: true };
+      }
+
+      // If same year, check if month is in the past
+      if (year === currentYear && month < currentMonth) {
+        return { expiredCard: true };
+      }
+
+      return null;
+    };
   }
 
   private cardNumberValidator() {
