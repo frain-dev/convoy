@@ -512,34 +512,28 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
 
 				billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
+					orgBillingRouter.Get("/", billingHandler.GetOrganisation)
 					orgBillingRouter.Get("/usage", billingHandler.GetUsage)
 					orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
 					orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
 					orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
 					orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
+					orgBillingRouter.Put("/tax_id", billingHandler.UpdateOrganisationTaxID)
+					orgBillingRouter.Put("/address", billingHandler.UpdateOrganisationAddress)
 				})
 
 				billingRouter.Route("/organisations", func(billingOrgRouter chi.Router) {
 					billingOrgRouter.Post("/", billingHandler.CreateOrganisation)
-					billingOrgRouter.Get("/{orgID}", billingHandler.GetOrganisation)
-					billingOrgRouter.Put("/{orgID}", billingHandler.UpdateOrganisation)
-					billingOrgRouter.Post("/{orgID}/tax_id", billingHandler.UpdateOrganisationTaxID)
-					billingOrgRouter.Post("/{orgID}/address", billingHandler.UpdateOrganisationAddress)
 				})
 
 				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
 					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
 					billingSubRouter.Post("/", billingHandler.CreateSubscription)
-					billingSubRouter.Put("/", billingHandler.UpdateSubscription)
-					billingSubRouter.Delete("/", billingHandler.DeleteSubscription)
 				})
 
 				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
 					billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
 					billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
-					billingPmRouter.Post("/", billingHandler.CreatePaymentMethod)
-					billingPmRouter.Put("/{pmID}", billingHandler.UpdatePaymentMethod)
-					billingPmRouter.Delete("/{pmID}", billingHandler.DeletePaymentMethod)
 				})
 
 				billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
@@ -548,9 +542,6 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
 				})
 
-				billingRouter.Post("/payment-method", billingHandler.CreateBillingPaymentMethod)
-				billingRouter.Post("/address", billingHandler.UpdateBillingAddress)
-				billingRouter.Post("/tax-id", billingHandler.UpdateBillingTaxID)
 			})
 		}
 	})

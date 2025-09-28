@@ -86,7 +86,7 @@ export class BillingOverviewService {
       },
       payment: payment ? {
         last4: payment.last4,
-        brand: payment.brand
+        brand: payment.card_type || payment.brand || 'unknown'
       } : null
     };
   }

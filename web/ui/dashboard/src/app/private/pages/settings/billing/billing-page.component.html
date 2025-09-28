@@ -153,7 +153,11 @@
           <div class="text-14 font-medium mb-8px">{{ billingAddressDetails.name }}</div>
           <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
           <div *ngIf="billingAddressDetails.addressLine2" class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine2 }}</div>
-          <div class="text-12 text-neutral-11">{{ billingAddressDetails.city }}, {{ billingAddressDetails.zipCode }}</div>
+          <div class="text-12 text-neutral-11">{{ billingAddressDetails.city }}, {{ billingAddressDetails.zipCode }}, {{ getCountryName(billingAddressDetails.country) }}</div>
+        </div>
+
+        <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && !billingAddressDetails" class="billing-details-display">
+          <div class="text-12 text-neutral-11">No billing address set</div>
         </div>
 
         <div *ngIf="isLoadingBillingAddress" class="billing-details-display">
@@ -195,7 +199,7 @@
               <label for="country" convoy-label required="true">Country</label>
               <select id="country" convoy-input formControlName="country" [disabled]="isLoadingCountries">
                 <option value="">{{ isLoadingCountries ? 'Loading countries...' : (countries.length === 0 ? 'No countries available' : 'Select country') }}</option>
-                <option *ngFor="let country of countries" [value]="country.name">{{ country.name }}</option>
+                <option *ngFor="let country of countries" [value]="country.code">{{ country.name }}</option>
               </select>
               <convoy-input-error *ngIf="billingAddressForm.get('country')?.touched && billingAddressForm.get('country')?.invalid">Please select country</convoy-input-error>
             </convoy-input-field>
@@ -277,9 +281,9 @@
           <div class="flex gap-12px">
             <convoy-input-field>
               <label for="country" convoy-label required="true">Select country</label>
-              <select id="country" convoy-input formControlName="country" [disabled]="isLoadingCountries">
-                <option value="">{{ isLoadingCountries ? 'Loading countries...' : (countries.length === 0 ? 'No countries available' : 'Select country') }}</option>
-                <option *ngFor="let country of countries" [value]="country.code">{{ country.name }}</option>
+              <select id="country" convoy-input formControlName="country" [disabled]="isLoadingVatCountries">
+                <option value="">{{ isLoadingVatCountries ? 'Loading countries...' : (vatCountries.length === 0 ? 'No countries available' : 'Select country') }}</option>
+                <option *ngFor="let country of vatCountries" [value]="country.code">{{ country.name }}</option>
               </select>
               <convoy-input-error *ngIf="vatForm.get('country')?.touched && vatForm.get('country')?.invalid">Please select country</convoy-input-error>
             </convoy-input-field>

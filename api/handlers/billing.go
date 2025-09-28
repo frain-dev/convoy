@@ -373,44 +373,6 @@ func (h *BillingHandler) CreateSubscription(w http.ResponseWriter, r *http.Reque
 	_ = render.Render(w, r, util.NewServerResponse("Subscription created successfully", resp.Data, http.StatusCreated))
 }
 
-func (h *BillingHandler) UpdateSubscription(w http.ResponseWriter, r *http.Request) {
-	orgID := chi.URLParam(r, "orgID")
-	if orgID == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
-		return
-	}
-
-	var subData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&subData); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.UpdateSubscription(r.Context(), orgID, subData)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Subscription updated successfully", resp.Data, http.StatusOK))
-}
-
-func (h *BillingHandler) DeleteSubscription(w http.ResponseWriter, r *http.Request) {
-	orgID := chi.URLParam(r, "orgID")
-	if orgID == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.DeleteSubscription(r.Context(), orgID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Subscription deleted successfully", resp.Data, http.StatusOK))
-}
-
 // Payment method handlers
 func (h *BillingHandler) GetSetupIntent(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "orgID")
@@ -426,74 +388,6 @@ func (h *BillingHandler) GetSetupIntent(w http.ResponseWriter, r *http.Request) 
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Setup intent retrieved successfully", resp.Data, http.StatusOK))
-}
-
-func (h *BillingHandler) CreatePaymentMethod(w http.ResponseWriter, r *http.Request) {
-	orgID := chi.URLParam(r, "orgID")
-	if orgID == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
-		return
-	}
-
-	var pmData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&pmData); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.CreatePaymentMethod(r.Context(), orgID, pmData)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	// Check if billing service returned an error response
-	if !resp.Status {
-		_ = render.Render(w, r, util.NewErrorResponse(resp.Message, http.StatusBadRequest))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Payment method created successfully", resp.Data, http.StatusCreated))
-}
-
-func (h *BillingHandler) UpdatePaymentMethod(w http.ResponseWriter, r *http.Request) {
-	orgID := chi.URLParam(r, "orgID")
-	pmID := chi.URLParam(r, "pmID")
-	if orgID == "" || pmID == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and payment method ID are required", http.StatusBadRequest))
-		return
-	}
-
-	var pmData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&pmData); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.UpdatePaymentMethod(r.Context(), orgID, pmID, pmData)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Payment method updated successfully", resp.Data, http.StatusOK))
-}
-
-func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Request) {
-	orgID := chi.URLParam(r, "orgID")
-	pmID := chi.URLParam(r, "pmID")
-	if orgID == "" || pmID == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and payment method ID are required", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.DeletePaymentMethod(r.Context(), orgID, pmID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Payment method deleted successfully", resp.Data, http.StatusOK))
 }
 
 // Invoice handlers
@@ -539,55 +433,6 @@ func (h *BillingHandler) DownloadInvoice(w http.ResponseWriter, r *http.Request)
 		_ = render.Render(w, r, util.NewErrorResponse("failed to write response", http.StatusInternalServerError))
 		return
 	}
-}
-
-// Public billing handlers
-func (h *BillingHandler) CreateBillingPaymentMethod(w http.ResponseWriter, r *http.Request) {
-	var pmData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&pmData); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.CreateBillingPaymentMethod(r.Context(), pmData)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Payment method created successfully", resp.Data, http.StatusCreated))
-}
-
-func (h *BillingHandler) UpdateBillingAddress(w http.ResponseWriter, r *http.Request) {
-	var addressData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&addressData); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.UpdateBillingAddress(r.Context(), addressData)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Address updated successfully", resp.Data, http.StatusOK))
-}
-
-func (h *BillingHandler) UpdateBillingTaxID(w http.ResponseWriter, r *http.Request) {
-	var taxData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&taxData); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.UpdateBillingTaxID(r.Context(), taxData)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	_ = render.Render(w, r, util.NewServerResponse("Tax ID updated successfully", resp.Data, http.StatusOK))
 }
 
 // GetInternalOrganisationID returns the internal organisation ID from Overwatch

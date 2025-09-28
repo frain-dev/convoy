@@ -44,8 +44,10 @@ export class BillingPageComponent implements OnInit {
   vatForm!: FormGroup;
 
   countries: { code: string; name: string }[] = [];
+  vatCountries: { code: string; name: string }[] = []; // Countries with tax ID types from Overwatch
   cities: string[] = [];
   isLoadingCountries = false;
+  isLoadingVatCountries = false;
   isLoadingCities = false;
 
   // API error message
@@ -75,10 +77,10 @@ export class BillingPageComponent implements OnInit {
     this.validateOrganisation();
     this.loadBillingConfiguration();
     this.loadCountries();
+    this.loadExistingData();
 
-    // Subscribe to country changes in the form
-    this.billingAddressForm.get('country')?.valueChanges.subscribe(countryName => {
-      this.onCountryChange(countryName);
+    this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
+      this.onCountryChange(countryCode);
     });
   }
 
@@ -155,33 +157,65 @@ export class BillingPageComponent implements OnInit {
         this.countries = countries;
         this.isLoadingCountries = false;
         console.log('Loaded countries:', countries.length);
+        this.loadVatCountries();
       },
       error: (error) => {
         console.error('Failed to load countries:', error);
         this.isLoadingCountries = false;
-        // No fallback data - countries array remains empty if API fails
         this.countries = [];
       }
     });
   }
 
-  onCountryChange(countryName: string) {
-    if (!countryName) {
+  private loadVatCountries() {
+    this.isLoadingVatCountries = true;
+    this.billingPaymentDetailsService.getTaxIDTypes().subscribe({
+      next: (response) => {
+        const taxIdTypes = response.data || [];
+        this.vatCountries = [];
+        
+        taxIdTypes.forEach((taxType: any) => {
+          const type = taxType.type;
+          if (type) {
+            const countryCode = type.split('_')[0];
+            if (countryCode) {
+              const country = this.countries.find(c => c.code.toLowerCase() === countryCode.toLowerCase());
+              if (country && !this.vatCountries.find(vc => vc.code === country.code)) {
+                this.vatCountries.push(country);
+              }
+            }
+          }
+        });
+        
+        this.isLoadingVatCountries = false;
+        console.log('Loaded VAT countries from Overwatch:', this.vatCountries);
+      },
+      error: (error) => {
+        console.error('Failed to load VAT countries:', error);
+        this.isLoadingVatCountries = false;
+        this.vatCountries = [];
+      }
+    });
+  }
+
+  onCountryChange(countryCode: string) {
+    if (!countryCode) {
       this.cities = [];
       this.billingAddressForm.get('city')?.setValue('');
       return;
     }
 
-    // Reset city selection when country changes
     this.billingAddressForm.get('city')?.setValue('');
     this.cities = [];
 
+    const countryName = this.getCountryName(countryCode);
+    
     this.isLoadingCities = true;
     this.countriesService.getCitiesForCountry(countryName).subscribe({
       next: (cities) => {
         this.cities = cities;
         this.isLoadingCities = false;
-        console.log(`Loaded ${cities.length} cities for ${countryName}`);
+        console.log(`Loaded ${cities.length} cities for ${countryName} (${countryCode})`);
       },
       error: (error) => {
         console.error('Failed to load cities:', error);
@@ -253,9 +287,11 @@ export class BillingPageComponent implements OnInit {
       next: (details) => {
         this.billingAddressDetails = details;
         this.isLoadingBillingAddress = false;
+        console.log('Loaded billing address:', details);
       },
       error: (error) => {
         console.error('Failed to load billing address:', error);
+        this.billingAddressDetails = null; // Clear any existing data on error
         this.isLoadingBillingAddress = false;
       }
     });
@@ -326,14 +362,16 @@ export class BillingPageComponent implements OnInit {
   startEditingBillingAddress() {
     this.isEditingBillingAddress = true;
     if (this.billingAddressDetails) {
-      this.billingAddressForm.patchValue(this.billingAddressDetails);
+      const formData = { ...this.billingAddressDetails };
+      this.billingAddressForm.patchValue(formData);
     }
   }
 
   startEditingVat() {
     this.isEditingVat = true;
     if (this.vatInfoDetails) {
-      this.vatForm.patchValue(this.vatInfoDetails);
+      const formData = { ...this.vatInfoDetails };
+      this.vatForm.patchValue(formData);
     }
   }
 
@@ -559,7 +597,7 @@ export class BillingPageComponent implements OnInit {
             style: 'success'
           });
           this.isEditingBillingAddress = false;
-          this.loadBillingAddress(); // Refresh the data
+          this.loadBillingAddress();
         },
         error: (error) => {
           console.error('Failed to update billing address:', error);
@@ -602,9 +640,13 @@ export class BillingPageComponent implements OnInit {
   }
 
   getCountryName(countryCode: string): string {
-    const country = this.countries.find(c => c.code === countryCode);
+    let country = this.vatCountries.find(c => c.code === countryCode);
+    if (!country) {
+      country = this.countries.find(c => c.code === countryCode);
+    }
     return country ? country.name : countryCode;
   }
+
 
   private markFormGroupTouched(formGroup: FormGroup) {
     Object.keys(formGroup.controls).forEach(key => {

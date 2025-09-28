@@ -208,39 +208,3 @@ func (m *MockBillingClient) GetInvoice(ctx context.Context, orgID, invoiceID str
 func (m *MockBillingClient) DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error) {
 	return []byte("fake pdf content"), nil
 }
-
-func (m *MockBillingClient) CreateBillingPaymentMethod(ctx context.Context, pmData interface{}) (*Response, error) {
-	data, _ := pmData.(map[string]interface{})
-	if data == nil || data["payment_method_id"] == nil || data["payment_method_id"] == "" {
-		return &Response{Status: false, Message: "payment_method_id is required"}, nil
-	}
-	return &Response{
-		Status:  true,
-		Message: "Payment method created successfully",
-		Data:    map[string]interface{}{"id": "pm-1"},
-	}, nil
-}
-
-func (m *MockBillingClient) UpdateBillingAddress(ctx context.Context, addressData interface{}) (*Response, error) {
-	data, _ := addressData.(map[string]interface{})
-	if data == nil || data["billing_address"] == nil || data["billing_address"] == "" {
-		return &Response{Status: false, Message: "invalid address"}, nil
-	}
-	return &Response{
-		Status:  true,
-		Message: "Address updated successfully",
-		Data:    data,
-	}, nil
-}
-
-func (m *MockBillingClient) UpdateBillingTaxID(ctx context.Context, taxData interface{}) (*Response, error) {
-	data, _ := taxData.(map[string]interface{})
-	if data == nil || data["tax_id_type"] == nil || data["tax_number"] == nil {
-		return &Response{Status: false, Message: "invalid tax id"}, nil
-	}
-	return &Response{
-		Status:  true,
-		Message: "Tax ID updated successfully",
-		Data:    data,
-	}, nil
-}
