@@ -1,6 +1,6 @@
 -- +migrate Up
 create type convoy.portal_auth_types as enum ('static_token', 'refresh_token');
-alter table convoy.portal_links add column auth_type convoy.portal_auth_types not null default 'static_token';
+alter table convoy.portal_links add column if not exists auth_type convoy.portal_auth_types not null default 'static_token';
 
 -- Assigns deterministic owner IDs (16-char SHA256 hash) to endpoints based on their associated portal IDs
 with portals_with_ids as (select id, endpoints from convoy.portal_links where length(endpoints) > 0)
@@ -19,5 +19,5 @@ set auth_type = 'static_token'
 where deleted_at is null;
 
 -- +migrate Down
-alter table convoy.portal_links drop column auth_type;
-drop type convoy.portal_auth_types;
+alter table convoy.portal_links drop column if exists auth_type;
+drop type if exists convoy.portal_auth_types;
