@@ -1,13 +1,38 @@
 @import './scss/font';
 
-/* Preload Open Sauce Sans for better rendering */
+/* Open Sauce Sans Font Faces */
 @font-face {
-	font-family: 'Open Sauce Sans';
-	font-style: normal;
-	font-weight: 500;
-	font-display: swap;
-	src: url('https://fonts.gstatic.com/s/opensaucesans/v1/OpenSauceSans-Medium.woff2') format('woff2');
+  font-family: 'Open Sauce Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/OpenSauceSans-Regular.ttf') format('truetype');
 }
+
+@font-face {
+  font-family: 'Open Sauce Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./assets/fonts/OpenSauceSans-Medium.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Open Sauce Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/OpenSauceSans-SemiBold.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Open Sauce Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/OpenSauceSans-Bold.ttf') format('truetype');
+}
+
 @import './scss/forms';
 @import './scss/prism';
 @import './scss/material-design-reset';
