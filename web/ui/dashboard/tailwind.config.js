@@ -76,7 +76,7 @@ module.exports = {
 				'focus--error': '0px 0px 0px 4px #FFFBFA'
 			},
 			fontFamily: {
-				sans: ['Inter', ...defaultTheme.fontFamily.sans],
+				sans: ['Open Sauce Sans', 'Inter', ...defaultTheme.fontFamily.sans],
 				menlo: ['Menlo Regular', ...defaultTheme.fontFamily.sans]
 			},
 			backgroundImage: {
@@ -85,13 +85,13 @@ module.exports = {
 		},
 		fontWeight: {
 			thin: '100',
-			extralight: '100',
-			light: '200',
-			normal: '300',
-			medium: '400',
-			semibold: '500',
-			bold: '600',
-			extrabold: '700'
+			extralight: '200',
+			light: '300',
+			normal: '400',
+			medium: '500',
+			semibold: '600',
+			bold: '700',
+			extrabold: '800'
 		},
 		screens: {
 			desktop: { max: '1050px' },
@@ -107,16 +107,16 @@ module.exports = {
 		},
 		fontSize: {
 			10: ['10px', '150%'],
-			12: ['12px', '20px'],
-			14: ['14px', '22px'],
+			12: ['12px', '16px'], // Text-xs/Regular: 12px, line-height 16px
+			14: ['14px', '20px'], // Text-sm/Regular: 14px, line-height 20px
 			16: ['16px', '24px'],
-			18: ['18px', '30px'],
-			20: ['20px', '30px'],
+			18: ['18px', '28px'], // Text-lg/Medium: 18px, line-height 28px
+			20: ['20px', '28px'], // Text-xl/Medium: 20px, line-height 28px
 			24: ['24px', '35px'],
-			h1: ['20px', '140%'],
-			h2: ['18px', '140%'],
-			h3: ['16px', '140%'],
-			h4: ['14px', '140%']
+			h1: ['20px', '28px'], // Text-xl/Medium
+			h2: ['18px', '28px'], // Text-lg/Medium
+			h3: ['16px', '24px'],
+			h4: ['14px', '20px']  // Text-sm/Regular
 		},
 		colors: {
 			'new.primary': {

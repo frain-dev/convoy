@@ -17,6 +17,7 @@ import {
     TableRowComponent
 } from "../../../../components/table/table.component";
 import {TableLoaderModule} from "../../../components/table-loader/table-loader.module";
+import {SkeletonLoaderComponent} from "../../../../components/skeleton-loader/skeleton-loader.component";
 import {BadgeComponent} from "../../../../components/badge/badge.component";
 import {ButtonComponent} from "../../../../components/button/button.component";
 import {DropdownComponent, DropdownOptionDirective} from "../../../../components/dropdown/dropdown.component";
@@ -39,7 +40,7 @@ import {DialogDirective, DialogHeaderComponent} from "../../../../components/dia
     BillingInvoicesComponent,
     StripeElementsComponent
   ],
-    imports: [CommonModule, ReactiveFormsModule, HttpClientModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent],
+    imports: [CommonModule, ReactiveFormsModule, HttpClientModule, CardComponent, TableRowComponent, TableCellComponent, TableHeadCellComponent, TableComponent, TableHeadComponent, TableLoaderModule, SkeletonLoaderComponent, BadgeComponent, ButtonComponent, DropdownComponent, DropdownOptionDirective, PermissionDirective, RolePipe, StatusColorModule, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, DialogDirective, DialogHeaderComponent],
   exports: [
     BillingPageComponent,
     BillingOverviewComponent,

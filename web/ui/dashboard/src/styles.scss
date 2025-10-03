@@ -1,4 +1,13 @@
 @import './scss/font';
+
+/* Preload Open Sauce Sans for better rendering */
+@font-face {
+	font-family: 'Open Sauce Sans';
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url('https://fonts.gstatic.com/s/opensaucesans/v1/OpenSauceSans-Medium.woff2') format('woff2');
+}
 @import './scss/forms';
 @import './scss/prism';
 @import './scss/material-design-reset';
@@ -49,6 +58,26 @@
 @layer base {
 	:root {
 		--color-white: 255, 255, 255;
+	}
+
+	/* System-wide font rendering improvements */
+	* {
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		text-rendering: optimizeLegibility;
+	}
+
+	/* Ensure consistent font rendering for all text elements */
+	body, html {
+		font-family: 'Open Sauce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		text-rendering: optimizeLegibility;
+	}
+
+	/* Apply font family to common text elements without overriding sizes */
+	p, span, div, h1, h2, h3, h4, h5, h6, a, button, input, textarea, select, label, td, th, li {
+		font-family: 'Open Sauce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 	}
 
 	h1 {

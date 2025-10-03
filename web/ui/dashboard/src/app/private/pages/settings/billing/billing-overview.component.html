@@ -4,7 +4,10 @@
     <div class="billing-card">
       <div class="billing-card-header">
         <div class="billing-card-label">Your plan</div>
-        <div class="billing-card-value">{{ overview?.plan?.name || 'Loading...' }}</div>
+        <div class="billing-card-value">
+          <convoy-skeleton-loader className="w-20 h-16px" *ngIf="isLoading"></convoy-skeleton-loader>
+          <span *ngIf="!isLoading">{{ overview?.plan?.name || 'No plan data' }}</span>
+        </div>
       </div>
       <a class="billing-card-link" href="#" (click)="onManagePlan($event)">Manage plan</a>
     </div>
@@ -12,7 +15,10 @@
     <div class="billing-card">
       <div class="billing-card-header">
         <div class="billing-card-label">Usage period</div>
-        <div class="billing-card-value">{{ overview?.usage?.period || 'Loading...' }}</div>
+        <div class="billing-card-value">
+          <convoy-skeleton-loader className="w-20 h-16px" *ngIf="isLoading"></convoy-skeleton-loader>
+          <span *ngIf="!isLoading">{{ overview?.usage?.period || 'No usage data' }}</span>
+        </div>
       </div>
       <div class="billing-card-subtext billing-card-reset-text" *ngIf="overview?.usage?.daysUntilReset !== undefined">
         Resets in {{ overview?.usage?.daysUntilReset }} days
@@ -26,7 +32,10 @@
           <div [innerHTML]="getCardIconSvg()"></div>
           <div class="billing-card-value">{{ payment.last4 }}</div>
         </div>
-        <div class="billing-card-value" *ngIf="!overview?.payment">{{ isLoading ? 'Loading...' : 'No payment method' }}</div>
+        <div class="billing-card-value" *ngIf="!overview?.payment">
+          <convoy-skeleton-loader className="w-20 h-16px" *ngIf="isLoading"></convoy-skeleton-loader>
+          <span *ngIf="!isLoading">No payment method</span>
+        </div>
       </div>
       <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">
         {{ overview?.payment ? 'Manage' : 'Add payment method' }}
