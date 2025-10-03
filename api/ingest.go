@@ -9,26 +9,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/api/handlers"
-
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"gopkg.in/guregu/null.v4"
-
-	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/crc"
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/verifier"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/go-chi/render"
 )
 
 func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +37,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskID)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			a.A.Logger.WithError(err).Errorf("Source not found for mask ID %s", maskID)
+			_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 			return
 		}
 		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
@@ -56,7 +54,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	}
 
 	if !a.A.Licenser.ProjectEnabled(project.UID) {
-		_ = render.Render(w, r, util.NewErrorResponse(handlers.ErrProjectDisabled.Error(), http.StatusBadRequest))
+		a.A.Logger.Errorf("Project disabled for project ID %s", project.UID)
+		_ = render.Render(w, r, util.NewErrorResponse("Project access denied", http.StatusBadRequest))
 		return
 	}
 
@@ -119,7 +118,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		cfg, err := config.Get()
 		if err != nil {
 			a.A.Logger.WithError(err).Error("failed to load config")
-			_ = render.Render(w, r, util.NewErrorResponse("failed to load config", http.StatusBadRequest))
+			_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
 			return
 		}
 
@@ -141,7 +140,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		duper := dedup.NewDeDuper(r.Context(), r, postgres.NewEventRepo(a.A.DB))
 		exists, err := duper.Exists(source.Name, source.ProjectID, source.IdempotencyKeys)
 		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			a.A.Logger.WithError(err).Error("Duplicate check failed")
+			_ = render.Render(w, r, util.NewErrorResponse("Failed to process request", http.StatusBadRequest))
 			return
 		}
 
@@ -149,7 +149,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 		checksum, err = duper.GenerateChecksum(source.Name, source.IdempotencyKeys)
 		if err != nil {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+			a.A.Logger.WithError(err).Error("Checksum generation failed")
+			_ = render.Render(w, r, util.NewErrorResponse("Failed to process request", http.StatusBadRequest))
 			return
 		}
 	}
@@ -158,12 +159,14 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	// Return 400 Bad Request.
 	payload, err := extractPayloadFromIngestEventReq(r, maxIngestSize)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		a.A.Logger.WithError(err).Error("Failed to extract payload")
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err = v.VerifyRequest(r, payload); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		a.A.Logger.WithError(err).Error("Request verification failed")
+		_ = render.Render(w, r, util.NewErrorResponse("Request verification failed", http.StatusBadRequest))
 		return
 	}
 
@@ -196,7 +199,8 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	eventByte, err := msgpack.EncodeMsgPack(createEvent)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		a.A.Logger.WithError(err).Error("Failed to encode event data")
+		_ = render.Render(w, r, util.NewErrorResponse("Failed to process event", http.StatusBadRequest))
 		return
 	}
 
@@ -210,7 +214,7 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 	err = a.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		a.A.Logger.WithError(err).Error("Error occurred sending new event to the queue")
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Failed to process event", http.StatusBadRequest))
 		return
 	}
 
@@ -297,7 +301,8 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	source, err := postgres.NewSourceRepo(a.A.DB).FindSourceByMaskID(r.Context(), maskId)
 	if err != nil {
 		if errors.Is(err, datastore.ErrSourceNotFound) {
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+			a.A.Logger.WithError(err).Errorf("Source not found for mask ID %s", maskId)
+			_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 			return
 		}
 		_ = render.Render(w, r, util.NewErrorResponse("error retrieving source", http.StatusBadRequest))
@@ -327,7 +332,8 @@ func (a *ApplicationHandler) HandleCrcCheck(w http.ResponseWriter, r *http.Reque
 	sourceRepo := postgres.NewSourceRepo(a.A.DB)
 	err = c.HandleRequest(w, r, source, sourceRepo)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		a.A.Logger.WithError(err).Error("CRC check failed")
+		_ = render.Render(w, r, util.NewErrorResponse("CRC verification failed", http.StatusBadRequest))
 		return
 	}
 }

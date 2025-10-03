@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/frain-dev/convoy/mocks"
@@ -13,7 +12,7 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 )
 
-func provideUpdatePortalLinkService(ctrl *gomock.Controller, project *datastore.Project, update *models.PortalLink, link *datastore.PortalLink) *UpdatePortalLinkService {
+func provideUpdatePortalLinkService(ctrl *gomock.Controller, project *datastore.Project, update *models.UpdatePortalLinkRequest, link *datastore.PortalLink) *UpdatePortalLinkService {
 	return &UpdatePortalLinkService{
 		PortalLinkRepo: mocks.NewMockPortalLinkRepository(ctrl),
 		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
@@ -29,7 +28,7 @@ func TestUpdatePortalLinkService_Run(t *testing.T) {
 	type args struct {
 		ctx        context.Context
 		portalLink *datastore.PortalLink
-		update     *models.PortalLink
+		update     *models.UpdatePortalLinkRequest
 		project    *datastore.Project
 	}
 
@@ -46,34 +45,25 @@ func TestUpdatePortalLinkService_Run(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				portalLink: &datastore.PortalLink{
-					UID:       "12345",
-					Endpoints: []string{"123"},
+					UID:     "12345",
+					OwnerID: "1234",
 				},
-				update: &models.PortalLink{
-					Name:      "test_portal_link",
-					Endpoints: []string{"123", "1234"},
+				update: &models.UpdatePortalLinkRequest{
+					Name:     "test_portal_link",
+					OwnerID:  "12345",
+					AuthType: string(datastore.PortalAuthTypeRefreshToken),
 				},
 				project: &datastore.Project{UID: "12345"},
 			},
 			wantPortalLink: &datastore.PortalLink{
-				UID:       "12345",
-				Name:      "test_portal_link",
-				Endpoints: []string{"123", "1234"},
+				UID:      "12345",
+				Name:     "test_portal_link",
+				OwnerID:  "12345",
+				AuthType: datastore.PortalAuthTypeRefreshToken,
 			},
 			dbFn: func(pl *UpdatePortalLinkService) {
 				p, _ := pl.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
 				p.EXPECT().UpdatePortalLink(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
-
-				e, _ := pl.EndpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:       "123",
-					ProjectID: "12345",
-				}, nil)
-
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:       "1234",
-					ProjectID: "12345",
-				}, nil)
 			},
 		},
 
@@ -82,27 +72,18 @@ func TestUpdatePortalLinkService_Run(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				portalLink: &datastore.PortalLink{
-					UID:       "12345",
-					Endpoints: []string{"123"},
+					UID:     "12345",
+					OwnerID: "1234",
 				},
-				update: &models.PortalLink{
-					Name:      "test_portal_link",
-					Endpoints: []string{"1234"},
+				update: &models.UpdatePortalLinkRequest{
+					Name:     "test_portal_link",
+					AuthType: "foo",
 				},
 				project: &datastore.Project{UID: "12345"},
 			},
-			dbFn: func(pl *UpdatePortalLinkService) {
-				p, _ := pl.PortalLinkRepo.(*mocks.MockPortalLinkRepository)
-				p.EXPECT().UpdatePortalLink(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(errors.New("failed"))
-
-				e, _ := pl.EndpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Endpoint{
-					UID:       "1234",
-					ProjectID: "12345",
-				}, nil)
-			},
+			dbFn:       func(pl *UpdatePortalLinkService) {},
 			wantErr:    true,
-			wantErrMsg: "an error occurred while updating portal link",
+			wantErrMsg: "invalid auth type: foo",
 		},
 	}
 

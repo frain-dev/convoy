@@ -7,20 +7,19 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 // CreateEndpoint
@@ -42,7 +41,8 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err := h.RM.VersionRequest(r, "CreateEndpoint")
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Version request failed for CreateEndpoint: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
 		return
 	}
 
@@ -50,19 +50,22 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	err = util.ReadJSON(r, &e)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to parse endpoint creation request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	err = e.Validate()
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Endpoint creation validation failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
 	}
 
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
 
@@ -130,14 +133,16 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
 
 	endpointID := chi.URLParam(r, "endpointID")
 	endpoint, err := h.retrieveEndpoint(r.Context(), endpointID, project.UID)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+		h.A.Logger.WithError(err).Errorf("Failed to retrieve endpoint: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
 		return
 	}
 
@@ -177,7 +182,8 @@ func (h *Handler) GetEndpoint(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	project, err := h.retrieveProject(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to retrieve project: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusBadRequest))
 		return
 	}
 
@@ -210,7 +216,7 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 	endpoints, paginationData, err := postgres.NewEndpointRepo(h.A.DB).LoadEndpointsPaged(r.Context(), project.UID, data.Filter, data.Pageable)
 	if err != nil {
 		h.A.Logger.WithError(err).Error("failed to load endpoints")
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		_ = render.Render(w, r, util.NewErrorResponse("Failed to load endpoints", http.StatusBadRequest))
 		return
 	}
 

@@ -2,17 +2,18 @@ package handlers
 
 import (
 	"errors"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
 	"net/http"
+
+	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/render"
 )
 
 func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
@@ -46,12 +47,14 @@ func (h *Handler) GetConfiguration(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to parse configuration request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err := newConfig.Validate(); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Configuration validation failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid configuration provided", http.StatusBadRequest))
 		return
 	}
 
@@ -77,12 +80,14 @@ func (h *Handler) CreateConfiguration(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	var newConfig models.Configuration
 	if err := util.ReadJSON(r, &newConfig); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to parse configuration update request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err := newConfig.Validate(); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Configuration update validation failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid configuration provided", http.StatusBadRequest))
 		return
 	}
 

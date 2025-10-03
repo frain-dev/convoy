@@ -33,8 +33,8 @@ var (
 
 const (
 	createPortalLink = `
-	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, can_manage_endpoint)
-	VALUES ($1, $2, $3, $4, $5, $6, $7);
+	INSERT INTO convoy.portal_links (id, project_id, name, token, endpoints, owner_id, can_manage_endpoint, auth_type)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
 	`
 
 	createPortalLinkAuthToken = `
@@ -58,6 +58,7 @@ const (
 		owner_id = $4,
 		can_manage_endpoint = $5,
 		name = $6,
+		auth_type = $7,
 		updated_at = NOW()
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
@@ -74,6 +75,7 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.auth_type,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -99,6 +101,7 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.auth_type,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -124,6 +127,7 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.auth_type,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -144,7 +148,7 @@ const (
 
 	fetchPortalLinkByMaskId = `
 	SELECT
-	    pl.id, pl.project_id, pt.token_salt, pt.token_mask_id, pt.token_expires_at, pt.token_hash, pl.name, pl.token, pl.endpoints,
+	    pl.id, pl.project_id, pt.token_salt, pt.token_mask_id, pt.token_expires_at, pt.token_hash, pl.name, pl.token, pl.endpoints, pl.auth_type,
 		COALESCE(pl.can_manage_endpoint, FALSE) AS "can_manage_endpoint", COALESCE(pl.owner_id, '') AS "owner_id",
 		CASE
 			WHEN pl.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = pl.owner_id)
@@ -173,6 +177,7 @@ const (
 	p.name,
 	p.token,
 	p.endpoints,
+	p.auth_type,
 	COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 	COALESCE(p.owner_id, '') AS "owner_id",
 	CASE
@@ -196,6 +201,7 @@ const (
 		p.name,
 		p.token,
 		p.endpoints,
+		p.auth_type,
 		COALESCE(p.can_manage_endpoint, FALSE) AS "can_manage_endpoint",
 		COALESCE(p.owner_id, '') AS "owner_id",
 		CASE
@@ -274,6 +280,7 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		portal.Endpoints,
 		portal.OwnerID,
 		portal.CanManageEndpoint,
+		portal.AuthType,
 	)
 	if err != nil {
 		return err
@@ -288,33 +295,35 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		return ErrPortalLinkNotCreated
 	}
 
-	portalAuth, err := generateToken(portal.UID)
-	if err != nil {
-		return err
-	}
+	if portal.AuthType == datastore.PortalAuthTypeRefreshToken {
+		portalAuth, tokenErr := generateToken(portal.UID)
+		if tokenErr != nil {
+			return tokenErr
+		}
 
-	r, err = tx.ExecContext(ctx, createPortalLinkAuthToken,
-		portalAuth.UID,
-		portal.UID,
-		portalAuth.MaskId,
-		portalAuth.Hash,
-		portalAuth.Salt,
-		portalAuth.ExpiresAt,
-	)
-	if err != nil {
-		return err
-	}
+		r, tokenErr = tx.ExecContext(ctx, createPortalLinkAuthToken,
+			portalAuth.UID,
+			portal.UID,
+			portalAuth.MaskId,
+			portalAuth.Hash,
+			portalAuth.Salt,
+			portalAuth.ExpiresAt,
+		)
+		if tokenErr != nil {
+			return tokenErr
+		}
 
-	rowsAffected, err = r.RowsAffected()
-	if err != nil {
-		return err
-	}
+		rowsAffected, tokenErr = r.RowsAffected()
+		if tokenErr != nil {
+			return tokenErr
+		}
 
-	if rowsAffected < 1 {
-		return ErrPortalLinkAuthTokenNotCreated
-	}
+		if rowsAffected < 1 {
+			return ErrPortalLinkAuthTokenNotCreated
+		}
 
-	portal.AuthKey = portalAuth.AuthKey
+		portal.AuthKey = portalAuth.AuthKey
+	}
 
 	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
 	if err != nil {
@@ -338,6 +347,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		portal.OwnerID,
 		portal.CanManageEndpoint,
 		portal.Name,
+		portal.AuthType,
 	)
 	if err != nil {
 		return err
@@ -361,13 +371,17 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 }
 
 func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
-	portalLink := &datastore.PortalLink{}
-	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(portalLink)
+	portalLink := datastore.PortalLink{}
+	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(&portalLink)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, datastore.ErrPortalLinkNotFound
 		}
 		return nil, err
+	}
+
+	if portalLink.AuthType == datastore.PortalAuthTypeStaticToken {
+		return &portalLink, nil
 	}
 
 	authToken, err := generateToken(portalLinkId)
@@ -399,7 +413,7 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID strin
 
 	portalLink.AuthKey = authToken.AuthKey
 
-	return portalLink, nil
+	return &portalLink, nil
 }
 
 func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID string, ownerID string) (*datastore.PortalLink, error) {
@@ -535,35 +549,46 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	pagination = pagination.Build(pageable, ids)
 
 	if len(portalLinks) > 0 {
-		authTokens := make([]datastore.PortalToken, len(portalLinks))
+		var authTokens []datastore.PortalToken
 		for i := range portalLinks {
+			if portalLinks[i].AuthType == datastore.PortalAuthTypeStaticToken {
+				continue
+			}
+
 			authToken, getTokenErr := generateToken(portalLinks[i].UID)
 			if getTokenErr != nil {
 				return nil, datastore.PaginationData{}, getTokenErr
 			}
-			authTokens[i] = *authToken
+			authTokens = append(authTokens, *authToken)
 		}
 
-		res, err := p.db.GetDB().NamedExecContext(ctx, bulkWritePortalAuthTokens, authTokens)
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
+		if len(authTokens) > 0 {
+			res, resultErr := p.db.GetDB().NamedExecContext(ctx, bulkWritePortalAuthTokens, authTokens)
+			if resultErr != nil {
+				log.WithError(resultErr).Error("failed to bulk write portal auth tokens")
+				return nil, datastore.PaginationData{}, resultErr
+			}
 
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			return nil, datastore.PaginationData{}, err
-		}
+			rowsAffected, resultErr := res.RowsAffected()
+			if resultErr != nil {
+				return nil, datastore.PaginationData{}, resultErr
+			}
 
-		if rowsAffected != int64(len(authTokens)) {
-			return nil, datastore.PaginationData{}, errors.New("failed to bulk write portal auth tokens")
-		}
+			if rowsAffected != int64(len(authTokens)) {
+				return nil, datastore.PaginationData{}, errors.New("failed to bulk write portal auth tokens")
+			}
 
-		for i := range portalLinks {
-			portalLinks[i].AuthKey = authTokens[i].AuthKey
-			portalLinks[i].TokenMaskId = authTokens[i].MaskId
-			portalLinks[i].TokenHash = authTokens[i].Hash
-			portalLinks[i].TokenSalt = authTokens[i].Salt
-			portalLinks[i].TokenExpiresAt = authTokens[i].ExpiresAt
+			for i := range portalLinks {
+				for j := range authTokens {
+					if portalLinks[i].UID == authTokens[j].PortalLinkID {
+						portalLinks[i].AuthKey = authTokens[j].AuthKey
+						portalLinks[i].TokenMaskId = authTokens[j].MaskId
+						portalLinks[i].TokenHash = authTokens[j].Hash
+						portalLinks[i].TokenSalt = authTokens[j].Salt
+						portalLinks[i].TokenExpiresAt = authTokens[j].ExpiresAt
+					}
+				}
+			}
 		}
 	}
 

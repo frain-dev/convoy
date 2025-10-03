@@ -1537,6 +1537,13 @@ type OrganisationInvite struct {
 	DeletedAt        null.Time    `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
+type PortalAuthType string
+
+const (
+	PortalAuthTypeRefreshToken PortalAuthType = "refresh_token"
+	PortalAuthTypeStaticToken  PortalAuthType = "static_token"
+)
+
 type PortalLink struct {
 	UID               string           `json:"uid" db:"id"`
 	Name              string           `json:"name" db:"name"`
@@ -1548,12 +1555,13 @@ type PortalLink struct {
 	EndpointCount     int              `json:"endpoint_count" db:"endpoint_count"`
 	CanManageEndpoint bool             `json:"can_manage_endpoint" db:"can_manage_endpoint"`
 
-	// portal auth token
-	TokenExpiresAt null.Time `json:"token_expires_at" db:"token_expires_at"`
-	TokenMaskId    string    `json:"token_mask_id" db:"token_mask_id"`
-	TokenHash      string    `json:"token_hash" db:"token_hash"`
-	TokenSalt      string    `json:"token_salt" db:"token_salt"`
-	AuthKey        string    `json:"auth_key" db:"-"`
+	// portal auth stuff
+	TokenExpiresAt null.Time      `json:"token_expires_at" db:"token_expires_at"`
+	TokenMaskId    string         `json:"token_mask_id" db:"token_mask_id"`
+	TokenHash      string         `json:"token_hash" db:"token_hash"`
+	TokenSalt      string         `json:"token_salt" db:"token_salt"`
+	AuthKey        string         `json:"auth_key" db:"-"`
+	AuthType       PortalAuthType `json:"auth_type" db:"auth_type"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`

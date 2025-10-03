@@ -553,6 +553,11 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		portalLinkRouter.Use(middleware.RequireValidPortalLinksLicense(handler.A.Licenser))
 		portalLinkRouter.Use(middleware.RequireAuth())
 
+		portalLinkRouter.Route("/configuration", func(configRouter chi.Router) {
+			configRouter.Get("/", handler.GetConfiguration)
+			configRouter.Get("/auth", handler.GetAuthConfiguration)
+		})
+
 		portalLinkRouter.Get("/portal_link", handler.GetPortalLink)
 
 		portalLinkRouter.Get("/license/features", handler.GetLicenseFeatures)

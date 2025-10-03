@@ -709,8 +709,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent() {
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
-	bodyStr := `{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, endpointID)
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -736,7 +735,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 
-	bodyStr := `{
+	body := serialize(`{
             "url":"https://testing.com",
             "secret": "12345",
             "event_type":"*",
@@ -744,8 +743,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateDynamicEvent() {
             "data": {"name":"daniel"},
             "idempotency_key": "idem-key-1"
         }
-}`
-	body := serialize(bodyStr, endpointID)
+}`)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events/dynamic", s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -769,13 +767,12 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateBroadcastEvent() {
 		Filter:     datastore.FilterSchema{Headers: datastore.M{}, Body: datastore.M{}},
 	})
 
-	bodyStr := `{
+	body := serialize(`{
             "event_type":"*",
             "data": {"name":"daniel"},
             "idempotency_key": "idem-key-1"
         }
-}`
-	body := serialize(bodyStr, endpointID)
+}`)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events/broadcast", s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -796,8 +793,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateFanoutEvent_MultipleEndpoin
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", ownerID, false, datastore.ActiveEndpointStatus)
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), "", ownerID, false, datastore.ActiveEndpointStatus)
 
-	bodyStr := `{"owner_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, ownerID)
+	body := serialize(`{"owner_id":"%s", "event_type":"*", "data":{"level":"test"}}`, ownerID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events/fanout", s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -830,8 +826,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_With_App_ID_V
 	err := postgres.NewEndpointRepo(s.ConvoyApp.A.DB).CreateEndpoint(context.TODO(), endpoint, s.DefaultProject.UID)
 	require.NoError(s.T(), err)
 
-	bodyStr := `{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, appID)
+	body := serialize(`{"app_id":"%s", "event_type":"*", "data":{"level":"test"}}`, appID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -850,8 +845,7 @@ func (s *PublicEventIntegrationTestSuite) Test_CreateEndpointEvent_Endpoint_is_d
 	// Just Before.
 	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", true, datastore.ActiveEndpointStatus)
 
-	bodyStr := `{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`
-	body := serialize(bodyStr, endpointID)
+	body := serialize(`{"endpoint_id": "%s", "event_type":"*", "data":{"level":"test"}}`, endpointID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/events", s.DefaultProject.UID)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
@@ -1081,8 +1075,7 @@ func (s *PublicEventIntegrationTestSuite) Test_ForceResendEventDeliveries_Valid_
 
 	url := fmt.Sprintf("/api/v1/projects/%s/eventdeliveries/forceresend", s.DefaultProject.UID)
 
-	bodyStr := `{"ids":["%s", "%s", "%s"]}`
-	body := serialize(bodyStr, e1.UID, e2.UID, e3.UID)
+	body := serialize(`{"ids":["%s", "%s", "%s"]}`, e1.UID, e2.UID, e3.UID)
 
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -1280,16 +1273,16 @@ func (s *PublicPortalLinkIntegrationTestSuite) TearDownTest() {
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
-	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
 	expectedStatusCode := http.StatusCreated
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
 	plainBody := fmt.Sprintf(`{
 		"name": "test_portal_link",
-		"endpoints": ["%s", "%s"]
-	}`, endpoint1.UID, endpoint2.UID)
+		"owner_id": "%s"
+	}`, endpoint1.OwnerID)
 	body := strings.NewReader(plainBody)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
@@ -1331,8 +1324,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_PortalLink
 
 func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink() {
 	// Just Before
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLink.UID)
@@ -1367,10 +1360,10 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLi
 
 	// Just Before
 	for i := 0; i < totalLinks; i++ {
-		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
 		require.NoError(s.T(), err)
 
-		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 		require.NoError(s.T(), err)
 	}
 
@@ -1397,15 +1390,15 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLi
 
 	// Just Before
 	for i := 0; i < totalLinks; i++ {
-		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
+		endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, ulid.Make().String(), ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
 		require.NoError(s.T(), err)
 
-		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+		_, err = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 		require.NoError(s.T(), err)
 	}
 
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	_, _ = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint.UID})
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/portal-links?endpointId=%s", s.DefaultProject.UID, endpoint.UID)
@@ -1426,17 +1419,16 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinks_ValidPortalLi
 
 func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	// Just Before
-	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	endpoint2, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID})
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint1.OwnerID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLink.UID)
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		    "name": "test_portal_link",
-			"endpoints": ["%s"]
-		}`, endpoint2.UID)
+			"owner_id": "%s"
+		}`, endpoint1.OwnerID)
 
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -1463,8 +1455,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 
 func (s *PublicPortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	// Just Before
-	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "", false, datastore.ActiveEndpointStatus)
-	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, []string{endpoint1.UID})
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint1.OwnerID)
 
 	// Arrange Request.
 	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s/revoke", s.DefaultProject.UID, portalLink.UID)
@@ -1632,7 +1624,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey_
 func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey() {
 	expectedStatusCode := http.StatusCreated
 
-	bodyStr := `{
+	body := serialize(`{
     "name": "test-project",
 	"type": "outgoing",
     "logo_url": "",
@@ -1653,13 +1645,12 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey(
             "duration": 60
         }
     }
-}`
+}`)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), s.DefaultUser.UID)
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
-	body := serialize(bodyStr)
 
 	req := createRequest(http.MethodPost, url, key, body)
 
@@ -1688,7 +1679,7 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey(
 func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusForbidden
 
-	bodyStr := `{
+	body := serialize(`{
         "name": "test-project",
         "type": "outgoing",
         "logo_url": "",
@@ -1709,7 +1700,7 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_
                 "duration": 60
             }
         }
-    }`
+    }`)
 
 	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
@@ -1718,7 +1709,6 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_
 	require.NoError(s.T(), err)
 
 	url := fmt.Sprintf("/api/v1/projects?orgID=%s", s.DefaultOrg.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, key, body)
 
 	w := httptest.NewRecorder()
@@ -1953,7 +1943,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_GetSource_ValidSources() {
 }
 
 func (s *PublicSourceIntegrationTestSuite) Test_CreateSource() {
-	bodyStr := `{
+	body := serialize(`{
 		"name": "convoy-prod",
 		"type": "http",
 		"is_disabled": false,
@@ -1970,10 +1960,9 @@ func (s *PublicSourceIntegrationTestSuite) Test_CreateSource() {
 				"secret": "convoy-secret"
 			}
 		}
-	}`
+	}`)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2024,7 +2013,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_CreateSource_RedirectToProjects(
 }
 
 func (s *PublicSourceIntegrationTestSuite) Test_CreateSource_NoName() {
-	bodyStr := `{
+	body := serialize(`{
 		"type": "http",
 		"is_disabled": false,
 		"verifier": {
@@ -2036,10 +2025,9 @@ func (s *PublicSourceIntegrationTestSuite) Test_CreateSource_NoName() {
 				"secret": "convoy-secret"
 			}
 		}
-	}`
+	}`)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2051,7 +2039,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_CreateSource_NoName() {
 }
 
 func (s *PublicSourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType() {
-	bodyStr := `{
+	body := serialize(`{
 		"name": "convoy-prod",
 		"type": "some-random-source-type",
 		"is_disabled": false,
@@ -2064,11 +2052,10 @@ func (s *PublicSourceIntegrationTestSuite) Test_CreateSource_InvalidSourceType()
 				"secret": "convoy-secret"
 			}
 		}
-	}`
+	}`)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/sources", s.DefaultProject.UID)
 
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2089,7 +2076,7 @@ func (s *PublicSourceIntegrationTestSuite) Test_UpdateSource() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/sources/%s", s.DefaultProject.UID, sourceID)
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"name": "%s",
 		"type": "http",
 		"is_disabled": %t,
@@ -2108,7 +2095,6 @@ func (s *PublicSourceIntegrationTestSuite) Test_UpdateSource() {
 		}
 	}`, name, !isDisabled)
 
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2282,7 +2268,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Incomin
 
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
 	source, _ := testdb.SeedSource(s.ConvoyApp.A.DB, project, ulid.Make().String(), "", "", nil, "", "")
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
 		"app_id": "%s",
@@ -2311,7 +2297,6 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Incomin
 	}`, endpoint.UID, source.UID, project.UID, endpoint.UID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", project.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, apiKey, body)
 	w := httptest.NewRecorder()
 
@@ -2336,7 +2321,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Incomin
 
 func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotFound() {
 	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, &datastore.Project{UID: ulid.Make().String()}, ulid.Make().String(), "", "", false, datastore.ActiveEndpointStatus)
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
 		"app_id": "%s",
@@ -2359,7 +2344,6 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotF
 	}`, ulid.Make().String(), endpoint.UID)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2371,7 +2355,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_AppNotF
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_EndpointNotFound() {
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
 		"app_id": "%s",
@@ -2395,7 +2379,6 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Endpoin
 	}`, ulid.Make().String(), s.DefaultProject.UID, ulid.Make().String())
 
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2407,7 +2390,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Endpoin
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_InvalidBody() {
-	bodyStr := `{
+	body := serialize(`{
 		"name": "sub-1",
 		"type": "incoming",
 		"alert_config": {
@@ -2425,10 +2408,9 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Invalid
 				"user.updated"
 			]
 		}
-	}`
+	}`)
 
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2615,7 +2597,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, subscriptionId)
-	bodyStr := `{
+	body := serialize(`{
 		"alert_config": {
 			"threshold": "1h",
 			"count": 10
@@ -2632,9 +2614,8 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription() {
 			]
 		},
 		"disable_endpoint": false
-	}`
+	}`)
 
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2667,7 +2648,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Creates
 	endpoint, err := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(s.T(), err)
 
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
         "name": "test-sub",
         "type": "incoming",
         "project_id": "%s",
@@ -2682,7 +2663,6 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_CreateSubscription_Creates
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions", s.DefaultProject.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPost, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 
@@ -2729,7 +2709,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription_Creates
 		})
 	require.NoError(s.T(), err)
 
-	bodyStr := fmt.Sprintf(`{
+	body := serialize(`{
         "name": "test-sub",
         "filter_config": {
             "event_types": [
@@ -2741,7 +2721,6 @@ func (s *PublicSubscriptionIntegrationTestSuite) Test_UpdateSubscription_Creates
 
 	// Arrange Request
 	url := fmt.Sprintf("/api/v1/projects/%s/subscriptions/%s", s.DefaultProject.UID, sub.UID)
-	body := serialize(bodyStr)
 	req := createRequest(http.MethodPut, url, s.APIKey, body)
 	w := httptest.NewRecorder()
 

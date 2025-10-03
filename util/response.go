@@ -20,11 +20,9 @@ func (res Response) Render(w http.ResponseWriter, r *http.Request) error {
 
 func NewErrorResponse(msg string, statusCode int) ServerResponse {
 	return ServerResponse{
-		Status:  false,
-		Message: msg,
-		Response: Response{
-			StatusCode: statusCode,
-		},
+		Status:   false,
+		Message:  msg,
+		Response: Response{StatusCode: statusCode},
 	}
 }
 
@@ -57,11 +55,9 @@ func NewServiceErrResponse(err error) ServerResponse {
 	}
 
 	return ServerResponse{
-		Status:  false,
-		Message: msg,
-		Response: Response{
-			StatusCode: statusCode,
-		},
+		Status:   false,
+		Message:  msg,
+		Response: Response{StatusCode: statusCode},
 	}
 }
 

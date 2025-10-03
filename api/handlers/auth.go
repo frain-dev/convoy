@@ -1,21 +1,20 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 
+	"github.com/go-chi/render"
+
+	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
-
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/services"
-
-	"encoding/json"
-	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/render"
 )
 
 type (
@@ -44,7 +43,8 @@ func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := lu.Run()
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+		h.A.Logger.WithError(err).Errorf("SSO initialization failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 		return
 	}
 
@@ -60,7 +60,6 @@ func (h *Handler) RedeemRegisterSSOToken(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent SSOAuthIntent) {
-
 	configuration := h.A.Cfg
 
 	lu := services.LoginUserSSOService{
@@ -75,7 +74,8 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 
 	tokenResp, err := lu.RedeemToken(r.URL.Query())
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+		h.A.Logger.WithError(err).Errorf("SSO token redemption failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 		return
 	}
 
@@ -85,10 +85,13 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 		user, token, err = lu.RegisterSSOUser(r.Context(), h.A, tokenResp)
 		if err != nil {
 			if errors.Is(err, services.ErrUserAlreadyExist) {
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusConflict))
+				h.A.Logger.WithError(err).Errorf("SSO user registration failed - user already exists: %v", err)
+				_ = render.Render(w, r, util.NewErrorResponse("User already exists", http.StatusConflict))
 				return
 			}
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+
+			h.A.Logger.WithError(err).Errorf("SSO user registration failed: %v", err)
+			_ = render.Render(w, r, util.NewErrorResponse("Registration failed", http.StatusForbidden))
 			return
 		}
 
@@ -96,10 +99,12 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 		user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
 		if err != nil {
 			if errors.Is(err, datastore.ErrUserNotFound) {
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusNotFound))
+				h.A.Logger.WithError(err).Errorf("SSO login failed - user not found: %v", err)
+				_ = render.Render(w, r, util.NewErrorResponse("Invalid credentials", http.StatusNotFound))
 				return
 			}
-			_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+			h.A.Logger.WithError(err).Errorf("SSO login failed: %v", err)
+			_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 			return
 		}
 	}
@@ -115,13 +120,15 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 	var newUser models.LoginUser
 	if err := util.ReadJSON(r, &newUser); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to parse login request body: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	configuration, err := config.Get()
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.Errorf("Failed to get configuration: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
 		return
 	}
 
@@ -136,7 +143,21 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := lu.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+		h.A.Logger.WithError(err).Errorf("User login failed: %v", err)
+
+		var errMsg string
+
+		if se, ok := err.(*services.ServiceError); ok {
+			switch se.Code {
+			case services.ErrCodeLicenseExpired:
+				errMsg = se.ErrMsg
+			default:
+				errMsg = "Invalid credentials"
+			}
+		}
+
+		_ = render.Render(w, r, util.NewErrorResponse(errMsg, http.StatusForbidden))
+
 		return
 	}
 
@@ -151,18 +172,21 @@ func (h *Handler) LoginUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var refreshToken models.Token
 	if err := util.ReadJSON(r, &refreshToken); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Failed to parse refresh token request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
 	}
 
 	if err := refreshToken.Validate(); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.WithError(err).Errorf("Refresh token validation failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid token", http.StatusBadRequest))
 		return
 	}
 
 	configuration, err := config.Get()
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.Errorf("Failed to get configuration: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
 		return
 	}
 
@@ -174,7 +198,8 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	token, err := rf.Run(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		h.A.Logger.WithError(err).Errorf("Token refresh failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid or expired token", http.StatusUnauthorized))
 		return
 	}
 
@@ -184,13 +209,15 @@ func (h *Handler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) LogoutUser(w http.ResponseWriter, r *http.Request) {
 	auth, err := middleware.GetAuthFromRequest(r)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+		h.A.Logger.WithError(err).Errorf("Failed to get auth from request: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 		return
 	}
 
 	configuration, err := config.Get()
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+		h.A.Logger.Errorf("Failed to get configuration: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Service temporarily unavailable", http.StatusInternalServerError))
 		return
 	}
 
@@ -243,7 +270,8 @@ func (h *Handler) GoogleOAuthToken(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := googleOAuthService.HandleIDToken(r.Context(), request.IDToken, h.A)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusForbidden))
+		h.A.Logger.WithError(err).Errorf("Google OAuth authentication failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Authentication failed", http.StatusForbidden))
 		return
 	}
 
@@ -300,7 +328,8 @@ func (h *Handler) GoogleOAuthSetup(w http.ResponseWriter, r *http.Request) {
 
 	user, token, err := googleOAuthService.CompleteGoogleOAuthSetup(r.Context(), request.IDToken, request.BusinessName, h.A)
 	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Failed to complete setup: "+err.Error(), http.StatusInternalServerError))
+		h.A.Logger.Errorf("Google OAuth setup failed: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Failed to complete setup", http.StatusInternalServerError))
 		return
 	}
 

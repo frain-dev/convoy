@@ -7,23 +7,29 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/xdg-go/pbkdf2"
 	"strings"
 	"time"
+
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/xdg-go/pbkdf2"
 )
 
 type PortalRealm struct {
 	portalLinkRepo datastore.PortalLinkRepository
+	logger         log.StdLogger
 }
 
 func (p *PortalRealm) GetName() string {
 	return auth.PortalRealmName
 }
 
-func NewPortalRealm(portalLinkRepo datastore.PortalLinkRepository) *PortalRealm {
-	return &PortalRealm{portalLinkRepo: portalLinkRepo}
+func NewPortalRealm(portalLinkRepo datastore.PortalLinkRepository, logger log.StdLogger) *PortalRealm {
+	return &PortalRealm{
+		portalLinkRepo: portalLinkRepo,
+		logger:         logger,
+	}
 }
 
 func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
@@ -44,11 +50,13 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 			pLink = &pLinks[0]
 		}
 
-		return &auth.AuthenticatedUser{
-			AuthenticatedByRealm: p.GetName(),
-			Credential:           *cred,
-			PortalLink:           pLink,
-		}, nil
+		if pLink.AuthType == datastore.PortalAuthTypeStaticToken {
+			return &auth.AuthenticatedUser{
+				AuthenticatedByRealm: p.GetName(),
+				Credential:           *cred,
+				PortalLink:           pLink,
+			}, nil
+		}
 	}
 
 	keySplit := strings.Split(cred.APIKey, ".")
@@ -62,20 +70,24 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	// check if the api key is a portal link auth token
 	pLink, innerErr := p.portalLinkRepo.FindPortalLinkByMaskId(ctx, maskID)
 	if innerErr != nil {
+		p.logger.Warnf("failed to find portal link: %v", innerErr)
 		return nil, fmt.Errorf("failed to find portal link: %v", innerErr)
+	}
+
+	if pLink.AuthType != datastore.PortalAuthTypeRefreshToken {
+		return nil, errors.New("invalid portal link auth token type")
 	}
 
 	// if the portal link is found, use the token hash and salt
 	decodedKey, innerErr := base64.URLEncoding.DecodeString(pLink.TokenHash)
 	if innerErr != nil {
+		p.logger.Warnf("failed to decode string: %v", innerErr)
 		return nil, fmt.Errorf("failed to decode string: %v", innerErr)
 	}
 
 	// compute hash & compare.
 	dk := pbkdf2.Key([]byte(cred.APIKey), []byte(pLink.TokenSalt), 4096, 32, sha256.New)
-
 	if !bytes.Equal(dk, decodedKey) {
-		// Not Match.
 		return nil, errors.New("invalid portal link auth token")
 	}
 

@@ -172,7 +172,10 @@ func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRep
 		t.Errorf("failed to get config: %v", err)
 	}
 
-	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache)
+	logger := log.NewLogger(os.Stderr)
+	logger.SetLevel(log.FatalLevel)
+
+	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, cache, logger)
 	if err != nil {
 		t.Errorf("failed to initialize realm chain : %v", err)
 	}

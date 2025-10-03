@@ -11,32 +11,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/riandyrn/otelchi"
-
-	"github.com/sirupsen/logrus"
-
-	"github.com/frain-dev/convoy/pkg/log"
-
-	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-
 	"github.com/felixge/httpsnoop"
-	"github.com/frain-dev/convoy/api/types"
-	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"github.com/riandyrn/otelchi"
+	"github.com/sirupsen/logrus"
 	sdktrace "go.opentelemetry.io/otel/trace"
+
+	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 )
 
 const (
@@ -198,7 +192,7 @@ func RequireAuth() func(next http.Handler) http.Handler {
 			creds, err := GetAuthFromRequest(r)
 			if err != nil {
 				log.FromContext(r.Context()).WithError(err).Error("failed to get auth from request")
-				_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusUnauthorized))
+				_ = render.Render(w, r, util.NewErrorResponse("Authentication required", http.StatusUnauthorized))
 				return
 			}
 
@@ -369,6 +363,10 @@ func LogHttpRequest(a *types.APIOptions) func(next http.Handler) http.Handler {
 					"httpResponse": responseFields,
 				}
 
+				if orgID := extractOrganisationID(r); orgID != "" {
+					logFields["organisation_id"] = orgID
+				}
+
 				if shouldSkipLogging(requestFields, responseFields) {
 					return
 				}
@@ -500,7 +498,8 @@ func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) htt
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.EnterpriseSSO() {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				log.Warnf("Enterprise SSO access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -508,11 +507,28 @@ func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) htt
 	}
 }
 
+func extractOrganisationID(r *http.Request) string {
+	if orgID := chi.URLParam(r, "orgID"); orgID != "" {
+		return orgID
+	}
+
+	if orgID := r.URL.Query().Get("orgID"); orgID != "" {
+		return orgID
+	}
+
+	if orgID := r.URL.Query().Get("organisation_id"); orgID != "" {
+		return orgID
+	}
+
+	return ""
+}
+
 func RequireValidGoogleOAuthLicense(l license.Licenser) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.GoogleOAuth() {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				log.Warnf("Google OAuth access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
 			next.ServeHTTP(w, r)
@@ -524,7 +540,8 @@ func RequireValidPortalLinksLicense(l license.Licenser) func(http.Handler) http.
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if !l.PortalLinks() {
-				_ = render.Render(w, r, util.NewErrorResponse(ErrValidLicenseRequired.Error(), http.StatusUnauthorized))
+				log.Warnf("Portal links access denied - license required")
+				_ = render.Render(w, r, util.NewErrorResponse("Access denied", http.StatusUnauthorized))
 				return
 			}
 			next.ServeHTTP(w, r)
