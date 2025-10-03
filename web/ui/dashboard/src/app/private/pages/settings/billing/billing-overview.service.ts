@@ -64,15 +64,11 @@ export class BillingOverviewService {
       };
     }
 
-    // Get current plan from subscription
     const currentPlan = data.subscription?.plan || { name: 'No plan', price: 0, currency: 'USD' };
 
-    // Get usage period
     const usage = data.usage || { period: '2024-01' };
     const usagePeriod = this.formatUsagePeriod(usage.period);
     const daysUntilReset = this.calculateDaysUntilReset(usage.period);
-
-    // Get payment method
     const payment = data.payment && data.payment.length > 0 ? data.payment[0] : null;
 
     return {

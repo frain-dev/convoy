@@ -313,12 +313,10 @@ export class BillingPageComponent implements OnInit {
   getFeaturesByCategory(category: 'core' | 'security' | 'support'): any[] {
     if (this.plans.length === 0) return [];
 
-    // Get all unique features for this category across all plans
     const allFeatures = this.plans.flatMap(plan =>
       plan.features.filter(feature => feature.category === category)
     );
 
-    // Remove duplicates based on feature name
     const uniqueFeatures = allFeatures.filter((feature, index, self) =>
       index === self.findIndex(f => f.name === feature.name)
     );
@@ -394,7 +392,6 @@ export class BillingPageComponent implements OnInit {
 
   // Edit mode methods
   startEditingPaymentMethod() {
-    // Validate organisation before starting payment method flow
     try {
       const org = localStorage.getItem('CONVOY_ORG');
       if (!org) {
@@ -511,7 +508,6 @@ export class BillingPageComponent implements OnInit {
     this.isSavingPaymentMethod = true;
     console.log('Set isSavingPaymentMethod to true');
 
-    // Add a small delay to see if the page reloads before this completes
     await new Promise(resolve => setTimeout(resolve, 100));
     console.log('After 100ms delay - still here');
 
@@ -664,7 +660,6 @@ export class BillingPageComponent implements OnInit {
         'DEFAULT': /^[A-Z0-9]{5,20}$/ // Generic pattern for other countries
       };
 
-      // Check if it matches any known pattern
       for (const [country, pattern] of Object.entries(vatPatterns)) {
         if (pattern.test(vatNumber)) {
           return null; // Valid VAT number
@@ -707,7 +702,6 @@ export class BillingPageComponent implements OnInit {
         'DEFAULT': /^[A-Z0-9\s\-]{3,10}$/ // Generic pattern for other countries
       };
 
-      // Check if it matches any known pattern
       for (const [country, pattern] of Object.entries(zipPatterns)) {
         if (pattern.test(zipCode)) {
           return null; // Valid zip code

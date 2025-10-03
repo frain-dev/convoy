@@ -53,7 +53,6 @@ export interface VatInfoDetails {
 export class BillingPaymentDetailsService {
   constructor(private httpService: HttpService) {}
 
-  // Get billing configuration including payment provider details
   getBillingConfig(): Observable<any> {
     return from(this.httpService.request({
       url: '/billing/config',
@@ -67,7 +66,6 @@ export class BillingPaymentDetailsService {
   }
 
 
-  // Get internal organisation ID from Overwatch
   getInternalOrganisationId(externalOrgId: string): Observable<any> {
     return from(this.httpService.request({
       url: `/billing/organisations/${externalOrgId}/internal_id`,
@@ -80,7 +78,6 @@ export class BillingPaymentDetailsService {
     );
   }
 
-  // Get existing payment details - this endpoint exists
   getPaymentMethodDetails(): Observable<PaymentMethodDetails> {
     const orgId = this.getOrganisationId();
     return from(this.httpService.request({
@@ -91,7 +88,7 @@ export class BillingPaymentDetailsService {
         // The API returns an array, get the first/default payment method
         const paymentMethods = response.data || [];
         if (paymentMethods.length > 0) {
-          const pm = paymentMethods[0]; // Get the first/default payment method
+          const pm = paymentMethods[0];
           return {
             cardholderName: pm.cardholder_name || 'Cardholder Name',
             last4: pm.last4 || '0000',
@@ -239,12 +236,9 @@ export class BillingPaymentDetailsService {
   updateVatInfo(vatInfo: VatInfoUpdate): Observable<any> {
     const orgId = this.getOrganisationId();
 
-    // Update the organization name for the VAT business name
     const orgUpdateData = {
       name: vatInfo.businessName
     };
-
-    // Get tax ID type dynamically from Overwatch
     return this.getTaxIdTypeForCountry(vatInfo.country).pipe(
       mergeMap((taxIdType: string) => {
         const taxData = {

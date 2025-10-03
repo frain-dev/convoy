@@ -411,6 +411,12 @@ func (h *BillingHandler) GetInvoice(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *BillingHandler) DownloadInvoice(w http.ResponseWriter, r *http.Request) {
+	// TODO: Implement invoice download functionality
+	// - Billing service needs to expose pdf_link in InvoiceSerializer
+	// - Add download endpoint in billing service invoices controller
+	// - Or use existing pdf_link from billing provider directly
+	// - Test with billing service
+
 	orgID := chi.URLParam(r, "orgID")
 	invoiceID := chi.URLParam(r, "invoiceID")
 

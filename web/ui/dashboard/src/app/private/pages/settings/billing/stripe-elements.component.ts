@@ -73,7 +73,6 @@ export class StripeElementsComponent implements OnInit, OnDestroy {
         throw new Error('Failed to load Stripe');
       }
 
-      // Create elements with proper configuration
       this.elements = this.stripe.elements({
         clientSecret: this.clientSecret,
         appearance: {
@@ -90,7 +89,6 @@ export class StripeElementsComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Create card element
       this.cardElement = this.elements.create('card', {
         style: {
           base: {

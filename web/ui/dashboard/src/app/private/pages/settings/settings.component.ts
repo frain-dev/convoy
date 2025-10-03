@@ -49,18 +49,15 @@ export class SettingsComponent implements OnInit {
 	}
 
 	private updateSettingsMenu() {
-		// Start with base menu items (without billing)
 		this.settingsMenu = [
 			{ name: 'organisation settings', icon: 'org', svg: 'fill' },
 			{ name: 'team', icon: 'team', svg: 'stroke' }
 		];
 
-		// Only add billing menu item if enabled
 		if (this.billingEnabled) {
 			this.settingsMenu.push({ name: 'usage and billing', icon: 'status', svg: 'stroke' });
 		}
 
-		// If current active page is billing but billing is disabled, switch to organisation settings
 		if (this.activePage === 'usage and billing' && !this.billingEnabled) {
 			this.toggleActivePage('organisation settings');
 		}

@@ -44,7 +44,6 @@ export class BillingInvoicesComponent implements OnInit {
 
     this.invoicesService.downloadInvoice(invoiceId).subscribe({
       next: (blob) => {
-        // Create a download link
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
