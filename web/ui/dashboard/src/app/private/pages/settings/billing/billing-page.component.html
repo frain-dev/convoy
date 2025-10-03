@@ -1,6 +1,7 @@
 <app-billing-overview 
   [refreshTrigger]="refreshOverviewTrigger"
-  (openPaymentDetails)="openPaymentDetails()">
+  (openPaymentDetails)="openPaymentDetails()"
+  (openManagePlan)="openManagePlan()">
 </app-billing-overview>
 <app-billing-usage></app-billing-usage>
 <app-billing-invoices></app-billing-invoices>
@@ -258,6 +259,126 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<dialog #managePlanDialog convoy-dialog position="center" size="lg">
+  <div convoy-dialog-header (closeDialog)="closeManagePlan()">
+    <h2 class="font-semibold text-14">Plan</h2>
+  </div>
+
+  <div class="manage-plan-content">
+    <h3 class="text-20 font-medium mb-24px">Manage your plan</h3>
+    
+    <!-- Plan Cards -->
+    <div class="flex gap-16px mb-40px" *ngIf="!isLoadingPlans">
+      <div 
+        class="plan-card flex-1" 
+        [class.plan-card-selected]="selectedPlan === plan.id" 
+        (click)="selectPlan(plan.id)"
+        *ngFor="let plan of plans">
+        <div class="plan-card-header">
+          <h4 class="plan-card-title">{{ plan.name }}</h4>
+          <svg *ngIf="selectedPlan === plan.id" class="plan-card-check" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="10" r="10" fill="#2780F1"/>
+            <path d="M14 7L8.5 12.5L6 10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <ul class="plan-card-features" *ngIf="plan.features && plan.features.length > 0">
+          <li *ngFor="let feature of plan.features.slice(0, 3)">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13.3332 4L5.99984 11.3333L2.6665 8" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>{{ feature.name }}</span>
+          </li>
+        </ul>
+        <button 
+          type="button" 
+          convoy-button 
+          [fill]="plan.id === 'enterprise' ? 'solid' : 'outline'" 
+          [color]="plan.id === 'enterprise' ? 'primary' : 'neutral'" 
+          class="plan-card-button" 
+          (click)="plan.id === 'enterprise' ? onUpgradePlan() : onCancelPlan(); $event.stopPropagation()">
+          {{ plan.id === 'enterprise' ? 'Upgrade' : 'Cancel' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="flex gap-16px mb-40px" *ngIf="isLoadingPlans">
+      <div class="plan-card flex-1">
+        <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
+      </div>
+      <div class="plan-card flex-1">
+        <convoy-skeleton-loader className="w-full h-48"></convoy-skeleton-loader>
+      </div>
+    </div>
+
+
+    <!-- Compare Plans Section -->
+    <div class="compare-plans-section" *ngIf="!isLoadingPlans">
+      <h4 class="compare-plans-title">Compare plans</h4>
+      
+      <!-- Comparison Table -->
+      <div class="comparison-table">
+        <!-- Table Header -->
+        <div class="comparison-table-header">
+          <div class="comparison-table-cell header-category"></div>
+          <div class="comparison-table-cell header-plan" *ngFor="let plan of plans">{{ plan.name }}</div>
+        </div>
+
+        <!-- Core Capabilities Section -->
+        <div class="comparison-section" *ngIf="getFeaturesByCategory('core').length > 0">
+          <div class="comparison-section-title">Core Capabilities</div>
+          
+          <div class="comparison-table-row" *ngFor="let feature of getFeaturesByCategory('core')">
+            <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
+            <div class="comparison-table-cell feature-value" *ngFor="let plan of plans">
+                <span class="status-badge"
+                      [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
+                      [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
+                      [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
+                  {{ getFeatureValue(plan.id, feature.name) }}
+                </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security & Compliance Section -->
+        <div class="comparison-section" *ngIf="getFeaturesByCategory('security').length > 0">
+          <div class="comparison-section-title">Security & Compliance</div>
+          
+          <div class="comparison-table-row" *ngFor="let feature of getFeaturesByCategory('security')">
+            <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
+            <div class="comparison-table-cell feature-value" *ngFor="let plan of plans">
+                <span class="status-badge"
+                      [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
+                      [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
+                      [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
+                  {{ getFeatureValue(plan.id, feature.name) }}
+                </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Support Section -->
+        <div class="comparison-section" *ngIf="getFeaturesByCategory('support').length > 0">
+          <div class="comparison-section-title">Support</div>
+          
+          <div class="comparison-table-row" *ngFor="let feature of getFeaturesByCategory('support')">
+            <div class="comparison-table-cell feature-name">{{ feature.name }}</div>
+            <div class="comparison-table-cell feature-value" *ngFor="let plan of plans">
+                <span class="status-badge"
+                      [class.status-supported]="getFeatureValueType(plan.id, feature.name) === 'supported'"
+                      [class.status-unsupported]="getFeatureValueType(plan.id, feature.name) === 'unsupported'"
+                      [class.status-plain]="getFeatureValueType(plan.id, feature.name) === 'plain'">
+                  {{ getFeatureValue(plan.id, feature.name) }}
+                </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

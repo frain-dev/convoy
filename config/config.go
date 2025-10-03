@@ -476,6 +476,7 @@ type BillingConfiguration struct {
 	URL             string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
 	APIKey          string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
 	PaymentProvider PaymentProviderConfiguration `json:"payment_provider"`
+	Plans           []interface{}                `json:"plans,omitempty"`
 }
 
 type PaymentProviderConfiguration struct {

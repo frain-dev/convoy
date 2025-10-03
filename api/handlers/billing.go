@@ -216,13 +216,15 @@ func (h *BillingHandler) GetPaymentMethods(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
-	resp, err := h.BillingClient.GetPlans(r.Context())
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
+	// Serve plans from configuration if available, otherwise return empty array
+	var plans []interface{}
+	if h.A.Cfg.Billing.Plans != nil && len(h.A.Cfg.Billing.Plans) > 0 {
+		plans = h.A.Cfg.Billing.Plans
+	} else {
+		plans = []interface{}{}
 	}
 
-	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", resp.Data, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Plans retrieved successfully", plans, http.StatusOK))
 }
 
 func (h *BillingHandler) GetTaxIDTypes(w http.ResponseWriter, r *http.Request) {

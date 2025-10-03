@@ -9,6 +9,7 @@ import {CardIconService} from './card-icon.service';
 })
 export class BillingOverviewComponent implements OnInit, OnChanges {
   @Output() openPaymentDetails = new EventEmitter<void>();
+  @Output() openManagePlan = new EventEmitter<void>();
   @Input() refreshTrigger: number = 0;
 
   overview: BillingOverview | null = null;
@@ -56,7 +57,6 @@ export class BillingOverviewComponent implements OnInit, OnChanges {
 
   onManagePlan(event: Event) {
     event.preventDefault();
-    // No-op for now - plan management functionality not yet implemented
-    console.log('Plan management not yet implemented');
+    this.openManagePlan.emit();
   }
 }

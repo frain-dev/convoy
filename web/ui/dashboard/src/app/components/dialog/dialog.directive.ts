@@ -9,8 +9,8 @@ import {ButtonComponent} from '../button/button.component';
 	standalone: true,
 	template: `
 		<div
-			class="px-20px pt-20px pb-16px border-y border-y-neutral-4 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
-			<div class="flex justify-between items-center max-w-[770px] m-auto">
+			class="px-32px pt-32px pb-24px border-y border-y-neutral-4 bg-white-100 rounded-tr-16px rounded-tl-16px w-full ">
+			<div class="flex justify-between items-center w-full">
 				<div class="flex items-center w-full" [ngClass]="{ 'justify-between': fullscreen === 'false' }">
 					<div class="w-full" [class]="fullscreen !== 'false' ? 'order-2' : 'order-1'">
 						<ng-content></ng-content>
@@ -50,7 +50,7 @@ export class DialogDirective implements OnInit {
 	modalType = {
 		full: ` w-full h-full`,
 		right: ` mr-0 h-full`,
-		center: ` rounded-[16px] mt-180px`
+		center: ` rounded-[16px] mt-40px`
 	};
 	constructor() {}
 

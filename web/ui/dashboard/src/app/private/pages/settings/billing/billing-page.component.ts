@@ -10,6 +10,7 @@ import {
 import {CardIconService} from './card-icon.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {CountriesService} from 'src/app/services/countries/countries.service';
+import {Plan, PlanService} from './plan.service';
 
 @Component({
   selector: 'app-billing-page',
@@ -18,11 +19,18 @@ import {CountriesService} from 'src/app/services/countries/countries.service';
 })
 export class BillingPageComponent implements OnInit {
   @ViewChild('paymentDetailsDialog') paymentDetailsDialog!: ElementRef<HTMLDialogElement>;
+  @ViewChild('managePlanDialog') managePlanDialog!: ElementRef<HTMLDialogElement>;
 
   isPaymentDetailsOpen = false;
+  isManagePlanOpen = false;
   refreshOverviewTrigger = 0;
+  selectedPlan: 'pro' | 'enterprise' = 'pro';
   currentYear = new Date().getFullYear() - 2000; // 2-digit current year
   currentMonth = new Date().getMonth() + 1; // Current month (1-12)
+
+  // Plan data
+  plans: Plan[] = [];
+  isLoadingPlans = false;
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
@@ -66,7 +74,8 @@ export class BillingPageComponent implements OnInit {
     private billingPaymentDetailsService: BillingPaymentDetailsService,
     private generalService: GeneralService,
     private cardIconService: CardIconService,
-    private countriesService: CountriesService
+    private countriesService: CountriesService,
+    private planService: PlanService
   ) {
     this.initializeForms();
   }
@@ -171,7 +180,7 @@ export class BillingPageComponent implements OnInit {
       next: (response) => {
         const taxIdTypes = response.data || [];
         this.vatCountries = [];
-        
+
         taxIdTypes.forEach((taxType: any) => {
           const type = taxType.type;
           if (type) {
@@ -184,7 +193,7 @@ export class BillingPageComponent implements OnInit {
             }
           }
         });
-        
+
         this.isLoadingVatCountries = false;
         console.log('Loaded VAT countries from Overwatch:', this.vatCountries);
       },
@@ -207,7 +216,7 @@ export class BillingPageComponent implements OnInit {
     this.cities = [];
 
     const countryName = this.getCountryName(countryCode);
-    
+
     this.isLoadingCities = true;
     this.countriesService.getCitiesForCountry(countryName).subscribe({
       next: (cities) => {
@@ -249,6 +258,88 @@ export class BillingPageComponent implements OnInit {
     this.paymentDetailsDialog.nativeElement.close();
     this.resetEditStates();
     this.resetForms();
+  }
+
+  openManagePlan() {
+    this.loadPlans();
+    this.managePlanDialog.nativeElement.showModal();
+  }
+
+  private loadPlans() {
+    this.isLoadingPlans = true;
+
+    // Load plans from backend configuration
+    this.planService.getPlans().subscribe({
+      next: (response) => {
+        // If no plans in config, use default plans
+        if (!response.data || response.data.length === 0) {
+          const defaultData = this.planService.getDefaultPlanComparison();
+          this.plans = defaultData.plans;
+        } else {
+          this.plans = response.data;
+        }
+        this.isLoadingPlans = false;
+      },
+      error: (error) => {
+        console.warn('Failed to load plans from backend:', error);
+        // Use default data when backend fails
+        const defaultData = this.planService.getDefaultPlanComparison();
+        this.plans = defaultData.plans;
+        this.isLoadingPlans = false;
+      }
+    });
+  }
+
+  closeManagePlan() {
+    this.managePlanDialog.nativeElement.close();
+  }
+
+  onCancelPlan() {
+    const subject = encodeURIComponent('Plan Cancellation Request');
+    const body = encodeURIComponent('Hello,\n\nI would like to cancel my current plan.\n\nThank you.');
+    window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+  }
+
+  onUpgradePlan() {
+    const subject = encodeURIComponent('Plan Upgrade Request');
+    const body = encodeURIComponent('Hello,\n\nI would like to upgrade to the Enterprise plan.\n\nThank you.');
+    window.location.href = `mailto:support@getconvoy.io?subject=${subject}&body=${body}`;
+  }
+
+  selectPlan(planId: string) {
+    this.selectedPlan = planId as 'pro' | 'enterprise';
+  }
+
+  getFeaturesByCategory(category: 'core' | 'security' | 'support'): any[] {
+    if (this.plans.length === 0) return [];
+
+    // Get all unique features for this category across all plans
+    const allFeatures = this.plans.flatMap(plan =>
+      plan.features.filter(feature => feature.category === category)
+    );
+
+    // Remove duplicates based on feature name
+    const uniqueFeatures = allFeatures.filter((feature, index, self) =>
+      index === self.findIndex(f => f.name === feature.name)
+    );
+
+    return uniqueFeatures;
+  }
+
+  getFeatureValue(planId: string, featureName: string): string {
+    const plan = this.plans.find(p => p.id === planId);
+    if (!plan) return 'Unsupported';
+
+    const feature = plan.features.find(f => f.name === featureName);
+    return feature ? feature.value : 'Unsupported';
+  }
+
+  getFeatureValueType(planId: string, featureName: string): 'supported' | 'unsupported' | 'plain' {
+    const value = this.getFeatureValue(planId, featureName);
+
+    if (value === 'Supported') return 'supported';
+    if (value === 'Unsupported') return 'unsupported';
+    return 'plain';
   }
 
   private loadExistingData() {
