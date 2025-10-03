@@ -39,57 +39,9 @@
           </div>
         </div>
 
-        <!-- Legacy form (hidden when using Stripe Elements) -->
-        <form *ngIf="isEditingPaymentMethod && useLegacyFlow" [formGroup]="paymentMethodForm" class="mb-16px">
-          <div class="flex gap-12px">
-            <convoy-input-field>
-              <label for="cardholderName" convoy-label required="true">Cardholder name</label>
-              <input type="text" id="cardholderName" convoy-input formControlName="cardholderName" placeholder="Enter cardholder name" />
-              <convoy-input-error *ngIf="paymentMethodForm.get('cardholderName')?.touched && paymentMethodForm.get('cardholderName')?.invalid">
-              <span *ngIf="paymentMethodForm.get('cardholderName')?.errors?.['required']">Please enter cardholder name</span>
-              <span *ngIf="paymentMethodForm.get('cardholderName')?.errors?.['minlength']">Cardholder name must be at least 2 characters</span>
-              <span *ngIf="paymentMethodForm.get('cardholderName')?.errors?.['maxlength']">Cardholder name must be less than 100 characters</span>
-            </convoy-input-error>
-            </convoy-input-field>
-
-            <convoy-input-field>
-              <label for="cardNumber" convoy-label required="true">Card number</label>
-              <input type="text" id="cardNumber" convoy-input formControlName="cardNumber" placeholder="0000 0000 0000 0000" maxlength="19" (input)="formatCardNumber($event)" />
-              <convoy-input-error *ngIf="apiError || (paymentMethodForm.get('cardNumber')?.touched && paymentMethodForm.get('cardNumber')?.invalid)">{{ apiError || 'Please enter a valid card number' }}</convoy-input-error>
-            </convoy-input-field>
-          </div>
-
-          <div class="flex gap-12px">
-            <convoy-input-field>
-              <label for="expiryMonth" convoy-label required="true">MM/YY</label>
-              <div class="flex gap-6px">
-                <input type="number" id="expiryMonth" convoy-input formControlName="expiryMonth" placeholder="MM" min="1" max="12" />
-                <span class="text-neutral-11 text-14 self-center">/</span>
-                <input type="number" id="expiryYear" convoy-input formControlName="expiryYear" placeholder="YY" [min]="currentYear" />
-              </div>
-              <convoy-input-error *ngIf="(paymentMethodForm.get('expiryMonth')?.touched || paymentMethodForm.get('expiryYear')?.touched) && (paymentMethodForm.get('expiryMonth')?.invalid || paymentMethodForm.get('expiryYear')?.invalid)">Please enter valid expiry date</convoy-input-error>
-              <convoy-input-error *ngIf="paymentMethodForm.errors?.['expiredCard']">Card has expired. Please enter a valid expiry date.</convoy-input-error>
-            </convoy-input-field>
-
-            <convoy-input-field>
-              <label for="cvv" convoy-label required="true">CVV</label>
-              <input type="text" id="cvv" convoy-input formControlName="cvv" placeholder="123" maxlength="4" />
-              <convoy-input-error *ngIf="paymentMethodForm.get('cvv')?.touched && paymentMethodForm.get('cvv')?.invalid">Please enter valid CVV</convoy-input-error>
-            </convoy-input-field>
-          </div>
-
-          <div class="flex gap-12px justify-end pt-24px">
-            <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()">
-              Cancel
-            </button>
-            <button convoy-button [disabled]="!paymentMethodForm.valid" (click)="onUpdatePaymentMethod()">
-              Update
-            </button>
-          </div>
-        </form>
 
         <!-- Payment Provider Elements form -->
-        <div *ngIf="isEditingPaymentMethod && !useLegacyFlow" class="mb-16px">
+        <div *ngIf="isEditingPaymentMethod" class="mb-16px">
           <div *ngIf="isPaymentProviderLoading" class="text-center py-20px">
             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
             <p class="text-14 text-neutral-11 mt-8px">Loading payment form...</p>
@@ -97,7 +49,6 @@
           
           <div *ngIf="!isPaymentProviderLoading && setupIntentSecret && paymentProviderType === 'stripe' && internalOrganisationId">
             <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Card Information</label>
               <app-stripe-elements 
                 #stripeElements
                 [publishableKey]="paymentProviderPublishableKey"
@@ -112,8 +63,8 @@
               <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()" [disabled]="isSavingPaymentMethod">
                 Cancel
               </button>
-              <button type="button" convoy-button (click)="onUpdatePaymentMethodWithProvider(stripeElements, $event)" [disabled]="isSavingPaymentMethod">
-                <span *ngIf="!isSavingPaymentMethod">Save Card</span>
+              <button type="button" convoy-button fill="outline" (click)="onUpdatePaymentMethodWithProvider(stripeElements, $event)" [disabled]="isSavingPaymentMethod">
+                <span *ngIf="!isSavingPaymentMethod">Update</span>
                 <span *ngIf="isSavingPaymentMethod">Saving...</span>
               </button>
             </div>
@@ -229,7 +180,7 @@
             <button type="button" convoy-button variant="secondary" (click)="cancelEditingBillingAddress()">
               Cancel
             </button>
-            <button convoy-button [disabled]="!billingAddressForm.valid" (click)="onUpdateBillingAddress()">
+            <button convoy-button fill="outline" [disabled]="!billingAddressForm.valid" (click)="onUpdateBillingAddress()">
               Update
             </button>
           </div>
@@ -302,7 +253,7 @@
             <button type="button" convoy-button variant="secondary" (click)="cancelEditingVat()">
               Cancel
             </button>
-            <button convoy-button [disabled]="!vatForm.valid" (click)="onUpdateVatInfo()">
+            <button convoy-button fill="outline" [disabled]="!vatForm.valid" (click)="onUpdateVatInfo()">
               Update
             </button>
           </div>

@@ -39,7 +39,6 @@ export class BillingPageComponent implements OnInit {
   isLoadingBillingAddress = false;
   isLoadingVat = false;
 
-  paymentMethodForm!: FormGroup;
   billingAddressForm!: FormGroup;
   vatForm!: FormGroup;
 
@@ -53,7 +52,6 @@ export class BillingPageComponent implements OnInit {
   // API error message
   apiError = '';
 
-  useLegacyFlow = false; // Use payment provider Elements instead of legacy flow
 
   // Payment provider properties
   paymentProviderType = '';
@@ -226,14 +224,6 @@ export class BillingPageComponent implements OnInit {
   }
 
   private initializeForms() {
-    this.paymentMethodForm = this.fb.group({
-      cardholderName: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      cardNumber: ['', [Validators.required, this.cardNumberValidator()]],
-      expiryMonth: ['', [Validators.required, Validators.min(1), Validators.max(12)]],
-      expiryYear: ['', [Validators.required, Validators.min(this.currentYear)]],
-      cvv: ['', [Validators.required, Validators.pattern(/^\d{3,4}$/)]]
-    }, { validators: this.expiryDateValidator() });
-
     this.billingAddressForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       addressLine1: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(200)]],
@@ -335,29 +325,10 @@ export class BillingPageComponent implements OnInit {
       return;
     }
 
-    if (this.useLegacyFlow) {
-      this.redirectToStripe();
-    } else {
-      this.isEditingPaymentMethod = true;
-      this.getSetupIntent();
-    }
+    this.isEditingPaymentMethod = true;
+    this.getSetupIntent();
   }
 
-  private redirectToStripe() {
-    this.billingPaymentDetailsService.getSetupIntent().subscribe({
-      next: (setupIntentResponse) => {
-        const stripeUrl = `https://checkout.stripe.com/pay/${setupIntentResponse.data.intent_secret}`;
-        window.location.href = stripeUrl;
-      },
-      error: (error) => {
-        console.error('Failed to get setup intent:', error);
-        this.generalService.showNotification({
-          message: 'Failed to initialize payment. Please try again.',
-          style: 'error'
-        });
-      }
-    });
-  }
 
   startEditingBillingAddress() {
     this.isEditingBillingAddress = true;
@@ -378,9 +349,6 @@ export class BillingPageComponent implements OnInit {
   cancelEditingPaymentMethod() {
     this.isEditingPaymentMethod = false;
     this.setupIntentSecret = '';
-    if (this.useLegacyFlow) {
-      this.paymentMethodForm.reset();
-    }
   }
 
   // Payment provider Elements methods
@@ -494,89 +462,11 @@ export class BillingPageComponent implements OnInit {
   }
 
   private resetForms() {
-    this.paymentMethodForm.reset();
     this.billingAddressForm.reset();
     this.vatForm.reset();
     this.apiError = '';
   }
 
-  onUpdatePaymentMethod() {
-    console.log('Payment method form valid:', this.paymentMethodForm.valid);
-    console.log('Payment method form errors:', this.paymentMethodForm.errors);
-    console.log('Payment method form value:', this.paymentMethodForm.value);
-
-    if (this.paymentMethodForm.valid) {
-      console.log('Updating payment method:', this.paymentMethodForm.value);
-
-      // Clean the card number and ensure expiry fields are strings
-      const formData = { ...this.paymentMethodForm.value };
-      formData.cardNumber = formData.cardNumber.replaceAll(' ', '');
-
-      // Convert expiry month and year to strings (mock service expects strings)
-      if (typeof formData.expiryMonth === 'number') {
-        formData.expiryMonth = formData.expiryMonth.toString();
-      }
-      if (typeof formData.expiryYear === 'number') {
-        formData.expiryYear = formData.expiryYear.toString();
-      }
-
-      console.log('Processed form data:', formData);
-
-      // First get the setup intent
-      this.billingPaymentDetailsService.getSetupIntent().subscribe({
-        next: (setupIntentResponse) => {
-          console.log('Setup intent received:', setupIntentResponse);
-
-          // Now update the payment method with the setup intent
-          this.billingPaymentDetailsService.updatePaymentMethod(formData, true).subscribe({
-            next: (response) => {
-              console.log('Payment method updated successfully:', response);
-              this.generalService.showNotification({
-                message: 'Payment method updated successfully!',
-                style: 'success'
-              });
-              this.isEditingPaymentMethod = false;
-              this.loadPaymentMethodDetails(); // Refresh the data
-              this.refreshOverviewTrigger++;
-            },
-            error: (error) => {
-              console.error('Failed to update payment method:', error);
-
-              // Extract specific error message from the response
-              let errorMessage = 'Failed to update payment method. Please try again.';
-
-              if (error.response?.data?.message) {
-                const fullMessage = error.response.data.message;
-                // Extract the part after "billing service error: " if it exists
-                if (fullMessage.includes('billing service error: ')) {
-                  errorMessage = fullMessage.split('billing service error: ')[1];
-                } else {
-                  errorMessage = fullMessage;
-                }
-              } else if (error.error && error.error.message) {
-                errorMessage = error.error.message;
-              } else if (error.message) {
-                errorMessage = error.message;
-              } else if (error.status === 400) {
-                errorMessage = 'Invalid request data. Please check your card details.';
-              } else if (error.status === 500) {
-                errorMessage = 'Server error. Please try again later.';
-              }
-
-              this.apiError = errorMessage;
-            }
-          });
-        },
-        error: (error) => {
-          console.error('Failed to get setup intent:', error);
-          this.apiError = 'Failed to initialize payment setup. Please try again.';
-        }
-      });
-    } else {
-      console.log('Form is invalid. Marking fields as touched...');
-      this.markFormGroupTouched(this.paymentMethodForm);
-    }
-  }
 
   onUpdateBillingAddress() {
     const cityControl = this.billingAddressForm.get('city');
@@ -655,70 +545,6 @@ export class BillingPageComponent implements OnInit {
     });
   }
 
-  formatCardNumber(event: any) {
-    const input = event.target;
-    // Remove all non-digits and limit to 16 digits
-    const cleanValue = input.value.replace(/\D/g, '').substring(0, 16);
-    const formattedValue = this.formatNumber(cleanValue);
-    input.value = formattedValue;
-
-    // Update the form control and trigger validation
-    this.paymentMethodForm.patchValue({ cardNumber: formattedValue });
-    this.paymentMethodForm.get('cardNumber')?.updateValueAndValidity();
-
-    // Debug logging
-    console.log('Card number value:', formattedValue);
-    console.log('Clean value:', cleanValue);
-    console.log('Form valid:', this.paymentMethodForm.valid);
-    console.log('Card number valid:', this.paymentMethodForm.get('cardNumber')?.valid);
-    console.log('Card number errors:', this.paymentMethodForm.get('cardNumber')?.errors);
-  }
-
-  private formatNumber(number: string): string {
-    return number.split('').reduce((seed, next, index) => {
-      if (index !== 0 && !(index % 4)) seed += ' ';
-      return seed + next;
-    }, '');
-  }
-
-  private expiryDateValidator() {
-    return (formGroup: FormGroup) => {
-      const month = formGroup.get('expiryMonth')?.value;
-      const year = formGroup.get('expiryYear')?.value;
-
-      if (!month || !year) {
-        return null; // Let required validators handle empty values
-      }
-
-      const currentYear = this.currentYear;
-      const currentMonth = this.currentMonth;
-
-      // Check if year is in the past
-      if (year < currentYear) {
-        return { expiredCard: true };
-      }
-
-      // If same year, check if month is in the past
-      if (year === currentYear && month < currentMonth) {
-        return { expiredCard: true };
-      }
-
-      return null;
-    };
-  }
-
-  private cardNumberValidator() {
-    return (control: any) => {
-      if (!control.value) {
-        return null;
-      }
-      const cleanValue = control.value.replace(/\s/g, '');
-      if (cleanValue.length === 16 && /^\d+$/.test(cleanValue)) {
-        return null;
-      }
-      return { invalidCardNumber: true };
-    };
-  }
 
   private vatNumberValidator() {
     return (control: any) => {

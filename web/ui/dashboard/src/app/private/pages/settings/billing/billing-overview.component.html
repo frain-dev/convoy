@@ -26,7 +26,7 @@
           <div [innerHTML]="getCardIconSvg()"></div>
           <div class="billing-card-value">{{ payment.last4 }}</div>
         </div>
-        <div class="billing-card-value" *ngIf="!overview?.payment">No payment method</div>
+        <div class="billing-card-value" *ngIf="!overview?.payment">{{ isLoading ? 'Loading...' : 'No payment method' }}</div>
       </div>
       <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">
         {{ overview?.payment ? 'Manage' : 'Add payment method' }}

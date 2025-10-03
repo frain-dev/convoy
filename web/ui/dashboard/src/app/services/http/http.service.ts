@@ -169,7 +169,9 @@ export class HttpService {
 					if (requestDetails.returnFullError) {
 						return reject(error);
 					} else {
-						return reject(error.message);
+						// Return the API error message if available, otherwise fall back to error.message
+						const errorMessage = msg || error.message || 'An unexpected error occurred';
+						return reject(errorMessage);
 					}
 				} else {
 					console.log('unexpected error: ', error);
