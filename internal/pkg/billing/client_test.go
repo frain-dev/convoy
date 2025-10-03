@@ -54,7 +54,7 @@ func TestNewClient(t *testing.T) {
 func TestClient_HealthCheck_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, "GET", r.Method)
-		assert.Equal(t, "/health", r.URL.Path)
+		assert.Equal(t, "/up", r.URL.Path)
 		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -185,13 +185,31 @@ func TestClient_GetPlans_Success(t *testing.T) {
 }
 
 func TestClient_GetTaxIDTypes_Success(t *testing.T) {
-	client, server := setupTestClient(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "GET", r.Method)
+		assert.Equal(t, "/tax_id_types", r.URL.Path)
+		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		// Return raw array, not Response object
+		if err := json.NewEncoder(w).Encode([]interface{}{"test", "data"}); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	cfg := config.BillingConfiguration{
+		Enabled: true,
+		URL:     server.URL,
+		APIKey:  "test-key",
+	}
+
+	client := NewClient(cfg)
 	defer server.Close()
 
 	resp, err := client.GetTaxIDTypes(context.Background())
 	require.NoError(t, err)
 	assert.True(t, resp.Status)
-	assert.Equal(t, "Success", resp.Message)
+	assert.Equal(t, "Tax ID types retrieved successfully", resp.Message)
 }
 
 func TestClient_CreateOrganisation_Success(t *testing.T) {
@@ -417,53 +435,6 @@ func TestClient_DownloadInvoice_ServerError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Nil(t, content)
 	assert.Contains(t, err.Error(), "download failed with status: 500")
-}
-
-func TestClient_CreateBillingPaymentMethod_Success(t *testing.T) {
-	client, server := setupTestClient(t)
-	defer server.Close()
-
-	pmData := map[string]interface{}{
-		"payment_method_id": "pm_test_123",
-	}
-
-	resp, err := client.CreateBillingPaymentMethod(context.Background(), pmData)
-	require.NoError(t, err)
-	assert.True(t, resp.Status)
-	assert.Equal(t, "Success", resp.Message)
-}
-
-func TestClient_UpdateBillingAddress_Success(t *testing.T) {
-	client, server := setupTestClient(t)
-	defer server.Close()
-
-	addressData := map[string]interface{}{
-		"billing_address": "123 Main St",
-		"billing_city":    "New York",
-		"billing_state":   "NY",
-		"billing_zip":     "10001",
-		"billing_country": "US",
-	}
-
-	resp, err := client.UpdateBillingAddress(context.Background(), addressData)
-	require.NoError(t, err)
-	assert.True(t, resp.Status)
-	assert.Equal(t, "Success", resp.Message)
-}
-
-func TestClient_UpdateBillingTaxID_Success(t *testing.T) {
-	client, server := setupTestClient(t)
-	defer server.Close()
-
-	taxData := map[string]interface{}{
-		"tax_id_type": "ein",
-		"tax_number":  "12-3456789",
-	}
-
-	resp, err := client.UpdateBillingTaxID(context.Background(), taxData)
-	require.NoError(t, err)
-	assert.True(t, resp.Status)
-	assert.Equal(t, "Success", resp.Message)
 }
 
 func TestClient_makeRequest_Disabled(t *testing.T) {

@@ -172,6 +172,22 @@ func (c *HTTPClient) CreateSubscription(ctx context.Context, orgID string, subDa
 	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/subscriptions", orgID), subData)
 }
 
+func (c *HTTPClient) UpdateSubscription(ctx context.Context, orgID string, subData interface{}) (*Response, error) {
+	return c.makeRequest(ctx, "PUT", fmt.Sprintf("/organisations/%s/subscriptions", orgID), subData)
+}
+
+func (c *HTTPClient) DeleteSubscription(ctx context.Context, orgID string) (*Response, error) {
+	return c.makeRequest(ctx, "DELETE", fmt.Sprintf("/organisations/%s/subscriptions", orgID), nil)
+}
+
+func (c *HTTPClient) CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*Response, error) {
+	return c.makeRequest(ctx, "POST", fmt.Sprintf("/organisations/%s/payment_methods", orgID), pmData)
+}
+
+func (c *HTTPClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error) {
+	return c.makeRequest(ctx, "DELETE", fmt.Sprintf("/organisations/%s/payment_methods/%s", orgID, pmID), nil)
+}
+
 // Payment method methods
 func (c *HTTPClient) GetSetupIntent(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/payment_methods/setup_intent", orgID), nil)

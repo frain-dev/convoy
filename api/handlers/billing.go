@@ -218,7 +218,7 @@ func (h *BillingHandler) GetPaymentMethods(w http.ResponseWriter, r *http.Reques
 func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
 	// Serve plans from configuration if available, otherwise return empty array
 	var plans []interface{}
-	if h.A.Cfg.Billing.Plans != nil && len(h.A.Cfg.Billing.Plans) > 0 {
+	if len(h.A.Cfg.Billing.Plans) > 0 {
 		plans = h.A.Cfg.Billing.Plans
 	} else {
 		plans = []interface{}{}

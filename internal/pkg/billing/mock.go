@@ -171,6 +171,17 @@ func (m *MockBillingClient) GetSetupIntent(ctx context.Context, orgID string) (*
 	}, nil
 }
 
+func (m *MockBillingClient) CreateSetupIntent(ctx context.Context, orgID string, setupIntentData interface{}) (*Response, error) {
+	if orgID == "" {
+		return &Response{Status: false, Message: "organisation ID is required"}, nil
+	}
+	return &Response{
+		Status:  true,
+		Message: "Setup intent created successfully",
+		Data:    map[string]interface{}{"client_secret": "seti_test_secret"},
+	}, nil
+}
+
 func (m *MockBillingClient) CreatePaymentMethod(ctx context.Context, orgID string, pmData interface{}) (*Response, error) {
 	data, _ := pmData.(map[string]interface{})
 	if orgID == "" || data == nil || data["payment_method_id"] == nil || data["payment_method_id"] == "" {
