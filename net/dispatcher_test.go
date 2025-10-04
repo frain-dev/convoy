@@ -32,6 +32,240 @@ import (
 
 var successBody = []byte("received webhook successfully")
 
+func TestDispatcher_Ping(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	fflag := fflag.NewFFlag([]string{})
+
+	// Setup default mocks
+	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	// Test cases
+	tests := []struct {
+		name          string
+		endpoint      string
+		contentType   string
+		serverHandler http.HandlerFunc
+		expectedError bool
+	}{
+		{
+			name:        "HEAD method succeeds",
+			endpoint:    "/test",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "HEAD" {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name:        "GET method succeeds after HEAD fails",
+			endpoint:    "/test",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "GET" {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name:        "POST method succeeds with JSON content type",
+			endpoint:    "/test",
+			contentType: "application/json",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "POST" && r.Header.Get("Content-Type") == "application/json" {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name:        "POST method succeeds with form content type",
+			endpoint:    "/test",
+			contentType: "application/x-www-form-urlencoded",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "POST" && r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name:        "All methods fail",
+			endpoint:    "/test",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test server
+			server := httptest.NewServer(tt.serverHandler)
+			defer server.Close()
+
+			// Create dispatcher
+			dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+			require.NoError(t, err)
+
+			// Test ping
+			ctx := context.Background()
+			err = dispatcher.Ping(ctx, server.URL+tt.endpoint, 5*time.Second, tt.contentType)
+
+			if tt.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestDispatcher_tryPingMethod(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	fflag := fflag.NewFFlag([]string{})
+
+	// Setup default mocks
+	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		method         string
+		contentType    string
+		serverHandler  http.HandlerFunc
+		expectedError  bool
+		expectedStatus int
+	}{
+		{
+			name:        "HEAD method succeeds",
+			method:      "HEAD",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "HEAD", r.Method)
+				w.WriteHeader(http.StatusOK)
+			},
+			expectedError: false,
+		},
+		{
+			name:        "GET method succeeds",
+			method:      "GET",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "GET", r.Method)
+				w.WriteHeader(http.StatusOK)
+			},
+			expectedError: false,
+		},
+		{
+			name:        "POST method with JSON content type",
+			method:      "POST",
+			contentType: "application/json",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "POST", r.Method)
+				require.Equal(t, "application/json", r.Header.Get("Content-Type"))
+				w.WriteHeader(http.StatusOK)
+			},
+			expectedError: false,
+		},
+		{
+			name:        "POST method with form content type",
+			method:      "POST",
+			contentType: "application/x-www-form-urlencoded",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "POST", r.Method)
+				require.Equal(t, "application/x-www-form-urlencoded", r.Header.Get("Content-Type"))
+				w.WriteHeader(http.StatusOK)
+			},
+			expectedError: false,
+		},
+		{
+			name:        "Method returns 404",
+			method:      "GET",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			},
+			expectedError: true,
+		},
+		{
+			name:        "Method returns 500",
+			method:      "GET",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test server
+			server := httptest.NewServer(tt.serverHandler)
+			defer server.Close()
+
+			// Test tryPingMethod
+			ctx := context.Background()
+			err := dispatcher.tryPingMethod(ctx, server.URL, tt.method, tt.contentType)
+
+			if tt.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestDispatcher_PingWithDefaultMethods(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	fflag := fflag.NewFFlag([]string{})
+
+	// Setup default mocks
+	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+	require.NoError(t, err)
+
+	// Test with default ping methods (HEAD, GET, POST)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "HEAD" {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	err = dispatcher.Ping(ctx, server.URL, 5*time.Second, "")
+	require.NoError(t, err) // Should succeed with default methods
+}
+
 func TestDispatcher_SendRequest(t *testing.T) {
 	client := http.DefaultClient
 
@@ -295,7 +529,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute)
+			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute, "application/json")
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)
@@ -447,6 +681,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 		headers,
 		"test-key",
 		5*time.Second,
+		"application/json",
 	)
 
 	// Assert response
@@ -492,6 +727,7 @@ func TestDispatcherWithTimeout(t *testing.T) {
 		nil,
 		"",
 		1*time.Second,
+		"application/json",
 	)
 
 	// Assert that we got a timeout error
@@ -537,6 +773,7 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 		nil,
 		"",
 		5*time.Second,
+		"application/json",
 	)
 
 	// Assert that the request was blocked

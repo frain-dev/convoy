@@ -55,6 +55,11 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set default content type if not provided
+	if e.ContentType == "" {
+		e.ContentType = "application/json"
+	}
+
 	err = e.Validate()
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Endpoint creation validation failed: %v", err)
@@ -313,6 +318,12 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	// Set default content type if not provided
+	if e.ContentType == nil || *e.ContentType == "" {
+		defaultContentType := "application/json"
+		e.ContentType = &defaultContentType
 	}
 
 	err = e.Validate()

@@ -117,6 +117,8 @@ var DefaultConfiguration = Configuration{
 		InsecureSkipVerify: false,
 		AllowList:          []string{"0.0.0.0/0", "::/0"},
 		BlockList:          []string{"127.0.0.0/8", "::1/128"},
+		PingMethods:        []string{"HEAD", "GET", "POST"},
+		SkipPingValidation: false,
 	},
 	InstanceIngestRate:  1000,
 	ApiRateLimit:        1000,
@@ -446,6 +448,8 @@ type DispatcherConfiguration struct {
 	BlockList          []string `json:"block_list" envconfig:"CONVOY_DISPATCHER_BLOCK_LIST"`
 	CACertPath         string   `json:"ca_cert_path" envconfig:"CONVOY_DISPATCHER_CACERT_PATH"`
 	CACertString       string   `json:"ca_cert_string" envconfig:"CONVOY_DISPATCHER_CACERT_STRING"`
+	PingMethods        []string `json:"ping_methods" envconfig:"CONVOY_DISPATCHER_PING_METHODS"`
+	SkipPingValidation bool     `json:"skip_ping_validation" envconfig:"CONVOY_DISPATCHER_SKIP_PING_VALIDATION"`
 }
 
 type PyroscopeConfiguration struct {
