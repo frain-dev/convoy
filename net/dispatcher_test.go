@@ -530,7 +530,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute, "application/json")
+			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute, constants.ContentTypeJSON)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)
@@ -545,6 +545,57 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			require.Equal(t, tt.want.RequestHeader, got.RequestHeader)
 		})
 	}
+}
+
+func TestDispatcher_SendFormDataWithSignature(t *testing.T) {
+	// Create a test server that expects form data
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "POST", r.Method)
+		require.Equal(t, constants.ContentTypeFormURLEncoded, r.Header.Get("Content-Type"))
+		require.Equal(t, "test-hmac", r.Header.Get("X-Signature"))
+
+		// Verify the body is form-encoded
+		err := r.ParseForm()
+		require.NoError(t, err)
+		require.Equal(t, "test", r.Form.Get("name"))
+		require.Equal(t, "123", r.Form.Get("value"))
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+
+	d := &Dispatcher{client: http.DefaultClient, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
+
+	jsonData := json.RawMessage(`{"name":"test","value":"123"}`)
+	project := &datastore.Project{
+		UID: "12345",
+		Config: &datastore.ProjectConfig{
+			Signature: &datastore.SignatureConfiguration{
+				Header: config.SignatureHeaderProvider("X-Signature"),
+			},
+			ReplayAttacks: false,
+		},
+	}
+
+	got, err := d.SendWebhook(
+		context.Background(),
+		server.URL,
+		jsonData,
+		project.Config.Signature.Header.String(),
+		"test-hmac",
+		config.MaxResponseSize,
+		nil,
+		"",
+		time.Minute,
+		constants.ContentTypeFormURLEncoded,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, "200 OK", got.Status)
+	require.Equal(t, 200, got.StatusCode)
+	require.Equal(t, constants.ContentTypeFormURLEncoded, got.RequestHeader.Get("Content-Type"))
+	require.Equal(t, "test-hmac", got.RequestHeader.Get("X-Signature"))
 }
 
 func TestNewDispatcher(t *testing.T) {

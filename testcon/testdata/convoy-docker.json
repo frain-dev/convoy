@@ -18,6 +18,9 @@
         }
     },
     "instance_ingest_rate": 50,
+    "dispatcher": {
+        "skip_ping_validation": true
+    },
     "auth": {
         "jwt": {
             "enabled": true

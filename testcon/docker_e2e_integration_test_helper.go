@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"io"
 	"net"
 	"net/http"
@@ -17,6 +16,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/frain-dev/convoy/api/testdb"
@@ -50,7 +51,14 @@ func getConfig() config.Configuration {
 		log.Fatal(err)
 	}
 
+	// Load CA cert for TLS operations
+	err = config.LoadCaCert("", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
+	_ = os.Setenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION", "true")
 
 	km, err := keys.NewLocalKeyManager()
 	if err != nil {
