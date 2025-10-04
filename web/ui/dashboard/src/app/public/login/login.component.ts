@@ -148,12 +148,8 @@ export class LoginComponent implements OnInit, AfterViewInit {
 		} catch (error: any) {
 			console.error('Login failed:', error);
 
-			let errorMessage = 'Login failed';
-			if (error?.message) {
-				errorMessage = error.message;
-			} else if (error?.error?.message) {
-				errorMessage = error.error.message;
-			}
+			// HttpService now rejects with the error message directly
+			let errorMessage = typeof error === 'string' ? error : (error?.message || error?.error?.message || 'Login failed');
 
 			this.generalService.showNotification({
 				message: errorMessage,

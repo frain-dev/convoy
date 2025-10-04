@@ -28,7 +28,8 @@ import {DialogDirective} from 'src/app/components/dialog/dialog.directive';
 import {TeamsModule} from './teams/teams.module';
 import {ConfigButtonComponent} from '../../components/config-button/config-button.component';
 import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
-import { PermissionDirective } from '../../components/permission/permission.directive';
+import {PermissionDirective} from '../../components/permission/permission.directive';
+import {BillingModule} from './billing/billing.module';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
 
@@ -60,7 +61,8 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		DialogDirective,
 		TeamsModule,
 		TooltipComponent,
-		PermissionDirective
+		PermissionDirective,
+		BillingModule
 	]
 })
 export class SettingsModule {}

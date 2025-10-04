@@ -148,7 +148,8 @@ export class HttpService {
         hideNotification?: boolean;
         query?: { [param: string]: any };
         level?: 'org' | 'org_project';
-        isOut?: boolean
+        isOut?: boolean;
+        returnFullError?: boolean
     }): Promise<HTTP_RESPONSE> {
         requestDetails.hideNotification = !!requestDetails.hideNotification;
 
@@ -200,7 +201,13 @@ export class HttpService {
                     if ('project not found' === msg) {
                         localStorage.removeItem('CONVOY_PROJECT');
                     }
-                    return reject(error);
+                    if (requestDetails.returnFullError) {
+                        return reject(error);
+                    } else {
+                        // Return the API error message if available, otherwise fall back to error.message
+                        const errorMessage = msg || error.message || 'An unexpected error occurred';
+                        return reject(errorMessage);
+                    }
                 } else {
                     console.log('unexpected error: ', error);
                     return reject('An unexpected error occurred');

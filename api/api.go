@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -18,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -69,6 +71,14 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 	}
 
 	appHandler.cfg = cfg
+
+	// Initialize billing service if enabled
+	if cfg.Billing.Enabled {
+		billingClient := billing.NewClient(cfg.Billing)
+		if err := billingClient.HealthCheck(context.Background()); err != nil {
+			return nil, fmt.Errorf("billing service health check failed: %w", err)
+		}
+	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
@@ -486,6 +496,54 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 			configRouter.Get("/", handler.GetConfiguration)
 			configRouter.Get("/auth", handler.GetAuthConfiguration)
 		})
+
+		// Billing routes - only registered when billing is enabled
+		if a.cfg.Billing.Enabled {
+			billingClient := billing.NewClient(a.cfg.Billing)
+			billingHandler := &handlers.BillingHandler{
+				Handler:       handler,
+				BillingClient: billingClient,
+			}
+
+			uiRouter.Route("/billing", func(billingRouter chi.Router) {
+				billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
+				billingRouter.Get("/config", billingHandler.GetBillingConfig)
+				billingRouter.Get("/plans", billingHandler.GetPlans)
+				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
+
+				billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
+					orgBillingRouter.Get("/", billingHandler.GetOrganisation)
+					orgBillingRouter.Get("/usage", billingHandler.GetUsage)
+					orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
+					orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
+					orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
+					orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
+					orgBillingRouter.Put("/tax_id", billingHandler.UpdateOrganisationTaxID)
+					orgBillingRouter.Put("/address", billingHandler.UpdateOrganisationAddress)
+				})
+
+				billingRouter.Route("/organisations", func(billingOrgRouter chi.Router) {
+					billingOrgRouter.Post("/", billingHandler.CreateOrganisation)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
+					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
+					billingSubRouter.Post("/", billingHandler.CreateSubscription)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
+					billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
+					billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
+					billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
+					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
+					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
+				})
+
+			})
+		}
 	})
 
 	// Portal Link API.
