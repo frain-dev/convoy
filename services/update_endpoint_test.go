@@ -8,6 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy"
@@ -199,7 +200,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 					RateLimit:         10000,
 					RateLimitDuration: 60,
 					HttpTimeout:       20,
-					ContentType:       stringPtr("application/x-www-form-urlencoded"),
+					ContentType:       stringPtr(constants.ContentTypeFormURLEncoded),
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint3"},
 				project:  project,
@@ -211,7 +212,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				RateLimit:         10000,
 				RateLimitDuration: 60,
 				HttpTimeout:       20,
-				ContentType:       "application/x-www-form-urlencoded",
+				ContentType:       constants.ContentTypeFormURLEncoded,
 			},
 			dbFn: func(as *UpdateEndpointService) {
 				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
@@ -220,7 +221,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
 					endpoint := x.(*datastore.Endpoint)
-					return endpoint.ContentType == "application/x-www-form-urlencoded"
+					return endpoint.ContentType == constants.ContentTypeFormURLEncoded
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
@@ -241,7 +242,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 					RateLimit:         10000,
 					RateLimitDuration: 60,
 					HttpTimeout:       20,
-					ContentType:       stringPtr("application/json"),
+					ContentType:       stringPtr(constants.ContentTypeJSON),
 				},
 				endpoint: &datastore.Endpoint{UID: "endpoint4"},
 				project:  project,
@@ -253,7 +254,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				RateLimit:         10000,
 				RateLimitDuration: 60,
 				HttpTimeout:       20,
-				ContentType:       "application/json",
+				ContentType:       constants.ContentTypeJSON,
 			},
 			dbFn: func(as *UpdateEndpointService) {
 				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
@@ -262,7 +263,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
 					endpoint := x.(*datastore.Endpoint)
-					return endpoint.ContentType == "application/json"
+					return endpoint.ContentType == constants.ContentTypeJSON
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)

@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/stealthrocket/netjail"
 
@@ -79,9 +80,9 @@ func TestDispatcher_Ping(t *testing.T) {
 		{
 			name:        "POST method succeeds with JSON content type",
 			endpoint:    "/test",
-			contentType: "application/json",
+			contentType: constants.ContentTypeJSON,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
-				if r.Method == "POST" && r.Header.Get("Content-Type") == "application/json" {
+				if r.Method == "POST" && r.Header.Get("Content-Type") == constants.ContentTypeJSON {
 					w.WriteHeader(http.StatusOK)
 				} else {
 					w.WriteHeader(http.StatusMethodNotAllowed)
@@ -92,9 +93,9 @@ func TestDispatcher_Ping(t *testing.T) {
 		{
 			name:        "POST method succeeds with form content type",
 			endpoint:    "/test",
-			contentType: "application/x-www-form-urlencoded",
+			contentType: constants.ContentTypeFormURLEncoded,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
-				if r.Method == "POST" && r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+				if r.Method == "POST" && r.Header.Get("Content-Type") == constants.ContentTypeFormURLEncoded {
 					w.WriteHeader(http.StatusOK)
 				} else {
 					w.WriteHeader(http.StatusMethodNotAllowed)
@@ -180,10 +181,10 @@ func TestDispatcher_tryPingMethod(t *testing.T) {
 		{
 			name:        "POST method with JSON content type",
 			method:      "POST",
-			contentType: "application/json",
+			contentType: constants.ContentTypeJSON,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				require.Equal(t, "POST", r.Method)
-				require.Equal(t, "application/json", r.Header.Get("Content-Type"))
+				require.Equal(t, constants.ContentTypeJSON, r.Header.Get("Content-Type"))
 				w.WriteHeader(http.StatusOK)
 			},
 			expectedError: false,
@@ -191,10 +192,10 @@ func TestDispatcher_tryPingMethod(t *testing.T) {
 		{
 			name:        "POST method with form content type",
 			method:      "POST",
-			contentType: "application/x-www-form-urlencoded",
+			contentType: constants.ContentTypeFormURLEncoded,
 			serverHandler: func(w http.ResponseWriter, r *http.Request) {
 				require.Equal(t, "POST", r.Method)
-				require.Equal(t, "application/x-www-form-urlencoded", r.Header.Get("Content-Type"))
+				require.Equal(t, constants.ContentTypeFormURLEncoded, r.Header.Get("Content-Type"))
 				w.WriteHeader(http.StatusOK)
 			},
 			expectedError: false,
@@ -311,7 +312,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				URL:        nil,
 				RequestHeader: http.Header{
 					"Accept-Encoding":                      []string{"gzip"},
-					"Content-Type":                         []string{"application/json"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
@@ -359,7 +360,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				URL:        nil,
 				RequestHeader: http.Header{
 					"Accept-Encoding":                      []string{"gzip"},
-					"Content-Type":                         []string{"application/json"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
 					"User-Agent":                           []string{defaultUserAgent()},
 					"X-Test-Sig":                           []string{"abcdef"},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
@@ -405,7 +406,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				URL:        nil,
 				RequestHeader: http.Header{
 					"Accept-Encoding":                      []string{"gzip"},
-					"Content-Type":                         []string{"application/json"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
@@ -449,7 +450,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				Method:     http.MethodPost,
 				RequestHeader: http.Header{
 					"Accept-Encoding":                      []string{"gzip"},
-					"Content-Type":                         []string{"application/json"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
@@ -681,7 +682,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 		headers,
 		"test-key",
 		5*time.Second,
-		"application/json",
+		constants.ContentTypeJSON,
 	)
 
 	// Assert response
@@ -727,7 +728,7 @@ func TestDispatcherWithTimeout(t *testing.T) {
 		nil,
 		"",
 		1*time.Second,
-		"application/json",
+		constants.ContentTypeJSON,
 	)
 
 	// Assert that we got a timeout error
@@ -773,7 +774,7 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 		nil,
 		"",
 		5*time.Second,
-		"application/json",
+		constants.ContentTypeJSON,
 	)
 
 	// Assert that the request was blocked

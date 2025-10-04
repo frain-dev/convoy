@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
 
 	"gopkg.in/guregu/null.v4"
@@ -54,7 +55,7 @@ func runUpdateEndpointTest(t *testing.T, db database.Database) {
 		RateLimit:          8898,
 		Status:             datastore.ActiveEndpointStatus,
 		RateLimitDuration:  10,
-		ContentType:        "application/json", // Set expected content type
+		ContentType:        constants.ContentTypeJSON, // Set expected content type
 		Authentication: &datastore.EndpointAuthentication{
 			Type: datastore.APIKeyAuthentication,
 			ApiKey: &datastore.ApiKey{
@@ -728,7 +729,7 @@ func generateEndpoint(project *datastore.Project) *datastore.Endpoint {
 		RateLimit:          300,
 		Status:             datastore.ActiveEndpointStatus,
 		RateLimitDuration:  10,
-		ContentType:        "application/json", // Set default content type for tests
+		ContentType:        constants.ContentTypeJSON, // Set default content type for tests
 		Secrets: []datastore.Secret{
 			{
 				UID:       ulid.Make().String(),

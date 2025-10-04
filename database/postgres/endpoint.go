@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/util"
 	"github.com/jmoiron/sqlx"
 	"gopkg.in/guregu/null.v4"
@@ -266,12 +267,12 @@ func checkEncryptionStatus(db database.Database) (bool, error) {
 func validateAndSetContentType(contentType string) (string, error) {
 	// Set default content type if empty
 	if contentType == "" {
-		contentType = "application/json"
+		contentType = constants.ContentTypeJSON
 	}
 
 	// Validate content type
-	if contentType != "application/json" && contentType != "application/x-www-form-urlencoded" {
-		return "", fmt.Errorf("invalid content type: %s. Must be either 'application/json' or 'application/x-www-form-urlencoded'", contentType)
+	if !constants.IsValidContentType(contentType) {
+		return "", fmt.Errorf("invalid content type: %s. Must be either '%s' or '%s'", contentType, constants.ContentTypeJSON, constants.ContentTypeFormURLEncoded)
 	}
 
 	return contentType, nil

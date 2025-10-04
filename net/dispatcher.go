@@ -27,6 +27,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -55,7 +56,7 @@ func (j JSONConverter) Convert(jsonData json.RawMessage) ([]byte, error) {
 }
 
 func (j JSONConverter) ContentType() string {
-	return "application/json"
+	return constants.ContentTypeJSON
 }
 
 // FormURLEncodedConverter handles application/x-www-form-urlencoded content type
@@ -92,13 +93,13 @@ func (f FormURLEncodedConverter) Convert(jsonData json.RawMessage) ([]byte, erro
 }
 
 func (f FormURLEncodedConverter) ContentType() string {
-	return "application/x-www-form-urlencoded"
+	return constants.ContentTypeFormURLEncoded
 }
 
 // getConverter returns the appropriate converter for the given content type
 func getConverter(contentType string) ContentTypeConverter {
 	switch contentType {
-	case "application/x-www-form-urlencoded":
+	case constants.ContentTypeFormURLEncoded:
 		return FormURLEncodedConverter{}
 	default:
 		return JSONConverter{}

@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/services"
@@ -57,7 +58,7 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	// Set default content type if not provided
 	if e.ContentType == "" {
-		e.ContentType = "application/json"
+		e.ContentType = constants.ContentTypeJSON
 	}
 
 	err = e.Validate()
@@ -322,7 +323,7 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 
 	// Set default content type if not provided
 	if e.ContentType == nil || *e.ContentType == "" {
-		defaultContentType := "application/json"
+		defaultContentType := constants.ContentTypeJSON
 		e.ContentType = &defaultContentType
 	}
 
