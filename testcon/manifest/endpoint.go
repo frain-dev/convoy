@@ -33,3 +33,9 @@ func PrintEndpoints() {
 	defer lock.RUnlock()
 	fmt.Printf("Size: %d Endpoints: %+v\n", len(endpoints), endpoints)
 }
+
+func ResetEndpoints() {
+	lock.Lock()
+	defer lock.Unlock()
+	endpoints = map[string]int{}
+}

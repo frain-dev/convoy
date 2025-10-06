@@ -5,11 +5,13 @@ package testcon
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"sync"
@@ -221,7 +223,11 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 				defer func() {
 					current := manifest.DecrementAndGet(counter)
 					if current <= 0 {
-						done <- true
+						select {
+						case done <- true:
+						default:
+							// Channel is closed or full, ignore
+						}
 					}
 				}()
 			default:
@@ -229,9 +235,11 @@ func startHTTPServer(done chan bool, counter *atomic.Int64, port int) {
 				_, _ = w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
 			}
 		})
+
+		// Start serving - let endpoint creation retry handle server availability
 		err := http.ListenAndServe(":"+strconv.Itoa(port), mux)
 		if err != nil {
-			log.Fatal()
+			log.Fatal(err)
 		}
 	}()
 }
@@ -249,8 +257,26 @@ func createEndpoints(t *testing.T, ctx context.Context, c *convoy.Client, ports 
 			OwnerID:      ownerId,
 		}
 
-		endpoint, err := c.Endpoints.Create(ctx, body, &convoy.EndpointParams{})
-		require.NoError(t, err)
+		// Retry endpoint creation with exponential backoff
+		var endpoint *convoy.EndpointResponse
+		var err error
+		maxRetries := 5
+		retryDelay := 100 * time.Millisecond
+
+		for attempt := 0; attempt < maxRetries; attempt++ {
+			endpoint, err = c.Endpoints.Create(ctx, body, &convoy.EndpointParams{})
+			if err == nil {
+				break
+			}
+
+			if attempt < maxRetries-1 {
+				t.Logf("Endpoint creation attempt %d failed: %v, retrying in %v", attempt+1, err, retryDelay)
+				time.Sleep(retryDelay)
+				retryDelay *= 2 // Exponential backoff
+			}
+		}
+
+		require.NoError(t, err, "Failed to create endpoint after %d attempts", maxRetries)
 		require.NotEmpty(t, endpoint.UID)
 
 		endpoint.TargetUrl = baseURL
@@ -347,4 +373,230 @@ func waitForEvents(t *testing.T, done chan bool) {
 	case <-time.After(30 * time.Second):
 		t.Errorf("Time out while waiting for events")
 	}
+}
+
+// Global map to track received form data for assertions
+var (
+	receivedFormData = make(map[string]string)
+	formDataMutex    sync.RWMutex
+)
+
+func startFormHTTPServer(done chan bool, counter *atomic.Int64, port int) {
+	go func() {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/api/convoy", func(w http.ResponseWriter, r *http.Request) {
+			endpoint := "http://" + r.Host + r.URL.Path
+			manifest.IncEndpoint(endpoint)
+
+			if r.URL.Path != "/api/convoy" {
+				http.NotFound(w, r)
+				return
+			}
+
+			// Set appropriate content type for form data
+			w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+
+			switch r.Method {
+			case "GET":
+				for k, v := range r.URL.Query() {
+					log.Info(fmt.Sprintf("Form GET %s: %s\n", k, v))
+				}
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("Received a form GET request\n"))
+			case "POST":
+				reqBody, err := io.ReadAll(r.Body)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				ev := string(reqBody)
+				fmt.Printf("Received form %s request on %s Payload: %s\n", r.Method, endpoint, reqBody)
+				fmt.Printf("Content-Type header: %s\n", r.Header.Get("Content-Type"))
+
+				// Check if the payload is JSON or form-encoded data
+				var jsonData map[string]interface{}
+
+				// Try to parse as JSON first
+				if err := json.Unmarshal(reqBody, &jsonData); err == nil {
+					// It's JSON data, use it directly
+					log.Info("Received JSON payload, using directly")
+				} else {
+					// Try to parse as form-encoded data
+					formData, err := url.ParseQuery(ev)
+					if err != nil {
+						log.Errorf("Failed to parse payload as JSON or form data: %v", err)
+						w.WriteHeader(http.StatusBadRequest)
+						_, _ = w.Write([]byte("Payload parsing failed\n"))
+						return
+					}
+
+					// Convert form data to JSON format for assertion
+					jsonData = map[string]interface{}{
+						"traceId": formData.Get("traceId"),
+					}
+
+					// Parse the formData field which contains JSON string
+					if formDataStr := formData.Get("formData"); formDataStr != "" {
+						var formDataObj map[string]interface{}
+						if err := json.Unmarshal([]byte(formDataStr), &formDataObj); err == nil {
+							jsonData["formData"] = formDataObj
+						} else {
+							// Fallback to flat structure if parsing fails
+							jsonData["formData"] = map[string]string{
+								"name":  formData.Get("name"),
+								"email": formData.Get("email"),
+							}
+						}
+					} else {
+						// Fallback to flat structure
+						jsonData["formData"] = map[string]string{
+							"name":  formData.Get("name"),
+							"email": formData.Get("email"),
+						}
+					}
+				}
+
+				jsonBytes, err := json.Marshal(jsonData)
+				if err != nil {
+					log.Errorf("Failed to marshal data to JSON: %v", err)
+					w.WriteHeader(http.StatusBadRequest)
+					_, _ = w.Write([]byte("Data conversion failed\n"))
+					return
+				}
+
+				if !assertFormDataReceived(string(jsonBytes)) {
+					log.Error("Form data assertion failed")
+					w.WriteHeader(http.StatusBadRequest)
+					_, _ = w.Write([]byte("Form data validation failed\n"))
+					return
+				}
+
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("Received a form POST request\n"))
+
+				// Store event in the format expected by assertions (just traceId)
+				traceId := jsonData["traceId"]
+				if traceId != nil {
+					eventForManifest := fmt.Sprintf(`{"traceId":"%s"}`, traceId)
+					manifest.IncEvent(eventForManifest)
+				} else {
+					manifest.IncEvent(ev)
+				}
+				defer func() {
+					current := manifest.DecrementAndGet(counter)
+					if current <= 0 {
+						select {
+						case done <- true:
+						default:
+							// Channel is closed or full, ignore
+						}
+					}
+				}()
+			default:
+				w.WriteHeader(http.StatusNotImplemented)
+				_, _ = w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
+			}
+		})
+
+		// Start serving - let endpoint creation retry handle server availability
+		err := http.ListenAndServe(":"+strconv.Itoa(port), mux)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+}
+
+// assertFormDataReceived validates that form data was received correctly
+func assertFormDataReceived(formData string) bool {
+	// Parse the JSON form data
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(formData), &data); err != nil {
+		log.Errorf("Failed to parse form data JSON: %v", err)
+		return false
+	}
+
+	// Check if traceId exists
+	traceId, ok := data["traceId"].(string)
+	if !ok {
+		log.Error("traceId not found in form data")
+		return false
+	}
+
+	// Store the received form data for later assertion
+	formDataMutex.Lock()
+	receivedFormData[traceId] = formData
+	formDataMutex.Unlock()
+
+	// Check if formData field exists
+	formDataField, ok := data["formData"].(map[string]interface{})
+	if !ok {
+		log.Error("formData field not found in received data")
+		return false
+	}
+
+	// Check if user field exists within formData
+	userField, ok := formDataField["user"].(map[string]interface{})
+	if !ok {
+		log.Error("user field not found in formData")
+		return false
+	}
+
+	// Validate required form fields
+	if name, ok := userField["name"].(string); !ok || name == "" {
+		log.Error("name field missing or empty in form data")
+		return false
+	}
+
+	if email, ok := userField["email"].(string); !ok || email == "" {
+		log.Error("email field missing or empty in form data")
+		return false
+	}
+
+	log.Infof("Form data validation passed for traceId: %s", traceId)
+	return true
+}
+
+// assertFormDataReceivedByEndpoint verifies that form data was received by the endpoint
+func assertFormDataReceivedByEndpoint(t *testing.T, traceId, expectedName, expectedEmail string) {
+	// Wait a bit for the form data to be processed
+	time.Sleep(100 * time.Millisecond)
+
+	formDataMutex.RLock()
+	receivedData, exists := receivedFormData[traceId]
+	formDataMutex.RUnlock()
+
+	require.True(t, exists, "Form data for traceId %s was not received", traceId)
+	require.NotEmpty(t, receivedData, "Received form data is empty for traceId %s", traceId)
+
+	// Parse the received form data
+	var data map[string]interface{}
+	err := json.Unmarshal([]byte(receivedData), &data)
+	require.NoError(t, err, "Failed to parse received form data JSON")
+
+	// Verify traceId matches
+	actualTraceId, ok := data["traceId"].(string)
+	require.True(t, ok, "traceId field not found in received data")
+	require.Equal(t, traceId, actualTraceId, "traceId mismatch")
+
+	// Verify form data structure
+	formDataField, ok := data["formData"].(map[string]interface{})
+	require.True(t, ok, "formData field not found in received data")
+
+	// Verify user field exists within formData
+	userField, ok := formDataField["user"].(map[string]interface{})
+	require.True(t, ok, "user field not found in formData")
+
+	// Verify name field
+	actualName, ok := userField["name"].(string)
+	require.True(t, ok, "name field not found in form data")
+	require.Equal(t, expectedName, actualName, "name field mismatch")
+
+	// Verify email field
+	actualEmail, ok := userField["email"].(string)
+	require.True(t, ok, "email field not found in form data")
+	require.Equal(t, expectedEmail, actualEmail, "email field mismatch")
+
+	t.Logf("✅ Form data assertion passed for traceId: %s", traceId)
+	t.Logf("   Name: %s", actualName)
+	t.Logf("   Email: %s", actualEmail)
 }
