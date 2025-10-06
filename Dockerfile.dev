@@ -8,7 +8,7 @@ RUN --mount=type=cache,target=/root/.npm \
 COPY ./web/ui/dashboard .
 RUN npm run build
 
-FROM golang:1.25 as build-env
+FROM golang:1.24 as build-env
 WORKDIR /go/src/frain-dev/convoy
 
 # Set Go module proxy and enable module caching
