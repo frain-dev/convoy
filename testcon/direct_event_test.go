@@ -12,8 +12,6 @@ import (
 )
 
 func (d *DockerE2EIntegrationTestSuite) Test_DirectEvent_Success_AllSubscriptions() {
-	config := getConfig()
-	require.NotEmpty(d.T(), config.LicenseKey)
 	ctx := context.Background()
 	t := d.T()
 	ownerID := d.DefaultOrg.OwnerID + "_0"

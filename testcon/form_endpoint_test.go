@@ -16,8 +16,6 @@ import (
 )
 
 func (d *DockerE2EIntegrationTestSuite) Test_FormEndpoint_Success_ContentType() {
-	config := getConfig()
-	require.NotEmpty(d.T(), config.LicenseKey)
 	ctx := context.Background()
 	t := d.T()
 	ownerID := d.DefaultOrg.OwnerID + "_form_0"
