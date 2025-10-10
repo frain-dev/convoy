@@ -18,6 +18,7 @@
 
 /api/ui/build/*
 !/api/ui/build/go_test_stub.txt
+!/api/ui/build/index.html
 /data/mongo/
 .DS_Store
 *.db

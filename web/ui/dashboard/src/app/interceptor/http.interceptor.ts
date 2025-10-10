@@ -10,7 +10,9 @@ export class HttpIntercepter implements HttpInterceptor {
 	constructor(private router: Router, private generalService: GeneralService) {}
 
 	intercept(request: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
-		return next.handle(request).pipe(
+		const modifiedRequest = this.addRootPathToApiCalls(request);
+
+		return next.handle(modifiedRequest).pipe(
 			map((httpEvent: HttpEvent<any>) => {
 				return httpEvent;
 			}),
@@ -28,5 +30,29 @@ export class HttpIntercepter implements HttpInterceptor {
 				return throwError(error);
 			})
 		);
+	}
+
+	private addRootPathToApiCalls(request: HttpRequest<unknown>): HttpRequest<unknown> {
+		const baseElement = document.querySelector('base');
+		const baseHref = baseElement?.getAttribute('href') || '/';
+
+		const rootPath = baseHref.replace(/\/$/, '');
+
+		const insertRootPath = (url: string) => {
+			if (rootPath === '/') return url;
+			try {
+				const urlObj = new URL(url, window.location.origin);
+				urlObj.pathname = rootPath + urlObj.pathname;
+				return urlObj.pathname + urlObj.search + urlObj.hash;
+			} catch (e) {
+				return rootPath + url;
+			}
+		};
+
+		const modifiedUrl = insertRootPath(request.url);
+
+		return request.clone({
+			url: modifiedUrl
+		});
 	}
 }
