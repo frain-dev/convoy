@@ -84,12 +84,21 @@ func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user
 	}
 
 	baseURL := cfg.Host
+	rootPath := cfg.RootPath
+
+	var inviteURL string
+	if rootPath != "" {
+		inviteURL = fmt.Sprintf("%s%s/accept-invite?invite-token=%s", baseURL, rootPath, iv.Token)
+	} else {
+		inviteURL = fmt.Sprintf("%s/accept-invite?invite-token=%s", baseURL, iv.Token)
+	}
+
 	em := email.Message{
 		Email:        iv.InviteeEmail,
 		Subject:      "Convoy Organization Invite",
 		TemplateName: email.TemplateOrganisationInvite,
 		Params: map[string]string{
-			"invite_url":        fmt.Sprintf("%s/accept-invite?invite-token=%s", baseURL, iv.Token),
+			"invite_url":        inviteURL,
 			"organisation_name": org.Name,
 			"inviter_name":      fmt.Sprintf("%s %s", user.FirstName, user.LastName),
 			"expires_at":        iv.ExpiresAt.Format(time.RFC1123),

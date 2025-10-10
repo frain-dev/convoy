@@ -75,6 +75,7 @@
     }
   },
   "host": "<insert-host>",
+  "root_path": "",
   "custom_domain_suffix": "<insert-custom-domain-suffix>",
   "feature_flag": "experimental",
   "analytics": {

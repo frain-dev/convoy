@@ -28,6 +28,7 @@ FROM alpine:3.16.2
 COPY --from=build-env /go/bin/cmd /
 COPY --from=build-env /go/src/frain-dev/convoy/internal/email/templates/* templates/
 COPY --from=build-env /go/src/frain-dev/convoy/configs/local/start.sh /
+COPY --from=build-env /go/src/frain-dev/convoy/api/ui/build /ui/build
 
 RUN chmod +x /cmd
 RUN apk add --no-cache gcompat

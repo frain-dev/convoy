@@ -427,6 +427,16 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 
 	c.LicenseKey = licenseKey
 
+	// CONVOY_ROOT_PATH
+	rootPath, err := cmd.Flags().GetString("root-path")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(rootPath) {
+		c.RootPath = rootPath
+	}
+
 	// CONVOY_DB_TYPE
 	dbType, err := cmd.Flags().GetString("db-type")
 	if err != nil {
