@@ -24,7 +24,7 @@ jobs:
     name: Build UI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       - name: Build Artifact
         run: "make ui_install type=ce"
 
@@ -50,7 +50,7 @@ jobs:
              dockerfile: release.Dockerfile
 
     steps:
-      - uses: actions/checkout@v08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
             fetch-depth: 0
 
