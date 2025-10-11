@@ -55,6 +55,11 @@ jobs:
          pip install --upgrade cloudsmith-cli
          echo $(cloudsmith --version)
 
+      - name: Clean git state
+        run: |
+          git checkout -- api/ui/build/
+          git clean -fd
+
       - uses: goreleaser/goreleaser-action@v6
         name: Release, Upload & Publish
         with:

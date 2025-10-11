@@ -3,6 +3,7 @@ project_name: convoy
 before:
   hooks:
     - go mod tidy
+
 builds:
   - env:
       - CGO_ENABLED=0
@@ -25,6 +26,8 @@ archives:
     id: cobin-archive
     builds:
       - cobin
+    files:
+      - README.md
 
 # https://goreleaser.com/customization/nfpm/
 nfpms:
@@ -93,3 +96,9 @@ checksum:
 release:
   ids:
     - lib
+  github:
+    owner: frain-dev
+    name: Convoy
+  prerelease: auto
+  draft: true
+  name_template: "{{ .ProjectName }}-v{{ .Version }}"
