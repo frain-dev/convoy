@@ -83,11 +83,66 @@ func (a *ApplicationHandler) serveIndexWithRootPath(rw http.ResponseWriter, req 
 		return
 	}
 
+	root := strings.TrimSuffix(a.cfg.RootPath, "/")
 	contentStr := string(content)
-	contentStr = strings.Replace(contentStr, `<base href="/">`, fmt.Sprintf(`<base href="%s/">`, a.cfg.RootPath), 1)
-	contentStr = strings.Replace(contentStr, `href="favicon.ico"`, fmt.Sprintf(`href="%s/favicon.ico"`, a.cfg.RootPath), 1)
 
-	rw.Header().Set("Content-Type", "text/html")
+	contentStr = strings.Replace(contentStr, `<base href="/">`, fmt.Sprintf(`<base href="%s/">`, root), 1)
+	contentStr = strings.Replace(contentStr, `href="favicon.ico"`, fmt.Sprintf(`href="%s/favicon.ico"`, root), 1)
+
+	// Inject a lightweight JS shim to fix Angular asset URLs dynamically
+	clientScript := fmt.Sprintf(`
+<script type="text/javascript" defer>
+document.addEventListener('DOMContentLoaded', function() {
+  const rootPath = '%s';
+
+  function fixAsset(el, attr) {
+    const val = el.getAttribute(attr);
+    if (val && val.startsWith('/assets/')) {
+      el.setAttribute(attr, rootPath + val);
+    }
+  }
+
+  function fixAllAssets() {
+    document.querySelectorAll('[src^="/assets/"], [href^="/assets/"]').forEach(el => {
+      if (el.hasAttribute('src')) fixAsset(el, 'src');
+      if (el.hasAttribute('href')) fixAsset(el, 'href');
+    });
+  }
+
+  // Initial fix
+  fixAllAssets();
+
+  // Observe dynamic DOM changes
+  const observer = new MutationObserver(mutations => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && (m.attributeName === 'src' || m.attributeName === 'href')) {
+        fixAsset(m.target, m.attributeName);
+      } else if (m.type === 'childList') {
+        m.addedNodes.forEach(node => {
+          if (node.nodeType === 1) {
+            if (node.hasAttribute?.('src')) fixAsset(node, 'src');
+            if (node.hasAttribute?.('href')) fixAsset(node, 'href');
+            node.querySelectorAll?.('[src^="/assets/"], [href^="/assets/"]').forEach(inner => {
+              if (inner.hasAttribute('src')) fixAsset(inner, 'src');
+              if (inner.hasAttribute('href')) fixAsset(inner, 'href');
+            });
+          }
+        });
+      }
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    attributes: true,
+    subtree: true
+  });
+});
+</script>`, root)
+
+	contentStr = strings.Replace(contentStr, `</body>`, clientScript+`</body>`, 1)
+
+	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if _, err := rw.Write([]byte(contentStr)); err != nil {
 		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
 		return
