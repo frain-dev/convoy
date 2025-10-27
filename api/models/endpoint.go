@@ -207,8 +207,10 @@ func (er EndpointResponse) MarshalJSON() ([]byte, error) {
 	e := *er.Endpoint
 	if e.MtlsClientCert != nil {
 		mtls := *e.MtlsClientCert
-		// Redact private key from API responses
-		mtls.ClientKey = ""
+		// Redact private key from API responses - show placeholder if key exists
+		if mtls.ClientKey != "" {
+			mtls.ClientKey = "[REDACTED]"
+		}
 		e.MtlsClientCert = &mtls
 	}
 

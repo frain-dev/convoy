@@ -185,9 +185,13 @@ export class CreateEndpointComponent implements OnInit {
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
 
-        // Remove mTLS config if all fields are empty
+        // Remove mTLS config if all fields are empty or if client_key is redacted placeholder
         const mtls = this.addNewEndpointForm.value.mtls_client_cert;
         if (!mtls?.client_cert && !mtls?.client_key) {
+            delete endpointValue.mtls_client_cert;
+        } else if (mtls?.client_key === '[REDACTED]') {
+            // Don't send mTLS config if it contains the redacted placeholder
+            // (user is updating other fields but not changing the mTLS cert)
             delete endpointValue.mtls_client_cert;
         }
 
