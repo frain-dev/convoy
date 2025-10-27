@@ -71,3 +71,23 @@ func GetCaCert() (*tls.Config, error) {
 
 	return cert, nil
 }
+
+// LoadClientCertificate loads a client certificate and key from PEM strings.
+// It returns a tls.Certificate that can be used for mTLS client authentication.
+func LoadClientCertificate(certString, keyString string) (*tls.Certificate, error) {
+	if certString == "" {
+		return nil, errors.New("client certificate must be provided")
+	}
+
+	if keyString == "" {
+		return nil, errors.New("client key must be provided")
+	}
+
+	// Parse the certificate and key
+	cert, err := tls.X509KeyPair([]byte(certString), []byte(keyString))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse client certificate and key: %w", err)
+	}
+
+	return &cert, nil
+}

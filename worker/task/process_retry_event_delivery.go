@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -209,7 +210,22 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 		} else {
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
 		}
-		resp, err := dispatch.SendWebhook(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration)
+
+		// Load mTLS client certificate if configured
+		var mtlsCert *tls.Certificate
+		if endpoint.MtlsClientCert != nil {
+			cert, certErr := config.LoadClientCertificate(
+				endpoint.MtlsClientCert.ClientCert,
+				endpoint.MtlsClientCert.ClientKey,
+			)
+			if certErr != nil {
+				log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
+			} else {
+				mtlsCert = cert
+			}
+		}
+
+		resp, err := dispatch.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, mtlsCert)
 
 		status := "-"
 		statusCode := 0
