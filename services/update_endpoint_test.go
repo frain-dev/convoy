@@ -116,7 +116,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().IpRules().Times(2).Return(true)
-				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr:    true,
@@ -314,6 +314,33 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,
+		},
+		{
+			name: "should_fail_with_incomplete_mtls",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:        stringPtr("Endpoint mTLS bad"),
+					Description: "desc",
+					URL:         "https://www.google.com/webhp",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+					},
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint-mtls-bad"},
+				project:  project,
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(&datastore.Endpoint{UID: "endpoint-mtls-bad"}, nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr:    true,
+			wantErrMsg: "mtls_client_cert requires both client_cert and client_key",
 		},
 	}
 	for _, tc := range tests {

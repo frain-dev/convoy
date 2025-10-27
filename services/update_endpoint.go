@@ -171,6 +171,17 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 
 	endpoint.Authentication = auth
 
+	// Update mTLS client certificate if provided
+	if e.MtlsClientCert != nil {
+		// Validate both fields provided together
+		cc := e.MtlsClientCert
+		if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
+			return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
+		}
+
+		endpoint.MtlsClientCert = e.MtlsClientCert.Transform()
+	}
+
 	endpoint.UpdatedAt = time.Now()
 
 	return endpoint, nil

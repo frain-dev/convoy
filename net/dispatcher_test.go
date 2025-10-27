@@ -833,3 +833,103 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 	require.ErrorIs(t, err, netjail.ErrDenied)
 	require.Contains(t, err.Error(), "127.0.0.1: address not allowed")
 }
+
+// TestDispatcherWithMTLSRespectsIPRules ensures that when an mTLS certificate is provided,
+// the dispatcher still enforces IP rules (via netjail) and blocks connections accordingly.
+func TestDispatcherWithMTLSRespectsIPRules(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	// Sample client certificate and key (testing only)
+	clientCert := `-----BEGIN CERTIFICATE-----
+MIIDXjCCAkagAwIBAgIBATANBgkqhkiG9w0BAQsFADBTMQswCQYDVQQGEwJVUzEO
+MAwGA1UECAwFU3RhdGUxDTALBgNVBAcMBENpdHkxETAPBgNVBAoMCENsaWVudENB
+MRIwEAYDVQQDDAlDbGllbnQtQ0EwHhcNMjUxMDI0MDc1MjM4WhcNMjgwNzIwMDc1
+MjM4WjBOMQswCQYDVQQGEwJVUzEOMAwGA1UECAwFU3RhdGUxDTALBgNVBAcMBENp
+dHkxDzANBgNVBAoMBkNsaWVudDEPMA0GA1UEAwwGY2xpZW50MIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEA9Bv0GzAzt8ijkjlVP+E66KaNk0f67T5UFiiT
+ij4w9hPOzRPlyXhjsixlqNqkm5ASbycWKhHP67SO7Xn+IeKEXdk/N0BHR0pNlh9k
+lXpetKnzvrSwm6ldPD9OrXxjYqouvQpEJ/pkKZsUaH5S5Si6tW+KqczPN9JerjIU
+OTAPwDr7KN/MwF+Q2de+7UaZ7Chja41NB0lCIQAU18jGtqQpMISNtA2O3YcaXY8J
+0DNdjh/yczu7ii3VKvzFNHDGUbkC7VXJbLziGxCFjDBev9IhMxzmpfQS8IsMWeic
+iOBD/8Be9ENW0I2YEZfvMubH/rvJPgxIMSgq9jIE1LKuPAGRQwIDAQABo0IwQDAd
+BgNVHQ4EFgQUZFs54K2y3wBzj8S8g9aN2ERcElAwHwYDVR0jBBgwFoAUBhhmTRZN
+fHlRYCwezjxoQMKQxgswDQYJKoZIhvcNAQELBQADggEBAGV4PSkztoi1vd26oruO
+4b11Ylrx0qON9nXj0RJpARoGr3NY674jBITe8ZhSQUc178z08BeaBD1s9joXsMx4
+pmWCJSPLWL/h7d5VcT3x+HxOFXgek1q/L4CzbkExPkzu2655JzYcsI18KWSziZ5i
+gJDE82c2rYBwMzbKW5yZERPib/EDJP5I1FckApNZepHIp0zaxdgbsSj72nq7YWEs
+cGNwawU8GNLRl4b7a87FDoJj5UG9Yh3CRQejz7CVNsmney0bhmNmoB7T4W5NzUsP
+S8+eiZZouOkyMjDYK+piAfzKSttLOW2jbFDASqp4EGXzKqG4tM8oVXYsIWfIReRu
+ldg=
+-----END CERTIFICATE-----`
+
+	clientKey := `-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQD0G/QbMDO3yKOS
+OVU/4Tropo2TR/rtPlQWKJOKPjD2E87NE+XJeGOyLGWo2qSbkBJvJxYqEc/rtI7t
+ef4h4oRd2T83QEdHSk2WH2SVel60qfO+tLCbqV08P06tfGNiqi69CkQn+mQpmxRo
+flLlKLq1b4qpzM830l6uMhQ5MA/AOvso38zAX5DZ177tRpnsKGNrjU0HSUIhABTX
+yMa2pCkwhI20DY7dhxpdjwnQM12OH/JzO7uKLdUq/MU0cMZRuQLtVclsvOIbEIWM
+MF6/0iEzHOal9BLwiwxZ6JyI4EP/wF70Q1bQjZgRl+8y5sf+u8k+DEgxKCr2MgTU
+sq48AZFDAgMBAAECggEAB38vE7SuKe520Fm3Aga424Z3iGnoZwFuhxDijLDU3Rts
+bJG4Kv22n7UYWPazoalrjE+/F2l21FTPvOa6hMmwA5fVhqz2ydXNpMojBl1jOJlg
+yHiqu3Hlajr0suqqiYNGrmL5BxQVoAEVjKrKGr3E+iewsph9I3twKyZgYGwKJJhu
+9nrCccyDZHkOjW0KfaL2ppP6WRSSMl4LotBJnc8C//dDxX+zZkYoksII6jRzvPM2
+CeVxXILa43AP5rifguG+/wTyjP4PG2c42Ra+Ac4DzHkMwQrwa0gIHQYswN5CRU3G
+6Aha8KFt1jjwdEm4muV8Db8ZyeWneUz1mWZdRw/emQKBgQD+2U2zRpb1WNOE9j4w
+a9/TgHih1+OYUdFkV9u/4Zc1oCEhjBTUzpnxGlhAlco6Cjw0RjGmrYQ9gCscPdh/
+Oz8dPfZZcxSCuw4PFYjGu8OOoYNNeLfj6V8aqAFhROxICkL5EkRv5mZ8YWaPOqIn
+MbEBcSaezdk7cVPBbLFUH/2DaQKBgQD1NjssV/fzE+EUeIp6E75LA06nAX2xX1L2
+2uDMt/IGEscZLjUhcYS+M+LkuNtW2Yjgy/fzAlw1bMFjHIH9TYsLqAc7u3WcNAXW
+7L3DksBPhvknjoZ+i8nkaLFeUG3XnLQaI3drk/vhL5q+dR+KK9PALXeixjHmvFum
+Ry57kgTVywKBgQD9u5ky3xs5l4CxJwHv79dfms+AQ5QkeYGC6D6wIokMKSwTXIb5
+AeIfPN2VIA3CD6K1YRXaH3RETzGc4q6ErpY+JQz7LirDpj1vIz+Urikb/w7duU1N
+K3M29QK6t4aQizb3CQr+ZmSvfcJA5F3BrCXRi7ip78VS+5gqQm+jlF4x0QKBgGMN
+AgAalLzq9cuYGY/Qc9jHQDkz3/sLH2854P6w+yG66hPg13Nn8JAIU4nCpk9B1gnA
+Oqs989Nc2A1aEaQpc5ZEzI8zXQG4/fbgcJMUr3wwcGqrJubtPqN2KteHM6eZ1CKO
+2wlooKFI4oA2vYPJymJhu2bUGooy4e6b6EngJPXbAoGBAJG3A9IYS01CIEe3Aqch
+JvevQh041JhSVv78fVtY0YJNE3WZQ5M1GM0PLHIKRJ54DqFq979XVhzSw/t4TeNk
+POZjvwZTtrr1jOLClXXnNaM9y/Fo+fVcdEU1M2yEITJOxPfEmejB/4Qeji2ARKtm
+C6azzwqUOSsfDcuAS5sfJp/6
+-----END PRIVATE KEY-----`
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	licenser := mocks.NewMockLicenser(ctrl)
+	licenser.EXPECT().UseForwardProxy().Return(true)
+	licenser.EXPECT().IpRules().AnyTimes().Return(true)
+
+	dispatcher, err := NewDispatcher(
+		licenser,
+		fflag.NewFFlag([]string{string(fflag.IpRules)}),
+		LoggerOption(log.NewLogger(os.Stdout)),
+		ProxyOption("nil"),
+		AllowListOption([]string{"0.0.0.0/0"}),
+		BlockListOption([]string{"127.0.0.0/8"}),
+	)
+	require.NoError(t, err)
+
+	// Build a tls.Certificate from PEMs
+	cert, err := config.LoadClientCertificate(clientCert, clientKey)
+	require.NoError(t, err)
+
+	// Attempt to send a request with mTLS enabled
+	_, err = dispatcher.SendWebhookWithMTLS(
+		context.Background(),
+		server.URL,
+		nil,
+		"X-Signature",
+		"test-hmac",
+		1024,
+		nil,
+		"",
+		5*time.Second,
+		cert,
+	)
+
+	// Should be blocked by netjail due to blocklist
+	require.Error(t, err)
+	require.ErrorIs(t, err, netjail.ErrDenied)
+}

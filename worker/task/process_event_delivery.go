@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -211,11 +212,33 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 		} else {
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
 		}
-		contentType := endpoint.ContentType
-		if contentType == "" {
-			contentType = "application/json"
+	var httpDuration time.Duration
+	if endpoint.HttpTimeout == 0 || !licenser.AdvancedEndpointMgmt() {
+		httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION
+	} else {
+		httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
+	}
+
+	contentType := endpoint.ContentType
+	if contentType == "" {
+		contentType = "application/json"
+	}
+
+	// Load mTLS client certificate if configured
+	var mtlsCert *tls.Certificate
+	if endpoint.MtlsClientCert != nil {
+		cert, certErr := config.LoadClientCertificate(
+			endpoint.MtlsClientCert.ClientCert,
+			endpoint.MtlsClientCert.ClientKey,
+		)
+		if certErr != nil {
+			log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
+		} else {
+			mtlsCert = cert
 		}
-		resp, err := dispatch.SendWebhook(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType)
+	}
+
+	resp, err := dispatch.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
 
 		status := "-"
 		statusCode := 0

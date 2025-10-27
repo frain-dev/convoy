@@ -121,6 +121,18 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	}
 
 	endpoint.Authentication = auth
+
+	// Set mTLS client certificate if provided
+	if a.E.MtlsClientCert != nil {
+		// Validate both fields provided together
+		cc := a.E.MtlsClientCert
+		if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
+			return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
+		}
+
+		endpoint.MtlsClientCert = a.E.MtlsClientCert.Transform()
+	}
+
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")

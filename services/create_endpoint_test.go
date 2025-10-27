@@ -103,6 +103,34 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "should_fail_with_incomplete_mtls",
+			args: args{
+				ctx: ctx,
+				e: models.CreateEndpoint{
+					Name:        "mtls_endpoint_incomplete",
+					Secret:      "1234",
+					URL:         "https://google.com",
+					Description: "endpoint with incomplete mTLS",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+						// missing client_key
+					},
+				},
+				g: project,
+			},
+			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(project, nil)
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr:    true,
+			wantErrMsg: "mtls_client_cert requires both client_cert and client_key",
+		},
+		{
 			name: "should_default_http_timeout_endpoint_for_license_check_and_remove_slack_url_support_email",
 			args: args{
 				ctx: ctx,
@@ -206,6 +234,58 @@ func TestCreateEndpointService_Run(t *testing.T) {
 						HeaderName:  "x-api-key",
 						HeaderValue: "x-api-key",
 					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_create_endpoint_with_mtls",
+			args: args{
+				ctx: ctx,
+				e: models.CreateEndpoint{
+					Name:        "mtls_endpoint",
+					Secret:      "1234",
+					URL:         "https://secure.example.com",
+					Description: "endpoint with mTLS",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----",
+						ClientKey:  "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----",
+					},
+				},
+				g: project,
+			},
+			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
+				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.MtlsClientCert != nil &&
+						endpoint.MtlsClientCert.ClientCert == "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----" &&
+						endpoint.MtlsClientCert.ClientKey == "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----"
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:      "mtls_endpoint",
+				ProjectID: project.UID,
+				Secrets: []datastore.Secret{
+					{Value: "1234"},
+				},
+				AdvancedSignatures: true,
+				Url:                "https://secure.example.com",
+				Description:        "endpoint with mTLS",
+				Status:             datastore.ActiveEndpointStatus,
+				MtlsClientCert: &datastore.MtlsClientCert{
+					ClientCert: "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----",
+					ClientKey:  "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----",
 				},
 			},
 			wantErr: false,

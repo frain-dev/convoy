@@ -79,7 +79,11 @@ export class CreateEndpointComponent implements OnInit {
 			})
 		}),
 		advanced_signatures: [null],
-		content_type: ['application/json']
+		content_type: ['application/json'],
+		mtls_client_cert: this.formBuilder.group({
+			client_cert: [''],
+			client_key: ['']
+		})
 	});
 	token: string = this.route.snapshot.params.token;
 	@Input('endpointId') endpointUid = this.route.snapshot.params.id;
@@ -117,6 +121,7 @@ export class CreateEndpointComponent implements OnInit {
 				{ uid: 'auth', name: 'Auth', show: false, deleted: false },
 				{ uid: 'alert_config', name: 'Notifications', show: false, deleted: false },
 				{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
+				{ uid: 'mtls', name: 'mTLS Client Certificate', show: false, deleted: false },
 			);
 
 		if (!this.endpointUid) this.endpointUid = this.route.snapshot.params.id;
@@ -130,7 +135,8 @@ export class CreateEndpointComponent implements OnInit {
 			signature: ['advanced_signatures'],
 			rate_limit: ['rate_limit', 'rate_limit_duration'],
 			alert_config: ['support_email', 'slack_webhook_url'],
-			auth: ['authentication.api_key.header_name', 'authentication.api_key.header_value']
+			auth: ['authentication.api_key.header_name', 'authentication.api_key.header_value'],
+			mtls: []
 		};
 		this.configurations.forEach(config => {
 			const fields = configFields[config.uid];
@@ -179,6 +185,12 @@ export class CreateEndpointComponent implements OnInit {
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
 
+        // Remove mTLS config if all fields are empty
+        const mtls = this.addNewEndpointForm.value.mtls_client_cert;
+        if (!mtls?.client_cert && !mtls?.client_key) {
+            delete endpointValue.mtls_client_cert;
+        }
+
 		try {
 			const response =
 				(this.isUpdateAction || this.editMode) && this.type !== 'subscription' ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
@@ -216,6 +228,7 @@ export class CreateEndpointComponent implements OnInit {
 			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
 			if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
 			if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');
+			if (endpointDetails.mtls_client_cert) this.toggleConfigForm('mtls');
 
 			this.isLoadingEndpointDetails = false;
 		} catch {
