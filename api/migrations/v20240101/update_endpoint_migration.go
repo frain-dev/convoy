@@ -23,6 +23,7 @@ type oldUpdateEndpoint struct {
 	HttpTimeout       string                         `json:"http_timeout"`
 	RateLimit         int                            `json:"rate_limit"`
 	RateLimitDuration string                         `json:"rate_limit_duration"`
+	ContentType       string                         `json:"content_type"`
 	Authentication    *models.EndpointAuthentication `json:"authentication"`
 }
 

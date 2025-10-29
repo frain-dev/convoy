@@ -1,5 +1,3 @@
-version: "3"
-
 volumes:
     postgres_data:
     redis_data:
@@ -12,6 +10,9 @@ services:
         command: [ "/start.sh" ]
         environment:
             - CONVOY_LICENSE_KEY
+            - CONVOY_ENV=test
+            - CONVOY_VERSION=v1.0.0
+            - CONVOY_COMPONENT=web
         volumes:
             - ./convoy-docker.json:/convoy.json
         restart: on-failure
@@ -41,6 +42,9 @@ services:
         entrypoint: ["./cmd", "agent", "--config", "convoy.json"]
         environment:
             - CONVOY_LICENSE_KEY
+            - CONVOY_ENV=test
+            - CONVOY_VERSION=v1.0.0
+            - CONVOY_COMPONENT=agent
         volumes:
             - ./convoy-docker.json:/convoy.json
         restart: on-failure
@@ -61,8 +65,10 @@ services:
             POSTGRES_USER: convoy
             POSTGRES_PASSWORD: convoy
             PGDATA: /data/postgres
+        volumes:
+            - postgres_data:/data/postgres
         healthcheck:
-            test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+            test: [ "CMD-SHELL", "pg_isready -U convoy" ]
             interval: 5s
             timeout: 5s
             retries: 5
@@ -72,3 +78,5 @@ services:
         ports:
             - "6370:6379"
         restart: always
+        volumes:
+            - redis_data:/data

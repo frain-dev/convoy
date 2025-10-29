@@ -5,6 +5,7 @@ package testcon
 
 import (
 	"context"
+
 	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
@@ -17,7 +18,7 @@ func (d *DockerE2EIntegrationTestSuite) Test_DirectEvent_Success_AllSubscription
 
 	var ports = []int{9909}
 
-	c, done := d.initAndStartServers(ports, 2)
+	c, done := d.initAndStartServers(t, ports, 2)
 
 	endpoint := createEndpoints(t, ctx, c, ports, ownerID)[0]
 
@@ -38,7 +39,7 @@ func (d *DockerE2EIntegrationTestSuite) Test_DirectEvent_Success_MustMatchSubscr
 
 	var ports = []int{9910}
 
-	c, done := d.initAndStartServers(ports, 1)
+	c, done := d.initAndStartServers(t, ports, 1)
 
 	endpoint := createEndpoints(t, ctx, c, ports, ownerID)[0]
 

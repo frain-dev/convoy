@@ -31,6 +31,7 @@ type OldEndpointResponse struct {
 	Status      datastore.EndpointStatus `json:"status" db:"status"`
 
 	RateLimitDuration uint64                            `json:"rate_limit_duration" db:"rate_limit_duration"`
+	ContentType       string                            `json:"content_type" db:"content_type"`
 	Authentication    *datastore.EndpointAuthentication `json:"authentication" db:"authentication"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`

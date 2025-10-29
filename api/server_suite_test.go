@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 
@@ -58,6 +59,7 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
 
 	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
+	_ = os.Setenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION", "true")
 
 	err := config.LoadConfig("")
 	if err != nil {
@@ -65,6 +67,12 @@ func getConfig() config.Configuration {
 	}
 
 	cfg, err := config.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Load CA cert for TLS operations
+	err = config.LoadCaCert("", "")
 	if err != nil {
 		log.Fatal(err)
 	}

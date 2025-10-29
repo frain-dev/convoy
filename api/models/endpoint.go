@@ -53,6 +53,9 @@ type CreateEndpoint struct {
 	// Rate limit duration specifies the time range for the rate limit.
 	RateLimitDuration uint64 `json:"rate_limit_duration" copier:"-"`
 
+	// Content type for the endpoint. Defaults to application/json if not specified.
+	ContentType string `json:"content_type"`
+
 	// This is used to define any custom authentication required by the endpoint. This
 	// shouldn't be needed often because webhook endpoints usually should be exposed to
 	// the internet.
@@ -110,6 +113,9 @@ type UpdateEndpoint struct {
 
 	// Rate limit duration specifies the time range for the rate limit.
 	RateLimitDuration uint64 `json:"rate_limit_duration" copier:"-"`
+
+	// Content type for the endpoint. Defaults to application/json if not specified.
+	ContentType *string `json:"content_type"`
 
 	// This is used to define any custom authentication required by the endpoint. This
 	// shouldn't be needed often because webhook endpoints usually should be exposed to

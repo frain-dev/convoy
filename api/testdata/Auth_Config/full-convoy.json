@@ -48,5 +48,8 @@
             "header": "X-Company-Event-WebHook-Signature",
             "hash": "SHA256"
         }
+    },
+    "dispatcher": {
+        "skip_ping_validation": true
     }
 }

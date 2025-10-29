@@ -3,11 +3,13 @@ package services
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/pkg/constants"
+	"github.com/frain-dev/convoy/pkg/log"
 
 	"github.com/frain-dev/convoy"
 
@@ -186,6 +188,132 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: "endpoint not found",
+		},
+		{
+			name: "should_update_endpoint_with_form_urlencoded_content_type",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:              stringPtr("Form Endpoint"),
+					Description:       "test_endpoint_with_form_data",
+					URL:               "https://www.google.com/webhp",
+					RateLimit:         10000,
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
+					ContentType:       stringPtr(constants.ContentTypeFormURLEncoded),
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint3"},
+				project:  project,
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:              "Form Endpoint",
+				Description:       "test_endpoint_with_form_data",
+				Url:               "https://www.google.com/webhp",
+				RateLimit:         10000,
+				RateLimitDuration: 60,
+				HttpTimeout:       20,
+				ContentType:       constants.ContentTypeFormURLEncoded,
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
+					Times(1).Return(&datastore.Endpoint{UID: "endpoint3"}, nil)
+
+				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.ContentType == constants.ContentTypeFormURLEncoded
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_update_endpoint_with_json_content_type",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:              stringPtr("JSON Endpoint"),
+					Description:       "test_endpoint_with_json",
+					URL:               "https://www.google.com/webhp",
+					RateLimit:         10000,
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
+					ContentType:       stringPtr(constants.ContentTypeJSON),
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint4"},
+				project:  project,
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:              "JSON Endpoint",
+				Description:       "test_endpoint_with_json",
+				Url:               "https://www.google.com/webhp",
+				RateLimit:         10000,
+				RateLimitDuration: 60,
+				HttpTimeout:       20,
+				ContentType:       constants.ContentTypeJSON,
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
+					Times(1).Return(&datastore.Endpoint{UID: "endpoint4"}, nil)
+
+				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.ContentType == constants.ContentTypeJSON
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_default_to_json_when_content_type_is_nil",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:              stringPtr("Default Endpoint"),
+					Description:       "test_endpoint_with_default_content_type",
+					URL:               "https://www.google.com/webhp",
+					RateLimit:         10000,
+					RateLimitDuration: 60,
+					HttpTimeout:       20,
+					ContentType:       nil,
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint5"},
+				project:  project,
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:              "Default Endpoint",
+				Description:       "test_endpoint_with_default_content_type",
+				Url:               "https://www.google.com/webhp",
+				RateLimit:         10000,
+				RateLimitDuration: 60,
+				HttpTimeout:       20,
+				ContentType:       "",
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
+					Times(1).Return(&datastore.Endpoint{UID: "endpoint5"}, nil)
+
+				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.ContentType == ""
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr: false,
 		},
 	}
 	for _, tc := range tests {

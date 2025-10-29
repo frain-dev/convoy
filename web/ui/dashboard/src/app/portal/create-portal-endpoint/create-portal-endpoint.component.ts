@@ -58,6 +58,7 @@ import {LoaderModule} from '../../private/components/loader/loader.module';
 import {TagComponent} from '../../components/tag/tag.component';
 import {DialogDirective} from '../../components/dialog/dialog.directive';
 import {CopyButtonComponent} from '../../components/copy-button/copy-button.component';
+import {SelectComponent} from '../../components/select/select.component';
 
 @Component({
     selector: 'convoy-create-portal-endpoint',
@@ -83,7 +84,8 @@ import {CopyButtonComponent} from '../../components/copy-button/copy-button.comp
         LoaderModule,
         TagComponent,
         DialogDirective,
-        CopyButtonComponent
+        CopyButtonComponent,
+        SelectComponent
     ],
     providers: [
         {
@@ -149,6 +151,12 @@ export class CreatePortalEndpointComponent implements OnInit {
     ];
     selectedEndpointType = 'webhook';
 
+    contentTypeOptions = [
+        { uid: 'application/json', name: 'JSON (application/json)' },
+        { uid: 'application/x-www-form-urlencoded', name: 'Form Data (application/x-www-form-urlencoded)' }
+    ];
+    selectedContentType = 'application/json';
+
     // UI State Variables
     savingEndpoint = false;
     isLoadingEndpointDetails = false;
@@ -159,6 +167,7 @@ export class CreatePortalEndpointComponent implements OnInit {
 
     // Configurations
     configurations = [
+        {uid: 'content_type', name: 'Content Type', show: false, deleted: false},
         {uid: 'events', name: 'Event Types', show: false, deleted: false},
         {uid: 'transform', name: 'Payload Transformation', show: false, deleted: false},
         {uid: 'http_timeout', name: 'Timeout ', show: false, deleted: false},
@@ -322,7 +331,8 @@ function transform(payload) {
                     header_value: ['']
                 })
             }),
-            advanced_signatures: [null]
+            advanced_signatures: [null],
+            content_type: ['application/json']
         });
 
         this.subscriptionForm = this.formBuilder.group({
@@ -446,6 +456,12 @@ function transform(payload) {
 
             // Patch the form with endpoint details
             this.endpointForm.patchValue(endpointDetails);
+
+            // Set content type and toggle the configuration if it's not the default
+            if (endpointDetails.content_type && endpointDetails.content_type !== 'application/json') {
+                this.selectedContentType = endpointDetails.content_type;
+                this.toggleConfigForm('content_type');
+            }
 
             this.isLoadingEndpointDetails = false;
         } catch (error) {
@@ -577,6 +593,17 @@ function transform(payload) {
                 config.deleted = deleted ?? false;
             }
         });
+        
+        // When toggling content_type, ensure the form control has the correct value
+        if (configValue === 'content_type' && !deleted) {
+            // Give Angular time to render the select component, then set the value
+            setTimeout(() => {
+                const currentValue = this.endpointForm.get('content_type')?.value;
+                if (!currentValue || currentValue === '') {
+                    this.endpointForm.patchValue({ content_type: 'application/json' });
+                }
+            }, 0);
+        }
     }
 
     setConfigFormDeleted(configValue: string, deleted: boolean) {
@@ -589,6 +616,10 @@ function transform(payload) {
 
     showConfig(configValue: string): boolean {
         return this.configurations.find(config => config.uid === configValue)?.show || false;
+    }
+
+    onContentTypeSelected(value: any) {
+        this.endpointForm.get('content_type')?.setValue(value);
     }
 
     configDeleted(configValue: string): boolean {
@@ -701,8 +732,13 @@ function transform(payload) {
             this.setConfigFormDeleted('rate_limit', false);
         }
 
-        this.savingEndpoint = true;
-        const endpointValue = structuredClone(this.endpointForm.value);
+		this.savingEndpoint = true;
+		const endpointValue = structuredClone(this.endpointForm.value);
+
+		// Ensure content_type is always included with a default value
+		if (!endpointValue.content_type) {
+			endpointValue.content_type = 'application/json';
+		}
 
         // Remove authentication if not provided
         if (!this.endpointForm.value.authentication.api_key.header_name && !this.endpointForm.value.authentication.api_key.header_value) {

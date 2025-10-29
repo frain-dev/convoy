@@ -32,6 +32,7 @@ export interface ENDPOINT {
 	rate_limit_duration: string;
 	http_timeout?: string;
 	support_email: string;
+	content_type?: string;
 }
 
 export interface DEVICE {

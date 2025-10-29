@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/services"
@@ -53,6 +54,11 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 		h.A.Logger.WithError(err).Errorf("Failed to parse endpoint creation request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
+	}
+
+	// Set default content type if not provided
+	if e.ContentType == "" {
+		e.ContentType = constants.ContentTypeJSON
 	}
 
 	err = e.Validate()
@@ -313,6 +319,12 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
+	}
+
+	// Set default content type if not provided
+	if e.ContentType == nil || *e.ContentType == "" {
+		defaultContentType := constants.ContentTypeJSON
+		e.ContentType = &defaultContentType
 	}
 
 	err = e.Validate()

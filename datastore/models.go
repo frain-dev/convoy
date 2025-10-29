@@ -435,6 +435,7 @@ type Endpoint struct {
 
 	RateLimit         int     `json:"rate_limit" db:"rate_limit"`
 	RateLimitDuration uint64  `json:"rate_limit_duration" db:"rate_limit_duration"`
+	ContentType       string  `json:"content_type" db:"content_type"`
 	FailureRate       float64 `json:"failure_rate" db:"-"`
 
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`

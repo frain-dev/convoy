@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -102,9 +103,18 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			return "", innerErr
 		}
 
-		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second)
+		contentType := ""
+		if a.E.ContentType != nil {
+			contentType = *a.E.ContentType
+		}
+		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, contentType)
 		if pingErr != nil {
-			log.FromContext(ctx).Warnf("failed to ping tls endpoint: %v", pingErr)
+			if cfg.Dispatcher.SkipPingValidation {
+				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)
+			} else {
+				log.FromContext(ctx).Errorf("failed to ping tls endpoint: %v", pingErr)
+				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
+			}
 		}
 	default:
 		return "", errors.New("invalid endpoint scheme")
@@ -132,6 +142,10 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 	}
 
 	endpoint.RateLimitDuration = e.RateLimitDuration
+
+	if e.ContentType != nil {
+		endpoint.ContentType = *e.ContentType
+	}
 
 	if e.AdvancedSignatures != nil && project.Type == datastore.OutgoingProject {
 		endpoint.AdvancedSignatures = *e.AdvancedSignatures

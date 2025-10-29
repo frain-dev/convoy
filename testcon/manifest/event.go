@@ -33,3 +33,14 @@ func PrintEvents() {
 	defer evLock.RUnlock()
 	fmt.Printf("Size: %d Events: %+v\n", len(events), events)
 }
+
+func ResetEvents() {
+	evLock.Lock()
+	defer evLock.Unlock()
+	events = map[string]int{}
+}
+
+func Reset() {
+	ResetEndpoints()
+	ResetEvents()
+}

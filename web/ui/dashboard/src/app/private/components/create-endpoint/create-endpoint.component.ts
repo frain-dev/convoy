@@ -1,49 +1,54 @@
-import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { RadioComponent } from 'src/app/components/radio/radio.component';
-import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { ActivatedRoute, Router } from '@angular/router';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { CreateEndpointService } from './create-endpoint.service';
-import { PrivateService } from '../../private.service';
-import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
-import { FormLoaderComponent } from 'src/app/components/form-loader/form-loader.component';
-import { PermissionDirective } from '../permission/permission.directive';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { ENDPOINT, SECRET } from 'src/app/models/endpoint.model';
-import { EndpointsService } from '../../pages/project/endpoints/endpoints.service';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
-import { ConfigButtonComponent } from '../config-button/config-button.component';
-import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { TagComponent } from 'src/app/components/tag/tag.component';
+import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {
+    InputDirective,
+    InputErrorComponent,
+    InputFieldDirective,
+    LabelComponent
+} from 'src/app/components/input/input.component';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {RadioComponent} from 'src/app/components/radio/radio.component';
+import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {ActivatedRoute, Router} from '@angular/router';
+import {CardComponent} from 'src/app/components/card/card.component';
+import {CreateEndpointService} from './create-endpoint.service';
+import {PrivateService} from '../../private.service';
+import {FormLoaderComponent} from 'src/app/components/form-loader/form-loader.component';
+import {PermissionDirective} from '../permission/permission.directive';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {ENDPOINT, SECRET} from 'src/app/models/endpoint.model';
+import {EndpointsService} from '../../pages/project/endpoints/endpoints.service';
+import {NotificationComponent} from 'src/app/components/notification/notification.component';
+import {ConfigButtonComponent} from '../config-button/config-button.component';
+import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {TagComponent} from 'src/app/components/tag/tag.component';
+import {SelectComponent} from 'src/app/components/select/select.component';
 
 @Component({
 	selector: 'convoy-create-endpoint',
 	standalone: true,
-	imports: [
-		CommonModule,
-		ReactiveFormsModule,
-		InputDirective,
-		InputErrorComponent,
-		InputFieldDirective,
-		LabelComponent,
-		ButtonComponent,
-		RadioComponent,
-		TooltipComponent,
-		CardComponent,
-		ToggleComponent,
-		FormLoaderComponent,
-		PermissionDirective,
-		NotificationComponent,
-		ConfigButtonComponent,
-		CopyButtonComponent,
-		TagComponent
-	],
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        InputDirective,
+        InputErrorComponent,
+        InputFieldDirective,
+        LabelComponent,
+        ButtonComponent,
+        RadioComponent,
+        TooltipComponent,
+        CardComponent,
+        FormLoaderComponent,
+        PermissionDirective,
+        NotificationComponent,
+        ConfigButtonComponent,
+        CopyButtonComponent,
+        TagComponent,
+        SelectComponent
+    ],
 	templateUrl: './create-endpoint.component.html',
 	styleUrls: ['./create-endpoint.component.scss']
 })
@@ -73,12 +78,21 @@ export class CreateEndpointComponent implements OnInit {
 				header_value: ['']
 			})
 		}),
-		advanced_signatures: [null]
+		advanced_signatures: [null],
+		content_type: ['application/json']
 	});
 	token: string = this.route.snapshot.params.token;
 	@Input('endpointId') endpointUid = this.route.snapshot.params.id;
 	enableMoreConfig = false;
-	configurations = [{ uid: 'http_timeout', name: 'Timeout ', show: false, deleted: false }];
+	configurations = [
+		{ uid: 'content_type', name: 'Content Type', show: false, deleted: false },
+		{ uid: 'http_timeout', name: 'Timeout ', show: false, deleted: false }
+	];
+	contentTypeOptions = [
+		{ uid: 'application/json', name: 'JSON (application/json)' },
+		{ uid: 'application/x-www-form-urlencoded', name: 'Form Data (application/x-www-form-urlencoded)' }
+	];
+	selectedContentType = 'application/json';
 	endpointCreated: boolean = false;
 	endpointSecret?: SECRET;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
@@ -158,6 +172,11 @@ export class CreateEndpointComponent implements OnInit {
 		this.savingEndpoint = true;
 		const endpointValue = structuredClone(this.addNewEndpointForm.value);
 
+		// Ensure content_type is always included with a default value
+		if (!endpointValue.content_type) {
+			endpointValue.content_type = 'application/json';
+		}
+
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
 
 		try {
@@ -184,9 +203,15 @@ export class CreateEndpointComponent implements OnInit {
 
 			this.endpointSecret = endpointDetails?.secrets?.find(secret => !secret.expires_at);
 			if (endpointDetails.rate_limit_duration) this.toggleConfigForm('rate_limit');
-			this.addNewEndpointForm.patchValue(endpointDetails);
+		this.addNewEndpointForm.patchValue(endpointDetails);
 
-			if (endpointDetails.owner_id) this.toggleConfigForm('owner_id');
+		// Set content type and toggle the configuration if it's not the default
+		if (endpointDetails.content_type && endpointDetails.content_type !== 'application/json') {
+			this.selectedContentType = endpointDetails.content_type;
+			this.toggleConfigForm('content_type');
+		}
+
+		if (endpointDetails.owner_id) this.toggleConfigForm('owner_id');
 
 			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
 			if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
@@ -234,6 +259,17 @@ export class CreateEndpointComponent implements OnInit {
                 config.deleted = deleted ?? false;
             }
 		});
+
+		// When toggling content_type, ensure the form control has the correct value
+		if (configValue === 'content_type' && !deleted) {
+			// Give Angular time to render the select component, then set the value
+			setTimeout(() => {
+				const currentValue = this.addNewEndpointForm.get('content_type')?.value;
+				if (!currentValue || currentValue === '') {
+					this.addNewEndpointForm.patchValue({ content_type: 'application/json' });
+				}
+			}, 0);
+		}
 	}
 
     setConfigFormDeleted(configValue: string, deleted: boolean) {
@@ -246,6 +282,10 @@ export class CreateEndpointComponent implements OnInit {
 
 	showConfig(configValue: string): boolean {
 		return this.configurations.find(config => config.uid === configValue)?.show || false;
+	}
+
+	onContentTypeSelected(value: any) {
+		this.addNewEndpointForm.get('content_type')?.setValue(value);
 	}
 
     configDeleted(configValue: string): boolean {

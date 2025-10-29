@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/stealthrocket/netjail"
 
@@ -31,6 +32,240 @@ import (
 )
 
 var successBody = []byte("received webhook successfully")
+
+func TestDispatcher_Ping(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	fflag := fflag.NewFFlag([]string{})
+
+	// Setup default mocks
+	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	// Test cases
+	tests := []struct {
+		name          string
+		endpoint      string
+		contentType   string
+		serverHandler http.HandlerFunc
+		expectedError bool
+	}{
+		{
+			name:        "HEAD method succeeds",
+			endpoint:    "/test",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "HEAD" {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name:        "GET method succeeds after HEAD fails",
+			endpoint:    "/test",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "GET" {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name:        "POST method succeeds with JSON content type",
+			endpoint:    "/test",
+			contentType: constants.ContentTypeJSON,
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "POST" && r.Header.Get("Content-Type") == constants.ContentTypeJSON {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name:        "POST method succeeds with form content type",
+			endpoint:    "/test",
+			contentType: constants.ContentTypeFormURLEncoded,
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "POST" && r.Header.Get("Content-Type") == constants.ContentTypeFormURLEncoded {
+					w.WriteHeader(http.StatusOK)
+				} else {
+					w.WriteHeader(http.StatusMethodNotAllowed)
+				}
+			},
+			expectedError: false,
+		},
+		{
+			name:        "All methods fail",
+			endpoint:    "/test",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test server
+			server := httptest.NewServer(tt.serverHandler)
+			defer server.Close()
+
+			// Create dispatcher
+			dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+			require.NoError(t, err)
+
+			// Test ping
+			ctx := context.Background()
+			err = dispatcher.Ping(ctx, server.URL+tt.endpoint, 5*time.Second, tt.contentType)
+
+			if tt.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestDispatcher_tryPingMethod(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	fflag := fflag.NewFFlag([]string{})
+
+	// Setup default mocks
+	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+	require.NoError(t, err)
+
+	tests := []struct {
+		name           string
+		method         string
+		contentType    string
+		serverHandler  http.HandlerFunc
+		expectedError  bool
+		expectedStatus int
+	}{
+		{
+			name:        "HEAD method succeeds",
+			method:      "HEAD",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "HEAD", r.Method)
+				w.WriteHeader(http.StatusOK)
+			},
+			expectedError: false,
+		},
+		{
+			name:        "GET method succeeds",
+			method:      "GET",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "GET", r.Method)
+				w.WriteHeader(http.StatusOK)
+			},
+			expectedError: false,
+		},
+		{
+			name:        "POST method with JSON content type",
+			method:      "POST",
+			contentType: constants.ContentTypeJSON,
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "POST", r.Method)
+				require.Equal(t, constants.ContentTypeJSON, r.Header.Get("Content-Type"))
+				w.WriteHeader(http.StatusOK)
+			},
+			expectedError: false,
+		},
+		{
+			name:        "POST method with form content type",
+			method:      "POST",
+			contentType: constants.ContentTypeFormURLEncoded,
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				require.Equal(t, "POST", r.Method)
+				require.Equal(t, constants.ContentTypeFormURLEncoded, r.Header.Get("Content-Type"))
+				w.WriteHeader(http.StatusOK)
+			},
+			expectedError: false,
+		},
+		{
+			name:        "Method returns 404",
+			method:      "GET",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNotFound)
+			},
+			expectedError: true,
+		},
+		{
+			name:        "Method returns 500",
+			method:      "GET",
+			contentType: "",
+			serverHandler: func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+			},
+			expectedError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test server
+			server := httptest.NewServer(tt.serverHandler)
+			defer server.Close()
+
+			// Test tryPingMethod
+			ctx := context.Background()
+			err := dispatcher.tryPingMethod(ctx, server.URL, tt.method, tt.contentType)
+
+			if tt.expectedError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestDispatcher_PingWithDefaultMethods(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	fflag := fflag.NewFFlag([]string{})
+
+	// Setup default mocks
+	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+	require.NoError(t, err)
+
+	// Test with default ping methods (HEAD, GET, POST)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "HEAD" {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+		}
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	err = dispatcher.Ping(ctx, server.URL, 5*time.Second, "")
+	require.NoError(t, err) // Should succeed with default methods
+}
 
 func TestDispatcher_SendRequest(t *testing.T) {
 	client := http.DefaultClient
@@ -77,7 +312,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				URL:        nil,
 				RequestHeader: http.Header{
 					"Accept-Encoding":                      []string{"gzip"},
-					"Content-Type":                         []string{"application/json"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
@@ -125,7 +360,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				URL:        nil,
 				RequestHeader: http.Header{
 					"Accept-Encoding":                      []string{"gzip"},
-					"Content-Type":                         []string{"application/json"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
 					"User-Agent":                           []string{defaultUserAgent()},
 					"X-Test-Sig":                           []string{"abcdef"},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
@@ -171,7 +406,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				URL:        nil,
 				RequestHeader: http.Header{
 					"Accept-Encoding":                      []string{"gzip"},
-					"Content-Type":                         []string{"application/json"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
@@ -215,7 +450,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				Method:     http.MethodPost,
 				RequestHeader: http.Header{
 					"Accept-Encoding":                      []string{"gzip"},
-					"Content-Type":                         []string{"application/json"},
+					"Content-Type":                         []string{constants.ContentTypeJSON},
 					"User-Agent":                           []string{defaultUserAgent()},
 					config.DefaultSignatureHeader.String(): []string{"12345"}, // should equal hmac field above
 				},
@@ -295,7 +530,7 @@ func TestDispatcher_SendRequest(t *testing.T) {
 				defer deferFn()
 			}
 
-			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute)
+			got, err := d.SendWebhook(context.Background(), tt.args.endpoint, tt.args.jsonData, tt.args.project.Config.Signature.Header.String(), tt.args.hmac, config.MaxResponseSize, tt.args.headers, "", time.Minute, constants.ContentTypeJSON)
 			if tt.wantErr {
 				require.NotNil(t, err)
 				require.Contains(t, err.Error(), tt.want.Error)
@@ -310,6 +545,57 @@ func TestDispatcher_SendRequest(t *testing.T) {
 			require.Equal(t, tt.want.RequestHeader, got.RequestHeader)
 		})
 	}
+}
+
+func TestDispatcher_SendFormDataWithSignature(t *testing.T) {
+	// Create a test server that expects form data
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "POST", r.Method)
+		require.Equal(t, constants.ContentTypeFormURLEncoded, r.Header.Get("Content-Type"))
+		require.Equal(t, "test-hmac", r.Header.Get("X-Signature"))
+
+		// Verify the body is form-encoded
+		err := r.ParseForm()
+		require.NoError(t, err)
+		require.Equal(t, "test", r.Form.Get("name"))
+		require.Equal(t, "123", r.Form.Get("value"))
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	}))
+	defer server.Close()
+
+	d := &Dispatcher{client: http.DefaultClient, logger: log.NewLogger(os.Stdout), ff: fflag.NewFFlag([]string{}), tracer: tracer.NoOpBackend{}}
+
+	jsonData := json.RawMessage(`{"name":"test","value":"123"}`)
+	project := &datastore.Project{
+		UID: "12345",
+		Config: &datastore.ProjectConfig{
+			Signature: &datastore.SignatureConfiguration{
+				Header: config.SignatureHeaderProvider("X-Signature"),
+			},
+			ReplayAttacks: false,
+		},
+	}
+
+	got, err := d.SendWebhook(
+		context.Background(),
+		server.URL,
+		jsonData,
+		project.Config.Signature.Header.String(),
+		"test-hmac",
+		config.MaxResponseSize,
+		nil,
+		"",
+		time.Minute,
+		constants.ContentTypeFormURLEncoded,
+	)
+
+	require.NoError(t, err)
+	require.Equal(t, "200 OK", got.Status)
+	require.Equal(t, 200, got.StatusCode)
+	require.Equal(t, constants.ContentTypeFormURLEncoded, got.RequestHeader.Get("Content-Type"))
+	require.Equal(t, "test-hmac", got.RequestHeader.Get("X-Signature"))
 }
 
 func TestNewDispatcher(t *testing.T) {
@@ -447,6 +733,7 @@ func TestDispatcherSendRequest(t *testing.T) {
 		headers,
 		"test-key",
 		5*time.Second,
+		constants.ContentTypeJSON,
 	)
 
 	// Assert response
@@ -492,6 +779,7 @@ func TestDispatcherWithTimeout(t *testing.T) {
 		nil,
 		"",
 		1*time.Second,
+		constants.ContentTypeJSON,
 	)
 
 	// Assert that we got a timeout error
@@ -537,6 +825,7 @@ func TestDispatcherWithBlockedIP(t *testing.T) {
 		nil,
 		"",
 		5*time.Second,
+		constants.ContentTypeJSON,
 	)
 
 	// Assert that the request was blocked

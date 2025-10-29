@@ -5,10 +5,14 @@ package testcon
 
 import (
 	"context"
+	"fmt"
+	"sync/atomic"
+	"testing"
+	"time"
+
 	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
-	"sync/atomic"
 )
 
 func (d *DockerE2EIntegrationTestSuite) Test_FanOutEvent_Success_AllSubscriptions() {
@@ -18,7 +22,7 @@ func (d *DockerE2EIntegrationTestSuite) Test_FanOutEvent_Success_AllSubscription
 
 	var ports = []int{9911, 9912, 9913}
 
-	c, done := d.initAndStartServers(ports, 3*2)
+	c, done := d.initAndStartServers(t, ports, 3*2)
 
 	endpoints := createEndpoints(t, ctx, c, ports, ownerId)
 
@@ -44,7 +48,7 @@ func (d *DockerE2EIntegrationTestSuite) Test_FanOutEvent_Success_MustMatchSubscr
 
 	var ports = []int{9914, 9915, 9916}
 
-	c, done := d.initAndStartServers(ports, 3*1) // 3 endpoints, 1 event each
+	c, done := d.initAndStartServers(t, ports, 3*1) // 3 endpoints, 1 event each
 
 	endpoints := createEndpoints(t, ctx, c, ports, ownerID)
 
@@ -65,8 +69,12 @@ func (d *DockerE2EIntegrationTestSuite) Test_FanOutEvent_Success_MustMatchSubscr
 	assertEventCameThrough(t, done, endpoints, traceIds, negativeTraceIds)
 }
 
-func (d *DockerE2EIntegrationTestSuite) initAndStartServers(ports []int, eventCount int64) (*convoy.Client, chan bool) {
-	baseURL := "http://localhost:5015/api/v1"
+func (d *DockerE2EIntegrationTestSuite) initAndStartServers(t *testing.T, ports []int, eventCount int64) (*convoy.Client, chan bool) {
+	return d.initAndStartServersWithType(t, ports, eventCount, "regular")
+}
+
+func (d *DockerE2EIntegrationTestSuite) initAndStartServersWithType(t *testing.T, ports []int, eventCount int64, serverType string) (*convoy.Client, chan bool) {
+	baseURL := fmt.Sprintf("http://%s:5015/api/v1", GetOutboundIP().String())
 	c := convoy.New(baseURL, d.APIKey, d.DefaultProject.UID)
 
 	done := make(chan bool, 1)
@@ -75,8 +83,15 @@ func (d *DockerE2EIntegrationTestSuite) initAndStartServers(ports []int, eventCo
 	counter.Store(eventCount)
 
 	for _, port := range ports {
-		go startHTTPServer(done, &counter, port)
+		if serverType == "form" {
+			go startFormHTTPServer(done, &counter, port)
+		} else {
+			go startHTTPServer(done, &counter, port)
+		}
 	}
+
+	// Give servers a moment to start - endpoint creation retry will handle server availability
+	time.Sleep(100 * time.Millisecond)
 
 	return c, done
 }
