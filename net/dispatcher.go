@@ -290,7 +290,47 @@ func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	return nil, false, nil
 }
 
+// SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration
+func (d *Dispatcher) SendWebhookWithMTLS(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, mtlsCert *tls.Certificate) (*Response, error) {
+	client := d.client
+
+	// If mTLS certificate is provided, create a custom client with it
+	if mtlsCert != nil {
+		customTransport := d.transport.Clone()
+
+		// Clone the TLS config to avoid modifying the shared config
+		var tlsConfig *tls.Config
+		if customTransport.TLSClientConfig != nil {
+			tlsConfig = customTransport.TLSClientConfig.Clone()
+		} else {
+			tlsConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+		}
+
+		// Add the client certificate
+		tlsConfig.Certificates = []tls.Certificate{*mtlsCert}
+		customTransport.TLSClientConfig = tlsConfig
+
+		// Respect IP allow/block rules by using netjail transport when enabled
+		if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
+			netJailTransport := &netjail.Transport{
+				New: func() *http.Transport { return customTransport.Clone() },
+			}
+			client = &http.Client{Transport: NewNetJailTransport(netJailTransport)}
+		} else {
+			client = &http.Client{Transport: NewVanillaTransport(customTransport)}
+		}
+	}
+
+	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, client)
+}
+
 func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, d.client)
+}
+
+func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, client *http.Client) (*Response, error) {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -331,7 +371,7 @@ func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData 
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.do(ctx, req, r, maxResponseSize)
+	err = d.do(ctx, req, r, maxResponseSize, client)
 	if err != nil {
 		return r, err
 	}
@@ -361,7 +401,7 @@ func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }
 
-func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64) error {
+func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64, client *http.Client) error {
 	if d.detailedTrace.Enabled {
 		trace := &httptrace.ClientTrace{
 			DNSStart: func(info httptrace.DNSStartInfo) {
@@ -423,7 +463,7 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 		req = req.WithContext(ctx)
 	}
 
-	response, err := d.client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		d.logger.WithError(err).Error("error sending request to API endpoint")
 		res.Error = err.Error()
