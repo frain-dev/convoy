@@ -10,7 +10,7 @@ updates:
     schedule:
       interval: "daily"
       time: "02:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     assignees:
       - "frain-dev/convoy-maintainers"
     commit-message:
@@ -29,7 +29,7 @@ updates:
     schedule:
       interval: "daily"
       time: "02:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     assignees:
       - "frain-dev/convoy-maintainers"
     commit-message:
@@ -48,7 +48,7 @@ updates:
     schedule:
       interval: "daily"
       time: "02:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     assignees:
       - "frain-dev/convoy-maintainers"
     commit-message:
@@ -63,7 +63,7 @@ updates:
     schedule:
       interval: "daily"
       time: "02:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     assignees:
       - "frain-dev/convoy-maintainers"
     commit-message:
