@@ -1,0 +1,81 @@
+{
+    "auth": {
+        "native": {
+            "enabled": true
+        },
+        "jwt": {
+            "enabled": true,
+            "secret": "convoy-jwt-secret-development",
+            "expiry": 3600,
+            "refresh_secret": "convoy-jwt-refresh-secret-development",
+            "refresh_expiry": 86400
+        },
+        "is_signup_enabled": true
+    },
+    "database": {
+        "type": "postgres",
+        "scheme": "postgres",
+        "host": "localhost",
+        "username": "convoy",
+        "password": "convoy",
+        "database": "convoy",
+        "options": "sslmode=disable&connect_timeout=30",
+        "port": 5432,
+        "max_open_conn": 100,
+        "max_idle_conn": 10,
+        "conn_max_lifetime": 3600
+    },
+    "redis": {
+        "scheme": "redis",
+        "host": "localhost",
+        "username": "",
+        "password": "",
+        "database": "0",
+        "port": 6379
+    },
+    "server": {
+        "http": {
+            "ssl": false,
+            "port": 5011,
+            "ingest_port": 5012,
+            "worker_port": 5013,
+            "socket_port": 5014,
+            "domain_port": 5015
+        }
+    },
+    "max_response_size": 102400,
+    "smtp": {
+        "ssl": false,
+        "provider": "sendgrid",
+        "url": "smtp.sendgrid.net",
+        "port": 587,
+        "username": "sm",
+        "password": "pwd",
+        "from": "noreply@convoy.local",
+        "reply-to": "support@convoy.local"
+    },
+    "env": "development",
+    "logger": {
+        "level": "info"
+    },
+    "host": "http://localhost:5011",
+    "root_path": "/testing",
+    "custom_domain_suffix": "",
+    "analytics": {
+        "enabled": true
+    },
+    "storage_policy": {
+        "type": "on_prem",
+        "on_prem": {
+            "path": "./convoy-uploads"
+        }
+    },
+    "consumer_pool_size": 100,
+    "metrics": {
+        "enabled": true,
+        "metrics_backend": "prometheus",
+        "prometheus_metrics": {
+            "sample_time": 10
+        }
+    }
+}
