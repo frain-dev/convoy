@@ -86,10 +86,34 @@ func main() {
 
 	var configFile string
 
+	var queueDriver string
+
+	var rabbitURL string
+	var rabbitHost string
+	var rabbitPort int
+	var rabbitUser string
+	var rabbitPass string
+	var rabbitVHost string
+	var rabbitExchange string
+	var queuePrefetch int
+
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 	c.Flags().StringVar(&licenseKey, "license-key", "", "Convoy license key")
 	c.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	c.Flags().StringVar(&rootPath, "root-path", "", "Root path for routing behind load balancers (e.g., /convoy)")
+
+	// queue driver config
+	c.Flags().StringVar(&queueDriver, "queue-driver", "", "Background queue driver (redis|rabbitmq)")
+
+	// rabbitmq config
+	c.Flags().StringVar(&rabbitURL, "rabbitmq-url", "", "RabbitMQ AMQP URL (e.g., amqp://user:pass@host:5672/vhost)")
+	c.Flags().StringVar(&rabbitHost, "rabbitmq-host", "", "RabbitMQ host")
+	c.Flags().IntVar(&rabbitPort, "rabbitmq-port", 0, "RabbitMQ port")
+	c.Flags().StringVar(&rabbitUser, "rabbitmq-username", "", "RabbitMQ username")
+	c.Flags().StringVar(&rabbitPass, "rabbitmq-password", "", "RabbitMQ password")
+	c.Flags().StringVar(&rabbitVHost, "rabbitmq-vhost", "", "RabbitMQ vhost")
+	c.Flags().StringVar(&rabbitExchange, "rabbitmq-exchange", "", "RabbitMQ exchange name (default: convoy)")
+	c.Flags().IntVar(&queuePrefetch, "queue-prefetch", 0, "Queue prefetch/QoS")
 
 	// db config
 	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")

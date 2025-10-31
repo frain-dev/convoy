@@ -24,7 +24,7 @@ func (e *ProjectListener) AfterUpdate(ctx context.Context, data interface{}, cha
 	e.run(ctx, datastore.ProjectUpdated, data, changelog)
 }
 
-func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventType, data interface{}, changelog interface{}) {
+func (e *ProjectListener) run(ctx context.Context, eventType datastore.HookEventType, data interface{}, changelog interface{}) {
 	project, ok := data.(*datastore.Project)
 	if !ok {
 		log.Errorf("invalid type for project - %s", eventType)
@@ -60,7 +60,7 @@ func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventTy
 							Delay:   1 * time.Second,
 						}
 
-						err = e.queue.Write(convoy.TokenizeSearchForProject, convoy.ScheduleQueue, job)
+						err = e.queue.Write(ctx, convoy.TokenizeSearchForProject, convoy.ScheduleQueue, job)
 						if err != nil {
 							log.WithError(err).Error("an error occurred writing the job to the queue")
 							return

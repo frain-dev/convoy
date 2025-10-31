@@ -696,10 +696,12 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 	})
 
 	if a.A.Licenser.AsynqMonitoring() {
-		router.Route("/queue", func(asynqRouter chi.Router) {
-			asynqRouter.Use(middleware.RequireAuth())
-			asynqRouter.Handle("/monitoring/*", a.A.Queue.(*redisqueue.RedisQueue).Monitor())
-		})
+		if rq, ok := a.A.Queue.(*redisqueue.RedisQueue); ok {
+			router.Route("/queue", func(asynqRouter chi.Router) {
+				asynqRouter.Use(middleware.RequireAuth())
+				asynqRouter.Handle("/monitoring/*", rq.Monitor())
+			})
+		}
 	}
 
 	if a.A.Licenser.CanExportPrometheusMetrics() {

@@ -3,9 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/oklog/ulid/v2"
 	"net/http"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -45,7 +46,7 @@ func (e *CreateBroadcastEventService) Run(ctx context.Context) error {
 		Delay:   0,
 	}
 
-	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)
+	err = e.Queue.Write(ctx, taskName, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new broadcast event to the queue %s", err)
 		return &ServiceError{ErrMsg: "failed to create dynamic event"}

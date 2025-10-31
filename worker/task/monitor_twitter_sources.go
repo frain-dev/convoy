@@ -3,11 +3,12 @@ package task
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-	"time"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -119,7 +120,7 @@ func sendNotificationEmail(ctx context.Context, source datastore.Source, endpoin
 		Delay:   0,
 	}
 
-	err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
+	err = q.Write(ctx, convoy.NotificationProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		log.WithError(err).Error("failed to write new notification to the queue")
 		return err

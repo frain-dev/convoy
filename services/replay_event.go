@@ -3,6 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -11,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
 	"gopkg.in/guregu/null.v4"
-	"time"
 )
 
 type ReplayEventService struct {
@@ -43,7 +44,7 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 		Delay:   0,
 	}
 
-	err = e.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = e.Queue.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("replay_event: failed to write event to the queue")
 		return &ServiceError{ErrMsg: "failed to write event to queue", Err: err}

@@ -194,7 +194,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					UpdateEventDeliveryMetadata(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				mt.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
 
@@ -849,7 +849,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				q.EXPECT().
-					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
+					Write(gomock.Any(), convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
 
 				mt.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
@@ -948,7 +948,7 @@ func TestProcessEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				q.EXPECT().
-					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
+					Write(gomock.Any(), convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
 
 				mt.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(2)

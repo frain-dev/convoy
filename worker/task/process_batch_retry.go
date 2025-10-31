@@ -157,7 +157,7 @@ func ProcessBatchRetry(
 					Delay:   0,
 				}
 
-				err2 = queuer.Write(convoy.EventProcessor, convoy.EventQueue, job)
+				err2 = queuer.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
 				if err2 != nil {
 					totalFailed++
 					continue

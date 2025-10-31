@@ -115,7 +115,7 @@ func sendInviteEmail(ctx context.Context, iv *datastore.OrganisationInvite, user
 		Delay:   0,
 	}
 
-	err = queuer.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)
+	err = queuer.Write(context.Background(), convoy.EmailProcessor, convoy.DefaultQueue, job)
 	if err != nil {
 		return err
 	}

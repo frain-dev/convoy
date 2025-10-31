@@ -63,7 +63,8 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().GetName().Return("redis").AnyTimes()
+				q.EXPECT().Write(gomock.Any(), convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
 
 				mockTracer, _ := args.tracer.(*mocks.MockBackend)
 				mockTracer.EXPECT().Capture(gomock.Any(), "dynamic.event.creation.success", gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
@@ -102,7 +103,8 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				e.EXPECT().CreateEvent(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				q, _ := args.eventQueue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().GetName().Return("redis").AnyTimes()
+				q.EXPECT().Write(gomock.Any(), convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, gomock.Any()).Times(1).Return(nil)
 
 				mockTracer, _ := args.tracer.(*mocks.MockBackend)
 				mockTracer.EXPECT().Capture(gomock.Any(), "dynamic.event.creation.success", gomock.Any(), gomock.Any(), gomock.Any()).Times(1)

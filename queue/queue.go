@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"time"
 
 	"github.com/frain-dev/convoy"
@@ -8,9 +9,10 @@ import (
 )
 
 type Queuer interface {
-	Write(convoy.TaskName, convoy.QueueName, *Job) error
-	WriteWithoutTimeout(convoy.TaskName, convoy.QueueName, *Job) error
+	Write(context.Context, convoy.TaskName, convoy.QueueName, *Job) error
+	WriteWithoutTimeout(context.Context, convoy.TaskName, convoy.QueueName, *Job) error
 	Options() QueueOptions
+	GetName() string
 }
 
 type Job struct {
@@ -25,4 +27,5 @@ type QueueOptions struct {
 	RedisClient       *rdb.Redis
 	RedisAddress      []string
 	PrometheusAddress string
+	Extra             map[string]string
 }

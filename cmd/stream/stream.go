@@ -101,7 +101,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				Names:             queueNames,
 				RedisClient:       redis,
 				RedisAddress:      cfg.Redis.BuildDsn(),
-				Type:              string(config.RedisQueueProvider),
+				Type:              string(config.AsynqQueueProvider),
 				PrometheusAddress: cfg.Prometheus.Dsn,
 			}
 			q := redisQueue.NewQueue(opts)

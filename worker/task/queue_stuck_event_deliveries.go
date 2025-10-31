@@ -2,13 +2,14 @@ package task
 
 import (
 	"context"
+	"time"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/queue/redis"
-	"time"
 )
 
 func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDeliveryRepository, q queue.Queuer) {
@@ -52,7 +53,7 @@ func QueueStuckEventDeliveries(ctx context.Context, edRepo datastore.EventDelive
 				Delay:   1 * time.Second,
 			}
 
-			err = q.Write(convoy.EventProcessor, convoy.EventQueue, job)
+			err = q.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
 			if err != nil {
 				log.FromContext(ctx).WithError(err).Errorf("an error occurred queueing stuck event delivery with id %s", eventDelivery.UID)
 				continue
