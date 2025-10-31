@@ -939,7 +939,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				q.EXPECT().
-					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
+					Write(gomock.Any(), convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
 
 				mt.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
@@ -1037,7 +1037,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 					Return(nil).Times(1)
 
 				q.EXPECT().
-					Write(convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
+					Write(gomock.Any(), convoy.NotificationProcessor, convoy.DefaultQueue, gomock.Any()).
 					Return(nil).Times(1)
 
 				mt.EXPECT().Capture(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)

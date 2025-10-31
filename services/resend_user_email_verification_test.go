@@ -44,7 +44,7 @@ func TestResendEmailVerificationTokenService_Run(t *testing.T) {
 			},
 			dbFn: func(u *ResendEmailVerificationTokenService) {
 				q, _ := u.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				us, _ := u.UserRepo.(*mocks.MockUserRepository)
 				us.EXPECT().UpdateUser(gomock.Any(), gomock.Any()).Times(1).Return(nil)

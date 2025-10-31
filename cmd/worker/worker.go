@@ -7,29 +7,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/pkg/retention"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/queue"
-	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 )
 
@@ -57,37 +53,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
-	if err != nil {
-		return err
-	}
-
-	events := map[string]int{
-		string(convoy.EventQueue):         5,
-		string(convoy.CreateEventQueue):   5,
-		string(convoy.EventWorkflowQueue): 5,
-	}
-
-	retry := map[string]int{
-		string(convoy.RetryEventQueue):    7,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.MetaEventQueue):     1,
-		string(convoy.BatchRetryQueue):    5,
-		string(convoy.EventWorkflowQueue): 4,
-	}
-
-	both := map[string]int{
-		string(convoy.EventQueue):         4,
-		string(convoy.CreateEventQueue):   4,
-		string(convoy.EventWorkflowQueue): 3,
-		string(convoy.RetryEventQueue):    1,
-		string(convoy.ScheduleQueue):      1,
-		string(convoy.DefaultQueue):       1,
-		string(convoy.MetaEventQueue):     1,
-		string(convoy.BatchRetryQueue):    1,
-	}
-
 	if !a.Licenser.AgentExecutionMode() {
 		cfg.WorkerExecutionMode = config.DefaultExecutionMode
 	}
@@ -97,36 +62,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	var queueNames map[string]int
-	switch cfg.WorkerExecutionMode {
-	case config.RetryExecutionMode:
-		queueNames = retry
-	case config.EventsExecutionMode:
-		queueNames = events
-	case config.DefaultExecutionMode:
-		queueNames = both
-	default:
-		return fmt.Errorf("unknown execution mode: %s", cfg.WorkerExecutionMode)
+	if a.QueueDriver == nil {
+		return fmt.Errorf("queue driver not initialized")
 	}
 
-	opts := queue.QueueOptions{
-		Names:             queueNames,
-		RedisClient:       redis,
-		RedisAddress:      cfg.Redis.BuildDsn(),
-		Type:              string(config.RedisQueueProvider),
-		PrometheusAddress: cfg.Prometheus.Dsn,
-	}
+	drv := a.QueueDriver
+	consumer := drv.Worker()
 
-	q := redisQueue.NewQueue(opts)
-
-	ctx = log.NewContext(ctx, lo, log.Fields{})
-	lvl, err := log.ParseLevel(cfg.Logger.Level)
-	if err != nil {
-		return err
-	}
-
-	// register worker.
-	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo, lvl)
 	projectRepo := postgres.NewProjectRepo(a.DB)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)
@@ -150,17 +92,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	counter := &telemetry.EventsCounter{}
-
-	pb := telemetry.NewposthogBackend()
-	mb := telemetry.NewmixpanelBackend()
-
-	configuration, err := configRepo.LoadConfiguration(context.Background())
-	if err != nil {
-		lo.WithError(err).Fatal("Failed to instance configuration")
-		return err
-	}
-
 	subscriptionsLoader := loader.NewSubscriptionLoader(subRepo, projectRepo, lo, 0)
 	subscriptionsTable := memorystore.NewTable(memorystore.OptionSyncer(subscriptionsLoader))
 
@@ -176,10 +107,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	}
 
 	featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
-	newTelemetry := telemetry.NewTelemetry(lo, configuration,
-		telemetry.OptionTracker(counter),
-		telemetry.OptionBackend(pb),
-		telemetry.OptionBackend(mb))
 
 	caCertTLSCfg, err := config.GetCaCert()
 	if err != nil {
@@ -272,7 +199,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 							ownerEmail = owner.Email
 						}
 					}
-					_ = EnqueueCircuitBreakerEmails(a.Queue, lo, project, endpoint, ownerEmail)
+					_ = EnqueueCircuitBreakerEmails(ctx, a.Queue, lo, project, endpoint, ownerEmail)
 
 				default:
 					return fmt.Errorf("unsupported circuit breaker notification type: %s", n)
@@ -315,67 +242,76 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
+	configuration, err := configRepo.LoadConfiguration(context.Background())
+	if err != nil {
+		lo.WithError(err).Fatal("Failed to instance configuration")
+		return err
+	}
+
+	counter := &telemetry.EventsCounter{}
+	pb := telemetry.NewposthogBackend()
+	mb := telemetry.NewmixpanelBackend()
+	newTelemetry := telemetry.NewTelemetry(lo, configuration,
+		telemetry.OptionTracker(counter),
+		telemetry.OptionBackend(pb),
+		telemetry.OptionBackend(mb))
+
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
 		a.Licenser,
 		projectRepo,
-		a.Queue,
+		drv.Queuer(),
 		rateLimiter,
 		dispatcher,
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
-		a.TracerBackend),
-		newTelemetry)
+		a.TracerBackend), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 		endpointRepo,
 		eventRepo,
 		projectRepo,
-		a.Queue,
+		drv.Queuer(),
 		subRepo,
 		filterRepo,
 		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+		a.TracerBackend), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,
 		eventDeliveryRepo,
 		a.Licenser,
 		projectRepo,
-		a.Queue,
+		drv.Queuer(),
 		rateLimiter,
 		dispatcher,
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
-		a.TracerBackend),
-		newTelemetry)
+		a.TracerBackend), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
 		broadcastCh,
 		endpointRepo,
 		eventRepo,
 		projectRepo,
-		a.Queue,
+		drv.Queuer(),
 		subRepo,
 		filterRepo,
 		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+		a.TracerBackend), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
 		endpointRepo,
 		eventRepo,
 		projectRepo,
-		a.Queue,
+		drv.Queuer(),
 		subRepo,
 		filterRepo,
 		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+		a.TracerBackend), newTelemetry)
 
 	if a.Licenser.RetentionPolicy() {
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
@@ -388,15 +324,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		eventRepo,
 		projectRepo,
 		eventDeliveryRepo,
-		a.Queue,
+		drv.Queuer(),
 		subRepo,
 		filterRepo,
 		deviceRepo,
 		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+		a.TracerBackend), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd), nil)
+	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, drv.Queuer(), rd), nil)
 
 	consumer.RegisterHandlers(convoy.ExpireSecretsProcessor, task.ExpireSecret(endpointRepo), nil)
 
@@ -410,11 +345,17 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	consumer.RegisterHandlers(convoy.NotificationProcessor, task.ProcessNotifications(sc), nil)
 	consumer.RegisterHandlers(convoy.MetaEventProcessor, task.ProcessMetaEvent(projectRepo, metaEventRepo, dispatcher, a.TracerBackend), nil)
-	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(a.Queue, rd), nil)
+	consumer.RegisterHandlers(convoy.DeleteArchivedTasksProcessor, task.DeleteArchivedTasks(drv.Queuer(), rd), nil)
 
-	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
+	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, drv.Queuer(), lo), nil)
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	metrics.RegisterQueueMetrics(drv.Queuer(), a.DB, circuitBreakerManager)
+
+	go func() {
+		<-ctx.Done()
+		consumer.Stop()
+		lo.Println("Convoy Consumer Pool stopped")
+	}()
 
 	// start worker
 	consumer.Start()

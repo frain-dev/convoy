@@ -5,30 +5,31 @@ volumes:
   redis_data:
 
 services:
-    web:
-        build:
-          context: ./
-          dockerfile: Dockerfile.dev
-        command: [ "/start.sh" ]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
-        ports:
-          - "5005:5005"
-        depends_on:
-            - postgres
-            - redis_server
-            - migrate
-        environment:
-            - CONVOY_ENV=development
-            - CONVOY_VERSION=v1.0.0
-            - CONVOY_COMPONENT=web
-        logging:
-            driver: syslog
-            options:
-                syslog-address: "udp://localhost:1514"
-                syslog-format: rfc5424
-                tag: "web"
+    # web:
+    #     build:
+    #       context: ./
+    #       dockerfile: Dockerfile.dev
+    #     command: [ "/start.sh" ]
+    #     volumes:
+    #         - ./convoy.json:/convoy.json
+    #     restart: on-failure
+    #     ports:
+    #       - "5005:5005"
+    #     depends_on:
+    #         - postgres
+    #         - redis_server
+    #         - rabbitmq
+    #         - migrate
+    #     environment:
+    #         - CONVOY_ENV=development
+    #         - CONVOY_VERSION=v1.0.0
+    #         - CONVOY_COMPONENT=web
+    #     logging:
+    #         driver: syslog
+    #         options:
+    #             syslog-address: "udp://localhost:1514"
+    #             syslog-format: rfc5424
+    #             tag: "web"
 
     migrate:
         build:
@@ -36,36 +37,38 @@ services:
             dockerfile: Dockerfile.dev
         entrypoint: ["./cmd", "migrate", "up"]
         volumes:
-            - ./convoy.json:/convoy.json
+            # - ./convoy.json:/convoy.json
+            - ./debug.json:/convoy.json
         restart: on-failure
         depends_on:
             postgres:
                 condition: service_healthy
 
-    agent:
-        build:
-            context: ./
-            dockerfile: Dockerfile.dev
-        entrypoint: ["./cmd", "agent", "--config", "convoy.json"]
-        volumes:
-            - ./convoy.json:/convoy.json
-        restart: on-failure
-        ports:
-            - "5008:5008"
-        depends_on:
-            - postgres
-            - redis_server
-            - migrate
-        environment:
-            - CONVOY_ENV=development
-            - CONVOY_VERSION=v1.0.0
-            - CONVOY_COMPONENT=agent
-        logging:
-            driver: syslog
-            options:
-                syslog-address: "udp://localhost:1514"
-                syslog-format: rfc5424
-                tag: "agent"
+    # agent:
+    #     build:
+    #         context: ./
+    #         dockerfile: Dockerfile.dev
+    #     entrypoint: ["./cmd", "agent", "--config", "convoy.json"]
+    #     volumes:
+    #         - ./convoy.json:/convoy.json
+    #     restart: on-failure
+    #     ports:
+    #         - "5008:5008"
+    #     depends_on:
+    #         - postgres
+    #         - redis_server
+    #         - rabbitmq
+    #         - migrate
+    #     environment:
+    #         - CONVOY_ENV=development
+    #         - CONVOY_VERSION=v1.0.0
+    #         - CONVOY_COMPONENT=agent
+    #     logging:
+    #         driver: syslog
+    #         options:
+    #             syslog-address: "udp://localhost:1514"
+    #             syslog-format: rfc5424
+    #             tag: "agent"
 
     postgres:
         image: postgres:15.2-alpine
@@ -93,23 +96,34 @@ services:
         volumes:
           - redis_data:/data
 
-    prometheus:
-        image: prom/prometheus:v2.24.0
-        volumes:
-            - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-        ports:
-            - 9090:9090
+    rabbitmq:
+        image: rabbitmq:3.13-management-alpine
         restart: always
-
-    promtail:
-        image: grafana/promtail:2.9.0
-        volumes:
-            - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+        ports:
+            - "5672:5672"
+            - "15672:15672"
         environment:
-            - LOKI_URL=${LOKI_URL:-http://host.docker.internal:3100}
-        command: -config.file=/etc/promtail/config.yml -config.expand-env=true
-        ports:
-            - "1514:1514/udp"  # Syslog UDP port
-        restart: always
-        extra_hosts:
-            - "host.docker.internal:host-gateway"
+            RABBITMQ_DEFAULT_USER: guest
+            RABBITMQ_DEFAULT_PASS: guest
+            RABBITMQ_DEFAULT_VHOST: /
+
+    # prometheus:
+    #     image: prom/prometheus:v2.24.0
+    #     volumes:
+    #         - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    #     ports:
+    #         - 9090:9090
+    #     restart: always
+
+    # promtail:
+    #     image: grafana/promtail:2.9.0
+    #     volumes:
+    #         - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+    #     environment:
+    #         - LOKI_URL=${LOKI_URL:-http://host.docker.internal:3100}
+    #     command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+    #     ports:
+    #         - "1514:1514/udp"  # Syslog UDP port
+    #     restart: always
+    #     extra_hosts:
+    #         - "host.docker.internal:host-gateway"

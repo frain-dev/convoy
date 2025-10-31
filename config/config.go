@@ -61,6 +61,8 @@ var DefaultConfiguration = Configuration{
 		Host:   "localhost",
 		Port:   6379,
 	},
+	QueueDriver: AsynqQueueProvider,
+	RabbitMQ:    RabbitMQConfiguration{},
 	Logger: LoggerConfiguration{
 		Level: "error",
 	},
@@ -217,6 +219,34 @@ type RedisConfiguration struct {
 	Database  string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
 	Port      int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
 	Addresses string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
+}
+
+type RabbitMQConfiguration struct {
+	URL      string `json:"url" envconfig:"CONVOY_RABBITMQ_URL"`
+	Host     string `json:"host" envconfig:"CONVOY_RABBITMQ_HOST"`
+	Port     int    `json:"port" envconfig:"CONVOY_RABBITMQ_PORT"`
+	Username string `json:"username" envconfig:"CONVOY_RABBITMQ_USERNAME"`
+	Password string `json:"password" envconfig:"CONVOY_RABBITMQ_PASSWORD"`
+	VHost    string `json:"vhost" envconfig:"CONVOY_RABBITMQ_VHOST"`
+	Exchange string `json:"exchange" envconfig:"CONVOY_RABBITMQ_EXCHANGE"`
+}
+
+func (rc RabbitMQConfiguration) BuildURL() string {
+	if !IsStringEmpty(rc.URL) {
+		return rc.URL
+	}
+	if IsStringEmpty(rc.Host) || rc.Port == 0 {
+		return ""
+	}
+	auth := ""
+	if !IsStringEmpty(rc.Username) || !IsStringEmpty(rc.Password) {
+		auth = fmt.Sprintf("%s:%s@", rc.Username, rc.Password)
+	}
+	vhost := rc.VHost
+	if IsStringEmpty(vhost) {
+		vhost = "/"
+	}
+	return fmt.Sprintf("amqp://%s%s:%d/%s", auth, rc.Host, rc.Port, strings.TrimPrefix(vhost, "/"))
 }
 
 func (rc RedisConfiguration) BuildDsn() []string {
@@ -377,7 +407,11 @@ const (
 )
 
 const (
-	RedisQueueProvider       QueueProvider           = "redis"
+	AsynqQueueProvider    QueueProvider = "asynq"
+	RabbitMQQueueProvider QueueProvider = "rabbitmq"
+)
+
+const (
 	DefaultSignatureHeader   SignatureHeaderProvider = "X-Convoy-Signature"
 	PostgresDatabaseProvider DatabaseProvider        = "postgres"
 )
@@ -416,6 +450,9 @@ type Configuration struct {
 	Auth                AuthConfiguration            `json:"auth,omitempty"`
 	Database            DatabaseConfiguration        `json:"database"`
 	Redis               RedisConfiguration           `json:"redis"`
+	QueueDriver         QueueProvider                `json:"queue_driver" envconfig:"CONVOY_QUEUE_DRIVER"`
+	RabbitMQ            RabbitMQConfiguration        `json:"rabbitmq"`
+	QueuePrefetch       int                          `json:"queue_prefetch" envconfig:"CONVOY_QUEUE_PREFETCH"`
 	Prometheus          PrometheusConfiguration      `json:"prometheus"`
 	Server              ServerConfiguration          `json:"server"`
 	MaxResponseSize     uint64                       `json:"max_response_size" envconfig:"CONVOY_MAX_RESPONSE_SIZE"`
@@ -585,6 +622,13 @@ func ensureQueueConfig(queueCfg RedisConfiguration) error {
 	return nil
 }
 
+func ensureRabbitConfig(r RabbitMQConfiguration) error {
+	if IsStringEmpty(r.BuildURL()) {
+		return errors.New("rabbitmq url is empty")
+	}
+	return nil
+}
+
 func ensureMaxResponseSize(c *Configuration) {
 	bytes := c.MaxResponseSize * 1024
 
@@ -598,8 +642,17 @@ func ensureMaxResponseSize(c *Configuration) {
 func validate(c *Configuration) error {
 	ensureMaxResponseSize(c)
 
-	if err := ensureQueueConfig(c.Redis); err != nil {
-		return err
+	switch c.QueueDriver {
+	case AsynqQueueProvider:
+		if err := ensureQueueConfig(c.Redis); err != nil {
+			return err
+		}
+	case RabbitMQQueueProvider:
+		if err := ensureRabbitConfig(c.RabbitMQ); err != nil {
+			return err
+		}
+	default:
+		return errors.New("invalid queue driver")
 	}
 
 	if err := ensureSSL(c.Server); err != nil {

@@ -34,6 +34,16 @@
     "port": 6379,
     "addresses": "<insert-redis-addresses>"
   },
+  "queue_driver": "redis",
+  "rabbitmq": {
+    "url": "amqp://<user>:<pass>@<host>:5672/<vhost>",
+    "host": "<insert-rabbitmq-host>",
+    "port": 5672,
+    "username": "<insert-rabbitmq-username>",
+    "password": "<insert-rabbitmq-password>",
+    "vhost": "/",
+    "exchange": "convoy"
+  },
   "prometheus": {
     "dsn": "<insert-prometheus-dsn>"
   },

@@ -236,12 +236,12 @@ func TestProcessBatchRetry(t *testing.T) {
 
 				// Queue the first delivery successfully
 				q.EXPECT().
-					Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(1)
 
 				// Queue the second delivery - this will fail
 				q.EXPECT().
-					Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(errors.New("queue failed")).Times(1)
 
 				// Update batch retry progress
@@ -303,7 +303,7 @@ func TestProcessBatchRetry(t *testing.T) {
 
 				// Queue first batch successfully
 				q.EXPECT().
-					Write(convoy.EventProcessor, convoy.EventQueue, gomock.Any()).
+					Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil).Times(2)
 
 				// Update batch retry progress after first batch

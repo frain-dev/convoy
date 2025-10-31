@@ -4,6 +4,7 @@
 package redis
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -51,7 +52,7 @@ func TestWrite(t *testing.T) {
 			taskName := convoy.TaskName(ulid.Make().String())
 			configFile := tc.configFile
 			eventQueue := initializeQueue(configFile, tc.queueName, t)
-			err := eventQueue.Write(taskName, convoy.EventQueue, job)
+			err := eventQueue.Write(context.Background(), taskName, convoy.EventQueue, job)
 			if err != nil {
 				t.Fatalf("Failed to write to queue: %v", err)
 			}
@@ -84,7 +85,7 @@ func initializeQueue(configFile string, _ string, t *testing.T) queue.Queuer {
 		Names:        queueNames,
 		RedisClient:  redis,
 		RedisAddress: cfg.Redis.BuildDsn(),
-		Type:         string(config.RedisQueueProvider),
+		Type:         string(config.AsynqQueueProvider),
 	}
 
 	eventQueue := NewQueue(opts)

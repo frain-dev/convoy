@@ -66,7 +66,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 
 			// write it to the retry queue.
-			deferErr := q.Write(convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
+            deferErr := q.Write(ctx, convoy.RetryEventProcessor, convoy.RetryEventQueue, job)
 			if deferErr != nil {
 				log.FromContext(ctx).WithError(deferErr).Error("[asynq]: an error occurred sending event delivery to the retry queue")
 			}

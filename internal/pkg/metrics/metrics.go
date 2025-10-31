@@ -1,11 +1,12 @@
 package metrics
 
 import (
+	"sync"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"sync"
 
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -33,10 +34,16 @@ func Reset() {
 func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitBreakerManager) {
 	configuration, err := config.Get()
 	if err == nil && configuration.Metrics.IsEnabled {
-		if cbm == nil { // cbm can be nil if the feature flag is not enabled
-			Reg().MustRegister(q.(*redisqueue.RedisQueue), db.(*postgres.Postgres))
+		// Only register metrics for Redis queue
+		redisQ, ok := q.(*redisqueue.RedisQueue)
+		if !ok {
+			return
+		}
+
+		if cbm == nil {
+			Reg().MustRegister(redisQ, db.(*postgres.Postgres))
 		} else {
-			Reg().MustRegister(q.(*redisqueue.RedisQueue), db.(*postgres.Postgres), cbm)
+			Reg().MustRegister(redisQ, db.(*postgres.Postgres), cbm)
 		}
 	}
 }

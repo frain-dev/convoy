@@ -9,36 +9,32 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
-
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-
-	"github.com/frain-dev/convoy/util"
 	pyro "github.com/grafana/pyroscope-go"
-
-	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
-
-	dbhook "github.com/frain-dev/convoy/database/hooks"
-	"github.com/frain-dev/convoy/database/listener"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/oklog/ulid/v2"
+	"github.com/spf13/cobra"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	dbhook "github.com/frain-dev/convoy/database/hooks"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
+	qdriver "github.com/frain-dev/convoy/queue/driver"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/spf13/cobra"
+	"github.com/frain-dev/convoy/util"
 )
 
 func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -95,6 +91,30 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 
 		*db = *postgresDB
 
+		app.DB = postgresDB
+		app.Logger = lo
+
+		if ok := shouldBootstrap(cmd); ok {
+			err = ensureDefaultUser(context.Background(), app)
+			if err != nil {
+				return err
+			}
+
+			dbCfg, err := ensureInstanceConfig(context.Background(), app, cfg)
+			if err != nil {
+				return err
+			}
+
+			t := telemetry.NewTelemetry(lo, dbCfg,
+				telemetry.OptionBackend(telemetry.NewposthogBackend()),
+				telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
+
+			err = t.Identify(cmd.Context(), dbCfg.UID)
+			if err != nil {
+				return err
+			}
+		}
+
 		err = config.LoadCaCert(cfg.Dispatcher.CACertString, cfg.Dispatcher.CACertPath)
 		if err != nil {
 			return err
@@ -108,21 +128,23 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return errors.New("failed to connect to redis with err: " + err.Error())
 		}
 
-		queueNames := map[string]int{
-			string(convoy.EventQueue):         5,
-			string(convoy.CreateEventQueue):   2,
-			string(convoy.EventWorkflowQueue): 3,
-			string(convoy.ScheduleQueue):      1,
-			string(convoy.DefaultQueue):       1,
-			string(convoy.MetaEventQueue):     1,
+		queueNames, err := queue.GetQueuePriorities(cmd.Name(), cfg.WorkerExecutionMode)
+		if err != nil {
+			return errors.New("failed to get queue priorities with err: " + err.Error())
 		}
 
 		opts := queue.QueueOptions{
 			Names:             queueNames,
 			RedisClient:       redis,
 			RedisAddress:      cfg.Redis.BuildDsn(),
-			Type:              string(config.RedisQueueProvider),
+			Type:              string(config.AsynqQueueProvider),
 			PrometheusAddress: cfg.Prometheus.Dsn,
+			Extra:             make(map[string]string),
+		}
+
+		// Add prefetch to Extra for RabbitMQ
+		if cfg.QueuePrefetch > 0 {
+			opts.Extra["prefetch"] = fmt.Sprintf("%d", cfg.QueuePrefetch)
 		}
 
 		if cfg.Pyroscope.EnableProfiling {
@@ -132,7 +154,20 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			}
 		}
 
-		q = redisQueue.NewQueue(opts)
+		// Use queue driver service to select the appropriate driver
+		drvSvc := qdriver.NewService(
+			qdriver.NewAsynqDriver(redisQueue.NewQueue(opts), cmd.Context(), cfg.ConsumerPoolSize, lo, lvl),
+			qdriver.NewRabbitDriver(cmd.Context(), opts, lo, lvl),
+		)
+		if err := drvSvc.UseDriver(string(cfg.QueueDriver)); err != nil {
+			lo.WithError(err).Warn("invalid queue driver specified, defaulting to asynq")
+		}
+		drv := drvSvc.Driver()
+		q = drv.Queuer()
+
+		if err := drv.Initialize(); err != nil {
+			lo.WithError(err).Warn("failed to initialize queue driver; some queue operations may fail")
+		}
 
 		ca, err = cache.NewCache(cfg.Redis)
 		if err != nil {
@@ -169,32 +204,9 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		app.Redis = redis.Client()
-		app.DB = postgresDB
 		app.Queue = q
-		app.Logger = lo
+		app.QueueDriver = drv
 		app.Cache = ca
-
-		if ok := shouldBootstrap(cmd); ok {
-			err = ensureDefaultUser(context.Background(), app)
-			if err != nil {
-				return err
-			}
-
-			dbCfg, err := ensureInstanceConfig(context.Background(), app, cfg)
-			if err != nil {
-				return err
-			}
-
-			t := telemetry.NewTelemetry(lo, dbCfg,
-				telemetry.OptionBackend(telemetry.NewposthogBackend()),
-				telemetry.OptionBackend(telemetry.NewmixpanelBackend()))
-
-			err = t.Identify(cmd.Context(), dbCfg.UID)
-			if err != nil {
-				// do nothing?
-				return err
-			}
-		}
 
 		rateLimiter, err := limiter.NewLimiter(cfg)
 		if err != nil {
@@ -565,6 +577,76 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 		Database: redisDatabase,
 		Port:     redisPort,
 	}
+
+	// CONVOY_QUEUE_DRIVER
+	queueDriver, err := cmd.Flags().GetString("queue-driver")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(queueDriver) {
+		c.QueueDriver = config.QueueProvider(queueDriver)
+	}
+
+	// CONVOY_RABBITMQ_URL
+	rabbitURL, err := cmd.Flags().GetString("rabbitmq-url")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_RABBITMQ_HOST
+	rabbitHost, err := cmd.Flags().GetString("rabbitmq-host")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_RABBITMQ_PORT
+	rabbitPort, err := cmd.Flags().GetInt("rabbitmq-port")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_RABBITMQ_USERNAME
+	rabbitUsername, err := cmd.Flags().GetString("rabbitmq-username")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_RABBITMQ_PASSWORD
+	rabbitPassword, err := cmd.Flags().GetString("rabbitmq-password")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_RABBITMQ_VHOST
+	rabbitVHost, err := cmd.Flags().GetString("rabbitmq-vhost")
+	if err != nil {
+		return nil, err
+	}
+
+	// CONVOY_RABBITMQ_EXCHANGE
+	rabbitExchange, err := cmd.Flags().GetString("rabbitmq-exchange")
+	if err != nil {
+		return nil, err
+	}
+
+	c.RabbitMQ = config.RabbitMQConfiguration{
+		URL:      rabbitURL,
+		Host:     rabbitHost,
+		Port:     rabbitPort,
+		Username: rabbitUsername,
+		Password: rabbitPassword,
+		VHost:    rabbitVHost,
+		Exchange: rabbitExchange,
+	}
+
+	// CONVOY_QUEUE_PREFETCH
+	queuePrefetch, err := cmd.Flags().GetInt("queue-prefetch")
+	if err != nil {
+		return nil, err
+	}
+
+	c.QueuePrefetch = queuePrefetch
 
 	// CONVOY_RETENTION_POLICY
 	retentionPolicy, err := cmd.Flags().GetString("retention-policy")
