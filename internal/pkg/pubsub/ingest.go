@@ -266,7 +266,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		}
 
 		// write to our queue if it's a normal event
-		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+		err = i.queue.Write(i.ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
 			return err
 		}
@@ -304,7 +304,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		}
 
 		// write to our queue if it's a normal event
-		err = i.queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+		err = i.queue.Write(i.ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
 			return err
 		}
@@ -333,7 +333,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		}
 
 		// write to our queue if it's a broadcast event
-		err = i.queue.Write(convoy.CreateBroadcastEventProcessor, convoy.CreateEventQueue, job)
+		err = i.queue.Write(i.ctx, convoy.CreateBroadcastEventProcessor, convoy.CreateEventQueue, job)
 		if err != nil {
 			return err
 		}

@@ -74,7 +74,7 @@ func TestResendOrgMemberService_Run(t *testing.T) {
 					Times(1).Return(nil)
 
 				q := rs.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 			},
 			want: &datastore.OrganisationInvite{
 				OrganisationID: "123",

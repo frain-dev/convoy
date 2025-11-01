@@ -51,7 +51,7 @@ func TestInviteUserService(t *testing.T) {
 				)
 
 				q, _ := a.queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any())
+				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 			},
 		},
 		{

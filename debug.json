@@ -33,6 +33,16 @@
         "database": "0",
         "port": 6379
     },
+    "queue_driver": "rabbitmq",
+    "rabbitmq": {
+        "url": "amqp://guest:guest@localhost:5672/",
+        "host": "localhost",
+        "port": 5672,
+        "username": "guest",
+        "password": "guest",
+        "vhost": "/",
+        "exchange": "convoy"
+    },
     "server": {
         "http": {
             "ssl": false,

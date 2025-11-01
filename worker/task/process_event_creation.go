@@ -242,6 +242,9 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		raw := event.Raw
 		data := event.Data
 
+		log.FromContext(ctx).Infof("processing event: id=%s, type=%s, project=%s, driver=%s",
+			event.UID, event.EventType, event.ProjectID, eventQueue.GetName())
+
 		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) && licenser.Transformations() {
 			var payload map[string]interface{}
 			err = json.Unmarshal(event.Data, &payload)
@@ -325,14 +328,14 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			}
 
 			if s.Type == datastore.SubscriptionTypeAPI {
-				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+				err = eventQueue.Write(ctx, convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
-					log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
+					log.FromContext(ctx).WithError(err).Errorf("[%s]: an error occurred sending event delivery to be dispatched", eventQueue.GetName())
 				}
 			} else if s.Type == datastore.SubscriptionTypeCLI {
-				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
+				err = eventQueue.Write(ctx, convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
+					log.FromContext(ctx).WithError(err).Errorf("[%s]: an error occurred sending event delivery to the stream queue", eventQueue.GetName())
 				}
 			}
 		}

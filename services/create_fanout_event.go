@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/frain-dev/convoy/worker/task"
 	"gopkg.in/guregu/null.v4"
-	"time"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -143,7 +144,7 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		Payload: eventByte,
 		Delay:   0,
 	}
-	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
+	err = queuer.Write(ctx, convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {
 		log.FromContext(ctx).Errorf("Error occurred sending new event to the queue %s", err)
 	}

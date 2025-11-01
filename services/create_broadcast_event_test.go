@@ -42,7 +42,7 @@ func TestCreateBroadcastEventService_Run(t *testing.T) {
 			name: "should_create_broadcast_event",
 			dbFn: func(es *CreateBroadcastEventService) {
 				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(convoy.CreateBroadcastEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(nil)
+				q.EXPECT().Write(ctx, convoy.CreateBroadcastEventProcessor, convoy.CreateEventQueue, gomock.Any()).Times(1).Return(nil)
 			},
 			args: args{
 				ctx: ctx,

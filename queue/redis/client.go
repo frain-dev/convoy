@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -44,7 +45,7 @@ func NewQueue(opts queue.QueueOptions) queue.Queuer {
 	}
 }
 
-func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+func (q *RedisQueue) Write(_ context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
 	s := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
@@ -75,7 +76,7 @@ func (q *RedisQueue) Write(taskName convoy.TaskName, queueName convoy.QueueName,
 	return err
 }
 
-func (q *RedisQueue) WriteWithoutTimeout(taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
+func (q *RedisQueue) WriteWithoutTimeout(_ context.Context, taskName convoy.TaskName, queueName convoy.QueueName, job *queue.Job) error {
 	s := string(queueName)
 	if job.ID == "" {
 		job.ID = ulid.Make().String()
@@ -109,6 +110,10 @@ func (q *RedisQueue) WriteWithoutTimeout(taskName convoy.TaskName, queueName con
 
 func (q *RedisQueue) Options() queue.QueueOptions {
 	return q.opts
+}
+
+func (q *RedisQueue) GetName() string {
+	return "redis"
 }
 
 func (q *RedisQueue) Monitor() *asynqmon.HTTPHandler {

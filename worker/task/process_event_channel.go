@@ -98,6 +98,9 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			}
 		}
 
+		log.Infof("processing event: id=%s, type=%s, project=%s, channel=%s, driver=%s",
+			event.UID, event.EventType, event.ProjectID, cfg.Channel, eventQueue.GetName())
+
 		metadata := EventChannelMetadata{
 			Event:  event,
 			Config: cfg,
@@ -115,7 +118,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			Delay:   0,
 		}
 
-		err = eventQueue.Write(convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
+		err = eventQueue.Write(ctx, convoy.MatchEventSubscriptionsProcessor, convoy.EventWorkflowQueue, job)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred while matching event subs")
 		}
@@ -173,6 +176,10 @@ func MatchSubscriptionsAndCreateEventDeliveries(channels map[string]EventChannel
 		attributes["project.id"] = subResponse.Project.UID
 
 		event, subscriptions := subResponse.Event, subResponse.Subscriptions
+
+		log.Infof("processing event: id=%s, type=%s, project=%s, channel=%s, driver=%s",
+			event.UID, event.EventType, event.ProjectID, cfg.Channel, eventQueue.GetName())
+
 		if len(subscriptions) < 1 {
 			err = &EndpointError{Err: fmt.Errorf("CODE: 1011, empty subscriptions via channel %s", cfg.Channel), delay: cfg.DefaultDelay}
 			log.WithError(err).Errorf("failed to send %s", event.UID)

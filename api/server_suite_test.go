@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 
@@ -126,7 +127,7 @@ func getQueueOptions() (queue.QueueOptions, error) {
 		Names:        queueNames,
 		RedisClient:  redis,
 		RedisAddress: cfg.Redis.BuildDsn(),
-		Type:         string(config.RedisQueueProvider),
+		Type:         string(config.AsynqQueueProvider),
 	}
 
 	return opts, nil

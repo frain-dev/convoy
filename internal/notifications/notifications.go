@@ -3,8 +3,9 @@ package notifications
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"strconv"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -38,7 +39,7 @@ type SlackNotification struct {
 // NOTIFICATIONS
 
 func SendEndpointNotification(
-	_ context.Context,
+	ctx context.Context,
 	endpoint *datastore.Endpoint,
 	project *datastore.Project,
 	status datastore.EndpointStatus,
@@ -104,7 +105,7 @@ func SendEndpointNotification(
 
 		job := &queue.Job{Payload: buf}
 
-		err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
+		err = q.Write(ctx, convoy.NotificationProcessor, convoy.DefaultQueue, job)
 		if err != nil {
 			log.WithError(err).Error("Failed to write new notification to the queue")
 		}

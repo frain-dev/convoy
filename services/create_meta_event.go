@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
+
+	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
@@ -96,7 +97,7 @@ func (m *MetaEvent) Run(ctx context.Context, eventType string, projectID string,
 	}
 
 	jobId := fmt.Sprintf("meta:%s:%s", metaEvent.ProjectID, metaEvent.UID)
-	err = m.queue.Write(convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
+	err = m.queue.Write(ctx, convoy.MetaEventProcessor, convoy.MetaEventQueue, &queue.Job{
 		ID:      jobId,
 		Payload: bytes,
 	})
