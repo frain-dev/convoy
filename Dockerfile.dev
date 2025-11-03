@@ -1,49 +1,36 @@
 # syntax=docker/dockerfile:1
-FROM node:24.5 as node-env
+FROM node:14 as node-env
 WORKDIR /app
-COPY ./web/ui/dashboard/package*.json ./
-RUN git config --global url."https://".insteadOf git://
-RUN --mount=type=cache,target=/root/.npm \
-    npm install
 COPY ./web/ui/dashboard .
+RUN git config --global url."https://".insteadOf git://
+RUN npm install
 RUN npm run build
 
-FROM golang:1.24 as build-env
+FROM golang:1.25 as build-env
 WORKDIR /go/src/frain-dev/convoy
 
-# Set Go module proxy and enable module caching
-ENV GOPROXY=https://proxy.golang.org,direct
-ENV GOSUMDB=sum.golang.org
-ENV GOCACHE=/go/cache
+COPY ./go.mod /go/src/frain-dev/convoy
+COPY ./go.sum /go/src/frain-dev/convoy
 
-# Copy go mod files first for better caching
-COPY ./go.mod ./go.sum ./
+COPY --from=node-env /app/dist /go/src/frain-dev/convoy/api/ui/build
 
-# Use BuildKit cache mount for Go modules and cache
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/go/cache \
-    go mod download && \
-    go mod verify
+# Get dependancies - will also be cached if we don't change mod/sum
+RUN go mod download
+RUN go mod verify
 
-# Copy only the built UI assets
-COPY --from=node-env /app/dist ./api/ui/build
-
-# Copy source code (this will invalidate cache when source changes)
+# COPY the source code as the last step
 COPY . .
 
-# Build the binary with cache mounts
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/go/cache \
-    CGO_ENABLED=0 go install ./cmd
+RUN CGO_ENABLED=0
+RUN go install ./cmd
 
-FROM alpine:3.16.2
-RUN --mount=type=cache,target=/var/cache/apk \
-    apk add --no-cache gcompat
-
+FROM alpine:3.22.2
 COPY --from=build-env /go/bin/cmd /
 COPY --from=build-env /go/src/frain-dev/convoy/internal/email/templates/* templates/
 COPY --from=build-env /go/src/frain-dev/convoy/configs/local/start.sh /
+COPY --from=build-env /go/src/frain-dev/convoy/api/ui/build /ui/build
 
 RUN chmod +x /cmd
+RUN apk add --no-cache gcompat
 
 EXPOSE 8080

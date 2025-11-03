@@ -27,6 +27,7 @@ import (
 func AddServerCommand(a *cli.App) *cobra.Command {
 	var env string
 	var host string
+	var rootPath string
 	var proxy string
 	var limiter string
 	var cache string
@@ -74,6 +75,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&proxy, "proxy", "", "HTTP Proxy")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
 	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
+	cmd.Flags().StringVar(&rootPath, "root-path", "", "Root path for routing behind load balancers (e.g., /convoy)")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&sslCertFile, "ssl-cert-file", "", "SSL certificate file")
@@ -215,6 +217,16 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if !util.IsStringEmpty(host) {
 		c.Host = host
+	}
+
+	// CONVOY_ROOT_PATH
+	rootPath, err := cmd.Flags().GetString("root-path")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(rootPath) {
+		c.RootPath = rootPath
 	}
 
 	// CONVOY_DB_TYPE

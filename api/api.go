@@ -3,16 +3,21 @@ package api
 import (
 	"embed"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
 
+	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/util"
+	"github.com/go-chi/chi/v5"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/subomi/requestmigrations"
 
-	authz "github.com/Subomi/go-authz"
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
@@ -21,31 +26,127 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/subomi/requestmigrations"
 )
 
 //go:embed ui/build
 var reactFS embed.FS
 
-func reactRootHandler(rw http.ResponseWriter, req *http.Request) {
+func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	p := req.URL.Path
+
+	if a.cfg.RootPath != "" && strings.HasPrefix(p, a.cfg.RootPath) {
+		p = strings.TrimPrefix(p, a.cfg.RootPath)
+		if p == "" {
+			p = "/"
+		}
+	}
+
 	if !strings.HasPrefix(p, "/") {
 		p = "/" + p
-		req.URL.Path = p
 	}
 	p = path.Clean(p)
+
+	req.URL.Path = p
+
 	f := fs.FS(reactFS)
 	static, err := fs.Sub(f, "ui/build")
 	if err != nil {
 		return
 	}
-	if _, err := static.Open(strings.TrimLeft(p, "/")); err != nil { // If file not found server index/html from root
-		req.URL.Path = "/"
+
+	if _, err := static.Open(strings.TrimLeft(p, "/")); err == nil {
+		http.FileServer(http.FS(static)).ServeHTTP(rw, req)
+		return
 	}
-	http.FileServer(http.FS(static)).ServeHTTP(rw, req)
+
+	req.URL.Path = "/"
+	if a.cfg.RootPath != "" {
+		a.serveIndexWithRootPath(rw, req, static)
+	} else {
+		http.FileServer(http.FS(static)).ServeHTTP(rw, req)
+	}
+}
+
+func (a *ApplicationHandler) serveIndexWithRootPath(rw http.ResponseWriter, req *http.Request, static fs.FS) {
+	const indexFileName = "index.html"
+	indexPath := path.Join("ui/build", indexFileName)
+	indexFile, err := reactFS.Open(indexPath)
+	if err != nil {
+		http.Error(rw, fmt.Sprintf("%s not found", indexFileName), http.StatusNotFound)
+		return
+	}
+	defer indexFile.Close()
+
+	content, err := io.ReadAll(indexFile)
+	if err != nil {
+		http.Error(rw, fmt.Sprintf("Failed to read %s", indexFileName), http.StatusInternalServerError)
+		return
+	}
+
+	root := strings.TrimSuffix(a.cfg.RootPath, "/")
+	contentStr := string(content)
+
+	contentStr = strings.Replace(contentStr, `<base href="/">`, fmt.Sprintf(`<base href="%s/">`, root), 1)
+	contentStr = strings.Replace(contentStr, `href="favicon.ico"`, fmt.Sprintf(`href="%s/favicon.ico"`, root), 1)
+
+	// Inject a lightweight JS shim to fix Angular asset URLs dynamically
+	clientScript := fmt.Sprintf(`
+<script type="text/javascript" defer>
+document.addEventListener('DOMContentLoaded', function() {
+  const rootPath = '%s';
+
+  function fixAsset(el, attr) {
+    const val = el.getAttribute(attr);
+    if (val && val.startsWith('/assets/')) {
+      el.setAttribute(attr, rootPath + val);
+    }
+  }
+
+  function fixAllAssets() {
+    document.querySelectorAll('[src^="/assets/"], [href^="/assets/"]').forEach(el => {
+      if (el.hasAttribute('src')) fixAsset(el, 'src');
+      if (el.hasAttribute('href')) fixAsset(el, 'href');
+    });
+  }
+
+  // Initial fix
+  fixAllAssets();
+
+  // Observe dynamic DOM changes
+  const observer = new MutationObserver(mutations => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && (m.attributeName === 'src' || m.attributeName === 'href')) {
+        fixAsset(m.target, m.attributeName);
+      } else if (m.type === 'childList') {
+        m.addedNodes.forEach(node => {
+          if (node.nodeType === 1) {
+            if (node.hasAttribute?.('src')) fixAsset(node, 'src');
+            if (node.hasAttribute?.('href')) fixAsset(node, 'href');
+            node.querySelectorAll?.('[src^="/assets/"], [href^="/assets/"]').forEach(inner => {
+              if (inner.hasAttribute('src')) fixAsset(inner, 'src');
+              if (inner.hasAttribute('href')) fixAsset(inner, 'href');
+            });
+          }
+        });
+      }
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    attributes: true,
+    subtree: true
+  });
+});
+</script>`, root)
+
+	contentStr = strings.Replace(contentStr, `</body>`, clientScript+`</body>`, 1)
+
+	rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if _, err := rw.Write([]byte(contentStr)); err != nil {
+		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
+		return
+	}
 }
 
 const (
@@ -125,7 +226,23 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 
 	handler := &handlers.Handler{A: a.A, RM: a.rm}
 
-	// TODO(subomi): left this here temporarily till the data plane is stable.
+	if a.cfg.RootPath != "" {
+		subRouter := chi.NewMux()
+		a.mountControlPlaneRoutes(subRouter, handler)
+		subRouter.HandleFunc("/*", a.reactRootHandler)
+		router.Mount(a.cfg.RootPath, subRouter)
+	} else {
+		a.mountControlPlaneRoutes(router, handler)
+	}
+
+	router.HandleFunc("/*", a.reactRootHandler)
+
+	a.Router = router
+
+	return router
+}
+
+func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler *handlers.Handler) {
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
 		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
@@ -592,17 +709,27 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
+}
 
-	router.HandleFunc("/*", reactRootHandler)
+func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
+	router := a.buildRouter()
+
+	handler := &handlers.Handler{A: a.A, RM: a.rm}
+
+	if a.cfg.RootPath != "" {
+		subRouter := chi.NewMux()
+		a.mountDataPlaneRoutes(subRouter, handler)
+		router.Mount(a.cfg.RootPath, subRouter)
+	} else {
+		a.mountDataPlaneRoutes(router, handler)
+	}
 
 	a.Router = router
 
 	return router
 }
 
-func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
-	router := a.buildRouter()
-
+func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *handlers.Handler) {
 	if a.A.Licenser.CanExportPrometheusMetrics() {
 		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
 	}
@@ -617,8 +744,6 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 		ingestRouter.Get("/{maskID}", a.HandleCrcCheck)
 		ingestRouter.Post("/{maskID}", a.IngestEvent)
 	})
-
-	handler := &handlers.Handler{A: a.A, RM: a.rm}
 
 	// Public API.
 	router.Route("/api", func(v1Router chi.Router) {
@@ -763,10 +888,6 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 			})
 		})
 	})
-
-	a.Router = router
-
-	return router
 }
 
 func (a *ApplicationHandler) RegisterPolicy() error {

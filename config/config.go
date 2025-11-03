@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -32,6 +33,8 @@ var DefaultConfiguration = Configuration{
 	Host:            DefaultHost,
 	Environment:     OSSEnvironment,
 	MaxResponseSize: MaxResponseSizeKb,
+
+	RootPath: "",
 
 	Server: ServerConfiguration{
 		HTTP: HTTPServerConfiguration{
@@ -423,6 +426,7 @@ type Configuration struct {
 	Logger              LoggerConfiguration          `json:"logger"`
 	Tracer              TracerConfiguration          `json:"tracer"`
 	Host                string                       `json:"host" envconfig:"CONVOY_HOST"`
+	RootPath            string                       `json:"root_path" envconfig:"CONVOY_ROOT_PATH"`
 	Pyroscope           PyroscopeConfiguration       `json:"pyroscope"`
 	CustomDomainSuffix  string                       `json:"custom_domain_suffix" envconfig:"CONVOY_CUSTOM_DOMAIN_SUFFIX"`
 	EnableFeatureFlag   []string                     `json:"enable_feature_flag" envconfig:"CONVOY_ENABLE_FEATURE_FLAG"`
@@ -606,6 +610,10 @@ func validate(c *Configuration) error {
 		return err
 	}
 
+	if err := ensureRootPath(c); err != nil {
+		return err
+	}
+
 	if c.Metrics.IsEnabled {
 		backend := c.Metrics.Backend
 		switch backend {
@@ -614,6 +622,32 @@ func validate(c *Configuration) error {
 		default:
 			c.Metrics.IsEnabled = false
 		}
+	}
+
+	return nil
+}
+
+var rootPathRegex = regexp.MustCompile(`^[a-zA-Z0-9/_-]+$`)
+
+func ensureRootPath(c *Configuration) error {
+	if c.RootPath == "" {
+		return nil
+	}
+
+	if !strings.HasPrefix(c.RootPath, "/") {
+		return errors.New("root path must start with '/' (e.g., '/convoy')")
+	}
+
+	if strings.HasSuffix(c.RootPath, "/") {
+		return errors.New("root path should not end with '/' (e.g., use '/convoy' not '/convoy/')")
+	}
+
+	if c.RootPath == "/" {
+		return errors.New("root path cannot be '/', use empty string for no prefix")
+	}
+
+	if !rootPathRegex.MatchString(c.RootPath) {
+		return errors.New("root path contains invalid characters, only alphanumeric, hyphens, underscores, and slashes are allowed")
 	}
 
 	return nil

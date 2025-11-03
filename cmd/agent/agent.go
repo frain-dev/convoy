@@ -6,13 +6,13 @@ import (
 	"os/signal"
 	"time"
 
-	workerSrv "github.com/frain-dev/convoy/cmd/worker"
-	"github.com/frain-dev/convoy/util"
+	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/api"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	ingestSrv "github.com/frain-dev/convoy/cmd/ingest"
+	workerSrv "github.com/frain-dev/convoy/cmd/worker"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
@@ -20,7 +20,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/spf13/cobra"
+	"github.com/frain-dev/convoy/util"
 )
 
 func AddAgentCommand(a *cli.App) *cobra.Command {
