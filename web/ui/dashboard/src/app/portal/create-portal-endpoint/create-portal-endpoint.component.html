@@ -76,6 +76,41 @@
                        formControlName="secret" placeholder="Enter endpoint secret here"/>
             </convoy-input-field>
 
+            <!-- Content Type Configuration -->
+            <ng-container *ngIf="showConfig('content_type')">
+                <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+                    <div class="flex justify-between items-center mb-16px">
+                        <label for="content_type" convoy-label>
+                            Content Type
+                            <convoy-tooltip
+                                class="ml-4px"
+                                size="sm"
+                                tooltipContent="The content type for webhook delivery. JSON sends data as application/json, Form Data sends as application/x-www-form-urlencoded."
+                                position="top-right"
+                            ></convoy-tooltip>
+                        </label>
+                        <button convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('content_type')">
+                            <svg width="14" height="14" class="fill-transparent stroke-neutral-9">
+                                <use xlink:href="#delete-icon2"></use>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <convoy-input-field>
+                        <convoy-select
+                            [options]="contentTypeOptions"
+                            name="content_type"
+                            formControlName="content_type"
+                            placeholder="Select content type"
+                            label=""
+                            [required]="true"
+                            (selectedOption)="onContentTypeSelected($event)"
+                        ></convoy-select>
+                        <convoy-input-error *ngIf="endpointForm.get('content_type')?.touched && endpointForm.get('content_type')?.invalid">Please select a content type</convoy-input-error>
+                    </convoy-input-field>
+                </div>
+            </ng-container>
+
             <!-- Event types Configuration -->
             <ng-container *ngIf="showConfig('events')">
                 <div class="border-l-2 border-new.primary-25 pl-16px mb-40px">

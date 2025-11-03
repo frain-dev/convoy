@@ -16,7 +16,7 @@ require (
 	github.com/exaring/otelpgx v0.9.0
 	github.com/fatih/structs v1.1.0
 	github.com/felixge/httpsnoop v1.0.4
-	github.com/frain-dev/convoy-go/v2 v2.1.14
+	github.com/frain-dev/convoy-go/v2 v2.1.15
 	github.com/getkin/kin-openapi v0.131.0
 	github.com/getsentry/sentry-go v0.32.0
 	github.com/getsentry/sentry-go/otel v0.32.0

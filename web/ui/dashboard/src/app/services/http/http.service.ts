@@ -1,10 +1,10 @@
-import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
+import {Injectable} from '@angular/core';
+import {environment} from 'src/environments/environment';
 import axios from 'axios';
-import { ActivatedRoute, Router } from '@angular/router';
-import { GeneralService } from '../general/general.service';
-import { ProjectService } from 'src/app/private/pages/project/project.service';
-import { HTTP_RESPONSE } from 'src/app/models/global.model';
+import {ActivatedRoute, Router} from '@angular/router';
+import {GeneralService} from '../general/general.service';
+import {ProjectService} from 'src/app/private/pages/project/project.service';
+import {HTTP_RESPONSE} from 'src/app/models/global.model';
 
 @Injectable({
 	providedIn: 'root'

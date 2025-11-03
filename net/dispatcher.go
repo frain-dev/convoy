@@ -25,7 +25,9 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -39,6 +41,70 @@ var (
 	ErrTracerIsRequired    = errors.New("tracer cannot be nil")
 	ErrNon2xxResponse      = errors.New("endpoint returned a non-2xx response")
 )
+
+// ContentTypeConverter defines the interface for converting JSON data to different content types
+type ContentTypeConverter interface {
+	Convert(jsonData json.RawMessage) ([]byte, error)
+	ContentType() string
+}
+
+// JSONConverter handles application/json content type
+type JSONConverter struct{}
+
+func (j JSONConverter) Convert(jsonData json.RawMessage) ([]byte, error) {
+	return jsonData, nil
+}
+
+func (j JSONConverter) ContentType() string {
+	return constants.ContentTypeJSON
+}
+
+// FormURLEncodedConverter handles application/x-www-form-urlencoded content type
+type FormURLEncodedConverter struct{}
+
+func (f FormURLEncodedConverter) Convert(jsonData json.RawMessage) ([]byte, error) {
+	var data map[string]interface{}
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON data: %w", err)
+	}
+
+	values := url.Values{}
+	for key, value := range data {
+		switch v := value.(type) {
+		case string:
+			values.Set(key, v)
+		case float64:
+			values.Set(key, fmt.Sprintf("%.0f", v))
+		case bool:
+			values.Set(key, fmt.Sprintf("%t", v))
+		case nil:
+			values.Set(key, "")
+		default:
+			// For complex types, convert to JSON string
+			jsonValue, err := json.Marshal(v)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal value for key %s: %w", key, err)
+			}
+			values.Set(key, string(jsonValue))
+		}
+	}
+
+	return []byte(values.Encode()), nil
+}
+
+func (f FormURLEncodedConverter) ContentType() string {
+	return constants.ContentTypeFormURLEncoded
+}
+
+// getConverter returns the appropriate converter for the given content type
+func getConverter(contentType string) ContentTypeConverter {
+	switch contentType {
+	case constants.ContentTypeFormURLEncoded:
+		return FormURLEncodedConverter{}
+	default:
+		return JSONConverter{}
+	}
+}
 
 type DispatcherOption func(d *Dispatcher) error
 
@@ -290,7 +356,7 @@ func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	return nil, false, nil
 }
 
-func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string) (*Response, error) {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -308,14 +374,23 @@ func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData 
 		ctx = netjail.ContextWithRules(ctx, d.rules)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
+	// Convert JSON data to the appropriate content type using converter interface
+	converter := getConverter(contentType)
+	requestBody, err := converter.Convert(jsonData)
+	if err != nil {
+		d.logger.WithError(err).Error("error converting JSON data")
+		r.Error = err.Error()
+		return r, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
 		d.logger.WithError(err).Error("error occurred while creating request")
 		return r, err
 	}
 
 	req.Header.Set(signatureHeader, hmac)
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", converter.ContentType())
 	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Add("User-Agent", defaultUserAgent())
 	if len(idempotencyKey) > 0 {
@@ -464,9 +539,9 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 	return nil
 }
 
-// Ping sends a GET request to the specified endpoint and verifies it returns a 2xx response.
+// Ping sends requests to the specified endpoint using configurable methods and verifies it returns a 2xx response.
 // It returns an error if the endpoint is unreachable or returns a non-2xx status code.
-func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration) error {
+func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration, contentType string) error {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -476,34 +551,75 @@ func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Dur
 		ctx = netjail.ContextWithRules(ctx, d.rules)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	// Get ping methods from config
+	var methods []string
+	cfg, err := config.Get()
 	if err != nil {
-		d.logger.WithError(err).Error("error creating ping request")
+		d.logger.WithError(err).Warn("Failed to get config, using default ping methods")
+		methods = []string{"HEAD", "GET", "POST"}
+	} else {
+		methods = cfg.Dispatcher.PingMethods
+		if len(methods) == 0 {
+			methods = []string{"HEAD", "GET", "POST"}
+		}
+	}
+
+	var lastErr error
+	for i, method := range methods {
+		err := d.tryPingMethod(ctx, endpoint, method, contentType)
+		if err == nil {
+			if i > 0 {
+				d.logger.Infof("Ping succeeded with %s after %d attempts", method, i+1)
+			}
+			return nil
+		}
+
+		lastErr = err
+		d.logger.Debugf("Ping failed with %s: %v", method, err)
+	}
+
+	d.logger.Warnf("All ping methods failed for %s", endpoint)
+	return lastErr
+}
+
+func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, contentType string) error {
+	var body []byte
+	var reqContentType string
+
+	if method == "POST" && contentType != "" {
+		testPayload := json.RawMessage(`{"test": "ping"}`)
+		converter := getConverter(contentType)
+		var err error
+		body, err = converter.Convert(testPayload)
+		if err != nil {
+			return err
+		}
+		reqContentType = converter.ContentType()
+	}
+
+	var bodyReader io.Reader
+	if body != nil {
+		bodyReader = bytes.NewBuffer(body)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint, bodyReader)
+	if err != nil {
 		return err
 	}
 
-	trace := &httptrace.ClientTrace{
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			d.logger.Debugf("IP address resolved for %s to: %s", endpoint, connInfo.Conn.RemoteAddr())
-		},
-	}
-
-	ctx = httptrace.WithClientTrace(ctx, trace)
-	req = req.WithContext(ctx)
-
 	req.Header.Add("User-Agent", defaultUserAgent())
+	if reqContentType != "" {
+		req.Header.Set("Content-Type", reqContentType)
+	}
 
 	response, err := d.client.Do(req)
 	if err != nil {
-		d.logger.WithError(err).Error("error sending ping request")
 		return err
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode < 200 || response.StatusCode > 299 {
-		err = fmt.Errorf("%w: got status code %d", ErrNon2xxResponse, response.StatusCode)
-		d.logger.WithError(err).Error("ping request failed")
-		return err
+		return fmt.Errorf("%w: got status code %d", ErrNon2xxResponse, response.StatusCode)
 	}
 
 	return nil

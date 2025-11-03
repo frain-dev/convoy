@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -73,6 +74,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		AdvancedSignatures: *a.E.AdvancedSignatures,
 		AppID:              a.E.AppID,
 		RateLimitDuration:  a.E.RateLimitDuration,
+		ContentType:        a.E.ContentType,
 		Status:             datastore.ActiveEndpointStatus,
 		CreatedAt:          time.Now(),
 		UpdatedAt:          time.Now(),
@@ -170,9 +172,14 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			return "", innerErr
 		}
 
-		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second)
+		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, a.E.ContentType)
 		if pingErr != nil {
-			log.FromContext(ctx).Warnf("failed to ping tls endpoint: %v", pingErr)
+			if cfg.Dispatcher.SkipPingValidation {
+				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)
+			} else {
+				log.FromContext(ctx).Errorf("failed to ping tls endpoint: %v", pingErr)
+				return "", fmt.Errorf("endpoint validation failed: %w", pingErr)
+			}
 		}
 	default:
 		return "", errors.New("invalid endpoint scheme")

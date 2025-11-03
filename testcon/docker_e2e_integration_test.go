@@ -5,6 +5,7 @@ package testcon
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -15,6 +16,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/frain-dev/convoy/testcon/manifest"
 )
 
 type DockerE2EIntegrationTestSuite struct {
@@ -43,6 +46,7 @@ func (d *DockerE2EIntegrationTestSuite) SetupSuite() {
 		WaitForService("postgres", wait.NewLogStrategy("ready").WithStartupTimeout(60*time.Second)).
 		WaitForService("redis_server", wait.NewLogStrategy("Ready to accept connections").WithStartupTimeout(10*time.Second)).
 		WaitForService("migrate", wait.NewLogStrategy("migration up succeeded").WithStartupTimeout(60*time.Second)).
+		WaitForService("web", wait.NewHTTPStrategy(fmt.Sprintf("http://%s:5015/healthz", GetOutboundIP().String())).WithStartupTimeout(30*time.Second)).
 		Up(ctx, tc.Wait(true), tc.WithRecreate(api.RecreateNever))
 
 	if err != nil &&
@@ -56,6 +60,8 @@ func (d *DockerE2EIntegrationTestSuite) SetupSuite() {
 }
 
 func (d *DockerE2EIntegrationTestSuite) SetupTest() {
+	// Reset manifest state between tests
+	manifest.Reset()
 }
 
 func (d *DockerE2EIntegrationTestSuite) TearDownTest() {

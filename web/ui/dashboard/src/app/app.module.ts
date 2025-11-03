@@ -1,11 +1,11 @@
-import { APP_INITIALIZER, NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
+import {APP_INITIALIZER, NgModule} from '@angular/core';
+import {BrowserModule} from '@angular/platform-browser';
+import {NotificationComponent} from 'src/app/components/notification/notification.component';
 
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
-import { NotificationModalComponent } from './components/notification-modal/notification-modal.component';
-import { ConfigService } from './services/config/config.service';
+import {AppRoutingModule} from './app-routing.module';
+import {AppComponent} from './app.component';
+import {NotificationModalComponent} from './components/notification-modal/notification-modal.component';
+import {ConfigService} from './services/config/config.service';
 
 export function initializeGoogleOAuth(configService: ConfigService) {
 	return () => configService.getConfig();

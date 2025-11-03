@@ -903,8 +903,10 @@ github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/form3tech-oss/jwt-go v3.2.2+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
 github.com/frain-dev/convoy v0.9.2/go.mod h1:RO60yNPcMuvyzuOzuxqF/I+Fn0zeZtQcYeCEmwSSzSM=
-github.com/frain-dev/convoy-go/v2 v2.1.14 h1:pUeoIaH9UDXz+sRXkn+X+ImB3Bs5I4fCiLTBYbROq6g=
-github.com/frain-dev/convoy-go/v2 v2.1.14/go.mod h1:sQlm+jOXZrjdXcFp4fngXLhlvFGfiR0D1l4gYVncXrM=
+github.com/frain-dev/convoy-go/v2 v2.1.15 h1:74BWuz4hmJttM7k71ngLZNOOyv3jXmzVexFmTD0VhlY=
+github.com/frain-dev/convoy-go/v2 v2.1.15/go.mod h1:sQlm+jOXZrjdXcFp4fngXLhlvFGfiR0D1l4gYVncXrM=
+github.com/frain-dev/convoy-go/v2 v2.1.16 h1:bgEZz8MbVdOiy9p5vEY6reBFWMC6NygjcG758ZRyQFI=
+github.com/frain-dev/convoy-go/v2 v2.1.16/go.mod h1:sQlm+jOXZrjdXcFp4fngXLhlvFGfiR0D1l4gYVncXrM=
 github.com/franela/goblin v0.0.0-20200105215937-c9ffbefa60db/go.mod h1:7dvUGVsVBjqR7JHJk0brhHOZYGmfBYOrK0ZhYMEtBr4=
 github.com/franela/goreq v0.0.0-20171204163338-bcd34c9993f8/go.mod h1:ZhphrRTfi2rbfLwlschooIH4+wKKDR4Pdxhh+TRoA20=
 github.com/frankban/quicktest v1.11.3/go.mod h1:wRf/ReqHper53s+kmmSZizM8NamnL3IM0I9ntUbOk+k=

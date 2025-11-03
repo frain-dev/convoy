@@ -248,6 +248,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
 	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
+	require.Equal(s.T(), "application/json", dbEndpoint.ContentType) // Default content type should be JSON
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIKey() {
@@ -280,6 +281,59 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIK
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbApp.Name)
 	require.Equal(s.T(), endpointURL, dbApp.Url)
+}
+
+func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithFormContentType() {
+	endpointTitle := fmt.Sprintf("Test-Form-%s", ulid.Make().String())
+	endpointURL := "http://example.com"
+	expectedStatusCode := http.StatusCreated
+
+	// Create a project that allows HTTP endpoints
+	cfg := datastore.DefaultProjectConfig
+	cfg.SSL = &datastore.SSLConfiguration{EnforceSecureEndpoints: false}
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, "", "testing", s.DefaultOrg.UID, datastore.OutgoingProject, &cfg)
+	require.NoError(s.T(), err)
+
+	// Seed Auth
+	role := auth.Role{
+		Type:    auth.RoleProjectAdmin,
+		Project: project.UID,
+	}
+
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	require.NoError(s.T(), err)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", project.UID)
+	plainBody := fmt.Sprintf(`{
+		"name": "%s",
+		"description": "test endpoint with form content type",
+		"url": "%s",
+		"content_type": "application/x-www-form-urlencoded"
+	}`, endpointTitle, endpointURL)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, key, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	if w.Code != expectedStatusCode {
+		s.T().Logf("Expected status %d, got %d. Response body: %s", expectedStatusCode, w.Code, w.Body.String())
+	}
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
+	require.Equal(s.T(), "application/x-www-form-urlencoded", dbEndpoint.ContentType)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
@@ -362,6 +416,50 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	require.Equal(s.T(), title, dbEndpoint.Name)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
 	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
+	require.Equal(s.T(), "application/json", dbEndpoint.ContentType) // Default content type should be JSON
+}
+
+func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpointWithFormContentType() {
+	title := "random-form-endpoint"
+	endpointURL := "https://www.google.com/webhp"
+	supportEmail := "10xengineer@getconvoy.io"
+	endpointID := ulid.Make().String()
+	expectedStatusCode := http.StatusAccepted
+
+	// Just Before.
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
+	plainBody := fmt.Sprintf(`{
+		"name": "%s",
+		"description": "test endpoint with form content type",
+		"url": "%s",
+		"support_email": "%s",
+		"content_type": "application/x-www-form-urlencoded"
+ 	}`, title, endpointURL, supportEmail)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
+	require.Equal(s.T(), title, dbEndpoint.Name)
+	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
+	require.Equal(s.T(), "application/x-www-form-urlencoded", dbEndpoint.ContentType)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPIKey() {

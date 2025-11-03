@@ -209,7 +209,11 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 		} else {
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
 		}
-		resp, err := dispatch.SendWebhook(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration)
+		contentType := endpoint.ContentType
+		if contentType == "" {
+			contentType = "application/json"
+		}
+		resp, err := dispatch.SendWebhook(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType)
 
 		status := "-"
 		statusCode := 0
