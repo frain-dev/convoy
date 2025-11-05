@@ -86,8 +86,12 @@ func LoadClientCertificate(certString, keyString string) (*tls.Certificate, erro
 		return nil, errors.New("client key must be provided")
 	}
 
-	// Parse the certificate and key
-	// This function validates that the cert and key correspond to each other
+	// Parse the certificate and key pair
+	// tls.X509KeyPair validates that:
+	// 1. The certificate is valid PEM format
+	// 2. The private key is valid PEM format
+	// 3. The certificate's public key matches the private key (they correspond to each other)
+	// If the cert and key don't match, it returns an error like "tls: private key does not match public key"
 	cert, err := tls.X509KeyPair([]byte(certString), []byte(keyString))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse client certificate and key: %w", err)

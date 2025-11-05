@@ -213,6 +213,29 @@ C6azzwqUOSsfDcuAS5sfJp/6
 		require.Nil(t, cert)
 		require.Contains(t, err.Error(), "failed to parse client certificate and key")
 	})
+
+	t.Run("should reject mismatched certificate and private key", func(t *testing.T) {
+		// Generate two different cert/key pairs
+		notBefore := time.Now().Add(-1 * time.Hour)
+		notAfter := time.Now().Add(24 * time.Hour)
+
+		// First cert/key pair
+		_, key1PEM, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		// Second cert/key pair (different keys, different cert)
+		cert2PEM, _, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		// Try to use cert2 with key1 (mismatched) - should fail
+		// This proves that tls.X509KeyPair validates the cert and key correspond to each other
+		cert, err := LoadClientCertificate(cert2PEM, key1PEM)
+		require.Error(t, err)
+		require.Nil(t, cert)
+		require.Contains(t, err.Error(), "failed to parse client certificate and key")
+		// The underlying error from tls.X509KeyPair indicates the public key in cert2
+		// does not match the private key key1
+	})
 }
 
 func TestLoadClientCertificate_Expiration(t *testing.T) {
