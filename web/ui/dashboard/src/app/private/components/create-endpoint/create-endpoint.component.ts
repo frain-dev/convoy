@@ -81,8 +81,8 @@ export class CreateEndpointComponent implements OnInit {
 		advanced_signatures: [null],
 		content_type: ['application/json'],
 		mtls_client_cert: this.formBuilder.group({
-			client_cert: [''],
-			client_key: ['']
+			client_cert: ['', [Validators.pattern(/^-----BEGIN CERTIFICATE-----[\s\S]*-----END CERTIFICATE-----\s*$/)]],
+			client_key: ['', [Validators.pattern(/^-----BEGIN (RSA )?PRIVATE KEY-----[\s\S]*-----END (RSA )?PRIVATE KEY-----\s*$/)]]
 		})
 	});
 	token: string = this.route.snapshot.params.token;

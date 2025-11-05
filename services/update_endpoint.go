@@ -186,7 +186,25 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 			if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
 				return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
 			}
+
+			// Validate the certificate and key pair (checks expiration and matching)
+			_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
+			if err != nil {
+				return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
+			}
+
 			endpoint.MtlsClientCert = e.MtlsClientCert.Transform()
+
+			// Clear cached certificate since it's being updated
+			config.GetCertCache().Delete(endpoint.UID)
+		}
+	}
+
+	// Clear cache if mTLS cert was removed
+	if e.MtlsClientCert != nil {
+		cc := e.MtlsClientCert
+		if util.IsStringEmpty(cc.ClientCert) && util.IsStringEmpty(cc.ClientKey) {
+			config.GetCertCache().Delete(endpoint.UID)
 		}
 	}
 

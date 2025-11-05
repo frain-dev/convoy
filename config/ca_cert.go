@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"sync/atomic"
+	"time"
 )
 
 var caCertSingleton atomic.Value
@@ -74,6 +75,8 @@ func GetCaCert() (*tls.Config, error) {
 
 // LoadClientCertificate loads a client certificate and key from PEM strings.
 // It returns a tls.Certificate that can be used for mTLS client authentication.
+// It validates that the certificate and key match, and checks for certificate expiration.
+// This function does not use caching.
 func LoadClientCertificate(certString, keyString string) (*tls.Certificate, error) {
 	if certString == "" {
 		return nil, errors.New("client certificate must be provided")
@@ -84,10 +87,67 @@ func LoadClientCertificate(certString, keyString string) (*tls.Certificate, erro
 	}
 
 	// Parse the certificate and key
+	// This function validates that the cert and key correspond to each other
 	cert, err := tls.X509KeyPair([]byte(certString), []byte(keyString))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse client certificate and key: %w", err)
 	}
 
+	// Parse the X.509 certificate to check expiration
+	if len(cert.Certificate) > 0 {
+		x509Cert, err := x509.ParseCertificate(cert.Certificate[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse X.509 certificate: %w", err)
+		}
+
+		// Check if certificate has expired
+		now := time.Now()
+		if now.Before(x509Cert.NotBefore) {
+			return nil, fmt.Errorf("certificate is not yet valid (valid from %s)", x509Cert.NotBefore.Format(time.RFC3339))
+		}
+
+		if now.After(x509Cert.NotAfter) {
+			return nil, fmt.Errorf("certificate has expired (expired on %s)", x509Cert.NotAfter.Format(time.RFC3339))
+		}
+	}
+
 	return &cert, nil
+}
+
+// LoadClientCertificateWithCache loads a client certificate with caching support.
+// It first checks the cache for a valid parsed certificate. If not found or expired,
+// it parses the certificate, validates it, and stores it in the cache.
+// The cacheKey should be a unique identifier for the certificate (e.g., endpoint ID).
+func LoadClientCertificateWithCache(cacheKey, certString, keyString string) (*tls.Certificate, error) {
+	cache := GetCertCache()
+
+	// Try to get from cache first
+	if cachedCert := cache.Get(cacheKey); cachedCert != nil {
+		return cachedCert, nil
+	}
+
+	// Not in cache or expired, load and validate
+	cert, err := LoadClientCertificate(certString, keyString)
+	if err != nil {
+		return nil, err
+	}
+
+	// Determine expiration time for cache
+	var expiresAt time.Time
+	if len(cert.Certificate) > 0 {
+		x509Cert, parseErr := x509.ParseCertificate(cert.Certificate[0])
+		if parseErr == nil {
+			expiresAt = x509Cert.NotAfter
+		}
+	}
+
+	// If we couldn't determine expiration, cache for 1 hour
+	if expiresAt.IsZero() {
+		expiresAt = time.Now().Add(1 * time.Hour)
+	}
+
+	// Store in cache
+	cache.Set(cacheKey, cert, expiresAt)
+
+	return cert, nil
 }

@@ -130,6 +130,12 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 			return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
 		}
 
+		// Validate the certificate and key pair (checks expiration and matching)
+		_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
+		if err != nil {
+			return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
+		}
+
 		endpoint.MtlsClientCert = a.E.MtlsClientCert.Transform()
 	}
 

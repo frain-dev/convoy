@@ -250,11 +250,19 @@
 							<convoy-input-field className="mb-0">
 								<label for="client_cert" convoy-label>Client Certificate (PEM)</label>
 								<textarea id="client_cert" convoy-input autocomplete="client_cert" formControlName="client_cert" placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----" rows="6"></textarea>
+								<convoy-input-error *ngIf="addNewEndpointForm.get('mtls_client_cert.client_cert')?.touched && addNewEndpointForm.get('mtls_client_cert.client_cert')?.invalid">
+									<span *ngIf="addNewEndpointForm.get('mtls_client_cert.client_cert')?.hasError('pattern')">Certificate must be in valid PEM format (BEGIN/END CERTIFICATE)</span>
+									<span *ngIf="addNewEndpointForm.get('mtls_client_cert.client_cert')?.hasError('required')">Certificate is required when using mTLS</span>
+								</convoy-input-error>
 							</convoy-input-field>
 
 							<convoy-input-field className="mb-0">
 								<label for="client_key" convoy-label>Client Private Key (PEM)</label>
 								<textarea id="client_key" convoy-input autocomplete="client_key" formControlName="client_key" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----" rows="6"></textarea>
+								<convoy-input-error *ngIf="addNewEndpointForm.get('mtls_client_cert.client_key')?.touched && addNewEndpointForm.get('mtls_client_cert.client_key')?.invalid">
+									<span *ngIf="addNewEndpointForm.get('mtls_client_cert.client_key')?.hasError('pattern')">Private key must be in valid PEM format (BEGIN/END PRIVATE KEY or BEGIN/END RSA PRIVATE KEY)</span>
+									<span *ngIf="addNewEndpointForm.get('mtls_client_cert.client_key')?.hasError('required')">Private key is required when using mTLS</span>
+								</convoy-input-error>
 							</convoy-input-field>
 						</div>
 					</ng-container>
