@@ -157,6 +157,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 			nil,
 			"test-idempotency-key",
 			10*time.Second,
+			"application/json",
 			clientCert,
 		)
 
@@ -215,6 +216,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 			nil,
 			"test-idempotency-key",
 			10*time.Second,
+			"application/json",
 			nil, // No client certificate
 		)
 
@@ -305,6 +307,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 			nil,
 			"test-idempotency-key",
 			10*time.Second,
+			"application/json",
 			wrongCert,
 		)
 
@@ -354,6 +357,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 			nil,
 			"test-idempotency-key",
 			10*time.Second,
+			"application/json",
 		)
 
 		require.NoError(t, err)

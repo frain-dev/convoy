@@ -581,7 +581,7 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 
 // Ping sends requests to the specified endpoint using configurable methods and verifies it returns a 2xx response.
 // It returns an error if the endpoint is unreachable or returns a non-2xx status code.
-func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration, contentType string) error {
+func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) error {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -606,7 +606,7 @@ func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Dur
 
 	var lastErr error
 	for i, method := range methods {
-		err := d.tryPingMethod(ctx, endpoint, method, contentType)
+		err := d.tryPingMethod(ctx, endpoint, method, contentType, mtlsCert)
 		if err == nil {
 			if i > 0 {
 				d.logger.Infof("Ping succeeded with %s after %d attempts", method, i+1)
@@ -622,7 +622,38 @@ func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Dur
 	return lastErr
 }
 
-func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, contentType string) error {
+func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, contentType string, mtlsCert *tls.Certificate) error {
+	client := d.client
+
+	// If mTLS certificate is provided, create a custom client with it
+	if mtlsCert != nil {
+		customTransport := d.transport.Clone()
+
+		// Clone the TLS config to avoid modifying the shared config
+		var tlsConfig *tls.Config
+		if customTransport.TLSClientConfig != nil {
+			tlsConfig = customTransport.TLSClientConfig.Clone()
+		} else {
+			tlsConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+		}
+
+		// Add the client certificate
+		tlsConfig.Certificates = []tls.Certificate{*mtlsCert}
+		customTransport.TLSClientConfig = tlsConfig
+
+		// Respect IP allow/block rules by using netjail transport when enabled
+		if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
+			netJailTransport := &netjail.Transport{
+				New: func() *http.Transport { return customTransport.Clone() },
+			}
+			client = &http.Client{Transport: NewNetJailTransport(netJailTransport)}
+		} else {
+			client = &http.Client{Transport: NewVanillaTransport(customTransport)}
+		}
+	}
+
 	var body []byte
 	var reqContentType string
 
@@ -652,7 +683,7 @@ func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, conten
 		req.Header.Set("Content-Type", reqContentType)
 	}
 
-	response, err := d.client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		return err
 	}

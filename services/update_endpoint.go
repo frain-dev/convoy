@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/url"
@@ -36,7 +37,7 @@ type UpdateEndpointService struct {
 }
 
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	endpointUrl, err := a.ValidateEndpoint(ctx, a.Project.Config.SSL.EnforceSecureEndpoints)
+	endpointUrl, err := a.ValidateEndpoint(ctx, a.Project.Config.SSL.EnforceSecureEndpoints, a.E.MtlsClientCert)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -64,7 +65,7 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	return endpoint, nil
 }
 
-func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool) (string, error) {
+func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool, mtlsClientCert *models.MtlsClientCert) (string, error) {
 	if util.IsStringEmpty(a.E.URL) {
 		return "", errors.New("please provide the endpoint url")
 	}
@@ -103,11 +104,25 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			return "", innerErr
 		}
 
+		// Load mTLS client certificate if provided for ping validation
+		// Note: This is best-effort. If cert loading fails here, it will be properly
+		// validated later in the updateEndpoint() method before persisting to database.
+		var mtlsCert *tls.Certificate
+		if mtlsClientCert != nil && mtlsClientCert.ClientKey != "[REDACTED]" && !util.IsStringEmpty(mtlsClientCert.ClientCert) && !util.IsStringEmpty(mtlsClientCert.ClientKey) {
+			cert, certErr := config.LoadClientCertificate(mtlsClientCert.ClientCert, mtlsClientCert.ClientKey)
+			if certErr != nil {
+				// Log warning but don't fail - validation will happen later
+				log.FromContext(ctx).WithError(certErr).Warn("failed to load mTLS cert for ping, will validate later")
+			} else {
+				mtlsCert = cert
+			}
+		}
+
 		contentType := ""
 		if a.E.ContentType != nil {
 			contentType = *a.E.ContentType
 		}
-		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, contentType)
+		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, contentType, mtlsCert)
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
 				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)

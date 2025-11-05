@@ -126,7 +126,7 @@ func TestDispatcher_Ping(t *testing.T) {
 
 			// Test ping
 			ctx := context.Background()
-			err = dispatcher.Ping(ctx, server.URL+tt.endpoint, 5*time.Second, tt.contentType)
+			err = dispatcher.Ping(ctx, server.URL+tt.endpoint, 5*time.Second, tt.contentType, nil)
 
 			if tt.expectedError {
 				require.Error(t, err)
@@ -228,7 +228,7 @@ func TestDispatcher_tryPingMethod(t *testing.T) {
 
 			// Test tryPingMethod
 			ctx := context.Background()
-			err := dispatcher.tryPingMethod(ctx, server.URL, tt.method, tt.contentType)
+			err := dispatcher.tryPingMethod(ctx, server.URL, tt.method, tt.contentType, nil)
 
 			if tt.expectedError {
 				require.Error(t, err)
@@ -263,7 +263,7 @@ func TestDispatcher_PingWithDefaultMethods(t *testing.T) {
 	defer server.Close()
 
 	ctx := context.Background()
-	err = dispatcher.Ping(ctx, server.URL, 5*time.Second, "")
+	err = dispatcher.Ping(ctx, server.URL, 5*time.Second, "", nil)
 	require.NoError(t, err) // Should succeed with default methods
 }
 
@@ -926,6 +926,7 @@ C6azzwqUOSsfDcuAS5sfJp/6
 		nil,
 		"",
 		5*time.Second,
+		"application/json",
 		cert,
 	)
 
