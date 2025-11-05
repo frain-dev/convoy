@@ -108,7 +108,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 				require.Equal(t, "Test Client", clientCert.Subject.CommonName)
 			}
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status":"success"}`))
+			_, _ = w.Write([]byte(`{"status":"success"}`))
 		}))
 
 		// Configure server to require and verify client certificates
@@ -323,7 +323,7 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 		// Create normal HTTPS server (no client cert required)
 		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"status":"ok"}`))
+			_, _ = w.Write([]byte(`{"status":"ok"}`))
 		}))
 		defer server.Close()
 

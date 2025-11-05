@@ -2,12 +2,19 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"errors"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/pkg/log"
+	"math/big"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy"
 
@@ -32,10 +39,57 @@ func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoi
 	}
 }
 
+// generateTestCertificate generates a valid self-signed certificate and private key for testing
+func generateTestCertificate(t *testing.T) (certPEM, keyPEM string) {
+	t.Helper()
+
+	// Generate private key
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+
+	// Create certificate template
+	certTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Convoy Test"},
+			CommonName:   "Test Client",
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(24 * time.Hour),
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		KeyUsage:    x509.KeyUsageDigitalSignature,
+	}
+
+	// Create self-signed certificate
+	certBytes, err := x509.CreateCertificate(rand.Reader, certTemplate, certTemplate, &privKey.PublicKey, privKey)
+	require.NoError(t, err)
+
+	// Encode certificate to PEM
+	certPEM = string(pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: certBytes,
+	}))
+
+	// Encode private key to PEM
+	keyPEM = string(pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privKey),
+	}))
+
+	return certPEM, keyPEM
+}
+
 func TestCreateEndpointService_Run(t *testing.T) {
+	// Skip ping validation in tests since we use non-existent domains
+	_ = os.Setenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION", "true")
+	defer os.Unsetenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION")
+
 	_ = config.LoadCaCert("", "")
 	projectID := "1234567890"
 	project := &datastore.Project{UID: projectID, Type: datastore.OutgoingProject, Config: &datastore.DefaultProjectConfig}
+
+	// Generate valid test certificate for mTLS tests
+	testCertPEM, testKeyPEM := generateTestCertificate(t)
 
 	ctx := context.Background()
 	type args struct {
@@ -248,8 +302,8 @@ func TestCreateEndpointService_Run(t *testing.T) {
 					URL:         "https://secure.example.com",
 					Description: "endpoint with mTLS",
 					MtlsClientCert: &models.MtlsClientCert{
-						ClientCert: "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----",
-						ClientKey:  "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----",
+						ClientCert: testCertPEM,
+						ClientKey:  testKeyPEM,
 					},
 				},
 				g: project,
@@ -264,8 +318,8 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
 					endpoint := x.(*datastore.Endpoint)
 					return endpoint.MtlsClientCert != nil &&
-						endpoint.MtlsClientCert.ClientCert == "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----" &&
-						endpoint.MtlsClientCert.ClientKey == "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----"
+						endpoint.MtlsClientCert.ClientCert == testCertPEM &&
+						endpoint.MtlsClientCert.ClientKey == testKeyPEM
 				}), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := app.Licenser.(*mocks.MockLicenser)
@@ -284,8 +338,8 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				Description:        "endpoint with mTLS",
 				Status:             datastore.ActiveEndpointStatus,
 				MtlsClientCert: &datastore.MtlsClientCert{
-					ClientCert: "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----",
-					ClientKey:  "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----",
+					ClientCert: testCertPEM,
+					ClientKey:  testKeyPEM,
 				},
 			},
 			wantErr: false,
