@@ -356,39 +356,44 @@ func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	return nil, false, nil
 }
 
-// SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration
-func (d *Dispatcher) SendWebhookWithMTLS(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) (*Response, error) {
-	client := d.client
+// createClientWithMTLS creates an HTTP client configured with the provided mTLS certificate.
+// If mtlsCert is nil, returns the default dispatcher client.
+// The returned client respects IP allow/block rules when the feature is enabled.
+func (d *Dispatcher) createClientWithMTLS(mtlsCert *tls.Certificate) *http.Client {
+	if mtlsCert == nil {
+		return d.client
+	}
 
-	// If mTLS certificate is provided, create a custom client with it
-	if mtlsCert != nil {
-		customTransport := d.transport.Clone()
+	customTransport := d.transport.Clone()
 
-		// Clone the TLS config to avoid modifying the shared config
-		var tlsConfig *tls.Config
-		if customTransport.TLSClientConfig != nil {
-			tlsConfig = customTransport.TLSClientConfig.Clone()
-		} else {
-			tlsConfig = &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			}
-		}
-
-		// Add the client certificate
-		tlsConfig.Certificates = []tls.Certificate{*mtlsCert}
-		customTransport.TLSClientConfig = tlsConfig
-
-		// Respect IP allow/block rules by using netjail transport when enabled
-		if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
-			netJailTransport := &netjail.Transport{
-				New: func() *http.Transport { return customTransport.Clone() },
-			}
-			client = &http.Client{Transport: NewNetJailTransport(netJailTransport)}
-		} else {
-			client = &http.Client{Transport: NewVanillaTransport(customTransport)}
+	// Clone the TLS config to avoid modifying the shared config
+	var tlsConfig *tls.Config
+	if customTransport.TLSClientConfig != nil {
+		tlsConfig = customTransport.TLSClientConfig.Clone()
+	} else {
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
 		}
 	}
 
+	// Add the client certificate
+	tlsConfig.Certificates = []tls.Certificate{*mtlsCert}
+	customTransport.TLSClientConfig = tlsConfig
+
+	// Respect IP allow/block rules by using netjail transport when enabled
+	if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
+		netJailTransport := &netjail.Transport{
+			New: func() *http.Transport { return customTransport.Clone() },
+		}
+		return &http.Client{Transport: NewNetJailTransport(netJailTransport)}
+	}
+
+	return &http.Client{Transport: NewVanillaTransport(customTransport)}
+}
+
+// SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration
+func (d *Dispatcher) SendWebhookWithMTLS(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) (*Response, error) {
+	client := d.createClientWithMTLS(mtlsCert)
 	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, client)
 }
 
@@ -623,36 +628,7 @@ func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Dur
 }
 
 func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, contentType string, mtlsCert *tls.Certificate) error {
-	client := d.client
-
-	// If mTLS certificate is provided, create a custom client with it
-	if mtlsCert != nil {
-		customTransport := d.transport.Clone()
-
-		// Clone the TLS config to avoid modifying the shared config
-		var tlsConfig *tls.Config
-		if customTransport.TLSClientConfig != nil {
-			tlsConfig = customTransport.TLSClientConfig.Clone()
-		} else {
-			tlsConfig = &tls.Config{
-				MinVersion: tls.VersionTLS12,
-			}
-		}
-
-		// Add the client certificate
-		tlsConfig.Certificates = []tls.Certificate{*mtlsCert}
-		customTransport.TLSClientConfig = tlsConfig
-
-		// Respect IP allow/block rules by using netjail transport when enabled
-		if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
-			netJailTransport := &netjail.Transport{
-				New: func() *http.Transport { return customTransport.Clone() },
-			}
-			client = &http.Client{Transport: NewNetJailTransport(netJailTransport)}
-		} else {
-			client = &http.Client{Transport: NewVanillaTransport(customTransport)}
-		}
-	}
+	client := d.createClientWithMTLS(mtlsCert)
 
 	var body []byte
 	var reqContentType string
