@@ -105,24 +105,23 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		}
 
 		// Load mTLS client certificate if provided for ping validation
-		// If user is not updating cert ([REDACTED]), use existing cert from database
+		// Determine which cert to use: existing, new, or none
 		var mtlsCert *tls.Certificate
-		if mtlsClientCert != nil && mtlsClientCert.ClientKey == "[REDACTED]" {
-			// User is not updating cert - use existing cert from database for ping
-			if existingEndpoint != nil && existingEndpoint.MtlsClientCert != nil {
-				cert, certErr := config.LoadClientCertificate(existingEndpoint.MtlsClientCert.ClientCert, existingEndpoint.MtlsClientCert.ClientKey)
-				if certErr != nil {
-					log.FromContext(ctx).WithError(certErr).Warn("failed to load existing mTLS cert for ping")
-				} else {
-					mtlsCert = cert
-				}
-			}
-		} else if mtlsClientCert != nil && !util.IsStringEmpty(mtlsClientCert.ClientCert) && !util.IsStringEmpty(mtlsClientCert.ClientKey) {
-			// User is updating cert - validate and use new cert for ping
+
+		if mtlsClientCert != nil && !util.IsStringEmpty(mtlsClientCert.ClientCert) && !util.IsStringEmpty(mtlsClientCert.ClientKey) {
+			// Case 1: User is updating cert - validate and use new cert for ping
 			cert, certErr := config.LoadClientCertificate(mtlsClientCert.ClientCert, mtlsClientCert.ClientKey)
 			if certErr != nil {
 				// Log warning but don't fail - validation will happen later
 				log.FromContext(ctx).WithError(certErr).Warn("failed to load new mTLS cert for ping, will validate later")
+			} else {
+				mtlsCert = cert
+			}
+		} else if mtlsClientCert == nil && existingEndpoint != nil && existingEndpoint.MtlsClientCert != nil {
+			// Case 2: mTLS field not sent in request, but endpoint has mTLS - use existing cert
+			cert, certErr := config.LoadClientCertificate(existingEndpoint.MtlsClientCert.ClientCert, existingEndpoint.MtlsClientCert.ClientKey)
+			if certErr != nil {
+				log.FromContext(ctx).WithError(certErr).Warn("failed to load existing mTLS cert for ping")
 			} else {
 				mtlsCert = cert
 			}
@@ -200,10 +199,7 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 	if e.MtlsClientCert != nil {
 		cc := e.MtlsClientCert
 
-		// Skip update if client_key is redacted placeholder (user is not updating mTLS cert)
-		if cc.ClientKey == "[REDACTED]" {
-			// Keep existing mTLS cert unchanged
-		} else if util.IsStringEmpty(cc.ClientCert) && util.IsStringEmpty(cc.ClientKey) {
+		if util.IsStringEmpty(cc.ClientCert) && util.IsStringEmpty(cc.ClientKey) {
 			// Both empty means remove mTLS configuration
 			endpoint.MtlsClientCert = nil
 			// Clear cached certificate since it's being removed
