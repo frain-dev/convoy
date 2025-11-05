@@ -37,7 +37,7 @@ type UpdateEndpointService struct {
 }
 
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	endpointUrl, err := a.ValidateEndpoint(ctx, a.Project.Config.SSL.EnforceSecureEndpoints, a.E.MtlsClientCert)
+	endpointUrl, err := a.ValidateEndpoint(ctx, a.Project.Config.SSL.EnforceSecureEndpoints, a.E.MtlsClientCert, a.Endpoint)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -65,7 +65,7 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	return endpoint, nil
 }
 
-func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool, mtlsClientCert *models.MtlsClientCert) (string, error) {
+func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool, mtlsClientCert *models.MtlsClientCert, existingEndpoint *datastore.Endpoint) (string, error) {
 	if util.IsStringEmpty(a.E.URL) {
 		return "", errors.New("please provide the endpoint url")
 	}
@@ -105,14 +105,24 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		}
 
 		// Load mTLS client certificate if provided for ping validation
-		// Note: This is best-effort. If cert loading fails here, it will be properly
-		// validated later in the updateEndpoint() method before persisting to database.
+		// If user is not updating cert ([REDACTED]), use existing cert from database
 		var mtlsCert *tls.Certificate
-		if mtlsClientCert != nil && mtlsClientCert.ClientKey != "[REDACTED]" && !util.IsStringEmpty(mtlsClientCert.ClientCert) && !util.IsStringEmpty(mtlsClientCert.ClientKey) {
+		if mtlsClientCert != nil && mtlsClientCert.ClientKey == "[REDACTED]" {
+			// User is not updating cert - use existing cert from database for ping
+			if existingEndpoint != nil && existingEndpoint.MtlsClientCert != nil {
+				cert, certErr := config.LoadClientCertificate(existingEndpoint.MtlsClientCert.ClientCert, existingEndpoint.MtlsClientCert.ClientKey)
+				if certErr != nil {
+					log.FromContext(ctx).WithError(certErr).Warn("failed to load existing mTLS cert for ping")
+				} else {
+					mtlsCert = cert
+				}
+			}
+		} else if mtlsClientCert != nil && !util.IsStringEmpty(mtlsClientCert.ClientCert) && !util.IsStringEmpty(mtlsClientCert.ClientKey) {
+			// User is updating cert - validate and use new cert for ping
 			cert, certErr := config.LoadClientCertificate(mtlsClientCert.ClientCert, mtlsClientCert.ClientKey)
 			if certErr != nil {
 				// Log warning but don't fail - validation will happen later
-				log.FromContext(ctx).WithError(certErr).Warn("failed to load mTLS cert for ping, will validate later")
+				log.FromContext(ctx).WithError(certErr).Warn("failed to load new mTLS cert for ping, will validate later")
 			} else {
 				mtlsCert = cert
 			}
