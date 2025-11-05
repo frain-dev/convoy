@@ -182,9 +182,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(nil, datastore.ErrEndpointNotFound)
 
-				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(false)
+				// No licenser expectations - FindEndpointByID fails before ValidateEndpoint is called
 			},
 			wantErr:    true,
 			wantErrMsg: "endpoint not found",

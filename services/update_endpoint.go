@@ -37,19 +37,19 @@ type UpdateEndpointService struct {
 }
 
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
-	endpointUrl, err := a.ValidateEndpoint(ctx, a.Project.Config.SSL.EnforceSecureEndpoints, a.E.MtlsClientCert, a.Endpoint)
+	// Fetch the current endpoint from database first to get decrypted mTLS cert
+	endpoint, err := a.EndpointRepo.FindEndpointByID(ctx, a.Endpoint.UID, a.Project.UID)
+	if err != nil {
+		return nil, &ServiceError{ErrMsg: err.Error()}
+	}
+
+	// Validate the endpoint URL with the existing endpoint data
+	endpointUrl, err := a.ValidateEndpoint(ctx, a.Project.Config.SSL.EnforceSecureEndpoints, a.E.MtlsClientCert, endpoint)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
 	a.E.URL = endpointUrl
-
-	endpoint := a.Endpoint
-
-	endpoint, err = a.EndpointRepo.FindEndpointByID(ctx, endpoint.UID, a.Project.UID)
-	if err != nil {
-		return nil, &ServiceError{ErrMsg: err.Error()}
-	}
 
 	endpoint, err = a.updateEndpoint(endpoint, a.E, a.Project)
 	if err != nil {
