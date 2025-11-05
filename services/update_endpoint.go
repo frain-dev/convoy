@@ -181,6 +181,8 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 		} else if util.IsStringEmpty(cc.ClientCert) && util.IsStringEmpty(cc.ClientKey) {
 			// Both empty means remove mTLS configuration
 			endpoint.MtlsClientCert = nil
+			// Clear cached certificate since it's being removed
+			config.GetCertCache().Delete(endpoint.UID)
 		} else {
 			// Updating or setting new mTLS cert - both fields required
 			if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
@@ -196,14 +198,6 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 			endpoint.MtlsClientCert = e.MtlsClientCert.Transform()
 
 			// Clear cached certificate since it's being updated
-			config.GetCertCache().Delete(endpoint.UID)
-		}
-	}
-
-	// Clear cache if mTLS cert was removed
-	if e.MtlsClientCert != nil {
-		cc := e.MtlsClientCert
-		if util.IsStringEmpty(cc.ClientCert) && util.IsStringEmpty(cc.ClientKey) {
 			config.GetCertCache().Delete(endpoint.UID)
 		}
 	}
