@@ -1,6 +1,6 @@
 import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidatorFn, Validators} from '@angular/forms';
 import {
     InputDirective,
     InputErrorComponent,
@@ -26,6 +26,33 @@ import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.co
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {TagComponent} from 'src/app/components/tag/tag.component';
 import {SelectComponent} from 'src/app/components/select/select.component';
+
+// Custom validators that skip validation for [REDACTED] placeholder
+function mtlsCertValidator(): ValidatorFn {
+	return (control: AbstractControl): {[key: string]: any} | null => {
+		const value = control.value;
+		// Skip validation if empty or [REDACTED] (unchanged from server)
+		if (!value || value === '[REDACTED]') {
+			return null;
+		}
+		// Validate PEM format
+		const certPattern = /^-----BEGIN CERTIFICATE-----[\s\S]*-----END CERTIFICATE-----\s*$/;
+		return certPattern.test(value) ? null : { pattern: { value } };
+	};
+}
+
+function mtlsKeyValidator(): ValidatorFn {
+	return (control: AbstractControl): {[key: string]: any} | null => {
+		const value = control.value;
+		// Skip validation if empty or [REDACTED] (unchanged from server)
+		if (!value || value === '[REDACTED]') {
+			return null;
+		}
+		// Validate PEM format for private key
+		const keyPattern = /^-----BEGIN (RSA )?PRIVATE KEY-----[\s\S]*-----END (RSA )?PRIVATE KEY-----\s*$/;
+		return keyPattern.test(value) ? null : { pattern: { value } };
+	};
+}
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -81,8 +108,8 @@ export class CreateEndpointComponent implements OnInit {
 		advanced_signatures: [null],
 		content_type: ['application/json'],
 		mtls_client_cert: this.formBuilder.group({
-			client_cert: ['', [Validators.pattern(/^-----BEGIN CERTIFICATE-----[\s\S]*-----END CERTIFICATE-----\s*$/)]],
-			client_key: ['', [Validators.pattern(/^-----BEGIN (RSA )?PRIVATE KEY-----[\s\S]*-----END (RSA )?PRIVATE KEY-----\s*$/)]]
+			client_cert: ['', [mtlsCertValidator()]],
+			client_key: ['', [mtlsKeyValidator()]]
 		})
 	});
 	token: string = this.route.snapshot.params.token;
