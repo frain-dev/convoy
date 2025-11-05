@@ -1,12 +1,61 @@
 package config
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"github.com/stretchr/testify/require"
+	"math/big"
 	"os"
 	"testing"
+	"time"
 )
+
+// Helper function to generate a test certificate
+func generateTestCert(notBefore, notAfter time.Time) (certPEM, keyPEM string, err error) {
+	// Generate private key
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Create certificate template
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Test Org"},
+			CommonName:   "test.example.com",
+		},
+		NotBefore:             notBefore,
+		NotAfter:              notAfter,
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth},
+		BasicConstraintsValid: true,
+	}
+
+	// Create self-signed certificate
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		return "", "", err
+	}
+
+	// Encode certificate to PEM
+	certPEMBlock := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: certDER,
+	})
+
+	// Encode private key to PEM
+	keyPEMBlock := pem.EncodeToMemory(&pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	})
+
+	return string(certPEMBlock), string(keyPEMBlock), nil
+}
 
 func TestGetCACertTLSCfg_CustomCA(t *testing.T) {
 	caCert := `-----BEGIN CERTIFICATE-----
@@ -163,5 +212,139 @@ C6azzwqUOSsfDcuAS5sfJp/6
 		require.Error(t, err)
 		require.Nil(t, cert)
 		require.Contains(t, err.Error(), "failed to parse client certificate and key")
+	})
+}
+
+func TestLoadClientCertificate_Expiration(t *testing.T) {
+	t.Run("should reject expired certificate", func(t *testing.T) {
+		// Generate certificate that expired yesterday
+		notBefore := time.Now().Add(-48 * time.Hour)
+		notAfter := time.Now().Add(-24 * time.Hour)
+		certPEM, keyPEM, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		cert, err := LoadClientCertificate(certPEM, keyPEM)
+		require.Error(t, err)
+		require.Nil(t, cert)
+		require.Contains(t, err.Error(), "certificate has expired")
+	})
+
+	t.Run("should reject not-yet-valid certificate", func(t *testing.T) {
+		// Generate certificate valid starting tomorrow
+		notBefore := time.Now().Add(24 * time.Hour)
+		notAfter := time.Now().Add(48 * time.Hour)
+		certPEM, keyPEM, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		cert, err := LoadClientCertificate(certPEM, keyPEM)
+		require.Error(t, err)
+		require.Nil(t, cert)
+		require.Contains(t, err.Error(), "certificate is not yet valid")
+	})
+
+	t.Run("should accept valid certificate", func(t *testing.T) {
+		// Generate certificate valid now
+		notBefore := time.Now().Add(-1 * time.Minute)
+		notAfter := time.Now().Add(1 * time.Hour)
+		certPEM, keyPEM, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		cert, err := LoadClientCertificate(certPEM, keyPEM)
+		require.NoError(t, err)
+		require.NotNil(t, cert)
+	})
+}
+
+func TestLoadClientCertificateWithCache(t *testing.T) {
+	cache := GetCertCache()
+	cache.Clear()
+
+	t.Run("should cache certificate on first load", func(t *testing.T) {
+		notBefore := time.Now().Add(-1 * time.Minute)
+		notAfter := time.Now().Add(1 * time.Hour)
+		certPEM, keyPEM, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		cacheKey := "endpoint-123"
+
+		// First load - should parse and cache
+		cert1, err := LoadClientCertificateWithCache(cacheKey, certPEM, keyPEM)
+		require.NoError(t, err)
+		require.NotNil(t, cert1)
+
+		// Verify it's in cache
+		cachedCert := cache.Get(cacheKey)
+		require.NotNil(t, cachedCert)
+
+		// Second load - should return cached version
+		cert2, err := LoadClientCertificateWithCache(cacheKey, certPEM, keyPEM)
+		require.NoError(t, err)
+		require.NotNil(t, cert2)
+
+		// Should be the same instance (pointer equality)
+		require.Equal(t, cert1, cert2)
+	})
+
+	t.Run("should not cache invalid certificate", func(t *testing.T) {
+		cache.Clear()
+		invalidCert := "invalid"
+		invalidKey := "invalid"
+		cacheKey := "endpoint-invalid"
+
+		cert, err := LoadClientCertificateWithCache(cacheKey, invalidCert, invalidKey)
+		require.Error(t, err)
+		require.Nil(t, cert)
+
+		// Should not be in cache
+		cachedCert := cache.Get(cacheKey)
+		require.Nil(t, cachedCert)
+	})
+
+	t.Run("should not cache expired certificate", func(t *testing.T) {
+		cache.Clear()
+		notBefore := time.Now().Add(-2 * time.Hour)
+		notAfter := time.Now().Add(-1 * time.Hour)
+		certPEM, keyPEM, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		cacheKey := "endpoint-expired"
+
+		cert, err := LoadClientCertificateWithCache(cacheKey, certPEM, keyPEM)
+		require.Error(t, err)
+		require.Nil(t, cert)
+		require.Contains(t, err.Error(), "expired")
+
+		// Should not be in cache
+		cachedCert := cache.Get(cacheKey)
+		require.Nil(t, cachedCert)
+	})
+
+	t.Run("should use different cache entries for different keys", func(t *testing.T) {
+		cache.Clear()
+
+		// Generate two different certificates
+		notBefore := time.Now().Add(-1 * time.Minute)
+		notAfter := time.Now().Add(1 * time.Hour)
+
+		cert1PEM, key1PEM, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		cert2PEM, key2PEM, err := generateTestCert(notBefore, notAfter)
+		require.NoError(t, err)
+
+		// Load with different keys
+		loadedCert1, err := LoadClientCertificateWithCache("endpoint-1", cert1PEM, key1PEM)
+		require.NoError(t, err)
+
+		loadedCert2, err := LoadClientCertificateWithCache("endpoint-2", cert2PEM, key2PEM)
+		require.NoError(t, err)
+
+		// Should be different certificates
+		require.NotEqual(t, loadedCert1, loadedCert2)
+
+		// Both should be cached
+		require.NotNil(t, cache.Get("endpoint-1"))
+		require.NotNil(t, cache.Get("endpoint-2"))
+		require.Equal(t, 2, cache.Size())
 	})
 }
