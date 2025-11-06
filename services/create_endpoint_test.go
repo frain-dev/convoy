@@ -82,7 +82,7 @@ func generateTestCertificate(t *testing.T) (certPEM, keyPEM string) {
 func TestCreateEndpointService_Run(t *testing.T) {
 	// Skip ping validation in tests since we use non-existent domains
 	_ = os.Setenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION", "true")
-	defer os.Unsetenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION")
+	defer func() { _ = os.Unsetenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION") }()
 
 	_ = config.LoadCaCert("", "")
 	projectID := "1234567890"
