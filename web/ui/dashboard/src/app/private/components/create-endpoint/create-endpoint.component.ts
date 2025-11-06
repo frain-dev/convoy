@@ -1,6 +1,6 @@
 import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidatorFn, Validators} from '@angular/forms';
 import {
     InputDirective,
     InputErrorComponent,
@@ -26,6 +26,33 @@ import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.co
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {TagComponent} from 'src/app/components/tag/tag.component';
 import {SelectComponent} from 'src/app/components/select/select.component';
+
+// Custom validators that skip validation for [REDACTED] placeholder
+function mtlsCertValidator(): ValidatorFn {
+	return (control: AbstractControl): {[key: string]: any} | null => {
+		const value = control.value;
+		// Skip validation if empty or [REDACTED] (unchanged from server)
+		if (!value || value === '[REDACTED]') {
+			return null;
+		}
+		// Validate PEM format
+		const certPattern = /^-----BEGIN CERTIFICATE-----[\s\S]*-----END CERTIFICATE-----\s*$/;
+		return certPattern.test(value) ? null : { pattern: { value } };
+	};
+}
+
+function mtlsKeyValidator(): ValidatorFn {
+	return (control: AbstractControl): {[key: string]: any} | null => {
+		const value = control.value;
+		// Skip validation if empty or [REDACTED] (unchanged from server)
+		if (!value || value === '[REDACTED]') {
+			return null;
+		}
+		// Validate PEM format for private key
+		const keyPattern = /^-----BEGIN (RSA )?PRIVATE KEY-----[\s\S]*-----END (RSA )?PRIVATE KEY-----\s*$/;
+		return keyPattern.test(value) ? null : { pattern: { value } };
+	};
+}
 
 @Component({
 	selector: 'convoy-create-endpoint',
@@ -79,7 +106,11 @@ export class CreateEndpointComponent implements OnInit {
 			})
 		}),
 		advanced_signatures: [null],
-		content_type: ['application/json']
+		content_type: ['application/json'],
+		mtls_client_cert: this.formBuilder.group({
+			client_cert: ['', [mtlsCertValidator()]],
+			client_key: ['', [mtlsKeyValidator()]]
+		})
 	});
 	token: string = this.route.snapshot.params.token;
 	@Input('endpointId') endpointUid = this.route.snapshot.params.id;
@@ -117,6 +148,7 @@ export class CreateEndpointComponent implements OnInit {
 				{ uid: 'auth', name: 'Auth', show: false, deleted: false },
 				{ uid: 'alert_config', name: 'Notifications', show: false, deleted: false },
 				{ uid: 'signature', name: 'Signature Format', show: false, deleted: false },
+				{ uid: 'mtls', name: 'mTLS Client Certificate', show: false, deleted: false },
 			);
 
 		if (!this.endpointUid) this.endpointUid = this.route.snapshot.params.id;
@@ -130,7 +162,8 @@ export class CreateEndpointComponent implements OnInit {
 			signature: ['advanced_signatures'],
 			rate_limit: ['rate_limit', 'rate_limit_duration'],
 			alert_config: ['support_email', 'slack_webhook_url'],
-			auth: ['authentication.api_key.header_name', 'authentication.api_key.header_value']
+			auth: ['authentication.api_key.header_name', 'authentication.api_key.header_value'],
+			mtls: []
 		};
 		this.configurations.forEach(config => {
 			const fields = configFields[config.uid];
@@ -179,6 +212,16 @@ export class CreateEndpointComponent implements OnInit {
 
 		if (!this.addNewEndpointForm.value.authentication.api_key.header_name && !this.addNewEndpointForm.value.authentication.api_key.header_value) delete endpointValue.authentication;
 
+        // Remove mTLS config if all fields are empty or if client_key is redacted placeholder
+        const mtls = this.addNewEndpointForm.value.mtls_client_cert;
+        if (!mtls?.client_cert && !mtls?.client_key) {
+            delete endpointValue.mtls_client_cert;
+        } else if (mtls?.client_key === '[REDACTED]') {
+            // Don't send mTLS config if it contains the redacted placeholder
+            // (user is updating other fields but not changing the mTLS cert)
+            delete endpointValue.mtls_client_cert;
+        }
+
 		try {
 			const response =
 				(this.isUpdateAction || this.editMode) && this.type !== 'subscription' ? await this.createEndpointService.editEndpoint({ endpointId: this.endpointUid || '', body: endpointValue }) : await this.createEndpointService.addNewEndpoint({ body: endpointValue });
@@ -216,6 +259,7 @@ export class CreateEndpointComponent implements OnInit {
 			if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
 			if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
 			if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');
+			if (endpointDetails.mtls_client_cert) this.toggleConfigForm('mtls');
 
 			this.isLoadingEndpointDetails = false;
 		} catch {

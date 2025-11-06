@@ -438,6 +438,9 @@ type Endpoint struct {
 	ContentType       string  `json:"content_type" db:"content_type"`
 	FailureRate       float64 `json:"failure_rate" db:"-"`
 
+	// mTLS client certificate configuration
+	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty" db:"mtls_client_cert"`
+
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
@@ -492,6 +495,44 @@ type Secret struct {
 type EndpointAuthentication struct {
 	Type   EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key)~unsupported authentication type"`
 	ApiKey *ApiKey                    `json:"api_key" db:"api_key"`
+}
+
+// MtlsClientCert holds the client certificate and key configuration for mTLS
+type MtlsClientCert struct {
+	// ClientCert is the client certificate PEM string
+	ClientCert string `json:"client_cert,omitempty" db:"client_cert"`
+	// ClientKey is the client private key PEM string
+	ClientKey string `json:"client_key,omitempty" db:"client_key"`
+}
+
+func (m *MtlsClientCert) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, m)
+}
+
+func (m MtlsClientCert) Value() (driver.Value, error) {
+	if m.ClientCert == "" && m.ClientKey == "" {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 var (

@@ -231,6 +231,44 @@
 				</div>
 			</ng-container>
 
+			<ng-container *ngIf="showConfig('mtls')">
+				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
+					<div class="flex justify-between items-center mb-16px">
+						<p class="flex items-center text-12 font-medium text-neutral-11">
+							mTLS Client Certificate
+							<convoy-tooltip size="sm" position="top-right" class="ml-4px">Configure client certificate and private key for mutual TLS authentication. Provide PEM-encoded certificate and key strings.</convoy-tooltip>
+						</p>
+						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('mtls', true)">
+							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
+								<use xlink:href="#delete-icon2"></use>
+							</svg>
+						</button>
+					</div>
+
+					<ng-container formGroupName="mtls_client_cert">
+						<div class="grid grid-cols-1 gap-24px">
+							<convoy-input-field className="mb-0">
+								<label for="client_cert" convoy-label>Client Certificate (PEM)</label>
+								<textarea id="client_cert" convoy-input autocomplete="client_cert" formControlName="client_cert" placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----" rows="6"></textarea>
+								<convoy-input-error *ngIf="addNewEndpointForm.get('mtls_client_cert.client_cert')?.touched && addNewEndpointForm.get('mtls_client_cert.client_cert')?.invalid">
+									<span *ngIf="addNewEndpointForm.get('mtls_client_cert.client_cert')?.hasError('pattern')">Certificate must be in valid PEM format (-----BEGIN CERTIFICATE-----)</span>
+									<span *ngIf="addNewEndpointForm.get('mtls_client_cert.client_cert')?.hasError('required')">Certificate is required when using mTLS</span>
+								</convoy-input-error>
+							</convoy-input-field>
+
+							<convoy-input-field className="mb-0">
+								<label for="client_key" convoy-label>Client Private Key (PEM)</label>
+								<textarea id="client_key" convoy-input autocomplete="client_key" formControlName="client_key" placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----" rows="6"></textarea>
+								<convoy-input-error *ngIf="addNewEndpointForm.get('mtls_client_cert.client_key')?.touched && addNewEndpointForm.get('mtls_client_cert.client_key')?.invalid">
+									<span *ngIf="addNewEndpointForm.get('mtls_client_cert.client_key')?.hasError('pattern')">Private key must be in valid PEM format (-----BEGIN PRIVATE KEY-----)</span>
+									<span *ngIf="addNewEndpointForm.get('mtls_client_cert.client_key')?.hasError('required')">Private key is required when using mTLS</span>
+								</convoy-input-error>
+							</convoy-input-field>
+						</div>
+					</ng-container>
+				</div>
+			</ng-container>
+
 			<div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">

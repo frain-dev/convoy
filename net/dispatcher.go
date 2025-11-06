@@ -356,7 +356,52 @@ func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	return nil, false, nil
 }
 
+// createClientWithMTLS creates an HTTP client configured with the provided mTLS certificate.
+// If mtlsCert is nil, returns the default dispatcher client.
+// The returned client respects IP allow/block rules when the feature is enabled.
+func (d *Dispatcher) createClientWithMTLS(mtlsCert *tls.Certificate) *http.Client {
+	if mtlsCert == nil {
+		return d.client
+	}
+
+	customTransport := d.transport.Clone()
+
+	// Clone the TLS config to avoid modifying the shared config
+	var tlsConfig *tls.Config
+	if customTransport.TLSClientConfig != nil {
+		tlsConfig = customTransport.TLSClientConfig.Clone()
+	} else {
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	// Add the client certificate
+	tlsConfig.Certificates = []tls.Certificate{*mtlsCert}
+	customTransport.TLSClientConfig = tlsConfig
+
+	// Respect IP allow/block rules by using netjail transport when enabled
+	if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
+		netJailTransport := &netjail.Transport{
+			New: func() *http.Transport { return customTransport.Clone() },
+		}
+		return &http.Client{Transport: NewNetJailTransport(netJailTransport)}
+	}
+
+	return &http.Client{Transport: NewVanillaTransport(customTransport)}
+}
+
+// SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration
+func (d *Dispatcher) SendWebhookWithMTLS(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) (*Response, error) {
+	client := d.createClientWithMTLS(mtlsCert)
+	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, client)
+}
+
 func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string) (*Response, error) {
+	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, d.client)
+}
+
+func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string, client *http.Client) (*Response, error) {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -406,7 +451,7 @@ func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData 
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.do(ctx, req, r, maxResponseSize)
+	err = d.do(ctx, req, r, maxResponseSize, client)
 	if err != nil {
 		return r, err
 	}
@@ -436,7 +481,7 @@ func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }
 
-func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64) error {
+func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64, client *http.Client) error {
 	if d.detailedTrace.Enabled {
 		trace := &httptrace.ClientTrace{
 			DNSStart: func(info httptrace.DNSStartInfo) {
@@ -498,7 +543,7 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 		req = req.WithContext(ctx)
 	}
 
-	response, err := d.client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		d.logger.WithError(err).Error("error sending request to API endpoint")
 		res.Error = err.Error()
@@ -541,7 +586,7 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 
 // Ping sends requests to the specified endpoint using configurable methods and verifies it returns a 2xx response.
 // It returns an error if the endpoint is unreachable or returns a non-2xx status code.
-func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration, contentType string) error {
+func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) error {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -566,7 +611,7 @@ func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Dur
 
 	var lastErr error
 	for i, method := range methods {
-		err := d.tryPingMethod(ctx, endpoint, method, contentType)
+		err := d.tryPingMethod(ctx, endpoint, method, contentType, mtlsCert)
 		if err == nil {
 			if i > 0 {
 				d.logger.Infof("Ping succeeded with %s after %d attempts", method, i+1)
@@ -582,7 +627,9 @@ func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Dur
 	return lastErr
 }
 
-func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, contentType string) error {
+func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, contentType string, mtlsCert *tls.Certificate) error {
+	client := d.createClientWithMTLS(mtlsCert)
+
 	var body []byte
 	var reqContentType string
 
@@ -612,7 +659,7 @@ func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, conten
 		req.Header.Set("Content-Type", reqContentType)
 	}
 
-	response, err := d.client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		return err
 	}

@@ -33,6 +33,10 @@ export interface ENDPOINT {
 	http_timeout?: string;
 	support_email: string;
 	content_type?: string;
+	mtls_client_cert?: {
+		client_cert?: string;
+		client_key?: string;
+	};
 }
 
 export interface DEVICE {

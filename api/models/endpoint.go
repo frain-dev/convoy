@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -60,6 +61,9 @@ type CreateEndpoint struct {
 	// shouldn't be needed often because webhook endpoints usually should be exposed to
 	// the internet.
 	Authentication *EndpointAuthentication `json:"authentication"`
+
+	// mTLS client certificate configuration for the endpoint
+	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty"`
 
 	// Deprecated but necessary for backward compatibility
 	AppID string
@@ -121,6 +125,9 @@ type UpdateEndpoint struct {
 	// shouldn't be needed often because webhook endpoints usually should be exposed to
 	// the internet.
 	Authentication *EndpointAuthentication `json:"authentication"`
+
+	// mTLS client certificate configuration for the endpoint
+	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty"`
 }
 
 func (uE *UpdateEndpoint) Validate() error {
@@ -155,6 +162,25 @@ type EndpointAuthentication struct {
 	ApiKey *ApiKey                              `json:"api_key"`
 }
 
+// MtlsClientCert holds the client certificate and key configuration for mTLS
+type MtlsClientCert struct {
+	// ClientCert is the client certificate PEM string
+	ClientCert string `json:"client_cert,omitempty"`
+	// ClientKey is the client private key PEM string
+	ClientKey string `json:"client_key,omitempty"`
+}
+
+func (mc *MtlsClientCert) Transform() *datastore.MtlsClientCert {
+	if mc == nil {
+		return nil
+	}
+
+	return &datastore.MtlsClientCert{
+		ClientCert: mc.ClientCert,
+		ClientKey:  mc.ClientKey,
+	}
+}
+
 func (ea *EndpointAuthentication) Transform() *datastore.EndpointAuthentication {
 	if ea == nil {
 		return nil
@@ -168,4 +194,25 @@ func (ea *EndpointAuthentication) Transform() *datastore.EndpointAuthentication 
 
 type EndpointResponse struct {
 	*datastore.Endpoint
+}
+
+// MarshalJSON redacts sensitive fields before serializing the endpoint response.
+// Specifically, it removes the mTLS client private key from the JSON output.
+func (er EndpointResponse) MarshalJSON() ([]byte, error) {
+	if er.Endpoint == nil {
+		return []byte("null"), nil
+	}
+
+	// Create a shallow copy to avoid mutating the original
+	e := *er.Endpoint
+	if e.MtlsClientCert != nil {
+		mtls := *e.MtlsClientCert
+		// Redact private key from API responses - show placeholder if key exists
+		if mtls.ClientKey != "" {
+			mtls.ClientKey = "[REDACTED]"
+		}
+		e.MtlsClientCert = &mtls
+	}
+
+	return json.Marshal(&e)
 }

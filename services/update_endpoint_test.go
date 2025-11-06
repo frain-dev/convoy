@@ -116,7 +116,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().IpRules().Times(2).Return(true)
-				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr:    true,
@@ -182,9 +182,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").
 					Times(1).Return(nil, datastore.ErrEndpointNotFound)
 
-				licenser, _ := as.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().IpRules().Times(2).Return(true)
-				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(false)
+				// No licenser expectations - FindEndpointByID fails before ValidateEndpoint is called
 			},
 			wantErr:    true,
 			wantErrMsg: "endpoint not found",
@@ -311,6 +309,163 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				licenser, _ := as.Licenser.(*mocks.MockLicenser)
 				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_with_incomplete_mtls",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:        stringPtr("Endpoint mTLS bad"),
+					Description: "desc",
+					URL:         "https://www.google.com/webhp",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+					},
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint-mtls-bad"},
+				project:  project,
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(&datastore.Endpoint{UID: "endpoint-mtls-bad"}, nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr:    true,
+			wantErrMsg: "mtls_client_cert requires both client_cert and client_key",
+		},
+		{
+			name: "should_update_endpoint_with_mtls_field_omitted_uses_existing_cert",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:        stringPtr("Updated Name Only"),
+					Description: "updating name without touching mTLS",
+					URL:         "https://www.google.com/webhp",
+					// MtlsClientCert is nil (field omitted) - should use existing cert from DB
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint-with-mtls"},
+				project:  project,
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:        "Updated Name Only",
+				Description: "updating name without touching mTLS",
+				Url:         "https://www.google.com/webhp",
+				MtlsClientCert: &datastore.MtlsClientCert{
+					ClientCert: "-----BEGIN CERTIFICATE-----\nexisting-cert\n-----END CERTIFICATE-----",
+					ClientKey:  "-----BEGIN PRIVATE KEY-----\nexisting-key\n-----END PRIVATE KEY-----",
+				},
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				// Return endpoint with existing mTLS cert
+				existingEndpoint := &datastore.Endpoint{
+					UID: "endpoint-with-mtls",
+					MtlsClientCert: &datastore.MtlsClientCert{
+						ClientCert: "-----BEGIN CERTIFICATE-----\nexisting-cert\n-----END CERTIFICATE-----",
+						ClientKey:  "-----BEGIN PRIVATE KEY-----\nexisting-key\n-----END PRIVATE KEY-----",
+					},
+				}
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(existingEndpoint, nil)
+
+				// Verify that mTLS cert is preserved (not removed)
+				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.MtlsClientCert != nil &&
+						endpoint.MtlsClientCert.ClientCert == "-----BEGIN CERTIFICATE-----\nexisting-cert\n-----END CERTIFICATE-----"
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr: false,
+		},
+		{
+			name: "should_fail_to_replace_mtls_cert_with_invalid_cert",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:        stringPtr("Endpoint with new cert"),
+					Description: "replacing mTLS cert with invalid data",
+					URL:         "https://www.google.com/webhp",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: "-----BEGIN CERTIFICATE-----\ninvalid-cert-data\n-----END CERTIFICATE-----",
+						ClientKey:  "-----BEGIN PRIVATE KEY-----\ninvalid-key-data\n-----END PRIVATE KEY-----",
+					},
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint-replace-mtls"},
+				project:  project,
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				// Return endpoint with existing mTLS cert
+				existingEndpoint := &datastore.Endpoint{
+					UID: "endpoint-replace-mtls",
+					MtlsClientCert: &datastore.MtlsClientCert{
+						ClientCert: "-----BEGIN CERTIFICATE-----\nold-cert\n-----END CERTIFICATE-----",
+						ClientKey:  "-----BEGIN PRIVATE KEY-----\nold-key\n-----END PRIVATE KEY-----",
+					},
+				}
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(existingEndpoint, nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+			},
+			wantErr:    true,
+			wantErrMsg: "invalid mTLS client certificate: failed to parse client certificate and key: tls: failed to find any PEM data in certificate input",
+		},
+		{
+			name: "should_remove_mtls_cert_with_empty_strings",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:        stringPtr("Endpoint remove mTLS"),
+					Description: "removing mTLS configuration",
+					URL:         "https://www.google.com/webhp",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: "",
+						ClientKey:  "",
+					},
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint-remove-mtls"},
+				project:  project,
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:        "Endpoint remove mTLS",
+				Description: "removing mTLS configuration",
+				Url:         "https://www.google.com/webhp",
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				// Return endpoint with existing mTLS cert
+				existingEndpoint := &datastore.Endpoint{
+					UID: "endpoint-remove-mtls",
+					MtlsClientCert: &datastore.MtlsClientCert{
+						ClientCert: "-----BEGIN CERTIFICATE-----\nexisting-cert\n-----END CERTIFICATE-----",
+						ClientKey:  "-----BEGIN PRIVATE KEY-----\nexisting-key\n-----END PRIVATE KEY-----",
+					},
+				}
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(existingEndpoint, nil)
+
+				// Verify the mTLS cert is removed (set to nil)
+				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.MtlsClientCert == nil
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
 			},
 			wantErr: false,

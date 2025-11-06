@@ -33,7 +33,8 @@ const (
                 rate_limit, rate_limit_duration, advanced_signatures, slack_webhook_url,
                 support_email, app_id, project_id, authentication_type, authentication_type_api_key_header_name,
                 authentication_type_api_key_header_value,
-                is_encrypted, secrets_cipher, authentication_type_api_key_header_value_cipher, content_type
+                is_encrypted, secrets_cipher, authentication_type_api_key_header_value_cipher,
+                mtls_client_cert, mtls_client_cert_cipher, content_type
             )
             VALUES
               (
@@ -42,7 +43,9 @@ const (
                 $14, $15, $16, $17, CASE WHEN $19 THEN '' ELSE $18 END,
                $19,
                CASE WHEN $19 THEN pgp_sym_encrypt($4::TEXT, $20)  END, -- Ciphered values if encrypted
-               CASE WHEN $19 THEN pgp_sym_encrypt($18, $20) END, $21
+               CASE WHEN $19 THEN pgp_sym_encrypt($18, $20) END,
+               CASE WHEN $19 THEN NULL ELSE $21::jsonb END,
+               CASE WHEN $19 THEN pgp_sym_encrypt($21::TEXT, $20) END, $22
               );
             `
 
@@ -62,7 +65,12 @@ const (
 	CASE
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $1)::TEXT
         ELSE e.authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value", e.content_type
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.mtls_client_cert_cipher::bytea, $1)::jsonb
+        ELSE e.mtls_client_cert
+    END AS mtls_client_cert,
+	e.content_type
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
 	`
@@ -89,7 +97,12 @@ const (
 	CASE
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, $3)::TEXT
         ELSE e.authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value", e.content_type
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.mtls_client_cert_cipher::bytea, $3)::jsonb
+        ELSE e.mtls_client_cert
+    END AS mtls_client_cert,
+	e.content_type
     FROM convoy.endpoints AS e WHERE e.deleted_at IS NULL AND e.url = $1 AND e.project_id = $2;
     `
 
@@ -114,7 +127,14 @@ const (
         WHEN is_encrypted THEN '[]'
         ELSE $17
     END,
-	updated_at = NOW(), content_type = $19
+    mtls_client_cert = CASE
+        WHEN is_encrypted THEN NULL
+        ELSE $19::jsonb
+    END,
+	mtls_client_cert_cipher = CASE
+        WHEN is_encrypted THEN pgp_sym_encrypt($19::TEXT, $18)
+    END,
+	updated_at = NOW(), content_type = $20
 	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL;
 	`
 
@@ -134,7 +154,12 @@ const (
     CASE
         WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::TEXT
         ELSE authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value", content_type;
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, $4)::jsonb
+        ELSE mtls_client_cert
+    END AS mtls_client_cert,
+	content_type;
 	`
 
 	updateEndpointSecrets = `
@@ -162,7 +187,12 @@ const (
     CASE
         WHEN is_encrypted THEN pgp_sym_decrypt(authentication_type_api_key_header_value_cipher::bytea, $4)::TEXT
         ELSE authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value", content_type;
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN is_encrypted THEN pgp_sym_decrypt(mtls_client_cert_cipher::bytea, $4)::jsonb
+        ELSE mtls_client_cert
+    END AS mtls_client_cert,
+	content_type;
 	`
 
 	deleteEndpoint = `
@@ -196,7 +226,12 @@ const (
 	CASE
         WHEN e.is_encrypted THEN pgp_sym_decrypt(e.authentication_type_api_key_header_value_cipher::bytea, :encryption_key)::TEXT
         ELSE e.authentication_type_api_key_header_value
-    END AS "authentication.api_key.header_value", e.content_type
+    END AS "authentication.api_key.header_value",
+	CASE
+        WHEN e.is_encrypted THEN pgp_sym_decrypt(e.mtls_client_cert_cipher::bytea, :encryption_key)::jsonb
+        ELSE e.mtls_client_cert
+    END AS mtls_client_cert,
+	e.content_type
 	FROM convoy.endpoints AS e
 	WHERE e.deleted_at IS NULL
 	AND e.project_id = :project_id
@@ -304,7 +339,8 @@ func (e *endpointRepo) CreateEndpoint(ctx context.Context, endpoint *datastore.E
 		endpoint.UID, endpoint.Name, endpoint.Status, endpoint.Secrets, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail, endpoint.AppID,
-		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, isEncrypted, key, contentType,
+		projectID, ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, isEncrypted, key,
+		endpoint.MtlsClientCert, contentType,
 	}
 
 	result, err := e.db.GetDB().ExecContext(ctx, createEndpoint, args...)
@@ -428,7 +464,8 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 	r, err := e.db.GetReadDB().ExecContext(ctx, updateEndpoint, endpoint.UID, projectID, endpoint.Name, endpoint.Status, endpoint.OwnerID, endpoint.Url,
 		endpoint.Description, endpoint.HttpTimeout, endpoint.RateLimit, endpoint.RateLimitDuration,
 		endpoint.AdvancedSignatures, endpoint.SlackWebhookURL, endpoint.SupportEmail,
-		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets, key, contentType,
+		ac.Type, ac.ApiKey.HeaderName, ac.ApiKey.HeaderValue, endpoint.Secrets, key,
+		endpoint.MtlsClientCert, contentType,
 	)
 	if err != nil {
 		isEncErr, err2 := e.isEncryptionError(err)

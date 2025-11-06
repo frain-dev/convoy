@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net/http"
@@ -41,7 +42,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		return nil, &ServiceError{ErrMsg: "failed to load endpoint project", Err: err}
 	}
 
-	endpointUrl, err := a.ValidateEndpoint(ctx, project.Config.SSL.EnforceSecureEndpoints)
+	endpointUrl, err := a.ValidateEndpoint(ctx, project.Config.SSL.EnforceSecureEndpoints, a.E.MtlsClientCert)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -121,6 +122,24 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	}
 
 	endpoint.Authentication = auth
+
+	// Set mTLS client certificate if provided
+	if a.E.MtlsClientCert != nil {
+		// Validate both fields provided together
+		cc := a.E.MtlsClientCert
+		if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
+			return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
+		}
+
+		// Validate the certificate and key pair (checks expiration and matching)
+		_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
+		if err != nil {
+			return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
+		}
+
+		endpoint.MtlsClientCert = a.E.MtlsClientCert.Transform()
+	}
+
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create endpoint")
@@ -133,7 +152,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	return endpoint, nil
 }
 
-func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool) (string, error) {
+func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool, mtlsClientCert *models.MtlsClientCert) (string, error) {
 	if util.IsStringEmpty(a.E.URL) {
 		return "", errors.New("please provide the endpoint url")
 	}
@@ -172,7 +191,21 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			return "", innerErr
 		}
 
-		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, a.E.ContentType)
+		// Load mTLS client certificate if provided for ping validation
+		// Note: This is best-effort. If cert loading fails here, it will be properly
+		// validated later in the Run() method before persisting to database.
+		var mtlsCert *tls.Certificate
+		if mtlsClientCert != nil && !util.IsStringEmpty(mtlsClientCert.ClientCert) && !util.IsStringEmpty(mtlsClientCert.ClientKey) {
+			cert, certErr := config.LoadClientCertificate(mtlsClientCert.ClientCert, mtlsClientCert.ClientKey)
+			if certErr != nil {
+				// Log warning but don't fail - validation will happen later
+				log.FromContext(ctx).WithError(certErr).Warn("failed to load mTLS cert for ping, will validate later")
+			} else {
+				mtlsCert = cert
+			}
+		}
+
+		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, a.E.ContentType, mtlsCert)
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
 				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)

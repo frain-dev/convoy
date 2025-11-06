@@ -757,3 +757,93 @@ func seedEndpoint(t *testing.T, db database.Database) *datastore.Endpoint {
 
 	return endpoint
 }
+
+func Test_CreateEndpoint_WithMtls(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	runCreateEndpointWithMtlsTest(t, db)
+}
+
+func Test_CreateEndpoint_WithMtls_Encrypted(t *testing.T) {
+	db, closeFn := getDB(t)
+	defer closeFn()
+
+	runCreateEndpointWithMtlsTest(t, db)
+
+	assertAndInitEncryption(t, db)
+
+	runCreateEndpointWithMtlsTest(t, db)
+}
+
+func runCreateEndpointWithMtlsTest(t *testing.T, db database.Database) {
+	projectRepo := NewProjectRepo(db)
+	endpointRepo := NewEndpointRepo(db)
+
+	project := &datastore.Project{
+		UID:            ulid.Make().String(),
+		Name:           "Project with mTLS",
+		LogoURL:        "s3.com/logo",
+		OrganisationID: seedOrg(t, db).UID,
+		Type:           datastore.OutgoingProject,
+		Config:         &datastore.DefaultProjectConfig,
+	}
+
+	require.NoError(t, projectRepo.CreateProject(context.Background(), project))
+
+	// Create endpoint with mTLS certificate
+	endpoint := &datastore.Endpoint{
+		UID:                ulid.Make().String(),
+		ProjectID:          project.UID,
+		OwnerID:            ulid.Make().String(),
+		Url:                "https://secure.example.com",
+		Name:               "mTLS Test Endpoint",
+		AdvancedSignatures: true,
+		Description:        "endpoint with mTLS",
+		HttpTimeout:        30,
+		RateLimit:          300,
+		Status:             datastore.ActiveEndpointStatus,
+		RateLimitDuration:  10,
+		Secrets: []datastore.Secret{
+			{
+				UID:       ulid.Make().String(),
+				Value:     "secret-value",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		},
+		MtlsClientCert: &datastore.MtlsClientCert{
+			ClientCert: "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----",
+			ClientKey:  "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----",
+		},
+	}
+
+	// Create the endpoint
+	err := endpointRepo.CreateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Fetch it back and verify mTLS configuration
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(t, err)
+
+	// Verify mTLS certificate was stored and retrieved correctly
+	require.NotNil(t, dbEndpoint.MtlsClientCert)
+	require.Equal(t, "-----BEGIN CERTIFICATE-----\ntest-cert-data\n-----END CERTIFICATE-----", dbEndpoint.MtlsClientCert.ClientCert)
+	require.Equal(t, "-----BEGIN PRIVATE KEY-----\ntest-key-data\n-----END PRIVATE KEY-----", dbEndpoint.MtlsClientCert.ClientKey)
+
+	// Update the endpoint with different mTLS config
+	endpoint.MtlsClientCert = &datastore.MtlsClientCert{
+		ClientCert: "-----BEGIN CERTIFICATE-----\nupdated-cert\n-----END CERTIFICATE-----",
+		ClientKey:  "-----BEGIN PRIVATE KEY-----\nupdated-key\n-----END PRIVATE KEY-----",
+	}
+
+	err = endpointRepo.UpdateEndpoint(context.Background(), endpoint, project.UID)
+	require.NoError(t, err)
+
+	// Verify update worked
+	dbEndpoint, err = endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(t, err)
+	require.NotNil(t, dbEndpoint.MtlsClientCert)
+	require.Equal(t, "-----BEGIN CERTIFICATE-----\nupdated-cert\n-----END CERTIFICATE-----", dbEndpoint.MtlsClientCert.ClientCert)
+	require.Equal(t, "-----BEGIN PRIVATE KEY-----\nupdated-key\n-----END PRIVATE KEY-----", dbEndpoint.MtlsClientCert.ClientKey)
+}
