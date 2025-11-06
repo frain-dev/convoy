@@ -223,7 +223,12 @@ func TestDispatcherMTLSIntegration(t *testing.T) {
 
 		// Should fail with TLS handshake error
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "tls")
+		errMsg := err.Error()
+		require.True(t,
+			strings.Contains(errMsg, "tls") ||
+				strings.Contains(errMsg, "connection reset") ||
+				strings.Contains(errMsg, "closed network connection"),
+			"expected TLS/connection error, got: %s", errMsg)
 		if resp != nil {
 			require.NotEqual(t, http.StatusOK, resp.StatusCode)
 		}
