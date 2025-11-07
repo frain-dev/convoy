@@ -36,6 +36,10 @@ import (
 	"github.com/hibiken/asynq"
 )
 
+const (
+	errMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
+)
+
 func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) (err error) {
 		// Start a new trace span for event delivery
@@ -221,6 +225,19 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 	// Load mTLS client certificate if configured
 	var mtlsCert *tls.Certificate
 	if endpoint.MtlsClientCert != nil {
+		// Check license before using mTLS during delivery
+		if !licenser.MutualTLS() {
+			log.FromContext(ctx).Error(errMutualTLSFeatureUnavailable)
+			eventDelivery.Status = datastore.FailureEventStatus
+			eventDelivery.Description = errMutualTLSFeatureUnavailable
+			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+			if err != nil {
+				log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+			}
+			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+			return nil // Return nil to avoid retrying
+		}
+
 		// Use cached certificate loading to avoid parsing on every request
 		cert, certErr := config.LoadClientCertificateWithCache(
 			endpoint.UID, // Use endpoint ID as cache key

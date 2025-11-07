@@ -5,6 +5,10 @@ const (
 	ErrCodeLicenseExpired = "license.expired"
 )
 
+const (
+	ErrMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
+)
+
 type ServiceError struct {
 	ErrMsg string
 	Err    error

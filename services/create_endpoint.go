@@ -125,6 +125,11 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 	// Set mTLS client certificate if provided
 	if a.E.MtlsClientCert != nil {
+		// Check license before allowing mTLS configuration
+		if !a.Licenser.MutualTLS() {
+			return nil, &ServiceError{ErrMsg: ErrMutualTLSFeatureUnavailable}
+		}
+
 		// Validate both fields provided together
 		cc := a.E.MtlsClientCert
 		if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
