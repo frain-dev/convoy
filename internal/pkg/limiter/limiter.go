@@ -13,7 +13,13 @@ type RateLimiter interface {
 }
 
 func NewLimiter(cfg config.Configuration) (RateLimiter, error) {
-	r, err := rlimiter.NewRedisLimiter(cfg.Redis.BuildDsn())
+	r, err := rlimiter.NewRedisLimiterFromConfig(
+		cfg.Redis.BuildDsn(),
+		cfg.Redis.TLSSkipVerify,
+		cfg.Redis.TLSCACertFile,
+		cfg.Redis.TLSCertFile,
+		cfg.Redis.TLSKeyFile,
+	)
 	if err != nil {
 		return nil, err
 	}

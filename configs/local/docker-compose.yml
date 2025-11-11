@@ -1,9 +1,10 @@
 services:
     web:
-        image: getconvoy/convoy:latest
+        image: rtukpe/convoy-main:v9
         command: ["/start.sh"]
         volumes:
             - ./convoy.json:/convoy.json
+            - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
         restart: unless-stopped
         ports:
             - "5005:5005"
@@ -18,18 +19,19 @@ services:
             - redis_server
             - pgbouncer
     agent:
-        image: getconvoy/convoy:latest
+        image: rtukpe/convoy-main:v9
         command: ["./cmd", "agent", "--config", "convoy.json"]
         ports:
             - "5008:5008"
         volumes:
             - ./convoy.json:/convoy.json
+            - ./conf/redis/ca-cert.pem:/etc/ssl/certs/redis-ca.pem:ro
         restart: unless-stopped
         depends_on:
             web:
                 condition: service_healthy
     pgbouncer:
-        image: bitnami/pgbouncer:latest
+        image: bitnamilegacy/pgbouncer
         hostname: pgbouncer
         restart: unless-stopped
         depends_on:
@@ -63,8 +65,15 @@ services:
     redis_server:
         image: redis:7-alpine
         restart: unless-stopped
+        ports:
+            - "6379:6379"
+        command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
         volumes:
           - redis_data:/data
+          - ./conf/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+          - ./conf/redis/ca-cert.pem:/usr/local/etc/redis/certs/ca-cert.pem:ro
+          - ./conf/redis/redis-server-cert.pem:/usr/local/etc/redis/certs/redis-server-cert.pem:ro
+          - ./conf/redis/redis-server-key.pem:/usr/local/etc/redis/certs/redis-server-key.pem:ro
 volumes:
     postgresql_master_data:
     redis_data:

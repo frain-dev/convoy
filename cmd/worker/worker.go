@@ -57,7 +57,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+	redis, err := rdb.NewClientFromConfig(
+		cfg.Redis.BuildDsn(),
+		cfg.Redis.TLSSkipVerify,
+		cfg.Redis.TLSCACertFile,
+		cfg.Redis.TLSCertFile,
+		cfg.Redis.TLSKeyFile,
+	)
 	if err != nil {
 		return err
 	}
@@ -140,7 +146,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	filterRepo := postgres.NewFilterRepo(a.DB)
 	batchRetryRepo := postgres.NewBatchRetryRepo(a.DB)
 
-	rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
+	rd, err := rdb.NewClientFromConfig(
+		cfg.Redis.BuildDsn(),
+		cfg.Redis.TLSSkipVerify,
+		cfg.Redis.TLSCACertFile,
+		cfg.Redis.TLSCertFile,
+		cfg.Redis.TLSKeyFile,
+	)
 	if err != nil {
 		return err
 	}
