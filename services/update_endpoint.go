@@ -205,6 +205,11 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 			// Clear cached certificate since it's being removed
 			config.GetCertCache().Delete(endpoint.UID)
 		} else {
+			// Check license before allowing mTLS configuration
+			if !a.Licenser.MutualTLS() {
+				return nil, &ServiceError{ErrMsg: ErrMutualTLSFeatureUnavailable}
+			}
+
 			// Updating or setting new mTLS cert - both fields required
 			if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
 				return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}

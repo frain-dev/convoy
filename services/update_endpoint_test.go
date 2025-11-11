@@ -39,6 +39,9 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 	_ = config.LoadCaCert("", "")
 	ctx := context.Background()
 	project := &datastore.Project{UID: "1234567890", Config: &datastore.DefaultProjectConfig}
+
+	// Generate valid test certificate for mTLS tests
+	testCertPEM, testKeyPEM := generateTestCertificate(t)
 	type args struct {
 		ctx      context.Context
 		e        models.UpdateEndpoint
@@ -336,6 +339,7 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "mtls_client_cert requires both client_cert and client_key",
@@ -420,9 +424,42 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "invalid mTLS client certificate: failed to parse client certificate and key: tls: failed to find any PEM data in certificate input",
+		},
+		{
+			name: "should_fail_to_update_endpoint_with_mtls_when_license_denies",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:        stringPtr("Endpoint with mTLS denied"),
+					Description: "updating endpoint with mTLS but license denies",
+					URL:         "https://www.google.com/webhp",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: testCertPEM,
+						ClientKey:  testKeyPEM,
+					},
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint-mtls-denied"},
+				project:  project,
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				existingEndpoint := &datastore.Endpoint{
+					UID: "endpoint-mtls-denied",
+				}
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(existingEndpoint, nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+				licenser.EXPECT().MutualTLS().Times(1).Return(false)
+			},
+			wantErr:    true,
+			wantErrMsg: ErrMutualTLSFeatureUnavailable,
 		},
 		{
 			name: "should_remove_mtls_cert_with_empty_strings",

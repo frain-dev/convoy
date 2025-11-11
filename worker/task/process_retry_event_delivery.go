@@ -219,6 +219,19 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 	// Load mTLS client certificate if configured
 	var mtlsCert *tls.Certificate
 	if endpoint.MtlsClientCert != nil {
+		// Check license before using mTLS during delivery
+		if !licenser.MutualTLS() {
+			log.FromContext(ctx).Error(errMutualTLSFeatureUnavailable)
+			eventDelivery.Status = datastore.FailureEventStatus
+			eventDelivery.Description = errMutualTLSFeatureUnavailable
+			innerErr := eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+			if innerErr != nil {
+				log.FromContext(ctx).WithError(innerErr).Error("failed to update event delivery status to failed")
+			}
+			tracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+			return nil // Return nil to avoid retrying
+		}
+
 		// Use cached certificate loading to avoid parsing on every request
 		cert, certErr := config.LoadClientCertificateWithCache(
 			endpoint.UID, // Use endpoint ID as cache key

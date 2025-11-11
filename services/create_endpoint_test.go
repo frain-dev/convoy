@@ -180,6 +180,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantErr:    true,
 			wantErrMsg: "mtls_client_cert requires both client_cert and client_key",
@@ -326,6 +327,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				licenser.EXPECT().IpRules().Times(2).Return(true)
 				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
 				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+				licenser.EXPECT().MutualTLS().Times(1).Return(true)
 			},
 			wantEndpoint: &datastore.Endpoint{
 				Name:      "mtls_endpoint",
@@ -343,6 +345,37 @@ func TestCreateEndpointService_Run(t *testing.T) {
 				},
 			},
 			wantErr: false,
+		},
+		{
+			name: "should_fail_to_create_endpoint_with_mtls_when_license_denies",
+			args: args{
+				ctx: ctx,
+				e: models.CreateEndpoint{
+					Name:        "mtls_endpoint_denied",
+					Secret:      "1234",
+					URL:         "https://secure.example.com",
+					Description: "endpoint with mTLS but license denies",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: testCertPEM,
+						ClientKey:  testKeyPEM,
+					},
+				},
+				g: project,
+			},
+			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+				licenser.EXPECT().MutualTLS().Times(1).Return(false)
+			},
+			wantErr:    true,
+			wantErrMsg: ErrMutualTLSFeatureUnavailable,
 		},
 		{
 			name: "should_fail_to_create_endpoint",
