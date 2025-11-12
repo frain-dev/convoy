@@ -8,8 +8,10 @@
         "port": 6432
     },
     "redis": {
+        "scheme": "rediss",
         "port": 6379,
-        "host": "redis_server"
+        "host": "redis_server",
+        "tls_ca_cert_file": "/etc/ssl/certs/redis-ca.pem"
     },
     "server": {
         "http": {

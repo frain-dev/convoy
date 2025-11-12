@@ -31,6 +31,22 @@ func NewRedisCache(addresses []string) (*RedisCache, error) {
 	return r, nil
 }
 
+func NewRedisCacheFromConfig(addresses []string, tlsSkipVerify bool, caCertFile, certFile, keyFile string) (*RedisCache, error) {
+	client, err := rdb.NewClientFromConfig(addresses, tlsSkipVerify, caCertFile, certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	c := cache.New(&cache.Options{
+		Redis:      client.Client(),
+		LocalCache: cache.NewTinyLFU(cacheSize, 1*time.Minute),
+	})
+
+	r := &RedisCache{cache: c}
+
+	return r, nil
+}
+
 func (r *RedisCache) Set(ctx context.Context, key string, data interface{}, ttl time.Duration) error {
 	return r.cache.Set(&cache.Item{
 		Ctx:   ctx,

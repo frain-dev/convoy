@@ -89,7 +89,13 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 
 			handler := socket.BuildRoutes(r)
 
-			redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+			redis, err := rdb.NewClientFromConfig(
+				cfg.Redis.BuildDsn(),
+				cfg.Redis.TLSSkipVerify,
+				cfg.Redis.TLSCACertFile,
+				cfg.Redis.TLSCertFile,
+				cfg.Redis.TLSKeyFile,
+			)
 			if err != nil {
 				return err
 			}

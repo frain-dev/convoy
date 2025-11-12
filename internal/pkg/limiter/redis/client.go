@@ -27,6 +27,18 @@ func NewRedisLimiter(addresses []string) (*RedisLimiter, error) {
 	return r, nil
 }
 
+func NewRedisLimiterFromConfig(addresses []string, tlsSkipVerify bool, caCertFile, certFile, keyFile string) (*RedisLimiter, error) {
+	client, err := rdb.NewClientFromConfig(addresses, tlsSkipVerify, caCertFile, certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	c := redis_rate.NewLimiter(client.Client())
+	r := &RedisLimiter{limiter: c}
+
+	return r, nil
+}
+
 func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int) error {
 	l := redis_rate.Limit{
 		Period: time.Second,

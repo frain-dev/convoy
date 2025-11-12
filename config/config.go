@@ -212,13 +212,17 @@ type PrometheusConfiguration struct {
 }
 
 type RedisConfiguration struct {
-	Scheme    string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
-	Host      string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
-	Username  string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
-	Password  string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
-	Database  string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
-	Port      int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
-	Addresses string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
+	Scheme        string `json:"scheme" envconfig:"CONVOY_REDIS_SCHEME"`
+	Host          string `json:"host" envconfig:"CONVOY_REDIS_HOST"`
+	Username      string `json:"username" envconfig:"CONVOY_REDIS_USERNAME"`
+	Password      string `json:"password" envconfig:"CONVOY_REDIS_PASSWORD"`
+	Database      string `json:"database" envconfig:"CONVOY_REDIS_DATABASE"`
+	Port          int    `json:"port" envconfig:"CONVOY_REDIS_PORT"`
+	Addresses     string `json:"addresses" envconfig:"CONVOY_REDIS_CLUSTER_ADDRESSES"`
+	TLSSkipVerify bool   `json:"tls_skip_verify" envconfig:"CONVOY_REDIS_TLS_SKIP_VERIFY"`
+	TLSCertFile   string `json:"tls_cert_file" envconfig:"CONVOY_REDIS_TLS_CERT_FILE"`
+	TLSKeyFile    string `json:"tls_key_file" envconfig:"CONVOY_REDIS_TLS_KEY_FILE"`
+	TLSCACertFile string `json:"tls_ca_cert_file" envconfig:"CONVOY_REDIS_TLS_CA_CERT_FILE"`
 }
 
 func (rc RedisConfiguration) BuildDsn() []string {
@@ -241,6 +245,10 @@ func (rc RedisConfiguration) BuildDsn() []string {
 	}
 
 	return []string{fmt.Sprintf("%s://%s%s:%d%s", rc.Scheme, authPart, rc.Host, rc.Port, dbPart)}
+}
+
+func (rc RedisConfiguration) HasTLSConfig() bool {
+	return rc.TLSSkipVerify || rc.TLSCACertFile != "" || (rc.TLSCertFile != "" && rc.TLSKeyFile != "")
 }
 
 type FileRealmOption struct {
