@@ -29,6 +29,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 )
@@ -329,6 +330,9 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		a.TracerBackend),
 		newTelemetry)
 
+	// Initialize OAuth2 token service
+	oauth2TokenService := services.NewOAuth2TokenService(a.Cache, lo)
+
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
 		endpointRepo,
 		eventRepo,
@@ -337,7 +341,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		filterRepo,
 		a.Licenser,
-		a.TracerBackend),
+		a.TracerBackend,
+		oauth2TokenService),
 		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
@@ -351,7 +356,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
-		a.TracerBackend),
+		a.TracerBackend,
+		oauth2TokenService),
 		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
@@ -363,7 +369,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		filterRepo,
 		a.Licenser,
-		a.TracerBackend),
+		a.TracerBackend,
+		oauth2TokenService),
 		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
@@ -374,7 +381,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		subRepo,
 		filterRepo,
 		a.Licenser,
-		a.TracerBackend),
+		a.TracerBackend,
+		oauth2TokenService),
 		newTelemetry)
 
 	if a.Licenser.RetentionPolicy() {
@@ -393,7 +401,8 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		filterRepo,
 		deviceRepo,
 		a.Licenser,
-		a.TracerBackend),
+		a.TracerBackend,
+		oauth2TokenService),
 		newTelemetry)
 
 	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd), nil)

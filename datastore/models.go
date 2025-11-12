@@ -199,6 +199,7 @@ const (
 
 const (
 	APIKeyAuthentication EndpointAuthenticationType = "api_key"
+	OAuth2Authentication EndpointAuthenticationType = "oauth2"
 )
 
 const (
@@ -441,6 +442,9 @@ type Endpoint struct {
 	// mTLS client certificate configuration
 	MtlsClientCert *MtlsClientCert `json:"mtls_client_cert,omitempty" db:"mtls_client_cert"`
 
+	// OAuth2 configuration (scanned from oauth2_config column)
+	OAuth2Config *OAuth2 `json:"-" db:"oauth2_config"`
+
 	CreatedAt time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 	DeletedAt null.Time `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
@@ -493,8 +497,9 @@ type Secret struct {
 }
 
 type EndpointAuthentication struct {
-	Type   EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key)~unsupported authentication type"`
-	ApiKey *ApiKey                    `json:"api_key" db:"api_key"`
+	Type   EndpointAuthenticationType `json:"type,omitempty" db:"type" valid:"optional,in(api_key|oauth2)~unsupported authentication type"`
+	ApiKey *ApiKey                    `json:"api_key,omitempty" db:"api_key"`
+	OAuth2 *OAuth2                    `json:"oauth2,omitempty" db:"oauth2"`
 }
 
 // MtlsClientCert holds the client certificate and key configuration for mTLS
@@ -1427,6 +1432,103 @@ type BasicAuth struct {
 type ApiKey struct {
 	HeaderValue string `json:"header_value" db:"header_value" valid:"required"`
 	HeaderName  string `json:"header_name" db:"header_name" valid:"required"`
+}
+
+// OAuth2AuthenticationType represents the type of OAuth2 authentication
+type OAuth2AuthenticationType string
+
+const (
+	SharedSecretAuth    OAuth2AuthenticationType = "shared_secret"
+	ClientAssertionAuth OAuth2AuthenticationType = "client_assertion"
+)
+
+// OAuth2SigningKey represents a JWK-formatted signing key for client assertion
+// Supports both EC (Elliptic Curve) and RSA key types
+type OAuth2SigningKey struct {
+	Kty string `json:"kty"` // Key type: "EC" or "RSA"
+
+	// EC (Elliptic Curve) key fields
+	Crv string `json:"crv,omitempty"` // Curve: "P-256", "P-384", "P-521"
+	X   string `json:"x,omitempty"`   // X coordinate (EC only)
+	Y   string `json:"y,omitempty"`   // Y coordinate (EC only)
+	D   string `json:"d,omitempty"`   // Private key (EC only)
+
+	// RSA key fields
+	N  string `json:"n,omitempty"`  // RSA modulus (RSA only)
+	E  string `json:"e,omitempty"`  // RSA public exponent (RSA only)
+	P  string `json:"p,omitempty"`  // RSA first prime factor (RSA private key only)
+	Q  string `json:"q,omitempty"`  // RSA second prime factor (RSA private key only)
+	Dp string `json:"dp,omitempty"` // RSA first factor CRT exponent (RSA private key only)
+	Dq string `json:"dq,omitempty"` // RSA second factor CRT exponent (RSA private key only)
+	Qi string `json:"qi,omitempty"` // RSA first CRT coefficient (RSA private key only)
+
+	Kid string `json:"kid"` // Key ID
+}
+
+// OAuth2ExpiryTimeUnit represents the unit for expiry time
+type OAuth2ExpiryTimeUnit string
+
+const (
+	ExpiryTimeUnitSeconds      OAuth2ExpiryTimeUnit = "seconds"
+	ExpiryTimeUnitMilliseconds OAuth2ExpiryTimeUnit = "milliseconds"
+	ExpiryTimeUnitMinutes      OAuth2ExpiryTimeUnit = "minutes"
+	ExpiryTimeUnitHours        OAuth2ExpiryTimeUnit = "hours"
+)
+
+// OAuth2FieldMapping allows custom field name mappings for token response
+type OAuth2FieldMapping struct {
+	AccessToken string `json:"access_token,omitempty"` // Field name for access token (e.g., "accessToken", "access_token", "token")
+	TokenType   string `json:"token_type,omitempty"`   // Field name for token type (e.g., "tokenType", "token_type")
+	ExpiresIn   string `json:"expires_in,omitempty"`   // Field name for expiry time (e.g., "expiresIn", "expires_in", "expiresAt")
+}
+
+// OAuth2 holds OAuth2 authentication configuration
+type OAuth2 struct {
+	URL                string                   `json:"url" db:"url" valid:"required"`
+	ClientID           string                   `json:"client_id" db:"client_id" valid:"required"`
+	GrantType          string                   `json:"grant_type,omitempty" db:"grant_type"`
+	Scope              string                   `json:"scope,omitempty" db:"scope"`
+	Audience           string                   `json:"audience,omitempty" db:"audience"`
+	AuthenticationType OAuth2AuthenticationType `json:"authentication_type" db:"authentication_type" valid:"required,in(shared_secret|client_assertion)~unsupported authentication type"`
+	ClientSecret       string                   `json:"client_secret,omitempty" db:"client_secret"` // Encrypted at rest
+	SigningKey         *OAuth2SigningKey        `json:"signing_key,omitempty" db:"signing_key"`     // Encrypted at rest
+	SigningAlgorithm   string                   `json:"signing_algorithm,omitempty" db:"signing_algorithm"`
+	Issuer             string                   `json:"issuer,omitempty" db:"issuer"`
+	Subject            string                   `json:"subject,omitempty" db:"subject"`
+	// Field mapping for flexible token response parsing
+	FieldMapping *OAuth2FieldMapping `json:"field_mapping,omitempty" db:"field_mapping"`
+	// Expiry time unit (seconds, milliseconds, minutes, hours)
+	ExpiryTimeUnit OAuth2ExpiryTimeUnit `json:"expiry_time_unit,omitempty" db:"expiry_time_unit"`
+}
+
+func (o *OAuth2) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	b, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("unsupported value type %T", value)
+	}
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	return json.Unmarshal(b, o)
+}
+
+func (o OAuth2) Value() (driver.Value, error) {
+	if o.URL == "" && o.ClientID == "" {
+		return nil, nil
+	}
+
+	b, err := json.Marshal(o)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 type Organisation struct {

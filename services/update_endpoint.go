@@ -131,7 +131,17 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 		if a.E.ContentType != nil {
 			contentType = *a.E.ContentType
 		}
-		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, contentType, mtlsCert)
+
+		var oauth2TokenGetter net.OAuth2TokenGetter
+		if a.E.Authentication != nil && a.E.Authentication.Type == datastore.OAuth2Authentication {
+			// OAuth2 is being set or updated
+			oauth2TokenGetter = createOAuth2TokenGetter(a.E.Authentication, a.E.URL, existingEndpoint.UID, a.Logger)
+		} else if existingEndpoint != nil && existingEndpoint.Authentication != nil && existingEndpoint.Authentication.Type == datastore.OAuth2Authentication {
+			// OAuth2 is not being updated, but endpoint already has OAuth2 - use existing config
+			oauth2TokenGetter = createOAuth2TokenGetterFromDatastore(existingEndpoint.Authentication.OAuth2, a.E.URL, existingEndpoint.UID, a.Logger)
+		}
+
+		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, contentType, mtlsCert, oauth2TokenGetter)
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
 				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)
@@ -191,6 +201,13 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 	auth, err := ValidateEndpointAuthentication(e.Authentication.Transform())
 	if err != nil {
 		return nil, err
+	}
+
+	// Check license before allowing OAuth2 configuration
+	if auth != nil && auth.Type == datastore.OAuth2Authentication {
+		if !a.Licenser.OAuth2EndpointAuth() {
+			return nil, &ServiceError{ErrMsg: ErrOAuth2FeatureUnavailable}
+		}
 	}
 
 	endpoint.Authentication = auth

@@ -3,9 +3,10 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/oklog/ulid/v2"
 	"testing"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -26,19 +27,22 @@ import (
 )
 
 type testArgs struct {
-	endpointRepo      datastore.EndpointRepository
-	eventRepo         datastore.EventRepository
-	projectRepo       datastore.ProjectRepository
-	eventDeliveryRepo datastore.EventDeliveryRepository
-	db                database.Database
-	cache             cache.Cache
-	eventQueue        queue.Queuer
-	subRepo           datastore.SubscriptionRepository
-	filterRepo        datastore.FilterRepository
-	deviceRepo        datastore.DeviceRepository
-	subTable          memorystore.ITable
-	licenser          license.Licenser
-	tracer            tracer.Backend
+	endpointRepo       datastore.EndpointRepository
+	eventRepo          datastore.EventRepository
+	projectRepo        datastore.ProjectRepository
+	eventDeliveryRepo  datastore.EventDeliveryRepository
+	db                 database.Database
+	cache              cache.Cache
+	eventQueue         queue.Queuer
+	subRepo            datastore.SubscriptionRepository
+	filterRepo         datastore.FilterRepository
+	deviceRepo         datastore.DeviceRepository
+	subTable           memorystore.ITable
+	licenser           license.Licenser
+	tracer             tracer.Backend
+	oauth2TokenService interface {
+		GetAccessToken(context.Context, *datastore.Endpoint) (string, error)
+	}
 }
 
 func provideArgs(ctrl *gomock.Controller) *testArgs {
@@ -55,21 +59,33 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 	filterRepo := mocks.NewMockFilterRepository(ctrl)
 	mockTracer := mocks.NewMockBackend(ctrl)
 
+	// Create a simple mock OAuth2TokenService that returns empty token (no-op for tests)
+	mockOAuth2TokenService := &mockOAuth2TokenService{}
+
 	return &testArgs{
-		endpointRepo:      endpointRepo,
-		deviceRepo:        deviceRepo,
-		eventRepo:         eventRepo,
-		projectRepo:       projectRepo,
-		db:                db,
-		eventDeliveryRepo: eventDeliveryRepo,
-		cache:             mockCache,
-		eventQueue:        mockQueuer,
-		subRepo:           subRepo,
-		subTable:          subTable,
-		filterRepo:        filterRepo,
-		licenser:          mocks.NewMockLicenser(ctrl),
-		tracer:            mockTracer,
+		endpointRepo:       endpointRepo,
+		deviceRepo:         deviceRepo,
+		eventRepo:          eventRepo,
+		projectRepo:        projectRepo,
+		db:                 db,
+		eventDeliveryRepo:  eventDeliveryRepo,
+		cache:              mockCache,
+		eventQueue:         mockQueuer,
+		subRepo:            subRepo,
+		subTable:           subTable,
+		filterRepo:         filterRepo,
+		licenser:           mocks.NewMockLicenser(ctrl),
+		tracer:             mockTracer,
+		oauth2TokenService: mockOAuth2TokenService,
 	}
+}
+
+// mockOAuth2TokenService is a simple no-op implementation for tests
+type mockOAuth2TokenService struct{}
+
+func (m *mockOAuth2TokenService) GetAccessToken(ctx context.Context, endpoint *datastore.Endpoint) (string, error) {
+	// Return empty token for tests - OAuth2 functionality is tested separately
+	return "", nil
 }
 
 func TestProcessEventCreated(t *testing.T) {
@@ -348,7 +364,7 @@ func TestProcessEventCreated(t *testing.T) {
 
 			fn := ProcessEventCreation(args.endpointRepo, args.eventRepo,
 				args.projectRepo, args.eventQueue, args.subRepo,
-				args.filterRepo, args.licenser, args.tracer)
+				args.filterRepo, args.licenser, args.tracer, args.oauth2TokenService)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)
