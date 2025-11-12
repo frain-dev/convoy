@@ -74,9 +74,7 @@ func NewClientWithTLS(addresses []string, tlsConfig *TLSConfig) (*Redis, error) 
 
 		client = redis.NewClient(opts)
 	} else {
-		tlsCfg := &tls.Config{
-			InsecureSkipVerify: true,
-		}
+		tlsCfg := &tls.Config{}
 
 		// Apply TLS configuration if provided
 		if tlsConfig != nil {
