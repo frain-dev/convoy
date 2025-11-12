@@ -7,7 +7,7 @@ const (
 
 const (
 	ErrMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
-	ErrOAuth2FeatureUnavailable     = "OAuth2 feature unavailable, please upgrade your license"
+	ErrOAuth2FeatureUnavailable    = "OAuth2 feature unavailable, please upgrade your license"
 )
 
 type ServiceError struct {

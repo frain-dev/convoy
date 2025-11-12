@@ -162,4 +162,3 @@ func TestOAuth2_Transform_Nil(t *testing.T) {
 	result := oauth2.Transform()
 	require.Nil(t, result)
 }
-
