@@ -1,8 +1,8 @@
 -- +migrate Up
-CREATE INDEX IF NOT EXISTS idx_events_headers_broker_message_id ON
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_events_headers_broker_message_id ON
     convoy.events ((headers -> 'x-broker-message-id' ->> 0));
 
-CREATE INDEX IF NOT EXISTS idx_event_deliveries_headers_broker_message_id ON
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_event_deliveries_headers_broker_message_id ON
     convoy.event_deliveries ((headers -> 'x-broker-message-id' ->> 0));
 
 -- +migrate Down
