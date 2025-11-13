@@ -426,7 +426,7 @@ func (h *Handler) GetEventsPaged(w http.ResponseWriter, r *http.Request) {
 	data.Filter.Project = project
 
 	if !h.A.Licenser.AdvancedWebhookFiltering() {
-		data.Filter.Query = "" // event payload search not allowed
+		data.Filter.Query = "" // event payload search is not allowed
 	}
 
 	eventsPaged, paginationData, err := postgres.NewEventRepo(h.A.DB).LoadEventsPaged(r.Context(), project.UID, data.Filter)

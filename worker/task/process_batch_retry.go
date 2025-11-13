@@ -118,7 +118,8 @@ func ProcessBatchRetry(
 				filter.SearchParams,
 				filter.Pageable,
 				filter.IdempotencyKey,
-				filter.EventType)
+				filter.EventType,
+				filter.BrokerMessageId)
 			if innerErr != nil {
 				lo.WithError(innerErr).Error("failed to load deliveries")
 				now := time.Now()
