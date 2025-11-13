@@ -5,9 +5,10 @@ package postgres
 
 import (
 	"context"
-	"gopkg.in/guregu/null.v4"
 	"testing"
 	"time"
+
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/stretchr/testify/require"
 
@@ -464,7 +465,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		datastore.Pageable{
 			PerPage: 10,
 		},
-		"", "",
+		"", "", "",
 	)
 
 	require.NoError(t, err)
@@ -515,7 +516,7 @@ func Test_eventDeliveryRepo_LoadEventDeliveriesPaged(t *testing.T) {
 		datastore.Pageable{
 			PerPage: 10,
 		},
-		"", evType,
+		"", evType, "",
 	)
 
 	require.NoError(t, err)
