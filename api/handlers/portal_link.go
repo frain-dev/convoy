@@ -25,7 +25,7 @@ import (
 //	@Id				CreatePortalLink
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			projectID	path		string							true	"Project ID"
 //	@Param			portallink	body		models.CreatePortalLinkRequest	true	"Portal Link Details"
 //	@Success		201			{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
@@ -196,8 +196,8 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID		path		string				true	"Project ID"
-//	@Param			portalLinkID	path		string				true	"portal link id"
+//	@Param			projectID		path		string							true	"Project ID"
+//	@Param			portalLinkID	path		string							true	"portal link id"
 //	@Param			portallink		body		models.UpdatePortalLinkRequest	true	"Portal Link Details"
 //	@Success		202				{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}

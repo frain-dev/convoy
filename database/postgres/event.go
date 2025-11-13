@@ -160,6 +160,8 @@ const (
 
 	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
 
+	brokerMessageIdFilter = ` AND headers #>> '{x-broker-message-id,0}' = :broker_message_id`
+
 	baseCountPrevEvents = `
 	select exists(
 		SELECT 1
@@ -488,16 +490,17 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	}
 
 	arg := map[string]interface{}{
-		"endpoint_ids":    filter.EndpointIDs,
-		"project_id":      projectID,
-		"source_ids":      filter.SourceIDs,
-		"limit":           filter.Pageable.Limit(),
-		"start_date":      startDate,
-		"end_date":        endDate,
-		"owner_id":        filter.OwnerID,
-		"query":           filter.Query,
-		"cursor":          filter.Pageable.Cursor(),
-		"idempotency_key": filter.IdempotencyKey,
+		"endpoint_ids":      filter.EndpointIDs,
+		"project_id":        projectID,
+		"source_ids":        filter.SourceIDs,
+		"limit":             filter.Pageable.Limit(),
+		"start_date":        startDate,
+		"end_date":          endDate,
+		"owner_id":          filter.OwnerID,
+		"query":             filter.Query,
+		"cursor":            filter.Pageable.Cursor(),
+		"idempotency_key":   filter.IdempotencyKey,
+		"broker_message_id": filter.BrokerMessageId,
 	}
 
 	base := baseEventsPaged
@@ -516,6 +519,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery += endpointFilter
+	}
+
+	if len(filter.BrokerMessageId) > 0 {
+		filterQuery += brokerMessageIdFilter
 	}
 
 	// if there's no owner_id, we remove the initial CTE
@@ -544,8 +551,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-
-	// fmt.Printf("%+v\nargs:%+v\n", query, args)
 
 	query = e.db.GetReadDB().Rebind(query)
 	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)

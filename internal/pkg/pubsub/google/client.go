@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"cloud.google.com/go/pubsub"
@@ -54,7 +55,7 @@ func (g *Google) Verify() error {
 
 	client, err := pubsub.NewClient(ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
-		log.WithError(err).Error("failed to create new pubsub client")
+		log.WithError(err).Error("failed to create new Google PubSub client")
 		return ErrInvalidCredentials
 	}
 
@@ -76,7 +77,7 @@ func (g *Google) Verify() error {
 func (g *Google) consume() {
 	client, err := pubsub.NewClient(g.ctx, g.Cfg.ProjectID, option.WithCredentialsJSON(g.Cfg.ServiceAccount))
 	if err != nil {
-		g.log.WithError(err).Error("failed to create new pubsub client")
+		g.log.WithError(err).Error("failed to create new Google PubSub client")
 	}
 
 	defer g.handleError(client)
@@ -87,6 +88,12 @@ func (g *Google) consume() {
 	sub.ReceiveSettings.NumGoroutines = g.workers
 
 	err = sub.Receive(g.ctx, func(ctx context.Context, m *pubsub.Message) {
+		if m.Attributes != nil {
+			m.Attributes = map[string]string{}
+		}
+
+		m.Attributes[common.BrokerMessageHeader] = m.ID
+
 		attributes, err := msgpack.EncodeMsgPack(m.Attributes)
 		if err != nil {
 			g.log.WithError(err).Error("failed to marshall message attributes")

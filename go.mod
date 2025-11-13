@@ -48,8 +48,8 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/r3labs/diff/v3 v3.0.1
 	github.com/rabbitmq/amqp091-go v1.10.0
-	github.com/redis/go-redis/extra/redisotel/v9 v9.16.0
-	github.com/redis/go-redis/v9 v9.16.0
+	github.com/redis/go-redis/extra/redisotel/v9 v9.14.0
+	github.com/redis/go-redis/v9 v9.14.0
 	github.com/riandyrn/otelchi v0.12.1
 	github.com/rubenv/sql-migrate v1.8.0
 	github.com/sebdah/goldie/v2 v2.5.5
@@ -227,7 +227,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/redis/go-redis/extra/rediscmd/v9 v9.16.0 // indirect
+	github.com/redis/go-redis/extra/rediscmd/v9 v9.14.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/ryanuber/go-glob v1.0.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect

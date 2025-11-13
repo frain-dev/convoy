@@ -7,21 +7,22 @@ import (
 )
 
 type Filter struct {
-	Query          string
-	OwnerID        string
-	Project        *Project
-	ProjectID      string
-	EndpointID     string
-	EndpointIDs    []string
-	SubscriptionID string
-	EventID        string
-	EventType      string
-	SourceID       string
-	SourceIDs      []string
-	Pageable       Pageable
-	IdempotencyKey string
-	Status         []EventDeliveryStatus
-	SearchParams   SearchParams
+	Query           string
+	OwnerID         string
+	Project         *Project
+	ProjectID       string
+	EndpointID      string
+	EndpointIDs     []string
+	SubscriptionID  string
+	EventID         string
+	EventType       string
+	SourceID        string
+	SourceIDs       []string
+	Pageable        Pageable
+	IdempotencyKey  string
+	BrokerMessageId string
+	Status          []EventDeliveryStatus
+	SearchParams    SearchParams
 }
 
 func (f *Filter) Scan(v interface{}) error {

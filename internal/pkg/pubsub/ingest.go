@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
+	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -30,32 +31,32 @@ type IngestCtxKey string
 
 var ingestCtx IngestCtxKey = "IngestCtx"
 
-const ConvoyMessageTypeHeader = "x-convoy-message-type"
-
 type Ingest struct {
-	ctx         context.Context
-	ticker      *time.Ticker
-	queue       queue.Queuer
-	rateLimiter limiter.RateLimiter
-	sources     map[memorystore.Key]*PubSubSource
-	table       *memorystore.Table
-	log         log.StdLogger
-	instanceId  string
-	licenser    license.Licenser
+	ctx          context.Context
+	ticker       *time.Ticker
+	queue        queue.Queuer
+	rateLimiter  limiter.RateLimiter
+	sources      map[memorystore.Key]*PubSubSource
+	table        *memorystore.Table
+	log          log.StdLogger
+	instanceId   string
+	licenser     license.Licenser
+	endpointRepo datastore.EndpointRepository
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*Ingest, error) {
+func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, endpointRepo datastore.EndpointRepository) (*Ingest, error) {
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
-		ctx:         ctx,
-		log:         log,
-		table:       table,
-		queue:       queue,
-		rateLimiter: rateLimiter,
-		instanceId:  instanceId,
-		licenser:    licenser,
-		sources:     make(map[memorystore.Key]*PubSubSource),
-		ticker:      time.NewTicker(time.Duration(1) * time.Second),
+		ctx:          ctx,
+		log:          log,
+		table:        table,
+		queue:        queue,
+		rateLimiter:  rateLimiter,
+		instanceId:   instanceId,
+		licenser:     licenser,
+		sources:      make(map[memorystore.Key]*PubSubSource),
+		ticker:       time.NewTicker(time.Duration(1) * time.Second),
+		endpointRepo: endpointRepo,
 	}
 
 	return i, nil
@@ -133,7 +134,7 @@ func (i *Ingest) run() error {
 	return nil
 }
 
-func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, metadata []byte) error {
+func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg string, metadata []byte) error {
 	defer handlePanic(source)
 
 	// unmarshal to an interface{} struct
@@ -178,6 +179,22 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	if err = decoder.Decode(&convoyEvent); err != nil {
 		log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
 			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, payload)
+		return err
+	}
+
+	// check if the endpoint exists
+	if util.IsStringEmpty(convoyEvent.EndpointID) {
+		err := fmt.Errorf("the payload for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
+			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+		return err
+	}
+
+	// check if the endpoint_id is valid
+	_, err = i.endpointRepo.FindEndpointByID(ctx, convoyEvent.EndpointID, source.ProjectID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrEndpointNotFound) {
+			return fmt.Errorf("the payload for %s with id (%s) includes an invalid endpoint id, got: %+v", source.Name, source.UID, convoyEvent)
+		}
 		return err
 	}
 
@@ -231,7 +248,7 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 		headers = headerMap
 	}
 
-	messageType := headers[ConvoyMessageTypeHeader]
+	messageType := headers[common.ConvoyMessageTypeHeader]
 	switch messageType {
 	case "single":
 		ce := task.CreateEvent{
@@ -366,10 +383,10 @@ func mergeHeaders(dest map[string]string, src map[string]string) {
 		dest[k] = v
 	}
 
-	_, ok := dest[ConvoyMessageTypeHeader]
+	_, ok := dest[common.ConvoyMessageTypeHeader]
 	if !ok {
 		// the message type header wasn't found, set it to a default value
-		dest[ConvoyMessageTypeHeader] = "single"
+		dest[common.ConvoyMessageTypeHeader] = "single"
 	}
 }
 

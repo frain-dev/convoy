@@ -644,24 +644,25 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	return nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey, eventType string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey, eventType, brokerMessageId string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
 
 	arg := map[string]interface{}{
-		"endpoint_ids":    endpointIDs,
-		"project_id":      projectID,
-		"limit":           pageable.Limit(),
-		"subscription_id": subscriptionID,
-		"start_date":      start,
-		"event_id":        eventID,
-		"event_type":      eventType,
-		"end_date":        end,
-		"status":          status,
-		"cursor":          pageable.Cursor(),
-		"idempotency_key": idempotencyKey,
+		"endpoint_ids":      endpointIDs,
+		"project_id":        projectID,
+		"limit":             pageable.Limit(),
+		"subscription_id":   subscriptionID,
+		"start_date":        start,
+		"event_id":          eventID,
+		"event_type":        eventType,
+		"end_date":          end,
+		"status":            status,
+		"cursor":            pageable.Cursor(),
+		"idempotency_key":   idempotencyKey,
+		"broker_message_id": brokerMessageId,
 	}
 
 	var query, filterQuery string
@@ -682,6 +683,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 
 	if !util.IsStringEmpty(subscriptionID) {
 		filterQuery += ` AND ed.subscription_id = :subscription_id`
+	}
+
+	if !util.IsStringEmpty(brokerMessageId) {
+		filterQuery += ` AND ed.headers #>> '{x-broker-message-id,0}' = :broker_message_id`
 	}
 
 	preOrder := pageable.SortOrder()

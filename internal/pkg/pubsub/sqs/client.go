@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 
 	"github.com/frain-dev/convoy/util"
@@ -164,6 +165,13 @@ func (s *Sqs) consume() {
 					defer s.handleError()
 
 					var d Attrs = m.MessageAttributes
+
+					if d == nil {
+						d = Attrs{}
+					}
+
+					// Add message_id to attributes
+					d[common.BrokerMessageHeader] = &sqs.MessageAttributeValue{StringValue: m.MessageId, DataType: aws.String("String")}
 
 					attributes, err := msgpack.EncodeMsgPack(d.Map())
 					if err != nil {
