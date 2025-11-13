@@ -33,29 +33,31 @@ var ingestCtx IngestCtxKey = "IngestCtx"
 const ConvoyMessageTypeHeader = "x-convoy-message-type"
 
 type Ingest struct {
-	ctx         context.Context
-	ticker      *time.Ticker
-	queue       queue.Queuer
-	rateLimiter limiter.RateLimiter
-	sources     map[memorystore.Key]*PubSubSource
-	table       *memorystore.Table
-	log         log.StdLogger
-	instanceId  string
-	licenser    license.Licenser
+	ctx          context.Context
+	ticker       *time.Ticker
+	queue        queue.Queuer
+	rateLimiter  limiter.RateLimiter
+	sources      map[memorystore.Key]*PubSubSource
+	table        *memorystore.Table
+	log          log.StdLogger
+	instanceId   string
+	licenser     license.Licenser
+	endpointRepo datastore.EndpointRepository
 }
 
-func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*Ingest, error) {
+func NewIngest(ctx context.Context, table *memorystore.Table, queue queue.Queuer, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string, endpointRepo datastore.EndpointRepository) (*Ingest, error) {
 	ctx = context.WithValue(ctx, ingestCtx, nil)
 	i := &Ingest{
-		ctx:         ctx,
-		log:         log,
-		table:       table,
-		queue:       queue,
-		rateLimiter: rateLimiter,
-		instanceId:  instanceId,
-		licenser:    licenser,
-		sources:     make(map[memorystore.Key]*PubSubSource),
-		ticker:      time.NewTicker(time.Duration(1) * time.Second),
+		ctx:          ctx,
+		log:          log,
+		table:        table,
+		queue:        queue,
+		rateLimiter:  rateLimiter,
+		instanceId:   instanceId,
+		licenser:     licenser,
+		sources:      make(map[memorystore.Key]*PubSubSource),
+		ticker:       time.NewTicker(time.Duration(1) * time.Second),
+		endpointRepo: endpointRepo,
 	}
 
 	return i, nil
@@ -133,7 +135,7 @@ func (i *Ingest) run() error {
 	return nil
 }
 
-func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string, metadata []byte) error {
+func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg string, metadata []byte) error {
 	defer handlePanic(source)
 
 	// unmarshal to an interface{} struct
@@ -178,6 +180,22 @@ func (i *Ingest) handler(_ context.Context, source *datastore.Source, msg string
 	if err = decoder.Decode(&convoyEvent); err != nil {
 		log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
 			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, payload)
+		return err
+	}
+
+	// check if the endpoint exists
+	if util.IsStringEmpty(convoyEvent.EndpointID) {
+		err := fmt.Errorf("the payload for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
+			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+		return err
+	}
+
+	// check if the endpoint_id is valid
+	_, err = i.endpointRepo.FindEndpointByID(ctx, convoyEvent.EndpointID, source.ProjectID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrEndpointNotFound) {
+			return fmt.Errorf("the payload for %s with id (%s) includes an invalid endpoint id, got: %+v", source.Name, source.UID, convoyEvent)
+		}
 		return err
 	}
 
