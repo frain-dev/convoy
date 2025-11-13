@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/frain-dev/convoy/internal/pkg/license"
+	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -29,8 +30,6 @@ import (
 type IngestCtxKey string
 
 var ingestCtx IngestCtxKey = "IngestCtx"
-
-const ConvoyMessageTypeHeader = "x-convoy-message-type"
 
 type Ingest struct {
 	ctx          context.Context
@@ -249,7 +248,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		headers = headerMap
 	}
 
-	messageType := headers[ConvoyMessageTypeHeader]
+	messageType := headers[common.ConvoyMessageTypeHeader]
 	switch messageType {
 	case "single":
 		ce := task.CreateEvent{
@@ -384,10 +383,10 @@ func mergeHeaders(dest map[string]string, src map[string]string) {
 		dest[k] = v
 	}
 
-	_, ok := dest[ConvoyMessageTypeHeader]
+	_, ok := dest[common.ConvoyMessageTypeHeader]
 	if !ok {
 		// the message type header wasn't found, set it to a default value
-		dest[ConvoyMessageTypeHeader] = "single"
+		dest[common.ConvoyMessageTypeHeader] = "single"
 	}
 }
 
