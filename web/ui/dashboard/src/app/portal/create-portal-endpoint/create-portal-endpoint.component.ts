@@ -451,7 +451,7 @@ function transform(payload) {
             if (endpointDetails.rate_limit_duration) this.toggleConfigForm('rate_limit');
             if (endpointDetails.owner_id) this.toggleConfigForm('owner_id');
             if (endpointDetails.support_email) this.toggleConfigForm('alert_config');
-            if (endpointDetails.authentication.api_key.header_value || endpointDetails.authentication.api_key.header_name) this.toggleConfigForm('auth');
+            if (endpointDetails.authentication?.api_key?.header_value || endpointDetails.authentication?.api_key?.header_name) this.toggleConfigForm('auth');
             if (endpointDetails.http_timeout) this.toggleConfigForm('http_timeout');
 
             // Patch the form with endpoint details

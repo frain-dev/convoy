@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -126,7 +127,7 @@ func TestDispatcher_Ping(t *testing.T) {
 
 			// Test ping
 			ctx := context.Background()
-			err = dispatcher.Ping(ctx, server.URL+tt.endpoint, 5*time.Second, tt.contentType, nil)
+			err = dispatcher.Ping(ctx, server.URL+tt.endpoint, 5*time.Second, tt.contentType, nil, nil)
 
 			if tt.expectedError {
 				require.Error(t, err)
@@ -228,7 +229,7 @@ func TestDispatcher_tryPingMethod(t *testing.T) {
 
 			// Test tryPingMethod
 			ctx := context.Background()
-			err := dispatcher.tryPingMethod(ctx, server.URL, tt.method, tt.contentType, nil)
+			err := dispatcher.tryPingMethod(ctx, server.URL, tt.method, tt.contentType, nil, nil)
 
 			if tt.expectedError {
 				require.Error(t, err)
@@ -263,8 +264,130 @@ func TestDispatcher_PingWithDefaultMethods(t *testing.T) {
 	defer server.Close()
 
 	ctx := context.Background()
-	err = dispatcher.Ping(ctx, server.URL, 5*time.Second, "", nil)
+	err = dispatcher.Ping(ctx, server.URL, 5*time.Second, "", nil, nil)
 	require.NoError(t, err) // Should succeed with default methods
+}
+
+func TestDispatcher_PingWithOAuth2(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLicenser := mocks.NewMockLicenser(ctrl)
+	fflag := fflag.NewFFlag([]string{})
+
+	// Setup default mocks
+	mockLicenser.EXPECT().IpRules().Return(false).AnyTimes()
+
+	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
+	require.NoError(t, err)
+
+	// Setup mock OAuth2 token server
+	oauth2Server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(t, "POST", r.Method)
+		require.Equal(t, "application/x-www-form-urlencoded", r.Header.Get("Content-Type"))
+
+		err := r.ParseForm()
+		require.NoError(t, err)
+
+		require.Equal(t, "client_credentials", r.Form.Get("grant_type"))
+		require.Equal(t, "test-client-id", r.Form.Get("client_id"))
+		require.Equal(t, "test-client-secret", r.Form.Get("client_secret"))
+
+		response := map[string]interface{}{
+			"access_token": "test-access-token-12345",
+			"token_type":   "Bearer",
+			"expires_in":   3600,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(response)
+	}))
+	defer oauth2Server.Close()
+
+	// Setup mock endpoint server that requires OAuth2 Bearer token
+	endpointServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte("Missing Authorization header"))
+			return
+		}
+
+		expectedAuth := "Bearer test-access-token-12345"
+		if authHeader != expectedAuth {
+			w.WriteHeader(http.StatusUnauthorized)
+			_, _ = w.Write([]byte("Invalid token"))
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	}))
+	defer endpointServer.Close()
+
+	// Create OAuth2 token getter
+	oauth2TokenGetter := func(ctx context.Context) (string, error) {
+		// Create a simple HTTP client to fetch token
+		req, err := http.NewRequestWithContext(ctx, "POST", oauth2Server.URL, bytes.NewBufferString(
+			"grant_type=client_credentials&client_id=test-client-id&client_secret=test-client-secret"))
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		client := &http.Client{Timeout: 5 * time.Second}
+		resp, err := client.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("token exchange failed with status %d", resp.StatusCode)
+		}
+
+		var tokenResp struct {
+			AccessToken string `json:"access_token"`
+			TokenType   string `json:"token_type"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+			return "", err
+		}
+
+		// Return formatted Authorization header (e.g., "Bearer token" or "CustomType token")
+		tokenType := tokenResp.TokenType
+		if tokenType == "" {
+			tokenType = "Bearer" // Default if not provided
+		}
+		return fmt.Sprintf("%s %s", tokenType, tokenResp.AccessToken), nil
+	}
+
+	t.Run("should_succeed_with_oauth2_token", func(t *testing.T) {
+		ctx := context.Background()
+		err := dispatcher.Ping(ctx, endpointServer.URL, 5*time.Second, "", nil, oauth2TokenGetter)
+		require.NoError(t, err)
+	})
+
+	t.Run("should_fail_without_oauth2_token_when_endpoint_requires_it", func(t *testing.T) {
+		ctx := context.Background()
+		err := dispatcher.Ping(ctx, endpointServer.URL, 5*time.Second, "", nil, nil)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "status code 401")
+	})
+
+	t.Run("should_succeed_without_oauth2_token_when_endpoint_does_not_require_it", func(t *testing.T) {
+		// Create a server that doesn't require authentication
+		publicServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("OK"))
+		}))
+		defer publicServer.Close()
+
+		ctx := context.Background()
+		err := dispatcher.Ping(ctx, publicServer.URL, 5*time.Second, "", nil, nil)
+		require.NoError(t, err)
+	})
 }
 
 func TestDispatcher_SendRequest(t *testing.T) {

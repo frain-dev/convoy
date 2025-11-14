@@ -1220,7 +1220,10 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
-			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, l, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, mt)
+			// Create a simple mock OAuth2TokenService that returns empty token (no-op for tests)
+			mockOAuth2TokenService := &mockOAuth2TokenService{}
+
+			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, l, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, mt, mockOAuth2TokenService)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

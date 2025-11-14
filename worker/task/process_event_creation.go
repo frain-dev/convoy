@@ -28,6 +28,20 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+// OAuth2TokenService is an interface for getting OAuth2 authorization headers.
+type OAuth2TokenService interface {
+	GetAuthorizationHeader(context.Context, *datastore.Endpoint) (string, error)
+}
+
+// getOAuth2TokenService performs type assertion on oauth2TokenService.
+func getOAuth2TokenService(oauth2TokenService interface{}) (OAuth2TokenService, bool) {
+	if oauth2TokenService == nil {
+		return nil, false
+	}
+	tokenSvc, ok := oauth2TokenService.(OAuth2TokenService)
+	return tokenSvc, ok
+}
+
 type CreateEventTaskParams struct {
 	UID            string            `json:"uid"`
 	ProjectID      string            `json:"project_id"`
@@ -201,13 +215,13 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	return &response, nil
 }
 
-func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService interface{}) func(context.Context, *asynq.Task) error {
 	ch := &DefaultEventChannel{}
 
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend)
+	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend, oauth2TokenService)
 }
 
-func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser) error {
+func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser, oauth2TokenService interface{}) error {
 	ec := &EventDeliveryConfig{project: project}
 
 	eventDeliveries := make([]*datastore.EventDelivery, 0)
@@ -225,10 +239,52 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 				return &EndpointError{Err: fmt.Errorf("CODE: 1006, err: %s", err.Error()), delay: defaultDelay}
 			}
 
-			if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
-				headers = make(httpheader.HTTPHeader)
-				headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
-				headers.MergeHeaders(event.Headers)
+			authType := ""
+			hasOAuth2 := false
+			if endpoint.Authentication != nil {
+				authType = string(endpoint.Authentication.Type)
+				hasOAuth2 = endpoint.Authentication.OAuth2 != nil
+			}
+			log.FromContext(ctx).WithFields(log.Fields{
+				"endpoint.id":        endpoint.UID,
+				"has_authentication": endpoint.Authentication != nil,
+				"auth_type":          authType,
+				"has_oauth2":         hasOAuth2,
+			}).Debug("Processing endpoint authentication")
+
+			if endpoint.Authentication != nil {
+				switch endpoint.Authentication.Type {
+				case datastore.APIKeyAuthentication:
+					headers = make(httpheader.HTTPHeader)
+					headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
+					headers.MergeHeaders(event.Headers)
+				case datastore.OAuth2Authentication:
+					tokenSvc, ok := getOAuth2TokenService(oauth2TokenService)
+					if !ok {
+						log.FromContext(ctx).Error("OAuth2 token service is nil or type assertion failed")
+					} else {
+						authHeader, err := tokenSvc.GetAuthorizationHeader(ctx, endpoint)
+						if err != nil {
+							log.FromContext(ctx).WithError(err).Error("failed to get OAuth2 authorization header")
+						} else {
+							headers = make(httpheader.HTTPHeader)
+							headers["Authorization"] = []string{authHeader}
+							headers.MergeHeaders(event.Headers)
+							log.FromContext(ctx).WithFields(log.Fields{
+								"endpoint.id": endpoint.UID,
+							}).Info("OAuth2 authorization header retrieved and added to headers")
+						}
+					}
+				default:
+					log.FromContext(ctx).WithFields(log.Fields{
+						"endpoint.id": endpoint.UID,
+						"auth_type":   endpoint.Authentication.Type,
+					}).Debug("Unknown authentication type, skipping")
+				}
+			} else {
+				log.FromContext(ctx).WithFields(log.Fields{
+					"endpoint.id": endpoint.UID,
+				}).Debug("Endpoint has no authentication configured")
 			}
 
 			s.Endpoint = endpoint

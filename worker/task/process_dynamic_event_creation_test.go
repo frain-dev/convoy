@@ -130,7 +130,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventQueue, args.subRepo, args.filterRepo, args.licenser, args.tracer)
+			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventQueue, args.subRepo, args.filterRepo, args.licenser, args.tracer, args.oauth2TokenService)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

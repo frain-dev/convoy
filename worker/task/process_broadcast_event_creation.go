@@ -177,8 +177,8 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	return &response, nil
 }
 
-func ProcessBroadcastEventCreation(ch *BroadcastEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend)
+func ProcessBroadcastEventCreation(ch *BroadcastEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService interface{}) func(context.Context, *asynq.Task) error {
+	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend, oauth2TokenService)
 }
 
 func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscription) {
