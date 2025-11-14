@@ -160,7 +160,7 @@ const (
 
 	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
 
-	brokerMessageIdFilter = ` AND headers #>> '{x-broker-message-id,0}' = :broker_message_id`
+	brokerMessageIdFilter = ` AND headers -> 'x-broker-message-id' ->> 0 = :broker_message_id`
 
 	baseCountPrevEvents = `
 	select exists(
