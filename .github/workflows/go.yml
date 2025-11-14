@@ -77,19 +77,19 @@ jobs:
                   CONVOY_REDIS_HOST: localhost
                   CONVOY_REDIS_PORT: 6379
 
-            - name: Run integration tests
-              run: make integration_tests
-              env:
-                  TEST_DB_SCHEME: postgres
-                  TEST_DB_HOST: localhost
-                  TEST_DB_USERNAME: postgres
-                  TEST_DB_PASSWORD: postgres
-                  TEST_DB_DATABASE: convoy
-                  TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
-                  TEST_DB_PORT: 5432
-                  TEST_REDIS_SCHEME: redis
-                  TEST_REDIS_HOST: localhost
-                  TEST_REDIS_PORT: 6379
+            # - name: Run integration tests
+            #   run: make integration_tests
+            #   env:
+            #       TEST_DB_SCHEME: postgres
+            #       TEST_DB_HOST: localhost
+            #       TEST_DB_USERNAME: postgres
+            #       TEST_DB_PASSWORD: postgres
+            #       TEST_DB_DATABASE: convoy
+            #       TEST_DB_OPTIONS: sslmode=disable&connect_timeout=30
+            #       TEST_DB_PORT: 5432
+            #       TEST_REDIS_SCHEME: redis
+            #       TEST_REDIS_HOST: localhost
+            #       TEST_REDIS_PORT: 6379
 
             - name: Run integration tests (with test containers)
               run: make docker_e2e_tests
