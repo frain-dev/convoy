@@ -10,7 +10,7 @@ jobs:
         if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
         strategy:
             matrix:
-                go-version: [1.22.x]
+                go-version: [1.24.x]
                 os: [ubuntu-latest, macos-latest]
                 postgres-version: ["15"]
                 redis-version: ["6.2.6"]
@@ -40,7 +40,7 @@ jobs:
               run: echo ::set-output name=tag::$(echo ${GITHUB_SHA:8})
 
             - name: Set up Go
-              uses: actions/setup-go@v2
+              uses: actions/setup-go@v6
               with:
                   go-version: ${{ matrix.go-version }}
 
