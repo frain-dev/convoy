@@ -182,22 +182,6 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		return err
 	}
 
-	// check if the endpoint exists
-	if util.IsStringEmpty(convoyEvent.EndpointID) {
-		err := fmt.Errorf("the payload for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
-			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
-		return err
-	}
-
-	// check if the endpoint_id is valid
-	_, err = i.endpointRepo.FindEndpointByID(ctx, convoyEvent.EndpointID, source.ProjectID)
-	if err != nil {
-		if errors.Is(err, datastore.ErrEndpointNotFound) {
-			return fmt.Errorf("the payload for %s with id (%s) includes an invalid endpoint id, got: %+v", source.Name, source.UID, convoyEvent)
-		}
-		return err
-	}
-
 	if util.IsStringEmpty(convoyEvent.EventType) {
 		err := fmt.Errorf("the payload for %s with id (%s) doesn't include an event type, please refer to the documentation or"+
 			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
@@ -271,12 +255,21 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 				" use transfrom functions to properly format it, got: %+v", messageType, source.Name, source.UID, convoyEvent)
 		}
 
+		// check if the endpoint_id is valid
+		_, err = i.endpointRepo.FindEndpointByID(ctx, ce.Params.EndpointID, ce.Params.ProjectID)
+		if err != nil {
+			if errors.Is(err, datastore.ErrEndpointNotFound) {
+				return fmt.Errorf("the payload for %s with id (%s) includes an invalid endpoint id, got: %+v", source.Name, source.UID, convoyEvent)
+			}
+			return err
+		}
+
 		eventByte, err := msgpack.EncodeMsgPack(ce)
 		if err != nil {
 			return err
 		}
 
-		jobId := fmt.Sprintf("single:%s:%s", source.ProjectID, ce.Params.UID)
+		jobId := fmt.Sprintf("single:%s:%s", ce.Params.ProjectID, ce.Params.UID)
 		job := &queue.Job{
 			ID:      jobId,
 			Payload: eventByte,
