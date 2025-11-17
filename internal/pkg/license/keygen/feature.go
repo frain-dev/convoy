@@ -19,6 +19,7 @@ const (
 	HADeployment               Feature = "HA_DEPLOYMENT"
 	WebhookAnalytics           Feature = "WEBHOOK_ANALYTICS"
 	MutualTLS                  Feature = "MUTUAL_TLS"
+	OAuth2EndpointAuth         Feature = "OAUTH2_ENDPOINT_AUTH"
 	AsynqMonitoring            Feature = "ASYNQ_MONITORING"
 	SynchronousWebhooks        Feature = "SYNCHRONOUS_WEBHOOKS"
 	PortalLinks                Feature = "PORTAL_LINKS"
