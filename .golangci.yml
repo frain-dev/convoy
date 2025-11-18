@@ -32,7 +32,7 @@ linters:
     - wastedassign
 
     # Developer Experience: Naming and style
- #   - revive
+    #   - revive
     - lll
     - misspell
     - whitespace
@@ -48,7 +48,7 @@ linters:
     - thelper
     - tparallel
     - unused
-#    - wrapcheck
+  #    - wrapcheck
 
   disable:
     # Disable linters that conflict with Tiger Style principles
@@ -67,7 +67,7 @@ linters:
     # Safety: Control flow and limits
     cyclop:
       max-complexity: 11 # Keep functions simple and explicit
-      package-average:  7.0
+      package-average: 7.0
 
     # Safety: Function length limits (Tiger Style: under 70 lines)
     funlen:
@@ -204,15 +204,15 @@ linters:
         - XMPP
         - XSRF
         - XSS
-#    wrapcheck:
+      #    wrapcheck:
       # An array of strings specifying additional substrings of signatures to ignore.
       # Unlike 'ignore-sigs', this option extends the default set (or the set specified in 'ignore-sigs') without replacing it entirely.
       # This allows you to add specific signatures to the ignore list
       # while retaining the defaults or any items in 'ignore-sigs'.
       # Default: []
-#      extra-ignore-sigs:
-#        - .CustomError(
-#        - .SpecificWrap(
+      #      extra-ignore-sigs:
+      #        - .CustomError(
+      #        - .SpecificWrap(
 
       # An array of strings that specify substrings of signatures to ignore.
       # If this set, it will override the default set of ignored signatures.
@@ -280,7 +280,7 @@ linters:
         linters:
           - unused #certain middleware may not be used
 
-    # Allow specific patterns for generated code
+      # Allow specific patterns for generated code
       - text: "generated"
         linters:
           - all
@@ -303,8 +303,8 @@ formatters:
         - localmodule
 
   exclusions:
-      paths:
-        - ".*_test.go"
+    paths:
+      - ".*_test.go"
 issues:
   # Treat all warnings as errors (Tiger Style principle)
   fix: false
