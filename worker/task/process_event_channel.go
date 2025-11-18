@@ -259,7 +259,12 @@ func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQ
 		return nil, false, &EndpointError{Err: fmt.Errorf("cannot deduce jobID: %s", jobID)}
 	}
 
-	q := eventQueue.(*redis.RedisQueue)
+	q, ok := eventQueue.(*redis.RedisQueue)
+	if !ok {
+		// For non-Redis queues (e.g., in tests), skip the task info check
+		return nil, false, nil
+	}
+
 	ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), jobID)
 	if err != nil {
 		log.WithError(err).Error("failed to get task from queue")

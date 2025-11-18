@@ -2,7 +2,6 @@ package task
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -29,6 +29,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 		{
 			name: "should_create_dynamic_event",
 			dynamicEvent: &models.DynamicEvent{
+				JobID:          "123:1234567890",
 				URL:            "https://google.com",
 				Secret:         "1234",
 				EventTypes:     []string{"*"},
@@ -71,6 +72,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 		{
 			name: "should_create_new_endpoint_and_subscription_for_dynamic_event",
 			dynamicEvent: &models.DynamicEvent{
+				JobID:     "123:1234567890",
 				URL:       "https://google.com",
 				Secret:    "1234",
 				Data:      []byte(`{"name":"daniel"}`),
@@ -119,7 +121,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				tt.dbFn(args)
 			}
 
-			payload, err := json.Marshal(tt.dynamicEvent)
+			payload, err := msgpack.EncodeMsgPack(tt.dynamicEvent)
 			require.NoError(t, err)
 
 			job := queue.Job{
