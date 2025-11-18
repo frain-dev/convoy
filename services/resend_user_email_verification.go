@@ -4,12 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/queue"
-
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 )
 
 type ResendEmailVerificationTokenService struct {

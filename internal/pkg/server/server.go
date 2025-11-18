@@ -10,13 +10,13 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 )
 
 type Server struct {

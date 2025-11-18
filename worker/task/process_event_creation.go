@@ -8,24 +8,21 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/flatten"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/transform"
-
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/util"
-
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
-	"github.com/oklog/ulid/v2"
+	"github.com/frain-dev/convoy/util"
 )
 
 type CreateEventTaskParams struct {
@@ -542,7 +539,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 				"subscription.id": sub.UID,
 			}).Debug("subscription filter matched passed")
 		}
-
 	}
 
 	return matched, nil

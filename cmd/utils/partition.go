@@ -2,11 +2,13 @@ package utils
 
 import (
 	"fmt"
+
+	"github.com/spf13/cobra"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/spf13/cobra"
 )
 
 func AddPartitionCommand(a *cli.App) *cobra.Command {

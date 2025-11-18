@@ -2,8 +2,10 @@ package database
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/database/hooks"
+
 	"github.com/jmoiron/sqlx"
+
+	"github.com/frain-dev/convoy/database/hooks"
 )
 
 type Database interface {

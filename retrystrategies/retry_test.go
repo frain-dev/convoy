@@ -3,8 +3,9 @@ package retrystrategies
 import (
 	"testing"
 
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestRetry_CreatesExponential(t *testing.T) {

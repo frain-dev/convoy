@@ -9,11 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/redis/go-redis/v9"
-	"github.com/stretchr/testify/require"
 )
 
 func getRedisForTest(t *testing.T) redis.UniversalClient {

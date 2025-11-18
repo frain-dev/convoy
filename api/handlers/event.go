@@ -5,22 +5,21 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/queue"
-	"github.com/frain-dev/convoy/worker/task"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/frain-dev/convoy/pkg/log"
-
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
+	"github.com/frain-dev/convoy/worker/task"
 )
 
 // CreateEndpointEvent
@@ -61,7 +60,6 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		}
 
 		projectID = project.UID
-
 	} else {
 		projectID = chi.URLParam(r, "projectID")
 		if util.IsStringEmpty(projectID) {

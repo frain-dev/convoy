@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func Test_CreateSource(t *testing.T) {

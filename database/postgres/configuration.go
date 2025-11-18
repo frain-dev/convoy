@@ -4,11 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/frain-dev/convoy/util"
+
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"gopkg.in/guregu/null.v4"
+	"github.com/frain-dev/convoy/util"
 )
 
 const (

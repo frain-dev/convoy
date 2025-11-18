@@ -14,8 +14,9 @@ import (
 	"github.com/docker/compose/v2/pkg/api"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	tc "github.com/testcontainers/testcontainers-go/modules/compose"
 
 	"github.com/frain-dev/convoy/testcon/manifest"
 )

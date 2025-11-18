@@ -6,9 +6,10 @@ import (
 	"errors"
 	"os"
 
-	"github.com/frain-dev/convoy/util"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/frain-dev/convoy/util"
 )
 
 // Redis is our wrapper logic to instrument redis calls

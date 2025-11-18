@@ -8,23 +8,21 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"gopkg.in/guregu/null.v4"
-
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	"github.com/hibiken/asynq"
-	"github.com/oklog/ulid/v2"
 )
 
 type DynamicEventChannel struct {

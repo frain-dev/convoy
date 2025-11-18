@@ -113,7 +113,6 @@ func (c *Converter) ExtractWebhooks() (*Collection, error) {
 					pathItem.Post.RequestBody.Value.Content != nil &&
 					pathItem.Post.RequestBody.Value.Content["application/json"] != nil &&
 					pathItem.Post.RequestBody.Value.Content["application/json"].Schema != nil {
-
 					name := extractWebhookName(path)
 					schema := pathItem.Post.RequestBody.Value.Content["application/json"].Schema.Value
 					if schema != nil {

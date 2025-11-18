@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/pkg/clock"
 )
 
 func TestRedisStore_Keys(t *testing.T) {

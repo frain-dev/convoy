@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
+	"github.com/jmoiron/sqlx"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
 )
 
 const (

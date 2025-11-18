@@ -5,12 +5,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/cobra"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/migrator"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/spf13/cobra"
 )
 
 func AddMigrateCommand(a *cli.App) *cobra.Command {

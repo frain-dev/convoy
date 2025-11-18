@@ -1,9 +1,11 @@
 package models
 
 import (
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestCreateSource_Validate(t *testing.T) {

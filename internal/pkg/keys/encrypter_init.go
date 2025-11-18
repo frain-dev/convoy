@@ -3,10 +3,12 @@ package keys
 import (
 	"context"
 	"fmt"
+	"strings"
+
+	"github.com/jmoiron/sqlx"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/jmoiron/sqlx"
-	"strings"
 )
 
 const NULL = "NULL"

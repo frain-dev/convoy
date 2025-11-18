@@ -2,6 +2,7 @@ package keys
 
 import (
 	"fmt"
+
 	"github.com/hashicorp/vault/api"
 )
 

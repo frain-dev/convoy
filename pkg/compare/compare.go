@@ -131,7 +131,6 @@ func compare(payload map[string]interface{}, filter map[string]interface{}) (boo
 				}
 				pass = append(pass, check)
 			}
-
 		}
 	}
 

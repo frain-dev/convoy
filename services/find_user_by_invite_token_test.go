@@ -6,11 +6,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/frain-dev/convoy/mocks"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideFindUserByInviteTokenService(ctrl *gomock.Controller, token string) *FindUserByInviteTokenService {

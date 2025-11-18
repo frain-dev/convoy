@@ -12,9 +12,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/kelseyhightower/envconfig"
 )
 
 const (

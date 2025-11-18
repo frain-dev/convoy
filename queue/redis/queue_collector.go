@@ -1,10 +1,11 @@
 package redis
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // Namespace used in fully qualified metrics names.

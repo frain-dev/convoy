@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
-	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+
+	convoy "github.com/frain-dev/convoy-go/v2"
 )
 
 func (d *DockerE2EIntegrationTestSuite) Test_FanOutEvent_Success_AllSubscriptions() {

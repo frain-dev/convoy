@@ -6,34 +6,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/pkg/httpheader"
-
-	"github.com/frain-dev/convoy/pkg/url"
+	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/notifications"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
+	"github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/pkg/url"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/retrystrategies"
 	"github.com/frain-dev/convoy/util"
-	"github.com/hibiken/asynq"
 )
 
 const (
@@ -217,49 +211,49 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			httpDuration = time.Duration(endpoint.HttpTimeout) * time.Second
 		}
 
-	contentType := endpoint.ContentType
-	if contentType == "" {
-		contentType = "application/json"
-	}
-
-	// Load mTLS client certificate if configured
-	var mtlsCert *tls.Certificate
-	if endpoint.MtlsClientCert != nil {
-		// Check license before using mTLS during delivery
-		if !licenser.MutualTLS() {
-			log.FromContext(ctx).Error(errMutualTLSFeatureUnavailable)
-			eventDelivery.Status = datastore.FailureEventStatus
-			eventDelivery.Description = errMutualTLSFeatureUnavailable
-			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
-			}
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
-			return nil // Return nil to avoid retrying
+		contentType := endpoint.ContentType
+		if contentType == "" {
+			contentType = "application/json"
 		}
 
-		// Use cached certificate loading to avoid parsing on every request
-		cert, certErr := config.LoadClientCertificateWithCache(
-			endpoint.UID, // Use endpoint ID as cache key
-			endpoint.MtlsClientCert.ClientCert,
-			endpoint.MtlsClientCert.ClientKey,
-		)
-		if certErr != nil {
-			// Fail fast on certificate errors (invalid or expired cert) to avoid needless retries
-			log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
-			eventDelivery.Status = datastore.FailureEventStatus
-			eventDelivery.Description = fmt.Sprintf("Invalid mTLS certificate: %v", certErr)
-			err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+		// Load mTLS client certificate if configured
+		var mtlsCert *tls.Certificate
+		if endpoint.MtlsClientCert != nil {
+			// Check license before using mTLS during delivery
+			if !licenser.MutualTLS() {
+				log.FromContext(ctx).Error(errMutualTLSFeatureUnavailable)
+				eventDelivery.Status = datastore.FailureEventStatus
+				eventDelivery.Description = errMutualTLSFeatureUnavailable
+				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+				}
+				tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+				return nil // Return nil to avoid retrying
 			}
-			tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
-			return nil // Return nil to avoid retrying
-		}
-		mtlsCert = cert
-	}
 
-	resp, err := dispatch.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
+			// Use cached certificate loading to avoid parsing on every request
+			cert, certErr := config.LoadClientCertificateWithCache(
+				endpoint.UID, // Use endpoint ID as cache key
+				endpoint.MtlsClientCert.ClientCert,
+				endpoint.MtlsClientCert.ClientKey,
+			)
+			if certErr != nil {
+				// Fail fast on certificate errors (invalid or expired cert) to avoid needless retries
+				log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
+				eventDelivery.Status = datastore.FailureEventStatus
+				eventDelivery.Description = fmt.Sprintf("Invalid mTLS certificate: %v", certErr)
+				err = eventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+				}
+				tracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+				return nil // Return nil to avoid retrying
+			}
+			mtlsCert = cert
+		}
+
+		resp, err := dispatch.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
 
 		status := "-"
 		statusCode := 0

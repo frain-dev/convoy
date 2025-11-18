@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/render"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/render"
-
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {

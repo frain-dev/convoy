@@ -5,9 +5,8 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/frain-dev/convoy/cache"
-
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
 )

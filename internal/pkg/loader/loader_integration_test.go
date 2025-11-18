@@ -9,6 +9,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -18,8 +21,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
 )
 
 var (

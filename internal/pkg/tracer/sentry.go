@@ -4,14 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/getsentry/sentry-go"
-	sentryotel "github.com/getsentry/sentry-go/otel"
 	"go.opentelemetry.io/otel"
-
 	"go.opentelemetry.io/otel/attribute"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
+
+	sentryotel "github.com/getsentry/sentry-go/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 type SentryTracer struct {

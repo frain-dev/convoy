@@ -6,8 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 func TestReactRootHandlerWithRootPath(t *testing.T) {

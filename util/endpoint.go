@@ -5,11 +5,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 func ValidateEndpoint(s string, enforceSecure bool, customCA bool) (string, error) {

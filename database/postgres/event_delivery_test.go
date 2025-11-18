@@ -8,15 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/frain-dev/convoy/pkg/httpheader"
-
-	"github.com/oklog/ulid/v2"
-
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 )
 
 func Test_eventDeliveryRepo_CreateEventDelivery(t *testing.T) {

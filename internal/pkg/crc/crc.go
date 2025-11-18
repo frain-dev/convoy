@@ -9,8 +9,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
 	"gopkg.in/guregu/null.v4"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 type Crc interface {

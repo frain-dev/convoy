@@ -19,9 +19,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
+
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -31,10 +33,9 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/testcon/manifest"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
 )
 
 var (

@@ -1,10 +1,12 @@
 package migrator
 
 import (
+	"github.com/jmoiron/sqlx"
+
+	migrate "github.com/rubenv/sql-migrate"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
-	"github.com/jmoiron/sqlx"
-	migrate "github.com/rubenv/sql-migrate"
 )
 
 var (

@@ -261,7 +261,6 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		render.Status(r, http.StatusOK)
 		render.PlainText(w, r, source.CustomResponse.Body)
 		return
-
 	}
 
 	if event.IsDuplicateEvent {

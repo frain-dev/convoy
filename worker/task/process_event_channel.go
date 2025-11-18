@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hibiken/asynq"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
@@ -17,7 +19,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
-	"github.com/hibiken/asynq"
 )
 
 type EventChannelConfig struct {

@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideCreateEndpointAPIKeyService(ctrl *gomock.Controller, d *models.CreateEndpointApiKey) *CreateEndpointAPIKeyService {

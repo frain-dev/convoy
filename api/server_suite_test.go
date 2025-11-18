@@ -8,10 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-
 	"io"
 	"math/rand"
 	"net/http"
@@ -22,27 +18,26 @@ import (
 	"testing"
 	"time"
 
-	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
-	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
-
-	ncache "github.com/frain-dev/convoy/cache/noop"
-
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
+	"github.com/frain-dev/convoy/auth/realm_chain"
+	"github.com/frain-dev/convoy/cache"
+	ncache "github.com/frain-dev/convoy/cache/noop"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/util"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/cache"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
+	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/util"
 )
 
 // TEST HELPERS.

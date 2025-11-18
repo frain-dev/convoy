@@ -6,11 +6,11 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )

@@ -5,19 +5,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/mocks"
-
-	"github.com/frain-dev/convoy/api/models"
-
-	"github.com/frain-dev/convoy"
+	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
 )
 
 func TestProcessBroadcastEventCreation(t *testing.T) {

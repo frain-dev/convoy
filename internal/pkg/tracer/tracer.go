@@ -5,11 +5,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/pkg/log"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/frain-dev/convoy/config"
-	"go.opentelemetry.io/otel/trace"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var (

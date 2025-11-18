@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func Test_CreateUser(t *testing.T) {

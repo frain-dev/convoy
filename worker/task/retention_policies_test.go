@@ -3,33 +3,31 @@ package task
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/pkg/retention"
-	partman "github.com/jirevwe/go_partman"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/pkg/log"
-
+	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"gopkg.in/guregu/null.v4"
 
+	partman "github.com/jirevwe/go_partman"
+
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/oklog/ulid/v2"
-
-	"github.com/hibiken/asynq"
-
-	"github.com/frain-dev/convoy/api/testdb"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 type RetentionPoliciesIntegrationTestSuite struct {

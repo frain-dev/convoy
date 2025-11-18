@@ -3,10 +3,11 @@ package models
 import (
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/lib/pq"
 )
 
 type CreateProject struct {

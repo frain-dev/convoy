@@ -6,19 +6,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/hibiken/asynq"
 	"gopkg.in/guregu/null.v4"
-
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/util"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
+	"github.com/frain-dev/convoy/util"
 )
 
 var (

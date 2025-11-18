@@ -8,6 +8,9 @@ import (
 	"math"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -15,8 +18,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -407,7 +408,6 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 		if err != nil {
 			return nil, err
 		}
-
 	}
 
 	return subs[:counter], nil
@@ -489,7 +489,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 
 	query := fmt.Sprintf(fetchUpdatedSubscriptions, valuesSQL)
 
-	//Flatten named params into a single map
+	// Flatten named params into a single map
 	args := map[string]interface{}{}
 	for i, e := range subscriptionUpdates {
 		args[fmt.Sprintf("id%d", i)] = e.UID

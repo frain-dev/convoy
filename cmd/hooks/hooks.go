@@ -9,36 +9,32 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
-
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-
-	"github.com/frain-dev/convoy/util"
-	pyro "github.com/grafana/pyroscope-go"
-
-	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
-
-	dbhook "github.com/frain-dev/convoy/database/hooks"
-	"github.com/frain-dev/convoy/database/listener"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/oklog/ulid/v2"
+	"github.com/spf13/cobra"
 	"gopkg.in/guregu/null.v4"
+
+	pyro "github.com/grafana/pyroscope-go"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	dbhook "github.com/frain-dev/convoy/database/hooks"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/spf13/cobra"
+	"github.com/frain-dev/convoy/util"
 )
 
 func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
@@ -681,7 +677,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			DSN:        dsn,
 			SampleRate: sampleRate,
 		}
-
 	}
 
 	c.Metrics = config.MetricsConfiguration{

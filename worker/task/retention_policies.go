@@ -4,19 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
-
-	"github.com/frain-dev/convoy/internal/pkg/exporter"
+	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	objectstore "github.com/frain-dev/convoy/internal/pkg/object-store"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/hibiken/asynq"
 )
 
 func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd *rdb.Redis) func(context.Context, *asynq.Task) error {

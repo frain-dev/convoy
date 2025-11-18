@@ -1,7 +1,10 @@
 package types
 
 import (
+	"github.com/redis/go-redis/v9"
+
 	authz "github.com/Subomi/go-authz"
+
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
@@ -10,7 +13,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/redis/go-redis/v9"
 )
 
 type ContextKey string

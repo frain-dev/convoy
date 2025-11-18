@@ -4,22 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/dedup"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/util"
+	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/dedup"
+	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/pkg/signature"
 	"github.com/frain-dev/convoy/retrystrategies"
-	"github.com/hibiken/asynq"
+	"github.com/frain-dev/convoy/util"
 )
 
 var ErrMetaEventDeliveryFailed = errors.New("meta event delivery failed")

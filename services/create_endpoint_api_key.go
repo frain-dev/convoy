@@ -6,13 +6,12 @@ import (
 	"encoding/base64"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/xdg-go/pbkdf2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
-	"github.com/oklog/ulid/v2"
-	"gopkg.in/guregu/null.v4"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"

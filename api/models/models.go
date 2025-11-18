@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"gopkg.in/guregu/null.v4"
 )
 
 type PagedResponse struct {

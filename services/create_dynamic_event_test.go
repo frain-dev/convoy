@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideCreateDynamicEventService(ctrl *gomock.Controller, de *models.DynamicEvent, project *datastore.Project) *CreateDynamicEventService {

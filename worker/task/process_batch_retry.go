@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/hibiken/asynq"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
 

@@ -8,15 +8,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/hibiken/asynq"
+	"github.com/slack-go/slack"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/internal/email"
 	notification "github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
-	"github.com/hibiken/asynq"
-
-	"github.com/slack-go/slack"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
 var ErrInvalidSlackPayload = errors.New("invalid slack payload")

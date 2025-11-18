@@ -1,8 +1,9 @@
 package utils
 
 import (
-	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/spf13/cobra"
+
+	"github.com/frain-dev/convoy/internal/pkg/cli"
 )
 
 var utilsCmd = &cobra.Command{

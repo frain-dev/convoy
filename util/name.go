@@ -1,11 +1,12 @@
 package util
 
 import (
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"math/rand"
 	"strings"
 	"time"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 var firstNames = []string{"John", "Jane", "Alice", "Bob", "Charlie", "Mary", "Michael", "Emma", "Liam", "Olivia"}

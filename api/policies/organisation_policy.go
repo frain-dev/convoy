@@ -3,7 +3,9 @@ package policies
 import (
 	"context"
 	"errors"
+
 	authz "github.com/Subomi/go-authz"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 )
