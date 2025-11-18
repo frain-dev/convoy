@@ -178,19 +178,19 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 	// check the payload structure to be sure it satisfies what convoy can ingest else discard and nack it.
 	if err = decoder.Decode(&convoyEvent); err != nil {
 		log.WithError(err).Errorf("the payload for %s with id (%s) is badly formatted, please refer to the documentation or"+
-			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, payload)
+			" use transfrom functions to properly format it, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		return err
 	}
 
 	if util.IsStringEmpty(convoyEvent.EventType) {
 		err := fmt.Errorf("the payload for %s with id (%s) doesn't include an event type, please refer to the documentation or"+
-			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+			" use transfrom functions to properly format it, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		return err
 	}
 
 	if len(convoyEvent.Data) == 0 {
 		err := fmt.Errorf("the payload for %s with id (%s) doesn't include any data, please refer to the documentation or"+
-			" use transfrom functions to properly format it, got: %+v", source.Name, source.UID, convoyEvent)
+			" use transfrom functions to properly format it, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		return err
 	}
 
@@ -252,14 +252,14 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 
 		if util.IsStringEmpty(ce.Params.EndpointID) {
 			return fmt.Errorf("the payload with message type %s for %s with id (%s) doesn't include an endpoint id, please refer to the documentation or"+
-				" use transfrom functions to properly format it, got: %+v", messageType, source.Name, source.UID, convoyEvent)
+				" use transfrom functions to properly format it, got: %q (event_type: %q)", messageType, source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		}
 
 		// check if the endpoint_id is valid
 		_, err = i.endpointRepo.FindEndpointByID(ctx, ce.Params.EndpointID, ce.Params.ProjectID)
 		if err != nil {
 			if errors.Is(err, datastore.ErrEndpointNotFound) {
-				return fmt.Errorf("the payload for %s with id (%s) includes an invalid endpoint id, got: %+v", source.Name, source.UID, convoyEvent)
+				return fmt.Errorf("the payload for %s with id (%s) includes an invalid endpoint id, got: %q (event_type: %q)", source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 			}
 			return err
 		}
@@ -299,7 +299,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 
 		if util.IsStringEmpty(ce.Params.OwnerID) {
 			return fmt.Errorf("the payload with message type %s for %s with id (%s) doesn't include an owner id, please refer to the documentation or"+
-				" use transfrom functions to properly format it, got: %+v", messageType, source.Name, source.UID, convoyEvent)
+				" use transfrom functions to properly format it, got: %q (event_type: %q)", messageType, source.Name, source.UID, convoyEvent.EndpointID, convoyEvent.EventType)
 		}
 
 		eventByte, err := msgpack.EncodeMsgPack(ce)

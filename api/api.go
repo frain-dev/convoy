@@ -704,6 +704,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 	if a.A.Licenser.CanExportPrometheusMetrics() {
 		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+	} else {
+		router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Prometheus metrics export is not enabled", http.StatusNotFound)
+		})
 	}
 
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -732,6 +736,10 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *handlers.Handler) {
 	if a.A.Licenser.CanExportPrometheusMetrics() {
 		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+	} else {
+		router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Prometheus metrics export is not enabled", http.StatusNotFound)
+		})
 	}
 
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
