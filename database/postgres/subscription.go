@@ -408,7 +408,6 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 		if err != nil {
 			return nil, err
 		}
-
 	}
 
 	return subs[:counter], nil
@@ -490,7 +489,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 
 	query := fmt.Sprintf(fetchUpdatedSubscriptions, valuesSQL)
 
-	//Flatten named params into a single map
+	// Flatten named params into a single map
 	args := map[string]interface{}{}
 	for i, e := range subscriptionUpdates {
 		args[fmt.Sprintf("id%d", i)] = e.UID

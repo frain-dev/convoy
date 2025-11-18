@@ -60,7 +60,6 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		}
 
 		projectID = project.UID
-
 	} else {
 		projectID = chi.URLParam(r, "projectID")
 		if util.IsStringEmpty(projectID) {

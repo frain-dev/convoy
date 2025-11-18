@@ -17,7 +17,6 @@ func AddRevertEncryptionCommand(a *cli.App) *cobra.Command {
 		Short: "Reverts the encryption initialization for the specified table columns with the encryption key fetched from HCP Vaults",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-
 			timeout, err := cmd.Flags().GetInt("timeout")
 			if err != nil {
 				log.WithError(err).Errorln("failed to get timeout")

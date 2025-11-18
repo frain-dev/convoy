@@ -11,7 +11,6 @@ import (
 )
 
 func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, oldKey, newKey string, timeout int) error {
-
 	tx, err := db.GetDB().Beginx()
 	if err != nil {
 		lo.WithError(err).Error("failed to begin transaction")

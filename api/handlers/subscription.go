@@ -73,7 +73,6 @@ func (h *Handler) GetSubscriptions(w http.ResponseWriter, r *http.Request) {
 		} else {
 			data.FilterBy.EndpointIDs = endpointIDs
 		}
-
 	}
 
 	subscriptions, paginationData, err := postgres.NewSubscriptionRepo(h.A.DB).LoadSubscriptionsPaged(r.Context(), project.UID, data.FilterBy, data.Pageable)

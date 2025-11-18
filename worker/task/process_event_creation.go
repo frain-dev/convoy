@@ -539,7 +539,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 				"subscription.id": sub.UID,
 			}).Debug("subscription filter matched passed")
 		}
-
 	}
 
 	return matched, nil

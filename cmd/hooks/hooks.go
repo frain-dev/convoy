@@ -677,7 +677,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			DSN:        dsn,
 			SampleRate: sampleRate,
 		}
-
 	}
 
 	c.Metrics = config.MetricsConfiguration{

@@ -47,7 +47,6 @@ type Jwt struct {
 }
 
 func NewJwt(opts *config.JwtRealmOptions, cache cache.Cache) *Jwt {
-
 	j := &Jwt{
 		Secret:        opts.Secret,
 		Expiry:        opts.Expiry,
@@ -126,7 +125,6 @@ func (j *Jwt) isTokenBlacklisted(token string) (bool, error) {
 	}
 
 	return true, nil
-
 }
 
 func (j *Jwt) BlacklistToken(verified *VerifiedToken, token string) error {

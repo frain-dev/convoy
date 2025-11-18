@@ -38,7 +38,6 @@ const ssoRedirectPath = "/ssoready/redirect"
 const ssoTokenPath = "/ssoready/token"
 
 func (u *LoginUserSSOService) Run() (*models.SSOLoginResponse, error) {
-
 	ssoReq := models.SSORequest{
 		LicenseKey: u.LicenseKey,
 		Host:       u.Host,
@@ -254,5 +253,4 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 	}
 
 	return user, &token, nil
-
 }

@@ -117,5 +117,4 @@ func getAllOrganisations(ctx context.Context, orgRepo datastore.OrganisationRepo
 	}
 
 	return orgs, nil
-
 }

@@ -28,7 +28,6 @@ const (
 )
 
 func ComputeJSONHmac(hash, data, secret string, order bool) (string, error) {
-
 	if order {
 		d, err := JsonReMarshalString(data)
 		if err != nil {

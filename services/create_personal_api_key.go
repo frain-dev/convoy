@@ -59,7 +59,6 @@ func (cpa *CreatePersonalAPIKeyService) Run(ctx context.Context) (*datastore.API
 
 	err = cpa.APIKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
-
 		log.FromContext(ctx).WithError(err).Error("failed to create api key")
 		return nil, "", &ServiceError{ErrMsg: "failed to create api key", Err: err}
 	}

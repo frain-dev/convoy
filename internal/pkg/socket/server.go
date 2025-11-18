@@ -119,7 +119,6 @@ func (h *Hub) sendEvent(ctx context.Context, ev *CLIEvent) {
 	if err != nil {
 		log.WithError(err).Error("failed to write event to socket")
 	}
-
 }
 
 type EventDelivery struct {

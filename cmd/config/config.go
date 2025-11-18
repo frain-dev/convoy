@@ -7,12 +7,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-func AddConfigCommand(a *cli.App) *cobra.Command {
-
+func AddConfigCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "config outputs your instances computed configuration",

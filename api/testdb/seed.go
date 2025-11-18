@@ -24,7 +24,6 @@ import (
 )
 
 func SeedEventType(db database.Database, projectId, uid, name, desc, category string) (*datastore.ProjectEventType, error) {
-
 	evtTypesRepo := postgres.NewEventTypesRepo(db)
 	pe := &datastore.ProjectEventType{
 		UID:         uid,

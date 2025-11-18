@@ -15,7 +15,6 @@ func NewOnPremClient(opts ObjectStoreOptions) (ObjectStore, error) {
 		opts: opts,
 	}
 	return client, nil
-
 }
 
 func (o *OnPremClient) Save(filename string) error {
