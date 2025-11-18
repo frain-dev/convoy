@@ -416,8 +416,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 		return subscriptions, nil
 	}
 
-	// fmt.Printf("matched %+v\n", subscriptions)
-
 	var matched []datastore.Subscription
 
 	// payload is interface{} and not map[string]interface{} because

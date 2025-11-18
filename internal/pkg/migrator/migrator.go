@@ -36,8 +36,8 @@ func (m *Migrator) Up() error {
 	return nil
 }
 
-func (m *Migrator) Down(max int) error {
-	_, err := migrate.ExecMax(m.dbx.DB, "postgres", m.src, migrate.Down, max)
+func (m *Migrator) Down(maxMigrations int) error {
+	_, err := migrate.ExecMax(m.dbx.DB, "postgres", m.src, migrate.Down, maxMigrations)
 	if err != nil {
 		return err
 	}

@@ -95,5 +95,4 @@ func writeOutDocV3(docV3 *openapi3.T) error {
 	fmt.Println("created", v3FnameYAML)
 
 	return nil
-
 }

@@ -312,22 +312,16 @@ func (cb *CircuitBreakerManager) loadCircuitBreakers(ctx context.Context) ([]Cir
 
 	circuitBreakers := make([]CircuitBreaker, len(res))
 	for i := range res {
-		switch res[i].(type) {
+		switch v := res[i].(type) {
 		case string:
-			str, ok := res[i].(string)
-			if !ok {
-				cb.logger.Errorf("[circuit breaker] breaker with key (%s) is corrupted", keys[i])
-				continue
-			}
-
-			c, innerErr := NewCircuitBreakerFromStore([]byte(str), cb.logger)
+			c, innerErr := NewCircuitBreakerFromStore([]byte(v), cb.logger)
 			if innerErr != nil {
 				cb.logger.WithError(innerErr).Errorf("[circuit breaker] an error occurred loading circuit breaker (%s) state from the store", keys[i])
 				continue
 			}
 			circuitBreakers[i] = *c
 		case CircuitBreaker: // only used in tests that use the mockStore
-			circuitBreakers[i] = res[i].(CircuitBreaker)
+			circuitBreakers[i] = v
 		}
 	}
 

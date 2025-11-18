@@ -123,7 +123,7 @@ func (m *Metrics) RecordIngestLatency(projectId string, latency float64) {
 	m.IngestLatency.With(prometheus.Labels{projectLabel: projectId}).Observe(latency)
 }
 
-func (m *Metrics) IncrementIngestTotal(source string, project string) {
+func (m *Metrics) IncrementIngestTotal(source, project string) {
 	if !m.IsEnabled {
 		return
 	}

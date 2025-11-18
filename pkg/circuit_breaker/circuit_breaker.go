@@ -35,7 +35,7 @@ type CircuitBreaker struct {
 	logger *log.Logger
 }
 
-func NewCircuitBreaker(key string, tenantId string, logger *log.Logger) *CircuitBreaker {
+func NewCircuitBreaker(key, tenantId string, logger *log.Logger) *CircuitBreaker {
 	return &CircuitBreaker{
 		Key:               key,
 		TenantId:          tenantId,

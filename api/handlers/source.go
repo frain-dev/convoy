@@ -315,7 +315,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
-func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
+func fillSourceURL(s *datastore.Source, baseUrl, customDomain string) {
 	url := baseUrl
 	if len(customDomain) > 0 {
 		url = customDomain

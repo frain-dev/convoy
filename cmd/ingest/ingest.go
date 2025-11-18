@@ -58,7 +58,7 @@ func StartIngest(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	go ingest.Run()
 
-	log.Println("Starting Convoy Ingester")
+	log.Printf("Starting Convoy Ingester")
 
 	return nil
 }

@@ -55,7 +55,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if err = config.Override(cliConfig); err != nil {
+			if err := config.Override(cliConfig); err != nil {
 				return err
 			}
 
@@ -109,7 +109,7 @@ func startConvoyServer(a *cli.App) error {
 			km.Unset()
 		}
 	}
-	if err = keys.Set(km); err != nil {
+	if err := keys.Set(km); err != nil {
 		return err
 	}
 

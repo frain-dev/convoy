@@ -60,7 +60,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		if err = config.Override(cliConfig); err != nil {
+		if err := config.Override(cliConfig); err != nil {
 			return err
 		}
 
@@ -218,7 +218,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		licenseOverrideCfg(&cfg, app.Licenser)
-		if err = config.Override(&cfg); err != nil {
+		if err := config.Override(&cfg); err != nil {
 			return err
 		}
 
@@ -236,7 +236,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				lo.WithError(err).Error("Failed to load configuration")
 			} else {
 				cfg.InstanceId = instCfg.UID
-				if err = config.Override(&cfg); err != nil {
+				if err := config.Override(&cfg); err != nil {
 					return err
 				}
 			}
@@ -695,8 +695,7 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 				Backend:   config.MetricsBackend(metricsBackend),
 			}
 
-			switch c.Metrics.Backend {
-			case config.PrometheusMetricsProvider:
+			if c.Metrics.Backend == config.PrometheusMetricsProvider {
 				sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
 				if err != nil {
 					return nil, err

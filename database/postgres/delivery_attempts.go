@@ -66,7 +66,7 @@ func (d *deliveryAttemptRepo) CreateDeliveryAttempt(ctx context.Context, attempt
 	return nil
 }
 
-func (d *deliveryAttemptRepo) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId string, id string) (*datastore.DeliveryAttempt, error) {
+func (d *deliveryAttemptRepo) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, id string) (*datastore.DeliveryAttempt, error) {
 	attempt := &datastore.DeliveryAttempt{}
 	err := d.db.GetReadDB().QueryRowxContext(ctx, findOneDeliveryAttempt, id, eventDeliveryId).StructScan(attempt)
 	if err != nil {

@@ -21,11 +21,11 @@ func NewProjectListener(queue queue.Queuer) *ProjectListener {
 	return &ProjectListener{queue: queue}
 }
 
-func (e *ProjectListener) AfterUpdate(ctx context.Context, data interface{}, changelog interface{}) {
+func (e *ProjectListener) AfterUpdate(ctx context.Context, data, changelog interface{}) {
 	e.run(ctx, datastore.ProjectUpdated, data, changelog)
 }
 
-func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventType, data interface{}, changelog interface{}) {
+func (e *ProjectListener) run(_ context.Context, eventType datastore.HookEventType, data, changelog interface{}) {
 	project, ok := data.(*datastore.Project)
 	if !ok {
 		log.Errorf("invalid type for project - %s", eventType)

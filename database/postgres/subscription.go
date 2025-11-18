@@ -391,7 +391,7 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 			defer closeWithError(rows)
 			for rows.Next() {
 				sub := datastore.Subscription{}
-				if err = rows.StructScan(&sub); err != nil {
+				if err := rows.StructScan(&sub); err != nil {
 					return
 				}
 
@@ -413,7 +413,7 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 	return subs[:counter], nil
 }
 
-func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID string, eventType string, pageSize int) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FetchSubscriptionsForBroadcast(ctx context.Context, projectID, eventType string, pageSize int) ([]datastore.Subscription, error) {
 	var _subs []datastore.Subscription
 	cursor := "0"
 
@@ -463,7 +463,7 @@ func (s *subscriptionRepo) FetchDeletedSubscriptions(ctx context.Context, projec
 	subs := make([]datastore.Subscription, 0)
 	for rows.Next() {
 		sub := datastore.Subscription{}
-		if err = rows.StructScan(&sub); err != nil {
+		if err := rows.StructScan(&sub); err != nil {
 			return nil, err
 		}
 
@@ -522,7 +522,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 	defer closeWithError(rows)
 	for rows.Next() {
 		sub := datastore.Subscription{}
-		if err = rows.StructScan(&sub); err != nil {
+		if err := rows.StructScan(&sub); err != nil {
 			return nil, err
 		}
 
@@ -890,7 +890,7 @@ func (s *subscriptionRepo) DeleteSubscription(ctx context.Context, projectID str
 	return nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID string, subscriptionID string) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID, subscriptionID string) (*datastore.Subscription, error) {
 	subscription := &datastore.Subscription{}
 	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
@@ -909,7 +909,7 @@ func (s *subscriptionRepo) FindSubscriptionByID(ctx context.Context, projectID s
 	return subscription, nil
 }
 
-func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID string, sourceID string) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, projectID, sourceID string) ([]datastore.Subscription, error) {
 	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
@@ -926,7 +926,7 @@ func (s *subscriptionRepo) FindSubscriptionsBySourceID(ctx context.Context, proj
 	return scanSubscriptions(rows)
 }
 
-func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectId string, endpointID string) ([]datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, projectId, endpointID string) ([]datastore.Subscription, error) {
 	key, err := s.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
@@ -943,7 +943,7 @@ func (s *subscriptionRepo) FindSubscriptionsByEndpointID(ctx context.Context, pr
 	return scanSubscriptions(rows)
 }
 
-func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectId string, deviceID string, subscriptionType datastore.SubscriptionType) (*datastore.Subscription, error) {
+func (s *subscriptionRepo) FindSubscriptionByDeviceID(ctx context.Context, projectId, deviceID string, subscriptionType datastore.SubscriptionType) (*datastore.Subscription, error) {
 	subscription := &datastore.Subscription{}
 	err := s.db.GetDB().QueryRowxContext(ctx, fetchSubscriptionByDeviceID, deviceID, projectId, subscriptionType).StructScan(subscription)
 	if err != nil {

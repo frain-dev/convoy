@@ -346,7 +346,7 @@ func (e *eventRepo) UpdateEventStatus(ctx context.Context, event *datastore.Even
 }
 
 // FindEventByID to find events in real time - requires the primary db
-func (e *eventRepo) FindEventByID(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindEventByID(ctx context.Context, projectID, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventById, id, projectID).StructScan(event)
 	if err != nil {
@@ -387,7 +387,7 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	return events, nil
 }
 
-func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]datastore.Event, error) {
+func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
 	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, idempotencyKey, projectID)
 	if err != nil {
 		return nil, err
@@ -415,7 +415,7 @@ func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID st
 	return events, nil
 }
 
-func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchFirstEventWithIdempotencyKey, id, projectID).StructScan(event)
 	if err != nil {

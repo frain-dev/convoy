@@ -429,7 +429,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	// start worker
 	consumer.Start()
-	lo.Println("Starting Convoy Consumer Pool")
+	lo.Printf("Starting Convoy Consumer Pool")
 
 	return ctx.Err()
 }

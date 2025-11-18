@@ -192,8 +192,7 @@ func flatten(prefix string, nested interface{}) (M, error) {
 			}
 
 			for i := range n {
-				switch t := n[i].(type) {
-				case M:
+				if t, ok := n[i].(M); ok {
 					newPrefix = strconv.Itoa(i)
 					if len(currentFrame.prefix) > 0 {
 						b.Grow(len(newPrefix) + len(currentFrame.prefix) + 1)
@@ -272,8 +271,7 @@ func countKeys(nested interface{}) (int, int) {
 			}
 
 			for i := range n {
-				switch t := n[i].(type) {
-				case M:
+				if t, ok := n[i].(M); ok {
 					stack = append(stack, counterStackFrame{t})
 				}
 			}

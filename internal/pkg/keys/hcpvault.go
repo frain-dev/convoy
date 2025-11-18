@@ -167,7 +167,8 @@ func (k *HCPVaultKeyManager) GetHCPSecretKey() (string, error) {
 			}
 			return "", err
 		}
-		return currentKey, k.cache.Set(context.Background(), RedisCacheKey, &currentKey, oneYear)
+		err = k.cache.Set(context.Background(), RedisCacheKey, &currentKey, oneYear)
+		return currentKey, err
 	}
 }
 
@@ -176,7 +177,7 @@ func (k *HCPVaultKeyManager) fetchSecretKey() (string, error) {
 	url := fmt.Sprintf("%s/secrets/2023-11-28/organizations/%s/projects/%s/apps/%s/secrets/%s:open",
 		k.APIBaseURL, k.OrgID, k.ProjectID, k.AppName, k.SecretName)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", url, http.NoBody)
 	if err != nil {
 		return "", fmt.Errorf("error creating request: %w", err)
 	}
@@ -289,7 +290,7 @@ func (k *HCPVaultKeyManager) deleteSecret() error {
 	deleteURL := fmt.Sprintf("%s/secrets/2023-11-28/organizations/%s/projects/%s/apps/%s/secrets/%s",
 		k.APIBaseURL, k.OrgID, k.ProjectID, k.AppName, k.SecretName)
 
-	req, err := http.NewRequest("DELETE", deleteURL, nil)
+	req, err := http.NewRequest("DELETE", deleteURL, http.NoBody)
 	if err != nil {
 		return fmt.Errorf("error creating delete request: %w", err)
 	}

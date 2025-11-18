@@ -207,7 +207,7 @@ func (g *GoogleOAuthService) verifyGoogleIDToken(ctx context.Context, idToken st
 	}
 
 	// Fetch Google's public keys
-	jwks, err := g.fetchGoogleJWKS(ctx)
+	jwks, err := g.fetchGoogleJWKS()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Google JWKS: %w", err)
 	}
@@ -277,7 +277,7 @@ func (g *GoogleOAuthService) verifyGoogleIDToken(ctx context.Context, idToken st
 	return userInfo, nil
 }
 
-func (g *GoogleOAuthService) fetchGoogleJWKS(ctx context.Context) (*GoogleJWKS, error) {
+func (g *GoogleOAuthService) fetchGoogleJWKS() (*GoogleJWKS, error) {
 	// Google's JWKS endpoint
 	jwksURL := "https://www.googleapis.com/oauth2/v3/certs"
 

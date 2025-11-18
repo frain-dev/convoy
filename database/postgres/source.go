@@ -339,7 +339,7 @@ func (s *sourceRepo) UpdateSource(ctx context.Context, projectID string, source 
 	return nil
 }
 
-func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id string) (*datastore.Source, error) {
+func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId, id string) (*datastore.Source, error) {
 	source := &datastore.Source{}
 	err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSource, "s.id"), id).StructScan(source)
 	if err != nil {
@@ -352,7 +352,7 @@ func (s *sourceRepo) FindSourceByID(ctx context.Context, projectId string, id st
 	return source, nil
 }
 
-func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID string, name string) (*datastore.Source, error) {
+func (s *sourceRepo) FindSourceByName(ctx context.Context, projectID, name string) (*datastore.Source, error) {
 	source := &datastore.Source{}
 	err := s.db.GetDB().QueryRowxContext(ctx, fmt.Sprintf(fetchSourceByName, "s.project_id", "s.name"), projectID, name).StructScan(source)
 	if err != nil {
@@ -378,7 +378,7 @@ func (s *sourceRepo) FindSourceByMaskID(ctx context.Context, maskID string) (*da
 	return source, nil
 }
 
-func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId string, id, sourceVerifierId string) error {
+func (s *sourceRepo) DeleteSourceByID(ctx context.Context, projectId, id, sourceVerifierId string) error {
 	tx, err := s.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err

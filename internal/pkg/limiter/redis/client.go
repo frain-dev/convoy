@@ -62,7 +62,7 @@ func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int) error {
 	return nil
 }
 
-func (r *RedisLimiter) AllowWithDuration(ctx context.Context, key string, limit int, duration int) error {
+func (r *RedisLimiter) AllowWithDuration(ctx context.Context, key string, limit, duration int) error {
 	if limit == 0 || duration == 0 { // this should never happen
 		return nil
 	}

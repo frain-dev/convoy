@@ -34,7 +34,7 @@ func init() {
 	}
 }
 
-func Compare(payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
+func Compare(payload, filter map[string]interface{}) (bool, error) {
 	return compare(payload, filter)
 }
 
@@ -475,7 +475,7 @@ func genCombos(payload map[string]interface{}, s string) ([]string, error) {
 // integer value n, generates all possible combinations of integers from 0 to n
 // for each "$" character, and returns a slice of strings representing all
 // possible combinations.
-func generateCombinations(combinations []string, index int, n int) []string {
+func generateCombinations(combinations []string, index, n int) []string {
 	if index >= len(combinations) {
 		return []string{strings.Join(combinations, "")}
 	}
