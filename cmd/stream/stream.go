@@ -4,20 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/queue"
-	redisQueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
+	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker"
-	"github.com/spf13/cobra"
 )
 
 func AddStreamCommand(a *cli.App) *cobra.Command {

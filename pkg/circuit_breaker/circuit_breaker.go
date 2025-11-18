@@ -1,9 +1,10 @@
 package circuit_breaker
 
 import (
+	"time"
+
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"time"
 )
 
 // CircuitBreaker represents a circuit breaker

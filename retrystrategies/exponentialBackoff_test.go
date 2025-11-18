@@ -2,11 +2,13 @@ package retrystrategies
 
 import (
 	"fmt"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/stretchr/testify/assert"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestExponentialBackoffRetryStrategy_NextDuration(t *testing.T) {

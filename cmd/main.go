@@ -3,9 +3,10 @@ package main
 import (
 	"os"
 	"time"
-	_ "time/tzdata"
 
 	"github.com/sirupsen/logrus"
+
+	_ "time/tzdata"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cmd/agent"

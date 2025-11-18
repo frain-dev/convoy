@@ -23,6 +23,7 @@
 .DS_Store
 *.db
 pgdata
+bin
 
 # ui depencencies
 **/node_modules
@@ -45,3 +46,5 @@ convoy-ce
 
 # used to generate test stubs
 .cursor
+
+mise.local.toml

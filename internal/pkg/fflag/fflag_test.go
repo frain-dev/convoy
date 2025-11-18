@@ -1,9 +1,10 @@
 package fflag
 
 import (
-	"github.com/frain-dev/convoy/config"
 	"reflect"
 	"testing"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 func TestFFlag_CanAccessFeature(t *testing.T) {

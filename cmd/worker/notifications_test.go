@@ -3,11 +3,12 @@ package worker
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/stretchr/testify/require"
 )
 
 type testQueue struct{ wrote []*queue.Job }

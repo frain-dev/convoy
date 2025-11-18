@@ -9,16 +9,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	"github.com/oklog/ulid/v2"
 
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 type ListenRequest struct {

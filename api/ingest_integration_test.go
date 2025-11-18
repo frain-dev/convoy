@@ -11,16 +11,15 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/stretchr/testify/require"
-
-	"github.com/stretchr/testify/suite"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
 )
 
 type IngestIntegrationTestSuite struct {

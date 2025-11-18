@@ -3,26 +3,24 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"github.com/oklog/ulid/v2"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 type testArgs struct {

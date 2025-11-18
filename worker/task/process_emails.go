@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+
+	"github.com/hibiken/asynq"
+
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/hibiken/asynq"
 )
 
 var ErrInvalidEmailPayload = errors.New("invalid email payload")

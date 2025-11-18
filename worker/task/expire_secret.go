@@ -3,9 +3,11 @@ package task
 import (
 	"context"
 	"encoding/json"
+
+	"github.com/hibiken/asynq"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/hibiken/asynq"
 )
 
 type Payload struct {

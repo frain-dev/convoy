@@ -6,12 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
+
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 )
 
 func provideClient(r *Repo, c WebSocketConnection) *Client {

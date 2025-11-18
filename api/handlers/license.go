@@ -3,10 +3,10 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/frain-dev/convoy/pkg/log"
-
-	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
+
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 )
 
 func (h *Handler) GetLicenseFeatures(w http.ResponseWriter, r *http.Request) {

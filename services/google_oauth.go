@@ -9,20 +9,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"math/big"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
 )
 
 type GoogleOAuthService struct {

@@ -2,13 +2,15 @@ package listener
 
 import (
 	"context"
+	"time"
+
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
-	"gopkg.in/guregu/null.v4"
-	"time"
 )
 
 type EventDeliveryListener struct {

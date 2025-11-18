@@ -11,17 +11,16 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
+	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
-
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/xdg-go/pbkdf2"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
 )
 
 var (

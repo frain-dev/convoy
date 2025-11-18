@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
 	authz "github.com/Subomi/go-authz"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 )
 
 type ProjectPolicy struct {

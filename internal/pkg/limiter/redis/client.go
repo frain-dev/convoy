@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/go-redis/redis_rate/v10"
+
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
 var ErrRateLimitExceeded = errors.New("rate limit exceeded")

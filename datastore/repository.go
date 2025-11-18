@@ -2,13 +2,11 @@ package datastore
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-
-	"errors"
-
 	"github.com/frain-dev/convoy/pkg/flatten"
 )
 

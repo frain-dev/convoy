@@ -6,19 +6,18 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"os"
 	"sync"
 	"testing"
 
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
-
-	"github.com/stretchr/testify/require"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func getConfig() config.Configuration {

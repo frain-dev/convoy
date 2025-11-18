@@ -6,15 +6,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/google/uuid"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	"github.com/google/uuid"
 )
 
 type CreateDynamicEventService struct {

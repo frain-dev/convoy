@@ -6,9 +6,10 @@ package testcon
 import (
 	"context"
 
-	convoy "github.com/frain-dev/convoy-go/v2"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+
+	convoy "github.com/frain-dev/convoy-go/v2"
 )
 
 func (d *DockerE2EIntegrationTestSuite) Test_DirectEvent_Success_AllSubscriptions() {

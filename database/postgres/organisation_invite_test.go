@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth"
 	"github.com/oklog/ulid/v2"
-
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/auth"
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestLoadOrganisationsInvitesPaged(t *testing.T) {

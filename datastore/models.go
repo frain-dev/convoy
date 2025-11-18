@@ -2,9 +2,7 @@ package datastore
 
 import (
 	"context"
-
 	"database/sql/driver"
-
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,18 +11,16 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
-
-	"github.com/frain-dev/convoy/pkg/flatten"
-
+	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/lib/pq"
 )
 
 type SubscriptionUpdate struct {

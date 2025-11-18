@@ -8,9 +8,9 @@ import (
 
 // CertCacheEntry represents a cached certificate with its parsed form and expiration time
 type CertCacheEntry struct {
-	Cert       *tls.Certificate
-	ExpiresAt  time.Time
-	CachedAt   time.Time
+	Cert      *tls.Certificate
+	ExpiresAt time.Time
+	CachedAt  time.Time
 }
 
 // CertCache provides a thread-safe cache for parsed client certificates

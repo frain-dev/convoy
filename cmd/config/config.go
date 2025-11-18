@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/spf13/cobra"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/pkg/log"
-
-	"github.com/spf13/cobra"
 )
 
 func AddConfigCommand(a *cli.App) *cobra.Command {

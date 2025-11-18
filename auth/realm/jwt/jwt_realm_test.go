@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 func TestJwtRealm_Authenticate(t *testing.T) {

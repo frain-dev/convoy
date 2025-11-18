@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideRegenerateProjectAPIKeyService(ctrl *gomock.Controller, project *datastore.Project, member *datastore.OrganisationMember) *RegenerateProjectAPIKeyService {

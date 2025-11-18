@@ -3,10 +3,12 @@ package pg
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var ErrRateLimitExceeded = errors.New("rate limit exceeded")

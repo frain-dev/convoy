@@ -4,6 +4,10 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
+	"github.com/subomi/requestmigrations"
+
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
@@ -12,9 +16,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
-	"github.com/subomi/requestmigrations"
 )
 
 type Handler struct {

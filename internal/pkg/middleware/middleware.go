@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/riandyrn/otelchi"
 	"github.com/sirupsen/logrus"
+
 	sdktrace "go.opentelemetry.io/otel/trace"
 
 	"github.com/frain-dev/convoy/api/types"

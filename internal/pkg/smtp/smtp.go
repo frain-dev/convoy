@@ -2,14 +2,15 @@ package smtp
 
 import (
 	"bytes"
-	_ "embed"
 	"fmt"
+
+	"gopkg.in/gomail.v2"
+
+	_ "embed"
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-
-	"gopkg.in/gomail.v2"
 )
 
 type SmtpClient interface {

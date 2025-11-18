@@ -3,15 +3,15 @@ package circuit_breaker
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/redis/go-redis/v9"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func getRedis(t *testing.T) (client redis.UniversalClient, err error) {

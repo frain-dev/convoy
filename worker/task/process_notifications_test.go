@@ -7,13 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/hibiken/asynq"
 	"github.com/jarcoal/httpmock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/queue"
 )
 
 func TestProcessNotifications(t *testing.T) {

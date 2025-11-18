@@ -3,6 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -10,8 +14,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker/task"
-	"gopkg.in/guregu/null.v4"
-	"time"
 )
 
 type ReplayEventService struct {

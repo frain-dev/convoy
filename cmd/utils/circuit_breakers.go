@@ -7,14 +7,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/spf13/cobra"
+	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func AddCircuitBreakersCommand(a *cli.App) *cobra.Command {

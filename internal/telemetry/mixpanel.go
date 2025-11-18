@@ -2,9 +2,10 @@ package telemetry
 
 import (
 	"context"
-	"github.com/frain-dev/convoy"
 
 	"github.com/mixpanel/mixpanel-go"
+
+	"github.com/frain-dev/convoy"
 )
 
 const (

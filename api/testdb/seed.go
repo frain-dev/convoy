@@ -9,19 +9,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dchest/uniuri"
+	"github.com/oklog/ulid/v2"
+	"github.com/xdg-go/pbkdf2"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/frain-dev/convoy/pkg/httpheader"
-
-	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
-	"github.com/xdg-go/pbkdf2"
 )
 
 func SeedEventType(db database.Database, projectId, uid, name, desc, category string) (*datastore.ProjectEventType, error) {

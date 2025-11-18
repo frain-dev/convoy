@@ -2,6 +2,7 @@ package msgpack
 
 import (
 	"bytes"
+
 	"github.com/vmihailenco/msgpack/v5"
 )
 

@@ -5,8 +5,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/frain-dev/convoy"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy"
 )
 
 var _ convoy.Plugin = (*AddHeadersPlugin)(nil)

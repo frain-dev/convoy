@@ -5,14 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/lib/pq"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
 )
 
 const (

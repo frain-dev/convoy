@@ -3,9 +3,11 @@ package keys
 import (
 	"context"
 	"fmt"
+
+	"github.com/jmoiron/sqlx"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/jmoiron/sqlx"
 )
 
 func RotateEncryptionKey(lo log.StdLogger, db database.Database, km KeyManager, oldKey, newKey string, timeout int) error {

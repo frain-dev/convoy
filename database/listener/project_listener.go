@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/r3labs/diff/v3"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/r3labs/diff/v3"
 )
 
 type ProjectListener struct {

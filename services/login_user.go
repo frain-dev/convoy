@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 )
 
 type LoginUserService struct {

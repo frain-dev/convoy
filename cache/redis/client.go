@@ -5,8 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/go-redis/cache/v9"
+
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
 const cacheSize = 128000

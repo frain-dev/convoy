@@ -5,8 +5,9 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/frain-dev/convoy/api/models"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/api/models"
 )
 
 var (

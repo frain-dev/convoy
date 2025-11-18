@@ -8,24 +8,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-
 	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/netip"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/stealthrocket/netjail"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/httpheader"

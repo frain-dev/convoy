@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
+
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/oklog/ulid/v2"
-	"time"
 )
 
 var (

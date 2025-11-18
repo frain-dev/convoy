@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/xdg-go/pbkdf2"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -13,7 +14,6 @@ import (
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
 )
 
 type CreateAPIKeyService struct {

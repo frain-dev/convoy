@@ -9,15 +9,15 @@ import (
 	"path"
 	"strings"
 
-	authz "github.com/Subomi/go-authz"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/subomi/requestmigrations"
 
+	authz "github.com/Subomi/go-authz"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
@@ -26,6 +26,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/util"
 )
 
 //go:embed ui/build

@@ -1,10 +1,11 @@
 package worker
 
 import (
+	"github.com/hibiken/asynq"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
 )
 
 type Scheduler struct {

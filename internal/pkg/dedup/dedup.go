@@ -6,13 +6,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/tidwall/gjson"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/tidwall/gjson"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 type Idempotency interface {
