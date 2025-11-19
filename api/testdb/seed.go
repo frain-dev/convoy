@@ -350,7 +350,7 @@ func SeedProject(db database.Database, uid, name, orgID string, projectType data
 }
 
 // SeedEvent creates a random event for integration tests.
-func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
+func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, uid, eventType, sourceID string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
 	}
@@ -377,7 +377,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *datastore.Endpoint, projectID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *datastore.Endpoint, projectID, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
 	}

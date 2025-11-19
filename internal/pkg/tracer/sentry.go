@@ -67,7 +67,7 @@ func (st *SentryTracer) Type() config.TracerProvider {
 	return config.SentryTracerProvider
 }
 
-func (st *SentryTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time) {
+func (st *SentryTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime, endTime time.Time) {
 	_, span := otel.Tracer("").Start(ctx, name,
 		trace.WithTimestamp(startTime))
 

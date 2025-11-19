@@ -192,7 +192,7 @@ func (j *jobRepo) MarkJobAsFailed(ctx context.Context, uid, projectID string) er
 	return nil
 }
 
-func (j *jobRepo) DeleteJob(ctx context.Context, uid string, projectID string) error {
+func (j *jobRepo) DeleteJob(ctx context.Context, uid, projectID string) error {
 	r, err := j.db.GetDB().ExecContext(ctx, deleteJob, uid, projectID)
 	if err != nil {
 		return err
@@ -210,7 +210,7 @@ func (j *jobRepo) DeleteJob(ctx context.Context, uid string, projectID string) e
 	return nil
 }
 
-func (j *jobRepo) FetchJobById(ctx context.Context, uid string, projectID string) (*datastore.Job, error) {
+func (j *jobRepo) FetchJobById(ctx context.Context, uid, projectID string) (*datastore.Job, error) {
 	job := &datastore.Job{}
 	err := j.db.GetDB().QueryRowxContext(ctx, fetchJobById, uid, projectID).StructScan(job)
 	if err != nil {

@@ -47,7 +47,7 @@ var (
 )
 
 // shouldSkipLogging checks if the given path should be excluded from logging
-func shouldSkipLogging(r map[string]interface{}, w map[string]interface{}) bool {
+func shouldSkipLogging(r, w map[string]interface{}) bool {
 	for _, skipPath := range skipLoggingPaths {
 		if strings.Contains(r["requestURL"].(string), skipPath) {
 			return true
@@ -467,7 +467,7 @@ func headerFields(header http.Header) map[string]string {
 	return headerField
 }
 
-func EnsurePeriod(start time.Time, end time.Time) error {
+func EnsurePeriod(start, end time.Time) error {
 	if start.Unix() > end.Unix() {
 		return errors.New("startDate cannot be greater than endDate")
 	}

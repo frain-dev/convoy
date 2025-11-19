@@ -355,7 +355,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 	return nil
 }
 
-func mergeHeaders(dest map[string]string, src map[string]string) {
+func mergeHeaders(dest, src map[string]string) {
 	var k, v string
 	// convert all the dest header values to lowercase
 	for k, v = range dest {

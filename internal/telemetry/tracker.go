@@ -15,7 +15,7 @@ var ErrInvalidInstanceID = errors.New("invalid instance id provided")
 
 type EventsCounter struct{}
 
-func (e *EventsCounter) track(ctx context.Context, instanceID string) (Metric, error) {
+func (e *EventsCounter) track(_ context.Context, instanceID string) (Metric, error) {
 	return Metric{
 		Name:       metricName(EventCounter),
 		Version:    convoy.GetVersion(),

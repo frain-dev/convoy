@@ -573,7 +573,7 @@ func LoadConfig(p string) error {
 		return err
 	}
 
-	if err = validate(&c); err != nil {
+	if err := validate(&c); err != nil {
 		return err
 	}
 

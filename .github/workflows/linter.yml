@@ -1,17 +1,20 @@
 name: golangci-lint
 on:
-    pull_request:
+  pull_request:
 
 jobs:
-    golangci:
-        if: ${{ !(contains(github.head_ref, 'ui/')) || !(contains(github.head_ref, 'cms/')) }}
-        name: lint
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v5
-            - name: golangci-lint
-              uses: golangci/golangci-lint-action@v6
-              with:
-                  version: latest
-                  only-new-issues: true
-                  args: --timeout 3m --verbose
+  backend-lint:
+    name: Lint
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          args: --config=.golangci.yml --timeout 3m --verbose
+          only-new-issues: 'true'
+          version: v2.1

@@ -365,7 +365,7 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 	return tx.Commit()
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventDeliveryByID, id, projectID).StructScan(eventDelivery)
 	if err != nil {
@@ -378,7 +378,7 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID
 	return eventDelivery, nil
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveryByIDSlim(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveryByIDSlim(ctx context.Context, projectID, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventDeliverySlim, projectID, id).StructScan(eventDelivery)
 	if err != nil {
@@ -421,7 +421,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 	return eventDeliveries, nil
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID string, eventID string) ([]datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID, eventID string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
 	q := fetchEventDeliveries + " WHERE event_id = $1 AND project_id = $2 AND deleted_at IS NULL"

@@ -32,6 +32,18 @@ import (
 //go:embed ui/build
 var reactFS embed.FS
 
+const (
+	VersionHeader = "X-Convoy-Version"
+	serverName    = "apiserver"
+)
+
+type ApplicationHandler struct {
+	Router http.Handler
+	rm     *requestmigrations.RequestMigration
+	A      *types.APIOptions
+	cfg    config.Configuration
+}
+
 func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	p := req.URL.Path
 
@@ -148,18 +160,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
-}
-
-const (
-	VersionHeader = "X-Convoy-Version"
-	serverName    = "apiserver"
-)
-
-type ApplicationHandler struct {
-	Router http.Handler
-	rm     *requestmigrations.RequestMigration
-	A      *types.APIOptions
-	cfg    config.Configuration
 }
 
 func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {

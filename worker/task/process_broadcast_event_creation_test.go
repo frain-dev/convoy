@@ -29,6 +29,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 		{
 			name: "should_create_broadcast_event",
 			dynamicEvent: &models.BroadcastEvent{
+				JobID:          "123:1234567890",
 				EventType:      "some.*",
 				ProjectID:      "project-id-1",
 				Data:           []byte(`{"name":"daniel"}`),

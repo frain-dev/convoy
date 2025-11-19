@@ -83,7 +83,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.
 						}
 
 						if !util.IsStringEmpty(app.SupportEmail) {
-							err = sendNotificationEmail(ctx, source, app, queue)
+							err = sendNotificationEmail(source, app, queue)
 							if err != nil {
 								log.Error("failed to send notification")
 								return err
@@ -97,7 +97,7 @@ func MonitorTwitterSources(db database.Database, queue queue.Queuer, redis *rdb.
 	}
 }
 
-func sendNotificationEmail(ctx context.Context, source datastore.Source, endpoint *datastore.Endpoint, q queue.Queuer) error {
+func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint, q queue.Queuer) error {
 	em := email.Message{
 		Email:        endpoint.SupportEmail,
 		Subject:      "Twitter Custom Source",

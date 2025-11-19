@@ -101,7 +101,7 @@ func (m *metaEventRepo) CreateMetaEvent(ctx context.Context, metaEvent *datastor
 	return nil
 }
 
-func (m *metaEventRepo) FindMetaEventByID(ctx context.Context, projectID string, id string) (*datastore.MetaEvent, error) {
+func (m *metaEventRepo) FindMetaEventByID(ctx context.Context, projectID, id string) (*datastore.MetaEvent, error) {
 	metaEvent := &datastore.MetaEvent{}
 	err := m.db.GetDB().QueryRowxContext(ctx, fetchMetaEventById, id, projectID).StructScan(metaEvent)
 	if err != nil {

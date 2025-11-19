@@ -369,7 +369,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 	return tx.Commit()
 }
 
-func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
+func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID, portalLinkId string) (*datastore.PortalLink, error) {
 	portalLink := datastore.PortalLink{}
 	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(&portalLink)
 	if err != nil {
@@ -415,7 +415,7 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID strin
 	return &portalLink, nil
 }
 
-func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID string, ownerID string) (*datastore.PortalLink, error) {
+func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID, ownerID string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{}
 	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkByOwnerID, ownerID, projectID).StructScan(portalLink)
 	if err != nil {
@@ -579,13 +579,14 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 
 			for i := range portalLinks {
 				for j := range authTokens {
-					if portalLinks[i].UID == authTokens[j].PortalLinkID {
-						portalLinks[i].AuthKey = authTokens[j].AuthKey
-						portalLinks[i].TokenMaskId = authTokens[j].MaskId
-						portalLinks[i].TokenHash = authTokens[j].Hash
-						portalLinks[i].TokenSalt = authTokens[j].Salt
-						portalLinks[i].TokenExpiresAt = authTokens[j].ExpiresAt
+					if portalLinks[i].UID != authTokens[j].PortalLinkID {
+						continue
 					}
+					portalLinks[i].AuthKey = authTokens[j].AuthKey
+					portalLinks[i].TokenMaskId = authTokens[j].MaskId
+					portalLinks[i].TokenHash = authTokens[j].Hash
+					portalLinks[i].TokenSalt = authTokens[j].Salt
+					portalLinks[i].TokenExpiresAt = authTokens[j].ExpiresAt
 				}
 			}
 		}
@@ -594,7 +595,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	return portalLinks, *pagination, nil
 }
 
-func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, projectID string, id string) error {
+func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, projectID, id string) error {
 	r, err := p.db.GetDB().ExecContext(ctx, deletePortalLink, id, projectID)
 	if err != nil {
 		return err
@@ -638,7 +639,7 @@ func (p *portalLinkRepo) FindPortalLinkByMaskId(ctx context.Context, maskId stri
 	return portalLink, nil
 }
 
-func (p *portalLinkRepo) RefreshPortalLinkAuthToken(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
+func (p *portalLinkRepo) RefreshPortalLinkAuthToken(ctx context.Context, projectID, portalLinkId string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{}
 	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(portalLink)
 	if err != nil {

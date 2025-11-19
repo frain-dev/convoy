@@ -51,7 +51,7 @@ func (u *GeneratePasswordResetTokenService) Run(ctx context.Context) error {
 	return nil
 }
 
-func (u *GeneratePasswordResetTokenService) sendPasswordResetEmail(ctx context.Context, baseURL string, token string, user *datastore.User) error {
+func (u *GeneratePasswordResetTokenService) sendPasswordResetEmail(ctx context.Context, baseURL, token string, user *datastore.User) error {
 	em := email.Message{
 		Email:        user.Email,
 		Subject:      "Convoy Password Reset",

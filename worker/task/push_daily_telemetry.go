@@ -73,18 +73,11 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) fu
 			ProjectRepo: projectRepo,
 		}
 
-		// totalActiveProjectTracker := &telemetry.TotalActiveProjectTracker{
-		//	Orgs:        orgs,
-		//	EventRepo:   eventRepo,
-		//	ProjectRepo: projectRepo,
-		// }
-
 		pb := telemetry.NewposthogBackend()
 		mb := telemetry.NewmixpanelBackend()
 
 		newTelemetry := telemetry.NewTelemetry(log, configuration,
 			telemetry.OptionTracker(totalEventsTracker),
-			// telemetry.OptionTracker(totalActiveProjectTracker),
 			telemetry.OptionBackend(pb),
 			telemetry.OptionBackend(mb))
 

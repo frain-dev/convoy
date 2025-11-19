@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/dchest/uniuri"
@@ -58,20 +57,4 @@ func (p *CreatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 	}
 
 	return portalLink, nil
-}
-
-func findEndpoints(ctx context.Context, endpoints []string, project *datastore.Project, endpointRepo datastore.EndpointRepository) error {
-	for _, e := range endpoints {
-		endpoint, err := endpointRepo.FindEndpointByID(ctx, e, project.UID)
-		log.FromContext(ctx).WithError(err).Errorf("failed to find endpoint %s", e)
-		if errors.Is(err, datastore.ErrEndpointNotFound) {
-			return &ServiceError{ErrMsg: fmt.Sprintf("endpoint with ID :%s not found", e), Err: err}
-		}
-
-		if endpoint.ProjectID != project.UID {
-			return &ServiceError{ErrMsg: fmt.Sprintf("unauthorized access to endpoint with ID: %s", e)}
-		}
-	}
-
-	return nil
 }

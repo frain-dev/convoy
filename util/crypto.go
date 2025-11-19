@@ -54,7 +54,7 @@ type Signature struct {
 	EncodedData []byte
 }
 
-func GenerateSignatureHeader(replayAttacks bool, hash string, secret string, data json.RawMessage) (*Signature, error) {
+func GenerateSignatureHeader(replayAttacks bool, hash, secret string, data json.RawMessage) (*Signature, error) {
 	buf := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(buf)
 	encoder.SetEscapeHTML(false)

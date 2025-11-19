@@ -82,7 +82,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_outgoing_project",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Params: CreateEventTaskParams{
 					UID:            "01JMJ3WTZGP411PY39KSY8AFQF",
 					ProjectID:      "project-id-1",
@@ -135,7 +135,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_outgoing_project_without_subscription",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Event: &datastore.Event{
 					UID:            ulid.Make().String(),
 					EventType:      "*",
@@ -184,7 +184,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_incoming_project_api_event",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Event: &datastore.Event{
 					UID:            ulid.Make().String(),
 					EventType:      "*",
@@ -232,7 +232,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_event_for_incoming_project_cli_event",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Event: &datastore.Event{
 					UID:            ulid.Make().String(),
 					EventType:      "*",
@@ -280,7 +280,7 @@ func TestProcessEventCreated(t *testing.T) {
 		{
 			name: "should_process_replayed_event",
 			createEvent: &CreateEvent{
-				JobID: "123",
+				JobID: "123:1234567890",
 				Event: &datastore.Event{
 					UID:            ulid.Make().String(),
 					EventType:      "*",

@@ -62,6 +62,10 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 
 		// get or create event
 		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
+		if err != nil {
+			return err
+		}
+
 		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
 			log.FromContext(ctx).Debugf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey)
 			return nil
@@ -255,7 +259,12 @@ func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQ
 		return nil, false, &EndpointError{Err: fmt.Errorf("cannot deduce jobID: %s", jobID)}
 	}
 
-	q := eventQueue.(*redis.RedisQueue)
+	q, ok := eventQueue.(*redis.RedisQueue)
+	if !ok {
+		// For non-Redis queues (e.g., in tests), skip the task info check
+		return nil, false, nil
+	}
+
 	ti, err := q.Inspector().GetTaskInfo(string(convoy.CreateEventQueue), jobID)
 	if err != nil {
 		log.WithError(err).Error("failed to get task from queue")

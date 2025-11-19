@@ -198,10 +198,6 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 	l.entry.Printf(format, args...)
 }
 
-func (l *Logger) Println(format string, args ...interface{}) {
-	l.entry.Printf(format, args...)
-}
-
 func (l *Logger) Fatalf(format string, args ...interface{}) {
 	l.entry.Fatal(fmt.Sprintf(format, args...))
 }

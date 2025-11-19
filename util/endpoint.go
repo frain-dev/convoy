@@ -13,7 +13,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 )
 
-func ValidateEndpoint(s string, enforceSecure bool, customCA bool) (string, error) {
+func ValidateEndpoint(s string, enforceSecure, customCA bool) (string, error) {
 	if IsStringEmpty(s) {
 		return "", errors.New("please provide the endpoint url")
 	}

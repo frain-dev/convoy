@@ -39,7 +39,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if err = config.Override(cliConfig); err != nil {
+			if err := config.Override(cliConfig); err != nil {
 				return err
 			}
 
