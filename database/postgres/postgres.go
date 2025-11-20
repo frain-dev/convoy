@@ -72,6 +72,12 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	return primary, err
 }
 
+func NewFromConnection(pool *pgxpool.Pool) *Postgres {
+	sqlDB := stdlib.OpenDBFromPool(pool)
+	db := sqlx.NewDb(sqlDB, "pgx")
+	return &Postgres{dbx: db, pool: pool}
+}
+
 func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postgres, error) {
 	pgxCfg, err := pgxpool.ParseConfig(dbConfig.BuildDsn())
 	if err != nil {

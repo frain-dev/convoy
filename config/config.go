@@ -12,8 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/kelseyhightower/envconfig"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -377,7 +375,6 @@ type PrometheusMetricsConfiguration struct {
 }
 
 const (
-	envPrefix      string = "convoy"
 	OSSEnvironment string = "oss"
 )
 
@@ -546,9 +543,11 @@ func overrideFields(ov, nv reflect.Value) {
 	}
 }
 
+type ConfigFunc func(c *Configuration) error
+
 // LoadConfig is used to load the configuration from either the json config file
 // or the environment variables.
-func LoadConfig(p string) error {
+func LoadConfig(p string, opts ...ConfigFunc) error {
 	c := DefaultConfiguration
 
 	if _, err := os.Stat(p); err == nil {
@@ -568,9 +567,10 @@ func LoadConfig(p string) error {
 	}
 
 	// override config from environment variables
-	err := envconfig.Process(envPrefix, &c)
-	if err != nil {
-		return err
+	for _, opt := range opts {
+		if err := opt(&c); err != nil {
+			return err
+		}
 	}
 
 	if err := validate(&c); err != nil {

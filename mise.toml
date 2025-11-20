@@ -8,6 +8,7 @@
 go = "1.25.3"
 golangci-lint = "2.4.0"
 nodejs = "24.10.0"
+postgres = "15.1"
 
 "asdf:jonathanmorley/asdf-pre-commit" = "latest"
 "aqua:pvolok/mprocs" = "0.7.2"
@@ -30,7 +31,7 @@ LOG_LEVEL = "debug"
 
 ## Convoy-specific settings
 CONVOY_HOST = "http://localhost:5005"
-CONVOY_ENV = "development"
+CONVOY_ENV = "oss"
 CONVOY_API_VERSION = "2024-04-01"
 CONVOY_MAX_RESPONSE_SIZE = 50
 CONVOY_ROOT_PATH = ""
@@ -59,7 +60,7 @@ CONVOY_DB_DSN = ""
 CONVOY_DB_MAX_OPEN_CONN = 0
 CONVOY_DB_MAX_IDLE_CONN = 0
 CONVOY_DB_CONN_MAX_LIFETIME = 3600
-CONVOY_DB_READ_REPLICAS = ""
+CONVOY_DB_READ_REPLICAS = "[]"
 
 #########################
 ## Redis configuration ##
