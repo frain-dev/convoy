@@ -2,20 +2,25 @@ package api
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/expfmt"
 	"github.com/subomi/requestmigrations"
 
 	authz "github.com/Subomi/go-authz"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	dto "github.com/prometheus/client_model/go"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/handlers"
@@ -25,6 +30,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/pkg/log"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 )
@@ -244,6 +250,10 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 }
 
 func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler *handlers.Handler) {
+	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
+	})
+
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
 		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
@@ -703,17 +713,24 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		})
 	}
 
-	if a.A.Licenser.CanExportPrometheusMetrics() {
-		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
-	} else {
-		router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Prometheus metrics export is not enabled", http.StatusNotFound)
-		})
+	router.HandleFunc("/metrics", a.metricsHandler())
+}
+
+func (a *ApplicationHandler) metricsHandler() http.HandlerFunc {
+	if !a.cfg.Metrics.IsEnabled || !a.A.Licenser.CanExportPrometheusMetrics() {
+		return func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Prometheus metrics export is not enabled", http.StatusMethodNotAllowed)
+		}
 	}
 
-	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
+	if a.cfg.Metrics.AgentMetricsURL != "" {
+		return a.aggregateMetricsHandler
+	}
+
+	h := promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{
+		Registry: metrics.Reg(),
 	})
+	return h.ServeHTTP
 }
 
 func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
@@ -735,13 +752,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 }
 
 func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *handlers.Handler) {
-	if a.A.Licenser.CanExportPrometheusMetrics() {
-		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
-	} else {
-		router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Prometheus metrics export is not enabled", http.StatusNotFound)
-		})
-	}
+	router.HandleFunc("/metrics", a.metricsHandler())
 
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
@@ -962,6 +973,90 @@ func shouldAuthRoute(r *http.Request) bool {
 	}
 
 	return true
+}
+
+func (a *ApplicationHandler) aggregateMetricsHandler(w http.ResponseWriter, r *http.Request) {
+	agentMetrics := a.fetchAgentMetrics(a.cfg.Metrics.AgentMetricsURL)
+
+	// Wrap agent metrics in a safe gatherer that handles errors gracefully
+	safeAgentGatherer := &safeGatherer{
+		gatherer: agentMetrics,
+		logger:   a.A.Logger,
+	}
+
+	mergedGatherer := prometheus.Gatherers{metrics.Reg(), safeAgentGatherer}
+	promhttp.HandlerFor(mergedGatherer, promhttp.HandlerOpts{}).ServeHTTP(w, r)
+}
+
+func (a *ApplicationHandler) fetchAgentMetrics(agentURL string) prometheus.Gatherer {
+	// Increased timeout to 15 seconds to handle slower agent responses
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+
+	agentGatherer := &agentMetricsGatherer{
+		url:    agentURL,
+		client: client,
+	}
+
+	return agentGatherer
+}
+
+var errAgentMetricsStatus = errors.New("agent metrics endpoint returned non-OK status")
+
+type agentMetricsGatherer struct {
+	url    string
+	client *http.Client
+}
+
+func (g *agentMetricsGatherer) Gather() ([]*dto.MetricFamily, error) {
+	resp, err := g.client.Get(g.url)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: %d", errAgentMetricsStatus, resp.StatusCode)
+	}
+
+	decoder := expfmt.NewDecoder(resp.Body, expfmt.NewFormat(expfmt.TypeTextPlain))
+	var families []*dto.MetricFamily
+
+	for {
+		var mf dto.MetricFamily
+		err := decoder.Decode(&mf)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode metric family: %w", err)
+		}
+		families = append(families, &mf)
+	}
+
+	return families, nil
+}
+
+type safeGatherer struct {
+	gatherer prometheus.Gatherer
+	logger   log.StdLogger
+}
+
+func (g *safeGatherer) Gather() ([]*dto.MetricFamily, error) {
+	if g.gatherer == nil {
+		return nil, nil
+	}
+
+	metrics, err := g.gatherer.Gather()
+	if err != nil {
+		g.logger.WithError(err).Warn("Failed to gather agent metrics, serving server metrics only")
+		return nil, nil
+	}
+
+	return metrics, nil
 }
 
 func shouldApplyCORS(r *http.Request) bool {
