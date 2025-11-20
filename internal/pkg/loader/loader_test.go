@@ -1,81 +1,20 @@
-//go:build integration
-// +build integration
-
 package loader
 
 import (
 	"context"
 	"os"
-	"sync"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/api/testdb"
-	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/pkg/log"
 )
-
-var (
-	once sync.Once
-	pDB  *postgres.Postgres
-)
-
-func getConfig() config.Configuration {
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
-	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
-	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
-	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
-	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
-	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
-	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
-
-	err := config.LoadConfig("")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cfg, err := config.Get()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	km, err := keys.NewLocalKeyManager()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if km.IsSet() {
-		if _, err = km.GetCurrentKeyFromCache(); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if err = keys.Set(km); err != nil {
-		log.Fatal(err)
-	}
-
-	return cfg
-}
-
-func getDB(t *testing.T) (database.Database, func()) {
-	once.Do(func() {
-		var err error
-		dbHooks := hooks.Init()
-		dbHooks.RegisterHook(datastore.EndpointCreated, func(ctx context.Context, data interface{}, changelog interface{}) {})
-		pDB, err = postgres.NewDB(getConfig())
-		require.NoError(t, err)
-	})
-
-	return pDB, func() {
-		testdb.PurgeDB(t, pDB)
-	}
-}
 
 // TestData holds common test data for integration tests
 type TestData struct {
@@ -95,7 +34,8 @@ type TestData struct {
 
 // setupTestData creates common test data for integration tests
 func setupTestData(t *testing.T) *TestData {
-	db, _ := getDB(t)
+	_, l := newLoader(t)
+	db := l.Database
 
 	// Create user and organization
 	user, err := testdb.SeedDefaultUser(db)
@@ -257,17 +197,13 @@ func countSubscriptionsInTable(t *testing.T, table *memorystore.Table) int {
 func TestSubscriptionLoaderIntegration(t *testing.T) {
 	t.Run("TestInitialLoad", func(t *testing.T) {
 		t.Run("TestLoadEmptyDatabase", func(t *testing.T) {
-			db, cleanup := getDB(t)
-			defer cleanup()
-
+			ctx, l := newLoader(t)
 			table := memorystore.NewTable()
-			ctx := context.Background()
-			logger := log.NewLogger(os.Stdout)
 
-			subRepo := postgres.NewSubscriptionRepo(db)
-			projectRepo := postgres.NewProjectRepo(db)
+			subRepo := postgres.NewSubscriptionRepo(l.Database)
+			projectRepo := postgres.NewProjectRepo(l.Database)
 
-			loader := NewSubscriptionLoader(subRepo, projectRepo, logger, 1000)
+			loader := NewSubscriptionLoader(subRepo, projectRepo, l.Logger, 1000)
 			err := loader.SyncChanges(ctx, table)
 			require.NoError(t, err)
 
