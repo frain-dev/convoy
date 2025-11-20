@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
 	"gopkg.in/guregu/null.v4"
@@ -37,6 +38,8 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+const envPrefix = "convoy"
+
 func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		cfgPath, err := cmd.Flags().GetString("config")
@@ -44,7 +47,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		err = config.LoadConfig(cfgPath)
+		err = config.LoadConfig(cfgPath, func(c *config.Configuration) error {
+			err := envconfig.Process(envPrefix, c)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+
 		if err != nil {
 			return err
 		}
