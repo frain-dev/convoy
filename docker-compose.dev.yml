@@ -23,6 +23,10 @@ services:
             - CONVOY_ENV=development
             - CONVOY_VERSION=v1.0.0
             - CONVOY_COMPONENT=web
+            - CONVOY_ENABLE_FEATURE_FLAG=ip-rules,credential-encryption,circuit-breaker,prometheus
+            - CONVOY_METRICS_ENABLED=true
+            - CONVOY_METRICS_BACKEND=prometheus
+            - CONVOY_METRICS_SAMPLE_TIME=5            
         logging:
             driver: syslog
             options:
@@ -60,6 +64,10 @@ services:
             - CONVOY_ENV=development
             - CONVOY_VERSION=v1.0.0
             - CONVOY_COMPONENT=agent
+            - CONVOY_ENABLE_FEATURE_FLAG=ip-rules,credential-encryption,circuit-breaker,prometheus
+            - CONVOY_METRICS_ENABLED=true
+            - CONVOY_METRICS_BACKEND=prometheus
+            - CONVOY_METRICS_SAMPLE_TIME=5                
         logging:
             driver: syslog
             options:
