@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-redis/cache/v9"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
@@ -14,6 +15,11 @@ const cacheSize = 128000
 
 type RedisCache struct {
 	cache *cache.Cache
+}
+
+func NewRedisCacheFromClient(rediser redis.UniversalClient) *RedisCache {
+	c := cache.New(&cache.Options{Redis: rediser})
+	return &RedisCache{cache: c}
 }
 
 func NewRedisCache(addresses []string) (*RedisCache, error) {

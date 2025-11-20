@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis_rate/v10"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
@@ -14,6 +15,10 @@ var ErrRateLimitExceeded = errors.New("rate limit exceeded")
 
 type RedisLimiter struct {
 	limiter *redis_rate.Limiter
+}
+
+func NewLimiterFromRedisClient(rediser redis.UniversalClient) *RedisLimiter {
+	return &RedisLimiter{limiter: redis_rate.NewLimiter(rediser)}
 }
 
 func NewRedisLimiter(addresses []string) (*RedisLimiter, error) {
