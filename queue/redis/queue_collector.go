@@ -46,29 +46,42 @@ func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
+	// Collect queue info with error handling - return zero values on error to prevent blocking
 	qinfo, err := q.inspector.GetQueueInfo(string(convoy.CreateEventQueue))
 	if err != nil {
-		log.Errorf("an error occurred while fetching queue %+v", err)
-		return
+		log.Errorf("an error occurred while fetching queue info for %s: %+v", convoy.CreateEventQueue, err)
+		// Send zero value instead of returning to prevent blocking the endpoint
+		ch <- prometheus.MustNewConstMetric(
+			eventQueueTotalDesc,
+			prometheus.GaugeValue,
+			0,
+			"scheduled",
+		)
+	} else {
+		ch <- prometheus.MustNewConstMetric(
+			eventQueueTotalDesc,
+			prometheus.GaugeValue,
+			float64(qinfo.Size-qinfo.Completed-qinfo.Archived),
+			"scheduled", // not yet in db
+		)
 	}
 
 	qMSinfo, err := q.inspector.GetQueueInfo(string(convoy.EventWorkflowQueue))
 	if err != nil {
-		log.Errorf("an error occurred while fetching queue %+v", err)
-		return
+		log.Errorf("an error occurred while fetching queue info for %s: %+v", convoy.EventWorkflowQueue, err)
+		// Send zero value instead of returning to prevent blocking the endpoint
+		ch <- prometheus.MustNewConstMetric(
+			eventQueueMatchSubscriptionsTotalDesc,
+			prometheus.GaugeValue,
+			0,
+			"scheduled",
+		)
+	} else {
+		ch <- prometheus.MustNewConstMetric(
+			eventQueueMatchSubscriptionsTotalDesc,
+			prometheus.GaugeValue,
+			float64(qMSinfo.Size-qMSinfo.Completed-qMSinfo.Archived),
+			"scheduled",
+		)
 	}
-
-	ch <- prometheus.MustNewConstMetric(
-		eventQueueTotalDesc,
-		prometheus.GaugeValue,
-		float64(qinfo.Size-qinfo.Completed-qinfo.Archived),
-		"scheduled", // not yet in db
-	)
-
-	ch <- prometheus.MustNewConstMetric(
-		eventQueueMatchSubscriptionsTotalDesc,
-		prometheus.GaugeValue,
-		float64(qMSinfo.Size-qMSinfo.Completed-qMSinfo.Archived),
-		"scheduled",
-	)
 }
