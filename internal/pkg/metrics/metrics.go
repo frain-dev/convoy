@@ -33,11 +33,34 @@ func Reset() {
 
 func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitBreakerManager) {
 	configuration, err := config.Get()
-	if err == nil && configuration.Metrics.IsEnabled {
-		if cbm == nil { // cbm can be nil if the feature flag is not enabled
-			Reg().MustRegister(q.(*redisqueue.RedisQueue), db.(*postgres.Postgres))
-		} else {
-			Reg().MustRegister(q.(*redisqueue.RedisQueue), db.(*postgres.Postgres), cbm)
+	if err != nil || !configuration.Metrics.IsEnabled {
+		return
+	}
+
+	redisQueue, ok := q.(*redisqueue.RedisQueue)
+	if !ok {
+		return
+	}
+
+	postgresDB, ok := db.(*postgres.Postgres)
+	if !ok {
+		return
+	}
+
+	registry := Reg()
+
+	// Register queue and database collectors
+	if err := registry.Register(redisQueue); err != nil {
+		return
+	}
+	if err := registry.Register(postgresDB); err != nil {
+		return
+	}
+
+	// Register circuit breaker if provided
+	if cbm != nil {
+		if err := registry.Register(cbm); err != nil {
+			return
 		}
 	}
 }

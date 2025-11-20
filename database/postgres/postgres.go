@@ -31,12 +31,12 @@ const TransactionCtx DbCtxKey = "transaction"
 var ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, please run convoy migrate first")
 
 type Postgres struct {
-	id       int
-	dbx      *sqlx.DB
-	hook     *hooks.Hook
-	pool     *pgxpool.Pool
-	replicas []*Postgres
-	randGen  *rand.Rand
+	id        int
+	dbx       *sqlx.DB
+	hook      *hooks.Hook
+	pool      *pgxpool.Pool
+	replicas  []*Postgres
+	randGen   *rand.Rand
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
@@ -101,6 +101,7 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 
 	return &Postgres{dbx: db, pool: pool}, nil
 }
+
 
 func (p *Postgres) GetDB() *sqlx.DB {
 	return p.dbx
