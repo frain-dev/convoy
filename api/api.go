@@ -244,6 +244,10 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 }
 
 func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler *handlers.Handler) {
+	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
+	})
+
 	// Ingestion API.
 	router.Route("/ingest", func(ingestRouter chi.Router) {
 		ingestRouter.Use(middleware.RateLimiterHandler(a.A.Rate, a.cfg.InstanceIngestRate))
@@ -707,17 +711,20 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		})
 	}
 
-	if a.A.Licenser.CanExportPrometheusMetrics() {
-		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
-	} else {
-		router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Prometheus metrics export is not enabled", http.StatusNotFound)
-		})
+	router.HandleFunc("/metrics", a.metricsHandler())
+}
+
+func (a *ApplicationHandler) metricsHandler() http.HandlerFunc {
+	if !a.cfg.Metrics.IsEnabled || !a.A.Licenser.CanExportPrometheusMetrics() {
+		return func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Prometheus metrics export is not enabled", http.StatusMethodNotAllowed)
+		}
 	}
 
-	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
+	h := promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{
+		Registry: metrics.Reg(),
 	})
+	return h.ServeHTTP
 }
 
 func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
@@ -739,13 +746,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 }
 
 func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *handlers.Handler) {
-	if a.A.Licenser.CanExportPrometheusMetrics() {
-		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
-	} else {
-		router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, "Prometheus metrics export is not enabled", http.StatusNotFound)
-		})
-	}
+	router.HandleFunc("/metrics", a.metricsHandler())
 
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
