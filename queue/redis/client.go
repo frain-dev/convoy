@@ -23,6 +23,12 @@ type RedisQueue struct {
 	opts      queue.QueueOptions
 	client    *asynq.Client
 	inspector *asynq.Inspector
+	component string
+}
+
+// SetComponent sets the component label for metrics
+func (q *RedisQueue) SetComponent(component string) {
+	q.component = component
 }
 
 func NewQueue(opts queue.QueueOptions) queue.Queuer {

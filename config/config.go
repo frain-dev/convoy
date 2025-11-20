@@ -365,9 +365,10 @@ type OnPremStorage struct {
 }
 
 type MetricsConfiguration struct {
-	IsEnabled  bool                           `json:"enabled" envconfig:"CONVOY_METRICS_ENABLED"`
-	Backend    MetricsBackend                 `json:"metrics_backend" envconfig:"CONVOY_METRICS_BACKEND"`
-	Prometheus PrometheusMetricsConfiguration `json:"prometheus_metrics"`
+	IsEnabled       bool                           `json:"enabled" envconfig:"CONVOY_METRICS_ENABLED"`
+	Backend         MetricsBackend                 `json:"metrics_backend" envconfig:"CONVOY_METRICS_BACKEND"`
+	Prometheus      PrometheusMetricsConfiguration `json:"prometheus_metrics"`
+	AgentMetricsURL string                         `json:"agent_metrics_url" envconfig:"CONVOY_METRICS_AGENT_URL"` // Optional: URL to fetch agent metrics from
 }
 
 type PrometheusMetricsConfiguration struct {

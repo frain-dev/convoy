@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -425,7 +426,12 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	component := os.Getenv("CONVOY_COMPONENT")
+	if component == "" {
+		component = "agent"
+	}
+
+	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager, component)
 
 	// start worker
 	consumer.Start()

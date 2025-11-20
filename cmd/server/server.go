@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -177,7 +178,12 @@ func startConvoyServer(a *cli.App) error {
 		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
+	component := os.Getenv("CONVOY_COMPONENT")
+	if component == "" {
+		component = "server"
+	}
+
+	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil, component)
 
 	// Start scheduler
 	s.Start()

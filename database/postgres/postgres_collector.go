@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -75,31 +76,31 @@ var (
 	eventQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_queue_total"),
 		"Total number of tasks in the event queue",
-		[]string{"project", "source", "status"}, nil,
+		[]string{"project", "source", "status", "component"}, nil,
 	)
 
 	eventQueueBacklogDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_queue_backlog_seconds"),
 		"Number of seconds the oldest pending task is waiting in pending state to be processed.",
-		[]string{"project", "source"}, nil,
+		[]string{"project", "source", "component"}, nil,
 	)
 
 	eventDeliveryQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_total"),
 		"Total number of tasks in the delivery queue per endpoint",
-		[]string{"project", "endpoint", "status"}, nil,
+		[]string{"project", "endpoint", "status", "component"}, nil,
 	)
 
 	eventDeliveryQueueBacklogDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_backlog_seconds"),
 		"Number of seconds the oldest pending task is waiting in pending state to be processed per endpoint",
-		[]string{"project", "endpoint", "source"}, nil,
+		[]string{"project", "endpoint", "source", "component"}, nil,
 	)
 
 	eventDeliveryAttemptsTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_attempts_total"),
 		"Total number of attempts per endpoint",
-		[]string{"project", "endpoint", "status", "http_status_code"}, nil,
+		[]string{"project", "endpoint", "status", "http_status_code", "component"}, nil,
 	)
 )
 
@@ -128,9 +129,21 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 		metrics, err = p.collectMetrics()
 		if err != nil {
 			log.Errorf("Failed to collect metrics data: %v", err)
-			return
+			if cachedMetrics != nil {
+				metrics = cachedMetrics
+				log.Warn("Using cached metrics due to collection failure")
+			} else {
+				// Return empty metrics to prevent blocking the endpoint
+				metrics = &Metrics{}
+			}
+		} else {
+			cachedMetrics = metrics
 		}
-		cachedMetrics = metrics
+	}
+
+	component := p.component
+	if component == "" {
+		component = "unknown"
 	}
 
 	metricsMap := make(map[string]struct{})
@@ -147,6 +160,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.ProjectID,
 			metric.SourceId,
 			"success", // already in db
+			component,
 		)
 		metricsMap[key] = struct{}{}
 	}
@@ -162,6 +176,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.AgeSeconds,
 			metric.ProjectID,
 			metric.SourceId,
+			component,
 		)
 		metricsMap[key] = struct{}{}
 	}
@@ -178,6 +193,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.ProjectID,
 			metric.EndpointId,
 			strings.ToLower(metric.Status),
+			component,
 		)
 		metricsMap[key] = struct{}{}
 	}
@@ -194,6 +210,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.ProjectID,
 			metric.EndpointId,
 			metric.SourceId,
+			component,
 		)
 		metricsMap[key] = struct{}{}
 	}
@@ -211,6 +228,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			metric.EndpointId,
 			strings.ToLower(metric.Status),
 			metric.StatusCode,
+			component,
 		)
 		metricsMap[key] = struct{}{}
 	}
@@ -221,12 +239,15 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 
 // collectMetrics gathers essential metrics from the DB
 func (p *Postgres) collectMetrics() (*Metrics, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	metrics := &Metrics{}
 
 	queryEventQueueMetrics := "select project_id, coalesce(source_id, 'http') as source_id, count(*) as total from convoy.events group by project_id, source_id"
-	rows, err := p.GetDB().Queryx(queryEventQueueMetrics)
+	rows, err := p.GetDB().QueryxContext(ctx, queryEventQueueMetrics)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query event queue metrics: %w", err)
 	}
 	defer closeWithError(rows)
 	eventQueueMetrics := make([]EventQueueMetrics, 0)
@@ -234,7 +255,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 		var eqm EventQueueMetrics
 		err = rows.StructScan(&eqm)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan event queue metrics: %w", err)
 		}
 		eventQueueMetrics = append(eventQueueMetrics, eqm)
 	}
@@ -261,9 +282,9 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
     WHERE ed.status = 'Success' AND a1.source_id IS NULL
     GROUP BY ed.project_id, e.source_id
     LIMIT 1000; -- samples`
-	rows1, err := p.GetDB().Queryx(backlogQM)
+	rows1, err := p.GetDB().QueryxContext(ctx, backlogQM)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query backlog metrics: %w", err)
 	}
 	defer closeWithError(rows1)
 	eventQueueBacklogMetrics := make([]EventQueueBacklogMetrics, 0)
@@ -278,9 +299,9 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	metrics.EventQueueBacklogMetrics = eventQueueBacklogMetrics
 
 	queryDeliveryQ := "select project_id, endpoint_id, status, count(*) as total from convoy.event_deliveries group by project_id, endpoint_id, status"
-	rows2, err := p.GetDB().Queryx(queryDeliveryQ)
+	rows2, err := p.GetDB().QueryxContext(ctx, queryDeliveryQ)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query delivery queue metrics: %w", err)
 	}
 	defer closeWithError(rows2)
 	eventDeliveryQueueMetrics := make([]EventDeliveryQueueMetrics, 0)
@@ -317,9 +338,9 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
     WHERE ed.status = 'Success' AND a1.endpoint_id IS NULL
     GROUP BY ed.project_id, e.source_id, ed.endpoint_id
     LIMIT 1000; -- samples`
-	rows3, err := p.GetDB().Queryx(backlogEQM)
+	rows3, err := p.GetDB().QueryxContext(ctx, backlogEQM)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query endpoint backlog metrics: %w", err)
 	}
 	defer closeWithError(rows3)
 	eventQueueEndpointBacklogMetrics := make([]EventQueueEndpointBacklogMetrics, 0)

@@ -31,12 +31,13 @@ const TransactionCtx DbCtxKey = "transaction"
 var ErrPendingMigrationsFound = errors.New("migrate: Pending migrations exist, please run convoy migrate first")
 
 type Postgres struct {
-	id       int
-	dbx      *sqlx.DB
-	hook     *hooks.Hook
-	pool     *pgxpool.Pool
-	replicas []*Postgres
-	randGen  *rand.Rand
+	id        int
+	dbx       *sqlx.DB
+	hook      *hooks.Hook
+	pool      *pgxpool.Pool
+	replicas  []*Postgres
+	randGen   *rand.Rand
+	component string
 }
 
 func NewDB(cfg config.Configuration) (*Postgres, error) {
@@ -100,6 +101,11 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 	db := sqlx.NewDb(sqlDB, "pgx")
 
 	return &Postgres{dbx: db, pool: pool}, nil
+}
+
+// SetComponent sets the component label for metrics
+func (p *Postgres) SetComponent(component string) {
+	p.component = component
 }
 
 func (p *Postgres) GetDB() *sqlx.DB {

@@ -1,6 +1,8 @@
 package redis
 
 import (
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/frain-dev/convoy"
@@ -16,12 +18,12 @@ var (
 	eventQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_queue_scheduled_total"),
 		"Total number of tasks scheduled in the event queue",
-		[]string{"status"}, nil,
+		[]string{"status", "component"}, nil,
 	)
 	eventQueueMatchSubscriptionsTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_workflow_queue_match_subscriptions_total"),
 		"Total number of tasks scheduled in the workflow queue matching subscriptions",
-		[]string{"status"}, nil,
+		[]string{"status", "component"}, nil,
 	)
 )
 
@@ -46,29 +48,58 @@ func (q *RedisQueue) Collect(ch chan<- prometheus.Metric) {
 		return
 	}
 
+	// Default component to "unknown" if not set
+	component := q.component
+	if component == "" {
+		component = "unknown"
+	}
+
+	// Collect queue info with error handling - return zero values on error to prevent blocking
 	qinfo, err := q.inspector.GetQueueInfo(string(convoy.CreateEventQueue))
 	if err != nil {
-		log.Errorf("an error occurred while fetching queue %+v", err)
-		return
+		// Only log non-expected errors (queues are created dynamically, so NOT_FOUND is normal)
+		if !strings.Contains(err.Error(), "NOT_FOUND") && !strings.Contains(err.Error(), "does not exist") {
+			log.Errorf("an error occurred while fetching queue info for %s: %+v", convoy.CreateEventQueue, err)
+		}
+		// Send zero value instead of returning to prevent blocking the endpoint
+		ch <- prometheus.MustNewConstMetric(
+			eventQueueTotalDesc,
+			prometheus.GaugeValue,
+			0,
+			"scheduled",
+			component,
+		)
+	} else {
+		ch <- prometheus.MustNewConstMetric(
+			eventQueueTotalDesc,
+			prometheus.GaugeValue,
+			float64(qinfo.Size-qinfo.Completed-qinfo.Archived),
+			"scheduled", // not yet in db
+			component,
+		)
 	}
 
 	qMSinfo, err := q.inspector.GetQueueInfo(string(convoy.EventWorkflowQueue))
 	if err != nil {
-		log.Errorf("an error occurred while fetching queue %+v", err)
-		return
+		// Only log non-expected errors (queues are created dynamically, so NOT_FOUND is normal)
+		if !strings.Contains(err.Error(), "NOT_FOUND") && !strings.Contains(err.Error(), "does not exist") {
+			log.Errorf("an error occurred while fetching queue info for %s: %+v", convoy.EventWorkflowQueue, err)
+		}
+		// Send zero value instead of returning to prevent blocking the endpoint
+		ch <- prometheus.MustNewConstMetric(
+			eventQueueMatchSubscriptionsTotalDesc,
+			prometheus.GaugeValue,
+			0,
+			"scheduled",
+			component,
+		)
+	} else {
+		ch <- prometheus.MustNewConstMetric(
+			eventQueueMatchSubscriptionsTotalDesc,
+			prometheus.GaugeValue,
+			float64(qMSinfo.Size-qMSinfo.Completed-qMSinfo.Archived),
+			"scheduled",
+			component,
+		)
 	}
-
-	ch <- prometheus.MustNewConstMetric(
-		eventQueueTotalDesc,
-		prometheus.GaugeValue,
-		float64(qinfo.Size-qinfo.Completed-qinfo.Archived),
-		"scheduled", // not yet in db
-	)
-
-	ch <- prometheus.MustNewConstMetric(
-		eventQueueMatchSubscriptionsTotalDesc,
-		prometheus.GaugeValue,
-		float64(qMSinfo.Size-qMSinfo.Completed-qMSinfo.Archived),
-		"scheduled",
-	)
 }

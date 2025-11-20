@@ -31,9 +31,16 @@ func Reset() {
 	prometheus.DefaultRegisterer = prometheus.NewRegistry()
 }
 
-func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitBreakerManager) {
+func RegisterQueueMetrics(q queue.Queuer, db database.Database, cbm *cb.CircuitBreakerManager, component string) {
 	configuration, err := config.Get()
 	if err == nil && configuration.Metrics.IsEnabled {
+		if redisQueue, ok := q.(*redisqueue.RedisQueue); ok {
+			redisQueue.SetComponent(component)
+		}
+		if postgresDB, ok := db.(*postgres.Postgres); ok {
+			postgresDB.SetComponent(component)
+		}
+
 		if cbm == nil { // cbm can be nil if the feature flag is not enabled
 			Reg().MustRegister(q.(*redisqueue.RedisQueue), db.(*postgres.Postgres))
 		} else {
