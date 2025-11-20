@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
@@ -414,7 +415,10 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			defer ctrl.Finish()
 			as := provideCreateEndpointService(ctrl, tc.args.e, tc.args.g.UID)
 
-			err := config.LoadConfig("")
+			// Load config and set SkipPingValidation via ConfigFunc
+			err := config.LoadConfig("", func(c *config.Configuration) error {
+				return envconfig.Process("convoy", c)
+			})
 			require.NoError(t, err)
 
 			// Arrange Expectations
