@@ -1411,7 +1411,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_PortalLink
 
 func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink() {
 	// Just Before
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test"+ulid.Make().String(), false, datastore.ActiveEndpointStatus)
 	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 
 	// Arrange Request
@@ -1638,7 +1638,7 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey() {
 func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusBadRequest
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
@@ -1687,7 +1687,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusBadRequest
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
@@ -1787,7 +1787,7 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_
         }
     }`)
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
@@ -1838,7 +1838,7 @@ func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey(
 func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusBadRequest
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
