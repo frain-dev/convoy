@@ -2354,7 +2354,7 @@ func (s *OrganisationMemberIntegrationTestSuite) TearDownTest() {
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("member.%d@test.com", time.Now().UnixNano()), "password")
 	require.NoError(s.T(), err)
 
 	_, err = testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
@@ -2406,7 +2406,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMembers() {
 func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("member.%d@test.com", time.Now().UnixNano()), "password")
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{Type: auth.RoleProjectAdmin})
@@ -2445,7 +2445,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_GetOrganisationMember() {
 func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember() {
 	expectedStatusCode := http.StatusAccepted
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("member.%d@test.com", time.Now().UnixNano()), "password")
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
@@ -2483,7 +2483,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember()
 func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember_IA() {
 	expectedStatusCode := http.StatusAccepted
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("member.%d@test.com", time.Now().UnixNano()), "password")
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
@@ -2521,7 +2521,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_UpdateOrganisationMember_I
 func (s *OrganisationMemberIntegrationTestSuite) Test_CannotUpdateOrganisationMember_IA() {
 	expectedStatusCode := http.StatusForbidden
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("member.%d@test.com", time.Now().UnixNano()), "password")
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
@@ -2552,7 +2552,7 @@ func (s *OrganisationMemberIntegrationTestSuite) Test_CannotUpdateOrganisationMe
 func (s *OrganisationMemberIntegrationTestSuite) Test_DeleteOrganisationMember() {
 	expectedStatusCode := http.StatusOK
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "member@test.com", "password")
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("member.%d@test.com", time.Now().UnixNano()), "password")
 	require.NoError(s.T(), err)
 
 	member, err := testdb.SeedOrganisationMember(s.ConvoyApp.A.DB, s.DefaultOrg, user, &auth.Role{
