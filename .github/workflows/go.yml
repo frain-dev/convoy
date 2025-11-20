@@ -81,6 +81,7 @@ jobs:
               run: make docker_e2e_tests
               env:
                   TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+                  CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
                   CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
                   TEST_DB_SCHEME: postgres
