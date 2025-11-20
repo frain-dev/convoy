@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -11,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 
@@ -31,14 +29,11 @@ type IngestIntegrationTestSuite struct {
 }
 
 func (i *IngestIntegrationTestSuite) SetupSuite() {
-	i.DB = getDB()
-	i.ConvoyApp = buildServer()
+	i.ConvoyApp = buildServer(i.T())
 	i.Router = i.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (i *IngestIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(i.T(), i.DB)
-
 	user, err := testdb.SeedDefaultUser(i.ConvoyApp.A.DB)
 	require.NoError(i.T(), err)
 
@@ -60,7 +55,6 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 }
 
 func (i *IngestIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(i.T(), i.DB)
 	metrics.Reset()
 }
 
@@ -81,8 +75,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadMaskID() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_NotHTTPSource() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before
@@ -110,8 +104,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NotHTTPSource() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodHmac() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before
@@ -145,8 +139,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodHmac() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadHmac() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before
@@ -179,8 +173,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadHmac() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodAPIKey() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before
@@ -209,8 +203,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodAPIKey() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadAPIKey() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before
@@ -239,8 +233,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadAPIKey() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodBasicAuth() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before
@@ -270,8 +264,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_GoodBasicAuth() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadBasicAuth() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusBadRequest
 
 	// Just Before
@@ -301,8 +295,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_BadBasicAuth() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 	resp := "[accepted]"
 	// Just Before
@@ -328,8 +322,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestBody() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before
@@ -356,7 +350,7 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_NoopVerifier_EmptyRequestB
 	err := json.NewDecoder(w.Body).Decode(&response)
 	require.NoError(i.T(), err)
 
-	// Check the lenght of the request body
+	// Check the length of the request body
 	require.Equal(i.T(), float64(2), response["data"].(float64))
 }
 
@@ -365,8 +359,8 @@ func (i *IngestIntegrationTestSuite) Test_IngestEvent_WriteToQueueFailed() {
 }
 
 func (i *IngestIntegrationTestSuite) Test_IngestEvent_PayloadExceedsConfiguredPayloadSize() {
-	maskID := "123456"
-	sourceID := "123456789"
+	maskID := ulid.Make().String()
+	sourceID := ulid.Make().String()
 
 	// Just Before
 	v := &datastore.VerifierConfig{
