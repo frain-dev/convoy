@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -42,13 +39,11 @@ type PublicEndpointIntegrationTestSuite struct {
 }
 
 func (s *PublicEndpointIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -85,7 +80,6 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicEndpointIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -106,7 +100,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound()
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
-	endpointID := "123456789"
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -135,7 +129,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_WithPersonalAPIKey() {
-	endpointID := "123456789"
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -562,7 +556,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_AllowHTTP() {
 
 	cfg := datastore.DefaultProjectConfig
 	cfg.SSL = &datastore.SSLConfiguration{EnforceSecureEndpoints: false}
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, "", "testing", s.DefaultOrg.UID, datastore.OutgoingProject, &cfg)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "test"+ulid.Make().String(), s.DefaultOrg.UID, datastore.OutgoingProject, &cfg)
 	require.NoError(s.T(), err)
 
 	// Seed Auth
@@ -761,13 +755,11 @@ type PublicEventIntegrationTestSuite struct {
 }
 
 func (s *PublicEventIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEventIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -797,7 +789,6 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicEventIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -1329,13 +1320,11 @@ type PublicPortalLinkIntegrationTestSuite struct {
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -1367,7 +1356,6 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -1590,13 +1578,11 @@ type PublicProjectIntegrationTestSuite struct {
 }
 
 func (s *PublicProjectIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicProjectIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -1906,7 +1892,6 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectsWithPersonalAPIKey() 
 }
 
 func (s *PublicProjectIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -1926,13 +1911,11 @@ type PublicSourceIntegrationTestSuite struct {
 }
 
 func (s *PublicSourceIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicSourceIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -1966,7 +1949,6 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicSourceIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -2255,13 +2237,11 @@ type PublicSubscriptionIntegrationTestSuite struct {
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -2295,7 +2275,6 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -2862,13 +2841,11 @@ type PublicMetaEventIntegrationTestSuite struct {
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -2902,7 +2879,6 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -2976,13 +2952,11 @@ type PublicEventTypeIntegrationTestSuite struct {
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -3011,7 +2985,6 @@ func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
