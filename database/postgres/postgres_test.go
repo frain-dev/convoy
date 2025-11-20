@@ -44,7 +44,7 @@ func getConfig() config.Configuration {
 		log.Fatal(err)
 	}
 
-	km, err := keys.NewLocalKeyManager()
+	km, err := keys.NewLocalKeyManager("test")
 	if err != nil {
 		log.Fatal(err)
 	}
