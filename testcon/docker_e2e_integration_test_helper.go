@@ -63,7 +63,7 @@ func getConfig() config.Configuration {
 	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
 	_ = os.Setenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION", "true")
 
-	km, err := keys.NewLocalKeyManager()
+	km, err := keys.NewLocalKeyManager("test-key")
 	if err != nil {
 		log.Fatal(err)
 	}

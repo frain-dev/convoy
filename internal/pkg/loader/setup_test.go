@@ -65,7 +65,7 @@ func newLoader(t *testing.T) (context.Context, *testInstance) {
 
 	pg := postgres.NewFromConnection(conn)
 
-	km, err := keys.NewLocalKeyManager()
+	km, err := keys.NewLocalKeyManager("test-key")
 	if err != nil {
 		log.Fatal(err)
 	}
