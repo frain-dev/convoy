@@ -61,7 +61,8 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 		cfg := channel.GetConfig()
 
 		// get or create event
-		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
+		var err error
+		var lastEvent, lastRunErrored, _ = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
 		// if err != nil {
 		// 	return err
 		// }

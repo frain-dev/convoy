@@ -321,12 +321,13 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 				Payload: data,
 			}
 
-			if s.Type == datastore.SubscriptionTypeAPI {
+			switch s.Type {
+			case datastore.SubscriptionTypeAPI:
 				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
 				}
-			} else if s.Type == datastore.SubscriptionTypeCLI {
+			case datastore.SubscriptionTypeCLI:
 				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
@@ -344,7 +345,8 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	var subscriptions []datastore.Subscription
 	var err error
 
-	if project.Type == datastore.OutgoingProject {
+	switch project.Type {
+	case datastore.OutgoingProject:
 		for _, endpointID := range event.Endpoints {
 			var endpoint *datastore.Endpoint
 
@@ -381,7 +383,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subscriptions = append(subscriptions, matchedSubs...)
 		}
-	} else if project.Type == datastore.IncomingProject {
+	case datastore.IncomingProject:
 		subscriptions, err = subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
 		if err != nil {
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
