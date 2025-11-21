@@ -20,7 +20,7 @@ jobs:
 
      steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v5
 
       - name: Run Local K6 Test
         uses: grafana/k6-action@v0.2.0
