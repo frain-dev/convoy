@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
@@ -21,15 +22,17 @@ import (
 )
 
 type UpdateEndpointService struct {
-	Cache        cache.Cache
-	EndpointRepo datastore.EndpointRepository
-	ProjectRepo  datastore.ProjectRepository
-	Licenser     license.Licenser
-	FeatureFlag  *fflag.FFlag
-	Logger       log.StdLogger
-	E            models.UpdateEndpoint
-	Endpoint     *datastore.Endpoint
-	Project      *datastore.Project
+	Cache              cache.Cache
+	EndpointRepo       datastore.EndpointRepository
+	ProjectRepo        datastore.ProjectRepository
+	Licenser           license.Licenser
+	FeatureFlag        *fflag.FFlag
+	FeatureFlagFetcher fflag.FeatureFlagFetcher
+	DB                 database.Database
+	Logger             log.StdLogger
+	E                  models.UpdateEndpoint
+	Endpoint           *datastore.Endpoint
+	Project            *datastore.Project
 }
 
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -47,7 +50,7 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 	a.E.URL = endpointUrl
 
-	endpoint, err = a.updateEndpoint(endpoint, a.E, a.Project)
+	endpoint, err = a.updateEndpoint(ctx, endpoint, a.E, a.Project)
 	if err != nil {
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
@@ -100,21 +103,16 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			return "", innerErr
 		}
 
-		// Load mTLS client certificate if provided for ping validation
-		// Determine which cert to use: existing, new, or none
 		var mtlsCert *tls.Certificate
 
 		if mtlsClientCert != nil && !util.IsStringEmpty(mtlsClientCert.ClientCert) && !util.IsStringEmpty(mtlsClientCert.ClientKey) {
-			// Case 1: User is updating cert - validate and use new cert for ping
 			cert, certErr := config.LoadClientCertificate(mtlsClientCert.ClientCert, mtlsClientCert.ClientKey)
 			if certErr != nil {
-				// Log warning but don't fail - validation will happen later
 				log.FromContext(ctx).WithError(certErr).Warn("failed to load new mTLS cert for ping, will validate later")
 			} else {
 				mtlsCert = cert
 			}
 		} else if mtlsClientCert == nil && existingEndpoint != nil && existingEndpoint.MtlsClientCert != nil {
-			// Case 2: mTLS field not sent in request, but endpoint has mTLS - use existing cert
 			cert, certErr := config.LoadClientCertificate(existingEndpoint.MtlsClientCert.ClientCert, existingEndpoint.MtlsClientCert.ClientKey)
 			if certErr != nil {
 				log.FromContext(ctx).WithError(certErr).Warn("failed to load existing mTLS cert for ping")
@@ -143,7 +141,7 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 	return u.String(), nil
 }
 
-func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
+func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
 	endpoint.Url = e.URL
 	endpoint.Description = e.Description
 
@@ -206,21 +204,28 @@ func (a *UpdateEndpointService) updateEndpoint(endpoint *datastore.Endpoint, e m
 				return nil, &ServiceError{ErrMsg: ErrMutualTLSFeatureUnavailable}
 			}
 
-			// Updating or setting new mTLS cert - both fields required
-			if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
-				return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
+            // Updating or setting new mTLS cert - both fields required
+			mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.Project.OrganisationID)
+			if !mtlsEnabled {
+				log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
+				endpoint.MtlsClientCert = nil
+				config.GetCertCache().Delete(endpoint.UID)
+			} else {
+				if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
+					return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
+				}
+
+                // Validate the certificate and key pair (checks expiration and matching)
+				_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
+				if err != nil {
+					return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
+				}
+
+				endpoint.MtlsClientCert = e.MtlsClientCert.Transform()
+
+                // Clear cached certificate since it's being updated
+				config.GetCertCache().Delete(endpoint.UID)
 			}
-
-			// Validate the certificate and key pair (checks expiration and matching)
-			_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
-			if err != nil {
-				return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
-			}
-
-			endpoint.MtlsClientCert = e.MtlsClientCert.Transform()
-
-			// Clear cached certificate since it's being updated
-			config.GetCertCache().Delete(endpoint.UID)
 		}
 	}
 

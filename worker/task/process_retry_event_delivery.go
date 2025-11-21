@@ -18,7 +18,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	tracer2 "github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/net"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -38,7 +38,7 @@ var (
 	defaultEventDelay        = 120 * time.Second
 )
 
-func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, tracerBackend tracer2.Backend) func(context.Context, *asynq.Task) error {
+func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, projectRepo datastore.ProjectRepository, q queue.Queuer, rateLimiter limiter.RateLimiter, dispatch *net.Dispatcher, attemptsRepo datastore.DeliveryAttemptsRepository, circuitBreakerManager *circuit_breaker.CircuitBreakerManager, featureFlag *fflag.FFlag, featureFlagFetcher fflag.FeatureFlagFetcher, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		// Start a new trace span for retry event delivery
 		traceStartTime := time.Now()
@@ -227,6 +227,13 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 				return nil // Return nil to avoid retrying
 			}
 
+			// Check feature flag for mTLS using project's organisation ID
+			mtlsEnabled := featureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, featureFlagFetcher, project.OrganisationID)
+			if !mtlsEnabled {
+				log.FromContext(ctx).Warn("Endpoint has mTLS configured but feature flag is disabled, continuing without mTLS")
+				// Continue without mTLS if feature flag is disabled
+				mtlsCert = nil
+			} else {
 			// Use cached certificate loading to avoid parsing on every request
 			cert, certErr := config.LoadClientCertificateWithCache(
 				endpoint.UID, // Use endpoint ID as cache key
@@ -246,6 +253,7 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 				return nil // Return nil to avoid retrying
 			}
 			mtlsCert = cert
+			}
 		}
 
 		resp, err := dispatch.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)

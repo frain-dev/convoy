@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -24,14 +25,16 @@ import (
 )
 
 type CreateEndpointService struct {
-	PortalLinkRepo datastore.PortalLinkRepository
-	EndpointRepo   datastore.EndpointRepository
-	ProjectRepo    datastore.ProjectRepository
-	Licenser       license.Licenser
-	FeatureFlag    *fflag.FFlag
-	Logger         log.StdLogger
-	E              models.CreateEndpoint
-	ProjectID      string
+	PortalLinkRepo     datastore.PortalLinkRepository
+	EndpointRepo       datastore.EndpointRepository
+	ProjectRepo        datastore.ProjectRepository
+	Licenser           license.Licenser
+	FeatureFlag        *fflag.FFlag
+	FeatureFlagFetcher fflag.FeatureFlagFetcher
+	DB                 database.Database
+	Logger             log.StdLogger
+	E                  models.CreateEndpoint
+	ProjectID          string
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -128,19 +131,24 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 			return nil, &ServiceError{ErrMsg: ErrMutualTLSFeatureUnavailable}
 		}
 
-		// Validate both fields provided together
-		cc := a.E.MtlsClientCert
-		if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
-			return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
-		}
+        // Validate both fields provided together
+		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, project.OrganisationID)
+		if !mtlsEnabled {
+			log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
+		} else {
+			cc := a.E.MtlsClientCert
+			if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
+				return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
+			}
 
-		// Validate the certificate and key pair (checks expiration and matching)
-		_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
-		if err != nil {
-			return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
-		}
+            // Validate the certificate and key pair (checks expiration and matching)
+			_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
+			if err != nil {
+				return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
+			}
 
-		endpoint.MtlsClientCert = a.E.MtlsClientCert.Transform()
+			endpoint.MtlsClientCert = a.E.MtlsClientCert.Transform()
+		}
 	}
 
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)

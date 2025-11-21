@@ -1217,7 +1217,10 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
-			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, l, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, mt)
+			// Create a nil fetcher for tests (will fall back to system-wide config)
+			var fetcher fflag.FeatureFlagFetcher = nil
+
+			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, l, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, fetcher, mt)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

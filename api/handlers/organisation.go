@@ -2,12 +2,16 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/render"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
+	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -141,4 +145,154 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Organisation deleted successfully", nil, http.StatusOK))
+}
+
+func (h *Handler) UpdateOrganisationFeatureFlags(w http.ResponseWriter, r *http.Request) {
+	var featureFlagsUpdate models.UpdateOrganisationFeatureFlags
+	err := util.ReadJSON(r, &featureFlagsUpdate)
+	if err != nil {
+		h.A.Logger.WithError(err).Error("Failed to parse feature flags update request")
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		return
+	}
+
+	org, err := h.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
+	user, err := h.retrieveUser(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	// Users can only update user-controlled feature flags (Early Adopter features)
+	for featureKey, enabled := range featureFlagsUpdate.FeatureFlags {
+		flagKey := fflag.FeatureFlagKey(featureKey)
+		if !fflag.IsEarlyAdopterFeature(flagKey) {
+			_ = render.Render(w, r, util.NewErrorResponse(
+				"Feature flag "+featureKey+" is not user-controlled and cannot be updated via API", http.StatusBadRequest))
+			return
+		}
+
+		featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
+		if err != nil {
+			if err == postgres.ErrFeatureFlagNotFound {
+				_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
+				return
+			}
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+
+		if !featureFlag.AllowOverride {
+			_ = render.Render(w, r, util.NewErrorResponse(
+				"Feature flag "+featureKey+" does not allow overrides", http.StatusBadRequest))
+			return
+		}
+
+		if !h.isEarlyAdopterFeatureLicensed(flagKey) {
+			_ = render.Render(w, r, util.NewErrorResponse(
+				"Feature flag "+featureKey+" is not available in your license plan", http.StatusForbidden))
+			return
+		}
+
+		override := &datastore.FeatureFlagOverride{
+			FeatureFlagID: featureFlag.UID,
+			OwnerType:     "organisation",
+			OwnerID:       org.UID,
+			Enabled:       enabled,
+			EnabledBy:     null.StringFrom(user.UID),
+		}
+
+		if enabled {
+			override.EnabledAt = null.TimeFrom(time.Now())
+		}
+
+		err = postgres.UpsertFeatureFlagOverride(r.Context(), h.A.DB, override)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Feature flags updated successfully", nil, http.StatusOK))
+}
+
+func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request) {
+	org, err := h.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+		return
+	}
+
+	features := fflag.GetEarlyAdopterFeatures()
+	responseFeatures := make([]models.EarlyAdopterFeature, 0, len(features))
+
+	overrides, err := postgres.LoadFeatureFlagOverridesByOwner(r.Context(), h.A.DB, "organisation", org.UID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	overrideMap := make(map[string]*datastore.FeatureFlagOverride)
+	for i := range overrides {
+		overrideMap[overrides[i].FeatureFlagID] = &overrides[i]
+	}
+
+	featureNames := map[fflag.FeatureFlagKey]string{
+		fflag.MTLS:               "mTLS",
+		fflag.OAuthTokenExchange: "OAuth Token Exchange",
+	}
+
+	featureDescriptions := map[fflag.FeatureFlagKey]string{
+		fflag.MTLS:               "Mutual TLS support for secure endpoint communication",
+		fflag.OAuthTokenExchange: "OAuth token exchange functionality for endpoint authentication",
+	}
+
+	for _, featureKey := range features {
+		featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, string(featureKey))
+		if err != nil {
+			log.FromContext(r.Context()).Warnf("Feature flag not found in database: %s, error: %v", string(featureKey), err)
+			continue
+		}
+
+		enabled := featureFlag.Enabled
+		if override, ok := overrideMap[featureFlag.UID]; ok {
+			enabled = override.Enabled
+		}
+
+		responseFeatures = append(responseFeatures, models.EarlyAdopterFeature{
+			Key:         string(featureKey),
+			Name:        featureNames[featureKey],
+			Description: featureDescriptions[featureKey],
+			Enabled:     enabled,
+		})
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Early adopter features fetched successfully", responseFeatures, http.StatusOK))
+}
+
+func (h *Handler) isEarlyAdopterFeatureLicensed(featureKey fflag.FeatureFlagKey) bool {
+	switch featureKey {
+	case fflag.MTLS:
+		return h.A.Licenser.MutualTLS()
+	case fflag.OAuthTokenExchange:
+		// TODO: Add proper license check for OAuth Token Exchange
+		return false
+	default:
+		return false
+	}
 }

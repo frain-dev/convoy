@@ -231,7 +231,7 @@
 				</div>
 			</ng-container>
 
-			<ng-container *ngIf="showConfig('mtls')">
+			<ng-container *ngIf="showConfig('mtls') && mtlsFeatureEnabled">
 				<div class="border-l-2 border-new.primary-25 pl-16px mb-40px">
 					<div class="flex justify-between items-center mb-16px">
 						<div class="flex items-center gap-12px">
@@ -282,7 +282,7 @@
 			<div class="flex items-center gap-24px overflow-x-auto no-scrollbar">
 				<ng-container *ngFor="let config of configurations; let i = index">
 					<ng-container *ngIf="!config.show">
-						<convoy-config-button convoy-permission="Endpoints|MANAGE" *ngIf="i < 5 || privateService.getProjectDetails?.type === 'outgoing'" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
+						<convoy-config-button convoy-permission="Endpoints|MANAGE" *ngIf="(i < 5 || privateService.getProjectDetails?.type === 'outgoing') && (config.uid !== 'mtls' || mtlsFeatureEnabled)" (onClick)="toggleConfigForm(config.uid)">{{ config.name }}</convoy-config-button>
 					</ng-container>
 				</ng-container>
 			</div>

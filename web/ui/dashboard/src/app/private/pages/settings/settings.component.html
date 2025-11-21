@@ -39,6 +39,10 @@
 				<organisation-settings></organisation-settings>
 			</ng-container>
 
+			<ng-container *ngIf="activePage === 'early adopter features'">
+				<early-adopter-features></early-adopter-features>
+			</ng-container>
+
 			<ng-container *ngIf="activePage === 'team'">
 				<app-teams></app-teams>
 			</ng-container>
