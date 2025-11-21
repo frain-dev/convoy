@@ -21,15 +21,16 @@ import (
 
 func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoint, Endpoint *datastore.Endpoint, Project *datastore.Project) *UpdateEndpointService {
 	return &UpdateEndpointService{
-		Cache:        mocks.NewMockCache(ctrl),
-		EndpointRepo: mocks.NewMockEndpointRepository(ctrl),
-		ProjectRepo:  mocks.NewMockProjectRepository(ctrl),
-		Licenser:     mocks.NewMockLicenser(ctrl),
-		FeatureFlag:  fflag.NoopFflag(),
-		Logger:       log.NewLogger(os.Stdout),
-		E:            e,
-		Endpoint:     Endpoint,
-		Project:      Project,
+		Cache:              mocks.NewMockCache(ctrl),
+		EndpointRepo:       mocks.NewMockEndpointRepository(ctrl),
+		ProjectRepo:        mocks.NewMockProjectRepository(ctrl),
+		Licenser:           mocks.NewMockLicenser(ctrl),
+		FeatureFlag:        fflag.NoopFflag(),
+		FeatureFlagFetcher: mocks.NewMockFeatureFlagFetcherWithMTLSEnabled(),
+		Logger:             log.NewLogger(os.Stdout),
+		E:                  e,
+		Endpoint:           Endpoint,
+		Project:            Project,
 	}
 }
 
@@ -460,6 +461,50 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 			wantErrMsg: ErrMutualTLSFeatureUnavailable,
 		},
 		{
+			name: "should_ignore_mtls_when_feature_flag_disabled",
+			args: args{
+				ctx: ctx,
+				e: models.UpdateEndpoint{
+					Name:        stringPtr("Endpoint with mTLS disabled flag"),
+					Description: "updating endpoint with mTLS but feature flag disabled",
+					URL:         "https://www.google.com/webhp",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: testCertPEM,
+						ClientKey:  testKeyPEM,
+					},
+				},
+				endpoint: &datastore.Endpoint{UID: "endpoint-mtls-disabled-flag"},
+				project:  project,
+			},
+			dbFn: func(as *UpdateEndpointService) {
+				a, _ := as.EndpointRepo.(*mocks.MockEndpointRepository)
+				existingEndpoint := &datastore.Endpoint{
+					UID: "endpoint-mtls-disabled-flag",
+				}
+				a.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "1234567890").Times(1).Return(existingEndpoint, nil)
+
+				// Verify the mTLS cert is ignored (set to nil) when feature flag is disabled
+				a.EXPECT().UpdateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					return endpoint.MtlsClientCert == nil
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := as.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().AnyTimes().Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+				licenser.EXPECT().MutualTLS().Times(1).Return(true)
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:        "Endpoint with mTLS disabled flag",
+				Description: "updating endpoint with mTLS but feature flag disabled",
+				Url:         "https://www.google.com/webhp",
+				// mTLS should be nil when feature flag is disabled
+				MtlsClientCert: nil,
+			},
+			wantErr: false,
+		},
+		{
 			name: "should_remove_mtls_cert_with_empty_strings",
 			args: args{
 				ctx: ctx,
@@ -511,6 +556,11 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			as := provideUpdateEndpointService(ctrl, tc.args.e, tc.args.endpoint, tc.args.project)
+
+			// Override fetcher for feature flag disabled test
+			if tc.name == "should_ignore_mtls_when_feature_flag_disabled" {
+				as.FeatureFlagFetcher = mocks.NewMockFeatureFlagFetcherWithMTLSDisabled()
+			}
 
 			err := config.LoadConfig("")
 			require.NoError(t, err)

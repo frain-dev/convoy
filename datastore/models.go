@@ -1425,6 +1425,27 @@ type ApiKey struct {
 	HeaderName  string `json:"header_name" db:"header_name" valid:"required"`
 }
 
+type FeatureFlag struct {
+	UID           string    `json:"uid" db:"id"`
+	FeatureKey    string    `json:"feature_key" db:"feature_key"`
+	Enabled       bool      `json:"enabled" db:"enabled"`
+	AllowOverride bool      `json:"allow_override" db:"allow_override"`
+	CreatedAt     time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt     time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+}
+
+type FeatureFlagOverride struct {
+	UID           string      `json:"uid" db:"id"`
+	FeatureFlagID string      `json:"feature_flag_id" db:"feature_flag_id"`
+	OwnerType     string      `json:"owner_type" db:"owner_type"`
+	OwnerID       string      `json:"owner_id" db:"owner_id"`
+	Enabled       bool        `json:"enabled" db:"enabled"`
+	EnabledAt     null.Time   `json:"enabled_at,omitempty" db:"enabled_at" swaggertype:"string"`
+	EnabledBy     null.String `json:"enabled_by,omitempty" db:"enabled_by"`
+	CreatedAt     time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt     time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+}
+
 type Organisation struct {
 	UID            string      `json:"uid" db:"id"`
 	OwnerID        string      `json:"" db:"owner_id"`

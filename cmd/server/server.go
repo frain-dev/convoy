@@ -122,6 +122,7 @@ func startConvoyServer(a *cli.App) error {
 	}
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
+	featureFlagFetcher := postgres.NewFeatureFlagFetcher(a.DB)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
@@ -140,15 +141,16 @@ func startConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:    flag,
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Logger:   lo,
-			Redis:    a.Redis,
-			Cache:    a.Cache,
-			Rate:     a.Rate,
-			Licenser: a.Licenser,
-			Cfg:      cfg,
+			FFlag:              flag,
+			FeatureFlagFetcher: featureFlagFetcher,
+			DB:                 a.DB,
+			Queue:              a.Queue,
+			Logger:             lo,
+			Redis:              a.Redis,
+			Cache:              a.Cache,
+			Rate:               a.Rate,
+			Licenser:           a.Licenser,
+			Cfg:                cfg,
 		})
 	if err != nil {
 		return err

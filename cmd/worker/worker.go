@@ -337,6 +337,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
+		postgres.NewFeatureFlagFetcher(a.DB),
 		a.TracerBackend),
 		newTelemetry)
 
@@ -362,6 +363,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		attemptRepo,
 		circuitBreakerManager,
 		featureFlag,
+		postgres.NewFeatureFlagFetcher(a.DB),
 		a.TracerBackend),
 		newTelemetry)
 

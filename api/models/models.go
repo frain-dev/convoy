@@ -255,3 +255,14 @@ func NewListResponse[T, M any](items []M, fn func(item M) T) []T {
 
 	return results
 }
+
+type UpdateOrganisationFeatureFlags struct {
+	FeatureFlags map[string]bool `json:"feature_flags" valid:"required"`
+}
+
+type EarlyAdopterFeature struct {
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Enabled     bool   `json:"enabled"`
+}

@@ -18,14 +18,15 @@ import (
 type ContextKey string
 
 type APIOptions struct {
-	FFlag    *fflag.FFlag
-	DB       database.Database
-	Redis    redis.UniversalClient
-	Queue    queue.Queuer
-	Logger   log.StdLogger
-	Cache    cache.Cache
-	Authz    *authz.Authz
-	Rate     limiter.RateLimiter
-	Licenser license.Licenser
-	Cfg      config.Configuration
+	FFlag              *fflag.FFlag
+	FeatureFlagFetcher fflag.FeatureFlagFetcher
+	DB                 database.Database
+	Redis              redis.UniversalClient
+	Queue              queue.Queuer
+	Logger             log.StdLogger
+	Cache              cache.Cache
+	Authz              *authz.Authz
+	Rate               limiter.RateLimiter
+	Licenser           license.Licenser
+	Cfg                config.Configuration
 }

@@ -452,6 +452,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				orgSubRouter.Get("/", handler.GetOrganisation)
 				orgSubRouter.Put("/", handler.UpdateOrganisation)
 				orgSubRouter.Delete("/", handler.DeleteOrganisation)
+				orgSubRouter.Put("/feature-flags", handler.UpdateOrganisationFeatureFlags)
+				orgSubRouter.Get("/early-adopter-features", handler.GetEarlyAdopterFeatures)
 
 				orgSubRouter.Route("/invites", func(orgInvitesRouter chi.Router) {
 					orgInvitesRouter.Post("/", handler.InviteUserToOrganisation)
