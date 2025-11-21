@@ -59,7 +59,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			err = startConvoyServer(a)
+			err = StartConvoyServer(a)
 
 			if err != nil {
 				a.Logger.Errorf("Error starting convoy server: %v", err)
@@ -91,7 +91,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func startConvoyServer(a *cli.App) error {
+func StartConvoyServer(a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")

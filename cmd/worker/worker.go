@@ -32,7 +32,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 )
 
-func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
+func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) error {
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("worker")
 
