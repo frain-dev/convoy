@@ -1,5 +1,7 @@
 package services
 
+import "errors"
+
 const (
 	ErrCodeAuthInvalid    = "auth.invalid"
 	ErrCodeLicenseExpired = "license.expired"
@@ -7,6 +9,13 @@ const (
 
 const (
 	ErrMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
+)
+
+var (
+	ErrEndpointURLRequired   = errors.New("please provide the endpoint url")
+	ErrHTTPSOnly             = errors.New("only https endpoints allowed")
+	ErrInvalidEndpointScheme = errors.New("invalid endpoint scheme")
+	ErrAPIKeyFieldRequired   = errors.New("api key field is required")
 )
 
 type ServiceError struct {

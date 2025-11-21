@@ -19,6 +19,12 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
+var (
+	ErrNotEarlyAdopterFeature = errors.New("not early adopter feature")
+	ErrOverrideNotAllowed     = errors.New("override not allowed")
+	ErrNotLicensed            = errors.New("not licensed")
+)
+
 func (h *Handler) GetOrganisation(w http.ResponseWriter, r *http.Request) {
 	org, err := h.retrieveOrganisation(r)
 	if err != nil {
@@ -248,7 +254,7 @@ func (h *Handler) updateFeatureFlag(w http.ResponseWriter, r *http.Request, feat
 	if !fflag.IsEarlyAdopterFeature(flagKey) {
 		_ = render.Render(w, r, util.NewErrorResponse(
 			"Feature flag "+featureKey+" is not user-controlled and cannot be updated via API", http.StatusBadRequest))
-		return errors.New("not early adopter feature")
+		return ErrNotEarlyAdopterFeature
 	}
 
 	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
@@ -264,13 +270,13 @@ func (h *Handler) updateFeatureFlag(w http.ResponseWriter, r *http.Request, feat
 	if !featureFlag.AllowOverride {
 		_ = render.Render(w, r, util.NewErrorResponse(
 			"Feature flag "+featureKey+" does not allow overrides", http.StatusBadRequest))
-		return errors.New("override not allowed")
+		return ErrOverrideNotAllowed
 	}
 
 	if !h.isEarlyAdopterFeatureLicensed(flagKey) {
 		_ = render.Render(w, r, util.NewErrorResponse(
 			"Feature flag "+featureKey+" is not available in your license plan", http.StatusForbidden))
-		return errors.New("not licensed")
+		return ErrNotLicensed
 	}
 
 	override := &datastore.FeatureFlagOverride{

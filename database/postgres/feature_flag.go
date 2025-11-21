@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/frain-dev/convoy/database"
@@ -13,7 +12,8 @@ import (
 )
 
 var (
-	ErrFeatureFlagNotFound = errors.New("feature flag not found")
+	ErrFeatureFlagNotFound         = errors.New("feature flag not found")
+	ErrFeatureFlagOverrideNotFound = errors.New("feature flag override not found")
 )
 
 const (
@@ -93,7 +93,7 @@ func FetchFeatureFlagOverride(ctx context.Context, db database.Database, ownerTy
 	err := db.GetDB().QueryRowxContext(ctx, fetchFeatureFlagOverride, ownerType, ownerID, featureFlagID).StructScan(override)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("feature flag override not found")
+			return nil, ErrFeatureFlagOverrideNotFound
 		}
 		return nil, err
 	}

@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"github.com/frain-dev/convoy/database"
@@ -40,9 +39,6 @@ func (f *FeatureFlagFetcherImpl) FetchFeatureFlag(ctx context.Context, key strin
 func (f *FeatureFlagFetcherImpl) FetchFeatureFlagOverride(ctx context.Context, ownerType, ownerID, featureFlagID string) (*fflag.FeatureFlagOverrideInfo, error) {
 	override, err := FetchFeatureFlagOverride(ctx, f.db, ownerType, ownerID, featureFlagID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errors.New("override not found")
-		}
 		return nil, err
 	}
 

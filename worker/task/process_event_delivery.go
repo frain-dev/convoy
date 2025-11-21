@@ -261,7 +261,10 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			}
 		}
 
-		resp, err := dispatch.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
+		resp, err := dispatch.SendWebhookWithMTLS(
+			ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header,
+			int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey,
+			httpDuration, contentType, mtlsCert)
 
 		status := "-"
 		statusCode := 0
@@ -411,13 +414,13 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			log.FromContext(ctx).
 				WithError(err).
 				Errorf("failed to create delivery attempt for event delivery with id: %s and delivery attempt: %s", eventDelivery.UID, attempt.ResponseData)
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
 		err = eventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to update message ", eventDelivery.UID)
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
@@ -425,7 +428,7 @@ func ProcessEventDelivery(endpointRepo datastore.EndpointRepository, eventDelive
 			if err != nil {
 				errS = err.Error()
 			}
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS)}
+			return &DeliveryError{Err: fmt.Errorf("%w: %s", ErrDeliveryAttemptFailed, errS)}
 		}
 
 		return nil

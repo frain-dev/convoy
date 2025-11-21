@@ -131,7 +131,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 			return nil, &ServiceError{ErrMsg: ErrMutualTLSFeatureUnavailable}
 		}
 
-        // Validate both fields provided together
+		// Validate both fields provided together
 		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, project.OrganisationID)
 		if !mtlsEnabled {
 			log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
@@ -141,7 +141,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 				return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
 			}
 
-            // Validate the certificate and key pair (checks expiration and matching)
+			// Validate the certificate and key pair (checks expiration and matching)
 			_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
 			if err != nil {
 				return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
@@ -165,7 +165,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool, mtlsClientCert *models.MtlsClientCert) (string, error) {
 	if util.IsStringEmpty(a.E.URL) {
-		return "", errors.New("please provide the endpoint url")
+		return "", ErrEndpointURLRequired
 	}
 
 	u, pingErr := url.Parse(a.E.URL)
@@ -176,7 +176,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 	switch u.Scheme {
 	case "http":
 		if enforceSecure {
-			return "", errors.New("only https endpoints allowed")
+			return "", ErrHTTPSOnly
 		}
 	case "https":
 		cfg, innerErr := config.Get()
@@ -226,7 +226,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			}
 		}
 	default:
-		return "", errors.New("invalid endpoint scheme")
+		return "", ErrInvalidEndpointScheme
 	}
 
 	return u.String(), nil
@@ -238,8 +238,10 @@ func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*da
 			return nil, err
 		}
 
-		if auth == nil && auth.Type == datastore.APIKeyAuthentication {
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("api key field is required"))
+		if auth.Type == datastore.APIKeyAuthentication {
+			if auth.ApiKey == nil || util.IsStringEmpty(auth.ApiKey.HeaderValue) {
+				return nil, util.NewServiceError(http.StatusBadRequest, ErrAPIKeyFieldRequired)
+			}
 		}
 
 		return auth, nil

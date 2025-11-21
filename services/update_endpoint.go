@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -66,7 +65,7 @@ func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool, mtlsClientCert *models.MtlsClientCert, existingEndpoint *datastore.Endpoint) (string, error) {
 	if util.IsStringEmpty(a.E.URL) {
-		return "", errors.New("please provide the endpoint url")
+		return "", ErrEndpointURLRequired
 	}
 
 	u, pingErr := url.Parse(a.E.URL)
@@ -77,7 +76,7 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 	switch u.Scheme {
 	case "http":
 		if enforceSecure {
-			return "", errors.New("only https endpoints allowed")
+			return "", ErrHTTPSOnly
 		}
 	case "https":
 		cfg, innerErr := config.Get()
@@ -135,7 +134,7 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			}
 		}
 	default:
-		return "", errors.New("invalid endpoint scheme")
+		return "", ErrInvalidEndpointScheme
 	}
 
 	return u.String(), nil
