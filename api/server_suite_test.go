@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -14,7 +11,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -23,7 +19,7 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/cache"
-	ncache "github.com/frain-dev/convoy/cache/noop"
+	rcache "github.com/frain-dev/convoy/cache/redis"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
@@ -37,34 +33,71 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/testenv"
 	"github.com/frain-dev/convoy/util"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/require"
 )
 
-// TEST HELPERS.
-func getConfig() config.Configuration {
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_REDIS_HOST"))
-	_ = os.Setenv("CONVOY_REDIS_SCHEME", os.Getenv("TEST_REDIS_SCHEME"))
-	_ = os.Setenv("CONVOY_REDIS_PORT", os.Getenv("TEST_REDIS_PORT"))
+var (
+	infra *testenv.Environment
+)
 
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
-	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
-	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
-	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
-	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
-	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
+func TestMain(m *testing.M) {
+	res, cleanup, err := testenv.Launch(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to launch test infrastructure: %v", err)
+	}
 
-	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
-	_ = os.Setenv("CONVOY_DISPATCHER_SKIP_PING_VALIDATION", "true")
+	infra = res
+
+	code := m.Run()
+
+	if err := cleanup(); err != nil {
+		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
+	}
+
+	os.Exit(code)
+}
+
+type testInstance struct {
+	Logger     *log.Logger
+	Conn       *pgxpool.Pool
+	Config     config.Configuration
+	KeyManager keys.KeyManager
+	Database   database.Database
+	Redis      redis.UniversalClient
+	Context    context.Context
+}
+
+func newInfra(t *testing.T) *testInstance {
+	t.Helper()
+
+	ctx := t.Context()
+
+	logger := testenv.NewLogger(t)
+	logger.SetLevel(log.FatalLevel)
 
 	err := config.LoadConfig("")
-	if err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, err)
+
+	conn, err := infra.CloneTestDatabase(t, "convoy")
+	require.NoError(t, err)
+
+	dbHooks := hooks.Init()
+	dbHooks.RegisterHook(datastore.EndpointCreated, func(ctx context.Context, data interface{}, changelog interface{}) {})
+
+	pg := postgres.NewFromConnection(conn)
+
+	rd, err := infra.NewRedisClient(t, 0)
+	require.NoError(t, err)
+
+	err = config.LoadConfig("")
+	require.NoError(t, err)
 
 	cfg, err := config.Get()
-	if err != nil {
-		log.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	// Load CA cert for TLS operations
 	err = config.LoadCaCert("", "")
@@ -72,7 +105,7 @@ func getConfig() config.Configuration {
 		log.Fatal(err)
 	}
 
-	km, err := keys.NewLocalKeyManager()
+	km, err := keys.NewLocalKeyManager("test")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,34 +118,23 @@ func getConfig() config.Configuration {
 		log.Fatal(err)
 	}
 
-	return cfg
+	return &testInstance{
+		Context:    ctx,
+		Redis:      rd,
+		Database:   pg,
+		KeyManager: km,
+		Config:     cfg,
+		Conn:       conn,
+		Logger:     logger,
+	}
 }
 
-var (
-	once sync.Once
-	pDB  *postgres.Postgres
-)
+func getQueueOptions(t *testing.T, cfg config.Configuration) (queue.QueueOptions, error) {
+	t.Helper()
 
-func getDB() database.Database {
-	once.Do(func() {
-		db, err := postgres.NewDB(getConfig())
-		if err != nil {
-			panic(fmt.Sprintf("failed to connect to db: %v", err))
-		}
-		_ = os.Setenv("TZ", "") // Use UTC by default :)
-
-		dbHooks := hooks.Init()
-		dbHooks.RegisterHook(datastore.EndpointCreated, func(ctx context.Context, data interface{}, changelog interface{}) {})
-
-		pDB = db
-	})
-	return pDB
-}
-
-func getQueueOptions() (queue.QueueOptions, error) {
 	var opts queue.QueueOptions
-	cfg := getConfig()
-	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+
+	rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
 	if err != nil {
 		return opts, err
 	}
@@ -126,8 +148,8 @@ func getQueueOptions() (queue.QueueOptions, error) {
 		string(convoy.MetaEventQueue):     1,
 	}
 	opts = queue.QueueOptions{
+		RedisClient:  rd,
 		Names:        queueNames,
-		RedisClient:  redis,
 		RedisAddress: cfg.Redis.BuildDsn(),
 		Type:         string(config.RedisQueueProvider),
 	}
@@ -135,37 +157,40 @@ func getQueueOptions() (queue.QueueOptions, error) {
 	return opts, nil
 }
 
-func buildServer() *ApplicationHandler {
-	var logger *log.Logger
+func buildServer(t *testing.T) *ApplicationHandler {
+	t.Helper()
+
 	var qOpts queue.QueueOptions
 
-	db := getDB()
-	qOpts, _ = getQueueOptions()
-	cfg := getConfig()
+	tl := newInfra(t)
+	db := tl.Database
+
+	qOpts, err := getQueueOptions(t, tl.Config)
+	require.NoError(t, err)
+
+	cfg := tl.Config
 
 	newQueue := redisqueue.NewQueue(qOpts)
-	logger = log.NewLogger(os.Stderr)
-	logger.SetLevel(log.FatalLevel)
 
-	noopCache := ncache.NewNoopCache()
-	r, _ := rlimiter.NewRedisLimiter(cfg.Redis.BuildDsn())
+	noopCache := rcache.NewRedisCacheFromClient(tl.Redis)
+	limiter := rlimiter.NewLimiterFromRedisClient(tl.Redis)
 
-	rd, _ := rdb.NewClient(cfg.Redis.BuildDsn())
-
-	ah, _ := NewApplicationHandler(
+	ah, err := NewApplicationHandler(
 		&types.APIOptions{
 			DB:       db,
 			Queue:    newQueue,
-			Redis:    rd.Client(),
-			Logger:   logger,
+			Redis:    tl.Redis,
+			Logger:   tl.Logger,
 			Cache:    noopCache,
 			FFlag:    fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
-			Rate:     r,
+			Rate:     limiter,
 			Licenser: noopLicenser.NewLicenser(),
 			Cfg:      cfg,
 		})
+	require.NoError(t, err)
 
-	_ = ah.RegisterPolicy()
+	err = ah.RegisterPolicy()
+	require.NoError(t, err)
 
 	return ah
 }

@@ -9,5 +9,5 @@ import (
 
 func NewLogger(t *testing.T) *log.Logger {
 	t.Helper()
-	return log.NewLogger(os.Stdout)
+	return log.NewLogger(os.Stderr)
 }

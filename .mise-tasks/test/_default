@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+#MISE description="Format Go code with gofmt and gci"
+#MISE dir="{{ config_root }}"
+
+set -e
+
+go run ./cmd config
+go test -tags integration -p 1 ./...

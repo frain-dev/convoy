@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -38,14 +35,12 @@ type FilterIntegrationTestSuite struct {
 }
 
 func (s *FilterIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	// s.DB = getDB()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *FilterIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
-
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
@@ -84,7 +79,7 @@ func (s *FilterIntegrationTestSuite) SetupTest() {
 }
 
 func (s *FilterIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
+	// testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 

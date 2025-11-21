@@ -25,7 +25,6 @@ func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to launch test infrastructure: %v", err)
-		os.Exit(1)
 	}
 
 	infra = res
