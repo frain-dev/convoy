@@ -78,7 +78,7 @@ jobs:
                   CONVOY_REDIS_PORT: 6379
 
             - name: Run integration tests (with test containers)
-              run: make docker_e2e_tests
+              run: make test
               env:
                   TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
                   CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
