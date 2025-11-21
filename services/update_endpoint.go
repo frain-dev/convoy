@@ -203,7 +203,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 				return nil, &ServiceError{ErrMsg: ErrMutualTLSFeatureUnavailable}
 			}
 
-            // Updating or setting new mTLS cert - both fields required
+			// Updating or setting new mTLS cert - both fields required
 			mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.Project.OrganisationID)
 			if !mtlsEnabled {
 				log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
@@ -214,7 +214,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 					return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
 				}
 
-                // Validate the certificate and key pair (checks expiration and matching)
+				// Validate the certificate and key pair (checks expiration and matching)
 				_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
 				if err != nil {
 					return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
@@ -222,7 +222,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 
 				endpoint.MtlsClientCert = e.MtlsClientCert.Transform()
 
-                // Clear cached certificate since it's being updated
+				// Clear cached certificate since it's being updated
 				config.GetCertCache().Delete(endpoint.UID)
 			}
 		}
