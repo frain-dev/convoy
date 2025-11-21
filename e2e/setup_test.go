@@ -199,7 +199,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	serverPort := uint32(10000 + (time.Now().UnixNano() % 10000))
 	cfg.Server.HTTP.Port = serverPort
 
-	// Override global config with our test-specific port
+	// Override global config with our test-specific settings
 	err = config.Override(&cfg)
 	require.NoError(t, err)
 
@@ -220,17 +220,22 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 	// Start Worker using cmd function
 	workerCtx, cancelWorker := context.WithCancel(serverCtx)
 	go func() {
+		t.Logf("Starting worker for test: %s", t.Name())
 		err := cmdworker.StartWorker(workerCtx, app, cfg)
-		if err != nil && err.Error() != "table already registered" {
+		if err != nil {
+			t.Logf("Worker error for test %s: %v", t.Name(), err)
 			logger.WithError(err).Error("Worker error")
 		}
+		t.Logf("Worker stopped for test: %s", t.Name())
 	}()
 
 	// Give worker a moment to start
 	time.Sleep(1 * time.Second)
+	t.Logf("Test environment ready: %s (port: %d, project: %s)", t.Name(), serverPort, project.UID)
 
 	// Cleanup function
 	t.Cleanup(func() {
+		t.Logf("Cleaning up test: %s", t.Name())
 		cancelWorker()
 		cancelServer()
 		// Give servers time to fully shut down - increased to ensure cleanup
@@ -241,6 +246,7 @@ func SetupE2E(t *testing.T) *E2ETestEnv {
 
 		// Unlock mutex to allow next test to run
 		testMutex.Unlock()
+		t.Logf("Cleanup complete for test: %s", t.Name())
 	})
 
 	return &E2ETestEnv{

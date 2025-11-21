@@ -95,3 +95,11 @@ jobs:
                   TEST_REDIS_HOST: localhost
                   TEST_REDIS_PORT: 6379
 
+            - name: Run E2E tests (testcontainers)
+              run: make test_e2e
+              env:
+                  TEST_LICENSE_KEY:  ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+                  CONVOY_LICENSE_KEY: ${{ secrets.CONVOY_TEST_LICENSE_KEY }}
+                  CONVOY_LOCAL_ENCRYPTION_KEY: ${{ secrets.CONVOY_TEST_ENCRYPTION_KEY }}
+                  CONVOY_DISPATCHER_SKIP_PING_VALIDATION: true
+
