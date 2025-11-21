@@ -15,12 +15,8 @@ ui_install:
 build:
 	scripts/build.sh
 
-integration_tests:
-	go run ./cmd migrate up
-	go test -tags integration -p 1 ./...
-
-docker_e2e_tests:
-	go test -tags docker_testcon -p 1 ./...
+test:
+	go test -p 1 ./...
 
 generate_migration_time:
 	@date +"%Y%m%d%H%M%S"

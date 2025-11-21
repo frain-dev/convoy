@@ -84,12 +84,14 @@ func TestE2E_FanOutEvent_AllSubscriptions(t *testing.T) {
 	// Verify both events were delivered
 	event1Count := 0
 	event2Count := 0
+
 	for key := range manifest.events {
 		if contains(key, traceId1) {
-			event1Count++
+			event1Count = manifest.events[key]
 		}
+
 		if contains(key, traceId2) {
-			event2Count++
+			event2Count = manifest.events[key]
 		}
 	}
 
@@ -173,10 +175,10 @@ func TestE2E_FanOutEvent_MustMatchSubscription(t *testing.T) {
 	mismatchedCount := 0
 	for key := range manifest.events {
 		if contains(key, traceIdMatch) {
-			matchedCount++
+			matchedCount = manifest.events[key]
 		}
 		if contains(key, traceIdMismatch) {
-			mismatchedCount++
+			mismatchedCount = manifest.events[key]
 		}
 	}
 

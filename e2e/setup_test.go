@@ -42,20 +42,20 @@ var (
 
 // TestMain sets up the test environment
 func TestMain(m *testing.M) {
-	fmt.Fprintf(os.Stderr, "TestMain: Starting test infrastructure setup...\n")
+	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Starting test infrastructure setup...\n")
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "TestMain: Failed to launch test infrastructure: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "TestMain: Failed to launch test infrastructure: %v\n", err)
 		log.Fatalf("Failed to launch test infrastructure: %v", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "TestMain: Infrastructure launched successfully\n")
+	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Infrastructure launched successfully\n")
 	infra = res
 
-	fmt.Fprintf(os.Stderr, "TestMain: Running tests...\n")
+	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Running tests...\n")
 	code := m.Run()
 
-	fmt.Fprintf(os.Stderr, "TestMain: Cleaning up...\n")
+	_, _ = fmt.Fprintf(os.Stderr, "TestMain: Cleaning up...\n")
 	if err := cleanup(); err != nil {
 		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
 	}

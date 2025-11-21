@@ -112,7 +112,7 @@ func TestE2E_DirectEvent_MustMatchSubscription(t *testing.T) {
 	SendEventViaSDK(t, c, endpoint.UID, "invoice.created", traceIdMatch)
 	t.Logf("Sent matching event with traceId: %s", traceIdMatch)
 
-	// Wait for webhook to be delivered (only the matching one)
+	// Wait for the webhooks to be delivered (only the matching one)
 	WaitForWebhooks(t, done, 30*time.Second)
 
 	// Verify only 1 webhook was received
