@@ -60,7 +60,7 @@ require (
 	github.com/spf13/pflag v1.0.10
 	github.com/stealthrocket/netjail v0.1.2
 	github.com/stretchr/testify v1.11.1
-	github.com/subomi/requestmigrations v0.4.0
+	github.com/subomi/requestmigrations v0.6.0
 	github.com/swaggo/swag v1.16.4
 	github.com/testcontainers/testcontainers-go v0.40.0
 	github.com/testcontainers/testcontainers-go/modules/compose v0.39.1
