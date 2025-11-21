@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -175,50 +176,7 @@ func (h *Handler) UpdateOrganisationFeatureFlags(w http.ResponseWriter, r *http.
 
 	// Users can only update user-controlled feature flags (Early Adopter features)
 	for featureKey, enabled := range featureFlagsUpdate.FeatureFlags {
-		flagKey := fflag.FeatureFlagKey(featureKey)
-		if !fflag.IsEarlyAdopterFeature(flagKey) {
-			_ = render.Render(w, r, util.NewErrorResponse(
-				"Feature flag "+featureKey+" is not user-controlled and cannot be updated via API", http.StatusBadRequest))
-			return
-		}
-
-		featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
-		if err != nil {
-			if err == postgres.ErrFeatureFlagNotFound {
-				_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
-				return
-			}
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
-			return
-		}
-
-		if !featureFlag.AllowOverride {
-			_ = render.Render(w, r, util.NewErrorResponse(
-				"Feature flag "+featureKey+" does not allow overrides", http.StatusBadRequest))
-			return
-		}
-
-		if !h.isEarlyAdopterFeatureLicensed(flagKey) {
-			_ = render.Render(w, r, util.NewErrorResponse(
-				"Feature flag "+featureKey+" is not available in your license plan", http.StatusForbidden))
-			return
-		}
-
-		override := &datastore.FeatureFlagOverride{
-			FeatureFlagID: featureFlag.UID,
-			OwnerType:     "organisation",
-			OwnerID:       org.UID,
-			Enabled:       enabled,
-			EnabledBy:     null.StringFrom(user.UID),
-		}
-
-		if enabled {
-			override.EnabledAt = null.TimeFrom(time.Now())
-		}
-
-		err = postgres.UpsertFeatureFlagOverride(r.Context(), h.A.DB, override)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		if err := h.updateFeatureFlag(w, r, featureKey, enabled, org, user); err != nil {
 			return
 		}
 	}
@@ -283,6 +241,57 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Early adopter features fetched successfully", responseFeatures, http.StatusOK))
+}
+
+func (h *Handler) updateFeatureFlag(w http.ResponseWriter, r *http.Request, featureKey string, enabled bool, org *datastore.Organisation, user *datastore.User) error {
+	flagKey := fflag.FeatureFlagKey(featureKey)
+	if !fflag.IsEarlyAdopterFeature(flagKey) {
+		_ = render.Render(w, r, util.NewErrorResponse(
+			"Feature flag "+featureKey+" is not user-controlled and cannot be updated via API", http.StatusBadRequest))
+		return errors.New("not early adopter feature")
+	}
+
+	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
+	if err != nil {
+		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
+			return err
+		}
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return err
+	}
+
+	if !featureFlag.AllowOverride {
+		_ = render.Render(w, r, util.NewErrorResponse(
+			"Feature flag "+featureKey+" does not allow overrides", http.StatusBadRequest))
+		return errors.New("override not allowed")
+	}
+
+	if !h.isEarlyAdopterFeatureLicensed(flagKey) {
+		_ = render.Render(w, r, util.NewErrorResponse(
+			"Feature flag "+featureKey+" is not available in your license plan", http.StatusForbidden))
+		return errors.New("not licensed")
+	}
+
+	override := &datastore.FeatureFlagOverride{
+		FeatureFlagID: featureFlag.UID,
+		OwnerType:     "organisation",
+		OwnerID:       org.UID,
+		Enabled:       enabled,
+		EnabledBy:     null.StringFrom(user.UID),
+	}
+
+	if enabled {
+		override.EnabledAt = null.TimeFrom(time.Now())
+	}
+
+	err = postgres.UpsertFeatureFlagOverride(r.Context(), h.A.DB, override)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return err
+	}
+
+	return nil
 }
 
 func (h *Handler) isEarlyAdopterFeatureLicensed(featureKey fflag.FeatureFlagKey) bool {

@@ -228,7 +228,8 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, project.OrganisationID)
+	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(
+		r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, project.OrganisationID)
 	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
 		// fetch keys from redis and mutate endpoints slice
 		keys := make([]string, len(endpoints))
@@ -541,7 +542,8 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, project.OrganisationID)
+	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(
+		r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, project.OrganisationID)
 	if !h.A.Licenser.CircuitBreaking() || !circuitBreakerEnabled {
 		_ = render.Render(w, r, util.NewErrorResponse("feature not enabled", http.StatusBadRequest))
 		return

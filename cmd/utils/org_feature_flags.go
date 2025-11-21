@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -17,6 +18,13 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
+var (
+	ErrOrgIDRequired       = errors.New("org-id is required")
+	ErrNoFlagsProvided     = errors.New("at least one --enable or --disable flag is required")
+	ErrFeatureFlagNotFound = errors.New("feature flag not found in database")
+	ErrOverrideNotAllowed  = errors.New("feature flag does not allow overrides")
+)
+
 func AddUpdateOrgFeatureFlagsCommand(a *cli.App) *cobra.Command {
 	var enableFlags, disableFlags []string
 	var orgID string
@@ -26,11 +34,11 @@ func AddUpdateOrgFeatureFlagsCommand(a *cli.App) *cobra.Command {
 		Short: "Update organization-level feature flags",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if orgID == "" {
-				return fmt.Errorf("org-id is required")
+				return ErrOrgIDRequired
 			}
 
 			if len(enableFlags) == 0 && len(disableFlags) == 0 {
-				return fmt.Errorf("at least one --enable or --disable flag is required")
+				return ErrNoFlagsProvided
 			}
 
 			db := a.DB
@@ -43,50 +51,17 @@ func AddUpdateOrgFeatureFlagsCommand(a *cli.App) *cobra.Command {
 
 			log.Infof("Updating feature flags for organisation: %s (%s)", org.Name, org.UID)
 
-			updated := 0
-			errors := []string{}
+			errorList := processFeatureFlags(context.Background(), db, orgID, enableFlags, true)
+			errorList = append(errorList, processFeatureFlags(context.Background(), db, orgID, disableFlags, false)...)
 
-			for _, flag := range enableFlags {
-				flagKey := strings.ToLower(strings.TrimSpace(flag))
-				if !isValidFeatureFlag(flagKey) {
-					log.Warnf("Skipping invalid feature flag: %s", flag)
-					continue
-				}
-
-				err := updateOrgFeatureFlag(context.Background(), db, orgID, flagKey, true)
-				if err != nil {
-					errors = append(errors, fmt.Sprintf("Failed to enable %s: %v", flagKey, err))
-					continue
-				}
-
-				log.Infof("Enabled feature flag: %s", flagKey)
-				updated++
-			}
-
-			for _, flag := range disableFlags {
-				flagKey := strings.ToLower(strings.TrimSpace(flag))
-				if !isValidFeatureFlag(flagKey) {
-					log.Warnf("Skipping invalid feature flag: %s", flag)
-					continue
-				}
-
-				err := updateOrgFeatureFlag(context.Background(), db, orgID, flagKey, false)
-				if err != nil {
-					errors = append(errors, fmt.Sprintf("Failed to disable %s: %v", flagKey, err))
-					continue
-				}
-
-				log.Infof("Disabled feature flag: %s", flagKey)
-				updated++
-			}
-
-			if len(errors) > 0 {
-				log.Errorf("Encountered %d errors:", len(errors))
-				for _, errMsg := range errors {
+			if len(errorList) > 0 {
+				log.Errorf("Encountered %d errors:", len(errorList))
+				for _, errMsg := range errorList {
 					log.Errorf("  - %s", errMsg)
 				}
 			}
 
+			updated := len(enableFlags) + len(disableFlags) - len(errorList)
 			if updated > 0 {
 				log.Infof("Successfully updated %d feature flag(s)", updated)
 			}
@@ -102,19 +77,47 @@ func AddUpdateOrgFeatureFlagsCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
+func processFeatureFlags(ctx context.Context, db database.Database, orgID string, flags []string, enabled bool) []string {
+	var errorList []string
+	for _, flag := range flags {
+		flagKey := strings.ToLower(strings.TrimSpace(flag))
+		if !isValidFeatureFlag(flagKey) {
+			log.Warnf("Skipping invalid feature flag: %s", flag)
+			continue
+		}
+
+		err := updateOrgFeatureFlag(ctx, db, orgID, flagKey, enabled)
+		if err != nil {
+			action := "enable"
+			if !enabled {
+				action = "disable"
+			}
+			errorList = append(errorList, fmt.Sprintf("Failed to %s %s: %v", action, flagKey, err))
+			continue
+		}
+
+		action := "Enabled"
+		if !enabled {
+			action = "Disabled"
+		}
+		log.Infof("%s feature flag: %s", action, flagKey)
+	}
+	return errorList
+}
+
 func updateOrgFeatureFlag(ctx context.Context, db database.Database, orgID, flagKey string, enabled bool) error {
 	// Fetch feature flag from database
 	featureFlag, err := postgres.FetchFeatureFlagByKey(ctx, db, flagKey)
 	if err != nil {
-		if err == postgres.ErrFeatureFlagNotFound {
-			return fmt.Errorf("feature flag '%s' not found in database", flagKey)
+		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+			return fmt.Errorf("%w: %s", ErrFeatureFlagNotFound, flagKey)
 		}
 		return err
 	}
 
 	// Check if allow_override is true
 	if !featureFlag.AllowOverride {
-		return fmt.Errorf("feature flag '%s' does not allow overrides (allow_override=false)", flagKey)
+		return fmt.Errorf("%w: %s (allow_override=false)", ErrOverrideNotAllowed, flagKey)
 	}
 
 	// Create or update override
