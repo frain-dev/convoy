@@ -140,6 +140,7 @@ func (a *UpdateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 	return u.String(), nil
 }
 
+//nolint:cyclop // Large function with many conditional branches for endpoint updates
 func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *datastore.Endpoint, e models.UpdateEndpoint, project *datastore.Project) (*datastore.Endpoint, error) {
 	endpoint.Url = e.URL
 	endpoint.Description = e.Description
