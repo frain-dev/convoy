@@ -63,7 +63,8 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 		// get or create event
 		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
 		if err != nil {
-			return err
+			log.WithError(err).Error("failed to get last task info")
+			// return err
 		}
 
 		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
