@@ -69,7 +69,7 @@ func AddAgentCommand(a *cli.App) *cobra.Command {
 			// start sync configuration from the database.
 			go memorystore.DefaultStore.Sync(ctx, interval)
 
-			err = workerSrv.StartWorker(ctx, a, cfg, interval)
+			err = workerSrv.StartWorker(ctx, a, cfg)
 			if err != nil {
 				a.Logger.Errorf("Error starting data plane worker component, err: %v", err)
 				return err

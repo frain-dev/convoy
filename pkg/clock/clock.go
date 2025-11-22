@@ -21,7 +21,7 @@ func NewRealClock() Clock { return &realTimeClock{} }
 
 type realTimeClock struct{}
 
-func (_ *realTimeClock) Now() time.Time { return time.Now() }
+func (*realTimeClock) Now() time.Time { return time.Now() }
 
 // A SimulatedClock is a concrete Clock implementation that doesn't "tick" on its own.
 // Time is advanced by explicit call to the AdvanceTime() or SetTime() functions.

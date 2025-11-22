@@ -70,7 +70,7 @@ func (s *Server) SetStopFunction(fn func()) {
 
 func (s *Server) Listen() {
 	go func() {
-		//service connections
+		// serve connections
 		err := s.s.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.WithError(err).Fatal("failed to listen")
@@ -82,7 +82,7 @@ func (s *Server) Listen() {
 
 func (s *Server) ListenAndServeTLS(certFile, keyFile string) {
 	go func() {
-		//service connections
+		// serve connections
 		err := s.s.ListenAndServeTLS(certFile, keyFile)
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.WithError(err).Fatal("failed to listen")

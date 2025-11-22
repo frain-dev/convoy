@@ -13,18 +13,18 @@ import (
 )
 
 var (
-	ErrAlgoNotFound                       = errors.New("Algorithm not found")
-	ErrInvalidIP                          = errors.New("Source IP not supported")
-	ErrCannotReadRequestBody              = errors.New("Failed to read request body")
-	ErrHashDoesNotMatch                   = errors.New("Invalid Signature - Hash does not match")
-	ErrCannotDecodeHexEncodedMACHeader    = errors.New("Cannot decode hex encoded MAC header")
-	ErrCannotDecodeBase64EncodedMACHeader = errors.New("Cannot decode base64 encoded MAC header")
-	ErrSignatureCannotBeEmpty             = errors.New("Signature cannot be empty")
-	ErrAuthHeader                         = errors.New("Invalid Authorization header")
-	ErrAuthHeaderCannotBeEmpty            = errors.New("Auth header cannot be empty")
-	ErrInvalidHeaderStructure             = errors.New("Invalid header structure")
-	ErrInvalidAuthLength                  = errors.New("Invalid Basic Auth Length")
-	ErrInvalidEncoding                    = errors.New("Invalid header encoding")
+	ErrAlgoNotFound                       = errors.New("algorithm not found")
+	ErrInvalidIP                          = errors.New("source IP not supported")
+	ErrCannotReadRequestBody              = errors.New("failed to read request body")
+	ErrHashDoesNotMatch                   = errors.New("invalid signature - hash does not match")
+	ErrCannotDecodeHexEncodedMACHeader    = errors.New("cannot decode hex encoded MAC header")
+	ErrCannotDecodeBase64EncodedMACHeader = errors.New("cannot decode base64 encoded MAC header")
+	ErrSignatureCannotBeEmpty             = errors.New("signature cannot be empty")
+	ErrAuthHeader                         = errors.New("invalid authorization header")
+	ErrAuthHeaderCannotBeEmpty            = errors.New("auth header cannot be empty")
+	ErrInvalidHeaderStructure             = errors.New("invalid header structure")
+	ErrInvalidAuthLength                  = errors.New("invalid basic auth length")
+	ErrInvalidEncoding                    = errors.New("invalid header encoding")
 )
 
 type Verifier interface {
@@ -71,17 +71,18 @@ func (hV *HmacVerifier) VerifyRequest(r *http.Request, payload []byte) error {
 
 	var sentMAC []byte
 
-	if hV.opts.Encoding == "hex" {
+	switch hV.opts.Encoding {
+	case "hex":
 		sentMAC, err = hex.DecodeString(signature)
 		if err != nil {
 			return ErrCannotDecodeHexEncodedMACHeader
 		}
-	} else if hV.opts.Encoding == "base64" {
+	case "base64":
 		sentMAC, err = base64.StdEncoding.DecodeString(signature)
 		if err != nil {
 			return ErrCannotDecodeBase64EncodedMACHeader
 		}
-	} else {
+	default:
 		return ErrInvalidEncoding
 	}
 

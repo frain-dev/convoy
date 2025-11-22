@@ -17,14 +17,14 @@ import (
 
 var (
 	// ErrFailedToEncodePayload is the error we return when we cannot encode webhook payload
-	ErrFailedToEncodePayload = errors.New("Failed to encode payload")
+	ErrFailedToEncodePayload = errors.New("failed to encode payload")
 
 	// ErrInvalidEncoding is the error returned when an invalid encoding is provided.
 	// TODO(subomi): Can I use this format where I'm using this error
-	ErrInvalidEncoding = errors.New("Invalid encoding format - %s")
+	ErrInvalidEncoding = errors.New("invalid encoding format - %s")
 
 	// ErrInvalidHash is the error returned when a unsupported hash is supplied.
-	ErrInvalidHash = errors.New("Hash not supported")
+	ErrInvalidHash = errors.New("hash not supported")
 )
 
 type Scheme struct {

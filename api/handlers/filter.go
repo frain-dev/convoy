@@ -220,7 +220,7 @@ func (h *Handler) GetFilters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var eventTypeFilters []datastore.EventTypeFilter
+	eventTypeFilters := make([]datastore.EventTypeFilter, 0, len(filters))
 	for _, filter := range filters {
 		eventTypeFilters = append(eventTypeFilters, datastore.EventTypeFilter{
 			UID:            filter.UID,

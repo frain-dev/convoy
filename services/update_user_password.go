@@ -19,7 +19,7 @@ type UpdatePasswordService struct {
 
 func (u *UpdatePasswordService) Run(ctx context.Context) (*datastore.User, error) {
 	if len(u.Data.Password) > MaxPasswordLength {
-		return nil, &ServiceError{ErrMsg: "password lenght too long"}
+		return nil, &ServiceError{ErrMsg: "password length too long"}
 	}
 
 	p := datastore.Password{Plaintext: u.Data.CurrentPassword, Hash: []byte(u.User.Password)}

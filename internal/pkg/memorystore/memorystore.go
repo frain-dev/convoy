@@ -37,6 +37,13 @@ func (s *Store) Register(name string, table *Table) error {
 	return nil
 }
 
+// Reset clears all registered tables (useful for testing)
+func (s *Store) Reset() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.tables = make(map[string]*Table)
+}
+
 // TODO(subomi): Improve to have table specific sync intervals.
 func (s *Store) Sync(ctx context.Context, interval int) {
 	ticker := time.NewTicker(time.Duration(interval) * time.Second)

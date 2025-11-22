@@ -134,10 +134,7 @@ func compare(payload map[string]interface{}, filter map[string]interface{}) (boo
 		}
 	}
 
-	passReduced := false
-	if len(filter) == 0 {
-		passReduced = true
-	}
+	passReduced := len(filter) == 0
 
 	if len(pass) > 0 {
 		passReduced = pass[0]

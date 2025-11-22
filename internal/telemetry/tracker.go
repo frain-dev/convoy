@@ -15,6 +15,7 @@ var ErrInvalidInstanceID = errors.New("invalid instance id provided")
 
 type EventsCounter struct{}
 
+//nolint:unparam // error return required by Tracker interface
 func (e *EventsCounter) track(_ context.Context, instanceID string) (Metric, error) {
 	return Metric{
 		Name:       metricName(EventCounter),
