@@ -380,13 +380,13 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var plResponse []models.PortalLinkResponse
 	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
+	plResponse := make([]models.PortalLinkResponse, 0, len(portalLinks))
 	for _, portalLink := range portalLinks {
 		pl := portalLinkResponse(&portalLink, baseUrl)
 		plResponse = append(plResponse, pl)

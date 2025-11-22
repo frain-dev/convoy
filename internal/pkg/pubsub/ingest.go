@@ -86,7 +86,7 @@ func (i *Ingest) Run() {
 }
 
 func (i *Ingest) getSourceKeys() []memorystore.Key {
-	var s []memorystore.Key
+	s := make([]memorystore.Key, 0, len(i.sources))
 	for k := range i.sources {
 		s = append(s, k)
 	}

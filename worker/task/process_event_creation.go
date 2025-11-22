@@ -649,7 +649,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		return nil, errors.New("no valid endpoint found")
 	}
 
-	var endpointIDs []string
+	endpointIDs := make([]string, 0, len(endpoints))
 	for _, endpoint := range endpoints {
 		endpointIDs = append(endpointIDs, endpoint.UID)
 	}

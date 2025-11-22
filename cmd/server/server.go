@@ -276,7 +276,7 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		return nil, err
 	}
 
-	var readReplicas []config.DatabaseConfiguration
+	readReplicas := make([]config.DatabaseConfiguration, 0, len(replicaDSNs))
 	for _, replicaStr := range replicaDSNs {
 		var replica config.DatabaseConfiguration
 		if len(replicaStr) == 0 || !strings.Contains(replicaStr, "://") {
