@@ -397,12 +397,8 @@ func ProcessRetryEventDelivery(endpointRepo datastore.EndpointRepository, eventD
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
-			errS := "nil"
-			if err != nil {
-				errS = err.Error()
-			}
 			tracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
-			return &EndpointError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS), delay: delayDuration}
+			return &EndpointError{Err: fmt.Errorf("%s: delivery not completed, retrying", ErrDeliveryAttemptFailed), delay: delayDuration}
 		}
 
 		return nil

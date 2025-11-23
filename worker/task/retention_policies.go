@@ -9,17 +9,17 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/exporter"
 	objectstore "github.com/frain-dev/convoy/internal/pkg/object-store"
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
-func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd *rdb.Redis) func(context.Context, *asynq.Task) error {
-	pool := goredis.NewPool(rd.Client())
+func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, attemptsRepo datastore.DeliveryAttemptsRepository, rd redis.UniversalClient) func(context.Context, *asynq.Task) error {
+	pool := goredis.NewPool(rd)
 	rs := redsync.New(pool)
 
 	return func(ctx context.Context, t *asynq.Task) error {
@@ -96,8 +96,8 @@ func BackupProjectData(configRepo datastore.ConfigurationRepository, projectRepo
 	}
 }
 
-func RetentionPolicies(rd *rdb.Redis, ret retention.Retentioner) func(context.Context, *asynq.Task) error {
-	pool := goredis.NewPool(rd.Client())
+func RetentionPolicies(rd redis.UniversalClient, ret retention.Retentioner) func(context.Context, *asynq.Task) error {
+	pool := goredis.NewPool(rd)
 	rs := redsync.New(pool)
 
 	return func(ctx context.Context, t *asynq.Task) error {

@@ -405,7 +405,7 @@ func (s *subscriptionRepo) LoadAllSubscriptionConfig(ctx context.Context, projec
 			}
 		}()
 
-		if err != nil {
+		if err := rows.Err(); err != nil {
 			return nil, err
 		}
 	}
@@ -530,7 +530,7 @@ func (s *subscriptionRepo) FetchUpdatedSubscriptions(ctx context.Context, projec
 		subs = append(subs, sub)
 	}
 
-	if err != nil {
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
