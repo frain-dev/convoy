@@ -565,7 +565,6 @@ func TestDispatcher_SendFormDataWithSignature(t *testing.T) {
 
 	jsonData := json.RawMessage(`{"name":"test","value":"123"}`)
 	project := &datastore.Project{
-		UID: "12345",
 		Config: &datastore.ProjectConfig{
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.SignatureHeaderProvider("X-Signature"),

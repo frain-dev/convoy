@@ -63,9 +63,6 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 		// get or create event
 		var err error
 		var lastEvent, lastRunErrored, _ = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
-		// if err != nil {
-		// 	return err
-		// }
 
 		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
 			log.FromContext(ctx).Debugf("[asynq]: duplicate event with idempotency key %v will not be sent", lastEvent.IdempotencyKey)

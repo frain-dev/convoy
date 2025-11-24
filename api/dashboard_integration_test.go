@@ -4110,7 +4110,6 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 	require.NoError(u.T(), err)
 
 	r := &models.RegisterUser{
-		FirstName:        "test",
 		LastName:         "test",
 		Email:            "test@test.com",
 		Password:         "123456",
@@ -4140,7 +4139,6 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
 	r := &models.RegisterUser{
 		FirstName:        "test",
 		LastName:         "test",
-		Email:            "test@test.com",
 		Password:         "123456",
 		OrganisationName: "test",
 	}

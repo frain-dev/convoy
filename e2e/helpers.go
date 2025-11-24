@@ -218,7 +218,7 @@ func CreateSubscriptionViaSDK(t *testing.T, c *convoy.Client, endpointUID string
 func SendEventViaSDK(t *testing.T, c *convoy.Client, endpointUID, eventType, traceID string) {
 	t.Helper()
 
-	event := fmt.Sprintf(`{"traceId": "%s"}`, traceID)
+	event := fmt.Sprintf(`{"traceId": %q}`, traceID)
 	payload := []byte(event)
 
 	body := &convoy.CreateEventRequest{
@@ -236,7 +236,7 @@ func SendEventViaSDK(t *testing.T, c *convoy.Client, endpointUID, eventType, tra
 func SendFanoutEventViaSDK(t *testing.T, c *convoy.Client, ownerID, eventType, traceID string) {
 	t.Helper()
 
-	event := fmt.Sprintf(`{"traceId": "%s"}`, traceID)
+	event := fmt.Sprintf(`{"traceId": %q}`, traceID)
 	payload := []byte(event)
 
 	body := &convoy.CreateFanoutEventRequest{
@@ -263,7 +263,7 @@ func WaitForWebhooks(t *testing.T, done chan bool, timeout time.Duration) {
 }
 
 // VerifyWebhookDelivery verifies that webhooks were delivered correctly
-func VerifyWebhookDelivery(t *testing.T, manifest *EventManifest, expectedEndpoints []string, expectedEvents []string) {
+func VerifyWebhookDelivery(t *testing.T, manifest *EventManifest, expectedEndpoints, expectedEvents []string) {
 	t.Helper()
 
 	// Verify endpoints received webhooks

@@ -1121,7 +1121,6 @@ func TestCircuitBreakerManager_ProjectSpecificConfig(t *testing.T) {
 	t.Run("Circuit Breaker Creation Uses Project Config", func(t *testing.T) {
 		// Create a circuit breaker for custom project
 		breaker := &CircuitBreaker{
-			Key:      "test-breaker",
 			TenantId: "custom-project",
 		}
 
