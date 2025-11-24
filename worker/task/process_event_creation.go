@@ -49,6 +49,17 @@ type CreateEvent struct {
 type DefaultEventChannel struct {
 }
 
+type EventProcessorDeps struct {
+	EndpointRepo  datastore.EndpointRepository
+	EventRepo     datastore.EventRepository
+	ProjectRepo   datastore.ProjectRepository
+	EventQueue    queue.Queuer
+	SubRepo       datastore.SubscriptionRepository
+	FilterRepo    datastore.FilterRepository
+	Licenser      license.Licenser
+	TracerBackend tracer.Backend
+}
+
 func NewDefaultEventChannel() *DefaultEventChannel {
 	return &DefaultEventChannel{}
 }
@@ -198,10 +209,20 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	return &response, nil
 }
 
-func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.Task) error {
 	ch := &DefaultEventChannel{}
 
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend)
+	return ProcessEventCreationByChannel(
+		ch,
+		deps.EndpointRepo,
+		deps.EventRepo,
+		deps.ProjectRepo,
+		deps.EventQueue,
+		deps.SubRepo,
+		deps.FilterRepo,
+		deps.Licenser,
+		deps.TracerBackend,
+	)
 }
 
 func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser) error {

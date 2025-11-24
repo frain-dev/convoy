@@ -340,16 +340,18 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		a.TracerBackend),
 		newTelemetry)
 
-	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+	eventProcessorDeps := task.EventProcessorDeps{
+		EndpointRepo:  endpointRepo,
+		EventRepo:     eventRepo,
+		ProjectRepo:   projectRepo,
+		EventQueue:    a.Queue,
+		SubRepo:       subRepo,
+		FilterRepo:    filterRepo,
+		Licenser:      a.Licenser,
+		TracerBackend: a.TracerBackend,
+	}
+
+	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
 		endpointRepo,
@@ -365,28 +367,9 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		a.TracerBackend),
 		newTelemetry)
 
-	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
-		broadcastCh,
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps), newTelemetry)
 
-	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
 
 	if a.Licenser.RetentionPolicy() {
 		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret), nil)

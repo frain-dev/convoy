@@ -11,12 +11,9 @@ import (
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -176,8 +173,21 @@ func (b *BroadcastEventChannel) MatchSubscriptions(ctx context.Context, metadata
 	return &response, nil
 }
 
-func ProcessBroadcastEventCreation(ch *BroadcastEventChannel, endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend)
+func ProcessBroadcastEventCreation(
+	ch *BroadcastEventChannel,
+	deps EventProcessorDeps,
+) func(context.Context, *asynq.Task) error {
+	return ProcessEventCreationByChannel(
+		ch,
+		deps.EndpointRepo,
+		deps.EventRepo,
+		deps.ProjectRepo,
+		deps.EventQueue,
+		deps.SubRepo,
+		deps.FilterRepo,
+		deps.Licenser,
+		deps.TracerBackend,
+	)
 }
 
 func getEndpointIDs(subs []datastore.Subscription) ([]string, []datastore.Subscription) {

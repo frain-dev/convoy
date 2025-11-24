@@ -35,12 +35,21 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at,delivery_mode)
+    INSERT INTO convoy.event_deliveries (
+        id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
+        metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
+    )
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
     `
 	createEventDeliveries = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at,delivery_mode)
-    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at, :delivery_mode);
+    INSERT INTO convoy.event_deliveries (
+        id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
+        metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
+    )
+    VALUES (
+        :id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :status,
+        :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at, :delivery_mode
+    );
     `
 
 	baseFetchEventDelivery = `
