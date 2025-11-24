@@ -472,7 +472,7 @@ func TestCreateEndpointService_Run(t *testing.T) {
             }
 
 			// Load config and set SkipPingValidation via ConfigFunc
-			err := config.LoadConfig("", func(c *config.Configuration) error {
+			_ = config.LoadConfig("", func(c *config.Configuration) error {
 				return envconfig.Process("convoy", c)
 			})
 
