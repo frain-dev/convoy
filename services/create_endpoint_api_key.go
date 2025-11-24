@@ -44,9 +44,10 @@ func (ss *CreateEndpointAPIKeyService) Run(ctx context.Context) (*datastore.APIK
 	encodedKey := base64.URLEncoding.EncodeToString(dk)
 
 	var v time.Time
-	if ss.D.KeyType == datastore.CLIKey {
+	switch ss.D.KeyType {
+	case datastore.CLIKey:
 		v = time.Now().Add(time.Hour * 24 * time.Duration(ss.D.Expiration))
-	} else if ss.D.KeyType == datastore.AppPortalKey {
+	case datastore.AppPortalKey:
 		v = time.Now().Add(30 * time.Minute)
 	}
 

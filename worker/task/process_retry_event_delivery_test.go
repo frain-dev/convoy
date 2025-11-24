@@ -123,7 +123,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 		{
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: &EndpointError{Err: fmt.Errorf("%s, err: nil", ErrDeliveryAttemptFailed.Error()), delay: 20000000000},
+			expectedError: &EndpointError{Err: fmt.Errorf("%s: delivery not completed, retrying", ErrDeliveryAttemptFailed.Error()), delay: 20000000000},
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
@@ -1217,7 +1217,20 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
-			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, l, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, mt)
+			deps := EventDeliveryProcessorDeps{
+				EndpointRepo:          endpointRepo,
+				EventDeliveryRepo:     msgRepo,
+				Licenser:              l,
+				ProjectRepo:           projectRepo,
+				Queue:                 q,
+				RateLimiter:           rateLimiter,
+				Dispatcher:            dispatcher,
+				AttemptsRepo:          attemptsRepo,
+				CircuitBreakerManager: manager,
+				FeatureFlag:           featureFlag,
+				TracerBackend:         mt,
+			}
+			processFn := ProcessRetryEventDelivery(deps)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

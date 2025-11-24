@@ -263,7 +263,7 @@ func SeedOrganisationMember(db database.Database, org *datastore.Organisation, u
 
 // SeedOrganisationInvite seed organisation invite
 func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, email string, role *auth.Role, expiry time.Time, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
-	if expiry == (time.Time{}) {
+	if expiry.Equal(time.Time{}) {
 		expiry = time.Now()
 	}
 
@@ -673,6 +673,7 @@ func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore
 // PurgeDB is run after every test run, and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(t *testing.T, db database.Database) {
+	t.Helper()
 	err := truncateTables(db)
 	if err != nil {
 		t.Fatalf("Could not purge DB: %v", err)

@@ -49,6 +49,17 @@ type CreateEvent struct {
 type DefaultEventChannel struct {
 }
 
+type EventProcessorDeps struct {
+	EndpointRepo  datastore.EndpointRepository
+	EventRepo     datastore.EventRepository
+	ProjectRepo   datastore.ProjectRepository
+	EventQueue    queue.Queuer
+	SubRepo       datastore.SubscriptionRepository
+	FilterRepo    datastore.FilterRepository
+	Licenser      license.Licenser
+	TracerBackend tracer.Backend
+}
+
 func NewDefaultEventChannel() *DefaultEventChannel {
 	return &DefaultEventChannel{}
 }
@@ -198,13 +209,27 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	return &response, nil
 }
 
-func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.Task) error {
 	ch := &DefaultEventChannel{}
 
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend)
+	return ProcessEventCreationByChannel(
+		ch,
+		deps.EndpointRepo,
+		deps.EventRepo,
+		deps.ProjectRepo,
+		deps.EventQueue,
+		deps.SubRepo,
+		deps.FilterRepo,
+		deps.Licenser,
+		deps.TracerBackend,
+	)
 }
 
-func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser) error {
+func writeEventDeliveriesToQueue(
+	ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project,
+	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
+	deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser,
+) error {
 	ec := &EventDeliveryConfig{project: project}
 
 	eventDeliveries := make([]*datastore.EventDelivery, 0)
@@ -321,12 +346,13 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 				Payload: data,
 			}
 
-			if s.Type == datastore.SubscriptionTypeAPI {
+			switch s.Type {
+			case datastore.SubscriptionTypeAPI:
 				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
 				}
-			} else if s.Type == datastore.SubscriptionTypeCLI {
+			case datastore.SubscriptionTypeCLI:
 				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
@@ -344,7 +370,8 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	var subscriptions []datastore.Subscription
 	var err error
 
-	if project.Type == datastore.OutgoingProject {
+	switch project.Type {
+	case datastore.OutgoingProject:
 		for _, endpointID := range event.Endpoints {
 			var endpoint *datastore.Endpoint
 
@@ -381,7 +408,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subscriptions = append(subscriptions, matchedSubs...)
 		}
-	} else if project.Type == datastore.IncomingProject {
+	case datastore.IncomingProject:
 		subscriptions, err = subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
 		if err != nil {
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
@@ -647,7 +674,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		return nil, errors.New("no valid endpoint found")
 	}
 
-	var endpointIDs []string
+	endpointIDs := make([]string, 0, len(endpoints))
 	for _, endpoint := range endpoints {
 		endpointIDs = append(endpointIDs, endpoint.UID)
 	}

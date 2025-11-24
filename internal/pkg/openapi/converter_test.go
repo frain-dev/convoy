@@ -167,7 +167,8 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 				require.NoError(t, err)
 
 				// For OpenAPI 3.0, webhooks are in x-webhooks extension
-				if tt.name == "OpenAPI 3.0" {
+				switch tt.name {
+				case "OpenAPI 3.0":
 					if v3doc.Extensions == nil {
 						v3doc.Extensions = make(map[string]interface{})
 					}
@@ -180,7 +181,7 @@ func TestConverter_ExtractWebhooks(t *testing.T) {
 					} else {
 						t.Logf("No x-webhooks found in OpenAPI 3.0")
 					}
-				} else if tt.name == "OpenAPI 3.1" {
+				case "OpenAPI 3.1":
 					if webhooks, ok := v3doc.Extensions["webhooks"]; ok {
 						t.Logf("Found webhooks in OpenAPI 3.1: %+v", webhooks)
 					} else {

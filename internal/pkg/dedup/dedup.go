@@ -142,9 +142,6 @@ func (d *DeDuper) extractFromBodyJSON(request *http.Request, parts []string) (in
 	}
 
 	request.Body = io.NopCloser(bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
 
 	var q strings.Builder
 	q.WriteString(parts[0])

@@ -4110,7 +4110,6 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoFirstName() {
 	require.NoError(u.T(), err)
 
 	r := &models.RegisterUser{
-		FirstName:        "test",
 		LastName:         "test",
 		Email:            "test@test.com",
 		Password:         "123456",
@@ -4140,7 +4139,6 @@ func (u *UserIntegrationTestSuite) Test_RegisterUser_NoEmail() {
 	r := &models.RegisterUser{
 		FirstName:        "test",
 		LastName:         "test",
-		Email:            "test@test.com",
 		Password:         "123456",
 		OrganisationName: "test",
 	}
@@ -4560,6 +4558,7 @@ func (s *MetaEventIntegrationTestSuite) Test_GetMetaEvent_Valid_MetaEvent() {
 	url := fmt.Sprintf("/ui/organisations/%s/projects/%s/meta-events/%s", s.DefaultProject.OrganisationID, s.DefaultProject.UID, metaEvent.UID)
 	req := createRequest(http.MethodGet, url, "", nil)
 	err = s.AuthenticatorFn(req, s.Router)
+	require.NoError(s.T(), err)
 
 	w := httptest.NewRecorder()
 
