@@ -32,7 +32,7 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 )
 
-func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
+func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) error {
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("worker")
 
@@ -326,88 +326,61 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
-	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-		endpointRepo,
-		eventDeliveryRepo,
-		a.Licenser,
-		projectRepo,
-		a.Queue,
-		rateLimiter,
-		dispatcher,
-		attemptRepo,
-		circuitBreakerManager,
-		featureFlag,
-		postgres.NewFeatureFlagFetcher(a.DB),
-		a.TracerBackend),
-		newTelemetry)
-
-	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
-
-	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
-		endpointRepo,
-		eventDeliveryRepo,
-		a.Licenser,
-		projectRepo,
-		a.Queue,
-		rateLimiter,
-		dispatcher,
-		attemptRepo,
-		circuitBreakerManager,
-		featureFlag,
-		postgres.NewFeatureFlagFetcher(a.DB),
-		a.TracerBackend),
-		newTelemetry)
-
-	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
-		broadcastCh,
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
-
-	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
-
-	if a.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
-		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd), nil)
+	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
+		EndpointRepo:          endpointRepo,
+		EventDeliveryRepo:     eventDeliveryRepo,
+		Licenser:              a.Licenser,
+		ProjectRepo:           projectRepo,
+		Queue:                 a.Queue,
+		RateLimiter:           rateLimiter,
+		Dispatcher:            dispatcher,
+		AttemptsRepo:          attemptRepo,
+		CircuitBreakerManager: circuitBreakerManager,
+		FeatureFlag:           featureFlag,
+		FeatureFlagFetcher:    postgres.NewFeatureFlagFetcher(a.DB),
+		TracerBackend:         a.TracerBackend,
 	}
 
-	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(
-		channels,
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		eventDeliveryRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		deviceRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
+
+	eventProcessorDeps := task.EventProcessorDeps{
+		EndpointRepo:  endpointRepo,
+		EventRepo:     eventRepo,
+		ProjectRepo:   projectRepo,
+		EventQueue:    a.Queue,
+		SubRepo:       subRepo,
+		FilterRepo:    filterRepo,
+		Licenser:      a.Licenser,
+		TracerBackend: a.TracerBackend,
+	}
+
+	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
+
+	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
+
+	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps), newTelemetry)
+
+	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
+
+	if a.Licenser.RetentionPolicy() {
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret), nil)
+		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client()), nil)
+	}
+
+	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
+		Channels:          channels,
+		EndpointRepo:      endpointRepo,
+		EventRepo:         eventRepo,
+		ProjectRepo:       projectRepo,
+		EventDeliveryRepo: eventDeliveryRepo,
+		EventQueue:        a.Queue,
+		SubRepo:           subRepo,
+		FilterRepo:        filterRepo,
+		DeviceRepo:        deviceRepo,
+		Licenser:          a.Licenser,
+		TracerBackend:     a.TracerBackend,
+	}
+	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd), nil)
 

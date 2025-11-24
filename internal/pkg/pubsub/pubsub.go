@@ -38,7 +38,8 @@ type PubSubSource struct {
 	// hash string, NOTE: Previously used to track config changes; left removed to satisfy linters.
 }
 
-func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*PubSubSource, error) {
+func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler,
+	log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*PubSubSource, error) {
 	client, err := createClient(source, handler, log, rateLimiter, licenser, instanceId)
 	if err != nil {
 		return nil, err

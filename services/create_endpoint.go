@@ -83,7 +83,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	}
 
 	if !a.Licenser.AdvancedEndpointMgmt() {
-		// switch to default timeout
+		// switch to the default timeout
 		endpoint.HttpTimeout = convoy.HTTP_TIMEOUT
 
 		endpoint.SupportEmail = ""

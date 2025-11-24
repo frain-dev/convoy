@@ -27,7 +27,10 @@ var (
 
 const (
 	creatDeliveryAttempt = `
-    INSERT INTO convoy.delivery_attempts (id, url, method, api_version, endpoint_id, event_delivery_id, project_id, ip_address, request_http_header, response_http_header, http_status, response_data, error, status)
+    INSERT INTO convoy.delivery_attempts (
+        id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
+        ip_address, request_http_header, response_http_header, http_status, response_data, error, status
+    )
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
     `
 

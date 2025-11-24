@@ -63,7 +63,7 @@ This command helps you identify webhook endpoints in your OpenAPI spec and gener
 				return nil
 			}
 
-			err = os.WriteFile(outputFile, output, 0644)
+			err = os.WriteFile(outputFile, output, 0600)
 			if err != nil {
 				return fmt.Errorf("error writing output file: %v", err)
 			}

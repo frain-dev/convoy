@@ -57,7 +57,7 @@ func (g *GoogleOAuthService) HandleIDToken(ctx context.Context, idToken string, 
 	log.FromContext(ctx).Info("HandleIDToken called - processing Google ID token")
 
 	// Verify the Google ID token and extract user info
-	userInfo, err := g.verifyGoogleIDToken(ctx, idToken)
+	userInfo, err := g.verifyGoogleIDToken(idToken)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,7 +89,7 @@ func (g *GoogleOAuthService) HandleIDToken(ctx context.Context, idToken string, 
 	}, nil, nil
 }
 
-func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idToken string, businessName string, a *types.APIOptions) (*datastore.User, *jwt.Token, error) {
+func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idToken, businessName string, a *types.APIOptions) (*datastore.User, *jwt.Token, error) {
 	// Validate business name
 	if businessName == "" || strings.TrimSpace(businessName) == "" {
 		return nil, nil, &ServiceError{ErrMsg: "business name is required"}
@@ -126,7 +126,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	}
 
 	// Verify the ID token and extract user info
-	userInfo, err := g.verifyGoogleIDToken(ctx, idToken)
+	userInfo, err := g.verifyGoogleIDToken(idToken)
 	if err != nil {
 		return nil, nil, &ServiceError{ErrMsg: "invalid ID token", Err: err}
 	}
@@ -185,7 +185,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	return user, &token, nil
 }
 
-func (g *GoogleOAuthService) verifyGoogleIDToken(ctx context.Context, idToken string) (*GoogleUserInfo, error) {
+func (g *GoogleOAuthService) verifyGoogleIDToken(idToken string) (*GoogleUserInfo, error) {
 	// Split the JWT token into parts
 	parts := strings.Split(idToken, ".")
 	if len(parts) != 3 {

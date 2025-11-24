@@ -1131,20 +1131,21 @@ func TestProcessEventDelivery(t *testing.T) {
 			// Create a nil fetcher for tests (will fall back to system-wide config)
 			var fetcher fflag.FeatureFlagFetcher = nil
 
-			processor := ProcessEventDelivery(
-				endpointRepo,
-				msgRepo,
-				licenser,
-				projectRepo,
-				q,
-				rateLimiter,
-				dispatcher,
-				attemptsRepo,
-				manager,
-				featureFlag,
-				fetcher,
-				mt,
-			)
+			deps := EventDeliveryProcessorDeps{
+				EndpointRepo:          endpointRepo,
+				EventDeliveryRepo:     msgRepo,
+				Licenser:              licenser,
+				ProjectRepo:           projectRepo,
+				Queue:                 q,
+				RateLimiter:           rateLimiter,
+				Dispatcher:            dispatcher,
+				AttemptsRepo:          attemptsRepo,
+				CircuitBreakerManager: manager,
+				FeatureFlag:           featureFlag,
+				FeatureFlagFetcher:    fetcher,
+				TracerBackend:         mt,
+			}
+			processor := ProcessEventDelivery(deps)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

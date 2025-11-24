@@ -130,7 +130,17 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventQueue, args.subRepo, args.filterRepo, args.licenser, args.tracer)
+			deps := EventProcessorDeps{
+				EndpointRepo:  args.endpointRepo,
+				EventRepo:     args.eventRepo,
+				ProjectRepo:   args.projectRepo,
+				EventQueue:    args.eventQueue,
+				SubRepo:       args.subRepo,
+				FilterRepo:    args.filterRepo,
+				Licenser:      args.licenser,
+				TracerBackend: args.tracer,
+			}
+			fn := ProcessDynamicEventCreation(deps)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

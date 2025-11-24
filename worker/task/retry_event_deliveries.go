@@ -16,7 +16,7 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-func RetryEventDeliveries(db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration string, eventId string) {
+func RetryEventDeliveries(db database.Database, eventQueue queue.Queuer, statuses []datastore.EventDeliveryStatus, lookBackDuration, eventId string) {
 	if len(statuses) == 1 && util.IsStringEmpty(string(statuses[0])) {
 		statuses = []datastore.EventDeliveryStatus{"Retry", "Scheduled", "Processing"}
 	}

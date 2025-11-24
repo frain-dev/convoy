@@ -1,7 +1,6 @@
 package api
 
 import (
-	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -84,14 +83,9 @@ func TestServeIndexWithRootPath(t *testing.T) {
 		},
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
 
-	f := fs.FS(reactFS)
-	static, err := fs.Sub(f, "ui/build")
-	require.NoError(t, err)
-
-	app.serveIndexWithRootPath(w, req, static)
+	app.serveIndexWithRootPath(w)
 
 	require.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()

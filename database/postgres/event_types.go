@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"time"
 
 	"github.com/oklog/ulid/v2"
 
@@ -99,8 +98,6 @@ func (e *eventTypesRepo) CreateDefaultEventType(ctx context.Context, projectId s
 		Name:       "*",
 		ProjectId:  projectId,
 		JSONSchema: []byte("{}"),
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
 	}
 
 	r, err := e.db.GetDB().ExecContext(ctx, createEventType,

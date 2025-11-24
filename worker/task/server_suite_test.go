@@ -1,4 +1,4 @@
-package loader
+package task
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/config"
@@ -26,7 +27,6 @@ func TestMain(m *testing.M) {
 	res, cleanup, err := testenv.Launch(context.Background())
 	if err != nil {
 		log.Fatalf("Failed to launch test infrastructure: %v", err)
-		os.Exit(1)
 	}
 
 	infra = res
@@ -35,7 +35,6 @@ func TestMain(m *testing.M) {
 
 	if err := cleanup(); err != nil {
 		log.Fatalf("Failed to cleanup test infrastructure: %v", err)
-		os.Exit(1)
 	}
 
 	os.Exit(code)
@@ -44,16 +43,20 @@ func TestMain(m *testing.M) {
 type testInstance struct {
 	Logger     *log.Logger
 	Conn       *pgxpool.Pool
+	Config     config.Configuration
 	KeyManager keys.KeyManager
 	Database   database.Database
+	Redis      redis.UniversalClient
+	Context    context.Context
 }
 
-func newLoader(t *testing.T) (context.Context, *testInstance) {
+func newInfra(t *testing.T) *testInstance {
 	t.Helper()
 
 	ctx := t.Context()
 
 	logger := testenv.NewLogger(t)
+	logger.SetLevel(log.FatalLevel)
 
 	err := config.LoadConfig("")
 	require.NoError(t, err)
@@ -66,19 +69,66 @@ func newLoader(t *testing.T) (context.Context, *testInstance) {
 
 	pg := postgres.NewFromConnection(conn)
 
-	km, err := keys.NewLocalKeyManager("test-key")
+	rd, err := infra.NewRedisClient(t, 0)
+	require.NoError(t, err)
+
+	err = config.LoadConfig("")
+	require.NoError(t, err)
+
+	cfg, err := config.Get()
+	require.NoError(t, err)
+
+	// Load CA cert for TLS operations
+	err = config.LoadCaCert("", "")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	km, err := keys.NewLocalKeyManager("test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if km.IsSet() {
+		if _, err = km.GetCurrentKeyFromCache(); err != nil {
+			log.Fatal(err)
+		}
+	}
 	if err = keys.Set(km); err != nil {
 		log.Fatal(err)
 	}
 
-	return ctx, &testInstance{
+	return &testInstance{
+		Context:    ctx,
+		Redis:      rd,
 		Database:   pg,
 		KeyManager: km,
+		Config:     cfg,
 		Conn:       conn,
 		Logger:     logger,
 	}
+}
+
+func buildApplication(t *testing.T) *applicationHandler {
+	t.Helper()
+
+	tl := newInfra(t)
+	db := tl.Database
+
+	projectRepo := postgres.NewProjectRepo(db)
+	eventRepo := postgres.NewEventRepo(db)
+	configRepo := postgres.NewConfigRepo(db)
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
+	deliveryRepo := postgres.NewDeliveryAttemptRepo(db)
+
+	app := &applicationHandler{
+		projectRepo:       projectRepo,
+		eventRepo:         eventRepo,
+		configRepo:        configRepo,
+		eventDeliveryRepo: eventDeliveryRepo,
+		deliveryRepo:      deliveryRepo,
+		database:          db,
+		redis:             tl.Redis,
+	}
+
+	return app
 }

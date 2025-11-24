@@ -103,7 +103,7 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 }
 
 func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *newEvent, g *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
-	var endpointIDs []string
+	endpointIDs := make([]string, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
 		endpointIDs = append(endpointIDs, endpoint.UID)

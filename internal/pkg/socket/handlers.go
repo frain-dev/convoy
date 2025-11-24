@@ -208,10 +208,7 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 
 	if device.Status != datastore.DeviceStatusOnline {
 		device.Status = datastore.DeviceStatusOnline
-		if err != nil {
-			log.WithError(err).Error("failed to update device to online")
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
-		}
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
 	}
 
 	if !util.IsStringEmpty(listenRequest.SourceName) {
