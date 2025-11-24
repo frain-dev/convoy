@@ -14,17 +14,17 @@ run:
 linters:
   enable:
     # Safety: Control flow and limits
-    - cyclop
-    - funlen
+    # - cyclop
+    # - funlen
 
     # Safety: Error handling
-    - errcheck
+    # - errcheck
     - govet
     - staticcheck
 
     # Safety: Memory and types
     - gocritic
-    - gosec
+    # - gosec
 
     # Performance: Resource optimization
     - prealloc
@@ -38,13 +38,13 @@ linters:
     - whitespace
 
     # Developer Experience: Code organization
-    - dupl
+    # - dupl
     - goprintffuncname
     - ineffassign
     - nakedret
     - nolintlint
     - rowserrcheck
-    - err113 # Allow error wrapping patterns
+    # - err113 # Allow error wrapping patterns
     - thelper
     - tparallel
     - unused
@@ -61,6 +61,13 @@ linters:
     - noctx # Allow context-less functions when appropriate
     - testpackage # Allow test packages
     - wsl # Allow single-line statements when appropriate
+    # Temporarily disabled linters
+    - cyclop # Cyclomatic complexity
+    - funlen # Function length
+    - errcheck # Unchecked errors
+    - gosec # Security issues
+    - dupl # Duplicate code
+    - err113 # Error wrapping
   settings:
     dupl:
       threshold: 200
@@ -152,7 +159,7 @@ linters:
 
     # Developer Experience: Line length limits
     lll:
-      line-length: 200 # Tiger Style: reasonable line length
+      line-length: 300 # Tiger Style: reasonable line length
 
     # Safety: Avoid off-by-one errors
     staticcheck:

@@ -37,7 +37,7 @@ func (pp *ProjectPolicy) checkAccess(ctx context.Context, res interface{}, check
 
 	project, ok := res.(*datastore.Project)
 	if !ok {
-		return errors.New("Wrong project type")
+		return errors.New("wrong project type")
 	}
 
 	org, err := pp.OrganisationRepo.FetchOrganisationByID(ctx, project.OrganisationID)

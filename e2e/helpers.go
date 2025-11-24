@@ -121,8 +121,9 @@ func StartMockWebhookServer(t *testing.T, manifest *EventManifest, done chan boo
 	})
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
+		ReadHeaderTimeout: 10 * time.Second,
+		Addr:              fmt.Sprintf(":%d", port),
+		Handler:           mux,
 	}
 
 	go func() {

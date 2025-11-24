@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	//nolint:staticcheck // we don't want to use v2
 	"cloud.google.com/go/pubsub"
 	"google.golang.org/api/option"
 

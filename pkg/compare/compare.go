@@ -38,7 +38,7 @@ func Compare(payload, filter map[string]interface{}) (bool, error) {
 	return compare(payload, filter)
 }
 
-func compare(payload map[string]interface{}, filter map[string]interface{}) (bool, error) {
+func compare(payload, filter map[string]interface{}) (bool, error) {
 	var pass []bool
 	for key, filterVal := range filter {
 		slen := len(key)
@@ -153,14 +153,14 @@ func compare(payload map[string]interface{}, filter map[string]interface{}) (boo
 func regex(payload, filter interface{}) (bool, error) {
 	f, ok := filter.(string)
 	if !ok {
-		fmt.Printf("filter %v is not valid string\n", filter)
-		return false, fmt.Errorf("filter %v is not valid json\n", filter)
+		fmt.Printf("filter %v is not valid string", filter)
+		return false, fmt.Errorf("filter %v is not valid json", filter)
 	}
 
 	p, ok := payload.(string)
 	if !ok {
-		fmt.Printf("payload %v is not valid string\n", payload)
-		return false, fmt.Errorf("payload %v is not valid json\n", payload)
+		fmt.Printf("payload %v is not valid string", payload)
+		return false, fmt.Errorf("payload %v is not valid json", payload)
 	}
 
 	r, err := regexp.Compile(f)
@@ -192,14 +192,14 @@ func gte(payload, filter interface{}) (bool, error) {
 func gt(payload, filter interface{}) (bool, error) {
 	p, ok := toFloat64(payload)
 	if !ok {
-		fmt.Printf("payload %v is not a valid number\n", payload)
-		return false, fmt.Errorf("payload %v is not a valid number\n", payload)
+		fmt.Printf("payload %v is not a valid number", payload)
+		return false, fmt.Errorf("payload %v is not a valid number", payload)
 	}
 
 	f, ok := toFloat64(filter)
 	if !ok {
 		fmt.Printf("filter %v is not a valid number\n", filter)
-		return false, fmt.Errorf("filter %v is not a valid number\n", filter)
+		return false, fmt.Errorf("filter %v is not a valid number", filter)
 	}
 
 	return p > f, nil
@@ -216,7 +216,7 @@ func lt(payload, filter interface{}) (bool, error) {
 }
 
 // in finds if the filter in the payload.
-// filter could be a string, number or bool, payload is an array
+// filter could be a string, number, or bool, payload is an array
 // there are two scenarios
 //  1. when we query directly on an array field
 //  2. when we try to check if a value is in a given array
@@ -229,8 +229,8 @@ func in(payload, filter interface{}) (bool, error) {
 		// scenario 1. We are querying on an array field
 		p, ok = payload.([]interface{})
 		if !ok {
-			fmt.Printf("%+v is not a valid slice\n", payload)
-			return false, fmt.Errorf("%+v is not a valid slice\n", payload)
+			fmt.Printf("%+v is not a valid slice", payload)
+			return false, fmt.Errorf("%+v is not a valid slice", payload)
 		}
 	}
 
@@ -291,13 +291,13 @@ func or(payload, filter interface{}) (bool, error) {
 	f, ok := filter.([]interface{})
 	if !ok {
 		fmt.Printf("filter %v is not valid json\n", filter)
-		return false, fmt.Errorf("filter %v is not valid json\n", filter)
+		return false, fmt.Errorf("filter %v is not valid json", filter)
 	}
 
 	p, ok := payload.(map[string]interface{})
 	if !ok {
 		fmt.Printf("payload %v is not valid json\n", payload)
-		return false, fmt.Errorf("payload %v is not valid json\n", payload)
+		return false, fmt.Errorf("payload %v is not valid json", payload)
 	}
 
 	for _, value := range f {
@@ -318,13 +318,13 @@ func and(payload, filter interface{}) (bool, error) {
 	f, ok := filter.([]interface{})
 	if !ok {
 		fmt.Printf("filter %v is not valid json\n", filter)
-		return false, fmt.Errorf("filter %v is not valid json\n", filter)
+		return false, fmt.Errorf("filter %v is not valid json", filter)
 	}
 
 	p, ok := payload.(map[string]interface{})
 	if !ok {
 		fmt.Printf("payload %v is not valid json\n", payload)
-		return false, fmt.Errorf("payload %v is not valid json\n", payload)
+		return false, fmt.Errorf("payload %v is not valid json", payload)
 	}
 
 	for _, value := range f {
@@ -339,18 +339,18 @@ func and(payload, filter interface{}) (bool, error) {
 	return check, nil
 }
 
-// exist requires a field to be undefined when false and array, number, object, string, boolean or null when true.
+// exist requires a field to be undefined when false and array, number, object, string, boolean, or null when true.
 func exist(payload, filter interface{}) (bool, error) {
 	f, ok := filter.(map[string]interface{})
 	if !ok {
 		fmt.Printf("filter %v is not valid json\n", filter)
-		return false, fmt.Errorf("filter %v is not valid json\n", filter)
+		return false, fmt.Errorf("filter %v is not valid json", filter)
 	}
 
 	p, ok := payload.(map[string]interface{})
 	if !ok {
 		fmt.Printf("payload %v is not valid json\n", payload)
-		return false, fmt.Errorf("payload %v is not valid json\n", payload)
+		return false, fmt.Errorf("payload %v is not valid json", payload)
 	}
 
 	var want bool

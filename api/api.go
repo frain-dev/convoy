@@ -74,13 +74,13 @@ func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.
 
 	req.URL.Path = "/"
 	if a.cfg.RootPath != "" {
-		a.serveIndexWithRootPath(rw, req, static)
+		a.serveIndexWithRootPath(rw)
 	} else {
 		http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 	}
 }
 
-func (a *ApplicationHandler) serveIndexWithRootPath(rw http.ResponseWriter, req *http.Request, static fs.FS) {
+func (a *ApplicationHandler) serveIndexWithRootPath(rw http.ResponseWriter) {
 	const indexFileName = "index.html"
 	indexPath := path.Join("ui/build", indexFileName)
 	indexFile, err := reactFS.Open(indexPath)

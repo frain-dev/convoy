@@ -26,7 +26,7 @@ func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository, m
 	return &MetaEvent{queue: queue, projectRepo: projectRepo, metaEventRepo: metaEventRepo}
 }
 
-func (m *MetaEvent) Run(ctx context.Context, eventType string, projectID string, data interface{}) error {
+func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data interface{}) error {
 	project, err := m.projectRepo.FetchProjectByID(ctx, projectID)
 	if err != nil {
 		return err

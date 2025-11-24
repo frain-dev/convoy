@@ -1128,19 +1128,20 @@ func TestProcessEventDelivery(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			processor := ProcessEventDelivery(
-				endpointRepo,
-				msgRepo,
-				licenser,
-				projectRepo,
-				q,
-				rateLimiter,
-				dispatcher,
-				attemptsRepo,
-				manager,
-				featureFlag,
-				mt,
-			)
+			deps := EventDeliveryProcessorDeps{
+				EndpointRepo:          endpointRepo,
+				EventDeliveryRepo:     msgRepo,
+				Licenser:              licenser,
+				ProjectRepo:           projectRepo,
+				Queue:                 q,
+				RateLimiter:           rateLimiter,
+				Dispatcher:            dispatcher,
+				AttemptsRepo:          attemptsRepo,
+				CircuitBreakerManager: manager,
+				FeatureFlag:           featureFlag,
+				TracerBackend:         mt,
+			}
+			processor := ProcessEventDelivery(deps)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

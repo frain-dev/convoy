@@ -251,7 +251,8 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 	}
 }
 
-func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEvent, subRepo datastore.SubscriptionRepository, project *datastore.Project, endpoint *datastore.Endpoint) (*datastore.Subscription, error) {
+func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEvent,
+	subRepo datastore.SubscriptionRepository, project *datastore.Project, endpoint *datastore.Endpoint) (*datastore.Subscription, error) {
 	subscriptions, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 
 	var subscription *datastore.Subscription

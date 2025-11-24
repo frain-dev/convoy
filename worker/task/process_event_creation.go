@@ -225,7 +225,11 @@ func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.
 	)
 }
 
-func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser) error {
+func writeEventDeliveriesToQueue(
+	ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project,
+	eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer,
+	deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser,
+) error {
 	ec := &EventDeliveryConfig{project: project}
 
 	eventDeliveries := make([]*datastore.EventDelivery, 0)

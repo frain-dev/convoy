@@ -583,7 +583,8 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryMetadata(ctx context.Context, pro
 	return nil
 }
 
-func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
+func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string,
+	status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
 	eventCount := struct {
 		Count int64
 	}{}
@@ -653,7 +654,11 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	return nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey, eventType, brokerMessageId string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(
+	ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string,
+	status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable,
+	idempotencyKey, eventType, brokerMessageId string,
+) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
