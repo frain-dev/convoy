@@ -6,15 +6,14 @@ import (
 	"encoding/base64"
 	"time"
 
-	"gopkg.in/guregu/null.v4"
-
+	"github.com/oklog/ulid/v2"
 	"github.com/xdg-go/pbkdf2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
 )
 
 type CreatePersonalAPIKeyService struct {
@@ -60,7 +59,6 @@ func (cpa *CreatePersonalAPIKeyService) Run(ctx context.Context) (*datastore.API
 
 	err = cpa.APIKeyRepo.CreateAPIKey(ctx, apiKey)
 	if err != nil {
-
 		log.FromContext(ctx).WithError(err).Error("failed to create api key")
 		return nil, "", &ServiceError{ErrMsg: "failed to create api key", Err: err}
 	}

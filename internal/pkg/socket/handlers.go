@@ -9,16 +9,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/queue"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/websocket"
 	"github.com/oklog/ulid/v2"
 
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 type ListenRequest struct {
@@ -207,10 +208,7 @@ func listen(ctx context.Context, listenRequest *ListenRequest, r *Repo) (*datast
 
 	if device.Status != datastore.DeviceStatusOnline {
 		device.Status = datastore.DeviceStatusOnline
-		if err != nil {
-			log.WithError(err).Error("failed to update device to online")
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
-		}
+		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("failed to update device to online"))
 	}
 
 	if !util.IsStringEmpty(listenRequest.SourceName) {

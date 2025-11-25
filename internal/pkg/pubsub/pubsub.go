@@ -6,12 +6,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
-
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-
-	"github.com/frain-dev/convoy/datastore"
 	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
@@ -40,7 +38,8 @@ type PubSubSource struct {
 	// hash string, NOTE: Previously used to track config changes; left removed to satisfy linters.
 }
 
-func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler, log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*PubSubSource, error) {
+func NewPubSubSource(ctx context.Context, source *datastore.Source, handler datastore.PubSubHandler,
+	log log.StdLogger, rateLimiter limiter.RateLimiter, licenser license.Licenser, instanceId string) (*PubSubSource, error) {
 	client, err := createClient(source, handler, log, rateLimiter, licenser, instanceId)
 	if err != nil {
 		return nil, err
@@ -48,7 +47,6 @@ func NewPubSubSource(ctx context.Context, source *datastore.Source, handler data
 
 	ctx, cancelFunc := context.WithCancel(ctx)
 	pubSubSource := &PubSubSource{ctx: ctx, cancelFunc: cancelFunc, client: client, licenser: licenser, source: source}
-	// pubSubSource.hash = generateSourceKey(source)
 	pubSubSource.cancelFunc = cancelFunc
 
 	return pubSubSource, nil

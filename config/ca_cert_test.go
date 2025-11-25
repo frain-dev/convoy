@@ -3,15 +3,15 @@ package config
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // Helper function to generate a test certificate
@@ -121,13 +121,10 @@ gNzJgq2rBh+ytZgv31JGEcG/DwfPrC7eANAy
 
 		systemCertPool, err := x509.SystemCertPool()
 		require.NoError(t, err)
+		require.NotNil(t, systemCertPool)
 
-		systemTlsCfg := &tls.Config{
-			RootCAs:    systemCertPool,
-			MinVersion: tls.VersionTLS12,
-		}
-
-		require.Equal(t, len(systemTlsCfg.Certificates), len(tlsCfg.Certificates))
+		// Verify tlsCfg has no certificates when no CA is provided
+		require.Equal(t, 0, len(tlsCfg.Certificates))
 	})
 }
 

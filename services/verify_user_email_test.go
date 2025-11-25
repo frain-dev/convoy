@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideVerifyEmailService(ctrl *gomock.Controller, token string) *VerifyEmailService {

@@ -7,17 +7,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/frain-dev/convoy/pkg/transform"
-
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
 )
 
 // CreateSource
@@ -316,7 +315,7 @@ func (h *Handler) LoadSourcesPaged(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Sources fetched successfully", models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
-func fillSourceURL(s *datastore.Source, baseUrl string, customDomain string) {
+func fillSourceURL(s *datastore.Source, baseUrl, customDomain string) {
 	url := baseUrl
 	if len(customDomain) > 0 {
 		url = customDomain

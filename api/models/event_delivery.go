@@ -58,14 +58,15 @@ func (ql *QueryListEventDelivery) Transform(r *http.Request) (*QueryListEventDel
 
 	return &QueryListEventDeliveryResponse{
 		Filter: &datastore.Filter{
-			EndpointIDs:    getEndpointIDs(r),
-			SubscriptionID: r.URL.Query().Get("subscriptionId"),
-			IdempotencyKey: r.URL.Query().Get("idempotencyKey"),
-			EventID:        r.URL.Query().Get("eventId"),
-			EventType:      r.URL.Query().Get("eventType"),
-			Status:         getEventDeliveryStatus(r),
-			Pageable:       m.GetPageableFromContext(r.Context()),
-			SearchParams:   searchParams,
+			EndpointIDs:     getEndpointIDs(r),
+			SubscriptionID:  r.URL.Query().Get("subscriptionId"),
+			IdempotencyKey:  r.URL.Query().Get("idempotencyKey"),
+			BrokerMessageId: r.URL.Query().Get("brokerMessageId"),
+			EventID:         r.URL.Query().Get("eventId"),
+			EventType:       r.URL.Query().Get("eventType"),
+			Pageable:        m.GetPageableFromContext(r.Context()),
+			Status:          getEventDeliveryStatus(r),
+			SearchParams:    searchParams,
 		},
 	}, nil
 }

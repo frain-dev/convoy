@@ -3,10 +3,12 @@ package pg
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/pkg/log"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var ErrRateLimitExceeded = errors.New("rate limit exceeded")
@@ -23,7 +25,7 @@ func (p *SlidingWindowRateLimiter) Allow(ctx context.Context, key string, rate i
 	return p.takeToken(ctx, key, rate, 1)
 }
 
-func (p *SlidingWindowRateLimiter) AllowWithDuration(ctx context.Context, key string, rate int, bucketSize int) error {
+func (p *SlidingWindowRateLimiter) AllowWithDuration(ctx context.Context, key string, rate, bucketSize int) error {
 	return p.takeToken(ctx, key, rate, bucketSize)
 }
 
@@ -31,7 +33,7 @@ func (p *SlidingWindowRateLimiter) AllowWithDuration(ctx context.Context, key st
 //
 // Creates the bucket if it doesn't exist and returns false if it is not successful.
 // Returns true otherwise
-func (p *SlidingWindowRateLimiter) takeToken(ctx context.Context, key string, rate int, windowSize int) error {
+func (p *SlidingWindowRateLimiter) takeToken(ctx context.Context, key string, rate, windowSize int) error {
 	// if one of rate and bucket size if zero, we skip processing
 	if rate == 0 || windowSize == 0 {
 		return nil

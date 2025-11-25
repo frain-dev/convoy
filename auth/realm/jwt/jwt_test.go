@@ -3,10 +3,11 @@ package jwt
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/stretchr/testify/require"
 )
 
 func provideJwt(t *testing.T) *Jwt {

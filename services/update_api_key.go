@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/auth"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"

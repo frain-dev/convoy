@@ -4,20 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/queue"
-	redisQueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
+	redisQueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/worker"
-	"github.com/spf13/cobra"
 )
 
 func AddStreamCommand(a *cli.App) *cobra.Command {
@@ -39,7 +39,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if err = config.Override(cliConfig); err != nil {
+			if err := config.Override(cliConfig); err != nil {
 				return err
 			}
 
@@ -89,7 +89,13 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 
 			handler := socket.BuildRoutes(r)
 
-			redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+			redis, err := rdb.NewClientFromConfig(
+				cfg.Redis.BuildDsn(),
+				cfg.Redis.TLSSkipVerify,
+				cfg.Redis.TLSCACertFile,
+				cfg.Redis.TLSCertFile,
+				cfg.Redis.TLSKeyFile,
+			)
 			if err != nil {
 				return err
 			}

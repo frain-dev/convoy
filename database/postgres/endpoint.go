@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/jmoiron/sqlx"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/pkg/constants"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
-	"gopkg.in/guregu/null.v4"
 )
 
 var (
@@ -475,7 +475,7 @@ func (e *endpointRepo) FindEndpointsByAppID(ctx context.Context, appID, projectI
 	return e.scanEndpoints(rows)
 }
 
-func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID string, ownerID string) ([]datastore.Endpoint, error) {
+func (e *endpointRepo) FindEndpointsByOwnerID(ctx context.Context, projectID, ownerID string) ([]datastore.Endpoint, error) {
 	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
 		return nil, err
@@ -539,7 +539,7 @@ func (e *endpointRepo) UpdateEndpoint(ctx context.Context, endpoint *datastore.E
 	return nil
 }
 
-func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID string, endpointID string, status datastore.EndpointStatus) error {
+func (e *endpointRepo) UpdateEndpointStatus(ctx context.Context, projectID, endpointID string, status datastore.EndpointStatus) error {
 	endpoint := datastore.Endpoint{}
 	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
@@ -599,7 +599,7 @@ func (e *endpointRepo) CountProjectEndpoints(ctx context.Context, projectID stri
 	return count, nil
 }
 
-func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID string, targetURL string) (*datastore.Endpoint, error) {
+func (e *endpointRepo) FindEndpointByTargetURL(ctx context.Context, projectID, targetURL string) (*datastore.Endpoint, error) {
 	endpoint := &datastore.Endpoint{}
 	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {
@@ -736,7 +736,7 @@ func (e *endpointRepo) isEncryptionError(err error) (bool, error) {
 	return false, nil
 }
 
-func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID string, projectID string, secrets datastore.Secrets) error {
+func (e *endpointRepo) UpdateSecrets(ctx context.Context, endpointID, projectID string, secrets datastore.Secrets) error {
 	endpoint := datastore.Endpoint{}
 	key, err := e.km.GetCurrentKeyFromCache()
 	if err != nil {

@@ -8,34 +8,35 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
 	"math/big"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy"
-
-	"github.com/frain-dev/convoy/mocks"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoint, projectID string) *CreateEndpointService {
 	return &CreateEndpointService{
-		PortalLinkRepo: nil,
-		EndpointRepo:   mocks.NewMockEndpointRepository(ctrl),
-		ProjectRepo:    mocks.NewMockProjectRepository(ctrl),
-		Licenser:       mocks.NewMockLicenser(ctrl),
-		Logger:         log.NewLogger(os.Stdout),
-		FeatureFlag:    fflag.NoopFflag(),
-		E:              e,
-		ProjectID:      projectID,
+		PortalLinkRepo:     nil,
+		EndpointRepo:       mocks.NewMockEndpointRepository(ctrl),
+		ProjectRepo:        mocks.NewMockProjectRepository(ctrl),
+		Licenser:           mocks.NewMockLicenser(ctrl),
+		Logger:             log.NewLogger(os.Stdout),
+		FeatureFlag:        fflag.NoopFflag(),
+		FeatureFlagFetcher: mocks.NewMockFeatureFlagFetcherWithMTLSEnabled(),
+		E:                  e,
+		ProjectID:          projectID,
 	}
 }
 
@@ -378,6 +379,56 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			wantErrMsg: ErrMutualTLSFeatureUnavailable,
 		},
 		{
+			name: "should_ignore_mtls_when_feature_flag_disabled",
+			args: args{
+				ctx: ctx,
+				e: models.CreateEndpoint{
+					Name:        "mtls_endpoint_disabled_flag",
+					Secret:      "1234",
+					URL:         "https://google.com",
+					Description: "endpoint with mTLS but feature flag disabled",
+					MtlsClientCert: &models.MtlsClientCert{
+						ClientCert: testCertPEM,
+						ClientKey:  testKeyPEM,
+					},
+				},
+				g: project,
+			},
+			dbFn: func(app *CreateEndpointService) {
+				p, _ := app.ProjectRepo.(*mocks.MockProjectRepository)
+				p.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).
+					Times(1).
+					Return(project, nil)
+
+				a, _ := app.EndpointRepo.(*mocks.MockEndpointRepository)
+				a.EXPECT().CreateEndpoint(gomock.Any(), gomock.Cond(func(x any) bool {
+					endpoint := x.(*datastore.Endpoint)
+					// mTLS should be nil/ignored when feature flag is disabled
+					return endpoint.MtlsClientCert == nil
+				}), gomock.Any()).Times(1).Return(nil)
+
+				licenser, _ := app.Licenser.(*mocks.MockLicenser)
+				licenser.EXPECT().IpRules().Times(2).Return(true)
+				licenser.EXPECT().AdvancedEndpointMgmt().Times(1).Return(true)
+				licenser.EXPECT().CustomCertificateAuthority().Times(1).Return(true)
+				licenser.EXPECT().MutualTLS().Times(1).Return(true)
+			},
+			wantEndpoint: &datastore.Endpoint{
+				Name:      "mtls_endpoint_disabled_flag",
+				ProjectID: project.UID,
+				Secrets: []datastore.Secret{
+					{Value: "1234"},
+				},
+				AdvancedSignatures: true,
+				Url:                "https://google.com",
+				Description:        "endpoint with mTLS but feature flag disabled",
+				Status:             datastore.ActiveEndpointStatus,
+				// mTLS should be nil when feature flag is disabled
+				MtlsClientCert: nil,
+			},
+			wantErr: false,
+		},
+		{
 			name: "should_fail_to_create_endpoint",
 			args: args{
 				ctx: ctx,
@@ -415,8 +466,15 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			defer ctrl.Finish()
 			as := provideCreateEndpointService(ctrl, tc.args.e, tc.args.g.UID)
 
-			err := config.LoadConfig("")
-			require.NoError(t, err)
+			// Override fetcher for feature flag disabled test
+			if tc.name == "should_ignore_mtls_when_feature_flag_disabled" {
+				as.FeatureFlagFetcher = mocks.NewMockFeatureFlagFetcherWithMTLSDisabled()
+			}
+
+			// Load config and set SkipPingValidation via ConfigFunc
+			_ = config.LoadConfig("", func(c *config.Configuration) error {
+				return envconfig.Process("convoy", c)
+			})
 
 			// Arrange Expectations
 			if tc.dbFn != nil {

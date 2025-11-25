@@ -2,21 +2,19 @@ package task
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/mocks"
-
-	"github.com/frain-dev/convoy/api/models"
-
-	"github.com/frain-dev/convoy"
+	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
 )
 
 func TestProcessDynamicEventCreation(t *testing.T) {
@@ -31,6 +29,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 		{
 			name: "should_create_dynamic_event",
 			dynamicEvent: &models.DynamicEvent{
+				JobID:          "123:1234567890",
 				URL:            "https://google.com",
 				Secret:         "1234",
 				EventTypes:     []string{"*"},
@@ -73,6 +72,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 		{
 			name: "should_create_new_endpoint_and_subscription_for_dynamic_event",
 			dynamicEvent: &models.DynamicEvent{
+				JobID:     "123:1234567890",
 				URL:       "https://google.com",
 				Secret:    "1234",
 				Data:      []byte(`{"name":"daniel"}`),
@@ -121,7 +121,7 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 				tt.dbFn(args)
 			}
 
-			payload, err := json.Marshal(tt.dynamicEvent)
+			payload, err := msgpack.EncodeMsgPack(tt.dynamicEvent)
 			require.NoError(t, err)
 
 			job := queue.Job{
@@ -130,7 +130,18 @@ func TestProcessDynamicEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessDynamicEventCreation(args.endpointRepo, args.eventRepo, args.projectRepo, args.eventQueue, args.subRepo, args.filterRepo, args.licenser, args.tracer, args.oauth2TokenService)
+			deps := EventProcessorDeps{
+				EndpointRepo:      args.endpointRepo,
+				EventRepo:         args.eventRepo,
+				ProjectRepo:       args.projectRepo,
+				EventQueue:        args.eventQueue,
+				SubRepo:           args.subRepo,
+				FilterRepo:        args.filterRepo,
+				Licenser:          args.licenser,
+				TracerBackend:     args.tracer,
+				OAuth2TokenService: args.oauth2TokenService,
+			}
+			fn := ProcessDynamicEventCreation(deps)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

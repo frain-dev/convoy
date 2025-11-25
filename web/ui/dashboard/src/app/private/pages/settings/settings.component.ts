@@ -1,9 +1,8 @@
-import { Location } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import {Component, OnInit} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
-export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team';
+export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'early adopter features';
 
 @Component({
 	selector: 'convoy-settings',
@@ -14,7 +13,8 @@ export class SettingsComponent implements OnInit {
 	activePage: SETTINGS = 'organisation settings';
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
-		{ name: 'team', icon: 'team', svg: 'stroke' }
+		{ name: 'team', icon: 'team', svg: 'stroke' },
+		{ name: 'early adopter features', icon: 'settings', svg: 'fill' }
 		// { name: 'configuration settings', icon: 'settings', svg: 'fill' }
 	];
 

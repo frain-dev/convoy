@@ -3,13 +3,13 @@ package notifications
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"strconv"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
 )
@@ -84,7 +84,9 @@ func SendEndpointNotification(
 
 			var text string
 			if failure {
-				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit, endpoint response body (%s) and status code was %d, reason for failure is \"%s\", endpoint status is now %s", endpoint.Url, responseBody, statusCode, failureMsg, status)
+				text = fmt.Sprintf("failed to send event delivery to endpoint url (%s) after retry limit was hit,"+
+					" endpoint response body (%s) and status code was %d, reason for failure is %q, endpoint status is now %s",
+					endpoint.Url, responseBody, statusCode, failureMsg, status)
 			} else {
 				text = fmt.Sprintf("endpoint url (%s) which was formerly dectivated has now been reactivated, endpoint status is now %s", endpoint.Url, status)
 			}

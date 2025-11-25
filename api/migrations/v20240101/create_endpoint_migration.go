@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"gopkg.in/guregu/null.v4"
+
 	v20240401 "github.com/frain-dev/convoy/api/migrations/v20240401"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"gopkg.in/guregu/null.v4"
 )
 
 type oldCreateEndpoint struct {

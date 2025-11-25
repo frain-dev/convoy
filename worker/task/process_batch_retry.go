@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/hibiken/asynq"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 )
 
@@ -118,7 +118,8 @@ func ProcessBatchRetry(
 				filter.SearchParams,
 				filter.Pageable,
 				filter.IdempotencyKey,
-				filter.EventType)
+				filter.EventType,
+				filter.BrokerMessageId)
 			if innerErr != nil {
 				lo.WithError(innerErr).Error("failed to load deliveries")
 				now := time.Now()

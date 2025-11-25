@@ -6,14 +6,15 @@ package rlimiter
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
-	"github.com/oklog/ulid/v2"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 func getDSN() []string {

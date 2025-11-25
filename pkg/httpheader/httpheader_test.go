@@ -15,21 +15,21 @@ func Test_MergeHeaders(t *testing.T) {
 	}{
 		"merge_new_fields": {
 			header: HTTPHeader(map[string][]string{
-				"X-Convoy-Signature": []string{"MDQ6VXNlcjgwNzQwMTE1"},
+				"X-Convoy-Signature": {"MDQ6VXNlcjgwNzQwMTE1"},
 			}),
 			newHeader: HTTPHeader(map[string][]string{
-				"X-GitHub-Delivery": []string{"c2520a2e-121b-11ed-862c-d3f38c5356fa"},
-				"X-GitHub-Event":    []string{"issue_comment"},
-				"X-GitHub-Hook-ID":  []string{"355729303"},
+				"X-GitHub-Delivery": {"c2520a2e-121b-11ed-862c-d3f38c5356fa"},
+				"X-GitHub-Event":    {"issue_comment"},
+				"X-GitHub-Hook-ID":  {"355729303"},
 			}),
 			fields: []string{"X-GitHub-Delivery", "X-GitHub-Event", "X-GitHub-Hook-ID"},
 		},
 		"do_not_overwrite_old_fields": {
 			header: HTTPHeader(map[string][]string{
-				"User-Agent": []string{"Convoy v0.6"},
+				"User-Agent": {"Convoy v0.6"},
 			}),
 			newHeader: HTTPHeader(map[string][]string{
-				"User-Agent": []string{"GitHub-Hookshot/9398d35"},
+				"User-Agent": {"GitHub-Hookshot/9398d35"},
 			}),
 			fields: []string{"User-Agent"},
 		},

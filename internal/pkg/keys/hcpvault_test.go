@@ -3,16 +3,18 @@ package keys
 import (
 	"context"
 	"fmt"
-	mcache "github.com/frain-dev/convoy/cache/memory"
-	"github.com/frain-dev/convoy/mocks"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+
+	mcache "github.com/frain-dev/convoy/cache/memory"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 var (

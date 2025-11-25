@@ -9,13 +9,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/models"
-
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"go.uber.org/mock/gomock"
 )
 
 func provideProcessInviteService(ctrl *gomock.Controller, token string, accepted bool, newUser *models.User) *ProcessInviteService {

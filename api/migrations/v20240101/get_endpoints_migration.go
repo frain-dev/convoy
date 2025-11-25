@@ -35,7 +35,7 @@ func (g *GetEndpointsResponseMigration) Migrate(b []byte, h http.Header) ([]byte
 		return b, h, nil
 	}
 
-	var res []endpointResponse
+	res := make([]endpointResponse, 0, len(endpoints))
 
 	for _, endpointPayload := range endpoints {
 		endpointBytes, err := json.Marshal(endpointPayload)

@@ -7,21 +7,22 @@ import (
 )
 
 type Filter struct {
-	Query          string
-	OwnerID        string
-	Project        *Project
-	ProjectID      string
-	EndpointID     string
-	EndpointIDs    []string
-	SubscriptionID string
-	EventID        string
-	EventType      string
-	SourceID       string
-	SourceIDs      []string
-	Pageable       Pageable
-	IdempotencyKey string
-	Status         []EventDeliveryStatus
-	SearchParams   SearchParams
+	Query           string
+	OwnerID         string
+	Project         *Project
+	ProjectID       string
+	EndpointID      string
+	EndpointIDs     []string
+	SubscriptionID  string
+	EventID         string
+	EventType       string
+	SourceID        string
+	SourceIDs       []string
+	Pageable        Pageable
+	IdempotencyKey  string
+	BrokerMessageId string
+	Status          []EventDeliveryStatus
+	SearchParams    SearchParams
 }
 
 func (f *Filter) Scan(v interface{}) error {
@@ -70,15 +71,15 @@ func (f *FilterBy) String() string {
 	var s string
 	filterByBuilder := new(strings.Builder)
 	// TODO(daniel, raymond): how to work around this?
-	filterByBuilder.WriteString(fmt.Sprintf("project_id:=%s", f.ProjectID))
-	filterByBuilder.WriteString(fmt.Sprintf(" && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd))
+	fmt.Fprintf(filterByBuilder, "project_id:=%s", f.ProjectID)
+	fmt.Fprintf(filterByBuilder, " && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd)
 
 	if len(f.EndpointID) > 0 {
-		filterByBuilder.WriteString(fmt.Sprintf(" && app_id:=%s", f.EndpointID))
+		fmt.Fprintf(filterByBuilder, " && app_id:=%s", f.EndpointID)
 	}
 
 	if len(f.SourceID) > 0 {
-		filterByBuilder.WriteString(fmt.Sprintf(" && source_id:=%s", f.SourceID))
+		fmt.Fprintf(filterByBuilder, " && source_id:=%s", f.SourceID)
 	}
 
 	s = filterByBuilder.String()

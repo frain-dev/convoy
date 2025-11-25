@@ -15,7 +15,7 @@ ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS status text DEFAULT NULL;
 ALTER TABLE convoy.events ADD COLUMN IF NOT EXISTS metadata text DEFAULT NULL;
 
 -- +migrate Down
-DROP INDEX IF EXISTS idx_uq_constraint_events_endpoints_event_id_endpoint_id;
+DROP INDEX IF EXISTS convoy.idx_uq_constraint_events_endpoints_event_id_endpoint_id;
 
 DROP TABLE IF EXISTS convoy.events_endpoints_deprecated;
 

@@ -1,15 +1,16 @@
 package metrics
 
 import (
+	"sync"
+
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"sync"
-
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 var reg *prometheus.Registry

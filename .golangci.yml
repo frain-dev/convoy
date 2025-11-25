@@ -1,0 +1,292 @@
+# Tiger Style golangci-lint configuration
+# Enforces safety, performance, and developer experience principles
+# Based on https://tigerstyle.dev/
+
+version: "2"
+
+run:
+  timeout: 5m
+  go: "1.23"
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+  allow-serial-runners: true
+
+linters:
+  enable:
+    # Safety: Control flow and limits
+    # - cyclop
+    # - funlen
+
+    # Safety: Error handling
+    # - errcheck
+    - govet
+    - staticcheck
+
+    # Safety: Memory and types
+    - gocritic
+    # - gosec
+
+    # Performance: Resource optimization
+    - prealloc
+    - unparam
+    - wastedassign
+
+    # Developer Experience: Naming and style
+    #   - revive
+    - lll
+    - misspell
+    - whitespace
+
+    # Developer Experience: Code organization
+    # - dupl
+    - goprintffuncname
+    - ineffassign
+    - nakedret
+    - nolintlint
+    - rowserrcheck
+    # - err113 # Allow error wrapping patterns
+    - thelper
+    - tparallel
+    - unused
+  #    - wrapcheck
+
+  disable:
+    # Disable linters that conflict with Tiger Style principles
+    - depguard # Allow external dependencies when needed
+    - forbidigo # Allow specific patterns when justified
+    - gochecknoinits # Allow init functions when necessary
+    - gochecknoglobals # Allow global variables when justified
+    - gocyclo # Redundant with cyclop
+    - godox # Allow TODO comments
+    - noctx # Allow context-less functions when appropriate
+    - testpackage # Allow test packages
+    - wsl # Allow single-line statements when appropriate
+    # Temporarily disabled linters
+    - cyclop # Cyclomatic complexity
+    - funlen # Function length
+    - errcheck # Unchecked errors
+    - gosec # Security issues
+    - dupl # Duplicate code
+    - err113 # Error wrapping
+  settings:
+    dupl:
+      threshold: 200
+    # Safety: Control flow and limits
+    cyclop:
+      max-complexity: 11 # Keep functions simple and explicit
+      package-average: 7.0
+
+    # Safety: Function length limits (Tiger Style: under 70 lines)
+    funlen:
+      lines: 70
+      statements: 50
+
+    # Safety: Error handling
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+      exclude-functions:
+        - "Close"
+
+    govet:
+      enable-all: true
+      disable:
+        - shadow
+        - fieldalignment
+        - composites
+
+
+    # Safety: Explicit types and sizes
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+      disabled-checks:
+        - "regexpMust"
+        - "stringXbytes"
+        - "dupImport" # Allow if needed for clarity
+        - "importShadow"
+        - "ifElseChain" # Allow explicit if-else chains
+        - "unnecessaryDefer" # Allow if it improves error handling
+        - "wrapperFunc" # Allow wrapper functions for clarity
+        - "octalLiteral" #this is just vague preference for one octal style
+        - "whyNoLint"
+        - "hugeParam" #premature optimization, would require pointers spattered everywhere
+        - "rangeValCopy" #same see above
+        - "emptyStringTest" #lem(stringVar) or strings.Trim(stringVar) is basically same
+        - "unnamedResult"
+        - "commentFormatting"
+
+    # Performance: Resource optimization
+    gosec:
+      excludes:
+        - G404 # Allow crypto/rand for non-crypto purposes
+        - G601 # Allow implicit memory aliasing in loops
+        - G115 #
+        - G101
+        - G109 #int16/32 conversions, some packages require diff int types, have to allow thi
+        - G402 #we need to allow insecure client connections/configs for local
+
+      severity: medium
+
+    # Developer Experience: Naming and style
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - disableStutteringCheck
+        - name: package-comments
+          disabled: true # Allow package comments to be optional
+        - name: var-naming
+          arguments:
+            - idNamingConvention
+            - "ID"
+        - name: function-result-limit
+          arguments:
+            - maxRes: 3
+        - name: function-length
+          arguments:
+            - maxStmt: 50
+            - maxLines: 70
+
+    # Developer Experience: Code organization
+    gocognit:
+      min-complexity: 10
+
+
+    # Developer Experience: Line length limits
+    lll:
+      line-length: 300 # Tiger Style: reasonable line length
+
+    # Safety: Avoid off-by-one errors
+    staticcheck:
+      # go version is now set globally in run.go
+      checks:
+        - "all"
+        - "-SA9009"
+        - "-ST1000"
+        - "-ST1003" #allow all CAPS names where applicable e.g log prefixes
+        - "-ST1020" # Swaggo annotations comments compatibility
+        - "-ST1021" # Swaggo annotation comments compatibility
+        - "-ST1016"
+        - "-ST1022"
+        - "-QF1008"
+      initialisms:
+        - ACL
+        - API
+        - ASCII
+        - CPU
+        - CSS
+        - DNS
+        - EOF
+        - GUID
+        - HTML
+        - HTTP
+        - HTTPS
+        - ID
+        - IP
+        - JSON
+        - QPS
+        - RAM
+        - RPC
+        - SLA
+        - SMTP
+        - SQL
+        - SSH
+        - TCP
+        - TLS
+        - TTL
+        - UDP
+        - UI
+        - UID
+        - UUID
+        - URI
+        - URL
+        - UTF8
+        - VM
+        - XML
+        - XMPP
+        - XSRF
+        - XSS
+
+  exclusions:
+    rules:
+      - path: internal/workers
+        linters:
+          - dupl # currently its allow-able for workers to perform similar repetitive tasks
+      - path: docs/
+        linters:
+          - all
+      - path: ".*_test.go"
+        linters:
+          - funlen
+          - gocognit
+          - cyclop
+          - dupl
+          - errcheck
+          - whitespace
+          - thelper
+          - unused
+          - lll
+          - err113
+          - gocritic
+          - unused
+      - path: cmd/
+        linters:
+          - funlen # Allow longer functions in main commands
+          - errcheck #Allow uncheked e.g db.CLose
+
+      - path: migrations/
+        linters:
+          - funlen
+          - gocognit
+
+      - path: testdata/
+        linters:
+          - all
+
+      - path: mocks/
+        linters:
+          - all
+          - cyclop
+      - path: ".*/pkg/.*"
+        linters:
+          - unused #certain functions in e.g clients may not be used
+          - unparam
+      - path: ".*/middleware/.*"
+        linters:
+          - unused #certain middleware may not be used
+
+      # Allow specific patterns for generated code
+      - text: "generated"
+        linters:
+          - all
+
+formatters:
+  enable:
+    - gci # checks if the code and import statements are formatted according to the 'goimports' command
+    - gofmt # checks if the code is formatted according to 'gofmt' command
+  settings:
+    # Developer Experience: Consistency
+    gofmt:
+      simplify: true
+    gci:
+      sections:
+        - standard # Standard section: captures all standard packages.
+        - default # Default section: contains all imports that could not be matched to another section type.
+        - blank # Blank section: contains all blank imports. This section is not present unless explicitly enabled.
+        - dot # Dot section: contains all dot imports. This section is not present unless explicitly enabled.
+        - alias # Alias section: contains all alias imports. This section is not present unless explicitly enabled.
+        - localmodule
+
+  exclusions:
+    paths:
+      - ".*_test.go"
+issues:
+  # Treat all warnings as errors (Tiger Style principle)
+  fix: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

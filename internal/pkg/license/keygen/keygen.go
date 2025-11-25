@@ -10,14 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/keygen-sh/keygen-go/v3"
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-
-	"github.com/google/uuid"
-	"github.com/keygen-sh/keygen-go/v3"
 )
 
 type Licenser struct {

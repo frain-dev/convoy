@@ -8,11 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/keygen-sh/keygen-go/v3"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/stretchr/testify/require"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func TestKeygenLicenserBoolMethods(t *testing.T) {

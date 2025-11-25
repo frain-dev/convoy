@@ -7,8 +7,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/frain-dev/convoy"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy"
 )
 
 func Test_EnvironmentTakesPrecedence(t *testing.T) {

@@ -10,15 +10,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
-	"gopkg.in/guregu/null.v4"
 )
 
 type eventDeliveryRepo struct {
@@ -35,12 +35,21 @@ var (
 
 const (
 	createEventDelivery = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at,delivery_mode)
+    INSERT INTO convoy.event_deliveries (
+        id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
+        metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
+    )
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16);
     `
 	createEventDeliveries = `
-    INSERT INTO convoy.event_deliveries (id,project_id,event_id,endpoint_id,device_id,subscription_id,headers,status,metadata,cli_metadata,description,url_query_params,idempotency_key,event_type,acknowledged_at,delivery_mode)
-    VALUES (:id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :status, :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at, :delivery_mode);
+    INSERT INTO convoy.event_deliveries (
+        id, project_id, event_id, endpoint_id, device_id, subscription_id, headers, status,
+        metadata, cli_metadata, description, url_query_params, idempotency_key, event_type, acknowledged_at, delivery_mode
+    )
+    VALUES (
+        :id, :project_id, :event_id, :endpoint_id, :device_id, :subscription_id, :headers, :status,
+        :metadata, :cli_metadata, :description, :url_query_params, :idempotency_key, :event_type, :acknowledged_at, :delivery_mode
+    );
     `
 
 	baseFetchEventDelivery = `
@@ -365,7 +374,7 @@ func (e *eventDeliveryRepo) CreateEventDeliveries(ctx context.Context, deliverie
 	return tx.Commit()
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventDeliveryByID, id, projectID).StructScan(eventDelivery)
 	if err != nil {
@@ -378,7 +387,7 @@ func (e *eventDeliveryRepo) FindEventDeliveryByID(ctx context.Context, projectID
 	return eventDelivery, nil
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveryByIDSlim(ctx context.Context, projectID string, id string) (*datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveryByIDSlim(ctx context.Context, projectID, id string) (*datastore.EventDelivery, error) {
 	eventDelivery := &datastore.EventDelivery{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventDeliverySlim, projectID, id).StructScan(eventDelivery)
 	if err != nil {
@@ -421,7 +430,7 @@ func (e *eventDeliveryRepo) FindEventDeliveriesByIDs(ctx context.Context, projec
 	return eventDeliveries, nil
 }
 
-func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID string, eventID string) ([]datastore.EventDelivery, error) {
+func (e *eventDeliveryRepo) FindEventDeliveriesByEventID(ctx context.Context, projectID, eventID string) ([]datastore.EventDelivery, error) {
 	eventDeliveries := make([]datastore.EventDelivery, 0)
 
 	q := fetchEventDeliveries + " WHERE event_id = $1 AND project_id = $2 AND deleted_at IS NULL"
@@ -574,7 +583,8 @@ func (e *eventDeliveryRepo) UpdateEventDeliveryMetadata(ctx context.Context, pro
 	return nil
 }
 
-func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
+func (e *eventDeliveryRepo) CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string,
+	status []datastore.EventDeliveryStatus, params datastore.SearchParams) (int64, error) {
 	eventCount := struct {
 		Count int64
 	}{}
@@ -644,24 +654,29 @@ func (e *eventDeliveryRepo) DeleteProjectEventDeliveries(ctx context.Context, pr
 	return nil
 }
 
-func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable, idempotencyKey, eventType string) ([]datastore.EventDelivery, datastore.PaginationData, error) {
+func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(
+	ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string,
+	status []datastore.EventDeliveryStatus, params datastore.SearchParams, pageable datastore.Pageable,
+	idempotencyKey, eventType, brokerMessageId string,
+) ([]datastore.EventDelivery, datastore.PaginationData, error) {
 	eventDeliveriesP := make([]EventDeliveryPaginated, 0)
 
 	start := time.Unix(params.CreatedAtStart, 0)
 	end := time.Unix(params.CreatedAtEnd, 0)
 
 	arg := map[string]interface{}{
-		"endpoint_ids":    endpointIDs,
-		"project_id":      projectID,
-		"limit":           pageable.Limit(),
-		"subscription_id": subscriptionID,
-		"start_date":      start,
-		"event_id":        eventID,
-		"event_type":      eventType,
-		"end_date":        end,
-		"status":          status,
-		"cursor":          pageable.Cursor(),
-		"idempotency_key": idempotencyKey,
+		"endpoint_ids":      endpointIDs,
+		"project_id":        projectID,
+		"limit":             pageable.Limit(),
+		"subscription_id":   subscriptionID,
+		"start_date":        start,
+		"event_id":          eventID,
+		"event_type":        eventType,
+		"end_date":          end,
+		"status":            status,
+		"cursor":            pageable.Cursor(),
+		"idempotency_key":   idempotencyKey,
+		"broker_message_id": brokerMessageId,
 	}
 
 	var query, filterQuery string
@@ -682,6 +697,10 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 
 	if !util.IsStringEmpty(subscriptionID) {
 		filterQuery += ` AND ed.subscription_id = :subscription_id`
+	}
+
+	if !util.IsStringEmpty(brokerMessageId) {
+		filterQuery += ` AND headers -> 'x-broker-message-id' ->> 0 = :broker_message_id`
 	}
 
 	preOrder := pageable.SortOrder()

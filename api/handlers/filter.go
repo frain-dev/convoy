@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frain-dev/convoy/database/postgres"
-
-	"github.com/frain-dev/convoy/api/models"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/util"
 )
 
 // CreateFilter
@@ -220,7 +220,7 @@ func (h *Handler) GetFilters(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var eventTypeFilters []datastore.EventTypeFilter
+	eventTypeFilters := make([]datastore.EventTypeFilter, 0, len(filters))
 	for _, filter := range filters {
 		eventTypeFilters = append(eventTypeFilters, datastore.EventTypeFilter{
 			UID:            filter.UID,

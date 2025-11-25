@@ -28,7 +28,7 @@ func (r *ExponentialBackoffRetryStrategy) NextDuration(attempts uint64) time.Dur
 	return d
 }
 
-func NewExponential(intervalSeconds uint64, maxRetrySeconds uint64) *ExponentialBackoffRetryStrategy {
+func NewExponential(intervalSeconds, maxRetrySeconds uint64) *ExponentialBackoffRetryStrategy {
 	if maxRetrySeconds == 0 {
 		maxRetrySeconds = 7200
 	}

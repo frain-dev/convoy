@@ -55,11 +55,11 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if err = config.Override(cliConfig); err != nil {
+			if err := config.Override(cliConfig); err != nil {
 				return err
 			}
 
-			err = startConvoyServer(a)
+			err = StartConvoyServer(a)
 
 			if err != nil {
 				a.Logger.Errorf("Error starting convoy server: %v", err)
@@ -91,7 +91,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func startConvoyServer(a *cli.App) error {
+func StartConvoyServer(a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
@@ -109,7 +109,7 @@ func startConvoyServer(a *cli.App) error {
 			km.Unset()
 		}
 	}
-	if err = keys.Set(km); err != nil {
+	if err := keys.Set(km); err != nil {
 		return err
 	}
 
@@ -122,6 +122,7 @@ func startConvoyServer(a *cli.App) error {
 	}
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
+	featureFlagFetcher := postgres.NewFeatureFlagFetcher(a.DB)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
@@ -140,15 +141,16 @@ func startConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:    flag,
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Logger:   lo,
-			Redis:    a.Redis,
-			Cache:    a.Cache,
-			Rate:     a.Rate,
-			Licenser: a.Licenser,
-			Cfg:      cfg,
+			FFlag:              flag,
+			FeatureFlagFetcher: featureFlagFetcher,
+			DB:                 a.DB,
+			Queue:              a.Queue,
+			Logger:             lo,
+			Redis:              a.Redis,
+			Cache:              a.Cache,
+			Rate:               a.Rate,
+			Licenser:           a.Licenser,
+			Cfg:                cfg,
 		})
 	if err != nil {
 		return err
@@ -276,7 +278,7 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		return nil, err
 	}
 
-	var readReplicas []config.DatabaseConfiguration
+	readReplicas := make([]config.DatabaseConfiguration, 0, len(replicaDSNs))
 	for _, replicaStr := range replicaDSNs {
 		var replica config.DatabaseConfiguration
 		if len(replicaStr) == 0 || !strings.Contains(replicaStr, "://") {

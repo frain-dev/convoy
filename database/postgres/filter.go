@@ -7,14 +7,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/compare"
 	"github.com/frain-dev/convoy/pkg/flatten"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 const (

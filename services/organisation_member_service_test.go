@@ -7,13 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/mocks"
-	"github.com/frain-dev/convoy/util"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/util"
 )
 
 func provideOrganisationMemberService(ctrl *gomock.Controller) *OrganisationMemberService {

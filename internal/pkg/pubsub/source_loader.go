@@ -3,9 +3,8 @@ package pubsub
 import (
 	"context"
 
-	"github.com/frain-dev/convoy/internal/pkg/memorystore"
-
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -41,7 +40,7 @@ func (s *SourceLoader) SyncChanges(ctx context.Context, table *memorystore.Table
 		return err
 	}
 
-	var dSourceKeys []memorystore.Key
+	dSourceKeys := make([]memorystore.Key, 0, len(sources))
 	for _, source := range sources {
 		dSourceKeys = append(dSourceKeys, generateSourceKey(&source))
 	}

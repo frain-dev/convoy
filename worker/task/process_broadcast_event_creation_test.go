@@ -5,19 +5,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/mocks"
-
-	"github.com/frain-dev/convoy/api/models"
-
-	"github.com/frain-dev/convoy"
+	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
 )
 
 func TestProcessBroadcastEventCreation(t *testing.T) {
@@ -32,6 +29,7 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 		{
 			name: "should_create_broadcast_event",
 			dynamicEvent: &models.BroadcastEvent{
+				JobID:          "123:1234567890",
 				EventType:      "some.*",
 				ProjectID:      "project-id-1",
 				Data:           []byte(`{"name":"daniel"}`),
@@ -90,7 +88,18 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
-			fn := ProcessBroadcastEventCreation(NewBroadcastEventChannel(args.subTable), args.endpointRepo, args.eventRepo, args.projectRepo, args.eventQueue, args.subRepo, args.filterRepo, args.licenser, args.tracer, args.oauth2TokenService)
+			deps := EventProcessorDeps{
+				EndpointRepo:      args.endpointRepo,
+				EventRepo:         args.eventRepo,
+				ProjectRepo:       args.projectRepo,
+				EventQueue:        args.eventQueue,
+				SubRepo:           args.subRepo,
+				FilterRepo:        args.filterRepo,
+				Licenser:          args.licenser,
+				TracerBackend:     args.tracer,
+				OAuth2TokenService: args.oauth2TokenService,
+			}
+			fn := ProcessBroadcastEventCreation(NewBroadcastEventChannel(args.subTable), deps)
 			err = fn(context.Background(), task)
 			if tt.wantErr {
 				require.NotNil(t, err)

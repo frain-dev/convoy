@@ -12,24 +12,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"github.com/frain-dev/convoy/pkg/constants"
-	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/jarcoal/httpmock"
 	"github.com/stealthrocket/netjail"
-
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
-	"github.com/frain-dev/convoy/mocks"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/jarcoal/httpmock"
-
 	"github.com/frain-dev/convoy/config"
-
-	"github.com/stretchr/testify/require"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/constants"
+	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var successBody = []byte("received webhook successfully")
@@ -692,7 +688,6 @@ func TestDispatcher_SendFormDataWithSignature(t *testing.T) {
 
 	jsonData := json.RawMessage(`{"name":"test","value":"123"}`)
 	project := &datastore.Project{
-		UID: "12345",
 		Config: &datastore.ProjectConfig{
 			Signature: &datastore.SignatureConfiguration{
 				Header: config.SignatureHeaderProvider("X-Signature"),

@@ -4,8 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/render"
+
+	"github.com/frain-dev/convoy/util"
 )
 
 var ErrProjectDisabled = errors.New("this project has been disabled for write operations until you re-subscribe your convoy instance")

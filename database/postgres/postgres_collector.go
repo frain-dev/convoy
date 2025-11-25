@@ -2,11 +2,13 @@ package postgres
 
 import (
 	"fmt"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/prometheus/client_golang/prometheus"
 	"strings"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 // Namespace used in fully-qualified metrics names.

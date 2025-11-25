@@ -1,9 +1,10 @@
 package circuit_breaker
 
 import (
+	"time"
+
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"time"
 )
 
 // CircuitBreaker represents a circuit breaker
@@ -34,7 +35,7 @@ type CircuitBreaker struct {
 	logger *log.Logger
 }
 
-func NewCircuitBreaker(key string, tenantId string, logger *log.Logger) *CircuitBreaker {
+func NewCircuitBreaker(key, tenantId string, logger *log.Logger) *CircuitBreaker {
 	return &CircuitBreaker{
 		Key:               key,
 		TenantId:          tenantId,

@@ -3,16 +3,17 @@ package services
 import (
 	"bytes"
 	"context"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/guregu/null.v4"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+	"gopkg.in/guregu/null.v4"
+
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
-	"go.uber.org/mock/gomock"
 )
 
 func provideCreateFanoutEventService(ctrl *gomock.Controller, event *models.FanoutEvent, project *datastore.Project) *CreateFanoutEventService {
@@ -137,6 +138,7 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				EventType: datastore.EventType("payment.created"),
 				Raw:       `{"name":"convoy"}`,
 				Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				Endpoints: []string{},
 				ProjectID: "abc",
 			},
 		},
@@ -179,6 +181,7 @@ func TestCreateFanoutEventService_Run(t *testing.T) {
 				EventType: datastore.EventType("payment.created"),
 				Raw:       `{"name":"convoy"}`,
 				Data:      bytes.NewBufferString(`{"name":"convoy"}`).Bytes(),
+				Endpoints: []string{},
 				ProjectID: "abc",
 			},
 		},

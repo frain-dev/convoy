@@ -8,24 +8,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-
 	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/netip"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/stealthrocket/netjail"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -392,16 +389,22 @@ func (d *Dispatcher) createClientWithMTLS(mtlsCert *tls.Certificate) *http.Clien
 }
 
 // SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration
-func (d *Dispatcher) SendWebhookWithMTLS(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) (*Response, error) {
+func (d *Dispatcher) SendWebhookWithMTLS(ctx context.Context, endpoint string, jsonData json.RawMessage,
+	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
+	idempotencyKey string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) (*Response, error) {
 	client := d.createClientWithMTLS(mtlsCert)
 	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, client)
 }
 
-func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string) (*Response, error) {
+func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage,
+	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
+	idempotencyKey string, timeout time.Duration, contentType string) (*Response, error) {
 	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, d.client)
 }
 
-func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration, contentType string, client *http.Client) (*Response, error) {
+func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, jsonData json.RawMessage,
+	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
+	idempotencyKey string, timeout time.Duration, contentType string, client *http.Client) (*Response, error) {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)

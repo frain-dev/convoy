@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	amqp "github.com/rabbitmq/amqp091-go"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
@@ -146,6 +148,11 @@ func (k *Amqp) consume() {
 	mm.IncrementIngestTotal(k.source.UID, k.source.ProjectID)
 
 	for d := range messages {
+		if d.Headers == nil {
+			d.Headers = amqp.Table{}
+		}
+		d.Headers[common.BrokerMessageHeader] = d.MessageId
+
 		headers, err := msgpack.EncodeMsgPack(d.Headers)
 		if err != nil {
 			k.log.WithError(err).Error("failed to marshall message headers")

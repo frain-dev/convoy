@@ -1,9 +1,10 @@
 package api
 
 import (
+	"github.com/subomi/requestmigrations"
+
 	v20240101 "github.com/frain-dev/convoy/api/migrations/v20240101"
 	v20240401 "github.com/frain-dev/convoy/api/migrations/v20240401"
-	"github.com/subomi/requestmigrations"
 )
 
 var migrations = requestmigrations.MigrationStore{

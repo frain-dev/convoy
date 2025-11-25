@@ -2,6 +2,7 @@ package listener
 
 import (
 	"context"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
@@ -17,15 +18,15 @@ func NewEndpointListener(queue queue.Queuer, projectRepo datastore.ProjectReposi
 	return &EndpointListener{mEvent: mEvent}
 }
 
-func (e *EndpointListener) AfterCreate(ctx context.Context, data interface{}, _ interface{}) {
+func (e *EndpointListener) AfterCreate(ctx context.Context, data, _ interface{}) {
 	e.metaEvent(ctx, datastore.EndpointCreated, data)
 }
 
-func (e *EndpointListener) AfterUpdate(ctx context.Context, data interface{}, _ interface{}) {
+func (e *EndpointListener) AfterUpdate(ctx context.Context, data, _ interface{}) {
 	e.metaEvent(ctx, datastore.EndpointUpdated, data)
 }
 
-func (e *EndpointListener) AfterDelete(ctx context.Context, data interface{}, _ interface{}) {
+func (e *EndpointListener) AfterDelete(ctx context.Context, data, _ interface{}) {
 	e.metaEvent(ctx, datastore.EndpointDeleted, data)
 }
 

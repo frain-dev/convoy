@@ -3,9 +3,11 @@ package keys
 import (
 	"context"
 	"fmt"
+
+	"github.com/jmoiron/sqlx"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/jmoiron/sqlx"
 )
 
 func RevertEncryption(lo log.StdLogger, db database.Database, encryptionKey string, timeout int) error {

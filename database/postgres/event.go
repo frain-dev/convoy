@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
+	"github.com/jmoiron/sqlx"
 
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
 )
 
 const (
@@ -159,6 +159,8 @@ const (
 	sourceFilter = ` AND ev.source_id IN (:source_ids) `
 
 	searchFilter = ` AND search_token @@ websearch_to_tsquery('simple',:query) `
+
+	brokerMessageIdFilter = ` AND headers -> 'x-broker-message-id' ->> 0 = :broker_message_id`
 
 	baseCountPrevEvents = `
 	select exists(
@@ -344,7 +346,7 @@ func (e *eventRepo) UpdateEventStatus(ctx context.Context, event *datastore.Even
 }
 
 // FindEventByID to find events in real time - requires the primary db
-func (e *eventRepo) FindEventByID(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindEventByID(ctx context.Context, projectID, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchEventById, id, projectID).StructScan(event)
 	if err != nil {
@@ -385,7 +387,7 @@ func (e *eventRepo) FindEventsByIDs(ctx context.Context, projectID string, ids [
 	return events, nil
 }
 
-func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID string, idempotencyKey string) ([]datastore.Event, error) {
+func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID, idempotencyKey string) ([]datastore.Event, error) {
 	query, args, err := sqlx.In(fetchEventsByIdempotencyKey, idempotencyKey, projectID)
 	if err != nil {
 		return nil, err
@@ -413,7 +415,7 @@ func (e *eventRepo) FindEventsByIdempotencyKey(ctx context.Context, projectID st
 	return events, nil
 }
 
-func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID string, id string) (*datastore.Event, error) {
+func (e *eventRepo) FindFirstEventWithIdempotencyKey(ctx context.Context, projectID, id string) (*datastore.Event, error) {
 	event := &datastore.Event{}
 	err := e.db.GetDB().QueryRowxContext(ctx, fetchFirstEventWithIdempotencyKey, id, projectID).StructScan(event)
 	if err != nil {
@@ -488,16 +490,17 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	}
 
 	arg := map[string]interface{}{
-		"endpoint_ids":    filter.EndpointIDs,
-		"project_id":      projectID,
-		"source_ids":      filter.SourceIDs,
-		"limit":           filter.Pageable.Limit(),
-		"start_date":      startDate,
-		"end_date":        endDate,
-		"owner_id":        filter.OwnerID,
-		"query":           filter.Query,
-		"cursor":          filter.Pageable.Cursor(),
-		"idempotency_key": filter.IdempotencyKey,
+		"endpoint_ids":      filter.EndpointIDs,
+		"project_id":        projectID,
+		"source_ids":        filter.SourceIDs,
+		"limit":             filter.Pageable.Limit(),
+		"start_date":        startDate,
+		"end_date":          endDate,
+		"owner_id":          filter.OwnerID,
+		"query":             filter.Query,
+		"cursor":            filter.Pageable.Cursor(),
+		"idempotency_key":   filter.IdempotencyKey,
+		"broker_message_id": filter.BrokerMessageId,
 	}
 
 	base := baseEventsPaged
@@ -516,6 +519,10 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 
 	if len(filter.EndpointIDs) > 0 {
 		filterQuery += endpointFilter
+	}
+
+	if len(filter.BrokerMessageId) > 0 {
+		filterQuery += brokerMessageIdFilter
 	}
 
 	// if there's no owner_id, we remove the initial CTE
@@ -544,8 +551,6 @@ func (e *eventRepo) LoadEventsPaged(ctx context.Context, projectID string, filte
 	if err != nil {
 		return nil, datastore.PaginationData{}, err
 	}
-
-	// fmt.Printf("%+v\nargs:%+v\n", query, args)
 
 	query = e.db.GetReadDB().Rebind(query)
 	rows, err := e.db.GetReadDB().QueryxContext(ctx, query, args...)

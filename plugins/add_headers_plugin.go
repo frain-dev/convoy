@@ -7,7 +7,6 @@ type AddHeadersPlugin struct {
 }
 
 func (a *AddHeadersPlugin) Apply(w http.ResponseWriter, r *http.Request) error {
-
 	for k, v := range a.config {
 		w.Header().Add(k, v)
 	}

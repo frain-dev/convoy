@@ -27,9 +27,7 @@ const (
 )
 
 func (h *Handler) InitSSO(w http.ResponseWriter, r *http.Request) {
-
 	configuration := h.A.Cfg
-
 	lu := services.LoginUserSSOService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
 		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
@@ -94,7 +92,6 @@ func (h *Handler) redeemSSOToken(w http.ResponseWriter, r *http.Request, intent 
 			_ = render.Render(w, r, util.NewErrorResponse("Registration failed", http.StatusForbidden))
 			return
 		}
-
 	} else {
 		user, token, err = lu.LoginSSOUser(r.Context(), tokenResp)
 		if err != nil {

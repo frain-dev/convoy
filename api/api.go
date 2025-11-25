@@ -9,15 +9,15 @@ import (
 	"path"
 	"strings"
 
-	authz "github.com/Subomi/go-authz"
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
-	chiMiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/subomi/requestmigrations"
 
+	authz "github.com/Subomi/go-authz"
+	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/handlers"
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/api/types"
@@ -26,10 +26,23 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/util"
 )
 
 //go:embed ui/build
 var reactFS embed.FS
+
+const (
+	VersionHeader = "X-Convoy-Version"
+	serverName    = "apiserver"
+)
+
+type ApplicationHandler struct {
+	Router http.Handler
+	rm     *requestmigrations.RequestMigration
+	A      *types.APIOptions
+	cfg    config.Configuration
+}
 
 func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
 	p := req.URL.Path
@@ -61,13 +74,13 @@ func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.
 
 	req.URL.Path = "/"
 	if a.cfg.RootPath != "" {
-		a.serveIndexWithRootPath(rw, req, static)
+		a.serveIndexWithRootPath(rw)
 	} else {
 		http.FileServer(http.FS(static)).ServeHTTP(rw, req)
 	}
 }
 
-func (a *ApplicationHandler) serveIndexWithRootPath(rw http.ResponseWriter, req *http.Request, static fs.FS) {
+func (a *ApplicationHandler) serveIndexWithRootPath(rw http.ResponseWriter) {
 	const indexFileName = "index.html"
 	indexPath := path.Join("ui/build", indexFileName)
 	indexFile, err := reactFS.Open(indexPath)
@@ -147,18 +160,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		http.Error(rw, "Failed to write response", http.StatusInternalServerError)
 		return
 	}
-}
-
-const (
-	VersionHeader = "X-Convoy-Version"
-	serverName    = "apiserver"
-)
-
-type ApplicationHandler struct {
-	Router http.Handler
-	rm     *requestmigrations.RequestMigration
-	A      *types.APIOptions
-	cfg    config.Configuration
 }
 
 func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
@@ -452,6 +453,8 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				orgSubRouter.Get("/", handler.GetOrganisation)
 				orgSubRouter.Put("/", handler.UpdateOrganisation)
 				orgSubRouter.Delete("/", handler.DeleteOrganisation)
+				orgSubRouter.Put("/feature-flags", handler.UpdateOrganisationFeatureFlags)
+				orgSubRouter.Get("/early-adopter-features", handler.GetEarlyAdopterFeatures)
 
 				orgSubRouter.Route("/invites", func(orgInvitesRouter chi.Router) {
 					orgInvitesRouter.Post("/", handler.InviteUserToOrganisation)
@@ -706,6 +709,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 	if a.A.Licenser.CanExportPrometheusMetrics() {
 		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+	} else {
+		router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Prometheus metrics export is not enabled", http.StatusNotFound)
+		})
 	}
 
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -734,6 +741,10 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *handlers.Handler) {
 	if a.A.Licenser.CanExportPrometheusMetrics() {
 		router.HandleFunc("/metrics", promhttp.HandlerFor(metrics.Reg(), promhttp.HandlerOpts{Registry: metrics.Reg()}).ServeHTTP)
+	} else {
+		router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "Prometheus metrics export is not enabled", http.StatusNotFound)
+		})
 	}
 
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {

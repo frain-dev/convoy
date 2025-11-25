@@ -1,8 +1,9 @@
 package circuit_breaker
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestCircuitBreakerConfig_Validate(t *testing.T) {

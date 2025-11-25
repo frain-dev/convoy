@@ -3,12 +3,13 @@ package transform
 import (
 	"errors"
 	"fmt"
-	"github.com/dop251/goja"
-	"github.com/dop251/goja_nodejs/console"
-	"github.com/dop251/goja_nodejs/require"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/dop251/goja"
+	"github.com/dop251/goja_nodejs/console"
+	"github.com/dop251/goja_nodejs/require"
 )
 
 var ErrFunctionNotFound = errors.New("the transform function is not found, please define it or rename the existing function")

@@ -2,11 +2,13 @@ package utils
 
 import (
 	"fmt"
+
+	"github.com/spf13/cobra"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/spf13/cobra"
 )
 
 func AddPartitionCommand(a *cli.App) *cobra.Command {
@@ -27,11 +29,11 @@ func AddPartitionCommand(a *cli.App) *cobra.Command {
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 			if !featureFlag.CanAccessFeature(fflag.RetentionPolicy) {
-				return fmt.Errorf("partitioning is only avaliable when the retention policy fflag is enabled")
+				return fmt.Errorf("partitioning is only available when the retention policy fflag is enabled")
 			}
 
 			if !a.Licenser.RetentionPolicy() {
-				return fmt.Errorf("partitioning is only avaliable with a license key")
+				return fmt.Errorf("partitioning is only available with a license key")
 			}
 
 			eventsRepo := postgres.NewEventRepo(a.DB)
@@ -111,11 +113,11 @@ func AddUnPartitionCommand(a *cli.App) *cobra.Command {
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 			if !featureFlag.CanAccessFeature(fflag.RetentionPolicy) {
-				return fmt.Errorf("partitioning is only avaliable when the retention policy fflag is enabled")
+				return fmt.Errorf("partitioning is only available when the retention policy fflag is enabled")
 			}
 
 			if !a.Licenser.RetentionPolicy() {
-				return fmt.Errorf("partitioning is only avaliable with a license key")
+				return fmt.Errorf("partitioning is only available with a license key")
 			}
 
 			eventsRepo := postgres.NewEventRepo(a.DB)

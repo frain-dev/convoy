@@ -3,15 +3,15 @@ package circuit_breaker
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/clock"
 	"github.com/redis/go-redis/v9"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func getRedis(t *testing.T) (client redis.UniversalClient, err error) {
@@ -1121,7 +1121,6 @@ func TestCircuitBreakerManager_ProjectSpecificConfig(t *testing.T) {
 	t.Run("Circuit Breaker Creation Uses Project Config", func(t *testing.T) {
 		// Create a circuit breaker for custom project
 		breaker := &CircuitBreaker{
-			Key:      "test-breaker",
 			TenantId: "custom-project",
 		}
 

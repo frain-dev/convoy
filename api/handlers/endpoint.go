@@ -87,14 +87,16 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.CreateEndpointService{
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:    postgres.NewProjectRepo(h.A.DB),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
-		Licenser:       h.A.Licenser,
-		E:              e,
-		ProjectID:      project.UID,
-		FeatureFlag:    h.A.FFlag,
-		Logger:         h.A.Logger,
+		EndpointRepo:       postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:        postgres.NewProjectRepo(h.A.DB),
+		PortalLinkRepo:     postgres.NewPortalLinkRepo(h.A.DB),
+		Licenser:           h.A.Licenser,
+		E:                  e,
+		ProjectID:          project.UID,
+		FeatureFlag:        h.A.FFlag,
+		FeatureFlagFetcher: h.A.FeatureFlagFetcher,
+		DB:                 h.A.DB,
+		Logger:             h.A.Logger,
 	}
 
 	endpoint, err := ce.Run(r.Context())
@@ -227,7 +229,9 @@ func (h *Handler) GetEndpoints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.A.FFlag.CanAccessFeature(fflag.CircuitBreaker) && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
+	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(
+		r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, project.OrganisationID)
+	if circuitBreakerEnabled && h.A.Licenser.CircuitBreaking() && len(endpoints) > 0 {
 		// fetch keys from redis and mutate endpoints slice
 		keys := make([]string, len(endpoints))
 		for i := 0; i < len(endpoints); i++ {
@@ -335,15 +339,17 @@ func (h *Handler) UpdateEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ce := services.UpdateEndpointService{
-		Cache:        h.A.Cache,
-		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
-		ProjectRepo:  postgres.NewProjectRepo(h.A.DB),
-		Licenser:     h.A.Licenser,
-		FeatureFlag:  h.A.FFlag,
-		Logger:       h.A.Logger,
-		E:            e,
-		Endpoint:     endpoint,
-		Project:      project,
+		Cache:              h.A.Cache,
+		EndpointRepo:       postgres.NewEndpointRepo(h.A.DB),
+		ProjectRepo:        postgres.NewProjectRepo(h.A.DB),
+		Licenser:           h.A.Licenser,
+		FeatureFlag:        h.A.FFlag,
+		FeatureFlagFetcher: h.A.FeatureFlagFetcher,
+		DB:                 h.A.DB,
+		Logger:             h.A.Logger,
+		E:                  e,
+		Endpoint:           endpoint,
+		Project:            project,
 	}
 
 	endpoint, err = ce.Run(r.Context())
@@ -531,14 +537,16 @@ func (h *Handler) PauseEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/endpoints/{endpointID}/activate [post]
 func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
-	if !h.A.Licenser.CircuitBreaking() || !h.A.FFlag.CanAccessFeature(fflag.CircuitBreaker) {
-		_ = render.Render(w, r, util.NewErrorResponse("feature not enabled", http.StatusBadRequest))
+	project, err := h.retrieveProject(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	project, err := h.retrieveProject(r)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusBadRequest))
+	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(
+		r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, project.OrganisationID)
+	if !h.A.Licenser.CircuitBreaking() || !circuitBreakerEnabled {
+		_ = render.Render(w, r, util.NewErrorResponse("feature not enabled", http.StatusBadRequest))
 		return
 	}
 

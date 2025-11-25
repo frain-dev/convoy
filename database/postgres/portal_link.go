@@ -11,17 +11,16 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
+	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
-
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/xdg-go/pbkdf2"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/jmoiron/sqlx"
 )
 
 var (
@@ -84,7 +83,11 @@ const (
 	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+		CASE WHEN e.id IS NOT NULL THEN
+			cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+		END
+	)) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -110,7 +113,11 @@ const (
 	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+		CASE WHEN e.id IS NOT NULL THEN
+			cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+		END
+	)) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -136,7 +143,11 @@ const (
 	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+		CASE WHEN e.id IS NOT NULL THEN
+			cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+		END
+	)) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -186,7 +197,11 @@ const (
 	END AS endpoint_count,
 	p.created_at,
 	p.updated_at,
-	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
+	ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+		CASE WHEN e.id IS NOT NULL THEN
+			cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+		END
+	)) AS endpoints_metadata
 	FROM convoy.portal_links p
 	LEFT JOIN convoy.portal_links_endpoints pe
 		ON p.id = pe.portal_link_id
@@ -210,7 +225,11 @@ const (
 		END AS endpoint_count,
 		p.created_at,
 		p.updated_at,
-		ARRAY_TO_JSON(ARRAY_AGG(DISTINCT CASE WHEN e.id IS NOT NULL THEN cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb) END)) AS endpoints_metadata
+		ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
+			CASE WHEN e.id IS NOT NULL THEN
+				cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+			END
+		)) AS endpoints_metadata
 		FROM convoy.portal_links p
 		LEFT JOIN convoy.portal_links_endpoints pe
 			ON p.id = pe.portal_link_id
@@ -370,7 +389,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 	return tx.Commit()
 }
 
-func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
+func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID, portalLinkId string) (*datastore.PortalLink, error) {
 	portalLink := datastore.PortalLink{}
 	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(&portalLink)
 	if err != nil {
@@ -416,7 +435,7 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID strin
 	return &portalLink, nil
 }
 
-func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID string, ownerID string) (*datastore.PortalLink, error) {
+func (p *portalLinkRepo) FindPortalLinkByOwnerID(ctx context.Context, projectID, ownerID string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{}
 	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkByOwnerID, ownerID, projectID).StructScan(portalLink)
 	if err != nil {
@@ -580,13 +599,14 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 
 			for i := range portalLinks {
 				for j := range authTokens {
-					if portalLinks[i].UID == authTokens[j].PortalLinkID {
-						portalLinks[i].AuthKey = authTokens[j].AuthKey
-						portalLinks[i].TokenMaskId = authTokens[j].MaskId
-						portalLinks[i].TokenHash = authTokens[j].Hash
-						portalLinks[i].TokenSalt = authTokens[j].Salt
-						portalLinks[i].TokenExpiresAt = authTokens[j].ExpiresAt
+					if portalLinks[i].UID != authTokens[j].PortalLinkID {
+						continue
 					}
+					portalLinks[i].AuthKey = authTokens[j].AuthKey
+					portalLinks[i].TokenMaskId = authTokens[j].MaskId
+					portalLinks[i].TokenHash = authTokens[j].Hash
+					portalLinks[i].TokenSalt = authTokens[j].Salt
+					portalLinks[i].TokenExpiresAt = authTokens[j].ExpiresAt
 				}
 			}
 		}
@@ -595,7 +615,7 @@ func (p *portalLinkRepo) LoadPortalLinksPaged(ctx context.Context, projectID str
 	return portalLinks, *pagination, nil
 }
 
-func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, projectID string, id string) error {
+func (p *portalLinkRepo) RevokePortalLink(ctx context.Context, projectID, id string) error {
 	r, err := p.db.GetDB().ExecContext(ctx, deletePortalLink, id, projectID)
 	if err != nil {
 		return err
@@ -639,7 +659,7 @@ func (p *portalLinkRepo) FindPortalLinkByMaskId(ctx context.Context, maskId stri
 	return portalLink, nil
 }
 
-func (p *portalLinkRepo) RefreshPortalLinkAuthToken(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
+func (p *portalLinkRepo) RefreshPortalLinkAuthToken(ctx context.Context, projectID, portalLinkId string) (*datastore.PortalLink, error) {
 	portalLink := &datastore.PortalLink{}
 	err := p.db.GetDB().QueryRowxContext(ctx, fetchPortalLinkById, portalLinkId, projectID).StructScan(portalLink)
 	if err != nil {

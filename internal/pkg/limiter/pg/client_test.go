@@ -2,12 +2,14 @@ package pg
 
 import (
 	"context"
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 func getConfig() config.Configuration {

@@ -6,14 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/mocks"
+	"github.com/hibiken/asynq"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"github.com/hibiken/asynq"
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func TestExpireSecret(t *testing.T) {

@@ -9,37 +9,36 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
-
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-
-	"github.com/frain-dev/convoy/util"
-	pyro "github.com/grafana/pyroscope-go"
-
-	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
-
-	dbhook "github.com/frain-dev/convoy/database/hooks"
-	"github.com/frain-dev/convoy/database/listener"
-	"github.com/frain-dev/convoy/queue"
+	"github.com/kelseyhightower/envconfig"
 	"github.com/oklog/ulid/v2"
+	"github.com/spf13/cobra"
 	"gopkg.in/guregu/null.v4"
+
+	pyro "github.com/grafana/pyroscope-go"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	dbhook "github.com/frain-dev/convoy/database/hooks"
+	"github.com/frain-dev/convoy/database/listener"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/license/keygen"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
-	"github.com/spf13/cobra"
+	"github.com/frain-dev/convoy/util"
 )
+
+const envPrefix = "convoy"
 
 func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
@@ -48,7 +47,14 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		err = config.LoadConfig(cfgPath)
+		err = config.LoadConfig(cfgPath, func(c *config.Configuration) error {
+			err := envconfig.Process(envPrefix, c)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+
 		if err != nil {
 			return err
 		}
@@ -64,7 +70,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 			return err
 		}
 
-		if err = config.Override(cliConfig); err != nil {
+		if err := config.Override(cliConfig); err != nil {
 			return err
 		}
 
@@ -103,7 +109,13 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		var ca cache.Cache
 		var q queue.Queuer
 
-		redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+		redis, err := rdb.NewClientFromConfig(
+			cfg.Redis.BuildDsn(),
+			cfg.Redis.TLSSkipVerify,
+			cfg.Redis.TLSCACertFile,
+			cfg.Redis.TLSCertFile,
+			cfg.Redis.TLSKeyFile,
+		)
 		if err != nil {
 			return errors.New("failed to connect to redis with err: " + err.Error())
 		}
@@ -216,7 +228,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 		}
 
 		licenseOverrideCfg(&cfg, app.Licenser)
-		if err = config.Override(&cfg); err != nil {
+		if err := config.Override(&cfg); err != nil {
 			return err
 		}
 
@@ -234,7 +246,7 @@ func PreRun(app *cli.App, db *postgres.Postgres) func(cmd *cobra.Command, args [
 				lo.WithError(err).Error("Failed to load configuration")
 			} else {
 				cfg.InstanceId = instCfg.UID
-				if err = config.Override(&cfg); err != nil {
+				if err := config.Override(&cfg); err != nil {
 					return err
 				}
 			}
@@ -675,7 +687,6 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 			DSN:        dsn,
 			SampleRate: sampleRate,
 		}
-
 	}
 
 	c.Metrics = config.MetricsConfiguration{
@@ -694,8 +705,7 @@ func buildCliConfiguration(cmd *cobra.Command) (*config.Configuration, error) {
 				Backend:   config.MetricsBackend(metricsBackend),
 			}
 
-			switch c.Metrics.Backend {
-			case config.PrometheusMetricsProvider:
+			if c.Metrics.Backend == config.PrometheusMetricsProvider {
 				sampleTime, err := cmd.Flags().GetUint64("metrics-prometheus-sample-time")
 				if err != nil {
 					return nil, err
