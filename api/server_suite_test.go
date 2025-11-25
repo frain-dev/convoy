@@ -178,15 +178,16 @@ func buildServer(t *testing.T) *ApplicationHandler {
 
 	ah, err := NewApplicationHandler(
 		&types.APIOptions{
-			DB:       db,
-			Queue:    newQueue,
-			Redis:    tl.Redis,
-			Logger:   tl.Logger,
-			Cache:    noopCache,
-			FFlag:    fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
-			Rate:     limiter,
-			Licenser: noopLicenser.NewLicenser(),
-			Cfg:      cfg,
+			DB:                 db,
+			Queue:              newQueue,
+			Redis:              tl.Redis,
+			Logger:             tl.Logger,
+			Cache:              noopCache,
+			FFlag:              fflag.NewFFlag([]string{string(fflag.Prometheus), string(fflag.FullTextSearch)}),
+			FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(db),
+			Rate:               limiter,
+			Licenser:           noopLicenser.NewLicenser(),
+			Cfg:                cfg,
 		})
 	require.NoError(t, err)
 
