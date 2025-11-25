@@ -9,11 +9,11 @@ import (
 	"net/url"
 	"time"
 
-	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -27,7 +27,7 @@ import (
 
 // createOAuth2TokenGetter creates an OAuth2TokenGetter for ping validation.
 // It uses a noop cache since this is a one-time validation.
-func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL string, existingEndpointID string, logger log.StdLogger) net.OAuth2TokenGetter {
+func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL, existingEndpointID string, logger log.StdLogger) net.OAuth2TokenGetter {
 	if auth == nil || auth.Type != datastore.OAuth2Authentication || auth.OAuth2 == nil {
 		return nil
 	}
@@ -36,7 +36,7 @@ func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL st
 }
 
 // createOAuth2TokenGetterFromDatastore creates an OAuth2TokenGetter from a datastore OAuth2 config.
-func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL string, existingEndpointID string, logger log.StdLogger) net.OAuth2TokenGetter {
+func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL, existingEndpointID string, logger log.StdLogger) net.OAuth2TokenGetter {
 	if oauth2 == nil {
 		return nil
 	}
@@ -165,6 +165,14 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 	if auth != nil && auth.Type == datastore.OAuth2Authentication {
 		if !a.Licenser.OAuth2EndpointAuth() {
 			return nil, &ServiceError{ErrMsg: ErrOAuth2FeatureUnavailable}
+		}
+
+		// Check feature flag for OAuth2 using project's organisation ID
+		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, project.OrganisationID)
+		if !oauth2Enabled {
+			log.FromContext(ctx).Warn("OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
+			// Remove OAuth2 authentication if feature flag is disabled
+			auth = nil
 		}
 	}
 

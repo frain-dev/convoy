@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -142,6 +143,8 @@ type MatchSubscriptionsDeps struct {
 	Licenser           license.Licenser
 	TracerBackend      tracer.Backend
 	OAuth2TokenService OAuth2TokenService
+	FeatureFlag        *fflag.FFlag
+	FeatureFlagFetcher fflag.FeatureFlagFetcher
 }
 
 func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) func(context.Context, *asynq.Task) error {
@@ -222,7 +225,19 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		}
 
 		// no need for a separate queue
-		err = writeEventDeliveriesToQueue(ctx, subResponse.Subscriptions, subResponse.Event, subResponse.Project, deps.EventDeliveryRepo, deps.EventQueue, deps.DeviceRepo, deps.EndpointRepo, deps.Licenser, deps.OAuth2TokenService)
+		err = writeEventDeliveriesToQueue(ctx, WriteEventDeliveriesToQueueOptions{
+			Subscriptions:      subResponse.Subscriptions,
+			Event:              subResponse.Event,
+			Project:            subResponse.Project,
+			EventDeliveryRepo:  deps.EventDeliveryRepo,
+			EventQueue:         deps.EventQueue,
+			DeviceRepo:         deps.DeviceRepo,
+			EndpointRepo:       deps.EndpointRepo,
+			Licenser:           deps.Licenser,
+			OAuth2TokenService: deps.OAuth2TokenService,
+			FeatureFlag:        deps.FeatureFlag,
+			FeatureFlagFetcher: deps.FeatureFlagFetcher,
+		})
 		if err != nil {
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
 			writeErr := fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error())

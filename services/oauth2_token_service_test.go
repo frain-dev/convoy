@@ -27,7 +27,7 @@ func provideOAuth2TokenService() (*OAuth2TokenService, cache.Cache) {
 	return NewOAuth2TokenService(memCache, logger), memCache
 }
 
-func generateTestECDSAPrivateKey(t *testing.T) (*ecdsa.PrivateKey, *datastore.OAuth2SigningKey) {
+func generateTestECDSAPrivateKey(t *testing.T) *datastore.OAuth2SigningKey {
 	t.Helper()
 
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -56,7 +56,7 @@ func generateTestECDSAPrivateKey(t *testing.T) (*ecdsa.PrivateKey, *datastore.OA
 		Kid: "test-key-id",
 	}
 
-	return privateKey, signingKey
+	return signingKey
 }
 
 func TestOAuth2TokenService_GetAccessToken_SharedSecret(t *testing.T) {
@@ -125,7 +125,7 @@ func TestOAuth2TokenService_GetAccessToken_ClientAssertion(t *testing.T) {
 	ctx := context.Background()
 	service, cache := provideOAuth2TokenService()
 
-	_, signingKey := generateTestECDSAPrivateKey(t)
+	signingKey := generateTestECDSAPrivateKey(t)
 
 	// Create a mock OAuth2 token server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -266,7 +266,7 @@ func TestOAuth2TokenService_GenerateClientAssertion(t *testing.T) {
 	ctx := context.Background()
 	service, _ := provideOAuth2TokenService()
 
-	_, signingKey := generateTestECDSAPrivateKey(t)
+	signingKey := generateTestECDSAPrivateKey(t)
 
 	oauth2 := &datastore.OAuth2{
 		URL:                "https://oauth.example.com/token",
@@ -297,7 +297,7 @@ func TestOAuth2TokenService_GenerateClientAssertion(t *testing.T) {
 func TestOAuth2TokenService_JWKToECDSAPrivateKey(t *testing.T) {
 	service, _ := provideOAuth2TokenService()
 
-	_, signingKey := generateTestECDSAPrivateKey(t)
+	signingKey := generateTestECDSAPrivateKey(t)
 
 	privateKey, err := service.jwkToECDSAPrivateKey(signingKey)
 	require.NoError(t, err)
@@ -414,7 +414,7 @@ func TestOAuth2TokenService_CalculateRefreshTime(t *testing.T) {
 
 // Test helper functions for different curves and algorithms
 
-func generateTestECDSAPrivateKeyForCurve(t *testing.T, curve elliptic.Curve, curveName string) (*ecdsa.PrivateKey, *datastore.OAuth2SigningKey) {
+func generateTestECDSAPrivateKeyForCurve(t *testing.T, curve elliptic.Curve, curveName string) *datastore.OAuth2SigningKey {
 	t.Helper()
 
 	privateKey, err := ecdsa.GenerateKey(curve, rand.Reader)
@@ -446,7 +446,7 @@ func generateTestECDSAPrivateKeyForCurve(t *testing.T, curve elliptic.Curve, cur
 		Kid: "test-key-id-" + curveName,
 	}
 
-	return privateKey, signingKey
+	return signingKey
 }
 
 func generateTestRSAPrivateKey(t *testing.T) (*rsa.PrivateKey, *datastore.OAuth2SigningKey) {
@@ -509,7 +509,7 @@ func TestOAuth2TokenService_ECDSACurves(t *testing.T) {
 
 	for _, tc := range curves {
 		t.Run(tc.name, func(t *testing.T) {
-			_, signingKey := generateTestECDSAPrivateKeyForCurve(t, tc.curve, tc.curveStr)
+			signingKey := generateTestECDSAPrivateKeyForCurve(t, tc.curve, tc.curveStr)
 
 			// Create a mock OAuth2 token server
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -572,7 +572,7 @@ func TestOAuth2TokenService_ECDSAAlgorithms(t *testing.T) {
 
 	for _, tc := range algorithms {
 		t.Run(tc.name, func(t *testing.T) {
-			_, signingKey := generateTestECDSAPrivateKeyForCurve(t, tc.curve, tc.curveStr)
+			signingKey := generateTestECDSAPrivateKeyForCurve(t, tc.curve, tc.curveStr)
 			// Create a mock OAuth2 token server
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				require.Equal(t, "POST", r.Method)
@@ -676,7 +676,7 @@ func TestOAuth2TokenService_UnsupportedAlgorithm(t *testing.T) {
 	ctx := context.Background()
 	service, _ := provideOAuth2TokenService()
 
-	_, signingKey := generateTestECDSAPrivateKey(t)
+	signingKey := generateTestECDSAPrivateKey(t)
 
 	endpoint := &datastore.Endpoint{
 		UID: "test-endpoint-unsupported",
@@ -744,7 +744,7 @@ func TestOAuth2TokenService_DefaultAlgorithm(t *testing.T) {
 	ctx := context.Background()
 	service, _ := provideOAuth2TokenService()
 
-	_, signingKey := generateTestECDSAPrivateKey(t)
+	signingKey := generateTestECDSAPrivateKey(t)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()

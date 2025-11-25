@@ -199,7 +199,7 @@ func CanAccessFeatureWithOrg(systemFFlag *FFlag, key FeatureFlagKey, data *Featu
 // EarlyAdopterFeatures defines which features are available under Early Adopter program
 var EarlyAdopterFeatures = []FeatureFlagKey{
 	MTLS,
-	// OAuthTokenExchange, // Excluded until feature flag handling is implemented
+	OAuthTokenExchange,
 }
 
 // GetEarlyAdopterFeatures returns the list of features available under Early Adopter

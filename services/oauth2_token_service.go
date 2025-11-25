@@ -17,10 +17,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -142,7 +143,7 @@ func (s *OAuth2TokenService) InvalidateToken(ctx context.Context, endpointID str
 }
 
 // exchangeToken exchanges credentials/assertion for an access token.
-func (s *OAuth2TokenService) exchangeToken(ctx context.Context, oauth2 *datastore.OAuth2, endpointID string) (*OAuth2TokenResponse, error) {
+func (s *OAuth2TokenService) exchangeToken(ctx context.Context, oauth2 *datastore.OAuth2, _ string) (*OAuth2TokenResponse, error) {
 	var reqBody url.Values
 	var err error
 
@@ -267,7 +268,7 @@ func (s *OAuth2TokenService) extractExpiresIn(val interface{}, unit datastore.OA
 	case datastore.ExpiryTimeUnitHours:
 		return int(expiresIn * 3600)
 	case datastore.ExpiryTimeUnitSeconds:
-		fallthrough
+		return int(expiresIn)
 	default:
 		return int(expiresIn)
 	}
@@ -314,7 +315,7 @@ func (s *OAuth2TokenService) buildClientAssertionRequest(ctx context.Context, oa
 }
 
 // generateClientAssertion generates a signed JWT assertion for client assertion authentication.
-func (s *OAuth2TokenService) generateClientAssertion(ctx context.Context, oauth2 *datastore.OAuth2) (string, error) {
+func (s *OAuth2TokenService) generateClientAssertion(_ context.Context, oauth2 *datastore.OAuth2) (string, error) {
 	if oauth2.SigningKey == nil {
 		return "", errors.New("signing_key is required for client assertion")
 	}

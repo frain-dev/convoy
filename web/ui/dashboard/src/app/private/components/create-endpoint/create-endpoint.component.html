@@ -220,9 +220,18 @@
 								</div>
 								<p class="text-10 text-neutral-10">OAuth2 endpoint authentication is a Business plan feature. Please upgrade your license to use this feature.</p>
 							</div>
+							<div *ngIf="licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH') && !oauth2FeatureEnabled" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+								<div class="flex items-center gap-8px mb-6px">
+									<svg width="14" height="14" class="fill-new.primary-400">
+										<use xlink:href="#lock-icon"></use>
+									</svg>
+									<p class="text-10 font-semibold text-neutral-12">OAuth2 Feature Flag Disabled</p>
+								</div>
+								<p class="text-10 text-neutral-10">OAuth2 endpoint authentication feature flag is not enabled for your organization. Please enable it in Early Adopter Features settings.</p>
+							</div>
 						</ng-container>
 
-						<ng-container *ngIf="selectedAuthType === 'oauth2' && licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH')" formGroupName="oauth2">
+						<ng-container *ngIf="selectedAuthType === 'oauth2' && licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH') && oauth2FeatureEnabled" formGroupName="oauth2">
 							<div class="grid grid-cols-1 gap-24px mb-24px">
 								<convoy-input-field>
 									<label for="oauth2_url" convoy-label required="true">

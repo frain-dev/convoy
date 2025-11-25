@@ -62,8 +62,8 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 
 	private hasFeatureLicense(featureKey: string): boolean {
 		const licenseMap: { [key: string]: string } = {
-			'mtls': 'MUTUAL_TLS'
-			// 'oauth-token-exchange': // TODO: Add proper license check for OAuth Token Exchange
+			'mtls': 'MUTUAL_TLS',
+			'oauth-token-exchange': 'OAUTH2_ENDPOINT_AUTH'
 		};
 
 		const license = licenseMap[featureKey];

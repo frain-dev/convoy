@@ -349,15 +349,17 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
 
 	eventProcessorDeps := task.EventProcessorDeps{
-		EndpointRepo:      endpointRepo,
-		EventRepo:         eventRepo,
-		ProjectRepo:       projectRepo,
-		EventQueue:        a.Queue,
-		SubRepo:           subRepo,
-		FilterRepo:        filterRepo,
-		Licenser:          a.Licenser,
-		TracerBackend:     a.TracerBackend,
+		EndpointRepo:       endpointRepo,
+		EventRepo:          eventRepo,
+		ProjectRepo:        projectRepo,
+		EventQueue:         a.Queue,
+		SubRepo:            subRepo,
+		FilterRepo:         filterRepo,
+		Licenser:           a.Licenser,
+		TracerBackend:      a.TracerBackend,
 		OAuth2TokenService: oauth2TokenService,
+		FeatureFlag:        featureFlag,
+		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
 	}
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
@@ -375,17 +377,19 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
 		Channels:           channels,
-		EndpointRepo:      endpointRepo,
-		EventRepo:         eventRepo,
-		ProjectRepo:       projectRepo,
+		EndpointRepo:       endpointRepo,
+		EventRepo:          eventRepo,
+		ProjectRepo:        projectRepo,
 		EventDeliveryRepo:  eventDeliveryRepo,
-		EventQueue:        a.Queue,
-		SubRepo:           subRepo,
-		FilterRepo:        filterRepo,
-		DeviceRepo:        deviceRepo,
-		Licenser:          a.Licenser,
-		TracerBackend:     a.TracerBackend,
+		EventQueue:         a.Queue,
+		SubRepo:            subRepo,
+		FilterRepo:         filterRepo,
+		DeviceRepo:         deviceRepo,
+		Licenser:           a.Licenser,
+		TracerBackend:      a.TracerBackend,
 		OAuth2TokenService: oauth2TokenService,
+		FeatureFlag:        featureFlag,
+		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 

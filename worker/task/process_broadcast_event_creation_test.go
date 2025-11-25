@@ -89,14 +89,14 @@ func TestProcessBroadcastEventCreation(t *testing.T) {
 			task := asynq.NewTask(string(convoy.EventProcessor), job.Payload, asynq.Queue(string(convoy.EventQueue)), asynq.ProcessIn(job.Delay))
 
 			deps := EventProcessorDeps{
-				EndpointRepo:      args.endpointRepo,
-				EventRepo:         args.eventRepo,
-				ProjectRepo:       args.projectRepo,
-				EventQueue:        args.eventQueue,
-				SubRepo:           args.subRepo,
-				FilterRepo:        args.filterRepo,
-				Licenser:          args.licenser,
-				TracerBackend:     args.tracer,
+				EndpointRepo:       args.endpointRepo,
+				EventRepo:          args.eventRepo,
+				ProjectRepo:        args.projectRepo,
+				EventQueue:         args.eventQueue,
+				SubRepo:            args.subRepo,
+				FilterRepo:         args.filterRepo,
+				Licenser:           args.licenser,
+				TracerBackend:      args.tracer,
 				OAuth2TokenService: args.oauth2TokenService,
 			}
 			fn := ProcessBroadcastEventCreation(NewBroadcastEventChannel(args.subTable), deps)

@@ -671,7 +671,7 @@ func (h *Handler) TestOAuth2Connection(w http.ResponseWriter, r *http.Request) {
 	// Format: "TokenType access_token" (e.g., "Bearer token123" or "CustomType token123")
 	parts := strings.SplitN(authHeader, " ", 2)
 	tokenType := "Bearer" // Default
-	accessToken := ""
+	var accessToken string
 	if len(parts) == 2 {
 		tokenType = parts[0]
 		accessToken = parts[1]

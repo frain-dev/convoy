@@ -167,6 +167,7 @@ export class CreateEndpointComponent implements OnInit {
 	endpointSecret?: SECRET;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
 	mtlsFeatureEnabled = false;
+	oauth2FeatureEnabled = false;
 	organisationId!: string;
 	private rbacService = inject(RbacService);
 
@@ -185,6 +186,7 @@ export class CreateEndpointComponent implements OnInit {
 	async ngOnInit() {
 		this.getOrganisationId();
 		await this.checkMTLSFeatureFlag();
+		await this.checkOAuth2FeatureFlag();
 
 		if (this.type !== 'portal')
 			this.configurations.push(
@@ -423,6 +425,18 @@ export class CreateEndpointComponent implements OnInit {
 			});
 		} catch (error) {
 			this.mtlsFeatureEnabled = false;
+		}
+	}
+
+	async checkOAuth2FeatureFlag() {
+		if (!this.organisationId) return;
+		try {
+			this.oauth2FeatureEnabled = await this.settingsService.checkFeatureFlagEnabled({
+				org_id: this.organisationId,
+				feature_key: 'oauth-token-exchange'
+			});
+		} catch (error) {
+			this.oauth2FeatureEnabled = false;
 		}
 	}
 	async runEndpointValidation() {
