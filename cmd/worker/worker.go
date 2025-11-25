@@ -411,7 +411,10 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	if err != nil {
+		return fmt.Errorf("failed to register queue metrics: %w", err)
+	}
 
 	// start worker
 	consumer.Start()

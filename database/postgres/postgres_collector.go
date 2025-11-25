@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -33,10 +34,15 @@ type EventQueueBacklogMetrics struct {
 }
 
 type EventDeliveryQueueMetrics struct {
-	ProjectID  string `json:"project_id" db:"project_id"`
-	EndpointId string `json:"endpoint_id" db:"endpoint_id"`
-	Status     string `json:"status" db:"status"`
-	Total      uint64 `json:"total" db:"total"`
+	ProjectID        string `json:"project_id" db:"project_id"`
+	ProjectName      string `json:"project_name" db:"project_name"`
+	EndpointId       string `json:"endpoint_id" db:"endpoint_id"`
+	Status           string `json:"status" db:"status"`
+	EventType        string `json:"event_type" db:"event_type"`
+	SourceId         string `json:"source_id" db:"source_id"`
+	OrganisationID   string `json:"organisation_id" db:"organisation_id"`
+	OrganisationName string `json:"organisation_name" db:"organisation_name"`
+	Total            uint64 `json:"total" db:"total"`
 }
 
 type EventDeliveryQueueLatencyMetrics struct {
@@ -87,7 +93,7 @@ var (
 	eventDeliveryQueueTotalDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(namespace, "", "event_delivery_queue_total"),
 		"Total number of tasks in the delivery queue per endpoint",
-		[]string{"project", "endpoint", "status"}, nil,
+		[]string{"project", "project_name", "endpoint", "status", "event_type", "source", "organisation_id", "organisation_name"}, nil,
 	)
 
 	eventDeliveryQueueBacklogDesc = prometheus.NewDesc(
@@ -128,16 +134,25 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 		metrics, err = p.collectMetrics()
 		if err != nil {
 			log.Errorf("Failed to collect metrics data: %v", err)
-			return
+			if cachedMetrics != nil {
+				metrics = cachedMetrics
+				log.Warn("Using cached metrics due to collection failure")
+			} else {
+				// Return empty metrics to prevent blocking the endpoint
+				metrics = &Metrics{}
+			}
+		} else {
+			cachedMetrics = metrics
 		}
-		cachedMetrics = metrics
 	}
 
+	// Use unique keys per metric type to prevent collisions
 	metricsMap := make(map[string]struct{})
 
 	for _, metric := range metrics.EventQueueMetrics {
-		key := fmt.Sprintf("eqm_%s_%s", metric.ProjectID, metric.SourceId)
+		key := fmt.Sprintf("event_queue_total_%s_%s", metric.ProjectID, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
+			log.Warnf("Duplicate metric detected and skipped: event_queue_total (project: %s, source: %s)", metric.ProjectID, metric.SourceId)
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -152,8 +167,9 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventQueueBacklogMetrics {
-		key := fmt.Sprintf("eqbm_%s_%s", metric.ProjectID, metric.SourceId)
+		key := fmt.Sprintf("event_queue_backlog_%s_%s", metric.ProjectID, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
+			log.Warnf("Duplicate metric detected and skipped: event_queue_backlog (project: %s, source: %s)", metric.ProjectID, metric.SourceId)
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -167,8 +183,9 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventDeliveryQueueMetrics {
-		key := fmt.Sprintf("edqm_%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.Status)
+		key := fmt.Sprintf("event_delivery_queue_total_%s_%s_%s_%s_%s_%s", metric.ProjectID, metric.EndpointId, strings.ToLower(metric.Status), metric.EventType, metric.SourceId, metric.OrganisationID)
 		if _, ok := metricsMap[key]; ok {
+			log.Warnf("Duplicate metric detected and skipped: event_delivery_queue_total (project: %s, endpoint: %s, status: %s, event_type: %s, source: %s, organisation_id: %s)", metric.ProjectID, metric.EndpointId, metric.Status, metric.EventType, metric.SourceId, metric.OrganisationID)
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -176,15 +193,21 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 			prometheus.GaugeValue,
 			float64(metric.Total),
 			metric.ProjectID,
+			metric.ProjectName,
 			metric.EndpointId,
 			strings.ToLower(metric.Status),
+			metric.EventType,
+			metric.SourceId,
+			metric.OrganisationID,
+			metric.OrganisationName,
 		)
 		metricsMap[key] = struct{}{}
 	}
 
 	for _, metric := range metrics.EventQueueEndpointBacklogMetrics {
-		key := fmt.Sprintf("%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.SourceId)
+		key := fmt.Sprintf("event_delivery_queue_backlog_%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.SourceId)
 		if _, ok := metricsMap[key]; ok {
+			log.Warnf("Duplicate metric detected and skipped: event_delivery_queue_backlog (project: %s, endpoint: %s, source: %s)", metric.ProjectID, metric.EndpointId, metric.SourceId)
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -199,8 +222,9 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	for _, metric := range metrics.EventQueueEndpointAttemptMetrics {
-		key := fmt.Sprintf("eqeam_%s_%s_%s_%s", metric.ProjectID, metric.EndpointId, metric.Status, metric.StatusCode)
+		key := fmt.Sprintf("event_delivery_attempts_total_%s_%s_%s_%s", metric.ProjectID, metric.EndpointId, strings.ToLower(metric.Status), metric.StatusCode)
 		if _, ok := metricsMap[key]; ok {
+			log.Warnf("Duplicate metric detected and skipped: event_delivery_attempts_total (project: %s, endpoint: %s, status: %s, status_code: %s)", metric.ProjectID, metric.EndpointId, metric.Status, metric.StatusCode)
 			continue
 		}
 		ch <- prometheus.MustNewConstMetric(
@@ -214,19 +238,21 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 		)
 		metricsMap[key] = struct{}{}
 	}
-	clear(metricsMap)
 
 	lastRun = now
 }
 
 // collectMetrics gathers essential metrics from the DB
 func (p *Postgres) collectMetrics() (*Metrics, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
 	metrics := &Metrics{}
 
-	queryEventQueueMetrics := "select project_id, coalesce(source_id, 'http') as source_id, count(*) as total from convoy.events group by project_id, source_id"
-	rows, err := p.GetDB().Queryx(queryEventQueueMetrics)
+	queryEventQueueMetrics := "select distinct project_id, coalesce(source_id, 'http') as source_id, count(*) as total from convoy.events group by project_id, source_id"
+	rows, err := p.GetDB().QueryxContext(ctx, queryEventQueueMetrics)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query event queue metrics: %w", err)
 	}
 	defer closeWithError(rows)
 	eventQueueMetrics := make([]EventQueueMetrics, 0)
@@ -234,7 +260,7 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 		var eqm EventQueueMetrics
 		err = rows.StructScan(&eqm)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan event queue metrics: %w", err)
 		}
 		eventQueueMetrics = append(eventQueueMetrics, eqm)
 	}
@@ -261,9 +287,9 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
     WHERE ed.status = 'Success' AND a1.source_id IS NULL
     GROUP BY ed.project_id, e.source_id
     LIMIT 1000; -- samples`
-	rows1, err := p.GetDB().Queryx(backlogQM)
+	rows1, err := p.GetDB().QueryxContext(ctx, backlogQM)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query backlog metrics: %w", err)
 	}
 	defer closeWithError(rows1)
 	eventQueueBacklogMetrics := make([]EventQueueBacklogMetrics, 0)
@@ -277,10 +303,25 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
 	}
 	metrics.EventQueueBacklogMetrics = eventQueueBacklogMetrics
 
-	queryDeliveryQ := "select project_id, endpoint_id, status, count(*) as total from convoy.event_deliveries group by project_id, endpoint_id, status"
-	rows2, err := p.GetDB().Queryx(queryDeliveryQ)
+	queryDeliveryQ := `SELECT DISTINCT 
+		ed.project_id, 
+		COALESCE(p.name, '') as project_name,
+		ed.endpoint_id, 
+		ed.status,
+		COALESCE(ed.event_type, '') as event_type,
+		COALESCE(e.source_id, 'http') as source_id,
+		COALESCE(p.organisation_id, '') as organisation_id,
+		COALESCE(o.name, '') as organisation_name,
+		COUNT(*) as total 
+	FROM convoy.event_deliveries ed
+	LEFT JOIN convoy.events e ON ed.event_id = e.id
+	LEFT JOIN convoy.projects p ON ed.project_id = p.id
+	LEFT JOIN convoy.organisations o ON p.organisation_id = o.id
+	WHERE ed.deleted_at IS NULL
+	GROUP BY ed.project_id, p.name, ed.endpoint_id, ed.status, ed.event_type, e.source_id, p.organisation_id, o.name`
+	rows2, err := p.GetDB().QueryxContext(ctx, queryDeliveryQ)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query delivery queue metrics: %w", err)
 	}
 	defer closeWithError(rows2)
 	eventDeliveryQueueMetrics := make([]EventDeliveryQueueMetrics, 0)
@@ -317,9 +358,9 @@ func (p *Postgres) collectMetrics() (*Metrics, error) {
     WHERE ed.status = 'Success' AND a1.endpoint_id IS NULL
     GROUP BY ed.project_id, e.source_id, ed.endpoint_id
     LIMIT 1000; -- samples`
-	rows3, err := p.GetDB().Queryx(backlogEQM)
+	rows3, err := p.GetDB().QueryxContext(ctx, backlogEQM)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query endpoint backlog metrics: %w", err)
 	}
 	defer closeWithError(rows3)
 	eventQueueEndpointBacklogMetrics := make([]EventQueueEndpointBacklogMetrics, 0)
