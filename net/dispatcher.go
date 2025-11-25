@@ -591,13 +591,24 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 // It returns the formatted Authorization header value (e.g., "Bearer token" or "CustomType token")
 type OAuth2TokenGetter func(ctx context.Context) (string, error)
 
+// PingOptions contains options for the Ping operation
+type PingOptions struct {
+	Endpoint          string
+	Timeout           time.Duration
+	ContentType       string
+	MtlsCert          *tls.Certificate
+	OAuth2TokenGetter OAuth2TokenGetter
+	// Method is used internally by tryPingMethod. It's set automatically by Ping.
+	Method string
+}
+
 // Ping sends requests to the specified endpoint using configurable methods and verifies it returns a 2xx response.
 // It returns an error if the endpoint is unreachable or returns a non-2xx status code.
-// If oauth2TokenGetter is provided, it will be used to fetch an OAuth2 token and add it to the Authorization header.
-func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate, oauth2TokenGetter OAuth2TokenGetter) error {
+// If opts.OAuth2TokenGetter is provided, it will be used to fetch an OAuth2 token and add it to the Authorization header.
+func (d *Dispatcher) Ping(ctx context.Context, opts PingOptions) error {
 	d.logger.Debugf("rules: %+v", d.rules)
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
 	defer cancel()
 
 	if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
@@ -619,7 +630,9 @@ func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Dur
 
 	var lastErr error
 	for i, method := range methods {
-		err := d.tryPingMethod(ctx, endpoint, method, contentType, mtlsCert, oauth2TokenGetter)
+		pingOpts := opts
+		pingOpts.Method = method
+		err := d.tryPingMethod(ctx, pingOpts)
 		if err == nil {
 			if i > 0 {
 				d.logger.Infof("Ping succeeded with %s after %d attempts", method, i+1)
@@ -631,19 +644,19 @@ func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Dur
 		d.logger.Debugf("Ping failed with %s: %v", method, err)
 	}
 
-	d.logger.Warnf("All ping methods failed for %s", endpoint)
+	d.logger.Warnf("All ping methods failed for %s", opts.Endpoint)
 	return lastErr
 }
 
-func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, contentType string, mtlsCert *tls.Certificate, oauth2TokenGetter OAuth2TokenGetter) error {
-	client := d.createClientWithMTLS(mtlsCert)
+func (d *Dispatcher) tryPingMethod(ctx context.Context, opts PingOptions) error {
+	client := d.createClientWithMTLS(opts.MtlsCert)
 
 	var body []byte
 	var reqContentType string
 
-	if method == "POST" && contentType != "" {
+	if opts.Method == "POST" && opts.ContentType != "" {
 		testPayload := json.RawMessage(`{"test": "ping"}`)
-		converter := getConverter(contentType)
+		converter := getConverter(opts.ContentType)
 		var err error
 		body, err = converter.Convert(testPayload)
 		if err != nil {
@@ -657,7 +670,7 @@ func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, conten
 		bodyReader = bytes.NewBuffer(body)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, endpoint, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, opts.Method, opts.Endpoint, bodyReader)
 	if err != nil {
 		return err
 	}
@@ -668,8 +681,8 @@ func (d *Dispatcher) tryPingMethod(ctx context.Context, endpoint, method, conten
 	}
 
 	// Add OAuth2 Authorization header if token getter is provided
-	if oauth2TokenGetter != nil {
-		authHeader, err := oauth2TokenGetter(ctx)
+	if opts.OAuth2TokenGetter != nil {
+		authHeader, err := opts.OAuth2TokenGetter(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to get OAuth2 token for ping: %w", err)
 		}

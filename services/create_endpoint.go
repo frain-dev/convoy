@@ -264,7 +264,13 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 
 		oauth2TokenGetter := createOAuth2TokenGetter(a.E.Authentication, a.E.URL, "", a.Logger)
 
-		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, a.E.ContentType, mtlsCert, oauth2TokenGetter)
+		pingErr = dispatcher.Ping(ctx, net.PingOptions{
+			Endpoint:          a.E.URL,
+			Timeout:           10 * time.Second,
+			ContentType:       a.E.ContentType,
+			MtlsCert:          mtlsCert,
+			OAuth2TokenGetter: oauth2TokenGetter,
+		})
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
 				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)

@@ -123,7 +123,13 @@ func TestDispatcher_Ping(t *testing.T) {
 
 			// Test ping
 			ctx := context.Background()
-			err = dispatcher.Ping(ctx, server.URL+tt.endpoint, 5*time.Second, tt.contentType, nil, nil)
+			err = dispatcher.Ping(ctx, PingOptions{
+				Endpoint:          server.URL + tt.endpoint,
+				Timeout:           5 * time.Second,
+				ContentType:       tt.contentType,
+				MtlsCert:          nil,
+				OAuth2TokenGetter: nil,
+			})
 
 			if tt.expectedError {
 				require.Error(t, err)
@@ -225,7 +231,13 @@ func TestDispatcher_tryPingMethod(t *testing.T) {
 
 			// Test tryPingMethod
 			ctx := context.Background()
-			err := dispatcher.tryPingMethod(ctx, server.URL, tt.method, tt.contentType, nil, nil)
+			err := dispatcher.tryPingMethod(ctx, PingOptions{
+				Endpoint:          server.URL,
+				Method:            tt.method,
+				ContentType:       tt.contentType,
+				MtlsCert:          nil,
+				OAuth2TokenGetter: nil,
+			})
 
 			if tt.expectedError {
 				require.Error(t, err)
@@ -260,7 +272,13 @@ func TestDispatcher_PingWithDefaultMethods(t *testing.T) {
 	defer server.Close()
 
 	ctx := context.Background()
-	err = dispatcher.Ping(ctx, server.URL, 5*time.Second, "", nil, nil)
+	err = dispatcher.Ping(ctx, PingOptions{
+		Endpoint:          server.URL,
+		Timeout:           5 * time.Second,
+		ContentType:       "",
+		MtlsCert:          nil,
+		OAuth2TokenGetter: nil,
+	})
 	require.NoError(t, err) // Should succeed with default methods
 }
 
@@ -361,13 +379,25 @@ func TestDispatcher_PingWithOAuth2(t *testing.T) {
 
 	t.Run("should_succeed_with_oauth2_token", func(t *testing.T) {
 		ctx := context.Background()
-		err := dispatcher.Ping(ctx, endpointServer.URL, 5*time.Second, "", nil, oauth2TokenGetter)
+		err := dispatcher.Ping(ctx, PingOptions{
+			Endpoint:          endpointServer.URL,
+			Timeout:           5 * time.Second,
+			ContentType:       "",
+			MtlsCert:          nil,
+			OAuth2TokenGetter: oauth2TokenGetter,
+		})
 		require.NoError(t, err)
 	})
 
 	t.Run("should_fail_without_oauth2_token_when_endpoint_requires_it", func(t *testing.T) {
 		ctx := context.Background()
-		err := dispatcher.Ping(ctx, endpointServer.URL, 5*time.Second, "", nil, nil)
+		err := dispatcher.Ping(ctx, PingOptions{
+			Endpoint:          endpointServer.URL,
+			Timeout:           5 * time.Second,
+			ContentType:       "",
+			MtlsCert:          nil,
+			OAuth2TokenGetter: nil,
+		})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "status code 401")
 	})
@@ -381,7 +411,13 @@ func TestDispatcher_PingWithOAuth2(t *testing.T) {
 		defer publicServer.Close()
 
 		ctx := context.Background()
-		err := dispatcher.Ping(ctx, publicServer.URL, 5*time.Second, "", nil, nil)
+		err := dispatcher.Ping(ctx, PingOptions{
+			Endpoint:          publicServer.URL,
+			Timeout:           5 * time.Second,
+			ContentType:       "",
+			MtlsCert:          nil,
+			OAuth2TokenGetter: nil,
+		})
 		require.NoError(t, err)
 	})
 }
