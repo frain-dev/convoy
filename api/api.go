@@ -271,6 +271,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 						endpointSubRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEndpoint)
 						endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+						endpointSubRouter.With(handler.RequireEnabledProject()).Post("/oauth2/test", handler.TestOAuth2Connection)
 
 						endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 							e.Get("/", handler.GetEndpoint)
@@ -488,6 +489,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 						projectSubRouter.Route("/endpoints", func(endpointSubRouter chi.Router) {
 							endpointSubRouter.With(handler.RequireEnabledProject()).Post("/", handler.CreateEndpoint)
 							endpointSubRouter.With(middleware.Pagination).Get("/", handler.GetEndpoints)
+							endpointSubRouter.With(handler.RequireEnabledProject()).Post("/oauth2/test", handler.TestOAuth2Connection)
 
 							endpointSubRouter.Route("/{endpointID}", func(e chi.Router) {
 								e.Get("/", handler.GetEndpoint)

@@ -466,10 +466,10 @@ func TestCreateEndpointService_Run(t *testing.T) {
 			defer ctrl.Finish()
 			as := provideCreateEndpointService(ctrl, tc.args.e, tc.args.g.UID)
 
-            // Override fetcher for feature flag disabled test
-            if tc.name == "should_ignore_mtls_when_feature_flag_disabled" {
-                as.FeatureFlagFetcher = mocks.NewMockFeatureFlagFetcherWithMTLSDisabled()
-            }
+			// Override fetcher for feature flag disabled test
+			if tc.name == "should_ignore_mtls_when_feature_flag_disabled" {
+				as.FeatureFlagFetcher = mocks.NewMockFeatureFlagFetcherWithMTLSDisabled()
+			}
 
 			// Load config and set SkipPingValidation via ConfigFunc
 			_ = config.LoadConfig("", func(c *config.Configuration) error {

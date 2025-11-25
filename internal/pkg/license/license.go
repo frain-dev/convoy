@@ -38,6 +38,7 @@ type Licenser interface {
 	WebhookAnalytics() bool
 	HADeployment() bool
 	MutualTLS() bool
+	OAuth2EndpointAuth() bool
 	SynchronousWebhooks() bool
 	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 

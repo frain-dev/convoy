@@ -195,6 +195,31 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			eventDelivery.Headers["X-Convoy-Event-ID"] = []string{eventDelivery.EventID}
 		}
 
+		// Refresh OAuth2 token if endpoint uses OAuth2 authentication
+		if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
+			// Check feature flag for OAuth2 using project's organisation ID
+			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, project.OrganisationID)
+			if !oauth2Enabled {
+				log.FromContext(ctx).Warn("Endpoint has OAuth2 configured but feature flag is disabled, continuing without OAuth2 authentication")
+				// Continue without OAuth2 authentication if feature flag is disabled
+			} else if deps.OAuth2TokenService == nil {
+				log.FromContext(ctx).Error("OAuth2 token service is nil during retry")
+			} else {
+				authHeader, err := deps.OAuth2TokenService.GetAuthorizationHeader(ctx, endpoint)
+				if err != nil {
+					log.FromContext(ctx).WithError(err).Error("failed to get OAuth2 authorization header for retry")
+				} else {
+					if eventDelivery.Headers == nil {
+						eventDelivery.Headers = httpheader.HTTPHeader{}
+					}
+					eventDelivery.Headers["Authorization"] = []string{authHeader}
+					log.FromContext(ctx).WithFields(log.Fields{
+						"endpoint.id": endpoint.UID,
+					}).Info("OAuth2 authorization header refreshed for retry")
+				}
+			}
+		}
+
 		var httpDuration time.Duration
 		if endpoint.HttpTimeout == 0 || !deps.Licenser.AdvancedEndpointMgmt() {
 			httpDuration = convoy.HTTP_TIMEOUT_IN_DURATION

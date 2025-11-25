@@ -402,6 +402,14 @@ func (k *Licenser) MutualTLS() bool {
 	return ok
 }
 
+func (k *Licenser) OAuth2EndpointAuth() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[OAuth2EndpointAuth]
+	return ok
+}
+
 func (k *Licenser) AsynqMonitoring() bool {
 	if checkExpiry(k.license) != nil {
 		return false

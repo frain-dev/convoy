@@ -13,6 +13,7 @@ import (
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
+	ncache "github.com/frain-dev/convoy/cache/noop"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
@@ -23,6 +24,44 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
+
+// createOAuth2TokenGetter creates an OAuth2TokenGetter for ping validation.
+// It uses a noop cache since this is a one-time validation.
+func createOAuth2TokenGetter(auth *models.EndpointAuthentication, endpointURL, existingEndpointID string, logger log.StdLogger) net.OAuth2TokenGetter {
+	if auth == nil || auth.Type != datastore.OAuth2Authentication || auth.OAuth2 == nil {
+		return nil
+	}
+
+	return createOAuth2TokenGetterFromDatastore(auth.OAuth2.Transform(), endpointURL, existingEndpointID, logger)
+}
+
+// createOAuth2TokenGetterFromDatastore creates an OAuth2TokenGetter from a datastore OAuth2 config.
+func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL, existingEndpointID string, logger log.StdLogger) net.OAuth2TokenGetter {
+	if oauth2 == nil {
+		return nil
+	}
+
+	tempEndpointID := existingEndpointID
+	if tempEndpointID == "" {
+		tempEndpointID = ulid.Make().String()
+	}
+
+	tempEndpoint := &datastore.Endpoint{
+		UID: tempEndpointID,
+		Url: endpointURL,
+		Authentication: &datastore.EndpointAuthentication{
+			Type:   datastore.OAuth2Authentication,
+			OAuth2: oauth2,
+		},
+	}
+
+	noopCache := ncache.NewNoopCache()
+	oauth2TokenService := NewOAuth2TokenService(noopCache, logger)
+
+	return func(ctx context.Context) (string, error) {
+		return oauth2TokenService.GetAuthorizationHeader(ctx, tempEndpoint)
+	}
+}
 
 type CreateEndpointService struct {
 	PortalLinkRepo     datastore.PortalLinkRepository
@@ -122,6 +161,21 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
+	// Check license before allowing OAuth2 configuration
+	if auth != nil && auth.Type == datastore.OAuth2Authentication {
+		if !a.Licenser.OAuth2EndpointAuth() {
+			return nil, &ServiceError{ErrMsg: ErrOAuth2FeatureUnavailable}
+		}
+
+		// Check feature flag for OAuth2 using project's organisation ID
+		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, project.OrganisationID)
+		if !oauth2Enabled {
+			log.FromContext(ctx).Warn("OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
+			// Remove OAuth2 authentication if feature flag is disabled
+			auth = nil
+		}
+	}
+
 	endpoint.Authentication = auth
 
 	// Set mTLS client certificate if provided
@@ -216,7 +270,15 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			}
 		}
 
-		pingErr = dispatcher.Ping(ctx, a.E.URL, 10*time.Second, a.E.ContentType, mtlsCert)
+		oauth2TokenGetter := createOAuth2TokenGetter(a.E.Authentication, a.E.URL, "", a.Logger)
+
+		pingErr = dispatcher.Ping(ctx, net.PingOptions{
+			Endpoint:          a.E.URL,
+			Timeout:           10 * time.Second,
+			ContentType:       a.E.ContentType,
+			MtlsCert:          mtlsCert,
+			OAuth2TokenGetter: oauth2TokenGetter,
+		})
 		if pingErr != nil {
 			if cfg.Dispatcher.SkipPingValidation {
 				log.FromContext(ctx).Warnf("failed to ping tls endpoint (validation skipped): %v", pingErr)
@@ -238,9 +300,75 @@ func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*da
 			return nil, err
 		}
 
-		if auth.Type == datastore.APIKeyAuthentication {
+		switch auth.Type {
+		case datastore.APIKeyAuthentication:
 			if auth.ApiKey == nil || util.IsStringEmpty(auth.ApiKey.HeaderValue) {
 				return nil, util.NewServiceError(http.StatusBadRequest, ErrAPIKeyFieldRequired)
+			}
+			if util.IsStringEmpty(auth.ApiKey.HeaderName) {
+				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("api key header_name is required"))
+			}
+
+		case datastore.OAuth2Authentication:
+			if auth.OAuth2 == nil {
+				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 configuration is required"))
+			}
+			if util.IsStringEmpty(auth.OAuth2.URL) {
+				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 url is required"))
+			}
+			if util.IsStringEmpty(auth.OAuth2.ClientID) {
+				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 client_id is required"))
+			}
+			if util.IsStringEmpty(string(auth.OAuth2.AuthenticationType)) {
+				return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 authentication_type is required"))
+			}
+
+			// Validate authentication type specific fields
+			switch auth.OAuth2.AuthenticationType {
+			case datastore.SharedSecretAuth:
+				if util.IsStringEmpty(auth.OAuth2.ClientSecret) {
+					return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 client_secret is required for shared_secret authentication"))
+				}
+			case datastore.ClientAssertionAuth:
+				if auth.OAuth2.SigningKey == nil {
+					return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 signing_key is required for client_assertion authentication"))
+				}
+				// Validate JWK fields
+				if util.IsStringEmpty(auth.OAuth2.SigningKey.Kty) {
+					return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 signing_key.kty is required"))
+				}
+				if util.IsStringEmpty(auth.OAuth2.SigningKey.Kid) {
+					return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 signing_key.kid is required"))
+				}
+				if util.IsStringEmpty(auth.OAuth2.SigningKey.D) {
+					return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 signing_key.d (private key) is required"))
+				}
+				// Validate ES256 algorithm requirements
+				if auth.OAuth2.SigningAlgorithm == "ES256" || auth.OAuth2.SigningAlgorithm == "" {
+					if auth.OAuth2.SigningKey.Kty != "EC" {
+						return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 signing_key.kty must be 'EC' for ES256 algorithm"))
+					}
+					if auth.OAuth2.SigningKey.Crv != "P-256" {
+						return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 signing_key.crv must be 'P-256' for ES256 algorithm"))
+					}
+					if util.IsStringEmpty(auth.OAuth2.SigningKey.X) || util.IsStringEmpty(auth.OAuth2.SigningKey.Y) {
+						return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 signing_key.x and signing_key.y are required for EC keys"))
+					}
+				}
+				if util.IsStringEmpty(auth.OAuth2.Issuer) {
+					return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 issuer is required for client_assertion authentication"))
+				}
+				if util.IsStringEmpty(auth.OAuth2.Subject) {
+					return nil, util.NewServiceError(http.StatusBadRequest, errors.New("oauth2 subject is required for client_assertion authentication"))
+				}
+			default:
+				return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("unsupported oauth2 authentication_type: %s", auth.OAuth2.AuthenticationType))
+			}
+
+			// Validate token URL format
+			_, err := url.Parse(auth.OAuth2.URL)
+			if err != nil {
+				return nil, util.NewServiceError(http.StatusBadRequest, fmt.Errorf("invalid oauth2 url: %w", err))
 			}
 		}
 

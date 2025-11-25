@@ -187,6 +187,7 @@ func ProcessBroadcastEventCreation(
 		deps.FilterRepo,
 		deps.Licenser,
 		deps.TracerBackend,
+		deps.OAuth2TokenService,
 	)
 }
 

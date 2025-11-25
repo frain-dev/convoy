@@ -3,14 +3,14 @@
 		<form [formGroup]="addNewEndpointForm">
 			<div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
 				<convoy-input-field>
-					<label for="name" convoy-label required="true">Endpoint Name</label>
-					<input id="name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoint name here" />
+					<label for="endpoint_name" convoy-label required="true">Endpoint Name</label>
+					<input id="endpoint_name" convoy-input autocomplete="name" formControlName="name" placeholder="Enter endpoint name here" />
 					<convoy-input-error *ngIf="addNewEndpointForm.get('name')?.touched && addNewEndpointForm.get('name')?.invalid">Please provide a name</convoy-input-error>
 				</convoy-input-field>
 
 				<convoy-input-field>
-					<label for="url" convoy-label required="true">Enter URL</label>
-					<input type="url" id="url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
+					<label for="endpoint_url" convoy-label required="true">Enter URL</label>
+					<input type="url" id="endpoint_url" convoy-input autocomplete="url" formControlName="url" placeholder="Enter endpoint URL here" />
 					<convoy-input-error *ngIf="addNewEndpointForm.get('url')?.touched && addNewEndpointForm.get('url')?.invalid">Invalid endpoint URL</convoy-input-error>
 				</convoy-input-field>
 			</div>
@@ -152,7 +152,7 @@
 					<div class="flex justify-between items-center mb-16px">
 						<p class="flex items-center text-12 font-medium text-neutral-11">
 							Endpoint Authentication
-							<convoy-tooltip size="sm" position="top-right" class="ml-4px">You can set your provided endpoint authentication is any is required</convoy-tooltip>
+							<convoy-tooltip size="sm" position="top-right" class="ml-4px">You can set your provided endpoint authentication if any is required</convoy-tooltip>
 						</p>
 						<button convoy-permission="Endpoints|MANAGE" convoy-button type="button" size="xs" fill="soft-outline" color="neutral" (click)="toggleConfigForm('auth', true)">
 							<svg width="14" height="14" class="fill-transparent stroke-neutral-10">
@@ -162,7 +162,36 @@
 					</div>
 
 					<ng-container formGroupName="authentication">
-						<div class="grid grid-cols-2 gap-24px" formGroupName="api_key">
+						<!-- Authentication Type Selection -->
+						<convoy-input-field className="mb-24px">
+							<label for="auth_type" convoy-label>Authentication Type</label>
+							<div class="flex items-center gap-12px">
+								<div class="flex-1">
+									<convoy-select
+										[options]="[
+											{ uid: 'api_key', name: 'API Key' },
+											{ uid: 'oauth2', name: 'OAuth2' }
+										]"
+										name="auth_type"
+										formControlName="type"
+										placeholder="Select authentication type"
+										label=""
+										[required]="true"
+										(selectedOption)="onAuthTypeChange($event)"
+									></convoy-select>
+								</div>
+								<div convoy-tag size="sm" color="primary" *ngIf="selectedAuthType === 'oauth2' && !licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH')">
+									<svg width="10" height="10" class="fill-new.primary-400 scale-150">
+										<use xlink:href="#lock-icon"></use>
+									</svg>
+									Business
+								</div>
+							</div>
+						</convoy-input-field>
+
+						<!-- API Key Authentication -->
+						<ng-container *ngIf="selectedAuthType === 'api_key'" formGroupName="api_key">
+							<div class="grid grid-cols-2 gap-24px">
 							<convoy-input-field className="mb-0">
 								<label for="header_name" convoy-label>API Key Name</label>
 								<input id="header_name" convoy-input autocomplete="header_name" formControlName="header_name" placeholder="Name" />
@@ -175,6 +204,388 @@
 								<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.api_key.header_value')?.touched && addNewEndpointForm.get('authentication.api_key.header_value')?.invalid">Endpoint auth API key value is required</convoy-input-error>
 							</convoy-input-field>
 						</div>
+						</ng-container>
+
+						<!-- OAuth2 Authentication -->
+						<ng-container *ngIf="selectedAuthType === 'oauth2'">
+							<div *ngIf="!licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH')" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+								<div class="flex items-center gap-8px mb-6px">
+									<svg width="14" height="14" class="fill-new.primary-400">
+										<use xlink:href="#lock-icon"></use>
+									</svg>
+									<p class="text-10 font-semibold text-neutral-12">OAuth2 Endpoint Authentication</p>
+									<div convoy-tag size="sm" color="primary">
+										Business
+									</div>
+								</div>
+								<p class="text-10 text-neutral-10">OAuth2 endpoint authentication is a Business plan feature. Please upgrade your license to use this feature.</p>
+							</div>
+							<div *ngIf="licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH') && !oauth2FeatureEnabled" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+								<div class="flex items-center gap-8px mb-6px">
+									<svg width="14" height="14" class="fill-new.primary-400">
+										<use xlink:href="#lock-icon"></use>
+									</svg>
+									<p class="text-10 font-semibold text-neutral-12">OAuth2 Feature Flag Disabled</p>
+								</div>
+								<p class="text-10 text-neutral-10">OAuth2 endpoint authentication feature flag is not enabled for your organization. Please enable it in Early Adopter Features settings.</p>
+							</div>
+						</ng-container>
+
+						<ng-container *ngIf="selectedAuthType === 'oauth2' && licenseService.hasLicense('OAUTH2_ENDPOINT_AUTH') && oauth2FeatureEnabled" formGroupName="oauth2">
+							<div class="grid grid-cols-1 gap-24px mb-24px">
+								<convoy-input-field>
+									<label for="oauth2_url" convoy-label required="true">
+										OAuth2 Token URL
+										<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The OAuth2 token endpoint URL where Convoy will request access tokens. This is typically provided by your OAuth2 provider (e.g., https://oauth.example.com/token)"></convoy-tooltip>
+									</label>
+									<input type="url" id="oauth2_url" convoy-input formControlName="url" placeholder="https://oauth.example.com/token" />
+									<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.url')?.touched && addNewEndpointForm.get('authentication.oauth2.url')?.invalid">OAuth2 token URL is required</convoy-input-error>
+								</convoy-input-field>
+
+								<convoy-input-field>
+									<label for="oauth2_client_id" convoy-label required="true">
+										Client ID
+										<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Your OAuth2 client identifier. This is provided by your OAuth2 provider when you register your application."></convoy-tooltip>
+									</label>
+									<input id="oauth2_client_id" convoy-input formControlName="client_id" placeholder="your-client-id" />
+									<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.client_id')?.touched && addNewEndpointForm.get('authentication.oauth2.client_id')?.invalid">Client ID is required</convoy-input-error>
+								</convoy-input-field>
+
+								<convoy-input-field>
+									<label for="oauth2_auth_type" convoy-label>
+										Authentication Method
+										<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Choose how to authenticate with the OAuth2 server: Shared Secret uses a client secret, Client Assertion uses a signed JWT token."></convoy-tooltip>
+									</label>
+									<convoy-select
+										[options]="[
+											{ uid: 'shared_secret', name: 'Shared Secret' },
+											{ uid: 'client_assertion', name: 'Client Assertion (JWT)' }
+										]"
+										name="oauth2_auth_type"
+										formControlName="authentication_type"
+										placeholder="Select authentication method"
+										label=""
+										[required]="true"
+										(selectedOption)="onOAuth2AuthTypeChange($event)"
+									></convoy-select>
+								</convoy-input-field>
+
+								<convoy-input-field>
+									<label for="oauth2_grant_type" convoy-label>
+										Grant Type
+										<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The OAuth2 grant type to use. Defaults to &quot;client_credentials&quot; which is used for server-to-server authentication."></convoy-tooltip>
+									</label>
+									<input id="oauth2_grant_type" convoy-input formControlName="grant_type" placeholder="client_credentials" />
+								</convoy-input-field>
+
+								<convoy-input-field>
+									<label for="oauth2_scope" convoy-label>
+										Scope (Optional)
+										<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Space-separated list of OAuth2 scopes to request. Scopes define the permissions your access token will have (e.g., &quot;read write&quot;)."></convoy-tooltip>
+									</label>
+									<input id="oauth2_scope" convoy-input formControlName="scope" placeholder="read write" />
+								</convoy-input-field>
+							</div>
+
+							<!-- Shared Secret Fields -->
+							<ng-container *ngIf="selectedOAuth2AuthType === 'shared_secret'">
+								<convoy-input-field>
+									<label for="oauth2_client_secret" convoy-label required="true">
+										Client Secret
+										<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Your OAuth2 client secret. This is provided by your OAuth2 provider and should be kept confidential. Used for authenticating token requests."></convoy-tooltip>
+									</label>
+									<input type="password" id="oauth2_client_secret" convoy-input formControlName="client_secret" placeholder="your-client-secret" />
+									<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.client_secret')?.touched && addNewEndpointForm.get('authentication.oauth2.client_secret')?.invalid">Client secret is required for shared secret authentication</convoy-input-error>
+								</convoy-input-field>
+							</ng-container>
+
+							<!-- Client Assertion Fields -->
+							<ng-container *ngIf="selectedOAuth2AuthType === 'client_assertion'">
+								<div class="grid grid-cols-1 gap-24px mb-24px">
+									<convoy-input-field>
+										<label for="oauth2_issuer" convoy-label required="true">
+											Issuer
+											<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The issuer claim (iss) in the JWT assertion. Typically your client ID. This identifies who issued the JWT token."></convoy-tooltip>
+										</label>
+										<input id="oauth2_issuer" convoy-input formControlName="issuer" placeholder="your-client-id" />
+										<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.issuer')?.touched && addNewEndpointForm.get('authentication.oauth2.issuer')?.invalid">Issuer is required for client assertion</convoy-input-error>
+									</convoy-input-field>
+
+									<convoy-input-field>
+										<label for="oauth2_subject" convoy-label required="true">
+											Subject
+											<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The subject claim (sub) in the JWT assertion. Typically your client ID. This identifies the subject of the JWT token."></convoy-tooltip>
+										</label>
+										<input id="oauth2_subject" convoy-input formControlName="subject" placeholder="your-client-id" />
+										<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.subject')?.touched && addNewEndpointForm.get('authentication.oauth2.subject')?.invalid">Subject is required for client assertion</convoy-input-error>
+									</convoy-input-field>
+
+									<ng-container formGroupName="signing_key">
+										<convoy-input-field>
+											<convoy-select
+												[options]="[
+													{ uid: 'EC', name: 'EC (Elliptic Curve)' },
+													{ uid: 'RSA', name: 'RSA' }
+												]"
+												name="jwk_kty"
+												formControlName="kty"
+												placeholder="Select key type"
+												label="Key Type (kty)"
+												[tooltipContent]="'The cryptographic key type. Use &quot;EC&quot; for Elliptic Curve keys or &quot;RSA&quot; for RSA keys. This determines which signing algorithms are available.'"
+												(selectedOption)="onKeyTypeChange($event)"
+											></convoy-select>
+										</convoy-input-field>
+									</ng-container>
+
+									<convoy-input-field>
+										<label for="oauth2_signing_algorithm" convoy-label>
+											Signing Algorithm
+											<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The algorithm used to sign the JWT assertion. Options depend on the selected key type. ES256, ES384, ES512 for EC keys. RS256, RS384, RS512, PS256, PS384, PS512 for RSA keys."></convoy-tooltip>
+										</label>
+										<convoy-select
+											[options]="getSigningAlgorithmOptions()"
+											name="oauth2_signing_algorithm"
+											formControlName="signing_algorithm"
+											placeholder="Select algorithm"
+											label=""
+										></convoy-select>
+									</convoy-input-field>
+								</div>
+
+								<div class="flex items-center gap-8px mb-16px">
+									<p class="text-12 text-neutral-11 font-medium">JWK Signing Key</p>
+									<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="JSON Web Key (JWK) format signing key for JWT client assertion. Provide your private key in JWK format. For EC keys, provide kty, crv, x, y, d. For RSA keys, provide kty, n, e, d, p, q, dp, dq, qi."></convoy-tooltip>
+								</div>
+								<ng-container formGroupName="signing_key">
+									<convoy-input-field class="mb-24px">
+										<label for="jwk_kid" convoy-label required="true">
+											Key ID (kid)
+											<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="A unique identifier for the key. This is included in the JWT header and helps the OAuth2 server identify which key to use for verification."></convoy-tooltip>
+										</label>
+										<input id="jwk_kid" convoy-input formControlName="kid" placeholder="key-id-1" />
+										<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.kid')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.kid')?.invalid">Key ID is required</convoy-input-error>
+									</convoy-input-field>
+
+									<convoy-input-field *ngIf="selectedKeyType === 'EC'" class="mb-24px">
+										<convoy-select
+											[options]="[
+												{ uid: 'P-256', name: 'P-256' },
+												{ uid: 'P-384', name: 'P-384' },
+												{ uid: 'P-521', name: 'P-521' }
+											]"
+											name="jwk_crv"
+											formControlName="crv"
+											placeholder="Select curve"
+											label="Curve (crv)"
+											[tooltipContent]="'The elliptic curve name for EC keys. Supported: P-256, P-384, P-521. Only required for EC key type.'"
+										></convoy-select>
+									</convoy-input-field>
+
+									<!-- EC Key Fields -->
+									<ng-container *ngIf="selectedKeyType === 'EC'">
+										<div class="grid grid-cols-1 gap-24px">
+											<convoy-input-field>
+												<label for="jwk_x" convoy-label required="true">
+													X Coordinate (x)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The X coordinate of the EC public key point, Base64URL encoded. Required for EC keys only."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_x" convoy-input formControlName="x" placeholder="Base64URL encoded X coordinate" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.x')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.x')?.invalid">X coordinate is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_y" convoy-label required="true">
+													Y Coordinate (y)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The Y coordinate of the EC public key point, Base64URL encoded. Required for EC keys only."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_y" convoy-input formControlName="y" placeholder="Base64URL encoded Y coordinate" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.y')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.y')?.invalid">Y coordinate is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_d" convoy-label required="true">
+													Private Key (d)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The private scalar for EC keys, Base64URL encoded. Keep this secret!"></convoy-tooltip>
+												</label>
+												<textarea id="jwk_d" convoy-input formControlName="d" placeholder="Base64URL encoded private key" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.d')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.d')?.invalid">Private key is required</convoy-input-error>
+											</convoy-input-field>
+										</div>
+									</ng-container>
+
+									<!-- RSA Key Fields -->
+									<ng-container *ngIf="selectedKeyType === 'RSA'">
+										<div class="grid grid-cols-1 gap-24px">
+											<convoy-input-field>
+												<label for="jwk_n" convoy-label required="true">
+													Modulus (n)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The RSA modulus, Base64URL encoded. This is part of the public key."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_n" convoy-input formControlName="n" placeholder="Base64URL encoded modulus" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.n')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.n')?.invalid">Modulus is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_e" convoy-label required="true">
+													Public Exponent (e)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The RSA public exponent, Base64URL encoded. Typically 65537 (AQAB in Base64URL)."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_e" convoy-input formControlName="e" placeholder="Base64URL encoded public exponent" rows="2"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.e')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.e')?.invalid">Public exponent is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_d" convoy-label required="true">
+													Private Exponent (d)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The RSA private exponent, Base64URL encoded. Keep this secret!"></convoy-tooltip>
+												</label>
+												<textarea id="jwk_d" convoy-input formControlName="d" placeholder="Base64URL encoded private exponent" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.d')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.d')?.invalid">Private exponent is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_p" convoy-label required="true">
+													Prime Factor P (p)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The first prime factor of the RSA modulus, Base64URL encoded. Required for RSA private keys."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_p" convoy-input formControlName="p" placeholder="Base64URL encoded prime factor P" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.p')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.p')?.invalid">Prime factor P is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_q" convoy-label required="true">
+													Prime Factor Q (q)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The second prime factor of the RSA modulus, Base64URL encoded. Required for RSA private keys."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_q" convoy-input formControlName="q" placeholder="Base64URL encoded prime factor Q" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.q')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.q')?.invalid">Prime factor Q is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_dp" convoy-label required="true">
+													CRT Exponent DP (dp)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The first factor CRT exponent (d mod (p-1)), Base64URL encoded. Required for RSA private keys."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_dp" convoy-input formControlName="dp" placeholder="Base64URL encoded CRT exponent DP" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.dp')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.dp')?.invalid">CRT exponent DP is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_dq" convoy-label required="true">
+													CRT Exponent DQ (dq)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The second factor CRT exponent (d mod (q-1)), Base64URL encoded. Required for RSA private keys."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_dq" convoy-input formControlName="dq" placeholder="Base64URL encoded CRT exponent DQ" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.dq')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.dq')?.invalid">CRT exponent DQ is required</convoy-input-error>
+											</convoy-input-field>
+
+											<convoy-input-field>
+												<label for="jwk_qi" convoy-label required="true">
+													CRT Coefficient QI (qi)
+													<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The first CRT coefficient (q^(-1) mod p), Base64URL encoded. Required for RSA private keys."></convoy-tooltip>
+												</label>
+												<textarea id="jwk_qi" convoy-input formControlName="qi" placeholder="Base64URL encoded CRT coefficient QI" rows="3"></textarea>
+												<convoy-input-error *ngIf="addNewEndpointForm.get('authentication.oauth2.signing_key.qi')?.touched && addNewEndpointForm.get('authentication.oauth2.signing_key.qi')?.invalid">CRT coefficient QI is required</convoy-input-error>
+											</convoy-input-field>
+										</div>
+									</ng-container>
+								</ng-container>
+							</ng-container>
+
+							<!-- Field Mapping Configuration -->
+							<div class="mt-24px p-16px bg-neutral-50 rounded-8px">
+								<p class="text-12 font-semibold text-neutral-12 mb-12px">Response Field Mapping (Optional)</p>
+								<p class="text-10 text-neutral-10 mb-16px">Configure field names if your OAuth2 provider uses different field names in the token response. If <code class="bg-neutral-100 px-4px py-2px rounded">token_type</code> is missing, we'll default to &quot;Bearer&quot;.</p>
+								
+								<ng-container formGroupName="field_mapping">
+									<div class="grid grid-cols-1 gap-16px">
+										<convoy-input-field>
+											<label for="field_access_token" convoy-label>
+												Access Token Field Name
+												<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Field name in the response that contains the access token (e.g., &quot;accessToken&quot;, &quot;access_token&quot;, &quot;token&quot;)"></convoy-tooltip>
+											</label>
+											<input id="field_access_token" convoy-input formControlName="access_token" placeholder="access_token" />
+										</convoy-input-field>
+
+										<convoy-input-field>
+											<label for="field_token_type" convoy-label>
+												Token Type Field Name (Optional)
+												<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Field name in the response that contains the token type (e.g., &quot;tokenType&quot;, &quot;token_type&quot;). Required by OAuth2 spec but defaults to &quot;Bearer&quot; if missing."></convoy-tooltip>
+											</label>
+											<input id="field_token_type" convoy-input formControlName="token_type" placeholder="token_type" />
+										</convoy-input-field>
+
+										<convoy-input-field>
+											<label for="field_expires_in" convoy-label>
+												Expires In Field Name
+												<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="Field name in the response that contains the expiry time (e.g., &quot;expiresIn&quot;, &quot;expires_in&quot;, &quot;expiresAt&quot;). Defaults to 3600 seconds if missing."></convoy-tooltip>
+											</label>
+											<input id="field_expires_in" convoy-input formControlName="expires_in" placeholder="expires_in" />
+										</convoy-input-field>
+									</div>
+								</ng-container>
+
+								<div class="mt-16px">
+									<convoy-input-field>
+										<label for="expiry_time_unit" convoy-label>
+											Expiry Time Unit
+											<convoy-tooltip size="sm" position="top-right" class="ml-4px" tooltipContent="The unit used for the expiry time value in your OAuth2 provider's response. Most providers use &quot;seconds&quot; (e.g., 3600 = 1 hour), but some may use milliseconds, minutes, or hours."></convoy-tooltip>
+										</label>
+										<convoy-select
+											[options]="[
+												{ uid: 'seconds', name: 'Seconds' },
+												{ uid: 'milliseconds', name: 'Milliseconds' },
+												{ uid: 'minutes', name: 'Minutes' },
+												{ uid: 'hours', name: 'Hours' }
+											]"
+											name="expiry_time_unit"
+											formControlName="expiry_time_unit"
+											placeholder="Select time unit"
+											label=""
+										></convoy-select>
+									</convoy-input-field>
+								</div>
+							</div>
+
+							<!-- OAuth2 Test Connection Button -->
+							<div class="mt-24px">
+								<button convoy-button color="primary" fill="solid" [disabled]="testingOAuth2" (click)="testOAuth2Connection()" size="sm" class="!w-auto !text-white-100" type="button">
+									<span *ngIf="!testingOAuth2" class="!text-white-100">Test OAuth2 Connection</span>
+									<img *ngIf="testingOAuth2" src="assets/img/button-loader.gif" alt="loader" class="h-18px" />
+								</button>
+								
+								<!-- Test Result Display -->
+								<div *ngIf="oauth2TestResult" class="mt-16px p-16px rounded-8px" [ngClass]="oauth2TestResult.success ? 'bg-success-50 border border-success-200' : 'bg-error-50 border border-error-200'">
+									<div class="flex items-center gap-8px mb-8px">
+										<span class="text-14 font-semibold" [ngClass]="oauth2TestResult.success ? 'text-success-600' : 'text-error-600'">
+											{{ oauth2TestResult.success ? '✓ Connection Successful' : '✗ Connection Failed' }}
+										</span>
+									</div>
+									<div *ngIf="oauth2TestResult.success" class="text-12 text-neutral-11 space-y-4px">
+										<div *ngIf="oauth2TestResult.access_token">
+											<strong>Access Token:</strong> 
+											<span class="font-mono text-10 break-all">{{ oauth2TestResult.access_token }}</span>
+										</div>
+										<div *ngIf="oauth2TestResult.token_type">
+											<strong>Token Type:</strong> {{ oauth2TestResult.token_type }}
+										</div>
+										<div *ngIf="oauth2TestResult.expires_at">
+											<strong>Expires At:</strong> {{ oauth2TestResult.expires_at | date:'medium' }}
+										</div>
+										<div *ngIf="oauth2TestResult.message" class="text-success-600">
+											{{ oauth2TestResult.message }}
+										</div>
+									</div>
+									<div *ngIf="!oauth2TestResult.success && oauth2TestResult.error" class="text-12 text-error-600">
+										<strong>Error:</strong> {{ oauth2TestResult.error }}
+									</div>
+									<div class="mt-12px text-10 text-neutral-10">
+										<strong>Note:</strong> Configure the field mapping above if your OAuth2 provider uses different field names. 
+										If <code class="bg-neutral-100 px-4px py-2px rounded">token_type</code> or <code class="bg-neutral-100 px-4px py-2px rounded">expires_in</code> are missing, we'll use defaults (Bearer and 3600 seconds).
+									</div>
+								</div>
+							</div>
+						</ng-container>
 					</ng-container>
 				</div>
 			</ng-container>

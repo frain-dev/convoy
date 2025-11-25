@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -31,13 +32,14 @@ type EventChannelMetadata struct {
 }
 
 type EventChannelArgs struct {
-	eventRepo     datastore.EventRepository
-	projectRepo   datastore.ProjectRepository
-	endpointRepo  datastore.EndpointRepository
-	subRepo       datastore.SubscriptionRepository
-	filterRepo    datastore.FilterRepository
-	licenser      license.Licenser
-	tracerBackend tracer.Backend
+	eventRepo          datastore.EventRepository
+	projectRepo        datastore.ProjectRepository
+	endpointRepo       datastore.EndpointRepository
+	subRepo            datastore.SubscriptionRepository
+	filterRepo         datastore.FilterRepository
+	licenser           license.Licenser
+	tracerBackend      tracer.Backend
+	oauth2TokenService OAuth2TokenService
 }
 
 type EventChannelSubResponse struct {
@@ -56,7 +58,7 @@ type EventChannel interface {
 func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.EndpointRepository,
 	eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository,
 	eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository,
-	licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+	licenser license.Licenser, tracerBackend tracer.Backend, oauth2TokenService OAuth2TokenService) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		cfg := channel.GetConfig()
 
@@ -74,13 +76,14 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			event = lastEvent
 		} else {
 			event, err = channel.CreateEvent(ctx, t, channel, EventChannelArgs{
-				eventRepo:     eventRepo,
-				projectRepo:   projectRepo,
-				endpointRepo:  endpointRepo,
-				subRepo:       subRepo,
-				filterRepo:    filterRepo,
-				licenser:      licenser,
-				tracerBackend: tracerBackend,
+				eventRepo:          eventRepo,
+				projectRepo:        projectRepo,
+				endpointRepo:       endpointRepo,
+				subRepo:            subRepo,
+				filterRepo:         filterRepo,
+				licenser:           licenser,
+				tracerBackend:      tracerBackend,
+				oauth2TokenService: oauth2TokenService,
 			})
 			if err != nil {
 				if strings.Contains(err.Error(), "duplicate key") {
@@ -128,17 +131,20 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 }
 
 type MatchSubscriptionsDeps struct {
-	Channels          map[string]EventChannel
-	EndpointRepo      datastore.EndpointRepository
-	EventRepo         datastore.EventRepository
-	ProjectRepo       datastore.ProjectRepository
-	EventDeliveryRepo datastore.EventDeliveryRepository
-	EventQueue        queue.Queuer
-	SubRepo           datastore.SubscriptionRepository
-	FilterRepo        datastore.FilterRepository
-	DeviceRepo        datastore.DeviceRepository
-	Licenser          license.Licenser
-	TracerBackend     tracer.Backend
+	Channels           map[string]EventChannel
+	EndpointRepo       datastore.EndpointRepository
+	EventRepo          datastore.EventRepository
+	ProjectRepo        datastore.ProjectRepository
+	EventDeliveryRepo  datastore.EventDeliveryRepository
+	EventQueue         queue.Queuer
+	SubRepo            datastore.SubscriptionRepository
+	FilterRepo         datastore.FilterRepository
+	DeviceRepo         datastore.DeviceRepository
+	Licenser           license.Licenser
+	TracerBackend      tracer.Backend
+	OAuth2TokenService OAuth2TokenService
+	FeatureFlag        *fflag.FFlag
+	FeatureFlagFetcher fflag.FeatureFlagFetcher
 }
 
 func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) func(context.Context, *asynq.Task) error {
@@ -170,13 +176,14 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		log.Infof("about to match subs for channel: %s\n", cfg.Channel)
 
 		subResponse, err := channel.MatchSubscriptions(ctx, metadata, EventChannelArgs{
-			eventRepo:     deps.EventRepo,
-			projectRepo:   deps.ProjectRepo,
-			endpointRepo:  deps.EndpointRepo,
-			subRepo:       deps.SubRepo,
-			filterRepo:    deps.FilterRepo,
-			licenser:      deps.Licenser,
-			tracerBackend: deps.TracerBackend,
+			eventRepo:          deps.EventRepo,
+			projectRepo:        deps.ProjectRepo,
+			endpointRepo:       deps.EndpointRepo,
+			subRepo:            deps.SubRepo,
+			filterRepo:         deps.FilterRepo,
+			licenser:           deps.Licenser,
+			tracerBackend:      deps.TracerBackend,
+			oauth2TokenService: deps.OAuth2TokenService,
 		})
 		if err != nil {
 			deps.TracerBackend.Capture(ctx, "event.subscription.matching.error", attributes, startTime, time.Now())
@@ -218,7 +225,19 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 		}
 
 		// no need for a separate queue
-		err = writeEventDeliveriesToQueue(ctx, subResponse.Subscriptions, subResponse.Event, subResponse.Project, deps.EventDeliveryRepo, deps.EventQueue, deps.DeviceRepo, deps.EndpointRepo, deps.Licenser)
+		err = writeEventDeliveriesToQueue(ctx, WriteEventDeliveriesToQueueOptions{
+			Subscriptions:      subResponse.Subscriptions,
+			Event:              subResponse.Event,
+			Project:            subResponse.Project,
+			EventDeliveryRepo:  deps.EventDeliveryRepo,
+			EventQueue:         deps.EventQueue,
+			DeviceRepo:         deps.DeviceRepo,
+			EndpointRepo:       deps.EndpointRepo,
+			Licenser:           deps.Licenser,
+			OAuth2TokenService: deps.OAuth2TokenService,
+			FeatureFlag:        deps.FeatureFlag,
+			FeatureFlagFetcher: deps.FeatureFlagFetcher,
+		})
 		if err != nil {
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
 			writeErr := fmt.Errorf("%s, err: %s", ErrFailedToWriteToQueue.Error(), err.Error())

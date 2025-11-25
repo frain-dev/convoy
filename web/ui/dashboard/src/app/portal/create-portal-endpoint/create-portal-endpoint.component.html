@@ -46,8 +46,8 @@
         <form [formGroup]="endpointForm">
             <div class="grid gap-24px" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr))">
                 <convoy-input-field>
-                    <label for="name" convoy-label required="true">Endpoint Name</label>
-                    <input id="name" convoy-input autocomplete="name" formControlName="name"
+                    <label for="portal_endpoint_name" convoy-label required="true">Endpoint Name</label>
+                    <input id="portal_endpoint_name" convoy-input autocomplete="name" formControlName="name"
                            placeholder="Enter endpoint name here"/>
                     <convoy-input-error *ngIf="endpointForm.get('name')?.touched && endpointForm.get('name')?.invalid">
                         Please provide a name
@@ -55,8 +55,8 @@
                 </convoy-input-field>
 
                 <convoy-input-field>
-                    <label for="url" convoy-label required="true">Enter URL</label>
-                    <input type="url" id="url" convoy-input autocomplete="url" formControlName="url"
+                    <label for="portal_endpoint_url" convoy-label required="true">Enter URL</label>
+                    <input type="url" id="portal_endpoint_url" convoy-input autocomplete="url" formControlName="url"
                            placeholder="Enter endpoint URL here"/>
                     <convoy-input-error *ngIf="endpointForm.get('url')?.touched && endpointForm.get('url')?.invalid">
                         Invalid endpoint URL

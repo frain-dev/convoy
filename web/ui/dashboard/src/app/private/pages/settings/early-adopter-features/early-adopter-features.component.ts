@@ -1,8 +1,8 @@
-import { Component, OnInit, inject } from '@angular/core';
-import { SettingsService } from '../settings.service';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import {Component, inject, OnInit} from '@angular/core';
+import {SettingsService} from '../settings.service';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 interface EarlyAdopterFeature {
 	key: string;
@@ -36,7 +36,7 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 			const organisationDetails = JSON.parse(org);
 			this.organisationId = organisationDetails.uid;
 		}
-		
+
 		this.canManage = await this.rbacService.userCanAccess('Organisations|MANAGE');
 		await this.getEarlyAdopterFeatures();
 	}
@@ -47,12 +47,12 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 		try {
 			const response = await this.settingService.getEarlyAdopterFeatures({ org_id: this.organisationId });
 			const allFeatures = response.data || [];
-			
+
 			// Filter features based on license availability
 			this.earlyAdopterFeatures = allFeatures.filter((feature: EarlyAdopterFeature) => {
 				return this.hasFeatureLicense(feature.key);
 			});
-			
+
 			this.isLoadingFeatures = false;
 		} catch (error) {
 			console.error('Error fetching features:', error);
@@ -62,8 +62,8 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 
 	private hasFeatureLicense(featureKey: string): boolean {
 		const licenseMap: { [key: string]: string } = {
-			'mtls': 'MUTUAL_TLS'
-			// 'oauth-token-exchange': // TODO: Add proper license check for OAuth Token Exchange
+			'mtls': 'MUTUAL_TLS',
+			'oauth-token-exchange': 'OAUTH2_ENDPOINT_AUTH'
 		};
 
 		const license = licenseMap[featureKey];
@@ -99,19 +99,19 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 
 	async toggleFeature(featureKey: string) {
 		if (!this.organisationId || this.isUpdatingFeatures || !this.canManage) return;
-		
+
 		// Find the feature by key
 		const feature = this.earlyAdopterFeatures.find(f => f.key === featureKey);
 		if (!feature) {
 			console.error('Feature not found:', featureKey);
 			return;
 		}
-		
+
 		// Store the current state before toggling
 		const currentState = feature.enabled;
 		const newState = !currentState;
 		const featureName = feature.name;
-		
+
 		this.isUpdatingFeatures = true;
 		try {
 			const featureFlags: { [key: string]: boolean } = {};

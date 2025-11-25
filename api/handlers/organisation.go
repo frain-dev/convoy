@@ -305,8 +305,7 @@ func (h *Handler) isEarlyAdopterFeatureLicensed(featureKey fflag.FeatureFlagKey)
 	case fflag.MTLS:
 		return h.A.Licenser.MutualTLS()
 	case fflag.OAuthTokenExchange:
-		// TODO: Add proper license check for OAuth Token Exchange
-		return false
+		return h.A.Licenser.OAuth2EndpointAuth()
 	default:
 		return false
 	}

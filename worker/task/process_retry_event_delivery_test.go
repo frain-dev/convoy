@@ -1220,6 +1220,9 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 			// Create a nil fetcher for tests (will fall back to system-wide config)
 			var fetcher fflag.FeatureFlagFetcher = nil
 
+			// Create a simple mock OAuth2TokenService that returns empty token (no-op for tests)
+			mockOAuth2TokenService := &mockOAuth2TokenService{}
+
 			deps := EventDeliveryProcessorDeps{
 				EndpointRepo:          endpointRepo,
 				EventDeliveryRepo:     msgRepo,
@@ -1233,6 +1236,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				FeatureFlag:           featureFlag,
 				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
+				OAuth2TokenService:    mockOAuth2TokenService,
 			}
 			processFn := ProcessRetryEventDelivery(deps)
 

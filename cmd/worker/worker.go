@@ -28,6 +28,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 )
@@ -326,6 +327,9 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
+	// Initialize OAuth2 token service
+	oauth2TokenService := services.NewOAuth2TokenService(a.Cache, lo)
+
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
 		EndpointRepo:          endpointRepo,
 		EventDeliveryRepo:     eventDeliveryRepo,
@@ -339,19 +343,23 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		FeatureFlag:           featureFlag,
 		FeatureFlagFetcher:    postgres.NewFeatureFlagFetcher(a.DB),
 		TracerBackend:         a.TracerBackend,
+		OAuth2TokenService:    oauth2TokenService,
 	}
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
 
 	eventProcessorDeps := task.EventProcessorDeps{
-		EndpointRepo:  endpointRepo,
-		EventRepo:     eventRepo,
-		ProjectRepo:   projectRepo,
-		EventQueue:    a.Queue,
-		SubRepo:       subRepo,
-		FilterRepo:    filterRepo,
-		Licenser:      a.Licenser,
-		TracerBackend: a.TracerBackend,
+		EndpointRepo:       endpointRepo,
+		EventRepo:          eventRepo,
+		ProjectRepo:        projectRepo,
+		EventQueue:         a.Queue,
+		SubRepo:            subRepo,
+		FilterRepo:         filterRepo,
+		Licenser:           a.Licenser,
+		TracerBackend:      a.TracerBackend,
+		OAuth2TokenService: oauth2TokenService,
+		FeatureFlag:        featureFlag,
+		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
 	}
 
 	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
@@ -368,17 +376,20 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	}
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
-		Channels:          channels,
-		EndpointRepo:      endpointRepo,
-		EventRepo:         eventRepo,
-		ProjectRepo:       projectRepo,
-		EventDeliveryRepo: eventDeliveryRepo,
-		EventQueue:        a.Queue,
-		SubRepo:           subRepo,
-		FilterRepo:        filterRepo,
-		DeviceRepo:        deviceRepo,
-		Licenser:          a.Licenser,
-		TracerBackend:     a.TracerBackend,
+		Channels:           channels,
+		EndpointRepo:       endpointRepo,
+		EventRepo:          eventRepo,
+		ProjectRepo:        projectRepo,
+		EventDeliveryRepo:  eventDeliveryRepo,
+		EventQueue:         a.Queue,
+		SubRepo:            subRepo,
+		FilterRepo:         filterRepo,
+		DeviceRepo:         deviceRepo,
+		Licenser:           a.Licenser,
+		TracerBackend:      a.TracerBackend,
+		OAuth2TokenService: oauth2TokenService,
+		FeatureFlag:        featureFlag,
+		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 

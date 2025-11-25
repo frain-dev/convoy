@@ -502,3 +502,17 @@ func (mr *MockLicenserMockRecorder) WebhookAnalytics() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WebhookAnalytics", reflect.TypeOf((*MockLicenser)(nil).WebhookAnalytics))
 }
+
+// OAuth2EndpointAuth mocks base method.
+func (m *MockLicenser) OAuth2EndpointAuth() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OAuth2EndpointAuth")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// OAuth2EndpointAuth indicates an expected call of OAuth2EndpointAuth.
+func (mr *MockLicenserMockRecorder) OAuth2EndpointAuth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OAuth2EndpointAuth", reflect.TypeOf((*MockLicenser)(nil).OAuth2EndpointAuth))
+}

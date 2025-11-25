@@ -73,6 +73,10 @@ func (Licenser) MutualTLS() bool {
 	return true
 }
 
+func (Licenser) OAuth2EndpointAuth() bool {
+	return true
+}
+
 func (Licenser) SynchronousWebhooks() bool {
 	return true
 }
