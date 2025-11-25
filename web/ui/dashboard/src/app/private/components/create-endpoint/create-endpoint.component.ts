@@ -26,6 +26,7 @@ import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.co
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {TagComponent} from 'src/app/components/tag/tag.component';
 import {SelectComponent} from 'src/app/components/select/select.component';
+import {SettingsService} from '../../pages/settings/settings.service';
 
 // Custom validators that skip validation for [REDACTED] placeholder
 function mtlsCertValidator(): ValidatorFn {
@@ -127,6 +128,8 @@ export class CreateEndpointComponent implements OnInit {
 	endpointCreated: boolean = false;
 	endpointSecret?: SECRET;
 	currentRoute = window.location.pathname.split('/').reverse()[0];
+	mtlsFeatureEnabled = false;
+	organisationId!: string;
 	private rbacService = inject(RbacService);
 
 	constructor(
@@ -137,10 +140,14 @@ export class CreateEndpointComponent implements OnInit {
 		public privateService: PrivateService,
 		private router: Router,
 		private endpointService: EndpointsService,
-		public licenseService: LicensesService
+		public licenseService: LicensesService,
+		private settingsService: SettingsService
 	) {}
 
 	async ngOnInit() {
+		this.getOrganisationId();
+		await this.checkMTLSFeatureFlag();
+
 		if (this.type !== 'portal')
 			this.configurations.push(
 				{ uid: 'owner_id', name: 'Owner ID ', show: false, deleted: false },
@@ -154,6 +161,26 @@ export class CreateEndpointComponent implements OnInit {
 		if (!this.endpointUid) this.endpointUid = this.route.snapshot.params.id;
 		if ((this.isUpdateAction || this.editMode) && this.type !== 'subscription') this.getEndpointDetails();
 		if (!(await this.rbacService.userCanAccess('Endpoints|MANAGE'))) this.addNewEndpointForm.disable();
+	}
+
+	getOrganisationId() {
+		const org = localStorage.getItem('CONVOY_ORG');
+		if (org) {
+			const organisationDetails = JSON.parse(org);
+			this.organisationId = organisationDetails.uid;
+		}
+	}
+
+	async checkMTLSFeatureFlag() {
+		if (!this.organisationId) return;
+		try {
+			this.mtlsFeatureEnabled = await this.settingsService.checkFeatureFlagEnabled({
+				org_id: this.organisationId,
+				feature_key: 'mtls'
+			});
+		} catch (error) {
+			this.mtlsFeatureEnabled = false;
+		}
 	}
 
 	async runEndpointValidation() {
@@ -325,7 +352,15 @@ export class CreateEndpointComponent implements OnInit {
     }
 
 	showConfig(configValue: string): boolean {
-		return this.configurations.find(config => config.uid === configValue)?.show || false;
+		const config = this.configurations.find(config => config.uid === configValue);
+		if (!config) return false;
+		
+		// For mTLS, also check if feature flag is enabled
+		if (configValue === 'mtls' && !this.mtlsFeatureEnabled) {
+			return false;
+		}
+		
+		return config.show || false;
 	}
 
 	onContentTypeSelected(value: any) {

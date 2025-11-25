@@ -337,6 +337,7 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		AttemptsRepo:          attemptRepo,
 		CircuitBreakerManager: circuitBreakerManager,
 		FeatureFlag:           featureFlag,
+		FeatureFlagFetcher:    postgres.NewFeatureFlagFetcher(a.DB),
 		TracerBackend:         a.TracerBackend,
 	}
 

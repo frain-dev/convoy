@@ -34,6 +34,7 @@ const (
 	errMutualTLSFeatureUnavailable = "mutual TLS feature unavailable, please upgrade your license"
 )
 
+//nolint:cyclop // Large function handling complex event delivery logic with many conditional branches
 type EventDeliveryProcessorDeps struct {
 	EndpointRepo          datastore.EndpointRepository
 	EventDeliveryRepo     datastore.EventDeliveryRepository
@@ -45,6 +46,7 @@ type EventDeliveryProcessorDeps struct {
 	AttemptsRepo          datastore.DeliveryAttemptsRepository
 	CircuitBreakerManager *circuit_breaker.CircuitBreakerManager
 	FeatureFlag           *fflag.FFlag
+	FeatureFlagFetcher    fflag.FeatureFlagFetcher
 	TracerBackend         tracer.Backend
 }
 
@@ -246,25 +248,33 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				return nil // Return nil to avoid retrying
 			}
 
-			// Use cached certificate loading to avoid parsing on every request
-			cert, certErr := config.LoadClientCertificateWithCache(
-				endpoint.UID, // Use endpoint ID as cache key
-				endpoint.MtlsClientCert.ClientCert,
-				endpoint.MtlsClientCert.ClientKey,
-			)
-			if certErr != nil {
-				// Fail fast on certificate errors (invalid or expired cert) to avoid needless retries
-				log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
-				eventDelivery.Status = datastore.FailureEventStatus
-				eventDelivery.Description = fmt.Sprintf("Invalid mTLS certificate: %v", certErr)
-				err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
-				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+			// Check feature flag for mTLS using project's organisation ID
+			mtlsEnabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, deps.FeatureFlagFetcher, project.OrganisationID)
+			if !mtlsEnabled {
+				log.FromContext(ctx).Warn("Endpoint has mTLS configured but feature flag is disabled, continuing without mTLS")
+				// Continue without mTLS if feature flag is disabled
+				mtlsCert = nil
+			} else {
+				// Use cached certificate loading to avoid parsing on every request
+				cert, certErr := config.LoadClientCertificateWithCache(
+					endpoint.UID, // Use endpoint ID as cache key
+					endpoint.MtlsClientCert.ClientCert,
+					endpoint.MtlsClientCert.ClientKey,
+				)
+				if certErr != nil {
+					// Fail fast on certificate errors (invalid or expired cert) to avoid needless retries
+					log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
+					eventDelivery.Status = datastore.FailureEventStatus
+					eventDelivery.Description = fmt.Sprintf("Invalid mTLS certificate: %v", certErr)
+					err = deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+					if err != nil {
+						log.FromContext(ctx).WithError(err).Error("failed to update event delivery status to failed")
+					}
+					deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
+					return nil // Return nil to avoid retrying
 				}
-				deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
-				return nil // Return nil to avoid retrying
+				mtlsCert = cert
 			}
-			mtlsCert = cert
 		}
 
 		resp, err := deps.Dispatcher.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)
@@ -417,13 +427,13 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			log.FromContext(ctx).
 				WithError(err).
 				Errorf("failed to create delivery attempt for event delivery with id: %s and delivery attempt: %s", eventDelivery.UID, attempt.ResponseData)
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
 		err = deps.EventDeliveryRepo.UpdateEventDeliveryMetadata(ctx, project.UID, eventDelivery)
 		if err != nil {
 			log.FromContext(ctx).WithError(err).Error("failed to update message ", eventDelivery.UID)
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, err.Error())}
+			return &DeliveryError{Err: fmt.Errorf("%w: %w", ErrDeliveryAttemptFailed, err)}
 		}
 
 		if !done && eventDelivery.Metadata.NumTrials < eventDelivery.Metadata.RetryLimit {
@@ -431,7 +441,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			if err != nil {
 				errS = err.Error()
 			}
-			return &DeliveryError{Err: fmt.Errorf("%s, err: %s", ErrDeliveryAttemptFailed, errS)}
+			return &DeliveryError{Err: fmt.Errorf("%w: %s", ErrDeliveryAttemptFailed, errS)}
 		}
 
 		return nil

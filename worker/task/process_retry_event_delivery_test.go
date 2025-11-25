@@ -1217,6 +1217,9 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
+			// Create a nil fetcher for tests (will fall back to system-wide config)
+			var fetcher fflag.FeatureFlagFetcher = nil
+
 			deps := EventDeliveryProcessorDeps{
 				EndpointRepo:          endpointRepo,
 				EventDeliveryRepo:     msgRepo,
@@ -1228,6 +1231,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 				AttemptsRepo:          attemptsRepo,
 				CircuitBreakerManager: manager,
 				FeatureFlag:           featureFlag,
+				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
 			}
 			processFn := ProcessRetryEventDelivery(deps)

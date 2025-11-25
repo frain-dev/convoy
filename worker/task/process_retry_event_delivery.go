@@ -33,6 +33,7 @@ var (
 	defaultEventDelay        = 120 * time.Second
 )
 
+//nolint:cyclop // Large function handling complex retry event delivery logic with many conditional branches
 func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		// Start a new trace span for retry event delivery
@@ -222,25 +223,33 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 				return nil // Return nil to avoid retrying
 			}
 
-			// Use cached certificate loading to avoid parsing on every request
-			cert, certErr := config.LoadClientCertificateWithCache(
-				endpoint.UID, // Use endpoint ID as cache key
-				endpoint.MtlsClientCert.ClientCert,
-				endpoint.MtlsClientCert.ClientKey,
-			)
-			if certErr != nil {
-				// Fail fast on certificate errors (invalid or expired cert) to avoid needless retries
-				log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
-				eventDelivery.Status = datastore.FailureEventStatus
-				eventDelivery.Description = fmt.Sprintf("Invalid mTLS certificate: %v", certErr)
-				innerErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
-				if innerErr != nil {
-					log.FromContext(ctx).WithError(innerErr).Error("failed to update event delivery status to failed")
+			// Check feature flag for mTLS using project's organisation ID
+			mtlsEnabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, deps.FeatureFlagFetcher, project.OrganisationID)
+			if !mtlsEnabled {
+				log.FromContext(ctx).Warn("Endpoint has mTLS configured but feature flag is disabled, continuing without mTLS")
+				// Continue without mTLS if feature flag is disabled
+				mtlsCert = nil
+			} else {
+				// Use cached certificate loading to avoid parsing on every request
+				cert, certErr := config.LoadClientCertificateWithCache(
+					endpoint.UID, // Use endpoint ID as cache key
+					endpoint.MtlsClientCert.ClientCert,
+					endpoint.MtlsClientCert.ClientKey,
+				)
+				if certErr != nil {
+					// Fail fast on certificate errors (invalid or expired cert) to avoid needless retries
+					log.FromContext(ctx).WithError(certErr).Error("failed to load mTLS client certificate")
+					eventDelivery.Status = datastore.FailureEventStatus
+					eventDelivery.Description = fmt.Sprintf("Invalid mTLS certificate: %v", certErr)
+					innerErr := deps.EventDeliveryRepo.UpdateStatusOfEventDelivery(ctx, project.UID, *eventDelivery, datastore.FailureEventStatus)
+					if innerErr != nil {
+						log.FromContext(ctx).WithError(innerErr).Error("failed to update event delivery status to failed")
+					}
+					deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
+					return nil // Return nil to avoid retrying
 				}
-				deps.TracerBackend.Capture(ctx, "event.retry.delivery.error", attributes, traceStartTime, time.Now())
-				return nil // Return nil to avoid retrying
+				mtlsCert = cert
 			}
-			mtlsCert = cert
 		}
 
 		resp, err := deps.Dispatcher.SendWebhookWithMTLS(ctx, targetURL, sig.Payload, project.Config.Signature.Header.String(), header, int64(cfg.MaxResponseSize), eventDelivery.Headers, eventDelivery.IdempotencyKey, httpDuration, contentType, mtlsCert)

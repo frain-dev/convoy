@@ -1128,6 +1128,9 @@ func TestProcessEventDelivery(t *testing.T) {
 			)
 			require.NoError(t, err)
 
+			// Create a nil fetcher for tests (will fall back to system-wide config)
+			var fetcher fflag.FeatureFlagFetcher = nil
+
 			deps := EventDeliveryProcessorDeps{
 				EndpointRepo:          endpointRepo,
 				EventDeliveryRepo:     msgRepo,
@@ -1139,6 +1142,7 @@ func TestProcessEventDelivery(t *testing.T) {
 				AttemptsRepo:          attemptsRepo,
 				CircuitBreakerManager: manager,
 				FeatureFlag:           featureFlag,
+				FeatureFlagFetcher:    fetcher,
 				TracerBackend:         mt,
 			}
 			processor := ProcessEventDelivery(deps)

@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -24,14 +25,16 @@ import (
 )
 
 type CreateEndpointService struct {
-	PortalLinkRepo datastore.PortalLinkRepository
-	EndpointRepo   datastore.EndpointRepository
-	ProjectRepo    datastore.ProjectRepository
-	Licenser       license.Licenser
-	FeatureFlag    *fflag.FFlag
-	Logger         log.StdLogger
-	E              models.CreateEndpoint
-	ProjectID      string
+	PortalLinkRepo     datastore.PortalLinkRepository
+	EndpointRepo       datastore.EndpointRepository
+	ProjectRepo        datastore.ProjectRepository
+	Licenser           license.Licenser
+	FeatureFlag        *fflag.FFlag
+	FeatureFlagFetcher fflag.FeatureFlagFetcher
+	DB                 database.Database
+	Logger             log.StdLogger
+	E                  models.CreateEndpoint
+	ProjectID          string
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -129,18 +132,23 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 
 		// Validate both fields provided together
-		cc := a.E.MtlsClientCert
-		if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
-			return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
-		}
+		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, project.OrganisationID)
+		if !mtlsEnabled {
+			log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
+		} else {
+			cc := a.E.MtlsClientCert
+			if util.IsStringEmpty(cc.ClientCert) || util.IsStringEmpty(cc.ClientKey) {
+				return nil, &ServiceError{ErrMsg: "mtls_client_cert requires both client_cert and client_key"}
+			}
 
-		// Validate the certificate and key pair (checks expiration and matching)
-		_, err = config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
-		if err != nil {
-			return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
-		}
+			// Validate the certificate and key pair (checks expiration and matching)
+			_, err := config.LoadClientCertificate(cc.ClientCert, cc.ClientKey)
+			if err != nil {
+				return nil, &ServiceError{ErrMsg: fmt.Sprintf("invalid mTLS client certificate: %v", err)}
+			}
 
-		endpoint.MtlsClientCert = a.E.MtlsClientCert.Transform()
+			endpoint.MtlsClientCert = a.E.MtlsClientCert.Transform()
+		}
 	}
 
 	err = a.EndpointRepo.CreateEndpoint(ctx, endpoint, a.ProjectID)
@@ -157,7 +165,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 
 func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSecure bool, mtlsClientCert *models.MtlsClientCert) (string, error) {
 	if util.IsStringEmpty(a.E.URL) {
-		return "", errors.New("please provide the endpoint url")
+		return "", ErrEndpointURLRequired
 	}
 
 	u, pingErr := url.Parse(a.E.URL)
@@ -168,7 +176,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 	switch u.Scheme {
 	case "http":
 		if enforceSecure {
-			return "", errors.New("only https endpoints allowed")
+			return "", ErrHTTPSOnly
 		}
 	case "https":
 		cfg, innerErr := config.Get()
@@ -218,7 +226,7 @@ func (a *CreateEndpointService) ValidateEndpoint(ctx context.Context, enforceSec
 			}
 		}
 	default:
-		return "", errors.New("invalid endpoint scheme")
+		return "", ErrInvalidEndpointScheme
 	}
 
 	return u.String(), nil
@@ -230,8 +238,10 @@ func ValidateEndpointAuthentication(auth *datastore.EndpointAuthentication) (*da
 			return nil, err
 		}
 
-		if auth.Type != datastore.APIKeyAuthentication {
-			return nil, util.NewServiceError(http.StatusBadRequest, errors.New("api key field is required"))
+		if auth.Type == datastore.APIKeyAuthentication {
+			if auth.ApiKey == nil || util.IsStringEmpty(auth.ApiKey.HeaderValue) {
+				return nil, util.NewServiceError(http.StatusBadRequest, ErrAPIKeyFieldRequired)
+			}
 		}
 
 		return auth, nil
