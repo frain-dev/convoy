@@ -27,6 +27,8 @@ test_e2e:
 	@go test -v ./e2e/... -run TestE2E_FanOutEvent_MustMatchSubscription -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_FormEndpoint_ContentType -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_FormEndpoint_WithCustomHeaders -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_OAuth2_SharedSecret -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_OAuth2_ClientAssertion -timeout 2m
 	@echo "✅ All E2E tests passed!"
 
 # Run all E2E tests together (may be flaky, use test_e2e for CI)

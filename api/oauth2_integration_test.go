@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -15,6 +12,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
@@ -24,6 +22,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -31,6 +30,7 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/guregu/null.v4"
 )
 
 type OAuth2IntegrationTestSuite struct {
@@ -53,14 +53,14 @@ type OAuth2IntegrationTestSuite struct {
 }
 
 func (s *OAuth2IntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
+	s.DB = s.ConvoyApp.A.DB
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *OAuth2IntegrationTestSuite) SetupTest() {
 	testdb.PurgeDB(s.T(), s.DB)
-	s.DB = getDB()
+	s.DB = s.ConvoyApp.A.DB
 
 	// Reset tracking
 	s.OAuth2TokenRequests = []map[string]string{}
@@ -78,6 +78,10 @@ func (s *OAuth2IntegrationTestSuite) SetupTest() {
 
 	// Setup Default Project.
 	s.DefaultProject, err = testdb.SeedDefaultProject(s.ConvoyApp.A.DB, org.UID)
+	require.NoError(s.T(), err)
+
+	// Enable OAuth2 feature flag for the organization
+	err = enableOAuth2FeatureFlag(s.T(), s.ConvoyApp.A.DB, org.UID)
 	require.NoError(s.T(), err)
 
 	s.AuthenticatorFn = authenticateRequest(&models.LoginUser{
@@ -574,6 +578,28 @@ func (s *OAuth2IntegrationTestSuite) Test_CreateEndpoint_WithOAuth2ClientAsserti
 	require.Equal(s.T(), signingKey.X, fetchedEndpoint.Authentication.OAuth2.SigningKey.X)
 	require.Equal(s.T(), signingKey.Y, fetchedEndpoint.Authentication.OAuth2.SigningKey.Y)
 	require.Equal(s.T(), signingKey.D, fetchedEndpoint.Authentication.OAuth2.SigningKey.D)
+}
+
+// enableOAuth2FeatureFlag enables the OAuth2 feature flag for an organization
+func enableOAuth2FeatureFlag(t *testing.T, db database.Database, orgID string) error {
+	t.Helper()
+
+	// Fetch feature flag
+	featureFlag, err := postgres.FetchFeatureFlagByKey(context.Background(), db, string(fflag.OAuthTokenExchange))
+	if err != nil {
+		return fmt.Errorf("failed to fetch feature flag: %w", err)
+	}
+
+	// Create or update override
+	override := &datastore.FeatureFlagOverride{
+		FeatureFlagID: featureFlag.UID,
+		OwnerType:     "organisation",
+		OwnerID:       orgID,
+		Enabled:       true,
+		EnabledAt:     null.TimeFrom(time.Now()),
+	}
+
+	return postgres.UpsertFeatureFlagOverride(context.Background(), db, override)
 }
 
 func TestOAuth2IntegrationTestSuite(t *testing.T) {
