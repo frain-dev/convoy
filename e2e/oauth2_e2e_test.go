@@ -333,9 +333,10 @@ func CreateOAuth2EndpointViaHTTP(t *testing.T, env *E2ETestEnv, oauth2URL string
 		"grant_type":          "client_credentials",
 	}
 
-	if authType == "shared_secret" {
+	switch authType {
+	case "shared_secret":
 		oauth2Config["client_secret"] = "test-client-secret"
-	} else if authType == "client_assertion" {
+	case "client_assertion":
 		if signingKey != nil {
 			oauth2Config["signing_key"] = map[string]interface{}{
 				"kty": signingKey.Kty,
