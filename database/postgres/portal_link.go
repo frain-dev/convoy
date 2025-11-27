@@ -68,6 +68,12 @@ const (
 	WHERE portal_link_id = $1 OR endpoint_id = $2
 	`
 
+	updateEndpointOwnerID = `
+	UPDATE convoy.endpoints
+	SET owner_id = $3
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL
+	`
+
 	fetchPortalLinkById = `
 	SELECT
 	p.id,
@@ -265,7 +271,7 @@ func NewPortalLinkRepo(db database.Database) datastore.PortalLinkRepository {
 	return &portalLinkRepo{db: db, km: km}
 }
 
-func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
+func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink, updateEndpointOwnerID bool, endpointIDs []string) error {
 	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -330,10 +336,18 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		return err
 	}
 
+	// Update endpoint owner_ids if migration signaled it's needed
+	if updateEndpointOwnerID && len(endpointIDs) > 0 {
+		err = p.updateEndpointOwnerIDs(ctx, tx, endpointIDs, portal.OwnerID, portal.ProjectID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return tx.Commit()
 }
 
-func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string, portal *datastore.PortalLink) error {
+func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string, portal *datastore.PortalLink, updateEndpointOwnerID bool, endpointIDs []string) error {
 	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -367,7 +381,59 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		return err
 	}
 
+	// Update endpoint owner_ids if migration signaled it's needed
+	if updateEndpointOwnerID && len(endpointIDs) > 0 {
+		err = p.updateEndpointOwnerIDs(ctx, tx, endpointIDs, portal.OwnerID, projectID)
+		if err != nil {
+			return err
+		}
+	}
+
 	return tx.Commit()
+}
+
+// updateEndpointOwnerIDs updates endpoint owner_ids for the given endpoint IDs within the transaction
+func (p *portalLinkRepo) updateEndpointOwnerIDs(ctx context.Context, tx *sqlx.Tx, endpointIDs []string, portalOwnerID, projectID string) error {
+	endpointRepo := NewEndpointRepo(p.db)
+	for _, endpointID := range endpointIDs {
+		endpoint, err := endpointRepo.FindEndpointByID(ctx, endpointID, projectID)
+		if err != nil {
+			return fmt.Errorf("failed to find endpoint %s: %w", endpointID, err)
+		}
+
+		// If endpoint's owner_id is blank, set it to portal link's owner_id
+		if util.IsStringEmpty(endpoint.OwnerID) {
+			endpoint.OwnerID = portalOwnerID
+			// Update endpoint owner_id using the transaction
+			err = p.updateEndpointOwnerID(ctx, tx, endpoint, projectID)
+			if err != nil {
+				return fmt.Errorf("failed to update endpoint %s owner_id: %w", endpointID, err)
+			}
+		} else if endpoint.OwnerID != portalOwnerID {
+			// If endpoint's owner_id is not blank and doesn't match, throw error
+			return fmt.Errorf("endpoint %s already has owner_id %s, cannot assign to portal link with owner_id %s", endpointID, endpoint.OwnerID, portalOwnerID)
+		}
+	}
+	return nil
+}
+
+// updateEndpointOwnerID updates the endpoint's owner_id using the provided transaction
+func (p *portalLinkRepo) updateEndpointOwnerID(ctx context.Context, tx *sqlx.Tx, endpoint *datastore.Endpoint, projectID string) error {
+	r, err := tx.ExecContext(ctx, updateEndpointOwnerID, endpoint.UID, projectID, endpoint.OwnerID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return fmt.Errorf("endpoint %s not found or not updated", endpoint.UID)
+	}
+
+	return nil
 }
 
 func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID string, portalLinkId string) (*datastore.PortalLink, error) {
@@ -664,7 +730,7 @@ func (p *portalLinkRepo) RefreshPortalLinkAuthToken(ctx context.Context, project
 	portalLink.TokenHash = encodedKey
 	portalLink.TokenExpiresAt = null.NewTime(time.Now().Add(time.Hour), true)
 
-	err = p.UpdatePortalLink(ctx, projectID, portalLink)
+	err = p.UpdatePortalLink(ctx, projectID, portalLink, false, nil)
 	if err != nil {
 		return nil, err
 	}

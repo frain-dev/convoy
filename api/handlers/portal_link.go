@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
+	"github.com/frain-dev/convoy/api/migrations"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -32,6 +33,13 @@ import (
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
 func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
+	err := h.RM.VersionRequest(r, "CreatePortalLink")
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Version request failed for CreatePortalLink: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
+		return
+	}
+
 	var newPortalLink models.CreatePortalLinkRequest
 	if err := util.ReadJSON(r, &newPortalLink); err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link creation request: %v", err)
@@ -56,11 +64,15 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if migration signaled that endpoint owner_ids need to be updated
+	updateEndpointOwnerID := r.Header.Get(migrations.UpdateEndpointOwnerIDHeader) == "true"
+
 	cp := services.CreatePortalLinkService{
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		Portal:         &newPortalLink,
-		Project:        project,
+		PortalLinkRepo:        postgres.NewPortalLinkRepo(h.A.DB),
+		EndpointRepo:          postgres.NewEndpointRepo(h.A.DB),
+		Portal:                &newPortalLink,
+		Project:               project,
+		UpdateEndpointOwnerID: updateEndpointOwnerID,
 	}
 
 	portalLink, err := cp.Run(r.Context())
@@ -124,7 +136,7 @@ func (h *Handler) GeneratePortalToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
-	err = portalLinkRepo.UpdatePortalLink(r.Context(), project.UID, pLink)
+	err = portalLinkRepo.UpdatePortalLink(r.Context(), project.UID, pLink, false, nil)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -204,8 +216,15 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
+	err := h.RM.VersionRequest(r, "UpdatePortalLink")
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Version request failed for UpdatePortalLink: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
+		return
+	}
+
 	var updatePortalLink models.UpdatePortalLinkRequest
-	err := util.ReadJSON(r, &updatePortalLink)
+	err = util.ReadJSON(r, &updatePortalLink)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link update request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -241,12 +260,16 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if migration signaled that endpoint owner_ids need to be updated
+	updateEndpointOwnerID := r.Header.Get(migrations.UpdateEndpointOwnerIDHeader) == "true"
+
 	upl := services.UpdatePortalLinkService{
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		Project:        project,
-		Update:         &updatePortalLink,
-		PortalLink:     portalLink,
+		PortalLinkRepo:        postgres.NewPortalLinkRepo(h.A.DB),
+		EndpointRepo:          postgres.NewEndpointRepo(h.A.DB),
+		Project:               project,
+		Update:                &updatePortalLink,
+		PortalLink:            portalLink,
+		UpdateEndpointOwnerID: updateEndpointOwnerID,
 	}
 
 	portalLink, err = upl.Run(r.Context())

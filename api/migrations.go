@@ -3,6 +3,7 @@ package api
 import (
 	v20240101 "github.com/frain-dev/convoy/api/migrations/v20240101"
 	v20240401 "github.com/frain-dev/convoy/api/migrations/v20240401"
+	v20251124 "github.com/frain-dev/convoy/api/migrations/v20251124"
 	"github.com/subomi/requestmigrations"
 )
 
@@ -20,5 +21,9 @@ var migrations = requestmigrations.MigrationStore{
 		&v20240401.GetEndpointResponseMigration{},
 		&v20240401.GetEndpointsResponseMigration{},
 		&v20240401.UpdateEndpointResponseMigration{},
+	},
+	"2025-11-24": requestmigrations.Migrations{
+		v20251124.NewCreatePortalLinkRequestMigration(),
+		v20251124.NewUpdatePortalLinkRequestMigration(),
 	},
 }
