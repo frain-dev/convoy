@@ -11,9 +11,8 @@ import (
 )
 
 type UpdatePortalLinkService struct {
-	PortalLinkRepo        datastore.PortalLinkRepository
-	EndpointRepo          datastore.EndpointRepository
-	UpdateEndpointOwnerID bool
+	PortalLinkRepo datastore.PortalLinkRepository
+	EndpointRepo   datastore.EndpointRepository
 
 	Project    *datastore.Project
 	Update     *models.UpdatePortalLinkRequest
@@ -33,7 +32,7 @@ func (p *UpdatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 	p.PortalLink.OwnerID = p.Update.OwnerID
 	p.PortalLink.AuthType = datastore.PortalAuthType(p.Update.AuthType)
 	p.PortalLink.CanManageEndpoint = p.Update.CanManageEndpoint
-	err := p.PortalLinkRepo.UpdatePortalLink(ctx, p.Project.UID, p.PortalLink, p.UpdateEndpointOwnerID, p.Update.Endpoints)
+	err := p.PortalLinkRepo.UpdatePortalLink(ctx, p.Project.UID, p.PortalLink)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to update portal link")
 		return nil, &ServiceError{ErrMsg: "an error occurred while updating portal link"}

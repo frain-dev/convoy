@@ -18,9 +18,8 @@ import (
 var ErrInvalidEndpoints = errors.New("endpoints cannot be empty")
 
 type CreatePortalLinkService struct {
-	PortalLinkRepo        datastore.PortalLinkRepository
-	EndpointRepo          datastore.EndpointRepository
-	UpdateEndpointOwnerID bool
+	PortalLinkRepo datastore.PortalLinkRepository
+	EndpointRepo   datastore.EndpointRepository
 
 	Portal  *models.CreatePortalLinkRequest
 	Project *datastore.Project
@@ -52,7 +51,7 @@ func (p *CreatePortalLinkService) Run(ctx context.Context) (*datastore.PortalLin
 		UpdatedAt:         time.Now(),
 	}
 
-	err := p.PortalLinkRepo.CreatePortalLink(ctx, portalLink, p.UpdateEndpointOwnerID, p.Portal.Endpoints)
+	err := p.PortalLinkRepo.CreatePortalLink(ctx, portalLink)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create portal link")
 		return nil, &ServiceError{ErrMsg: "failed to create portal link"}
