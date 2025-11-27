@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/util"
-	"github.com/stretchr/testify/require"
 )
 
 func generateTestJWK(t *testing.T) *datastore.OAuth2SigningKey {

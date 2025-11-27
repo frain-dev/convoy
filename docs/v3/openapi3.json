@@ -293,6 +293,9 @@
 					"api_key": {
 						"$ref": "#/components/schemas/datastore.ApiKey"
 					},
+					"oauth2": {
+						"$ref": "#/components/schemas/datastore.OAuth2"
+					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthenticationType"
 					}
@@ -301,7 +304,8 @@
 			},
 			"datastore.EndpointAuthenticationType": {
 				"enum": [
-					"api_key"
+					"api_key",
+					"oauth2"
 				],
 				"type": "string"
 			},
@@ -579,6 +583,156 @@
 					},
 					"client_key": {
 						"description": "ClientKey is the client private key PEM string",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.OAuth2": {
+				"properties": {
+					"audience": {
+						"type": "string"
+					},
+					"authentication_type": {
+						"$ref": "#/components/schemas/datastore.OAuth2AuthenticationType"
+					},
+					"client_id": {
+						"type": "string"
+					},
+					"client_secret": {
+						"description": "Encrypted at rest",
+						"type": "string"
+					},
+					"expiry_time_unit": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.OAuth2ExpiryTimeUnit"
+							}
+						],
+						"description": "Expiry time unit (seconds, milliseconds, minutes, hours)"
+					},
+					"field_mapping": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.OAuth2FieldMapping"
+							}
+						],
+						"description": "Field mapping for flexible token response parsing"
+					},
+					"grant_type": {
+						"type": "string"
+					},
+					"issuer": {
+						"type": "string"
+					},
+					"scope": {
+						"type": "string"
+					},
+					"signing_algorithm": {
+						"type": "string"
+					},
+					"signing_key": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/datastore.OAuth2SigningKey"
+							}
+						],
+						"description": "Encrypted at rest"
+					},
+					"subject": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.OAuth2AuthenticationType": {
+				"enum": [
+					"shared_secret",
+					"client_assertion"
+				],
+				"type": "string"
+			},
+			"datastore.OAuth2ExpiryTimeUnit": {
+				"enum": [
+					"seconds",
+					"milliseconds",
+					"minutes",
+					"hours"
+				],
+				"type": "string"
+			},
+			"datastore.OAuth2FieldMapping": {
+				"properties": {
+					"access_token": {
+						"description": "Field name for access token (e.g., \"accessToken\", \"access_token\", \"token\")",
+						"type": "string"
+					},
+					"expires_in": {
+						"description": "Field name for expiry time (e.g., \"expiresIn\", \"expires_in\", \"expiresAt\")",
+						"type": "string"
+					},
+					"token_type": {
+						"description": "Field name for token type (e.g., \"tokenType\", \"token_type\")",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"datastore.OAuth2SigningKey": {
+				"properties": {
+					"crv": {
+						"description": "EC (Elliptic Curve) key fields",
+						"type": "string"
+					},
+					"d": {
+						"description": "Private key (EC only)",
+						"type": "string"
+					},
+					"dp": {
+						"description": "RSA first factor CRT exponent (RSA private key only)",
+						"type": "string"
+					},
+					"dq": {
+						"description": "RSA second factor CRT exponent (RSA private key only)",
+						"type": "string"
+					},
+					"e": {
+						"description": "RSA public exponent (RSA only)",
+						"type": "string"
+					},
+					"kid": {
+						"description": "Key ID",
+						"type": "string"
+					},
+					"kty": {
+						"description": "Key type: \"EC\" or \"RSA\"",
+						"type": "string"
+					},
+					"n": {
+						"description": "RSA key fields",
+						"type": "string"
+					},
+					"p": {
+						"description": "RSA first prime factor (RSA private key only)",
+						"type": "string"
+					},
+					"q": {
+						"description": "RSA second prime factor (RSA private key only)",
+						"type": "string"
+					},
+					"qi": {
+						"description": "RSA first CRT coefficient (RSA private key only)",
+						"type": "string"
+					},
+					"x": {
+						"description": "X coordinate (EC only)",
+						"type": "string"
+					},
+					"y": {
+						"description": "Y coordinate (EC only)",
 						"type": "string"
 					}
 				},
@@ -1373,6 +1527,9 @@
 					"api_key": {
 						"$ref": "#/components/schemas/models.ApiKey"
 					},
+					"oauth2": {
+						"$ref": "#/components/schemas/models.OAuth2"
+					},
 					"type": {
 						"$ref": "#/components/schemas/datastore.EndpointAuthenticationType"
 					}
@@ -1918,6 +2075,130 @@
 				},
 				"type": "object"
 			},
+			"models.OAuth2": {
+				"properties": {
+					"audience": {
+						"type": "string"
+					},
+					"authentication_type": {
+						"type": "string"
+					},
+					"client_id": {
+						"type": "string"
+					},
+					"client_secret": {
+						"type": "string"
+					},
+					"expiry_time_unit": {
+						"description": "Expiry time unit (seconds, milliseconds, minutes, hours)",
+						"type": "string"
+					},
+					"field_mapping": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/models.OAuth2FieldMapping"
+							}
+						],
+						"description": "Field mapping for flexible token response parsing"
+					},
+					"grant_type": {
+						"type": "string"
+					},
+					"issuer": {
+						"type": "string"
+					},
+					"scope": {
+						"type": "string"
+					},
+					"signing_algorithm": {
+						"type": "string"
+					},
+					"signing_key": {
+						"$ref": "#/components/schemas/models.OAuth2SigningKey"
+					},
+					"subject": {
+						"type": "string"
+					},
+					"url": {
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.OAuth2FieldMapping": {
+				"properties": {
+					"access_token": {
+						"description": "Field name for access token (e.g., \"accessToken\", \"access_token\", \"token\")",
+						"type": "string"
+					},
+					"expires_in": {
+						"description": "Field name for expiry time (e.g., \"expiresIn\", \"expires_in\", \"expiresAt\")",
+						"type": "string"
+					},
+					"token_type": {
+						"description": "Field name for token type (e.g., \"tokenType\", \"token_type\")",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
+			"models.OAuth2SigningKey": {
+				"properties": {
+					"crv": {
+						"description": "EC (Elliptic Curve) key fields",
+						"type": "string"
+					},
+					"d": {
+						"description": "Private key (EC) or private exponent (RSA)",
+						"type": "string"
+					},
+					"dp": {
+						"description": "RSA first factor CRT exponent (RSA private key only)",
+						"type": "string"
+					},
+					"dq": {
+						"description": "RSA second factor CRT exponent (RSA private key only)",
+						"type": "string"
+					},
+					"e": {
+						"description": "RSA public exponent (RSA only)",
+						"type": "string"
+					},
+					"kid": {
+						"description": "Key ID",
+						"type": "string"
+					},
+					"kty": {
+						"description": "Key type: \"EC\" or \"RSA\"",
+						"type": "string"
+					},
+					"n": {
+						"description": "RSA key fields",
+						"type": "string"
+					},
+					"p": {
+						"description": "RSA first prime factor (RSA private key only)",
+						"type": "string"
+					},
+					"q": {
+						"description": "RSA second prime factor (RSA private key only)",
+						"type": "string"
+					},
+					"qi": {
+						"description": "RSA first CRT coefficient (RSA private key only)",
+						"type": "string"
+					},
+					"x": {
+						"description": "X coordinate (EC only)",
+						"type": "string"
+					},
+					"y": {
+						"description": "Y coordinate (EC only)",
+						"type": "string"
+					}
+				},
+				"type": "object"
+			},
 			"models.PagedResponse": {
 				"properties": {
 					"content": {},
@@ -2222,6 +2503,37 @@
 					"is_match": {
 						"description": "Whether the payload matches the filter criteria",
 						"type": "boolean"
+					}
+				},
+				"type": "object"
+			},
+			"models.TestOAuth2Request": {
+				"properties": {
+					"oauth2": {
+						"$ref": "#/components/schemas/models.OAuth2"
+					}
+				},
+				"type": "object"
+			},
+			"models.TestOAuth2Response": {
+				"properties": {
+					"access_token": {
+						"type": "string"
+					},
+					"error": {
+						"type": "string"
+					},
+					"expires_at": {
+						"type": "string"
+					},
+					"message": {
+						"type": "string"
+					},
+					"success": {
+						"type": "boolean"
+					},
+					"token_type": {
+						"type": "string"
 					}
 				},
 				"type": "object"
@@ -2887,6 +3199,134 @@
 					}
 				],
 				"summary": "Create an endpoint",
+				"tags": [
+					"Endpoints"
+				]
+			}
+		},
+		"/v1/projects/{projectID}/endpoints/oauth2/test": {
+			"post": {
+				"description": "This endpoint tests the OAuth2 connection by attempting to exchange a token",
+				"operationId": "TestOAuth2Connection",
+				"parameters": [
+					{
+						"description": "Project ID",
+						"in": "path",
+						"name": "projectID",
+						"required": true,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/models.TestOAuth2Request"
+							}
+						}
+					},
+					"description": "OAuth2 Configuration",
+					"required": true,
+					"x-originalParamName": "oauth2"
+				},
+				"responses": {
+					"200": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/models.TestOAuth2Response"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "OK"
+					},
+					"400": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Bad Request"
+					},
+					"401": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Unauthorized"
+					},
+					"404": {
+						"content": {
+							"application/json": {
+								"schema": {
+									"allOf": [
+										{
+											"$ref": "#/components/schemas/util.ServerResponse"
+										},
+										{
+											"properties": {
+												"data": {
+													"$ref": "#/components/schemas/handlers.Stub"
+												}
+											},
+											"type": "object"
+										}
+									]
+								}
+							}
+						},
+						"description": "Not Found"
+					}
+				},
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"summary": "Test OAuth2 connection",
 				"tags": [
 					"Endpoints"
 				]

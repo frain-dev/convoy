@@ -3,8 +3,9 @@ package models
 import (
 	"testing"
 
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestOAuth2_Transform_ECKey(t *testing.T) {
