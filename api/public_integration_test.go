@@ -1540,6 +1540,248 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	require.Equal(s.T(), resp.Endpoints, []string(pl.Endpoints))
 }
 
+func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpointsArray_UpdatesOwnerID() {
+	// Test creating portal link with endpoints array - migration sets flag, business logic updates endpoint owner_id
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	expectedStatusCode := http.StatusCreated
+
+	// Arrange Request - using endpoints array with owner_id (migration will set flag, business logic will update)
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "endpoint-link",
+		"owner_id": "%s"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert
+	var resp models.PortalLinkResponse
+	parseResponse(s.T(), w.Result(), &resp)
+
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	require.NoError(s.T(), err)
+
+	require.Equal(s.T(), resp.UID, pl.UID)
+	require.Equal(s.T(), resp.Name, "endpoint-link")
+	require.Equal(s.T(), resp.OwnerID, ownerID)
+	require.Equal(s.T(), resp.CanManageEndpoint, true)
+	// Endpoint should be linked via owner_id mechanism
+	require.Equal(s.T(), 1, pl.EndpointCount)
+
+	// Verify endpoint's owner_id was set by the business logic
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), ownerID, updatedEndpoint.OwnerID)
+}
+
+func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpointsArray_RollbackRemovesOwnerID() {
+	// Test that when an error occurs, the transaction rolls back and endpoint owner_id is NOT updated
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	expectedStatusCode := http.StatusBadRequest
+
+	// Arrange Request - using endpoints array with owner_id but invalid auth_type to trigger validation error
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "endpoint-link",
+		"owner_id": "%s",
+		"auth_type": "invalid_auth_type"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert - should fail with validation error
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Verify endpoint owner_id was NOT updated (rollback occurred)
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), updatedEndpoint.OwnerID, "Endpoint owner_id should remain empty after rollback")
+
+	// Verify portal link was NOT created (transaction rolled back)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	_, err = portalLinkRepo.FindPortalLinkByOwnerID(context.Background(), s.DefaultProject.UID, ownerID)
+	require.ErrorIs(s.T(), err, datastore.ErrPortalLinkNotFound, "Portal link should not be created due to validation error")
+}
+
+func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpointsArray_UpdatesOwnerID() {
+	// Test updating portal link with endpoints array - migration sets flag, business logic updates endpoint owner_id
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	// Create a portal link first
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerID)
+
+	expectedStatusCode := http.StatusAccepted
+
+	// Arrange Request - using endpoints array with owner_id (migration will set flag, business logic will update)
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLink.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "updated-endpoint-link",
+		"owner_id": "%s"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert
+	var resp models.PortalLinkResponse
+	parseResponse(s.T(), w.Result(), &resp)
+
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	require.NoError(s.T(), err)
+
+	require.Equal(s.T(), resp.UID, pl.UID)
+	require.Equal(s.T(), resp.Name, "updated-endpoint-link")
+	require.Equal(s.T(), resp.OwnerID, ownerID)
+	require.Equal(s.T(), resp.CanManageEndpoint, true)
+	// Endpoint should be linked via owner_id mechanism
+	require.Equal(s.T(), 1, pl.EndpointCount)
+
+	// Verify endpoint's owner_id was set by the business logic
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), ownerID, updatedEndpoint.OwnerID)
+}
+
+func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpointsArray_RollbackRemovesOwnerID() {
+	// Test that when an error occurs, the transaction rolls back and endpoint owner_id is NOT updated
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	// Create a portal link first
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerID)
+
+	expectedStatusCode := http.StatusBadRequest
+
+	// Arrange Request - using endpoints array with owner_id but invalid auth_type to trigger validation error
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLink.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "updated-endpoint-link",
+		"owner_id": "%s",
+		"auth_type": "invalid_auth_type"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert - should fail with validation error
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Verify endpoint owner_id was NOT updated (rollback occurred)
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), updatedEndpoint.OwnerID, "Endpoint owner_id should remain empty after rollback")
+
+	// Verify portal link was NOT updated (transaction rolled back)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
+	require.NoError(s.T(), err)
+	// Portal link should still have original values
+	require.Equal(s.T(), portalLink.Name, pl.Name, "Portal link name should not be updated due to validation error")
+}
+
 func (s *PublicPortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	// Just Before
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
