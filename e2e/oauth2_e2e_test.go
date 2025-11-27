@@ -21,6 +21,7 @@ import (
 	"gopkg.in/guregu/null.v4"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"

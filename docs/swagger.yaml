@@ -202,15 +202,19 @@ definitions:
     properties:
       api_key:
         $ref: '#/definitions/datastore.ApiKey'
+      oauth2:
+        $ref: '#/definitions/datastore.OAuth2'
       type:
         $ref: '#/definitions/datastore.EndpointAuthenticationType'
     type: object
   datastore.EndpointAuthenticationType:
     enum:
     - api_key
+    - oauth2
     type: string
     x-enum-varnames:
     - APIKeyAuthentication
+    - OAuth2Authentication
   datastore.EndpointStatus:
     enum:
     - active
@@ -420,6 +424,118 @@ definitions:
         type: string
       client_key:
         description: ClientKey is the client private key PEM string
+        type: string
+    type: object
+  datastore.OAuth2:
+    properties:
+      audience:
+        type: string
+      authentication_type:
+        $ref: '#/definitions/datastore.OAuth2AuthenticationType'
+      client_id:
+        type: string
+      client_secret:
+        description: Encrypted at rest
+        type: string
+      expiry_time_unit:
+        allOf:
+        - $ref: '#/definitions/datastore.OAuth2ExpiryTimeUnit'
+        description: Expiry time unit (seconds, milliseconds, minutes, hours)
+      field_mapping:
+        allOf:
+        - $ref: '#/definitions/datastore.OAuth2FieldMapping'
+        description: Field mapping for flexible token response parsing
+      grant_type:
+        type: string
+      issuer:
+        type: string
+      scope:
+        type: string
+      signing_algorithm:
+        type: string
+      signing_key:
+        allOf:
+        - $ref: '#/definitions/datastore.OAuth2SigningKey'
+        description: Encrypted at rest
+      subject:
+        type: string
+      url:
+        type: string
+    type: object
+  datastore.OAuth2AuthenticationType:
+    enum:
+    - shared_secret
+    - client_assertion
+    type: string
+    x-enum-varnames:
+    - SharedSecretAuth
+    - ClientAssertionAuth
+  datastore.OAuth2ExpiryTimeUnit:
+    enum:
+    - seconds
+    - milliseconds
+    - minutes
+    - hours
+    type: string
+    x-enum-varnames:
+    - ExpiryTimeUnitSeconds
+    - ExpiryTimeUnitMilliseconds
+    - ExpiryTimeUnitMinutes
+    - ExpiryTimeUnitHours
+  datastore.OAuth2FieldMapping:
+    properties:
+      access_token:
+        description: Field name for access token (e.g., "accessToken", "access_token",
+          "token")
+        type: string
+      expires_in:
+        description: Field name for expiry time (e.g., "expiresIn", "expires_in",
+          "expiresAt")
+        type: string
+      token_type:
+        description: Field name for token type (e.g., "tokenType", "token_type")
+        type: string
+    type: object
+  datastore.OAuth2SigningKey:
+    properties:
+      crv:
+        description: EC (Elliptic Curve) key fields
+        type: string
+      d:
+        description: Private key (EC only)
+        type: string
+      dp:
+        description: RSA first factor CRT exponent (RSA private key only)
+        type: string
+      dq:
+        description: RSA second factor CRT exponent (RSA private key only)
+        type: string
+      e:
+        description: RSA public exponent (RSA only)
+        type: string
+      kid:
+        description: Key ID
+        type: string
+      kty:
+        description: 'Key type: "EC" or "RSA"'
+        type: string
+      "n":
+        description: RSA key fields
+        type: string
+      p:
+        description: RSA first prime factor (RSA private key only)
+        type: string
+      q:
+        description: RSA second prime factor (RSA private key only)
+        type: string
+      qi:
+        description: RSA first CRT coefficient (RSA private key only)
+        type: string
+      x:
+        description: X coordinate (EC only)
+        type: string
+      "y":
+        description: Y coordinate (EC only)
         type: string
     type: object
   datastore.PageDirection:
@@ -1027,6 +1143,8 @@ definitions:
     properties:
       api_key:
         $ref: '#/definitions/models.ApiKey'
+      oauth2:
+        $ref: '#/definitions/models.OAuth2'
       type:
         $ref: '#/definitions/datastore.EndpointAuthenticationType'
     type: object
@@ -1396,6 +1514,94 @@ definitions:
         description: ClientKey is the client private key PEM string
         type: string
     type: object
+  models.OAuth2:
+    properties:
+      audience:
+        type: string
+      authentication_type:
+        type: string
+      client_id:
+        type: string
+      client_secret:
+        type: string
+      expiry_time_unit:
+        description: Expiry time unit (seconds, milliseconds, minutes, hours)
+        type: string
+      field_mapping:
+        allOf:
+        - $ref: '#/definitions/models.OAuth2FieldMapping'
+        description: Field mapping for flexible token response parsing
+      grant_type:
+        type: string
+      issuer:
+        type: string
+      scope:
+        type: string
+      signing_algorithm:
+        type: string
+      signing_key:
+        $ref: '#/definitions/models.OAuth2SigningKey'
+      subject:
+        type: string
+      url:
+        type: string
+    type: object
+  models.OAuth2FieldMapping:
+    properties:
+      access_token:
+        description: Field name for access token (e.g., "accessToken", "access_token",
+          "token")
+        type: string
+      expires_in:
+        description: Field name for expiry time (e.g., "expiresIn", "expires_in",
+          "expiresAt")
+        type: string
+      token_type:
+        description: Field name for token type (e.g., "tokenType", "token_type")
+        type: string
+    type: object
+  models.OAuth2SigningKey:
+    properties:
+      crv:
+        description: EC (Elliptic Curve) key fields
+        type: string
+      d:
+        description: Private key (EC) or private exponent (RSA)
+        type: string
+      dp:
+        description: RSA first factor CRT exponent (RSA private key only)
+        type: string
+      dq:
+        description: RSA second factor CRT exponent (RSA private key only)
+        type: string
+      e:
+        description: RSA public exponent (RSA only)
+        type: string
+      kid:
+        description: Key ID
+        type: string
+      kty:
+        description: 'Key type: "EC" or "RSA"'
+        type: string
+      "n":
+        description: RSA key fields
+        type: string
+      p:
+        description: RSA first prime factor (RSA private key only)
+        type: string
+      q:
+        description: RSA second prime factor (RSA private key only)
+        type: string
+      qi:
+        description: RSA first CRT coefficient (RSA private key only)
+        type: string
+      x:
+        description: X coordinate (EC only)
+        type: string
+      "y":
+        description: Y coordinate (EC only)
+        type: string
+    type: object
   models.PagedResponse:
     properties:
       content: {}
@@ -1595,6 +1801,26 @@ definitions:
       is_match:
         description: Whether the payload matches the filter criteria
         type: boolean
+    type: object
+  models.TestOAuth2Request:
+    properties:
+      oauth2:
+        $ref: '#/definitions/models.OAuth2'
+    type: object
+  models.TestOAuth2Response:
+    properties:
+      access_token:
+        type: string
+      error:
+        type: string
+      expires_at:
+        type: string
+      message:
+        type: string
+      success:
+        type: boolean
+      token_type:
+        type: string
     type: object
   models.UpdateCustomResponse:
     properties:
@@ -2391,6 +2617,69 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Pause endpoint
+      tags:
+      - Endpoints
+  /v1/projects/{projectID}/endpoints/oauth2/test:
+    post:
+      consumes:
+      - application/json
+      description: This endpoint tests the OAuth2 connection by attempting to exchange
+        a token
+      operationId: TestOAuth2Connection
+      parameters:
+      - description: Project ID
+        in: path
+        name: projectID
+        required: true
+        type: string
+      - description: OAuth2 Configuration
+        in: body
+        name: oauth2
+        required: true
+        schema:
+          $ref: '#/definitions/models.TestOAuth2Request'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.TestOAuth2Response'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+        "404":
+          description: Not Found
+          schema:
+            allOf:
+            - $ref: '#/definitions/util.ServerResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/handlers.Stub'
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Test OAuth2 connection
       tags:
       - Endpoints
   /v1/projects/{projectID}/event-types:

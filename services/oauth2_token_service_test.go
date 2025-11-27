@@ -14,11 +14,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/frain-dev/convoy/cache"
 	mcache "github.com/frain-dev/convoy/cache/memory"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/stretchr/testify/require"
 )
 
 func provideOAuth2TokenService() (*OAuth2TokenService, cache.Cache) {
