@@ -16,6 +16,7 @@ import (
 	"github.com/xdg-go/pbkdf2"
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy/api/migrations"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -290,7 +291,7 @@ func NewPortalLinkRepo(db database.Database) datastore.PortalLinkRepository {
 	return &portalLinkRepo{db: db, km: km}
 }
 
-func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink, updateEndpointOwnerID bool, endpointIDs []string) error {
+func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
 	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -356,6 +357,7 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 	}
 
 	// Update endpoint owner_ids if migration signaled it's needed
+	updateEndpointOwnerID, endpointIDs := migrations.GetUpdateEndpointOwnerID(ctx)
 	if updateEndpointOwnerID && len(endpointIDs) > 0 {
 		err = p.updateEndpointOwnerIDs(ctx, tx, endpointIDs, portal.OwnerID, portal.ProjectID)
 		if err != nil {
@@ -366,7 +368,7 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 	return tx.Commit()
 }
 
-func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string, portal *datastore.PortalLink, updateEndpointOwnerID bool, endpointIDs []string) error {
+func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string, portal *datastore.PortalLink) error {
 	tx, err := p.db.GetDB().BeginTxx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return err
@@ -401,6 +403,7 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 	}
 
 	// Update endpoint owner_ids if migration signaled it's needed
+	updateEndpointOwnerID, endpointIDs := migrations.GetUpdateEndpointOwnerID(ctx)
 	if updateEndpointOwnerID && len(endpointIDs) > 0 {
 		err = p.updateEndpointOwnerIDs(ctx, tx, endpointIDs, portal.OwnerID, projectID)
 		if err != nil {
@@ -750,7 +753,7 @@ func (p *portalLinkRepo) RefreshPortalLinkAuthToken(ctx context.Context, project
 	portalLink.TokenHash = encodedKey
 	portalLink.TokenExpiresAt = null.NewTime(time.Now().Add(time.Hour), true)
 
-	err = p.UpdatePortalLink(ctx, projectID, portalLink, false, nil)
+	err = p.UpdatePortalLink(ctx, projectID, portalLink)
 	if err != nil {
 		return nil, err
 	}

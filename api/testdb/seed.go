@@ -634,7 +634,7 @@ func SeedPortalLink(db database.Database, g *datastore.Project, ownerId string) 
 	}
 
 	portalLinkRepo := postgres.NewPortalLinkRepo(db)
-	err := portalLinkRepo.CreatePortalLink(context.TODO(), portalLink, false, nil)
+	err := portalLinkRepo.CreatePortalLink(context.TODO(), portalLink)
 	if err != nil {
 		return nil, err
 	}

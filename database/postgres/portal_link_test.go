@@ -111,7 +111,7 @@ func Test_UpdatePortalLink(t *testing.T) {
 	require.NoError(t, err)
 
 	portalLink.Endpoints = []string{endpoint.UID}
-	require.NoError(t, linkRepo.UpdatePortalLink(ctx, portalLink.ProjectID, portalLink, false, nil))
+	require.NoError(t, linkRepo.UpdatePortalLink(ctx, portalLink.ProjectID, portalLink))
 
 	newPortalLink, err := linkRepo.FindPortalLinkByID(ctx, portalLink.ProjectID, portalLink.UID)
 	require.NoError(t, err)

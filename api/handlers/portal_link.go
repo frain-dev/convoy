@@ -64,18 +64,20 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if migration signaled that endpoint owner_ids need to be updated
-	updateEndpointOwnerID := r.Header.Get(migrations.UpdateEndpointOwnerIDHeader) == "true"
-
-	cp := services.CreatePortalLinkService{
-		PortalLinkRepo:        postgres.NewPortalLinkRepo(h.A.DB),
-		EndpointRepo:          postgres.NewEndpointRepo(h.A.DB),
-		Portal:                &newPortalLink,
-		Project:               project,
-		UpdateEndpointOwnerID: updateEndpointOwnerID,
+	// Set context if endpoints are provided - business logic will update endpoint owner_ids
+	ctx := r.Context()
+	if len(newPortalLink.Endpoints) > 0 {
+		ctx = migrations.SetUpdateEndpointOwnerID(ctx, true, newPortalLink.Endpoints)
 	}
 
-	portalLink, err := cp.Run(r.Context())
+	cp := services.CreatePortalLinkService{
+		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
+		Portal:         &newPortalLink,
+		Project:        project,
+	}
+
+	portalLink, err := cp.Run(ctx)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -136,7 +138,7 @@ func (h *Handler) GeneratePortalToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
-	err = portalLinkRepo.UpdatePortalLink(r.Context(), project.UID, pLink, false, nil)
+	err = portalLinkRepo.UpdatePortalLink(r.Context(), project.UID, pLink)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -260,19 +262,21 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if migration signaled that endpoint owner_ids need to be updated
-	updateEndpointOwnerID := r.Header.Get(migrations.UpdateEndpointOwnerIDHeader) == "true"
-
-	upl := services.UpdatePortalLinkService{
-		PortalLinkRepo:        postgres.NewPortalLinkRepo(h.A.DB),
-		EndpointRepo:          postgres.NewEndpointRepo(h.A.DB),
-		Project:               project,
-		Update:                &updatePortalLink,
-		PortalLink:            portalLink,
-		UpdateEndpointOwnerID: updateEndpointOwnerID,
+	// Set context if endpoints are provided - business logic will update endpoint owner_ids
+	ctx := r.Context()
+	if len(updatePortalLink.Endpoints) > 0 {
+		ctx = migrations.SetUpdateEndpointOwnerID(ctx, true, updatePortalLink.Endpoints)
 	}
 
-	portalLink, err = upl.Run(r.Context())
+	upl := services.UpdatePortalLinkService{
+		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
+		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
+		Project:        project,
+		Update:         &updatePortalLink,
+		PortalLink:     portalLink,
+	}
+
+	portalLink, err = upl.Run(ctx)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

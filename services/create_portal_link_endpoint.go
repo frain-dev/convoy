@@ -36,7 +36,7 @@ func (p *CreateEndpointPortalLinkService) Run(ctx context.Context) (*datastore.E
 	}
 
 	p.PortalLink.Endpoints = append(p.PortalLink.Endpoints, endpoint.UID)
-	err = p.PortalLinkRepo.UpdatePortalLink(ctx, p.Project.UID, p.PortalLink, false, nil)
+	err = p.PortalLinkRepo.UpdatePortalLink(ctx, p.Project.UID, p.PortalLink)
 	if err != nil {
 		return nil, util.NewServiceError(http.StatusBadRequest, errors.New("an error occurred while updating portal link"))
 	}
