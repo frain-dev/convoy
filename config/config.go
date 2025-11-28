@@ -22,7 +22,7 @@ const (
 	DefaultHost                       = "localhost:5005"
 	DefaultSearchTokenizationInterval = 1
 	DefaultCacheTTL                   = time.Minute * 10
-	DefaultAPIVersion                 = "2024-04-01"
+	DefaultAPIVersion                 = "2025-11-24"
 )
 
 var cfgSingleton atomic.Value

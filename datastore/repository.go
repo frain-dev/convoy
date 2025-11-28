@@ -212,7 +212,7 @@ type ConfigurationRepository interface {
 }
 
 type PortalLinkRepository interface {
-	CreatePortalLink(context.Context, *PortalLink) error
+	CreatePortalLink(ctx context.Context, portal *PortalLink) error
 	UpdatePortalLink(ctx context.Context, projectID string, portal *PortalLink) error
 	FindPortalLinkByID(ctx context.Context, projectID string, id string) (*PortalLink, error)
 	FindPortalLinkByOwnerID(ctx context.Context, projectID string, id string) (*PortalLink, error)

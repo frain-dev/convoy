@@ -16,6 +16,7 @@ import (
 	"github.com/xdg-go/pbkdf2"
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy/api/migrations"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -65,6 +66,12 @@ const (
 	deletePortalLinkEndpoints = `
 	DELETE FROM convoy.portal_links_endpoints
 	WHERE portal_link_id = $1 OR endpoint_id = $2
+	`
+
+	updateEndpointOwnerID = `
+	UPDATE convoy.endpoints
+	SET owner_id = $3
+	WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL
 	`
 
 	fetchPortalLinkById = `
@@ -344,6 +351,17 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		portal.AuthKey = portalAuth.AuthKey
 	}
 
+	// Update endpoint owner_ids if migration signaled it's needed
+	// This must happen BEFORE upsertPortalLinkEndpoint so that endpoints have owner_id
+	// when upsertPortalLinkEndpoint queries for them
+	updateEndpointOwnerID, endpointIDs := migrations.GetUpdateEndpointOwnerID(ctx)
+	if updateEndpointOwnerID && len(endpointIDs) > 0 {
+		err = p.updateEndpointOwnerIDs(ctx, tx, endpointIDs, portal.OwnerID, portal.ProjectID)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
 	if err != nil {
 		return err
@@ -381,12 +399,67 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		return ErrPortalLinkNotUpdated
 	}
 
+	// Update endpoint owner_ids if migration signaled it's needed
+	// This must happen BEFORE upsertPortalLinkEndpoint so that endpoints have owner_id
+	// when upsertPortalLinkEndpoint queries for them
+	updateEndpointOwnerID, endpointIDs := migrations.GetUpdateEndpointOwnerID(ctx)
+	if updateEndpointOwnerID && len(endpointIDs) > 0 {
+		err = p.updateEndpointOwnerIDs(ctx, tx, endpointIDs, portal.OwnerID, projectID)
+		if err != nil {
+			return err
+		}
+	}
+
 	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
 	if err != nil {
 		return err
 	}
 
 	return tx.Commit()
+}
+
+// updateEndpointOwnerIDs updates endpoint owner_ids for the given endpoint IDs within the transaction
+func (p *portalLinkRepo) updateEndpointOwnerIDs(ctx context.Context, tx *sqlx.Tx, endpointIDs []string, portalOwnerID, projectID string) error {
+	endpointRepo := NewEndpointRepo(p.db)
+	for _, endpointID := range endpointIDs {
+		endpoint, err := endpointRepo.FindEndpointByID(ctx, endpointID, projectID)
+		if err != nil {
+			return fmt.Errorf("failed to find endpoint %s: %w", endpointID, err)
+		}
+
+		// If endpoint's owner_id is blank, set it to portal link's owner_id
+		if util.IsStringEmpty(endpoint.OwnerID) {
+			endpoint.OwnerID = portalOwnerID
+			// Update endpoint owner_id using the transaction
+			err = p.updateEndpointOwnerID(ctx, tx, endpoint, projectID)
+			if err != nil {
+				return fmt.Errorf("failed to update endpoint %s owner_id: %w", endpointID, err)
+			}
+		} else if endpoint.OwnerID != portalOwnerID {
+			// If endpoint's owner_id is not blank and doesn't match, throw error
+			return fmt.Errorf("endpoint %s already has owner_id %s, cannot assign to portal link with owner_id %s", endpointID, endpoint.OwnerID, portalOwnerID)
+		}
+	}
+	return nil
+}
+
+// updateEndpointOwnerID updates the endpoint's owner_id using the provided transaction
+func (p *portalLinkRepo) updateEndpointOwnerID(ctx context.Context, tx *sqlx.Tx, endpoint *datastore.Endpoint, projectID string) error {
+	r, err := tx.ExecContext(ctx, updateEndpointOwnerID, endpoint.UID, projectID, endpoint.OwnerID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := r.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected < 1 {
+		return fmt.Errorf("endpoint %s not found or not updated", endpoint.UID)
+	}
+
+	return nil
 }
 
 func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID, portalLinkId string) (*datastore.PortalLink, error) {
