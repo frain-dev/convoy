@@ -83,6 +83,14 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Fetch the portal link to populate calculated fields like EndpointCount
+	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+	portalLink, err = portalLinkRepo.FindPortalLinkByID(ctx, project.UID, portalLink.UID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
 	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -277,6 +285,14 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	portalLink, err = upl.Run(ctx)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	// Fetch the portal link to populate calculated fields like EndpointCount
+	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+	portalLink, err = portalLinkRepo.FindPortalLinkByID(ctx, project.UID, portalLink.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
