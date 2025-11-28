@@ -700,7 +700,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(
 	}
 
 	if !util.IsStringEmpty(brokerMessageId) {
-		filterQuery += ` AND headers -> 'x-broker-message-id' ->> 0 = :broker_message_id`
+		filterQuery += ` AND ed.headers -> 'x-broker-message-id' ->> 0 = :broker_message_id`
 	}
 
 	preOrder := pageable.SortOrder()
