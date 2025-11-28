@@ -332,18 +332,20 @@ func (p *portalLinkRepo) CreatePortalLink(ctx context.Context, portal *datastore
 		portal.AuthKey = portalAuth.AuthKey
 	}
 
-	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
-	if err != nil {
-		return err
-	}
-
 	// Update endpoint owner_ids if migration signaled it's needed
+	// This must happen BEFORE upsertPortalLinkEndpoint so that endpoints have owner_id
+	// when upsertPortalLinkEndpoint queries for them
 	updateEndpointOwnerID, endpointIDs := migrations.GetUpdateEndpointOwnerID(ctx)
 	if updateEndpointOwnerID && len(endpointIDs) > 0 {
 		err = p.updateEndpointOwnerIDs(ctx, tx, endpointIDs, portal.OwnerID, portal.ProjectID)
 		if err != nil {
 			return err
 		}
+	}
+
+	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
+	if err != nil {
+		return err
 	}
 
 	return tx.Commit()
@@ -378,18 +380,20 @@ func (p *portalLinkRepo) UpdatePortalLink(ctx context.Context, projectID string,
 		return ErrPortalLinkNotUpdated
 	}
 
-	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
-	if err != nil {
-		return err
-	}
-
 	// Update endpoint owner_ids if migration signaled it's needed
+	// This must happen BEFORE upsertPortalLinkEndpoint so that endpoints have owner_id
+	// when upsertPortalLinkEndpoint queries for them
 	updateEndpointOwnerID, endpointIDs := migrations.GetUpdateEndpointOwnerID(ctx)
 	if updateEndpointOwnerID && len(endpointIDs) > 0 {
 		err = p.updateEndpointOwnerIDs(ctx, tx, endpointIDs, portal.OwnerID, projectID)
 		if err != nil {
 			return err
 		}
+	}
+
+	err = p.upsertPortalLinkEndpoint(ctx, tx, portal)
+	if err != nil {
+		return err
 	}
 
 	return tx.Commit()
