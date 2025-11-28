@@ -686,7 +686,7 @@ func (e *eventDeliveryRepo) LoadEventDeliveriesPaged(ctx context.Context, projec
 	}
 
 	if !util.IsStringEmpty(brokerMessageId) {
-		filterQuery += ` AND headers -> 'x-broker-message-id' ->> 0 = :broker_message_id`
+		filterQuery += ` AND ed.headers -> 'x-broker-message-id' ->> 0 = :broker_message_id`
 	}
 
 	preOrder := pageable.SortOrder()
