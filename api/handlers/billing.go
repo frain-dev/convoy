@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -49,95 +47,35 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Calculate usage from actual Convoy data instead of external billing service
-	usage := h.calculateUsageFromConvoy(r.Context(), orgID)
-
-	_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", usage, http.StatusOK))
-}
-
-func (h *BillingHandler) calculateUsageFromConvoy(ctx context.Context, orgID string) map[string]interface{} {
-	var totalEvents int64
-	var totalDeliveries int64
-	var totalIngressBytes int64
-	var totalEgressBytes int64
-	var err error
-
 	// Calculate current month period
 	now := time.Now()
 	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
 	endOfMonth := startOfMonth.AddDate(0, 1, 0).Add(-time.Nanosecond)
 
-	// Ingress (received): events bytes
-	var orgRawBytes, orgDataBytes sql.NullInt64
-	ingressBytesQuery := `
-		SELECT COALESCE(SUM(LENGTH(e.raw)), 0) AS raw_bytes,
-		       COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS data_bytes
-		FROM convoy.events e
-		JOIN convoy.projects p ON p.id = e.project_id
-		WHERE p.organisation_id = $1
-		  AND e.created_at >= $2 AND e.created_at <= $3
-		  AND e.deleted_at IS NULL AND p.deleted_at IS NULL`
-	err = h.A.DB.GetReadDB().QueryRowxContext(ctx, ingressBytesQuery, orgID, startOfMonth, endOfMonth).Scan(&orgRawBytes, &orgDataBytes)
-	if err == nil {
-		totalIngressBytes = orgRawBytes.Int64 + orgDataBytes.Int64
+	// Calculate usage from actual Convoy data using repository
+	orgRepo := postgres.NewOrgRepo(h.A.DB)
+	usage, err := orgRepo.CalculateUsage(r.Context(), orgID, startOfMonth, endOfMonth)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("failed to calculate usage: %s", err.Error()), http.StatusInternalServerError))
+		return
 	}
 
-	// Egress (sent): deliveries bytes (count payload per delivery)
-	var orgEgressBytes sql.NullInt64
-	egressBytesQuery := `
-		SELECT COALESCE(SUM(LENGTH(e.raw)), 0) + COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS bytes
-		FROM convoy.event_deliveries d
-		JOIN convoy.events e ON e.id = d.event_id
-		JOIN convoy.projects p ON p.id = e.project_id
-		WHERE p.organisation_id = $1
-		  AND d.status = 'Success'
-		  AND d.created_at >= $2 AND d.created_at <= $3
-		  AND p.deleted_at IS NULL`
-	err = h.A.DB.GetReadDB().QueryRowxContext(ctx, egressBytesQuery, orgID, startOfMonth, endOfMonth).Scan(&orgEgressBytes)
-	if err == nil {
-		totalEgressBytes = orgEgressBytes.Int64
-	}
-
-	// Org-level total events (received volume)
-	eventsQuery := `
-		SELECT COUNT(*)
-		FROM convoy.events e
-		JOIN convoy.projects p ON p.id = e.project_id
-		WHERE p.organisation_id = $1
-		  AND e.created_at >= $2 AND e.created_at <= $3
-		  AND e.deleted_at IS NULL AND p.deleted_at IS NULL`
-	_ = h.A.DB.GetReadDB().QueryRowxContext(ctx, eventsQuery, orgID, startOfMonth, endOfMonth).Scan(&totalEvents)
-
-	// Org-level successful deliveries (sent volume)
-	deliveriesQuery := `
-		SELECT COUNT(*)
-		FROM convoy.event_deliveries d
-		JOIN convoy.events e ON e.id = d.event_id
-		JOIN convoy.projects p ON p.id = e.project_id
-		WHERE p.organisation_id = $1
-		  AND d.status = 'Success'
-		  AND d.created_at >= $2 AND d.created_at <= $3
-		  AND p.deleted_at IS NULL`
-	_ = h.A.DB.GetReadDB().QueryRowxContext(ctx, deliveriesQuery, orgID, startOfMonth, endOfMonth).Scan(&totalDeliveries)
-
-	// Format period as YYYY-MM
-	period := now.Format("2006-01")
-
-	usage := map[string]interface{}{
-		"organisation_id": orgID,
-		"period":          period,
+	// Format response
+	usageResponse := map[string]interface{}{
+		"organisation_id": usage.OrganisationID,
+		"period":          usage.Period,
 		"received": map[string]interface{}{
-			"volume": totalEvents,
-			"bytes":  totalIngressBytes,
+			"volume": usage.Received.Volume,
+			"bytes":  usage.Received.Bytes,
 		},
 		"sent": map[string]interface{}{
-			"volume": totalDeliveries,
-			"bytes":  totalEgressBytes,
+			"volume": usage.Sent.Volume,
+			"bytes":  usage.Sent.Bytes,
 		},
-		"created_at": now,
+		"created_at": usage.CreatedAt,
 	}
 
-	return usage
+	_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", usageResponse, http.StatusOK))
 }
 
 func (h *BillingHandler) GetInvoices(w http.ResponseWriter, r *http.Request) {
