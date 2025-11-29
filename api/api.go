@@ -668,7 +668,6 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 					billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
 					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
 				})
-
 			})
 		}
 	})

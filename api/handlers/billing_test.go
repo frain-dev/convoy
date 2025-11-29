@@ -482,7 +482,6 @@ func TestBillingHandler_GetSetupIntent(t *testing.T) {
 	assert.True(t, response["status"].(bool))
 }
 
-
 func TestBillingHandler_GetSubscriptions(t *testing.T) {
 	cfg := config.BillingConfiguration{
 		Enabled: true,

@@ -226,4 +226,3 @@ func (m *MockBillingClient) GetInvoice(ctx context.Context, orgID, invoiceID str
 		Data:    map[string]interface{}{"id": invoiceID, "status": "paid"},
 	}, nil
 }
-

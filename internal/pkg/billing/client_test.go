@@ -376,7 +376,6 @@ func TestClient_GetInvoice_Success(t *testing.T) {
 	assert.Equal(t, "Success", resp.Message)
 }
 
-
 func TestClient_makeRequest_Disabled(t *testing.T) {
 	cfg := config.BillingConfiguration{
 		Enabled: false,

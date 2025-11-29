@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/database/postgres"
-
-	"github.com/frain-dev/convoy/internal/pkg/billing"
-	"github.com/frain-dev/convoy/util"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
+	"github.com/frain-dev/convoy/util"
 )
 
 type BillingHandler struct {
@@ -50,16 +50,12 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Calculate usage from actual Convoy data instead of external billing service
-	usage, err := h.calculateUsageFromConvoy(r.Context(), orgID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
+	usage := h.calculateUsageFromConvoy(r.Context(), orgID)
 
 	_ = render.Render(w, r, util.NewServerResponse("Usage retrieved successfully", usage, http.StatusOK))
 }
 
-func (h *BillingHandler) calculateUsageFromConvoy(ctx context.Context, orgID string) (map[string]interface{}, error) {
+func (h *BillingHandler) calculateUsageFromConvoy(ctx context.Context, orgID string) map[string]interface{} {
 	var totalEvents int64
 	var totalDeliveries int64
 	var totalIngressBytes int64
@@ -141,7 +137,7 @@ func (h *BillingHandler) calculateUsageFromConvoy(ctx context.Context, orgID str
 		"created_at": now,
 	}
 
-	return usage, nil
+	return usage
 }
 
 func (h *BillingHandler) GetInvoices(w http.ResponseWriter, r *http.Request) {

@@ -72,7 +72,10 @@ export class BillingOverviewService {
     const usage = data.usage || { period: '2024-01' };
     const usagePeriod = this.formatUsagePeriod(usage.period);
     const daysUntilReset = this.calculateDaysUntilReset(usage.period);
-    const payment = data.payment && data.payment.length > 0 ? data.payment[0] : null;
+    // Find the default payment method, or fall back to the first one if no default is set
+    const payment = data.payment && data.payment.length > 0 
+      ? (data.payment.find((pm: any) => pm.defaulted_at !== null && pm.defaulted_at !== undefined) || data.payment[0])
+      : null;
 
     return {
       plan: {

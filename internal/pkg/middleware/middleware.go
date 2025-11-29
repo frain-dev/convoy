@@ -53,13 +53,7 @@ func shouldSkipLogging(r, w map[string]interface{}) bool {
 	// Check if this is a path we want to skip
 	for _, skipPath := range skipLoggingPaths {
 		if strings.Contains(r["requestURL"].(string), skipPath) {
-			// For billing paths, only skip successful requests (2xx), still log errors
-			status, ok := w["status"].(int)
-			if ok && status >= 200 && status < 300 {
-				return true
-			}
-			// Don't skip if it's an error (4xx, 5xx)
-			return false
+			return true
 		}
 	}
 

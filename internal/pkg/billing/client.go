@@ -64,7 +64,7 @@ func (c *HTTPClient) HealthCheck(ctx context.Context) error {
 	}
 
 	// Make a simple health check request to the billing service
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/up", c.config.URL), nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/up", c.config.URL), http.NoBody)
 	if err != nil {
 		return fmt.Errorf("failed to create health check request: %w", err)
 	}
@@ -112,7 +112,7 @@ func (c *HTTPClient) GetTaxIDTypes(ctx context.Context) (*Response, error) {
 	}
 
 	url := fmt.Sprintf("%s/tax_id_types", c.config.URL)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -230,7 +230,7 @@ func (c *HTTPClient) makeRequest(ctx context.Context, method, path string, body 
 		}
 		req, err = http.NewRequestWithContext(ctx, method, url, bytes.NewReader(jsonBody))
 	} else {
-		req, err = http.NewRequestWithContext(ctx, method, url, nil)
+		req, err = http.NewRequestWithContext(ctx, method, url, http.NoBody)
 	}
 
 	if err != nil {
