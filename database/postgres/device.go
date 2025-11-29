@@ -6,9 +6,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/jmoiron/sqlx"
 )
 
 var (
@@ -168,7 +169,7 @@ func (d *deviceRepo) UpdateDeviceLastSeen(ctx context.Context, device *datastore
 	return nil
 }
 
-func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, projectID string) error {
+func (d *deviceRepo) DeleteDevice(ctx context.Context, uid, endpointID, projectID string) error {
 	r, err := d.db.GetReadDB().ExecContext(ctx, deleteDevice, uid, projectID)
 	if err != nil {
 		return err
@@ -186,7 +187,7 @@ func (d *deviceRepo) DeleteDevice(ctx context.Context, uid string, endpointID, p
 	return nil
 }
 
-func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID, projectID string) (*datastore.Device, error) {
+func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
 	err := d.db.GetReadDB().QueryRowxContext(ctx, fetchDeviceById, uid, projectID).StructScan(device)
 	if err != nil {
@@ -199,7 +200,7 @@ func (d *deviceRepo) FetchDeviceByID(ctx context.Context, uid string, endpointID
 	return device, nil
 }
 
-func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName string, endpointID, projectID string) (*datastore.Device, error) {
+func (d *deviceRepo) FetchDeviceByHostName(ctx context.Context, hostName, endpointID, projectID string) (*datastore.Device, error) {
 	device := &datastore.Device{}
 	err := d.db.GetReadDB().QueryRowxContext(ctx, fetchDeviceByHostName, hostName, projectID).StructScan(device)
 	if err != nil {

@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
 
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/spf13/cobra"
+	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func AddCircuitBreakersCommand(a *cli.App) *cobra.Command {
@@ -117,15 +118,12 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "update [endpoint-id]",
+		Use:   "update [project-id]",
 		Short: "update circuit breaker configuration",
 		Long:  "update circuit breaker configuration for a specific project",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			breakerID := args[0]
-
-			// Remove the "breaker:" prefix if present
-			breakerID = strings.TrimPrefix(breakerID, "breaker:")
+			projectID := args[0]
 
 			// Validate flag ranges before any work
 			if cmd.Flags().Changed("failure_threshold") {
@@ -143,41 +141,6 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 					return fmt.Errorf("observability_window must be greater than 0")
 				}
 			}
-
-			// Create circuit breaker manager with config provider
-			cbManager, err := cb.NewCircuitBreakerManager(
-				cb.ConfigProviderOption(func(projectID string) *cb.CircuitBreakerConfig {
-					// For now, use defaults since we don't have projectRepo yet
-					// The actual project config will be fetched later when updating
-					return &cb.CircuitBreakerConfig{
-						SampleRate:                  datastore.DefaultCircuitBreakerConfiguration.SampleRate,
-						BreakerTimeout:              datastore.DefaultCircuitBreakerConfiguration.ErrorTimeout,
-						FailureThreshold:            datastore.DefaultCircuitBreakerConfiguration.FailureThreshold,
-						SuccessThreshold:            datastore.DefaultCircuitBreakerConfiguration.SuccessThreshold,
-						ObservabilityWindow:         datastore.DefaultCircuitBreakerConfiguration.ObservabilityWindow,
-						MinimumRequestCount:         datastore.DefaultCircuitBreakerConfiguration.MinimumRequestCount,
-						ConsecutiveFailureThreshold: datastore.DefaultCircuitBreakerConfiguration.ConsecutiveFailureThreshold,
-					}
-				}),
-				cb.StoreOption(cb.NewRedisStore(a.Redis, clock.NewRealClock())),
-				cb.ClockOption(clock.NewRealClock()),
-				cb.LoggerOption(log.NewLogger(os.Stdout)),
-			)
-			if err != nil {
-				return fmt.Errorf("failed to create circuit breaker manager: %v", err)
-			}
-
-			// Get circuit breaker to find the project ID
-			breaker, err := cbManager.GetCircuitBreakerWithError(context.Background(), breakerID)
-			if err != nil {
-				return fmt.Errorf("failed to get circuit breaker: %v", err)
-			}
-
-			if breaker == nil {
-				return fmt.Errorf("circuit breaker not found")
-			}
-
-			projectID := breaker.TenantId
 
 			// Get current project configuration
 			projectRepo := postgres.NewProjectRepo(a.DB)
@@ -240,9 +203,23 @@ func AddCircuitBreakersUpdateCommand(a *cli.App) *cobra.Command {
 					return fmt.Errorf("failed to update project configuration: %v", err)
 				}
 
-				// Reset breaker state in Redis so new config takes immediate effect
-				// Ignore errors here; it's best-effort
-				_ = a.Redis.Del(context.Background(), "breaker:"+breakerID).Err()
+				// Reset all circuit breakers for this project in Redis so new config takes immediate effect
+				// Get all breaker keys and filter by project ID
+				store := cb.NewRedisStore(a.Redis, clock.NewRealClock())
+				keys, err := store.Keys(context.Background(), "breaker:")
+				if err == nil {
+					for _, key := range keys {
+						// Get breaker to check TenantId
+						breakerData, err := store.GetOne(context.Background(), key)
+						if err == nil {
+							breaker, err := cb.NewCircuitBreakerFromStore([]byte(breakerData), log.NewLogger(os.Stdout))
+							if err == nil && breaker.TenantId == projectID {
+								// Ignore errors here; it's best-effort
+								_ = a.Redis.Del(context.Background(), key).Err()
+							}
+						}
+					}
+				}
 
 				fmt.Println("Circuit breaker configuration updated successfully")
 			} else {

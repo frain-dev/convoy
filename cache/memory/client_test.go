@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package mcache
 
 import (
@@ -8,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
 type data struct {
@@ -17,37 +14,46 @@ type data struct {
 
 const key = "test_key"
 
-func Test_WriteToCache(t *testing.T) {
-	cache := NewMemoryCache()
-
-	err := cache.Set(context.TODO(), key, &data{Name: "test_name"}, 10*time.Second)
-	require.NoError(t, err)
+type MemoryCacheIntegrationTestSuite struct {
+	suite.Suite
+	cache *MemoryCache
 }
 
-func Test_ReadFromCache(t *testing.T) {
-	cache := NewMemoryCache()
-
-	err := cache.Set(context.TODO(), key, &data{Name: "test_name"}, 10*time.Second)
-	require.NoError(t, err)
-
-	var item data
-	err = cache.Get(context.TODO(), key, &item)
-
-	require.NoError(t, err)
-	require.Equal(t, "test_name", item.Name)
+func (s *MemoryCacheIntegrationTestSuite) SetupTest() {
+	// Each test gets a fresh in-memory cache
+	s.cache = NewMemoryCache()
 }
 
-func Test_DeleteFromCache(t *testing.T) {
-	cache := NewMemoryCache()
+func (s *MemoryCacheIntegrationTestSuite) Test_WriteToCache() {
+	err := s.cache.Set(context.TODO(), key, &data{Name: "test_name"}, 10*time.Second)
+	s.Require().NoError(err)
+}
 
-	err := cache.Set(context.TODO(), key, &data{Name: "test_name"}, 10*time.Second)
-	require.NoError(t, err)
-
-	err = cache.Delete(context.TODO(), key)
-	require.NoError(t, err)
+func (s *MemoryCacheIntegrationTestSuite) Test_ReadFromCache() {
+	err := s.cache.Set(context.TODO(), key, &data{Name: "test_name"}, 10*time.Second)
+	s.Require().NoError(err)
 
 	var item data
-	err = cache.Get(context.TODO(), key, &item)
+	err = s.cache.Get(context.TODO(), key, &item)
 
-	require.Equal(t, "", item.Name)
+	s.Require().NoError(err)
+	s.Require().Equal("test_name", item.Name)
+}
+
+func (s *MemoryCacheIntegrationTestSuite) Test_DeleteFromCache() {
+	err := s.cache.Set(context.TODO(), key, &data{Name: "test_name"}, 10*time.Second)
+	s.Require().NoError(err)
+
+	err = s.cache.Delete(context.TODO(), key)
+	s.Require().NoError(err)
+
+	var item data
+	err = s.cache.Get(context.TODO(), key, &item)
+	s.Require().NoError(err)
+
+	s.Require().Equal("", item.Name)
+}
+
+func TestMemoryCacheIntegrationTestSuite(t *testing.T) {
+	suite.Run(t, new(MemoryCacheIntegrationTestSuite))
 }

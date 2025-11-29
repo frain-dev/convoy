@@ -2,63 +2,49 @@ package task
 
 import (
 	"context"
-	"fmt"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/pkg/retention"
-	partman "github.com/jirevwe/go_partman"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
-	"github.com/frain-dev/convoy/pkg/log"
-
-	"gopkg.in/guregu/null.v4"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/database"
-	"github.com/frain-dev/convoy/database/hooks"
-	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/httpheader"
-	"github.com/oklog/ulid/v2"
-
 	"github.com/hibiken/asynq"
-
-	"github.com/frain-dev/convoy/api/testdb"
-	"github.com/frain-dev/convoy/util"
+	"github.com/oklog/ulid/v2"
+	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"gopkg.in/guregu/null.v4"
+
+	partman "github.com/jirevwe/go_partman"
+
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/api/testdb"
+	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
+	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/util"
 )
 
 type RetentionPoliciesIntegrationTestSuite struct {
 	suite.Suite
-	DB          database.Database
 	ConvoyApp   *applicationHandler
 	DefaultUser *datastore.User
 	DefaultOrg  *datastore.Organisation
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) SetupSuite() {
-	r.DB = getDB()
-	r.ConvoyApp = buildApplication()
+	r.ConvoyApp = buildApplication(r.T())
 }
 
 func (r *RetentionPoliciesIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(r.T(), r.DB)
-
-	user, err := testdb.SeedDefaultUser(r.DB)
+	user, err := testdb.SeedDefaultUser(r.ConvoyApp.database)
 	require.NoError(r.T(), err)
 	r.DefaultUser = user
 
-	org, err := testdb.SeedDefaultOrganisation(r.DB, user)
+	org, err := testdb.SeedDefaultOrganisation(r.ConvoyApp.database, user)
 	require.NoError(r.T(), err)
 	r.DefaultOrg = org
-}
-
-func (r *RetentionPoliciesIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(r.T(), r.DB)
 }
 
 // todo(raymond):
@@ -160,16 +146,16 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	clock := partman.NewSimulatedClock(time.Now().Add(-duration))
 	pm, err := partman.NewManager(
 		partman.WithConfig(pmConfig),
-		partman.WithDB(r.DB.GetDB()),
+		partman.WithDB(r.ConvoyApp.database.GetDB()),
 		partman.WithClock(clock),
 		partman.WithLogger(log.NewLogger(os.Stdout)),
 	)
 	require.NoError(r.T(), err)
 
-	ret := retention.NewTestRetentionPolicy(r.DB, pm)
+	ret := retention.NewTestRetentionPolicy(r.ConvoyApp.database, pm)
 	ret.Start(context.Background(), time.Second)
 
-	endpoint, err := testdb.SeedEndpoint(r.DB, project, ulid.Make().String(), "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+	endpoint, err := testdb.SeedEndpoint(r.ConvoyApp.database, project, ulid.Make().String(), "test-endpoint", "", false, datastore.ActiveEndpointStatus)
 	require.NoError(r.T(), err)
 
 	event1, err := seedEvent(r.ConvoyApp.database, endpoint.UID, project.UID, "", "*", []byte(`{}`), SeedFilter{
@@ -182,7 +168,7 @@ func (r *RetentionPoliciesIntegrationTestSuite) Test_Should_Export_Two_Documents
 	})
 	require.NoError(r.T(), err)
 
-	subscription, err := testdb.SeedSubscription(r.DB, project, "", project.Type, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
+	subscription, err := testdb.SeedSubscription(r.ConvoyApp.database, project, "", project.Type, &datastore.Source{}, endpoint, &datastore.RetryConfiguration{}, &datastore.AlertConfiguration{}, nil)
 	require.NoError(r.T(), err)
 
 	now := clock.Now().UTC()
@@ -246,86 +232,6 @@ func TestRetentionPoliciesIntegrationSuiteTest(t *testing.T) {
 	suite.Run(t, new(RetentionPoliciesIntegrationTestSuite))
 }
 
-func getConfig() config.Configuration {
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_REDIS_HOST"))
-	_ = os.Setenv("CONVOY_REDIS_SCHEME", os.Getenv("TEST_REDIS_SCHEME"))
-	_ = os.Setenv("CONVOY_REDIS_PORT", os.Getenv("TEST_REDIS_PORT"))
-
-	_ = os.Setenv("CONVOY_DB_HOST", os.Getenv("TEST_DB_HOST"))
-	_ = os.Setenv("CONVOY_DB_SCHEME", os.Getenv("TEST_DB_SCHEME"))
-	_ = os.Setenv("CONVOY_DB_USERNAME", os.Getenv("TEST_DB_USERNAME"))
-	_ = os.Setenv("CONVOY_DB_PASSWORD", os.Getenv("TEST_DB_PASSWORD"))
-	_ = os.Setenv("CONVOY_DB_DATABASE", os.Getenv("TEST_DB_DATABASE"))
-	_ = os.Setenv("CONVOY_DB_OPTIONS", os.Getenv("TEST_DB_OPTIONS"))
-	_ = os.Setenv("CONVOY_DB_PORT", os.Getenv("TEST_DB_PORT"))
-
-	_ = os.Setenv("CONVOY_LOCAL_ENCRYPTION_KEY", "test-key")
-
-	err := config.LoadConfig("")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cfg, err := config.Get()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	km, err := keys.NewLocalKeyManager()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if km.IsSet() {
-		if _, err = km.GetCurrentKeyFromCache(); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if err = keys.Set(km); err != nil {
-		log.Fatal(err)
-	}
-
-	return cfg
-}
-
-func getDB() database.Database {
-	db, err := postgres.NewDB(getConfig())
-	if err != nil {
-		panic(fmt.Sprintf("failed to connect to db: %v", err))
-	}
-	_ = os.Setenv("TZ", "") // Use UTC by default :)
-
-	dbHooks := hooks.Init()
-	dbHooks.RegisterHook(datastore.EndpointCreated, func(ctx context.Context, data interface{}, changelog interface{}) {})
-
-	return db
-}
-
-func buildApplication() *applicationHandler {
-	db := getDB()
-	redis, err := rdb.NewClient(getConfig().Redis.BuildDsn())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	projectRepo := postgres.NewProjectRepo(db)
-	eventRepo := postgres.NewEventRepo(db)
-	configRepo := postgres.NewConfigRepo(db)
-	eventDeliveryRepo := postgres.NewEventDeliveryRepo(db)
-	deliveryRepo := postgres.NewDeliveryAttemptRepo(db)
-
-	app := &applicationHandler{
-		projectRepo:       projectRepo,
-		eventRepo:         eventRepo,
-		configRepo:        configRepo,
-		eventDeliveryRepo: eventDeliveryRepo,
-		deliveryRepo:      deliveryRepo,
-		database:          db,
-		redis:             redis,
-	}
-
-	return app
-}
-
 type applicationHandler struct {
 	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
@@ -333,7 +239,7 @@ type applicationHandler struct {
 	eventDeliveryRepo datastore.EventDeliveryRepository
 	deliveryRepo      datastore.DeliveryAttemptsRepository
 	database          database.Database
-	redis             *rdb.Redis
+	redis             redis.UniversalClient
 }
 
 func seedEvent(db database.Database, endpointID string, projectID string, uid, eventType string, data []byte, filter SeedFilter) (*datastore.Event, error) {

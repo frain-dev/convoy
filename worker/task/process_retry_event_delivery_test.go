@@ -8,28 +8,25 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
-
 	"time"
 
-	"github.com/frain-dev/convoy/net"
-	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/hibiken/asynq"
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
-	"github.com/jarcoal/httpmock"
-
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
+	"github.com/frain-dev/convoy/net"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 )
 
 func TestProcessRetryEventDelivery(t *testing.T) {
@@ -126,7 +123,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 		{
 			name:          "Endpoint does not respond with 2xx",
 			cfgPath:       "./testdata/Config/basic-convoy.json",
-			expectedError: &EndpointError{Err: fmt.Errorf("%s, err: nil", ErrDeliveryAttemptFailed.Error()), delay: 20000000000},
+			expectedError: &EndpointError{Err: fmt.Errorf("%s: delivery not completed, retrying", ErrDeliveryAttemptFailed.Error()), delay: 20000000000},
 			msg: &datastore.EventDelivery{
 				UID: "",
 			},
@@ -1220,7 +1217,28 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 
 			featureFlag := fflag.NewFFlag(cfg.EnableFeatureFlag)
 
-			processFn := ProcessRetryEventDelivery(endpointRepo, msgRepo, l, projectRepo, q, rateLimiter, dispatcher, attemptsRepo, manager, featureFlag, mt)
+			// Create a nil fetcher for tests (will fall back to system-wide config)
+			var fetcher fflag.FeatureFlagFetcher = nil
+
+			// Create a simple mock OAuth2TokenService that returns empty token (no-op for tests)
+			mockOAuth2TokenService := &mockOAuth2TokenService{}
+
+			deps := EventDeliveryProcessorDeps{
+				EndpointRepo:          endpointRepo,
+				EventDeliveryRepo:     msgRepo,
+				Licenser:              l,
+				ProjectRepo:           projectRepo,
+				Queue:                 q,
+				RateLimiter:           rateLimiter,
+				Dispatcher:            dispatcher,
+				AttemptsRepo:          attemptsRepo,
+				CircuitBreakerManager: manager,
+				FeatureFlag:           featureFlag,
+				FeatureFlagFetcher:    fetcher,
+				TracerBackend:         mt,
+				OAuth2TokenService:    mockOAuth2TokenService,
+			}
+			processFn := ProcessRetryEventDelivery(deps)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

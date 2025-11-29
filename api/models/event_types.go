@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/getkin/kin-openapi/openapi3"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/openapi"
 	"github.com/frain-dev/convoy/util"
-	"github.com/getkin/kin-openapi/openapi3"
 )
 
 type CreateEventType struct {

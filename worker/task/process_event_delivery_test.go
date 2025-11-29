@@ -7,28 +7,25 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/pkg/log"
-
-	"github.com/frain-dev/convoy/net"
-	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"github.com/frain-dev/convoy/pkg/clock"
-	"github.com/stretchr/testify/require"
-
 	"time"
+
+	"github.com/hibiken/asynq"
+	"github.com/jarcoal/httpmock"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth/realm_chain"
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
-	"github.com/jarcoal/httpmock"
-
 	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/mocks"
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/mock/gomock"
+	"github.com/frain-dev/convoy/net"
+	cb "github.com/frain-dev/convoy/pkg/circuit_breaker"
+	"github.com/frain-dev/convoy/pkg/clock"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/queue"
 )
 
 func TestProcessEventDelivery(t *testing.T) {
@@ -1131,19 +1128,24 @@ func TestProcessEventDelivery(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			processor := ProcessEventDelivery(
-				endpointRepo,
-				msgRepo,
-				licenser,
-				projectRepo,
-				q,
-				rateLimiter,
-				dispatcher,
-				attemptsRepo,
-				manager,
-				featureFlag,
-				mt,
-			)
+			// Create a nil fetcher for tests (will fall back to system-wide config)
+			var fetcher fflag.FeatureFlagFetcher = nil
+
+			deps := EventDeliveryProcessorDeps{
+				EndpointRepo:          endpointRepo,
+				EventDeliveryRepo:     msgRepo,
+				Licenser:              licenser,
+				ProjectRepo:           projectRepo,
+				Queue:                 q,
+				RateLimiter:           rateLimiter,
+				Dispatcher:            dispatcher,
+				AttemptsRepo:          attemptsRepo,
+				CircuitBreakerManager: manager,
+				FeatureFlag:           featureFlag,
+				FeatureFlagFetcher:    fetcher,
+				TracerBackend:         mt,
+			}
+			processor := ProcessEventDelivery(deps)
 
 			payload := EventDelivery{
 				EventDeliveryID: tc.msg.UID,

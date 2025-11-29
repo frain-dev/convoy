@@ -8,9 +8,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/tidwall/gjson"
-
 	"github.com/jmoiron/sqlx"
+	"github.com/tidwall/gjson"
 )
 
 const (

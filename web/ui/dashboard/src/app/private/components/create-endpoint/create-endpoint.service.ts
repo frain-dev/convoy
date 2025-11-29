@@ -42,4 +42,21 @@ export class CreateEndpointService {
 			}
 		});
 	}
+
+	testOAuth2Connection(requestDetails: { oauth2: any }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/endpoints/oauth2/test`,
+					body: requestDetails,
+					method: 'post',
+					level: 'org_project'
+				});
+
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

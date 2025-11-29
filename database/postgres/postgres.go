@@ -5,18 +5,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/exaring/otelpgx"
-	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 	"io"
 	"math/rand"
 	"time"
 
+	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/jmoiron/sqlx"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/hooks"
+	fflag2 "github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/jmoiron/sqlx"
 )
 
 const pkgName = "postgres"
@@ -69,6 +70,12 @@ func NewDB(cfg config.Configuration) (*Postgres, error) {
 	}
 
 	return primary, err
+}
+
+func NewFromConnection(pool *pgxpool.Pool) *Postgres {
+	sqlDB := stdlib.OpenDBFromPool(pool)
+	db := sqlx.NewDb(sqlDB, "pgx")
+	return &Postgres{dbx: db, pool: pool}
 }
 
 func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postgres, error) {

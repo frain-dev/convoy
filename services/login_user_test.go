@@ -4,14 +4,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/frain-dev/convoy/auth/realm/jwt"
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/mocks"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/auth/realm/jwt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/mocks"
 )
 
 func provideLoginUserService(ctrl *gomock.Controller, t *testing.T, loginUser *models.LoginUser) *LoginUserService {

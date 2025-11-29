@@ -5,8 +5,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/go-redis/redis_rate/v10"
+	"github.com/redis/go-redis/v9"
+
+	"github.com/frain-dev/convoy/internal/pkg/rdb"
 )
 
 var ErrRateLimitExceeded = errors.New("rate limit exceeded")
@@ -15,8 +17,24 @@ type RedisLimiter struct {
 	limiter *redis_rate.Limiter
 }
 
+func NewLimiterFromRedisClient(rediser redis.UniversalClient) *RedisLimiter {
+	return &RedisLimiter{limiter: redis_rate.NewLimiter(rediser)}
+}
+
 func NewRedisLimiter(addresses []string) (*RedisLimiter, error) {
 	client, err := rdb.NewClient(addresses)
+	if err != nil {
+		return nil, err
+	}
+
+	c := redis_rate.NewLimiter(client.Client())
+	r := &RedisLimiter{limiter: c}
+
+	return r, nil
+}
+
+func NewRedisLimiterFromConfig(addresses []string, tlsSkipVerify bool, caCertFile, certFile, keyFile string) (*RedisLimiter, error) {
+	client, err := rdb.NewClientFromConfig(addresses, tlsSkipVerify, caCertFile, certFile, keyFile)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +67,7 @@ func (r *RedisLimiter) Allow(ctx context.Context, key string, limit int) error {
 	return nil
 }
 
-func (r *RedisLimiter) AllowWithDuration(ctx context.Context, key string, limit int, duration int) error {
+func (r *RedisLimiter) AllowWithDuration(ctx context.Context, key string, limit, duration int) error {
 	if limit == 0 || duration == 0 { // this should never happen
 		return nil
 	}

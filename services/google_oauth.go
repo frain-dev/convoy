@@ -9,20 +9,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/frain-dev/convoy/config"
 	"math/big"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
 )
 
 type GoogleOAuthService struct {
@@ -56,7 +57,7 @@ func (g *GoogleOAuthService) HandleIDToken(ctx context.Context, idToken string, 
 	log.FromContext(ctx).Info("HandleIDToken called - processing Google ID token")
 
 	// Verify the Google ID token and extract user info
-	userInfo, err := g.verifyGoogleIDToken(ctx, idToken)
+	userInfo, err := g.verifyGoogleIDToken(idToken)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,7 +89,7 @@ func (g *GoogleOAuthService) HandleIDToken(ctx context.Context, idToken string, 
 	}, nil, nil
 }
 
-func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idToken string, businessName string, a *types.APIOptions) (*datastore.User, *jwt.Token, error) {
+func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idToken, businessName string, a *types.APIOptions) (*datastore.User, *jwt.Token, error) {
 	// Validate business name
 	if businessName == "" || strings.TrimSpace(businessName) == "" {
 		return nil, nil, &ServiceError{ErrMsg: "business name is required"}
@@ -125,7 +126,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	}
 
 	// Verify the ID token and extract user info
-	userInfo, err := g.verifyGoogleIDToken(ctx, idToken)
+	userInfo, err := g.verifyGoogleIDToken(idToken)
 	if err != nil {
 		return nil, nil, &ServiceError{ErrMsg: "invalid ID token", Err: err}
 	}
@@ -184,7 +185,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 	return user, &token, nil
 }
 
-func (g *GoogleOAuthService) verifyGoogleIDToken(ctx context.Context, idToken string) (*GoogleUserInfo, error) {
+func (g *GoogleOAuthService) verifyGoogleIDToken(idToken string) (*GoogleUserInfo, error) {
 	// Split the JWT token into parts
 	parts := strings.Split(idToken, ".")
 	if len(parts) != 3 {
@@ -206,7 +207,7 @@ func (g *GoogleOAuthService) verifyGoogleIDToken(ctx context.Context, idToken st
 	}
 
 	// Fetch Google's public keys
-	jwks, err := g.fetchGoogleJWKS(ctx)
+	jwks, err := g.fetchGoogleJWKS()
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch Google JWKS: %w", err)
 	}
@@ -276,7 +277,7 @@ func (g *GoogleOAuthService) verifyGoogleIDToken(ctx context.Context, idToken st
 	return userInfo, nil
 }
 
-func (g *GoogleOAuthService) fetchGoogleJWKS(ctx context.Context) (*GoogleJWKS, error) {
+func (g *GoogleOAuthService) fetchGoogleJWKS() (*GoogleJWKS, error) {
 	// Google's JWKS endpoint
 	jwksURL := "https://www.googleapis.com/oauth2/v3/certs"
 

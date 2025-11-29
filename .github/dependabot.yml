@@ -10,9 +10,9 @@ updates:
     schedule:
       interval: "daily"
       time: "02:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     assignees:
-      - "frain-dev/convoy-maintainers"
+      - "jirevwe"
     commit-message:
       prefix: "chore"
       prefix-development: "chore"
@@ -29,9 +29,9 @@ updates:
     schedule:
       interval: "daily"
       time: "02:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     assignees:
-      - "frain-dev/convoy-maintainers"
+      - "jirevwe"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -48,9 +48,9 @@ updates:
     schedule:
       interval: "daily"
       time: "02:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     assignees:
-      - "frain-dev/convoy-maintainers"
+      - "jirevwe"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -63,9 +63,9 @@ updates:
     schedule:
       interval: "daily"
       time: "02:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
     assignees:
-      - "frain-dev/convoy-maintainers"
+      - "jirevwe"
     commit-message:
       prefix: "chore"
       include: "scope"

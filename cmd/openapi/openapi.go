@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/frain-dev/convoy/internal/pkg/openapi"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/spf13/cobra"
+
+	"github.com/frain-dev/convoy/internal/pkg/openapi"
 )
 
 func AddOpenAPICommand() *cobra.Command {
@@ -62,7 +63,7 @@ This command helps you identify webhook endpoints in your OpenAPI spec and gener
 				return nil
 			}
 
-			err = os.WriteFile(outputFile, output, 0644)
+			err = os.WriteFile(outputFile, output, 0600)
 			if err != nil {
 				return fmt.Errorf("error writing output file: %v", err)
 			}

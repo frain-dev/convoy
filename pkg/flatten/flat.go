@@ -129,13 +129,13 @@ func flatten(prefix string, nested interface{}) (M, error) {
 						case []interface{}:
 
 							// a might look like:
-							//{
+							// {
 							//    "person": M{
 							//        "age": M{
 							//            "$in": []int{10, 11, 12},
 							//        },
 							//    },
-							//},
+							// },
 
 							// In the future, we can flatten large $and and $or array items concurrently
 							// say if len(a) > 10, use goroutines to concurrently flatten each item
@@ -154,10 +154,10 @@ func flatten(prefix string, nested interface{}) (M, error) {
 							}
 
 							// by the time we get here a will look like:
-							//{
+							// {
 							//    "person.age": M{
 							//    "$in": []int{10, 11, 12},
-							//},
+							// },
 							// set key [$or or $and] to the new value of a and set it in result
 							putValueInResult(currentFrame.prefix, key, value, result)
 						default:
@@ -192,8 +192,7 @@ func flatten(prefix string, nested interface{}) (M, error) {
 			}
 
 			for i := range n {
-				switch t := n[i].(type) {
-				case M:
+				if t, ok := n[i].(M); ok {
 					newPrefix = strconv.Itoa(i)
 					if len(currentFrame.prefix) > 0 {
 						b.Grow(len(newPrefix) + len(currentFrame.prefix) + 1)
@@ -272,8 +271,7 @@ func countKeys(nested interface{}) (int, int) {
 			}
 
 			for i := range n {
-				switch t := n[i].(type) {
-				case M:
+				if t, ok := n[i].(M); ok {
 					stack = append(stack, counterStackFrame{t})
 				}
 			}
@@ -298,7 +296,6 @@ func putValueInResult(prefix, key string, value interface{}, result M) {
 			return
 		}
 		v[key] = value
-
 	} else {
 		result[key] = value
 	}

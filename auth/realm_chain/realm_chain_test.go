@@ -3,18 +3,18 @@ package realm_chain
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/log"
 	"os"
 	"sync/atomic"
 	"testing"
 
-	"github.com/frain-dev/convoy/mocks"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
 	"github.com/frain-dev/convoy/config"
-	"github.com/stretchr/testify/require"
+	"github.com/frain-dev/convoy/mocks"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 func TestGet(t *testing.T) {

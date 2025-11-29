@@ -6,14 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/util"
+	"github.com/gorilla/websocket"
 	"github.com/hibiken/asynq"
 
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/gorilla/websocket"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/util"
 )
 
 // Register new clients
@@ -120,7 +119,6 @@ func (h *Hub) sendEvent(ctx context.Context, ev *CLIEvent) {
 	if err != nil {
 		log.WithError(err).Error("failed to write event to socket")
 	}
-
 }
 
 type EventDelivery struct {

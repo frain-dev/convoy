@@ -10,10 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/xdg-go/pbkdf2"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/xdg-go/pbkdf2"
 )
 
 type PortalRealm struct {

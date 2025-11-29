@@ -8,25 +8,30 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
+	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
 	"github.com/frain-dev/convoy/pkg/flatten"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/pkg/transform"
-
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/frain-dev/convoy/util"
-
-	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/pkg/transform"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/hibiken/asynq"
-	"github.com/oklog/ulid/v2"
+	"github.com/frain-dev/convoy/util"
 )
+
+// OAuth2TokenService is an interface for getting OAuth2 authorization headers.
+type OAuth2TokenService interface {
+	GetAuthorizationHeader(context.Context, *datastore.Endpoint) (string, error)
+}
+
+// getOAuth2TokenService performs type assertion on oauth2TokenService.
 
 type CreateEventTaskParams struct {
 	UID            string            `json:"uid"`
@@ -50,6 +55,20 @@ type CreateEvent struct {
 }
 
 type DefaultEventChannel struct {
+}
+
+type EventProcessorDeps struct {
+	EndpointRepo       datastore.EndpointRepository
+	EventRepo          datastore.EventRepository
+	ProjectRepo        datastore.ProjectRepository
+	EventQueue         queue.Queuer
+	SubRepo            datastore.SubscriptionRepository
+	FilterRepo         datastore.FilterRepository
+	Licenser           license.Licenser
+	TracerBackend      tracer.Backend
+	OAuth2TokenService OAuth2TokenService
+	FeatureFlag        *fflag.FFlag
+	FeatureFlagFetcher fflag.FeatureFlagFetcher
 }
 
 func NewDefaultEventChannel() *DefaultEventChannel {
@@ -201,22 +220,47 @@ func (d *DefaultEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	return &response, nil
 }
 
-func ProcessEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.Task) error {
 	ch := &DefaultEventChannel{}
 
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend)
+	return ProcessEventCreationByChannel(
+		ch,
+		deps.EndpointRepo,
+		deps.EventRepo,
+		deps.ProjectRepo,
+		deps.EventQueue,
+		deps.SubRepo,
+		deps.FilterRepo,
+		deps.Licenser,
+		deps.TracerBackend,
+		deps.OAuth2TokenService,
+	)
 }
 
-func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.Subscription, event *datastore.Event, project *datastore.Project, eventDeliveryRepo datastore.EventDeliveryRepository, eventQueue queue.Queuer, deviceRepo datastore.DeviceRepository, endpointRepo datastore.EndpointRepository, licenser license.Licenser) error {
-	ec := &EventDeliveryConfig{project: project}
+type WriteEventDeliveriesToQueueOptions struct {
+	Subscriptions      []datastore.Subscription
+	Event              *datastore.Event
+	Project            *datastore.Project
+	EventDeliveryRepo  datastore.EventDeliveryRepository
+	EventQueue         queue.Queuer
+	DeviceRepo         datastore.DeviceRepository
+	EndpointRepo       datastore.EndpointRepository
+	Licenser           license.Licenser
+	OAuth2TokenService OAuth2TokenService
+	FeatureFlag        *fflag.FFlag
+	FeatureFlagFetcher fflag.FeatureFlagFetcher
+}
+
+func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesToQueueOptions) error {
+	ec := &EventDeliveryConfig{project: opts.Project}
 
 	eventDeliveries := make([]*datastore.EventDelivery, 0)
-	for _, s := range subscriptions {
+	for _, s := range opts.Subscriptions {
 		ec.subscription = &s
-		headers := event.Headers
+		headers := opts.Event.Headers
 
 		if s.Type == datastore.SubscriptionTypeAPI {
-			endpoint, err := endpointRepo.FindEndpointByID(ctx, s.EndpointID, project.UID)
+			endpoint, err := opts.EndpointRepo.FindEndpointByID(ctx, s.EndpointID, opts.Project.UID)
 			if err != nil {
 				if errors.Is(err, datastore.ErrEndpointNotFound) {
 					continue
@@ -225,10 +269,56 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 				return &EndpointError{Err: fmt.Errorf("CODE: 1006, err: %s", err.Error()), delay: defaultDelay}
 			}
 
-			if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.APIKeyAuthentication {
-				headers = make(httpheader.HTTPHeader)
-				headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
-				headers.MergeHeaders(event.Headers)
+			authType := ""
+			hasOAuth2 := false
+			if endpoint.Authentication != nil {
+				authType = string(endpoint.Authentication.Type)
+				hasOAuth2 = endpoint.Authentication.OAuth2 != nil
+			}
+			log.FromContext(ctx).WithFields(log.Fields{
+				"endpoint.id":        endpoint.UID,
+				"has_authentication": endpoint.Authentication != nil,
+				"auth_type":          authType,
+				"has_oauth2":         hasOAuth2,
+			}).Debug("Processing endpoint authentication")
+
+			if endpoint.Authentication != nil {
+				switch endpoint.Authentication.Type {
+				case datastore.APIKeyAuthentication:
+					headers = make(httpheader.HTTPHeader)
+					headers[endpoint.Authentication.ApiKey.HeaderName] = []string{endpoint.Authentication.ApiKey.HeaderValue}
+					headers.MergeHeaders(opts.Event.Headers)
+				case datastore.OAuth2Authentication:
+					// Check feature flag for OAuth2 using project's organisation ID
+					oauth2Enabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, opts.FeatureFlagFetcher, opts.Project.OrganisationID)
+					if !oauth2Enabled {
+						log.FromContext(ctx).Warn("Endpoint has OAuth2 configured but feature flag is disabled, skipping OAuth2 authentication")
+						// Continue without OAuth2 authentication if feature flag is disabled
+					} else if opts.OAuth2TokenService == nil {
+						log.FromContext(ctx).Error("OAuth2 token service is nil")
+					} else {
+						authHeader, err := opts.OAuth2TokenService.GetAuthorizationHeader(ctx, endpoint)
+						if err != nil {
+							log.FromContext(ctx).WithError(err).Error("failed to get OAuth2 authorization header")
+						} else {
+							headers = make(httpheader.HTTPHeader)
+							headers["Authorization"] = []string{authHeader}
+							headers.MergeHeaders(opts.Event.Headers)
+							log.FromContext(ctx).WithFields(log.Fields{
+								"endpoint.id": endpoint.UID,
+							}).Info("OAuth2 authorization header retrieved and added to headers")
+						}
+					}
+				default:
+					log.FromContext(ctx).WithFields(log.Fields{
+						"endpoint.id": endpoint.UID,
+						"auth_type":   endpoint.Authentication.Type,
+					}).Debug("Unknown authentication type, skipping")
+				}
+			} else {
+				log.FromContext(ctx).WithFields(log.Fields{
+					"endpoint.id": endpoint.UID,
+				}).Debug("Endpoint has no authentication configured")
 			}
 
 			s.Endpoint = endpoint
@@ -239,12 +329,12 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 			return &EndpointError{Err: err, delay: defaultDelay}
 		}
 
-		raw := event.Raw
-		data := event.Data
+		raw := opts.Event.Raw
+		data := opts.Event.Data
 
-		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) && licenser.Transformations() {
+		if s.Function.Ptr() != nil && !util.IsStringEmpty(s.Function.String) && opts.Licenser.Transformations() {
 			var payload map[string]interface{}
-			err = json.Unmarshal(event.Data, &payload)
+			err = json.Unmarshal(opts.Event.Data, &payload)
 			if err != nil {
 				return &EndpointError{Err: err, delay: 10 * time.Second}
 			}
@@ -276,38 +366,38 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 		eventDelivery := &datastore.EventDelivery{
 			UID:            ulid.Make().String(),
 			SubscriptionID: s.UID,
-			EventType:      event.EventType,
+			EventType:      opts.Event.EventType,
 			Metadata:       metadata,
-			ProjectID:      project.UID,
-			EventID:        event.UID,
+			ProjectID:      opts.Project.UID,
+			EventID:        opts.Event.UID,
 			EndpointID:     s.EndpointID,
 			DeviceID:       s.DeviceID,
 			Headers:        headers,
-			IdempotencyKey: event.IdempotencyKey,
-			URLQueryParams: event.URLQueryParams,
-			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, deviceRepo),
+			IdempotencyKey: opts.Event.IdempotencyKey,
+			URLQueryParams: opts.Event.URLQueryParams,
+			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.DeviceRepo),
 			AcknowledgedAt: null.TimeFrom(time.Now()),
 			DeliveryMode:   s.DeliveryMode,
 		}
 
 		if s.Type == datastore.SubscriptionTypeCLI {
-			event.Endpoints = []string{}
+			opts.Event.Endpoints = []string{}
 			eventDelivery.CLIMetadata = &datastore.CLIMetadata{
-				EventType: string(event.EventType),
-				SourceID:  event.SourceID,
+				EventType: string(opts.Event.EventType),
+				SourceID:  opts.Event.SourceID,
 			}
 		}
 
 		eventDeliveries = append(eventDeliveries, eventDelivery)
 	}
 
-	err := eventDeliveryRepo.CreateEventDeliveries(ctx, eventDeliveries)
+	err := opts.EventDeliveryRepo.CreateEventDeliveries(ctx, eventDeliveries)
 	if err != nil {
 		return &EndpointError{Err: fmt.Errorf("CODE: 1008, err: %s", err.Error()), delay: defaultDelay}
 	}
 
 	for i, eventDelivery := range eventDeliveries {
-		s := subscriptions[i]
+		s := opts.Subscriptions[i]
 		if eventDelivery.Status != datastore.DiscardedEventStatus {
 			payload := EventDelivery{
 				EventDeliveryID: eventDelivery.UID,
@@ -324,13 +414,14 @@ func writeEventDeliveriesToQueue(ctx context.Context, subscriptions []datastore.
 				Payload: data,
 			}
 
-			if s.Type == datastore.SubscriptionTypeAPI {
-				err = eventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
+			switch s.Type {
+			case datastore.SubscriptionTypeAPI:
+				err = opts.EventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
 				}
-			} else if s.Type == datastore.SubscriptionTypeCLI {
-				err = eventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
+			case datastore.SubscriptionTypeCLI:
+				err = opts.EventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 				}
@@ -347,7 +438,8 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 	var subscriptions []datastore.Subscription
 	var err error
 
-	if project.Type == datastore.OutgoingProject {
+	switch project.Type {
+	case datastore.OutgoingProject:
 		for _, endpointID := range event.Endpoints {
 			var endpoint *datastore.Endpoint
 
@@ -384,7 +476,7 @@ func findSubscriptions(ctx context.Context, endpointRepo datastore.EndpointRepos
 
 			subscriptions = append(subscriptions, matchedSubs...)
 		}
-	} else if project.Type == datastore.IncomingProject {
+	case datastore.IncomingProject:
 		subscriptions, err = subRepo.FindSubscriptionsBySourceID(ctx, project.UID, event.SourceID)
 		if err != nil {
 			return nil, &EndpointError{Err: err, delay: defaultDelay}
@@ -418,8 +510,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 	if !licenser.AdvancedSubscriptions() {
 		return subscriptions, nil
 	}
-
-	// fmt.Printf("matched %+v\n", subscriptions)
 
 	var matched []datastore.Subscription
 
@@ -542,7 +632,6 @@ func matchSubscriptionsUsingFilter(ctx context.Context, e *datastore.Event, subR
 				"subscription.id": sub.UID,
 			}).Debug("subscription filter matched passed")
 		}
-
 	}
 
 	return matched, nil
@@ -653,7 +742,7 @@ func buildEvent(ctx context.Context, eventRepo datastore.EventRepository, endpoi
 		return nil, errors.New("no valid endpoint found")
 	}
 
-	var endpointIDs []string
+	endpointIDs := make([]string, 0, len(endpoints))
 	for _, endpoint := range endpoints {
 		endpointIDs = append(endpointIDs, endpoint.UID)
 	}

@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/render"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-	"github.com/go-chi/render"
-
-	"github.com/frain-dev/convoy/internal/pkg/middleware"
 )
 
 func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
@@ -155,7 +155,7 @@ func (h *Handler) GetDashboardSummary(w http.ResponseWriter, r *http.Request) {
 		dashboard, http.StatusOK))
 }
 
-func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, searchParams datastore.SearchParams, p datastore.Period, period string, qs string, endpointIds []string) {
+func (h *Handler) cacheNewDashboardDataInBackground(project *datastore.Project, searchParams datastore.SearchParams, p datastore.Period, period, qs string, endpointIds []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 

@@ -6,16 +6,15 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/frain-dev/convoy/auth/realm/portal"
-	"github.com/frain-dev/convoy/pkg/log"
-
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/file"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/auth/realm/native"
+	"github.com/frain-dev/convoy/auth/realm/portal"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type chainMap map[string]auth.Realm

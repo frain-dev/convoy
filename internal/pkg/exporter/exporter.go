@@ -9,9 +9,10 @@ import (
 	"path/filepath"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
-	log "github.com/sirupsen/logrus"
 )
 
 var (

@@ -10,11 +10,12 @@ type LocalKeyManager struct {
 	isSet      bool
 }
 
-func NewLocalKeyManager() (*LocalKeyManager, error) {
+func NewLocalKeyManager(key string) (*LocalKeyManager, error) {
 	currentKey := os.Getenv("CONVOY_LOCAL_ENCRYPTION_KEY")
 	if currentKey == "" {
-		return nil, fmt.Errorf("current key must not be empty")
+		currentKey = key
 	}
+
 	return &LocalKeyManager{
 		currentKey: currentKey,
 		isSet:      true,

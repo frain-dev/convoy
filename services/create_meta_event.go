@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/worker/task"
-	"github.com/oklog/ulid/v2"
 )
 
 type MetaEvent struct {
@@ -25,7 +26,7 @@ func NewMetaEvent(queue queue.Queuer, projectRepo datastore.ProjectRepository, m
 	return &MetaEvent{queue: queue, projectRepo: projectRepo, metaEventRepo: metaEventRepo}
 }
 
-func (m *MetaEvent) Run(ctx context.Context, eventType string, projectID string, data interface{}) error {
+func (m *MetaEvent) Run(ctx context.Context, eventType, projectID string, data interface{}) error {
 	project, err := m.projectRepo.FetchProjectByID(ctx, projectID)
 	if err != nil {
 		return err

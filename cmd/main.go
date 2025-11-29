@@ -3,28 +3,26 @@ package main
 import (
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
+
 	_ "time/tzdata"
 
-	"github.com/frain-dev/convoy/cmd/ff"
-	"github.com/frain-dev/convoy/cmd/utils"
-
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/cmd/agent"
 	"github.com/frain-dev/convoy/cmd/bootstrap"
-
 	configCmd "github.com/frain-dev/convoy/cmd/config"
+	"github.com/frain-dev/convoy/cmd/ff"
 	"github.com/frain-dev/convoy/cmd/hooks"
 	"github.com/frain-dev/convoy/cmd/migrate"
+	"github.com/frain-dev/convoy/cmd/openapi"
 	"github.com/frain-dev/convoy/cmd/retry"
 	"github.com/frain-dev/convoy/cmd/server"
 	"github.com/frain-dev/convoy/cmd/stream"
+	"github.com/frain-dev/convoy/cmd/utils"
 	"github.com/frain-dev/convoy/cmd/version"
 	"github.com/frain-dev/convoy/database/postgres"
-	"github.com/sirupsen/logrus"
-
 	"github.com/frain-dev/convoy/internal/pkg/cli"
-
-	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/cmd/openapi"
 )
 
 func main() {
@@ -85,6 +83,7 @@ func main() {
 
 	var licenseKey string
 	var logLevel string
+	var rootPath string
 
 	var configFile string
 
@@ -96,6 +95,7 @@ func main() {
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 	c.Flags().StringVar(&licenseKey, "license-key", "", "Convoy license key")
 	c.Flags().StringVar(&logLevel, "log-level", "", "Log level")
+	c.Flags().StringVar(&rootPath, "root-path", "", "Root path for routing behind load balancers (e.g., /convoy)")
 
 	// Billing flags
 	c.Flags().BoolVar(&enableBilling, "enable-billing", false, "Enable billing functionality")
@@ -159,7 +159,7 @@ func main() {
 	c.AddCommand(server.AddServerCommand(app))
 	c.AddCommand(retry.AddRetryCommand(app))
 	c.AddCommand(migrate.AddMigrateCommand(app))
-	c.AddCommand(configCmd.AddConfigCommand(app))
+	c.AddCommand(configCmd.AddConfigCommand())
 	c.AddCommand(stream.AddStreamCommand(app))
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))

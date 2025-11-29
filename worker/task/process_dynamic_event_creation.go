@@ -8,23 +8,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/tracer"
-	"gopkg.in/guregu/null.v4"
-
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
 	"github.com/google/uuid"
+	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/util"
-	"github.com/hibiken/asynq"
-	"github.com/oklog/ulid/v2"
 )
 
 type DynamicEventChannel struct {
@@ -190,10 +185,21 @@ func (d *DynamicEventChannel) MatchSubscriptions(ctx context.Context, metadata E
 	return &response, nil
 }
 
-func ProcessDynamicEventCreation(endpointRepo datastore.EndpointRepository, eventRepo datastore.EventRepository, projectRepo datastore.ProjectRepository, eventQueue queue.Queuer, subRepo datastore.SubscriptionRepository, filterRepo datastore.FilterRepository, licenser license.Licenser, tracerBackend tracer.Backend) func(context.Context, *asynq.Task) error {
+func ProcessDynamicEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.Task) error {
 	ch := &DynamicEventChannel{}
 
-	return ProcessEventCreationByChannel(ch, endpointRepo, eventRepo, projectRepo, eventQueue, subRepo, filterRepo, licenser, tracerBackend)
+	return ProcessEventCreationByChannel(
+		ch,
+		deps.EndpointRepo,
+		deps.EventRepo,
+		deps.ProjectRepo,
+		deps.EventQueue,
+		deps.SubRepo,
+		deps.FilterRepo,
+		deps.Licenser,
+		deps.TracerBackend,
+		deps.OAuth2TokenService,
+	)
 }
 
 func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo datastore.EndpointRepository, dynamicEvent *models.DynamicEvent) (*datastore.Endpoint, error) {
@@ -246,7 +252,8 @@ func findEndpoint(ctx context.Context, project *datastore.Project, endpointRepo 
 	}
 }
 
-func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEvent, subRepo datastore.SubscriptionRepository, project *datastore.Project, endpoint *datastore.Endpoint) (*datastore.Subscription, error) {
+func findDynamicSubscription(ctx context.Context, dynamicEvent *models.DynamicEvent,
+	subRepo datastore.SubscriptionRepository, project *datastore.Project, endpoint *datastore.Endpoint) (*datastore.Subscription, error) {
 	subscriptions, err := subRepo.FindSubscriptionsByEndpointID(ctx, project.UID, endpoint.UID)
 
 	var subscription *datastore.Subscription

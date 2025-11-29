@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/frain-dev/convoy/datastore"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-	"github.com/lib/pq"
 )
 
 type CreateSubscription struct {

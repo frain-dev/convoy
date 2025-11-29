@@ -51,7 +51,6 @@ func ReadJSON(r *http.Request, dst interface{}) error {
 		default:
 			return err
 		}
-
 	}
 
 	return nil

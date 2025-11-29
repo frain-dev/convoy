@@ -6,19 +6,20 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
-	"github.com/frain-dev/convoy/internal/pkg/license"
-	"github.com/frain-dev/convoy/internal/pkg/limiter"
-	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/util"
 	"github.com/segmentio/kafka-go"
 	"github.com/segmentio/kafka-go/sasl"
 	"github.com/segmentio/kafka-go/sasl/plain"
 	"github.com/segmentio/kafka-go/sasl/scram"
+
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/license"
+	"github.com/frain-dev/convoy/internal/pkg/limiter"
+	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	common "github.com/frain-dev/convoy/internal/pkg/pubsub/const"
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
+	"github.com/frain-dev/convoy/util"
 )
 
 type Kafka struct {
@@ -166,6 +167,11 @@ func (k *Kafka) consume() {
 			mm.IncrementIngestTotal(k.source.UID, k.source.ProjectID)
 
 			var d D = m.Headers
+			if d == nil {
+				d = D{}
+			}
+			d = append(d, kafka.Header{Key: common.BrokerMessageHeader, Value: m.Key})
+
 			headers, err := msgpack.EncodeMsgPack(d.Map())
 			if err != nil {
 				k.log.WithError(err).Error("failed to marshall message headers")

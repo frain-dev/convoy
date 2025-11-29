@@ -16,7 +16,43 @@ export interface ENDPOINT {
 	advanced_signatures: boolean;
 	failure_rate: number;
 	authentication: {
-		api_key: { header_value: string; header_name: string };
+		type?: 'api_key' | 'oauth2';
+		api_key?: { header_value: string; header_name: string };
+		oauth2?: {
+			url: string;
+			client_id: string;
+			authentication_type: 'shared_secret' | 'client_assertion';
+			client_secret?: string;
+			grant_type?: string;
+			scope?: string;
+			signing_key?: {
+				kty: string;
+				// EC (Elliptic Curve) key fields
+				crv?: string;
+				x?: string;
+				y?: string;
+				d: string;
+				// RSA key fields
+				n?: string;
+				e?: string;
+				p?: string;
+				q?: string;
+				dp?: string;
+				dq?: string;
+				qi?: string;
+				// Common fields
+				kid: string;
+			};
+			signing_algorithm?: string;
+			issuer?: string;
+			subject?: string;
+			field_mapping?: {
+				access_token?: string;
+				token_type?: string;
+				expires_in?: string;
+			};
+			expiry_time_unit?: 'seconds' | 'milliseconds' | 'minutes' | 'hours';
+		};
 	};
 	created_at: string;
     owner_id?:string;
@@ -32,6 +68,11 @@ export interface ENDPOINT {
 	rate_limit_duration: string;
 	http_timeout?: string;
 	support_email: string;
+	content_type?: string;
+	mtls_client_cert?: {
+		client_cert?: string;
+		client_key?: string;
+	};
 }
 
 export interface DEVICE {

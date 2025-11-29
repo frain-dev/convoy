@@ -5,7 +5,7 @@
 # export GOARCH=arm64
 
 buildConvoy() {
-    echo "Building Convoy ..."
+  echo "Building Convoy ..."
 
 	# Build UI.
 	UIDIR="api/ui/build"

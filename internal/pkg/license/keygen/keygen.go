@@ -10,14 +10,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/keygen-sh/keygen-go/v3"
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-
-	"github.com/google/uuid"
-	"github.com/keygen-sh/keygen-go/v3"
 )
 
 type Licenser struct {
@@ -400,6 +399,14 @@ func (k *Licenser) MutualTLS() bool {
 		return false
 	}
 	_, ok := k.featureList[MutualTLS]
+	return ok
+}
+
+func (k *Licenser) OAuth2EndpointAuth() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[OAuth2EndpointAuth]
 	return ok
 }
 

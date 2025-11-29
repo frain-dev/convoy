@@ -43,7 +43,6 @@ func (r *batchRetryRepo) CreateBatchRetry(ctx context.Context, batchRetry *datas
 }
 
 func (r *batchRetryRepo) UpdateBatchRetry(ctx context.Context, batchRetry *datastore.BatchRetry) error {
-
 	result, err := r.db.GetDB().NamedExecContext(ctx, updateBatchRetry, map[string]interface{}{
 		"id":               batchRetry.ID,
 		"project_id":       batchRetry.ProjectID,

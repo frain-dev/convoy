@@ -3,7 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {HttpService} from 'src/app/services/http/http.service';
 
-export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing';
+export type SETTINGS = 'organisation settings' | 'configuration settings' | 'personal access tokens' | 'team' | 'usage and billing' | 'early adopter features';
 
 @Component({
 	selector: 'convoy-settings',
@@ -15,7 +15,9 @@ export class SettingsComponent implements OnInit {
 	billingEnabled = false;
 	settingsMenu: { name: SETTINGS; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'organisation settings', icon: 'org', svg: 'fill' },
-		{ name: 'team', icon: 'team', svg: 'stroke' }
+		{ name: 'team', icon: 'team', svg: 'stroke' },
+		{ name: 'early adopter features', icon: 'settings', svg: 'fill' }
+		// { name: 'configuration settings', icon: 'settings', svg: 'fill' }
 	];
 
 	constructor(
@@ -51,7 +53,8 @@ export class SettingsComponent implements OnInit {
 	private updateSettingsMenu() {
 		this.settingsMenu = [
 			{ name: 'organisation settings', icon: 'org', svg: 'fill' },
-			{ name: 'team', icon: 'team', svg: 'stroke' }
+			{ name: 'team', icon: 'team', svg: 'stroke' },
+			{ name: 'early adopter features', icon: 'settings', svg: 'fill' }
 		];
 
 		if (this.billingEnabled) {

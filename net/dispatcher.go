@@ -8,24 +8,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-
 	"io"
 	"net/http"
 	"net/http/httptrace"
 	"net/netip"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/stealthrocket/netjail"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/frain-dev/convoy/internal/pkg/license"
-
 	"github.com/frain-dev/convoy"
+	"github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/tracer"
+	"github.com/frain-dev/convoy/pkg/constants"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -39,6 +38,70 @@ var (
 	ErrTracerIsRequired    = errors.New("tracer cannot be nil")
 	ErrNon2xxResponse      = errors.New("endpoint returned a non-2xx response")
 )
+
+// ContentTypeConverter defines the interface for converting JSON data to different content types
+type ContentTypeConverter interface {
+	Convert(jsonData json.RawMessage) ([]byte, error)
+	ContentType() string
+}
+
+// JSONConverter handles application/json content type
+type JSONConverter struct{}
+
+func (j JSONConverter) Convert(jsonData json.RawMessage) ([]byte, error) {
+	return jsonData, nil
+}
+
+func (j JSONConverter) ContentType() string {
+	return constants.ContentTypeJSON
+}
+
+// FormURLEncodedConverter handles application/x-www-form-urlencoded content type
+type FormURLEncodedConverter struct{}
+
+func (f FormURLEncodedConverter) Convert(jsonData json.RawMessage) ([]byte, error) {
+	var data map[string]interface{}
+	if err := json.Unmarshal(jsonData, &data); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON data: %w", err)
+	}
+
+	values := url.Values{}
+	for key, value := range data {
+		switch v := value.(type) {
+		case string:
+			values.Set(key, v)
+		case float64:
+			values.Set(key, fmt.Sprintf("%.0f", v))
+		case bool:
+			values.Set(key, fmt.Sprintf("%t", v))
+		case nil:
+			values.Set(key, "")
+		default:
+			// For complex types, convert to JSON string
+			jsonValue, err := json.Marshal(v)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal value for key %s: %w", key, err)
+			}
+			values.Set(key, string(jsonValue))
+		}
+	}
+
+	return []byte(values.Encode()), nil
+}
+
+func (f FormURLEncodedConverter) ContentType() string {
+	return constants.ContentTypeFormURLEncoded
+}
+
+// getConverter returns the appropriate converter for the given content type
+func getConverter(contentType string) ContentTypeConverter {
+	switch contentType {
+	case constants.ContentTypeFormURLEncoded:
+		return FormURLEncodedConverter{}
+	default:
+		return JSONConverter{}
+	}
+}
 
 type DispatcherOption func(d *Dispatcher) error
 
@@ -290,7 +353,58 @@ func (d *Dispatcher) validateProxy(proxyURL string) (*url.URL, bool, error) {
 	return nil, false, nil
 }
 
-func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage, signatureHeader string, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader, idempotencyKey string, timeout time.Duration) (*Response, error) {
+// createClientWithMTLS creates an HTTP client configured with the provided mTLS certificate.
+// If mtlsCert is nil, returns the default dispatcher client.
+// The returned client respects IP allow/block rules when the feature is enabled.
+func (d *Dispatcher) createClientWithMTLS(mtlsCert *tls.Certificate) *http.Client {
+	if mtlsCert == nil {
+		return d.client
+	}
+
+	customTransport := d.transport.Clone()
+
+	// Clone the TLS config to avoid modifying the shared config
+	var tlsConfig *tls.Config
+	if customTransport.TLSClientConfig != nil {
+		tlsConfig = customTransport.TLSClientConfig.Clone()
+	} else {
+		tlsConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+	}
+
+	// Add the client certificate
+	tlsConfig.Certificates = []tls.Certificate{*mtlsCert}
+	customTransport.TLSClientConfig = tlsConfig
+
+	// Respect IP allow/block rules by using netjail transport when enabled
+	if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
+		netJailTransport := &netjail.Transport{
+			New: func() *http.Transport { return customTransport.Clone() },
+		}
+		return &http.Client{Transport: NewNetJailTransport(netJailTransport)}
+	}
+
+	return &http.Client{Transport: NewVanillaTransport(customTransport)}
+}
+
+// SendWebhookWithMTLS sends a webhook request with optional mTLS client certificate configuration
+func (d *Dispatcher) SendWebhookWithMTLS(ctx context.Context, endpoint string, jsonData json.RawMessage,
+	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
+	idempotencyKey string, timeout time.Duration, contentType string, mtlsCert *tls.Certificate) (*Response, error) {
+	client := d.createClientWithMTLS(mtlsCert)
+	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, client)
+}
+
+func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData json.RawMessage,
+	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
+	idempotencyKey string, timeout time.Duration, contentType string) (*Response, error) {
+	return d.sendWebhookInternal(ctx, endpoint, jsonData, signatureHeader, hmac, maxResponseSize, headers, idempotencyKey, timeout, contentType, d.client)
+}
+
+func (d *Dispatcher) sendWebhookInternal(ctx context.Context, endpoint string, jsonData json.RawMessage,
+	signatureHeader, hmac string, maxResponseSize int64, headers httpheader.HTTPHeader,
+	idempotencyKey string, timeout time.Duration, contentType string, client *http.Client) (*Response, error) {
 	d.logger.Debugf("rules: %+v", d.rules)
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)
@@ -308,14 +422,23 @@ func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData 
 		ctx = netjail.ContextWithRules(ctx, d.rules)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
+	// Convert JSON data to the appropriate content type using converter interface
+	converter := getConverter(contentType)
+	requestBody, err := converter.Convert(jsonData)
+	if err != nil {
+		d.logger.WithError(err).Error("error converting JSON data")
+		r.Error = err.Error()
+		return r, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(requestBody))
 	if err != nil {
 		d.logger.WithError(err).Error("error occurred while creating request")
 		return r, err
 	}
 
 	req.Header.Set(signatureHeader, hmac)
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Content-Type", converter.ContentType())
 	req.Header.Set("Accept-Encoding", "gzip")
 	req.Header.Add("User-Agent", defaultUserAgent())
 	if len(idempotencyKey) > 0 {
@@ -331,7 +454,7 @@ func (d *Dispatcher) SendWebhook(ctx context.Context, endpoint string, jsonData 
 	r.URL = req.URL
 	r.Method = req.Method
 
-	err = d.do(ctx, req, r, maxResponseSize)
+	err = d.do(ctx, req, r, maxResponseSize, client)
 	if err != nil {
 		return r, err
 	}
@@ -361,7 +484,7 @@ func defaultUserAgent() string {
 	return "Convoy/" + convoy.GetVersion()
 }
 
-func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64) error {
+func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, maxResponseSize int64, client *http.Client) error {
 	if d.detailedTrace.Enabled {
 		trace := &httptrace.ClientTrace{
 			DNSStart: func(info httptrace.DNSStartInfo) {
@@ -423,7 +546,7 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 		req = req.WithContext(ctx)
 	}
 
-	response, err := d.client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
 		d.logger.WithError(err).Error("error sending request to API endpoint")
 		res.Error = err.Error()
@@ -464,46 +587,116 @@ func (d *Dispatcher) do(ctx context.Context, req *http.Request, res *Response, m
 	return nil
 }
 
-// Ping sends a GET request to the specified endpoint and verifies it returns a 2xx response.
+// OAuth2TokenGetter is a function type for getting OAuth2 access tokens
+// It returns the formatted Authorization header value (e.g., "Bearer token" or "CustomType token")
+type OAuth2TokenGetter func(ctx context.Context) (string, error)
+
+// PingOptions contains options for the Ping operation
+type PingOptions struct {
+	Endpoint          string
+	Timeout           time.Duration
+	ContentType       string
+	MtlsCert          *tls.Certificate
+	OAuth2TokenGetter OAuth2TokenGetter
+	// Method is used internally by tryPingMethod. It's set automatically by Ping.
+	Method string
+}
+
+// Ping sends requests to the specified endpoint using configurable methods and verifies it returns a 2xx response.
 // It returns an error if the endpoint is unreachable or returns a non-2xx status code.
-func (d *Dispatcher) Ping(ctx context.Context, endpoint string, timeout time.Duration) error {
+// If opts.OAuth2TokenGetter is provided, it will be used to fetch an OAuth2 token and add it to the Authorization header.
+func (d *Dispatcher) Ping(ctx context.Context, opts PingOptions) error {
 	d.logger.Debugf("rules: %+v", d.rules)
 
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, opts.Timeout)
 	defer cancel()
 
 	if d.ff.CanAccessFeature(fflag.IpRules) && d.l.IpRules() {
 		ctx = netjail.ContextWithRules(ctx, d.rules)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", endpoint, nil)
+	// Get ping methods from config
+	var methods []string
+	cfg, err := config.Get()
 	if err != nil {
-		d.logger.WithError(err).Error("error creating ping request")
+		d.logger.WithError(err).Warn("Failed to get config, using default ping methods")
+		methods = []string{"HEAD", "GET", "POST"}
+	} else {
+		methods = cfg.Dispatcher.PingMethods
+		if len(methods) == 0 {
+			methods = []string{"HEAD", "GET", "POST"}
+		}
+	}
+
+	var lastErr error
+	for i, method := range methods {
+		pingOpts := opts
+		pingOpts.Method = method
+		err := d.tryPingMethod(ctx, pingOpts)
+		if err == nil {
+			if i > 0 {
+				d.logger.Infof("Ping succeeded with %s after %d attempts", method, i+1)
+			}
+			return nil
+		}
+
+		lastErr = err
+		d.logger.Debugf("Ping failed with %s: %v", method, err)
+	}
+
+	d.logger.Warnf("All ping methods failed for %s", opts.Endpoint)
+	return lastErr
+}
+
+func (d *Dispatcher) tryPingMethod(ctx context.Context, opts PingOptions) error {
+	client := d.createClientWithMTLS(opts.MtlsCert)
+
+	var body []byte
+	var reqContentType string
+
+	if opts.Method == "POST" && opts.ContentType != "" {
+		testPayload := json.RawMessage(`{"test": "ping"}`)
+		converter := getConverter(opts.ContentType)
+		var err error
+		body, err = converter.Convert(testPayload)
+		if err != nil {
+			return err
+		}
+		reqContentType = converter.ContentType()
+	}
+
+	var bodyReader io.Reader
+	if body != nil {
+		bodyReader = bytes.NewBuffer(body)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, opts.Method, opts.Endpoint, bodyReader)
+	if err != nil {
 		return err
 	}
 
-	trace := &httptrace.ClientTrace{
-		GotConn: func(connInfo httptrace.GotConnInfo) {
-			d.logger.Debugf("IP address resolved for %s to: %s", endpoint, connInfo.Conn.RemoteAddr())
-		},
+	req.Header.Add("User-Agent", defaultUserAgent())
+	if reqContentType != "" {
+		req.Header.Set("Content-Type", reqContentType)
 	}
 
-	ctx = httptrace.WithClientTrace(ctx, trace)
-	req = req.WithContext(ctx)
+	// Add OAuth2 Authorization header if token getter is provided
+	if opts.OAuth2TokenGetter != nil {
+		authHeader, err := opts.OAuth2TokenGetter(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to get OAuth2 token for ping: %w", err)
+		}
+		req.Header.Set("Authorization", authHeader)
+	}
 
-	req.Header.Add("User-Agent", defaultUserAgent())
-
-	response, err := d.client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
-		d.logger.WithError(err).Error("error sending ping request")
 		return err
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode < 200 || response.StatusCode > 299 {
-		err = fmt.Errorf("%w: got status code %d", ErrNon2xxResponse, response.StatusCode)
-		d.logger.WithError(err).Error("ping request failed")
-		return err
+		return fmt.Errorf("%w: got status code %d", ErrNon2xxResponse, response.StatusCode)
 	}
 
 	return nil

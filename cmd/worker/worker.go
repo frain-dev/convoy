@@ -7,20 +7,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/pkg/fflag"
-	"github.com/frain-dev/convoy/internal/pkg/keys"
-	"github.com/frain-dev/convoy/internal/pkg/retention"
-
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
+	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
 	"github.com/frain-dev/convoy/internal/pkg/loader"
 	"github.com/frain-dev/convoy/internal/pkg/memorystore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/pkg/retention"
 	"github.com/frain-dev/convoy/internal/pkg/smtp"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/net"
@@ -29,11 +28,12 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
+	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/worker"
 	"github.com/frain-dev/convoy/worker/task"
 )
 
-func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, interval int) error {
+func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) error {
 	lo := a.Logger.(*log.Logger)
 	lo.SetPrefix("worker")
 
@@ -57,7 +57,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 		return err
 	}
 
-	redis, err := rdb.NewClient(cfg.Redis.BuildDsn())
+	redis, err := rdb.NewClientFromConfig(
+		cfg.Redis.BuildDsn(),
+		cfg.Redis.TLSSkipVerify,
+		cfg.Redis.TLSCACertFile,
+		cfg.Redis.TLSCertFile,
+		cfg.Redis.TLSKeyFile,
+	)
 	if err != nil {
 		return err
 	}
@@ -140,7 +146,13 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	filterRepo := postgres.NewFilterRepo(a.DB)
 	batchRetryRepo := postgres.NewBatchRetryRepo(a.DB)
 
-	rd, err := rdb.NewClient(cfg.Redis.BuildDsn())
+	rd, err := rdb.NewClientFromConfig(
+		cfg.Redis.BuildDsn(),
+		cfg.Redis.TLSSkipVerify,
+		cfg.Redis.TLSCACertFile,
+		cfg.Redis.TLSCertFile,
+		cfg.Redis.TLSKeyFile,
+	)
 	if err != nil {
 		return err
 	}
@@ -315,86 +327,71 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 	channels["broadcast"] = broadcastCh
 	channels["dynamic"] = dynamicCh
 
-	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(
-		endpointRepo,
-		eventDeliveryRepo,
-		a.Licenser,
-		projectRepo,
-		a.Queue,
-		rateLimiter,
-		dispatcher,
-		attemptRepo,
-		circuitBreakerManager,
-		featureFlag,
-		a.TracerBackend),
-		newTelemetry)
+	// Initialize OAuth2 token service
+	oauth2TokenService := services.NewOAuth2TokenService(a.Cache, lo)
 
-	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
-
-	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(
-		endpointRepo,
-		eventDeliveryRepo,
-		a.Licenser,
-		projectRepo,
-		a.Queue,
-		rateLimiter,
-		dispatcher,
-		attemptRepo,
-		circuitBreakerManager,
-		featureFlag,
-		a.TracerBackend),
-		newTelemetry)
-
-	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(
-		broadcastCh,
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
-
-	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
-
-	if a.Licenser.RetentionPolicy() {
-		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd, ret), nil)
-		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd), nil)
+	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
+		EndpointRepo:          endpointRepo,
+		EventDeliveryRepo:     eventDeliveryRepo,
+		Licenser:              a.Licenser,
+		ProjectRepo:           projectRepo,
+		Queue:                 a.Queue,
+		RateLimiter:           rateLimiter,
+		Dispatcher:            dispatcher,
+		AttemptsRepo:          attemptRepo,
+		CircuitBreakerManager: circuitBreakerManager,
+		FeatureFlag:           featureFlag,
+		FeatureFlagFetcher:    postgres.NewFeatureFlagFetcher(a.DB),
+		TracerBackend:         a.TracerBackend,
+		OAuth2TokenService:    oauth2TokenService,
 	}
 
-	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(
-		channels,
-		endpointRepo,
-		eventRepo,
-		projectRepo,
-		eventDeliveryRepo,
-		a.Queue,
-		subRepo,
-		filterRepo,
-		deviceRepo,
-		a.Licenser,
-		a.TracerBackend),
-		newTelemetry)
+	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
+
+	eventProcessorDeps := task.EventProcessorDeps{
+		EndpointRepo:       endpointRepo,
+		EventRepo:          eventRepo,
+		ProjectRepo:        projectRepo,
+		EventQueue:         a.Queue,
+		SubRepo:            subRepo,
+		FilterRepo:         filterRepo,
+		Licenser:           a.Licenser,
+		TracerBackend:      a.TracerBackend,
+		OAuth2TokenService: oauth2TokenService,
+		FeatureFlag:        featureFlag,
+		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
+	}
+
+	consumer.RegisterHandlers(convoy.CreateEventProcessor, task.ProcessEventCreation(eventProcessorDeps), newTelemetry)
+
+	consumer.RegisterHandlers(convoy.RetryEventProcessor, task.ProcessRetryEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
+
+	consumer.RegisterHandlers(convoy.CreateBroadcastEventProcessor, task.ProcessBroadcastEventCreation(broadcastCh, eventProcessorDeps), newTelemetry)
+
+	consumer.RegisterHandlers(convoy.CreateDynamicEventProcessor, task.ProcessDynamicEventCreation(eventProcessorDeps), newTelemetry)
+
+	if a.Licenser.RetentionPolicy() {
+		consumer.RegisterHandlers(convoy.RetentionPolicies, task.RetentionPolicies(rd.Client(), ret), nil)
+		consumer.RegisterHandlers(convoy.BackupProjectData, task.BackupProjectData(configRepo, projectRepo, eventRepo, eventDeliveryRepo, attemptRepo, rd.Client()), nil)
+	}
+
+	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
+		Channels:           channels,
+		EndpointRepo:       endpointRepo,
+		EventRepo:          eventRepo,
+		ProjectRepo:        projectRepo,
+		EventDeliveryRepo:  eventDeliveryRepo,
+		EventQueue:         a.Queue,
+		SubRepo:            subRepo,
+		FilterRepo:         filterRepo,
+		DeviceRepo:         deviceRepo,
+		Licenser:           a.Licenser,
+		TracerBackend:      a.TracerBackend,
+		OAuth2TokenService: oauth2TokenService,
+		FeatureFlag:        featureFlag,
+		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
+	}
+	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 
 	consumer.RegisterHandlers(convoy.MonitorTwitterSources, task.MonitorTwitterSources(a.DB, a.Queue, rd), nil)
 
@@ -414,11 +411,14 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration, inte
 
 	consumer.RegisterHandlers(convoy.BatchRetryProcessor, task.ProcessBatchRetry(batchRetryRepo, eventDeliveryRepo, a.Queue, lo), nil)
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, circuitBreakerManager)
+	if err != nil {
+		return fmt.Errorf("failed to register queue metrics: %w", err)
+	}
 
 	// start worker
 	consumer.Start()
-	lo.Println("Starting Convoy Consumer Pool")
+	lo.Printf("Starting Convoy Consumer Pool")
 
 	return ctx.Err()
 }

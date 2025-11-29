@@ -6,6 +6,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
+	notification "github.com/frain-dev/convoy/internal/notifications"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -70,7 +71,14 @@ func EnqueueCircuitBreakerEmails(q queue.Queuer, lo *log.Logger, project *datast
 }
 
 func enqueueEmail(q queue.Queuer, emailMsg *email.Message) error {
-	bytes, err := msgpack.EncodeMsgPack(emailMsg)
+	// Wrap email message in notification.Notification struct
+	// ProcessNotifications expects this structure with NotificationType and Payload
+	notif := &notification.Notification{
+		NotificationType: notification.EmailNotificationType,
+		Payload:          emailMsg,
+	}
+
+	bytes, err := msgpack.EncodeMsgPack(notif)
 	if err != nil {
 		return err
 	}

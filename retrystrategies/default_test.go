@@ -1,10 +1,12 @@
 package retrystrategies
 
 import (
-	"github.com/frain-dev/convoy/datastore"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 func TestDefaultRetryStrategy(t *testing.T) {

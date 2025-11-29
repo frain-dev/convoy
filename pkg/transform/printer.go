@@ -12,10 +12,10 @@ func NewBufferPrinter() *BuffPrinter {
 	return &BuffPrinter{
 		Buff: bufferLogger,
 		BuffOutPrint: func(s string) {
-			bufferLogger.WriteString(fmt.Sprintf("%s%s", s, newLine))
+			_, _ = fmt.Fprintf(bufferLogger, "%s%s", s, newLine)
 		},
 		BuffErrPrint: func(s string) {
-			bufferLogger.WriteString(fmt.Sprintf("%s%s", s, newLine))
+			_, _ = fmt.Fprintf(bufferLogger, "%s%s", s, newLine)
 		},
 	}
 }

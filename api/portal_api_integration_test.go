@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -11,6 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
@@ -18,9 +19,6 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 type PortalEndpointIntegrationTestSuite struct {
@@ -36,14 +34,11 @@ type PortalEndpointIntegrationTestSuite struct {
 }
 
 func (s *PortalEndpointIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
-
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
 	s.DefaultUser = user
@@ -79,7 +74,6 @@ func (s *PortalEndpointIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PortalEndpointIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -184,13 +178,11 @@ type PortalEventIntegrationTestSuite struct {
 }
 
 func (s *PortalEventIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PortalEventIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -220,7 +212,7 @@ func (s *PortalEventIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PortalEventIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
+
 	metrics.Reset()
 }
 

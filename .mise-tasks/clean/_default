@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+#MISE description="Clean up build artifacts and coverage files"
+#MISE dir="{{ config_root }}"
+
+set -e
+
+echo "Cleaning up..."
+rm -rf bin/*
+rm -f coverage.out

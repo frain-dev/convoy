@@ -18,10 +18,12 @@
 
 /api/ui/build/*
 !/api/ui/build/go_test_stub.txt
+!/api/ui/build/index.html
 /data/mongo/
 .DS_Store
 *.db
 pgdata
+bin
 
 # ui depencencies
 **/node_modules
@@ -44,3 +46,5 @@ convoy-ce
 
 # used to generate test stubs
 .cursor
+
+mise.local.toml

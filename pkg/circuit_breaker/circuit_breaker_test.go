@@ -1,13 +1,15 @@
 package circuit_breaker
 
 import (
-	"github.com/frain-dev/convoy/pkg/log"
-	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 )
 
 func TestCircuitBreaker_String(t *testing.T) {

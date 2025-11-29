@@ -23,9 +23,9 @@ func transformDurationStringToInt(d string) (uint64, error) {
 	return uint64(id.Seconds()), nil
 }
 
-func transformIntToDurationString(t uint64) (string, error) {
+func transformIntToDurationString(t uint64) string {
 	td := time.Duration(t) * time.Second
-	return td.String(), nil
+	return td.String()
 }
 
 func migrateEndpoint(oldPayload, newPayload interface{}, direction direction) error {
@@ -58,10 +58,7 @@ func migrateEndpoint(oldPayload, newPayload interface{}, direction direction) er
 					return fmt.Errorf("invalid type for %s field", jsonTag)
 				}
 
-				value, err = transformIntToDurationString(newValue)
-				if err != nil {
-					return err
-				}
+				value = transformIntToDurationString(newValue)
 			default:
 				return fmt.Errorf("invalid direction %s", direction)
 			}

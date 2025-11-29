@@ -3,9 +3,9 @@ package telemetry
 import (
 	"context"
 	"errors"
-	"github.com/frain-dev/convoy"
 	"time"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -15,7 +15,8 @@ var ErrInvalidInstanceID = errors.New("invalid instance id provided")
 
 type EventsCounter struct{}
 
-func (e *EventsCounter) track(ctx context.Context, instanceID string) (Metric, error) {
+//nolint:unparam // error return required by Tracker interface
+func (e *EventsCounter) track(_ context.Context, instanceID string) (Metric, error) {
 	return Metric{
 		Name:       metricName(EventCounter),
 		Version:    convoy.GetVersion(),

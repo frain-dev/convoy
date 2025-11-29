@@ -3,15 +3,14 @@ package services
 import (
 	"context"
 	"fmt"
-	"github.com/frain-dev/convoy/pkg/msgpack"
 	"time"
 
 	"github.com/frain-dev/convoy"
-	"github.com/frain-dev/convoy/worker/task"
-
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/log"
+	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/worker/task"
 )
 
 type RetryEventDeliveryService struct {

@@ -1,5 +1,5 @@
 import {Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild} from '@angular/core';
-import {loadStripe, Stripe, StripeCardElement, StripeElements} from '@stripe/stripe-js';
+import {loadStripe, Stripe, StripeCardElement, StripeCardElementChangeEvent, StripeElements} from '@stripe/stripe-js';
 
 @Component({
   selector: 'app-stripe-elements',
@@ -109,7 +109,7 @@ export class StripeElementsComponent implements OnInit, OnDestroy {
       this.cardElement.mount('#card-element');
 
       // Listen for changes
-      this.cardElement.on('change', (event) => {
+      this.cardElement.on('change', (event: StripeCardElementChangeEvent) => {
         if (event.error) {
           this.errorMessage = event.error.message;
           this.error.emit(event.error.message);

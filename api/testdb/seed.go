@@ -9,23 +9,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dchest/uniuri"
+	"github.com/oklog/ulid/v2"
+	"github.com/xdg-go/pbkdf2"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/frain-dev/convoy/pkg/httpheader"
-
-	"github.com/dchest/uniuri"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/util"
-	"github.com/oklog/ulid/v2"
-	"github.com/xdg-go/pbkdf2"
 )
 
 func SeedEventType(db database.Database, projectId, uid, name, desc, category string) (*datastore.ProjectEventType, error) {
-
 	evtTypesRepo := postgres.NewEventTypesRepo(db)
 	pe := &datastore.ProjectEventType{
 		UID:         uid,
@@ -124,6 +122,7 @@ func SeedEndpointSecret(db database.Database, e *datastore.Endpoint, value strin
 func SeedDefaultProject(db database.Database, orgID string) (*datastore.Project, error) {
 	return SeedDefaultProjectWithSSL(db, orgID, &datastore.DefaultSSLConfig)
 }
+
 func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastore.SSLConfiguration) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = ulid.Make().String()
@@ -171,7 +170,7 @@ func SeedDefaultProjectWithSSL(db database.Database, orgID string, ssl *datastor
 
 const DefaultUserPassword = "password"
 
-// seed default user
+// SeedDefaultUser seed default user
 func SeedDefaultUser(db database.Database, isAdmin ...bool) (*datastore.User, error) {
 	p := datastore.Password{Plaintext: DefaultUserPassword}
 	err := p.GenerateHash()
@@ -183,7 +182,7 @@ func SeedDefaultUser(db database.Database, isAdmin ...bool) (*datastore.User, er
 		UID:       ulid.Make().String(),
 		FirstName: "default",
 		LastName:  "default",
-		Email:     "default@user.com",
+		Email:     fmt.Sprintf("%d@user.com", time.Now().UnixNano()),
 		Password:  string(p.Hash),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -191,7 +190,7 @@ func SeedDefaultUser(db database.Database, isAdmin ...bool) (*datastore.User, er
 	if len(isAdmin) > 0 {
 		defaultUser.FirstName = "instance"
 		defaultUser.LastName = "admin"
-		defaultUser.Email = "instance.admin@user.com"
+		defaultUser.Email = fmt.Sprintf("instance.admin.%d@user.com", time.Now().UnixNano())
 	}
 
 	// Seed Data.
@@ -204,7 +203,7 @@ func SeedDefaultUser(db database.Database, isAdmin ...bool) (*datastore.User, er
 	return defaultUser, nil
 }
 
-// seed default organisation
+// SeedDefaultOrganisation seed default organisation
 func SeedDefaultOrganisation(db database.Database, user *datastore.User) (*datastore.Organisation, error) {
 	return SeedDefaultOrganisationWithRole(db, user, auth.RoleOrganisationAdmin)
 }
@@ -242,7 +241,7 @@ func SeedDefaultOrganisationWithRole(db database.Database, user *datastore.User,
 	return defaultOrg, nil
 }
 
-// seed organisation member
+// SeedOrganisationMember seed organisation member
 func SeedOrganisationMember(db database.Database, org *datastore.Organisation, user *datastore.User, role *auth.Role) (*datastore.OrganisationMember, error) {
 	member := &datastore.OrganisationMember{
 		UID:            ulid.Make().String(),
@@ -262,9 +261,9 @@ func SeedOrganisationMember(db database.Database, org *datastore.Organisation, u
 	return member, nil
 }
 
-// seed organisation invite
+// SeedOrganisationInvite seed organisation invite
 func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, email string, role *auth.Role, expiry time.Time, status datastore.InviteStatus) (*datastore.OrganisationInvite, error) {
-	if expiry == (time.Time{}) {
+	if expiry.Equal(time.Time{}) {
 		expiry = time.Now()
 	}
 
@@ -326,11 +325,12 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 	return apiKey, key, nil
 }
 
-// seed default project
+// SeedProject seed default project
 func SeedProject(db database.Database, uid, name, orgID string, projectType datastore.ProjectType, cfg *datastore.ProjectConfig) (*datastore.Project, error) {
 	if orgID == "" {
 		orgID = ulid.Make().String()
 	}
+
 	g := &datastore.Project{
 		UID:            uid,
 		Name:           name,
@@ -352,7 +352,7 @@ func SeedProject(db database.Database, uid, name, orgID string, projectType data
 }
 
 // SeedEvent creates a random event for integration tests.
-func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID string, uid, eventType string, sourceID string, data []byte) (*datastore.Event, error) {
+func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID, uid, eventType, sourceID string, data []byte) (*datastore.Event, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
 	}
@@ -379,7 +379,7 @@ func SeedEvent(db database.Database, endpoint *datastore.Endpoint, projectID str
 }
 
 // SeedEventDelivery creates a random event delivery for integration tests.
-func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *datastore.Endpoint, projectID string, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
+func SeedEventDelivery(db database.Database, event *datastore.Event, endpoint *datastore.Endpoint, projectID, uid string, status datastore.EventDeliveryStatus, subcription *datastore.Subscription) (*datastore.EventDelivery, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
 	}
@@ -565,7 +565,7 @@ func SeedUser(db database.Database, email, password string) (*datastore.User, er
 	}
 
 	if email == "" {
-		email = "test@test.com"
+		email = fmt.Sprintf("%d@test.com", time.Now().UnixNano())
 	}
 
 	user := &datastore.User{
@@ -673,6 +673,7 @@ func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore
 // PurgeDB is run after every test run, and it's used to truncate the DB to have
 // a clean slate in the next run.
 func PurgeDB(t *testing.T, db database.Database) {
+	t.Helper()
 	err := truncateTables(db)
 	if err != nil {
 		t.Fatalf("Could not purge DB: %v", err)

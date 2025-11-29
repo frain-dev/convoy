@@ -10,9 +10,10 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/crypto/pbkdf2"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"golang.org/x/crypto/pbkdf2"
 )
 
 type NativeRealm struct {

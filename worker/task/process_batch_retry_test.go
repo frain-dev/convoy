@@ -7,15 +7,16 @@ import (
 	"os"
 	"testing"
 
+	"github.com/hibiken/asynq"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
-	"github.com/hibiken/asynq"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/mock/gomock"
 )
 
 func TestProcessBatchRetry(t *testing.T) {
@@ -66,7 +67,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				// Load event deliveries - return empty list to exit loop
 				ed.EXPECT().
 					LoadEventDeliveriesPaged(
-						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "",
+						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "", "",
 					).
 					Return([]datastore.EventDelivery{}, datastore.PaginationData{HasNextPage: false}, nil).Times(1)
 
@@ -178,7 +179,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				// Load event deliveries - this will fail
 				ed.EXPECT().
 					LoadEventDeliveriesPaged(
-						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "",
+						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "", "",
 					).
 					Return(nil, datastore.PaginationData{}, errors.New("failed to load deliveries")).Times(1)
 
@@ -230,7 +231,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				}
 				ed.EXPECT().
 					LoadEventDeliveriesPaged(
-						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "",
+						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "", "",
 					).
 					Return(deliveries, datastore.PaginationData{HasNextPage: false}, nil).Times(1)
 
@@ -297,7 +298,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				}
 				ed.EXPECT().
 					LoadEventDeliveriesPaged(
-						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "",
+						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "", "",
 					).
 					Return(deliveries1, datastore.PaginationData{HasNextPage: true, NextPageCursor: "cursor-2"}, nil).Times(1)
 
@@ -319,7 +320,7 @@ func TestProcessBatchRetry(t *testing.T) {
 				// Second batch of deliveries (empty, so exit loop)
 				ed.EXPECT().
 					LoadEventDeliveriesPaged(
-						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "",
+						gomock.Any(), "project-1", []string{"endpoint-1"}, "event-1", "", []datastore.EventDeliveryStatus{}, gomock.Any(), gomock.Any(), "", "", "",
 					).
 					Return([]datastore.EventDelivery{}, datastore.PaginationData{HasNextPage: false}, nil).Times(1)
 

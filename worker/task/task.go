@@ -1,10 +1,11 @@
 package task
 
 import (
-	"github.com/frain-dev/convoy/datastore"
 	"time"
 
 	"github.com/hibiken/asynq"
+
+	"github.com/frain-dev/convoy/datastore"
 )
 
 type DeliveryError struct {

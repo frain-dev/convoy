@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/frain-dev/convoy/database/hooks"
-	"github.com/r3labs/diff/v3"
-
 	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
+	"github.com/r3labs/diff/v3"
 
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/datastore"
 )
 

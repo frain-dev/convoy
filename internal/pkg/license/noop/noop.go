@@ -1,5 +1,3 @@
-//go:build integration
-
 package noop
 
 import (
@@ -72,6 +70,10 @@ func (Licenser) HADeployment() bool {
 }
 
 func (Licenser) MutualTLS() bool {
+	return true
+}
+
+func (Licenser) OAuth2EndpointAuth() bool {
 	return true
 }
 

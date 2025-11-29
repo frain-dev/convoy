@@ -9,10 +9,10 @@ import (
 	"time"
 
 	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
 
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/stretchr/testify/require"
 )
 
 func Test_CreateDevice(t *testing.T) {

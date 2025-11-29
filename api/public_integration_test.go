@@ -1,6 +1,3 @@
-//go:build integration
-// +build integration
-
 package api
 
 import (
@@ -14,6 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jaswdr/faker"
+	"github.com/oklog/ulid/v2"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
+
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/auth"
@@ -22,10 +24,6 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
-	"github.com/jaswdr/faker"
-	"github.com/oklog/ulid/v2"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/suite"
 )
 
 type PublicEndpointIntegrationTestSuite struct {
@@ -41,13 +39,11 @@ type PublicEndpointIntegrationTestSuite struct {
 }
 
 func (s *PublicEndpointIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -84,7 +80,6 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicEndpointIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -105,7 +100,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_EndpointNotFound()
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
-	endpointID := "123456789"
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -134,7 +129,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint() {
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_GetEndpoint_ValidEndpoint_WithPersonalAPIKey() {
-	endpointID := "123456789"
+	endpointID := ulid.Make().String()
 	expectedStatusCode := http.StatusOK
 
 	// Just Before.
@@ -248,6 +243,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint() {
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
 	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
+	require.Equal(s.T(), "application/json", dbEndpoint.ContentType) // Default content type should be JSON
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIKey() {
@@ -280,6 +276,59 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithPersonalAPIK
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), endpointTitle, dbApp.Name)
 	require.Equal(s.T(), endpointURL, dbApp.Url)
+}
+
+func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpointWithFormContentType() {
+	endpointTitle := fmt.Sprintf("Test-Form-%s", ulid.Make().String())
+	endpointURL := "http://example.com"
+	expectedStatusCode := http.StatusCreated
+
+	// Create a project that allows HTTP endpoints
+	cfg := datastore.DefaultProjectConfig
+	cfg.SSL = &datastore.SSLConfiguration{EnforceSecureEndpoints: false}
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, "", "testing", s.DefaultOrg.UID, datastore.OutgoingProject, &cfg)
+	require.NoError(s.T(), err)
+
+	// Seed Auth
+	role := auth.Role{
+		Type:    auth.RoleProjectAdmin,
+		Project: project.UID,
+	}
+
+	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
+	require.NoError(s.T(), err)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints", project.UID)
+	plainBody := fmt.Sprintf(`{
+		"name": "%s",
+		"description": "test endpoint with form content type",
+		"url": "%s",
+		"content_type": "application/x-www-form-urlencoded"
+	}`, endpointTitle, endpointURL)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, key, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	if w.Code != expectedStatusCode {
+		s.T().Logf("Expected status %d, got %d. Response body: %s", expectedStatusCode, w.Code, w.Body.String())
+	}
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpoint.UID, project.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), endpointTitle, dbEndpoint.Name)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
+	require.Equal(s.T(), "application/x-www-form-urlencoded", dbEndpoint.ContentType)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_NoName() {
@@ -362,6 +411,50 @@ func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint() {
 	require.Equal(s.T(), title, dbEndpoint.Name)
 	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
 	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
+	require.Equal(s.T(), "application/json", dbEndpoint.ContentType) // Default content type should be JSON
+}
+
+func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpointWithFormContentType() {
+	title := "random-form-endpoint"
+	endpointURL := "https://www.google.com/webhp"
+	supportEmail := "10xengineer@getconvoy.io"
+	endpointID := ulid.Make().String()
+	expectedStatusCode := http.StatusAccepted
+
+	// Just Before.
+	_, _ = testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "", "", false, datastore.ActiveEndpointStatus)
+
+	// Arrange Request.
+	url := fmt.Sprintf("/api/v1/projects/%s/endpoints/%s", s.DefaultProject.UID, endpointID)
+	plainBody := fmt.Sprintf(`{
+		"name": "%s",
+		"description": "test endpoint with form content type",
+		"url": "%s",
+		"support_email": "%s",
+		"content_type": "application/x-www-form-urlencoded"
+ 	}`, title, endpointURL, supportEmail)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	w := httptest.NewRecorder()
+
+	// Act.
+	s.Router.ServeHTTP(w, req)
+
+	// Assert.
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert.
+	var endpoint datastore.Endpoint
+	parseResponse(s.T(), w.Result(), &endpoint)
+
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	dbEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), endpoint.UID, dbEndpoint.UID)
+	require.Equal(s.T(), title, dbEndpoint.Name)
+	require.Equal(s.T(), supportEmail, dbEndpoint.SupportEmail)
+	require.Equal(s.T(), endpointURL, dbEndpoint.Url)
+	require.Equal(s.T(), "application/x-www-form-urlencoded", dbEndpoint.ContentType)
 }
 
 func (s *PublicEndpointIntegrationTestSuite) Test_UpdateEndpoint_WithPersonalAPIKey() {
@@ -463,7 +556,7 @@ func (s *PublicEndpointIntegrationTestSuite) Test_CreateEndpoint_AllowHTTP() {
 
 	cfg := datastore.DefaultProjectConfig
 	cfg.SSL = &datastore.SSLConfiguration{EnforceSecureEndpoints: false}
-	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, "", "testing", s.DefaultOrg.UID, datastore.OutgoingProject, &cfg)
+	project, err := testdb.SeedProject(s.ConvoyApp.A.DB, ulid.Make().String(), "test"+ulid.Make().String(), s.DefaultOrg.UID, datastore.OutgoingProject, &cfg)
 	require.NoError(s.T(), err)
 
 	// Seed Auth
@@ -662,13 +755,11 @@ type PublicEventIntegrationTestSuite struct {
 }
 
 func (s *PublicEventIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEventIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -698,7 +789,6 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicEventIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -1230,13 +1320,11 @@ type PublicPortalLinkIntegrationTestSuite struct {
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -1268,7 +1356,6 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicPortalLinkIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -1324,7 +1411,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_PortalLink
 
 func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink() {
 	// Just Before
-	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
+	endpoint, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test"+ulid.Make().String(), false, datastore.ActiveEndpointStatus)
 	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, endpoint.OwnerID)
 
 	// Arrange Request
@@ -1453,6 +1540,443 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	require.Equal(s.T(), resp.Endpoints, []string(pl.Endpoints))
 }
 
+func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpointsArray_UpdatesOwnerID() {
+	// Test creating portal link with endpoints array - migration sets flag, business logic updates endpoint owner_id
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	expectedStatusCode := http.StatusCreated
+
+	// Arrange Request - using endpoints array with owner_id (migration will set flag, business logic will update)
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "endpoint-link",
+		"owner_id": "%s"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert - Parse response from w
+	var resp models.PortalLinkResponse
+	parseResponse(s.T(), w.Result(), &resp)
+
+	// Assert all response fields from create
+	require.NotEmpty(s.T(), resp.UID, "UID should not be empty")
+	require.Equal(s.T(), "endpoint-link", resp.Name)
+	require.Equal(s.T(), s.DefaultProject.UID, resp.ProjectID)
+	require.Equal(s.T(), ownerID, resp.OwnerID)
+	require.Equal(s.T(), true, resp.CanManageEndpoint)
+	require.Equal(s.T(), 1, resp.EndpointCount, "Endpoint should be linked via owner_id mechanism")
+	require.NotEmpty(s.T(), resp.Token, "Token should not be empty")
+	require.NotEmpty(s.T(), resp.URL, "URL should not be empty")
+	require.Contains(s.T(), resp.URL, resp.Token, "URL should contain the token")
+	require.Equal(s.T(), datastore.PortalAuthTypeStaticToken, resp.AuthType)
+	require.NotZero(s.T(), resp.CreatedAt, "CreatedAt should be set")
+	require.NotZero(s.T(), resp.UpdatedAt, "UpdatedAt should be set")
+	require.False(s.T(), resp.DeletedAt.Valid, "DeletedAt should not be set")
+	// Note: Endpoints array may be null/empty since it's deprecated - endpoints are linked via owner_id mechanism
+	// EndpointsMetadata may be populated with endpoint details
+
+	// Verify against database
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	require.NoError(s.T(), err)
+
+	// Assert response matches database
+	require.Equal(s.T(), resp.UID, pl.UID)
+	require.Equal(s.T(), resp.Name, pl.Name)
+	require.Equal(s.T(), resp.ProjectID, pl.ProjectID)
+	require.Equal(s.T(), resp.OwnerID, pl.OwnerID)
+	require.Equal(s.T(), resp.CanManageEndpoint, pl.CanManageEndpoint)
+	require.Equal(s.T(), resp.Token, pl.Token)
+	require.Equal(s.T(), resp.AuthType, pl.AuthType)
+	// Compare times in UTC to avoid timezone issues
+	require.Equal(s.T(), resp.CreatedAt.UTC(), pl.CreatedAt.UTC())
+	require.Equal(s.T(), resp.UpdatedAt.UTC(), pl.UpdatedAt.UTC())
+	require.Equal(s.T(), resp.EndpointCount, pl.EndpointCount, "Response EndpointCount should match database")
+
+	// Verify endpoint's owner_id was set by the business logic
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), ownerID, updatedEndpoint.OwnerID, "Endpoint owner_id should be updated")
+}
+
+func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithoutEndpointsArray_WithOwnerID() {
+	// Test creating portal link with only owner_id (no endpoints array) - normal flow
+	// Endpoints with matching owner_id should be automatically linked
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// First, create an endpoint with the owner_id already set
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ownerID
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has owner_id set
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), ownerID, endpoint.OwnerID, "Endpoint should have owner_id set")
+
+	expectedStatusCode := http.StatusCreated
+
+	// Arrange Request - create portal link with only owner_id (no endpoints array)
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"name": "endpoint-link",
+		"owner_id": "%s"
+	}`, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2025-11-24") // Use new API version
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert - Parse response from w
+	var resp models.PortalLinkResponse
+	parseResponse(s.T(), w.Result(), &resp)
+
+	// Assert all response fields from create
+	require.NotEmpty(s.T(), resp.UID, "UID should not be empty")
+	require.Equal(s.T(), "endpoint-link", resp.Name)
+	require.Equal(s.T(), s.DefaultProject.UID, resp.ProjectID)
+	require.Equal(s.T(), ownerID, resp.OwnerID)
+	require.Equal(s.T(), true, resp.CanManageEndpoint)
+	require.Equal(s.T(), 1, resp.EndpointCount, "Endpoint should be automatically linked via owner_id")
+	require.NotEmpty(s.T(), resp.Token, "Token should not be empty")
+	require.NotEmpty(s.T(), resp.URL, "URL should not be empty")
+	require.Contains(s.T(), resp.URL, resp.Token, "URL should contain the token")
+	require.Equal(s.T(), datastore.PortalAuthTypeStaticToken, resp.AuthType)
+	require.NotZero(s.T(), resp.CreatedAt, "CreatedAt should be set")
+	require.NotZero(s.T(), resp.UpdatedAt, "UpdatedAt should be set")
+	require.False(s.T(), resp.DeletedAt.Valid, "DeletedAt should not be set")
+
+	// Verify against database
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	require.NoError(s.T(), err)
+
+	// Assert response matches database
+	require.Equal(s.T(), resp.UID, pl.UID)
+	require.Equal(s.T(), resp.Name, pl.Name)
+	require.Equal(s.T(), resp.ProjectID, pl.ProjectID)
+	require.Equal(s.T(), resp.OwnerID, pl.OwnerID)
+	require.Equal(s.T(), resp.CanManageEndpoint, pl.CanManageEndpoint)
+	require.Equal(s.T(), resp.Token, pl.Token)
+	require.Equal(s.T(), resp.AuthType, pl.AuthType)
+	// Compare times in UTC to avoid timezone issues
+	require.Equal(s.T(), resp.CreatedAt.UTC(), pl.CreatedAt.UTC())
+	require.Equal(s.T(), resp.UpdatedAt.UTC(), pl.UpdatedAt.UTC())
+	require.Equal(s.T(), resp.EndpointCount, pl.EndpointCount, "Response EndpointCount should match database")
+	require.Equal(s.T(), 1, pl.EndpointCount, "Portal link should have 1 endpoint linked via owner_id")
+
+	// Verify endpoint still has owner_id (should not be changed)
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), ownerID, updatedEndpoint.OwnerID, "Endpoint owner_id should remain unchanged")
+}
+
+func (s *PublicPortalLinkIntegrationTestSuite) Test_ListPortalLinks_WithEndpointsArray_ShowsCorrectEndpointCount() {
+	// Test that the list endpoint shows correct EndpointCount when portal link is created with endpoints array
+	// This test demonstrates the bug fix: before the fix, list would show 0 endpoints;
+	// after the fix, it should show 1 endpoint
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	// Create portal link with endpoints array (using migration path)
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "endpoint-link",
+		"owner_id": "%s"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act - Create portal link
+	s.Router.ServeHTTP(w, req)
+
+	// Assert - Portal link created successfully
+	require.Equal(s.T(), http.StatusCreated, w.Code)
+
+	var createResp models.PortalLinkResponse
+	parseResponse(s.T(), w.Result(), &createResp)
+	require.Equal(s.T(), 1, createResp.EndpointCount, "Create response should show 1 endpoint")
+
+	// Now test the LIST endpoint - this is where the bug was
+	// Before fix: would show 0 endpoints
+	// After fix: should show 1 endpoint
+	listURL := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
+	listReq := createRequest(http.MethodGet, listURL, s.APIKey, nil)
+	listW := httptest.NewRecorder()
+
+	// Act - List portal links
+	s.Router.ServeHTTP(listW, listReq)
+
+	// Assert - List should return 200
+	require.Equal(s.T(), http.StatusOK, listW.Code)
+
+	// Parse list response
+	var listResp pagedResponse
+	parseResponse(s.T(), listW.Result(), &listResp)
+
+	// Find the portal link we just created in the list
+	var foundPortalLink *models.PortalLinkResponse
+	content := listResp.Content.([]interface{})
+	for _, item := range content {
+		itemBytes, _ := json.Marshal(item)
+		var pl models.PortalLinkResponse
+		json.Unmarshal(itemBytes, &pl)
+		if pl.UID == createResp.UID {
+			foundPortalLink = &pl
+			break
+		}
+	}
+
+	require.NotNil(s.T(), foundPortalLink, "Portal link should be found in list")
+	// This is the key assertion - before the fix, this would be 0
+	// After the fix, it should be 1
+	require.Equal(s.T(), 1, foundPortalLink.EndpointCount, "List endpoint should show correct EndpointCount (1), not 0. This demonstrates the bug fix where upsertPortalLinkEndpoint now runs AFTER updateEndpointOwnerIDs")
+}
+
+func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpointsArray_RollbackRemovesOwnerID() {
+	// Test that when an error occurs, the transaction rolls back and endpoint owner_id is NOT updated
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	expectedStatusCode := http.StatusBadRequest
+
+	// Arrange Request - using endpoints array with owner_id but invalid auth_type to trigger validation error
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links", s.DefaultProject.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "endpoint-link",
+		"owner_id": "%s",
+		"auth_type": "invalid_auth_type"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPost, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert - should fail with validation error
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Verify endpoint owner_id was NOT updated (rollback occurred)
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), updatedEndpoint.OwnerID, "Endpoint owner_id should remain empty after rollback")
+
+	// Verify portal link was NOT created (transaction rolled back)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	_, err = portalLinkRepo.FindPortalLinkByOwnerID(context.Background(), s.DefaultProject.UID, ownerID)
+	require.ErrorIs(s.T(), err, datastore.ErrPortalLinkNotFound, "Portal link should not be created due to validation error")
+}
+
+func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpointsArray_UpdatesOwnerID() {
+	// Test updating portal link with endpoints array - migration sets flag, business logic updates endpoint owner_id
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	// Create a portal link first
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerID)
+
+	expectedStatusCode := http.StatusAccepted
+
+	// Arrange Request - using endpoints array with owner_id (migration will set flag, business logic will update)
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLink.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "updated-endpoint-link",
+		"owner_id": "%s"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Deep Assert
+	var resp models.PortalLinkResponse
+	parseResponse(s.T(), w.Result(), &resp)
+
+	// Assert response fields
+	require.Equal(s.T(), "updated-endpoint-link", resp.Name)
+	require.Equal(s.T(), ownerID, resp.OwnerID)
+	require.Equal(s.T(), true, resp.CanManageEndpoint)
+	// Endpoint should be linked via owner_id mechanism - response should show correct count
+	require.Equal(s.T(), 1, resp.EndpointCount, "Update response should show correct EndpointCount (1)")
+
+	// Verify against database
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	require.NoError(s.T(), err)
+
+	require.Equal(s.T(), resp.UID, pl.UID)
+	require.Equal(s.T(), resp.Name, pl.Name)
+	require.Equal(s.T(), resp.OwnerID, pl.OwnerID)
+	require.Equal(s.T(), resp.CanManageEndpoint, pl.CanManageEndpoint)
+	require.Equal(s.T(), resp.EndpointCount, pl.EndpointCount, "Response EndpointCount should match database")
+
+	// Verify endpoint's owner_id was set by the business logic
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), ownerID, updatedEndpoint.OwnerID)
+}
+
+func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpointsArray_RollbackRemovesOwnerID() {
+	// Test that when an error occurs, the transaction rolls back and endpoint owner_id is NOT updated
+	endpointID := ulid.Make().String()
+	ownerID := endpointID + "-endpoint-link"
+
+	// Create endpoint without owner_id initially
+	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, endpointID, "test-endpoint", "", false, datastore.ActiveEndpointStatus)
+
+	// Clear owner_id to simulate endpoint without owner_id
+	endpointRepo := postgres.NewEndpointRepo(s.ConvoyApp.A.DB)
+	endpoint1.OwnerID = ""
+	err := endpointRepo.UpdateEndpoint(context.Background(), endpoint1, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+
+	// Verify endpoint has no owner_id initially
+	endpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), endpoint.OwnerID)
+
+	// Create a portal link first
+	portalLink, _ := testdb.SeedPortalLink(s.ConvoyApp.A.DB, s.DefaultProject, ownerID)
+
+	expectedStatusCode := http.StatusBadRequest
+
+	// Arrange Request - using endpoints array with owner_id but invalid auth_type to trigger validation error
+	url := fmt.Sprintf("/api/v1/projects/%s/portal-links/%s", s.DefaultProject.UID, portalLink.UID)
+	plainBody := fmt.Sprintf(`{
+		"can_manage_endpoint": true,
+		"endpoints": [
+			"%s"
+		],
+		"name": "updated-endpoint-link",
+		"owner_id": "%s",
+		"auth_type": "invalid_auth_type"
+	}`, endpointID, ownerID)
+	body := strings.NewReader(plainBody)
+	req := createRequest(http.MethodPut, url, s.APIKey, body)
+	req.Header.Set(VersionHeader, "2024-04-01")
+	w := httptest.NewRecorder()
+
+	// Act
+	s.Router.ServeHTTP(w, req)
+
+	// Assert - should fail with validation error
+	require.Equal(s.T(), expectedStatusCode, w.Code)
+
+	// Verify endpoint owner_id was NOT updated (rollback occurred)
+	updatedEndpoint, err := endpointRepo.FindEndpointByID(context.Background(), endpointID, s.DefaultProject.UID)
+	require.NoError(s.T(), err)
+	require.Empty(s.T(), updatedEndpoint.OwnerID, "Endpoint owner_id should remain empty after rollback")
+
+	// Verify portal link was NOT updated (transaction rolled back)
+	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
+	require.NoError(s.T(), err)
+	// Portal link should still have original values
+	require.Equal(s.T(), portalLink.Name, pl.Name, "Portal link name should not be updated due to validation error")
+}
+
 func (s *PublicPortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	// Just Before
 	endpoint1, _ := testdb.SeedEndpoint(s.ConvoyApp.A.DB, s.DefaultProject, "", ulid.Make().String(), "test", false, datastore.ActiveEndpointStatus)
@@ -1491,13 +2015,11 @@ type PublicProjectIntegrationTestSuite struct {
 }
 
 func (s *PublicProjectIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicProjectIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -1553,7 +2075,7 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey() {
 func (s *PublicProjectIntegrationTestSuite) TestGetProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusBadRequest
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
@@ -1602,7 +2124,7 @@ func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey(
 func (s *PublicProjectIntegrationTestSuite) TestDeleteProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusBadRequest
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
@@ -1702,7 +2224,7 @@ func (s *PublicProjectIntegrationTestSuite) TestCreateProjectWithPersonalAPIKey_
         }
     }`)
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
@@ -1753,7 +2275,7 @@ func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey(
 func (s *PublicProjectIntegrationTestSuite) TestUpdateProjectWithPersonalAPIKey_UnauthorizedRole() {
 	expectedStatusCode := http.StatusBadRequest
 
-	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, "test@gmail.com", testdb.DefaultUserPassword)
+	user, err := testdb.SeedUser(s.ConvoyApp.A.DB, fmt.Sprintf("invite.%d@test.com", time.Now().UnixNano()), testdb.DefaultUserPassword)
 	require.NoError(s.T(), err)
 
 	_, key, err := testdb.SeedAPIKey(s.ConvoyApp.A.DB, auth.Role{}, ulid.Make().String(), "test", string(datastore.PersonalKey), user.UID)
@@ -1807,7 +2329,6 @@ func (s *PublicProjectIntegrationTestSuite) TestGetProjectsWithPersonalAPIKey() 
 }
 
 func (s *PublicProjectIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -1827,13 +2348,11 @@ type PublicSourceIntegrationTestSuite struct {
 }
 
 func (s *PublicSourceIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicSourceIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -1867,7 +2386,6 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicSourceIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -2156,13 +2674,11 @@ type PublicSubscriptionIntegrationTestSuite struct {
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -2196,7 +2712,6 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicSubscriptionIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -2763,13 +3278,11 @@ type PublicMetaEventIntegrationTestSuite struct {
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -2803,7 +3316,6 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicMetaEventIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 
@@ -2877,13 +3389,11 @@ type PublicEventTypeIntegrationTestSuite struct {
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) SetupSuite() {
-	s.DB = getDB()
-	s.ConvoyApp = buildServer()
+	s.ConvoyApp = buildServer(s.T())
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 
 	user, err := testdb.SeedDefaultUser(s.ConvoyApp.A.DB)
 	require.NoError(s.T(), err)
@@ -2912,7 +3422,6 @@ func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
 }
 
 func (s *PublicEventTypeIntegrationTestSuite) TearDownTest() {
-	testdb.PurgeDB(s.T(), s.DB)
 	metrics.Reset()
 }
 

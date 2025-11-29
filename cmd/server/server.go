@@ -27,6 +27,7 @@ import (
 func AddServerCommand(a *cli.App) *cobra.Command {
 	var env string
 	var host string
+	var rootPath string
 	var proxy string
 	var limiter string
 	var cache string
@@ -54,11 +55,11 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 				return err
 			}
 
-			if err = config.Override(cliConfig); err != nil {
+			if err := config.Override(cliConfig); err != nil {
 				return err
 			}
 
-			err = startConvoyServer(a)
+			err = StartConvoyServer(a)
 
 			if err != nil {
 				a.Logger.Errorf("Error starting convoy server: %v", err)
@@ -74,6 +75,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	cmd.Flags().StringVar(&proxy, "proxy", "", "HTTP Proxy")
 	cmd.Flags().StringVar(&env, "env", "development", "Convoy environment")
 	cmd.Flags().StringVar(&host, "host", "", "Host - The application host name")
+	cmd.Flags().StringVar(&rootPath, "root-path", "", "Root path for routing behind load balancers (e.g., /convoy)")
 	cmd.Flags().StringVar(&cache, "cache", "redis", `Cache Provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&limiter, "limiter", "redis", `Rate limiter provider ("redis" or "in-memory")`)
 	cmd.Flags().StringVar(&sslCertFile, "ssl-cert-file", "", "SSL certificate file")
@@ -89,7 +91,7 @@ func AddServerCommand(a *cli.App) *cobra.Command {
 	return cmd
 }
 
-func startConvoyServer(a *cli.App) error {
+func StartConvoyServer(a *cli.App) error {
 	cfg, err := config.Get()
 	if err != nil {
 		a.Logger.WithError(err).Fatal("Failed to load configuration")
@@ -107,7 +109,7 @@ func startConvoyServer(a *cli.App) error {
 			km.Unset()
 		}
 	}
-	if err = keys.Set(km); err != nil {
+	if err := keys.Set(km); err != nil {
 		return err
 	}
 
@@ -120,6 +122,7 @@ func startConvoyServer(a *cli.App) error {
 	}
 
 	flag := fflag.NewFFlag(cfg.EnableFeatureFlag)
+	featureFlagFetcher := postgres.NewFeatureFlagFetcher(a.DB)
 
 	if cfg.Server.HTTP.Port <= 0 {
 		return errors.New("please provide the HTTP port in the convoy.json file")
@@ -138,15 +141,16 @@ func startConvoyServer(a *cli.App) error {
 
 	handler, err := api.NewApplicationHandler(
 		&types.APIOptions{
-			FFlag:    flag,
-			DB:       a.DB,
-			Queue:    a.Queue,
-			Logger:   lo,
-			Redis:    a.Redis,
-			Cache:    a.Cache,
-			Rate:     a.Rate,
-			Licenser: a.Licenser,
-			Cfg:      cfg,
+			FFlag:              flag,
+			FeatureFlagFetcher: featureFlagFetcher,
+			DB:                 a.DB,
+			Queue:              a.Queue,
+			Logger:             lo,
+			Redis:              a.Redis,
+			Cache:              a.Cache,
+			Rate:               a.Rate,
+			Licenser:           a.Licenser,
+			Cfg:                cfg,
 		})
 	if err != nil {
 		return err
@@ -175,7 +179,10 @@ func startConvoyServer(a *cli.App) error {
 		s.RegisterTask("0 1 * * *", convoy.ScheduleQueue, convoy.RetentionPolicies)
 	}
 
-	metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
+	err = metrics.RegisterQueueMetrics(a.Queue, a.DB, nil)
+	if err != nil {
+		return fmt.Errorf("failed to register queue metrics: %w", err)
+	}
 
 	// Start scheduler
 	s.Start()
@@ -215,6 +222,16 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 
 	if !util.IsStringEmpty(host) {
 		c.Host = host
+	}
+
+	// CONVOY_ROOT_PATH
+	rootPath, err := cmd.Flags().GetString("root-path")
+	if err != nil {
+		return nil, err
+	}
+
+	if !util.IsStringEmpty(rootPath) {
+		c.RootPath = rootPath
 	}
 
 	// CONVOY_DB_TYPE
@@ -264,7 +281,7 @@ func buildServerCliConfiguration(cmd *cobra.Command) (*config.Configuration, err
 		return nil, err
 	}
 
-	var readReplicas []config.DatabaseConfiguration
+	readReplicas := make([]config.DatabaseConfiguration, 0, len(replicaDSNs))
 	for _, replicaStr := range replicaDSNs {
 		var replica config.DatabaseConfiguration
 		if len(replicaStr) == 0 || !strings.Contains(replicaStr, "://") {

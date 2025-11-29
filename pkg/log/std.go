@@ -34,10 +34,6 @@ func Printf(format string, args ...interface{}) {
 	stdLogger.Printf(format, args...)
 }
 
-func Println(format string, args ...interface{}) {
-	stdLogger.Printf(format, args...)
-}
-
 func Fatal(args ...interface{}) {
 	stdLogger.entry.Fatal(args...)
 }

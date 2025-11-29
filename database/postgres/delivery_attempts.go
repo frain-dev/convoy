@@ -5,11 +5,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
+	"time"
+
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-	"io"
-	"time"
 )
 
 type deliveryAttemptRepo struct {
@@ -26,7 +27,10 @@ var (
 
 const (
 	creatDeliveryAttempt = `
-    INSERT INTO convoy.delivery_attempts (id, url, method, api_version, endpoint_id, event_delivery_id, project_id, ip_address, request_http_header, response_http_header, http_status, response_data, error, status)
+    INSERT INTO convoy.delivery_attempts (
+        id, url, method, api_version, endpoint_id, event_delivery_id, project_id,
+        ip_address, request_http_header, response_http_header, http_status, response_data, error, status
+    )
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14);
     `
 
@@ -65,7 +69,7 @@ func (d *deliveryAttemptRepo) CreateDeliveryAttempt(ctx context.Context, attempt
 	return nil
 }
 
-func (d *deliveryAttemptRepo) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId string, id string) (*datastore.DeliveryAttempt, error) {
+func (d *deliveryAttemptRepo) FindDeliveryAttemptById(ctx context.Context, eventDeliveryId, id string) (*datastore.DeliveryAttempt, error) {
 	attempt := &datastore.DeliveryAttempt{}
 	err := d.db.GetReadDB().QueryRowxContext(ctx, findOneDeliveryAttempt, id, eventDeliveryId).StructScan(attempt)
 	if err != nil {

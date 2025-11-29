@@ -2,13 +2,11 @@ package datastore
 
 import (
 	"context"
+	"errors"
 	"io"
 	"time"
 
 	"github.com/frain-dev/convoy/pkg/circuit_breaker"
-
-	"errors"
-
 	"github.com/frain-dev/convoy/pkg/flatten"
 )
 
@@ -39,7 +37,11 @@ type EventDeliveryRepository interface {
 	UpdateEventDeliveryMetadata(ctx context.Context, projectID string, eventDelivery *EventDelivery) error
 	CountEventDeliveries(ctx context.Context, projectID string, endpointIDs []string, eventID string, status []EventDeliveryStatus, params SearchParams) (int64, error)
 	DeleteProjectEventDeliveries(ctx context.Context, projectID string, filter *EventDeliveryFilter, hardDelete bool) error
-	LoadEventDeliveriesPaged(ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string, status []EventDeliveryStatus, params SearchParams, pageable Pageable, idempotencyKey, eventType string) ([]EventDelivery, PaginationData, error)
+	LoadEventDeliveriesPaged(
+		ctx context.Context, projectID string, endpointIDs []string, eventID, subscriptionID string,
+		status []EventDeliveryStatus, params SearchParams, pageable Pageable,
+		idempotencyKey, eventType, brokerMessageId string,
+	) ([]EventDelivery, PaginationData, error)
 	LoadEventDeliveriesIntervals(ctx context.Context, projectID string, params SearchParams, period Period, ids []string) ([]EventInterval, error)
 	PartitionEventDeliveriesTable(ctx context.Context) error
 	UnPartitionEventDeliveriesTable(ctx context.Context) error
@@ -210,7 +212,7 @@ type ConfigurationRepository interface {
 }
 
 type PortalLinkRepository interface {
-	CreatePortalLink(context.Context, *PortalLink) error
+	CreatePortalLink(ctx context.Context, portal *PortalLink) error
 	UpdatePortalLink(ctx context.Context, projectID string, portal *PortalLink) error
 	FindPortalLinkByID(ctx context.Context, projectID string, id string) (*PortalLink, error)
 	FindPortalLinkByOwnerID(ctx context.Context, projectID string, id string) (*PortalLink, error)

@@ -5,13 +5,14 @@ package rcache
 
 import (
 	"context"
-	"github.com/frain-dev/convoy/config"
 	"os"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 type data struct {

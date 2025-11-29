@@ -7,16 +7,17 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-go/v5/statsd"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+
+	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
+
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-
-	ddotel "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/opentelemetry"
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 type DatadogTracer struct {
@@ -63,7 +64,7 @@ func (dt *DatadogTracer) Type() config.TracerProvider {
 	return config.DatadogTracerProvider
 }
 
-func (dt *DatadogTracer) CaptureDelivery(ctx context.Context, project *datastore.Project, targetURL string, status string, statusCode int, bodyLength int, duration time.Duration) {
+func (dt *DatadogTracer) CaptureDelivery(ctx context.Context, project *datastore.Project, targetURL, status string, statusCode, bodyLength int, duration time.Duration) {
 	if !dt.Licenser.DatadogTracing() {
 		return
 	}
@@ -83,7 +84,7 @@ func (dt *DatadogTracer) Shutdown(ctx context.Context) error {
 	return dt.ShutdownFn(ctx)
 }
 
-func (dt *DatadogTracer) RecordLatency(projectID string, url string, status string, duration time.Duration) {
+func (dt *DatadogTracer) RecordLatency(projectID, url, status string, duration time.Duration) {
 	tags := []string{"project:" + projectID, "url:" + url, "status:" + status}
 	err := dt.StatsdClient.Timing("convoy.request.latency.avg", duration, tags, 1)
 	if err != nil {
@@ -95,7 +96,7 @@ func (dt *DatadogTracer) RecordLatency(projectID string, url string, status stri
 	}
 }
 
-func (dt *DatadogTracer) RecordErrorRate(projectID string, url string, statusCode int) {
+func (dt *DatadogTracer) RecordErrorRate(projectID, url string, statusCode int) {
 	tags := []string{"project:" + projectID, "url:" + url}
 	if statusCode >= 400 && statusCode < 500 {
 		err := dt.StatsdClient.Incr("convoy.request.errors.4xx", tags, 1)
@@ -110,7 +111,7 @@ func (dt *DatadogTracer) RecordErrorRate(projectID string, url string, statusCod
 	}
 }
 
-func (dt *DatadogTracer) RecordRequestTotal(projectID string, url string) {
+func (dt *DatadogTracer) RecordRequestTotal(projectID, url string) {
 	tags := []string{"project:" + projectID, "url:" + url}
 	err := dt.StatsdClient.Incr("convoy.request.total", tags, 1)
 	if err != nil {
@@ -118,7 +119,7 @@ func (dt *DatadogTracer) RecordRequestTotal(projectID string, url string) {
 	}
 }
 
-func (dt *DatadogTracer) RecordThroughput(projectID string, url string, dataSizeBytes int) {
+func (dt *DatadogTracer) RecordThroughput(projectID, url string, dataSizeBytes int) {
 	tags := []string{"project:" + projectID, "url:" + url}
 	dataSizeMB := float64(dataSizeBytes) / (1024 * 1024)
 	err := dt.StatsdClient.Gauge("convoy.data.throughput", dataSizeMB, tags, 1)
@@ -151,7 +152,7 @@ func byteArrToUint64(buf []byte) uint64 {
 	return x
 }
 
-func (dt *DatadogTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime time.Time, endTime time.Time) {
+func (dt *DatadogTracer) Capture(ctx context.Context, name string, attributes map[string]interface{}, startTime, endTime time.Time) {
 	if !dt.Licenser.DatadogTracing() {
 		return
 	}

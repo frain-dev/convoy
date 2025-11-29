@@ -3,11 +3,10 @@ package pubsub
 import (
 	"errors"
 
-	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
-	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
-
 	"github.com/frain-dev/convoy/datastore"
+	rqm "github.com/frain-dev/convoy/internal/pkg/pubsub/amqp"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/google"
+	"github.com/frain-dev/convoy/internal/pkg/pubsub/kafka"
 	"github.com/frain-dev/convoy/internal/pkg/pubsub/sqs"
 	"github.com/frain-dev/convoy/util"
 )

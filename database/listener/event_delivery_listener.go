@@ -2,13 +2,15 @@ package listener
 
 import (
 	"context"
+	"time"
+
+	"gopkg.in/guregu/null.v4"
+
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/services"
-	"gopkg.in/guregu/null.v4"
-	"time"
 )
 
 type EventDeliveryListener struct {
@@ -47,7 +49,7 @@ func NewEventDeliveryListener(queue queue.Queuer, projectRepo datastore.ProjectR
 	return &EventDeliveryListener{mEvent: mEvent, attemptsRepo: attemptsRepo}
 }
 
-func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data interface{}, _ interface{}) {
+func (e *EventDeliveryListener) AfterUpdate(ctx context.Context, data, _ interface{}) {
 	eventDelivery, ok := data.(*datastore.EventDelivery)
 	if !ok {
 		log.Error("invalid type for event - eventdelivery.updated")

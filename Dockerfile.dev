@@ -9,25 +9,32 @@ RUN npm run build
 FROM golang:1.25 as build-env
 WORKDIR /go/src/frain-dev/convoy
 
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOARCH=amd64
+
+ENV GOCACHE=/root/.cache/go-build
+ENV GOMODCACHE=/go/pkg/mod
+
 COPY ./go.mod /go/src/frain-dev/convoy
 COPY ./go.sum /go/src/frain-dev/convoy
 
 COPY --from=node-env /app/dist /go/src/frain-dev/convoy/api/ui/build
 
-# Get dependancies - will also be cached if we don't change mod/sum
 RUN go mod download
 RUN go mod verify
 
-# COPY the source code as the last step
 COPY . .
 
-RUN CGO_ENABLED=0
-RUN go install ./cmd
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    go build -ldflags="-w -s" -o /go/bin/cmd ./cmd
 
-FROM alpine:3.16.2
+FROM alpine:3.22.2
 COPY --from=build-env /go/bin/cmd /
 COPY --from=build-env /go/src/frain-dev/convoy/internal/email/templates/* templates/
 COPY --from=build-env /go/src/frain-dev/convoy/configs/local/start.sh /
+COPY --from=build-env /go/src/frain-dev/convoy/api/ui/build /ui/build
 
 RUN chmod +x /cmd
 RUN apk add --no-cache gcompat

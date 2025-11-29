@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
+	"github.com/frain-dev/convoy/api/migrations"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
@@ -25,13 +26,20 @@ import (
 //	@Id				CreatePortalLink
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string				true	"Project ID"
+//	@Param			projectID	path		string							true	"Project ID"
 //	@Param			portallink	body		models.CreatePortalLinkRequest	true	"Portal Link Details"
 //	@Success		201			{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links [post]
 func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
+	err := h.RM.VersionRequest(r, "CreatePortalLink")
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Version request failed for CreatePortalLink: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
+		return
+	}
+
 	var newPortalLink models.CreatePortalLinkRequest
 	if err := util.ReadJSON(r, &newPortalLink); err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link creation request: %v", err)
@@ -56,6 +64,12 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set context if endpoints are provided - business logic will update endpoint owner_ids
+	ctx := r.Context()
+	if len(newPortalLink.Endpoints) > 0 {
+		ctx = migrations.SetUpdateEndpointOwnerID(ctx, true, newPortalLink.Endpoints)
+	}
+
 	cp := services.CreatePortalLinkService{
 		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
@@ -63,7 +77,15 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		Project:        project,
 	}
 
-	portalLink, err := cp.Run(r.Context())
+	portalLink, err := cp.Run(ctx)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	// Fetch the portal link to populate calculated fields like EndpointCount
+	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+	portalLink, err = portalLinkRepo.FindPortalLinkByID(ctx, project.UID, portalLink.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -196,16 +218,23 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 //	@Tags			Portal Links
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID		path		string				true	"Project ID"
-//	@Param			portalLinkID	path		string				true	"portal link id"
+//	@Param			projectID		path		string							true	"Project ID"
+//	@Param			portalLinkID	path		string							true	"portal link id"
 //	@Param			portallink		body		models.UpdatePortalLinkRequest	true	"Portal Link Details"
 //	@Success		202				{object}	util.ServerResponse{data=models.PortalLinkResponse}
 //	@Failure		400,401,404		{object}	util.ServerResponse{data=Stub}
 //	@Security		ApiKeyAuth
 //	@Router			/v1/projects/{projectID}/portal-links/{portalLinkID} [put]
 func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
+	err := h.RM.VersionRequest(r, "UpdatePortalLink")
+	if err != nil {
+		h.A.Logger.WithError(err).Errorf("Version request failed for UpdatePortalLink: %v", err)
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request", http.StatusBadRequest))
+		return
+	}
+
 	var updatePortalLink models.UpdatePortalLinkRequest
-	err := util.ReadJSON(r, &updatePortalLink)
+	err = util.ReadJSON(r, &updatePortalLink)
 	if err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link update request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
@@ -241,6 +270,12 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set context if endpoints are provided - business logic will update endpoint owner_ids
+	ctx := r.Context()
+	if len(updatePortalLink.Endpoints) > 0 {
+		ctx = migrations.SetUpdateEndpointOwnerID(ctx, true, updatePortalLink.Endpoints)
+	}
+
 	upl := services.UpdatePortalLinkService{
 		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
@@ -249,7 +284,15 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		PortalLink:     portalLink,
 	}
 
-	portalLink, err = upl.Run(r.Context())
+	portalLink, err = upl.Run(ctx)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	// Fetch the portal link to populate calculated fields like EndpointCount
+	portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
+	portalLink, err = portalLinkRepo.FindPortalLinkByID(ctx, project.UID, portalLink.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -380,13 +423,13 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var plResponse []models.PortalLinkResponse
 	baseUrl, err := h.retrieveHost()
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
+	plResponse := make([]models.PortalLinkResponse, 0, len(portalLinks))
 	for _, portalLink := range portalLinks {
 		pl := portalLinkResponse(&portalLink, baseUrl)
 		plResponse = append(plResponse, pl)
