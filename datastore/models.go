@@ -1561,7 +1561,7 @@ type Organisation struct {
 
 type OrganisationUsage struct {
 	OrganisationID string
-	Period          string
+	Period         string
 	Received       UsageMetrics
 	Sent           UsageMetrics
 	CreatedAt      time.Time
