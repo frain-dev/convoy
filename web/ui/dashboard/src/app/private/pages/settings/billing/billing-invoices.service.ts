@@ -2,14 +2,15 @@ import {Injectable} from '@angular/core';
 import {from, Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {HttpService} from 'src/app/services/http/http.service';
-import {environment} from 'src/environments/environment';
 
 export interface InvoiceRow {
   id: string;
+  number: string;
   issuedOn: string;
   amount: string;
   status: string;
   dueDate: string;
+  pdfLink?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -22,8 +23,8 @@ export class BillingInvoicesService {
     );
   }
 
-  downloadInvoice(invoiceId: string): Observable<Blob> {
-    return from(this.downloadInvoiceData(invoiceId));
+  downloadInvoice(pdfLink: string): Observable<Blob> {
+    return from(this.downloadInvoiceData(pdfLink));
   }
 
   private async getInvoicesData() {
@@ -41,30 +42,12 @@ export class BillingInvoicesService {
     }
   }
 
-  private async downloadInvoiceData(invoiceId: string): Promise<Blob> {
+  private async downloadInvoiceData(pdfLink: string): Promise<Blob> {
     try {
-      const orgId = this.getOrganisationId();
-      const authToken = this.httpService.authDetails()?.access_token;
-
-      if (!authToken) {
-        throw new Error('No authentication token available');
-      }
-
-      const baseUrl = environment.production ? location.origin : 'http://localhost:5005';
-      const url = `${baseUrl}/ui/organisations/${orgId}/billing/invoices/${invoiceId}/download`;
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'X-Convoy-Version': '2024-04-01'
-        }
-      });
-
+      const response = await fetch(pdfLink);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       return await response.blob();
     } catch (error) {
       console.error('Failed to download invoice:', error);
@@ -75,25 +58,53 @@ export class BillingInvoicesService {
   private formatInvoicesData(invoices: any[]): InvoiceRow[] {
     if (!invoices || invoices.length === 0) {
       return [
-        { id: '', issuedOn: 'No invoices', amount: '$0', status: 'No data', dueDate: 'N/A' }
+        { id: '', number: '', issuedOn: 'No invoices', amount: '$0', status: 'No data', dueDate: 'N/A' }
       ];
     }
 
-    return invoices.map(invoice => ({
-      id: invoice.id || invoice.uid || '',
-      issuedOn: new Date(invoice.created_at).toLocaleDateString('en-US', {
+    return invoices.map(invoice => {
+      // Format amount from cents to dollars
+      const amountInDollars = invoice.total_amount ? (invoice.total_amount / 100).toFixed(2) : '0.00';
+      
+      // Format invoice date
+      let issuedOn = 'N/A';
+      if (invoice.invoice_date) {
+        try {
+          issuedOn = new Date(invoice.invoice_date).toLocaleDateString('en-US', {
         month: '2-digit',
         day: '2-digit',
         year: 'numeric'
-      }),
-      amount: `$${invoice.amount}`,
-      status: invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1),
-      dueDate: new Date(invoice.due_date).toLocaleDateString('en-US', {
+          });
+        } catch (e) {
+          console.warn('Invalid invoice_date:', invoice.invoice_date);
+        }
+      }
+      
+      // Format due date (use paid_date if available, otherwise invoice_date)
+      let dueDate = 'N/A';
+      const dateToUse = invoice.paid_date || invoice.invoice_date;
+      if (dateToUse) {
+        try {
+          dueDate = new Date(dateToUse).toLocaleDateString('en-US', {
         month: '2-digit',
         day: '2-digit',
         year: 'numeric'
-      })
-    }));
+          });
+        } catch (e) {
+          console.warn('Invalid date:', dateToUse);
+        }
+      }
+
+      return {
+        id: invoice.id || invoice.uid || '',
+        number: invoice.number || '',
+        issuedOn,
+        amount: `$${amountInDollars}`,
+        status: invoice.status ? (invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1).toLowerCase()) : 'Unknown',
+        dueDate,
+        pdfLink: invoice.pdf_link
+      };
+    });
   }
 
   private getOrganisationId(): string {

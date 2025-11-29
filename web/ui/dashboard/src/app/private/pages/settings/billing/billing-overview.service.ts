@@ -37,8 +37,10 @@ export class BillingOverviewService {
     try {
       const orgId = this.getOrganisationId();
 
+      // First call - if this fails, don't make other calls
       const subscriptionResponse = await this.httpService.request({ url: `/billing/organisations/${orgId}/subscription`, method: 'get', hideNotification: true });
 
+      // Only make other calls if subscription call succeeded
       const [usageResponse, paymentResponse] = await Promise.all([
         this.httpService.request({ url: `/billing/organisations/${orgId}/usage`, method: 'get', hideNotification: true }),
         this.httpService.request({ url: `/billing/organisations/${orgId}/payment_methods`, method: 'get', hideNotification: true })
@@ -51,6 +53,7 @@ export class BillingOverviewService {
       };
     } catch (error) {
       console.warn('Failed to load overview data:', error);
+      // Return null to indicate failure - don't make additional calls
       return null;
     }
   }
@@ -80,7 +83,7 @@ export class BillingOverviewService {
         period: usagePeriod,
         daysUntilReset
       },
-      payment: payment ? {
+      payment: payment && payment.last4 ? {
         last4: payment.last4,
         brand: payment.card_type || payment.brand || 'unknown'
       } : null

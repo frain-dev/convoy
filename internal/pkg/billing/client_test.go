@@ -376,66 +376,6 @@ func TestClient_GetInvoice_Success(t *testing.T) {
 	assert.Equal(t, "Success", resp.Message)
 }
 
-func TestClient_DownloadInvoice_Success(t *testing.T) {
-	pdfContent := []byte("fake pdf content")
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t, "GET", r.Method)
-		assert.Equal(t, "/organisations/test-org/invoices/inv-1/download", r.URL.Path)
-		assert.Equal(t, "Bearer test-key", r.Header.Get("Authorization"))
-		w.Header().Set("Content-Type", "application/pdf")
-		if _, err := w.Write(pdfContent); err != nil {
-			t.Errorf("failed to write response: %v", err)
-		}
-	}))
-
-	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
-	}
-
-	client := NewClient(cfg)
-	defer server.Close()
-
-	content, err := client.DownloadInvoice(context.Background(), "test-org", "inv-1")
-	require.NoError(t, err)
-	assert.Equal(t, pdfContent, content)
-}
-
-func TestClient_DownloadInvoice_Disabled(t *testing.T) {
-	cfg := config.BillingConfiguration{
-		Enabled: false,
-		URL:     "http://localhost:8080",
-		APIKey:  "test-key",
-	}
-
-	client := NewClient(cfg)
-
-	content, err := client.DownloadInvoice(context.Background(), "test-org", "inv-1")
-	assert.Error(t, err)
-	assert.Nil(t, content)
-	assert.Contains(t, err.Error(), "billing is not enabled")
-}
-
-func TestClient_DownloadInvoice_ServerError(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-
-	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     server.URL,
-		APIKey:  "test-key",
-	}
-
-	client := NewClient(cfg)
-	defer server.Close()
-
-	content, err := client.DownloadInvoice(context.Background(), "test-org", "inv-1")
-	assert.Error(t, err)
-	assert.Nil(t, content)
-	assert.Contains(t, err.Error(), "download failed with status: 500")
-}
 
 func TestClient_makeRequest_Disabled(t *testing.T) {
 	cfg := config.BillingConfiguration{

@@ -482,40 +482,6 @@ func TestBillingHandler_GetSetupIntent(t *testing.T) {
 	assert.True(t, response["status"].(bool))
 }
 
-func TestBillingHandler_DownloadInvoice(t *testing.T) {
-	cfg := config.BillingConfiguration{
-		Enabled: true,
-		URL:     "http://localhost:8080",
-		APIKey:  "test-key",
-	}
-
-	apiOptions := &types.APIOptions{
-		Cfg: config.Configuration{
-			Billing: cfg,
-		},
-	}
-
-	handler := &BillingHandler{
-		Handler: &Handler{
-			A: apiOptions,
-		},
-		BillingClient: &billing.MockBillingClient{},
-	}
-
-	req := httptest.NewRequest("GET", "/organisations/org-1/billing/invoices/inv-1/download", nil)
-	chiCtx := chi.NewRouteContext()
-	chiCtx.URLParams.Add("orgID", "org-1")
-	chiCtx.URLParams.Add("invoiceID", "inv-1")
-	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx))
-	w := httptest.NewRecorder()
-
-	handler.DownloadInvoice(w, req)
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
-	assert.Equal(t, "attachment; filename=invoice-inv-1.pdf", w.Header().Get("Content-Disposition"))
-	assert.Equal(t, "fake pdf content", w.Body.String())
-}
 
 func TestBillingHandler_GetSubscriptions(t *testing.T) {
 	cfg := config.BillingConfiguration{

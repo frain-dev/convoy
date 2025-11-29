@@ -38,7 +38,7 @@
         </div>
       </div>
       <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">
-        {{ overview?.payment ? 'Manage' : 'Add payment method' }}
+        {{ isLoading ? 'Loading...' : (overview?.payment ? 'Manage' : 'Add payment method') }}
       </a>
     </div>
   </div>

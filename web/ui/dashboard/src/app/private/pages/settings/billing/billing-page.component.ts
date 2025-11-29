@@ -1,9 +1,10 @@
-import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
+import {ChangeDetectorRef, Component, ElementRef, HostListener, OnInit, ViewChild} from '@angular/core';
 import {StripeElementsComponent} from './stripe-elements.component';
 import {FormBuilder, FormGroup, Validators} from '@angular/forms';
 import {
     BillingAddressDetails,
     BillingPaymentDetailsService,
+    PaymentMethod,
     PaymentMethodDetails,
     VatInfoDetails
 } from './billing-payment-details.service';
@@ -34,6 +35,7 @@ export class BillingPageComponent implements OnInit {
 
   // Existing data
   paymentMethodDetails: PaymentMethodDetails | null = null;
+  paymentMethods: PaymentMethod[] = [];
   billingAddressDetails: BillingAddressDetails | null = null;
   vatInfoDetails: VatInfoDetails | null = null;
 
@@ -51,7 +53,7 @@ export class BillingPageComponent implements OnInit {
   vatForm!: FormGroup;
 
   countries: { code: string; name: string }[] = [];
-  vatCountries: { code: string; name: string }[] = []; // Countries with tax ID types from Overwatch
+  vatCountries: { code: string; name: string }[] = []; // Countries with tax ID types from billing service
   cities: string[] = [];
   isLoadingCountries = false;
   isLoadingVatCountries = false;
@@ -67,7 +69,12 @@ export class BillingPageComponent implements OnInit {
   setupIntentSecret = '';
   isPaymentProviderLoading = false;
   isSavingPaymentMethod = false;
-  internalOrganisationId = ''; // Internal ID from Overwatch
+  isSavingBillingAddress = false;
+  internalOrganisationId = ''; // Internal ID from billing service
+
+  // Confirmation states
+  confirmingDefaultFor: string | null = null;
+  confirmingDeleteFor: string | null = null;
 
   constructor(
     private fb: FormBuilder,
@@ -75,7 +82,8 @@ export class BillingPageComponent implements OnInit {
     private generalService: GeneralService,
     private cardIconService: CardIconService,
     private countriesService: CountriesService,
-    private planService: PlanService
+    private planService: PlanService,
+    private cdr: ChangeDetectorRef
   ) {
     this.initializeForms();
   }
@@ -84,7 +92,7 @@ export class BillingPageComponent implements OnInit {
     this.validateOrganisation();
     this.loadBillingConfiguration();
     this.loadCountries();
-    this.loadExistingData();
+    // loadExistingData will be called after loadInternalOrganisationId succeeds
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
@@ -94,22 +102,17 @@ export class BillingPageComponent implements OnInit {
   private validateOrganisation() {
     try {
       const org = localStorage.getItem('CONVOY_ORG');
-      console.log('Validating organisation from localStorage:', org);
 
       if (!org) {
         throw new Error('No organisation found in localStorage');
       }
 
       const orgData = JSON.parse(org);
-      console.log('Organisation data:', orgData);
 
       if (!orgData.uid) {
         throw new Error('No organisation UID found');
       }
-
-      console.log('Organisation validation passed. UID:', orgData.uid);
     } catch (error) {
-      console.error('Organisation validation failed:', error);
       this.generalService.showNotification({
         message: 'Invalid organisation data. Please refresh the page and try again.',
         style: 'error'
@@ -122,11 +125,6 @@ export class BillingPageComponent implements OnInit {
       next: (config) => {
         this.paymentProviderType = config.data.payment_provider.type;
         this.paymentProviderPublishableKey = config.data.payment_provider.publishable_key;
-        console.log('Loaded billing config:', config.data);
-        console.log('Payment provider type:', this.paymentProviderType);
-        console.log('Publishable key:', this.paymentProviderPublishableKey ? 'Present' : 'Missing');
-
-        // Load internal organisation ID from Overwatch
         this.loadInternalOrganisationId();
       },
       error: (error) => {
@@ -144,15 +142,17 @@ export class BillingPageComponent implements OnInit {
     this.billingPaymentDetailsService.getInternalOrganisationId(externalOrgId).subscribe({
       next: (response) => {
         this.internalOrganisationId = response.data.id;
-        console.log('Loaded internal organisation ID from billing service:', this.internalOrganisationId);
+        this.loadExistingData();
       },
       error: (error) => {
         console.error('Failed to load internal organisation ID:', error);
+        const errorMessage = error?.error?.message || error?.message || 'Failed to load organisation data';
         this.generalService.showNotification({
-          message: 'Failed to load organisation data. Please refresh the page.',
+          message: errorMessage,
           style: 'error'
         });
         this.internalOrganisationId = '';
+        // Don't load existing data if the first call failed
       }
     });
   }
@@ -163,7 +163,6 @@ export class BillingPageComponent implements OnInit {
       next: (countries) => {
         this.countries = countries;
         this.isLoadingCountries = false;
-        console.log('Loaded countries:', countries.length);
         this.loadVatCountries();
       },
       error: (error) => {
@@ -195,7 +194,6 @@ export class BillingPageComponent implements OnInit {
         });
 
         this.isLoadingVatCountries = false;
-        console.log('Loaded VAT countries from Overwatch:', this.vatCountries);
       },
       error: (error) => {
         console.error('Failed to load VAT countries:', error);
@@ -222,7 +220,6 @@ export class BillingPageComponent implements OnInit {
       next: (cities) => {
         this.cities = cities;
         this.isLoadingCities = false;
-        console.log(`Loaded ${cities.length} cities for ${countryName} (${countryCode})`);
       },
       error: (error) => {
         console.error('Failed to load cities:', error);
@@ -341,9 +338,26 @@ export class BillingPageComponent implements OnInit {
   }
 
   private loadExistingData() {
+    this.loadPaymentMethods();
     this.loadPaymentMethodDetails();
     this.loadBillingAddress();
     this.loadVatInfo();
+  }
+
+  private loadPaymentMethods() {
+    this.isLoadingPaymentMethod = true;
+    this.billingPaymentDetailsService.getPaymentMethods().subscribe({
+      next: (methods) => {
+        // Sort by ID to maintain consistent order
+        this.paymentMethods = methods.sort((a, b) => a.id.localeCompare(b.id));
+        this.isLoadingPaymentMethod = false;
+      },
+      error: (error) => {
+        console.error('Failed to load payment methods:', error);
+        this.paymentMethods = [];
+        this.isLoadingPaymentMethod = false;
+      }
+    });
   }
 
   private loadPaymentMethodDetails() {
@@ -360,13 +374,45 @@ export class BillingPageComponent implements OnInit {
     });
   }
 
+  private loadPaymentMethodDetailsWithRetry(maxRetries: number = 5, retryDelay: number = 1000) {
+    let retryCount = 0;
+    
+    const attemptLoad = () => {
+      this.isLoadingPaymentMethod = true;
+      this.billingPaymentDetailsService.getPaymentMethodDetails().subscribe({
+        next: (details) => {
+          // Check if payment method actually exists (has last4)
+          if (details && details.last4) {
+            this.paymentMethodDetails = details;
+            this.isLoadingPaymentMethod = false;
+          } else if (retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(attemptLoad, retryDelay);
+          } else {
+            this.paymentMethodDetails = details;
+            this.isLoadingPaymentMethod = false;
+          }
+        },
+        error: (error) => {
+          if (retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(attemptLoad, retryDelay);
+          } else {
+            this.isLoadingPaymentMethod = false;
+          }
+        }
+      });
+    };
+    
+    attemptLoad();
+  }
+
   private loadBillingAddress() {
     this.isLoadingBillingAddress = true;
     this.billingPaymentDetailsService.getBillingAddress().subscribe({
       next: (details) => {
         this.billingAddressDetails = details;
         this.isLoadingBillingAddress = false;
-        console.log('Loaded billing address:', details);
       },
       error: (error) => {
         console.error('Failed to load billing address:', error);
@@ -402,10 +448,7 @@ export class BillingPageComponent implements OnInit {
       if (!orgData.uid) {
         throw new Error('Invalid organisation data');
       }
-
-      console.log('Starting payment method flow with organisation:', orgData.uid);
     } catch (error) {
-      console.error('Cannot start payment method flow - invalid organisation:', error);
       this.generalService.showNotification({
         message: 'Invalid organisation data. Please refresh the page and try again.',
         style: 'error'
@@ -414,6 +457,7 @@ export class BillingPageComponent implements OnInit {
     }
 
     this.isEditingPaymentMethod = true;
+    this.isPaymentProviderLoading = true;
     this.getSetupIntent();
   }
 
@@ -446,11 +490,8 @@ export class BillingPageComponent implements OnInit {
       next: (setupIntentResponse) => {
         this.setupIntentSecret = setupIntentResponse.data.intent_secret;
         this.isPaymentProviderLoading = false;
-        console.log('Setup intent received:', this.setupIntentSecret ? 'Success' : 'Failed');
       },
       error: (error) => {
-        console.error('Failed to get setup intent:', error);
-        console.error('Error details:', error);
         this.generalService.showNotification({
           message: 'Failed to initialize payment form. Please try again.',
           style: 'error'
@@ -468,8 +509,127 @@ export class BillingPageComponent implements OnInit {
     });
     this.isEditingPaymentMethod = false;
     this.setupIntentSecret = '';
-    this.loadPaymentMethodDetails();
     this.refreshOverviewTrigger++;
+    
+    // Wait for webhook to process before loading payment method details
+    // Stripe sends a webhook to billing service which processes asynchronously
+    setTimeout(() => {
+      this.loadPaymentMethodDetailsWithRetry();
+      this.loadPaymentMethods();
+    }, 1500); // Initial delay to allow webhook processing
+  }
+
+  setDefaultPaymentMethod(pmId: string) {
+    // Cancel any existing confirmation
+    if (this.confirmingDefaultFor || this.confirmingDeleteFor) {
+      this.cancelSetDefault();
+      this.cancelDelete();
+    }
+    // Show confirmation UI
+    this.confirmingDefaultFor = pmId;
+  }
+
+  confirmSetDefault() {
+    if (!this.confirmingDefaultFor) return;
+    
+    const pmId = this.confirmingDefaultFor;
+    this.confirmingDefaultFor = null;
+    
+    this.billingPaymentDetailsService.setDefaultPaymentMethod(pmId).subscribe({
+      next: () => {
+        this.generalService.showNotification({
+          message: 'Default payment method updated successfully!',
+          style: 'success'
+        });
+        this.loadPaymentMethods();
+        this.loadPaymentMethodDetails();
+        this.refreshOverviewTrigger++;
+      },
+      error: (error) => {
+        console.error('Failed to set default payment method:', error);
+        this.generalService.showNotification({
+          message: 'Failed to set default payment method. Please try again.',
+          style: 'error'
+        });
+      }
+    });
+  }
+
+  deletePaymentMethod(pmId: string) {
+    // Cancel any existing confirmation
+    if (this.confirmingDefaultFor || this.confirmingDeleteFor) {
+      this.cancelSetDefault();
+      this.cancelDelete();
+    }
+    // Show confirmation UI
+    this.confirmingDeleteFor = pmId;
+  }
+
+  confirmDelete() {
+    if (!this.confirmingDeleteFor) return;
+    
+    const pmId = this.confirmingDeleteFor;
+    this.confirmingDeleteFor = null;
+
+    this.billingPaymentDetailsService.deletePaymentMethod(pmId).subscribe({
+      next: () => {
+        this.generalService.showNotification({
+          message: 'Payment method deleted successfully!',
+          style: 'success'
+        });
+        this.loadPaymentMethods();
+        this.loadPaymentMethodDetails();
+        this.refreshOverviewTrigger++;
+      },
+      error: (error) => {
+        console.error('Failed to delete payment method:', error);
+        const errorMessage = error?.error?.message || 'Failed to delete payment method. Please try again.';
+        this.generalService.showNotification({
+          message: errorMessage,
+          style: 'error'
+        });
+      }
+    });
+  }
+
+  cancelSetDefault() {
+    this.confirmingDefaultFor = null;
+    // Reset radio buttons to match actual default
+    setTimeout(() => {
+      const radios = document.querySelectorAll('input[name="defaultPaymentMethod"]') as NodeListOf<HTMLInputElement>;
+      radios.forEach((radio, index) => {
+        const pm = this.paymentMethods[index];
+        if (pm) {
+          radio.checked = this.isDefaultPaymentMethod(pm);
+        }
+      });
+    }, 0);
+  }
+
+  cancelDelete() {
+    this.confirmingDeleteFor = null;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    // Check if click is outside the confirmation UI
+    const target = event.target as HTMLElement;
+    const confirmationElement = target.closest('.confirmation-ui');
+    const paymentMethodCard = target.closest('[data-payment-method-card]');
+    
+    // If clicking outside confirmation UI and not on a payment method action, cancel
+    if (!confirmationElement && !paymentMethodCard && (this.confirmingDefaultFor || this.confirmingDeleteFor)) {
+      this.cancelSetDefault();
+      this.cancelDelete();
+    }
+  }
+
+  isDefaultPaymentMethod(pm: PaymentMethod): boolean {
+    return pm.defaulted_at !== null && pm.defaulted_at !== undefined;
+  }
+
+  getCardIconForMethod(pm: PaymentMethod) {
+    return this.cardIconService.getCardIconSvg(pm.card_type);
   }
 
   onPaymentProviderError(errorMessage: string) {
@@ -492,37 +652,21 @@ export class BillingPageComponent implements OnInit {
   }
 
   async onUpdatePaymentMethodWithProvider(stripeElementsComponent: StripeElementsComponent, event?: Event) {
-    // This will be called from the template when using payment provider Elements
-    // The actual confirmation happens in the StripeElementsComponent
-    console.log('Save Card button clicked - triggering Stripe confirmation');
-    console.log('Event:', event);
-    console.log('stripeElementsComponent:', stripeElementsComponent);
-
-    // Prevent any default form submission behavior
     if (event) {
       event.preventDefault();
       event.stopPropagation();
-      console.log('Prevented default and stopped propagation');
     }
 
     this.isSavingPaymentMethod = true;
-    console.log('Set isSavingPaymentMethod to true');
 
     await new Promise(resolve => setTimeout(resolve, 100));
-    console.log('After 100ms delay - still here');
 
     try {
-      // Confirm the payment method with the existing setup intent
-      console.log('Confirming payment method...');
       const success = await stripeElementsComponent.confirmPaymentMethod();
       if (success) {
-        console.log('Payment method confirmed successfully!');
         this.onPaymentMethodCreated();
-      } else {
-        console.log('Payment method confirmation failed');
       }
     } catch (error) {
-      console.error('Error confirming payment method:', error);
       this.generalService.showNotification({
         message: 'Failed to save payment method. Please try again.',
         style: 'error'
@@ -564,17 +708,17 @@ export class BillingPageComponent implements OnInit {
     }
 
     if (this.billingAddressForm.valid) {
-      console.log('Updating billing address:', this.billingAddressForm.value);
+      this.isSavingBillingAddress = true;
 
       this.billingPaymentDetailsService.updateBillingAddress(this.billingAddressForm.value).subscribe({
         next: (response) => {
-          console.log('Billing address updated successfully:', response);
           this.generalService.showNotification({
             message: 'Billing address updated successfully!',
             style: 'success'
           });
           this.isEditingBillingAddress = false;
           this.loadBillingAddress();
+          this.isSavingBillingAddress = false;
         },
         error: (error) => {
           console.error('Failed to update billing address:', error);
@@ -582,6 +726,7 @@ export class BillingPageComponent implements OnInit {
             message: 'Failed to update billing address. Please try again.',
             style: 'error'
           });
+          this.isSavingBillingAddress = false;
         }
       });
     } else {
@@ -591,11 +736,8 @@ export class BillingPageComponent implements OnInit {
 
   onUpdateVatInfo() {
     if (this.vatForm.valid) {
-      console.log('Updating VAT info:', this.vatForm.value);
-
       this.billingPaymentDetailsService.updateVatInfo(this.vatForm.value).subscribe({
         next: (response) => {
-          console.log('VAT information updated successfully:', response);
           this.generalService.showNotification({
             message: 'VAT information updated successfully!',
             style: 'success'
@@ -622,6 +764,35 @@ export class BillingPageComponent implements OnInit {
       country = this.countries.find(c => c.code === countryCode);
     }
     return country ? country.name : countryCode;
+  }
+
+  hasBillingAddress(): boolean {
+    if (!this.billingAddressDetails) {
+      return false;
+    }
+    // Check if at least one address field has a value
+    return !!(
+      this.billingAddressDetails.addressLine1 ||
+      this.billingAddressDetails.city ||
+      this.billingAddressDetails.zipCode ||
+      this.billingAddressDetails.country
+    );
+  }
+
+  hasVatInfo(): boolean {
+    if (!this.vatInfoDetails) {
+      return false;
+    }
+    // Check if VAT number and country are set (businessName might be from org name)
+    return !!(this.vatInfoDetails.vatNumber && this.vatInfoDetails.country);
+  }
+
+  hasPaymentMethod(): boolean {
+    if (!this.paymentMethodDetails) {
+      return false;
+    }
+    // Check if last4 is set
+    return !!this.paymentMethodDetails.last4;
   }
 
 

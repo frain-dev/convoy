@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -31,7 +30,8 @@ type Client interface {
 	GetSetupIntent(ctx context.Context, orgID string) (*Response, error)
 	CreateSetupIntent(ctx context.Context, orgID string, setupIntentData interface{}) (*Response, error)
 	GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error)
-	DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error)
+	SetDefaultPaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error)
+	DeletePaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error)
 }
 
 type HTTPClient struct {
@@ -188,6 +188,10 @@ func (c *HTTPClient) DeletePaymentMethod(ctx context.Context, orgID, pmID string
 	return c.makeRequest(ctx, "DELETE", fmt.Sprintf("/organisations/%s/payment_methods/%s", orgID, pmID), nil)
 }
 
+func (c *HTTPClient) SetDefaultPaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error) {
+	return c.makeRequest(ctx, "PATCH", fmt.Sprintf("/organisations/%s/payment_methods/%s/default", orgID, pmID), nil)
+}
+
 // Payment method methods
 func (c *HTTPClient) GetSetupIntent(ctx context.Context, orgID string) (*Response, error) {
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/payment_methods/setup_intent", orgID), nil)
@@ -202,41 +206,6 @@ func (c *HTTPClient) GetInvoice(ctx context.Context, orgID, invoiceID string) (*
 	return c.makeRequest(ctx, "GET", fmt.Sprintf("/organisations/%s/invoices/%s", orgID, invoiceID), nil)
 }
 
-func (c *HTTPClient) DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error) {
-	if !c.config.Enabled {
-		return nil, fmt.Errorf("billing is not enabled")
-	}
-
-	url := fmt.Sprintf("%s/organisations/%s/invoices/%s/download", c.config.URL, orgID, invoiceID)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create download request: %w", err)
-	}
-
-	if c.config.APIKey != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.APIKey))
-	}
-
-	resp, err := c.httpClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download invoice: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("download failed with status: %d", resp.StatusCode)
-	}
-
-	// Read the PDF content
-	pdfContent, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read PDF content: %w", err)
-	}
-
-	return pdfContent, nil
-}
-
 // Public billing methods
 
 func (c *HTTPClient) makeRequest(ctx context.Context, method, path string, body interface{}) (*Response, error) {
@@ -244,7 +213,7 @@ func (c *HTTPClient) makeRequest(ctx context.Context, method, path string, body 
 		return nil, fmt.Errorf("billing is not enabled")
 	}
 
-	// Add /api/v1 prefix for Overwatch compatibility
+	// Add /api/v1 prefix for billing service compatibility
 	if !strings.HasPrefix(path, "/api/v1") && !strings.HasPrefix(path, "/billing") {
 		path = "/api/v1" + path
 	}

@@ -34,20 +34,27 @@ export class BillingInvoicesComponent implements OnInit {
   }
 
   downloadInvoice(invoiceId: string) {
-    if (!invoiceId) {
+    // Find the invoice row to get the pdf_link
+    const invoiceRow = this.invoiceRows.find(row => row.id === invoiceId);
+    
+    if (!invoiceRow || !invoiceRow.pdfLink) {
       this.generalService.showNotification({
-        message: 'Invoice ID not available',
+        message: 'Invoice PDF link not available',
         style: 'error'
       });
       return;
     }
 
-    this.invoicesService.downloadInvoice(invoiceId).subscribe({
+    this.invoicesService.downloadInvoice(invoiceRow.pdfLink).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `invoice-${invoiceId}.pdf`;
+        // Use invoice number for filename, fallback to ID if number not available
+        const invoiceNumber = invoiceRow.number || invoiceId;
+        // Convert to lowercase and replace spaces/hyphens if needed (e.g., "INV-1493" -> "inv-1493")
+        const filename = invoiceNumber.toLowerCase().replace(/\s+/g, '-');
+        link.download = `${filename}.pdf`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

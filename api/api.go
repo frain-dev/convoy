@@ -660,11 +660,12 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
 					billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
 					billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
+					billingPmRouter.Put("/{pmID}/default", billingHandler.SetDefaultPaymentMethod)
+					billingPmRouter.Delete("/{pmID}", billingHandler.DeletePaymentMethod)
 				})
 
 				billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
 					billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
-					billingInvoiceRouter.Get("/{invoiceID}/download", billingHandler.DownloadInvoice)
 					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
 				})
 

@@ -9,7 +9,7 @@ import { BillingUsageService, UsageRow } from './billing-usage.service';
 export class BillingUsageComponent implements OnInit {
   isFetchingUsage = false;
   usageRows: UsageRow[] = [];
-  tableHead = ['Name', 'Sent', 'Received', 'Total'];
+  tableHead = ['Name', 'Received', 'Sent', 'Total'];
 
   constructor(private usageService: BillingUsageService) {}
 

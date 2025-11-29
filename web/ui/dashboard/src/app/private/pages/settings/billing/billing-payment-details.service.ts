@@ -19,6 +19,15 @@ export interface PaymentMethodDetails {
   expiryYear: string;
 }
 
+export interface PaymentMethod {
+  id: string;
+  card_type: string;
+  last4: string;
+  exp_month: number;
+  exp_year: number;
+  defaulted_at: string | null;
+}
+
 export interface BillingAddressUpdate {
   name: string;
   addressLine1: string;
@@ -78,6 +87,22 @@ export class BillingPaymentDetailsService {
     );
   }
 
+  getPaymentMethods(): Observable<PaymentMethod[]> {
+    const orgId = this.getOrganisationId();
+    return from(this.httpService.request({
+      url: `/billing/organisations/${orgId}/payment_methods`,
+      method: 'get'
+    })).pipe(
+      map((response: any) => {
+        return response.data || [];
+      }),
+      catchError((error) => {
+        console.error('Failed to fetch payment methods:', error);
+        return of([]);
+      })
+    );
+  }
+
   getPaymentMethodDetails(): Observable<PaymentMethodDetails> {
     const orgId = this.getOrganisationId();
     return from(this.httpService.request({
@@ -118,6 +143,22 @@ export class BillingPaymentDetailsService {
     );
   }
 
+  setDefaultPaymentMethod(pmId: string): Observable<any> {
+    const orgId = this.getOrganisationId();
+    return from(this.httpService.request({
+      url: `/billing/organisations/${orgId}/payment_methods/${pmId}/default`,
+      method: 'put'
+    }));
+  }
+
+  deletePaymentMethod(pmId: string): Observable<any> {
+    const orgId = this.getOrganisationId();
+    return from(this.httpService.request({
+      url: `/billing/organisations/${orgId}/payment_methods/${pmId}`,
+      method: 'delete'
+    }));
+  }
+
   getBillingAddress(): Observable<BillingAddressDetails> {
     const orgId = this.getOrganisationId();
     return from(this.httpService.request({
@@ -126,14 +167,16 @@ export class BillingPaymentDetailsService {
     })).pipe(
       map((response: any) => {
         const org = response.data || {};
-        return {
-          name: org.billing_name || org.name || '',
-          addressLine1: org.billing_address || '',
-          addressLine2: org.billing_address_line2 || '',
-          country: org.billing_country || '',
-          city: org.billing_city || '',
-          zipCode: org.billing_zip || ''
+        // Handle null/undefined values properly - use nullish coalescing to preserve empty strings
+        const mapped = {
+          name: org.billing_name ?? org.name ?? '',
+          addressLine1: org.billing_address ?? '',
+          addressLine2: org.billing_address_line2 ?? '',
+          country: org.billing_country ?? '',
+          city: org.billing_city ?? '',
+          zipCode: org.billing_zip ?? ''
         };
+        return mapped;
       }),
       catchError((error) => {
         console.error('Failed to fetch billing address:', error);
@@ -246,28 +289,44 @@ export class BillingPaymentDetailsService {
           tax_number: vatInfo.vatNumber
         };
 
-        const addressData = {
-          billing_country: vatInfo.country
-        };
-
+        // Fetch current organisation data to preserve existing address fields
         return from(this.httpService.request({
-          url: `/organisations/${orgId}`,
-          method: 'put',
-          body: orgUpdateData
+          url: `/billing/organisations/${orgId}`,
+          method: 'get'
         })).pipe(
-          mergeMap(() => {
+          mergeMap((orgResponse: any) => {
+            const org = orgResponse.data || {};
+            // Include all existing address fields, only update the country
+            const addressData = {
+              billing_name: org.billing_name || org.name || '',
+              billing_address: org.billing_address || '',
+              billing_address_line2: org.billing_address_line2 || '',
+              billing_city: org.billing_city || '',
+              billing_state: org.billing_state || '',
+              billing_zip: org.billing_zip || '',
+              billing_country: vatInfo.country
+            };
+
             return from(this.httpService.request({
-              url: `/billing/organisations/${orgId}/tax_id`,
+              url: `/organisations/${orgId}`,
               method: 'put',
-              body: taxData
-            }));
-          }),
-          mergeMap(() => {
-            return from(this.httpService.request({
-              url: `/billing/organisations/${orgId}/address`,
-              method: 'put',
-              body: addressData
-            }));
+              body: orgUpdateData
+            })).pipe(
+              mergeMap(() => {
+                return from(this.httpService.request({
+                  url: `/billing/organisations/${orgId}/tax_id`,
+                  method: 'put',
+                  body: taxData
+                }));
+              }),
+              mergeMap(() => {
+                return from(this.httpService.request({
+                  url: `/billing/organisations/${orgId}/address`,
+                  method: 'put',
+                  body: addressData
+                }));
+              })
+            );
           })
         );
       })
@@ -310,23 +369,18 @@ export class BillingPaymentDetailsService {
 
   private getOrganisationId(): string {
     const org = localStorage.getItem('CONVOY_ORG');
-    console.log('Raw org from localStorage:', org);
 
     if (!org) {
-      console.error('No organisation found in localStorage');
       throw new Error('No organisation found. Please refresh the page and try again.');
     }
 
     try {
       const orgData = JSON.parse(org);
-      console.log('Parsed org data:', orgData);
 
       if (!orgData.uid) {
-        console.error('No organisation UID found in localStorage data:', orgData);
         throw new Error('Invalid organisation data. Please refresh the page and try again.');
       }
 
-      console.log('Using organisation ID:', orgData.uid);
       return orgData.uid;
     } catch (error) {
       console.error('Error parsing organisation data from localStorage:', error);

@@ -205,6 +205,17 @@ func (m *MockBillingClient) DeletePaymentMethod(ctx context.Context, orgID, pmID
 	}, nil
 }
 
+func (m *MockBillingClient) SetDefaultPaymentMethod(ctx context.Context, orgID, pmID string) (*Response, error) {
+	if orgID == "" || pmID == "" {
+		return &Response{Status: false, Message: "invalid payment method set default"}, nil
+	}
+	return &Response{
+		Status:  true,
+		Message: "Default payment method set successfully",
+		Data:    map[string]interface{}{"id": pmID, "defaulted_at": "2025-01-01T00:00:00Z"},
+	}, nil
+}
+
 func (m *MockBillingClient) GetInvoice(ctx context.Context, orgID, invoiceID string) (*Response, error) {
 	if orgID == "" || invoiceID == "" {
 		return &Response{Status: false, Message: "invalid invoice request"}, nil
@@ -216,6 +227,3 @@ func (m *MockBillingClient) GetInvoice(ctx context.Context, orgID, invoiceID str
 	}, nil
 }
 
-func (m *MockBillingClient) DownloadInvoice(ctx context.Context, orgID, invoiceID string) ([]byte, error) {
-	return []byte("fake pdf content"), nil
-}

@@ -176,6 +176,12 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
+		// Check if host is set - required by billing service
+		if org.AssignedDomain.String == "" {
+			_ = render.Render(w, r, util.NewErrorResponse("Organisation host (assigned domain) is required for billing. Please set the assigned domain for this organisation.", http.StatusBadRequest))
+			return
+		}
+
 		orgData := map[string]interface{}{
 			"name":          org.Name,
 			"external_id":   orgID,
@@ -185,7 +191,14 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 
 		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
 		if createErr != nil {
-			_ = render.Render(w, r, util.NewErrorResponse("failed to create organisation in billing service", http.StatusInternalServerError))
+			// Return the actual error message from billing service so UI can display it
+			errorMsg := createErr.Error()
+			if strings.Contains(errorMsg, "Validation failed") {
+				// Extract the validation message for better UX
+				_ = render.Render(w, r, util.NewErrorResponse(errorMsg, http.StatusBadRequest))
+			} else {
+				_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("Failed to create organisation in billing service: %s", errorMsg), http.StatusInternalServerError))
+			}
 			return
 		}
 	}
@@ -213,6 +226,40 @@ func (h *BillingHandler) GetPaymentMethods(w http.ResponseWriter, r *http.Reques
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Payment methods retrieved successfully", resp.Data, http.StatusOK))
+}
+
+func (h *BillingHandler) SetDefaultPaymentMethod(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	pmID := chi.URLParam(r, "pmID")
+	if orgID == "" || pmID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and payment method ID are required", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.SetDefaultPaymentMethod(r.Context(), orgID, pmID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Default payment method set successfully", resp.Data, http.StatusOK))
+}
+
+func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Request) {
+	orgID := chi.URLParam(r, "orgID")
+	pmID := chi.URLParam(r, "pmID")
+	if orgID == "" || pmID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and payment method ID are required", http.StatusBadRequest))
+		return
+	}
+
+	resp, err := h.BillingClient.DeletePaymentMethod(r.Context(), orgID, pmID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Payment method deleted successfully", resp.Data, http.StatusOK))
 }
 
 func (h *BillingHandler) GetPlans(w http.ResponseWriter, r *http.Request) {
@@ -410,40 +457,7 @@ func (h *BillingHandler) GetInvoice(w http.ResponseWriter, r *http.Request) {
 	_ = render.Render(w, r, util.NewServerResponse("Invoice retrieved successfully", resp.Data, http.StatusOK))
 }
 
-func (h *BillingHandler) DownloadInvoice(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement invoice download functionality
-	// - Billing service needs to expose pdf_link in InvoiceSerializer
-	// - Add download endpoint in billing service invoices controller
-	// - Or use existing pdf_link from billing provider directly
-	// - Test with billing service
-
-	orgID := chi.URLParam(r, "orgID")
-	invoiceID := chi.URLParam(r, "invoiceID")
-
-	if orgID == "" || invoiceID == "" {
-		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and invoice ID are required", http.StatusBadRequest))
-		return
-	}
-
-	resp, err := h.BillingClient.DownloadInvoice(r.Context(), orgID, invoiceID)
-	if err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
-		return
-	}
-
-	// Set response headers for PDF download
-	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=invoice-%s.pdf", invoiceID))
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(resp)))
-
-	// Write PDF content
-	if _, err := w.Write(resp); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("failed to write response", http.StatusInternalServerError))
-		return
-	}
-}
-
-// GetInternalOrganisationID returns the internal organisation ID from Overwatch
+// GetInternalOrganisationID returns the internal organisation ID from billing service
 func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
@@ -451,6 +465,47 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 		return
 	}
 
+	// Ensure organisation exists in billing service (bootstrap if needed)
+	// Use the same bootstrap logic as GetSubscription
+	_, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
+	if err != nil && strings.Contains(err.Error(), "Organisation not found") {
+		orgRepo := postgres.NewOrgRepo(h.A.DB)
+		org, err := orgRepo.FetchOrganisationByID(r.Context(), orgID)
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch organisation data", http.StatusInternalServerError))
+			return
+		}
+
+		// Check if host is set - required by billing service
+		if org.AssignedDomain.String == "" {
+			_ = render.Render(w, r, util.NewErrorResponse("Organisation host (assigned domain) is required for billing. Please set the assigned domain for this organisation.", http.StatusBadRequest))
+			return
+		}
+
+		orgData := map[string]interface{}{
+			"name":          org.Name,
+			"external_id":   orgID,
+			"billing_email": "",
+			"host":          org.AssignedDomain.String,
+		}
+
+		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
+		if createErr != nil {
+			// Return the actual error message from billing service so UI can display it
+			errorMsg := createErr.Error()
+			if strings.Contains(errorMsg, "Validation failed") {
+				_ = render.Render(w, r, util.NewErrorResponse(errorMsg, http.StatusBadRequest))
+			} else {
+				_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("Failed to create organisation in billing service: %s", errorMsg), http.StatusInternalServerError))
+			}
+			return
+		}
+	} else if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	// Now get the organisation to extract the internal ID
 	resp, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))

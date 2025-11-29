@@ -21,16 +21,68 @@
             class="text-primary-600 hover:text-primary-700"
             (click)="startEditingPaymentMethod()">
             <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
             </svg>
           </button>
         </div>
 
-        <div *ngIf="!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethodDetails" class="billing-details-display">
-          <div class="flex items-center gap-8px">
-            <div [innerHTML]="getCardIconSvg()"></div>
-            <div class="text-14 font-medium" style="margin-top: 5px;">{{ paymentMethodDetails.last4 }}</div>
+        <!-- Payment Methods List -->
+        <div *ngIf="!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethods.length > 0" class="mb-16px">
+          <div class="flex flex-col gap-12px">
+            <div *ngFor="let pm of paymentMethods" data-payment-method-card class="border border-neutral-4 rounded-8px p-12px">
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-12px cursor-pointer flex-1">
+                  <input 
+                    type="radio" 
+                    name="defaultPaymentMethod" 
+                    [checked]="isDefaultPaymentMethod(pm)"
+                    [disabled]="isDefaultPaymentMethod(pm)"
+                    class="w-16px h-16px text-primary-600 focus:ring-primary-500 focus:ring-2"
+                    (change)="setDefaultPaymentMethod(pm.id)">
+                  <div [innerHTML]="getCardIconForMethod(pm)"></div>
+                  <div>
+                    <div class="flex items-center gap-8px">
+                      <span class="text-14 font-medium">{{ pm.card_type | titlecase }} •••• {{ pm.last4 }}</span>
+                      <span *ngIf="isDefaultPaymentMethod(pm)" class="text-10 px-6px py-2px bg-primary-100 text-white-100 rounded-4px font-medium">Default</span>
+                    </div>
+                    <div class="text-12 text-neutral-11">Expires {{ pm.exp_month }}/{{ pm.exp_year }}</div>
+                  </div>
+                </label>
+                <button 
+                  *ngIf="!isDefaultPaymentMethod(pm)"
+                  type="button"
+                  class="p-8px text-neutral-10 hover:text-error-600 hover:bg-error-50 rounded-4px transition-colors"
+                  (click)="deletePaymentMethod(pm.id)"
+                  title="Delete payment method">
+                  <svg class="w-16px h-16px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+              
+              <!-- Confirmation UI for Set Default -->
+              <div *ngIf="confirmingDefaultFor === pm.id" class="confirmation-ui mt-12px p-12px border border-neutral-4 rounded-8px bg-neutral-1" (click)="$event.stopPropagation()">
+                <div class="text-12 text-neutral-11 mb-8px">Set this payment method as your default?</div>
+                <div class="flex items-center gap-8px justify-end">
+                  <button type="button" convoy-button variant="outline" size="sm" (click)="cancelSetDefault()">Cancel</button>
+                  <button type="button" convoy-button fill="outline" size="sm" (click)="confirmSetDefault()">Confirm</button>
+                </div>
+              </div>
+
+              <!-- Confirmation UI for Delete -->
+              <div *ngIf="confirmingDeleteFor === pm.id" class="confirmation-ui mt-12px p-12px border border-neutral-4 rounded-8px bg-neutral-1" (click)="$event.stopPropagation()">
+                <div class="text-12 text-neutral-11 mb-8px">Are you sure you want to delete this payment method?</div>
+                <div class="flex items-center gap-8px justify-end">
+                  <button type="button" convoy-button variant="outline" size="sm" (click)="cancelDelete()">Cancel</button>
+                  <button type="button" convoy-button variant="error" fill="outline" size="sm" (click)="confirmDelete()">Delete</button>
+                </div>
+              </div>
+            </div>
           </div>
+        </div>
+
+        <div *ngIf="!isEditingPaymentMethod && !isLoadingPaymentMethod && paymentMethods.length === 0" class="billing-details-display">
+          <div class="text-12 text-neutral-11">No payment method set</div>
         </div>
 
         <div *ngIf="isLoadingPaymentMethod" class="billing-details-display">
@@ -40,7 +92,6 @@
           </div>
         </div>
 
-
         <!-- Payment Provider Elements form -->
         <div *ngIf="isEditingPaymentMethod" class="mb-16px">
           <div *ngIf="isPaymentProviderLoading" class="text-center py-20px">
@@ -48,7 +99,7 @@
             <p class="text-14 text-neutral-11 mt-8px">Loading payment form...</p>
           </div>
           
-          <div *ngIf="!isPaymentProviderLoading && setupIntentSecret && paymentProviderType === 'stripe' && internalOrganisationId">
+          <div *ngIf="!isPaymentProviderLoading && setupIntentSecret">
             <div class="mb-4">
               <app-stripe-elements 
                 #stripeElements
@@ -65,21 +116,25 @@
                 Cancel
               </button>
               <button type="button" convoy-button fill="outline" (click)="onUpdatePaymentMethodWithProvider(stripeElements, $event)" [disabled]="isSavingPaymentMethod">
-                <span *ngIf="!isSavingPaymentMethod">Update</span>
-                <span *ngIf="isSavingPaymentMethod">Saving...</span>
+                <span *ngIf="!isSavingPaymentMethod">Update payment method</span>
+                <span *ngIf="isSavingPaymentMethod" class="flex items-center gap-8px">
+                  <div class="animate-spin rounded-full h-12px w-12px border-2 border-current border-t-transparent"></div>
+                  Saving...
+                </span>
               </button>
             </div>
           </div>
           
-          <!-- Future: Add other payment providers here -->
-          <div *ngIf="!isPaymentProviderLoading && setupIntentSecret && paymentProviderType === 'stripe' && !internalOrganisationId" class="text-center py-20px">
-            <p class="text-14 text-neutral-11">Loading organisation data...</p>
-            <p class="text-12 text-neutral-11 mt-4px">Please wait while we prepare your payment form.</p>
-          </div>
-          
-          <div *ngIf="!isPaymentProviderLoading && setupIntentSecret && paymentProviderType !== 'stripe'" class="text-center py-20px">
-            <p class="text-14 text-neutral-11">Payment provider "{{ paymentProviderType }}" is not yet supported in the UI.</p>
-            <p class="text-12 text-neutral-11 mt-4px">Please use the legacy flow or contact support.</p>
+          <div *ngIf="!isPaymentProviderLoading && !setupIntentSecret" class="text-center py-20px">
+            <p class="text-14 text-neutral-11">Failed to initialize payment form.</p>
+            <div class="flex gap-12px justify-center mt-16px">
+              <button type="button" convoy-button variant="secondary" (click)="cancelEditingPaymentMethod()">
+                Cancel
+              </button>
+              <button type="button" convoy-button fill="outline" (click)="getSetupIntent()">
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -101,14 +156,14 @@
           </button>
         </div>
 
-        <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && billingAddressDetails" class="billing-details-display">
+        <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && billingAddressDetails && hasBillingAddress()" class="billing-details-display">
           <div class="text-14 font-medium mb-8px">{{ billingAddressDetails.name }}</div>
           <div class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine1 }}</div>
           <div *ngIf="billingAddressDetails.addressLine2" class="text-12 text-neutral-11 mb-4px">{{ billingAddressDetails.addressLine2 }}</div>
           <div class="text-12 text-neutral-11">{{ billingAddressDetails.city }}, {{ billingAddressDetails.zipCode }}, {{ getCountryName(billingAddressDetails.country) }}</div>
         </div>
 
-        <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && !billingAddressDetails" class="billing-details-display">
+        <div *ngIf="!isEditingBillingAddress && !isLoadingBillingAddress && (!billingAddressDetails || !hasBillingAddress())" class="billing-details-display">
           <div class="text-12 text-neutral-11">No billing address set</div>
         </div>
 
@@ -178,11 +233,15 @@
           </div>
 
           <div class="flex gap-12px justify-end pt-24px">
-            <button type="button" convoy-button variant="secondary" (click)="cancelEditingBillingAddress()">
+            <button type="button" convoy-button variant="secondary" (click)="cancelEditingBillingAddress()" [disabled]="isSavingBillingAddress">
               Cancel
             </button>
-            <button convoy-button fill="outline" [disabled]="!billingAddressForm.valid" (click)="onUpdateBillingAddress()">
-              Update
+            <button convoy-button fill="outline" [disabled]="!billingAddressForm.valid || isSavingBillingAddress" (click)="onUpdateBillingAddress()">
+              <span *ngIf="!isSavingBillingAddress">Update</span>
+              <span *ngIf="isSavingBillingAddress" class="flex items-center gap-8px">
+                <div class="animate-spin rounded-full h-12px w-12px border-2 border-current border-t-transparent"></div>
+                Saving...
+              </span>
             </button>
           </div>
         </form>
@@ -205,10 +264,14 @@
           </button>
         </div>
 
-        <div *ngIf="!isEditingVat && !isLoadingVat && vatInfoDetails" class="billing-details-display">
+        <div *ngIf="!isEditingVat && !isLoadingVat && vatInfoDetails && hasVatInfo()" class="billing-details-display">
           <div class="text-14 font-medium mb-8px">{{ vatInfoDetails.businessName }}</div>
           <div class="text-12 text-neutral-11 mb-4px">{{ getCountryName(vatInfoDetails.country) }}</div>
           <div class="text-12 text-neutral-11">{{ vatInfoDetails.vatNumber }}</div>
+        </div>
+
+        <div *ngIf="!isEditingVat && !isLoadingVat && (!vatInfoDetails || !hasVatInfo())" class="billing-details-display">
+          <div class="text-12 text-neutral-11">No VAT information set</div>
         </div>
 
         <div *ngIf="isLoadingVat" class="billing-details-display">

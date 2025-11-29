@@ -157,7 +157,6 @@ export class StripeElementsComponent implements OnInit, OnDestroy {
 
   // Method to update client secret when it changes
   async updateClientSecret(newClientSecret: string) {
-    console.log('Updating client secret:', newClientSecret ? 'Present' : 'Missing');
     this.clientSecret = newClientSecret;
 
     // Destroy existing elements
@@ -174,7 +173,6 @@ export class StripeElementsComponent implements OnInit, OnDestroy {
 
   // Public method to trigger payment method confirmation
   async confirmPaymentMethod(): Promise<boolean> {
-    console.log('StripeElementsComponent: confirmPaymentMethod called');
     return await this.confirmSetup();
   }
 }
