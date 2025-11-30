@@ -125,6 +125,11 @@ var DefaultConfiguration = Configuration{
 	InstanceIngestRate:  1000,
 	ApiRateLimit:        1000,
 	WorkerExecutionMode: DefaultExecutionMode,
+	Billing: BillingConfiguration{
+		Enabled: false,
+		URL:     "",
+		APIKey:  "",
+	},
 }
 
 type DatabaseConfiguration struct {
@@ -450,6 +455,7 @@ type Configuration struct {
 	LicenseKey          string                       `json:"license_key" envconfig:"CONVOY_LICENSE_KEY"`
 	Dispatcher          DispatcherConfiguration      `json:"dispatcher"`
 	HCPVault            HCPVaultConfig               `json:"hcp_vault"`
+	Billing             BillingConfiguration         `json:"billing"`
 }
 
 type DispatcherConfiguration struct {
@@ -477,6 +483,36 @@ type HCPVaultConfig struct {
 	ProjectID    string `json:"project_id" envconfig:"CONVOY_HCP_PROJECT_ID"`
 	AppName      string `json:"app_name" envconfig:"CONVOY_HCP_APP_NAME"`
 	SecretName   string `json:"secret_name" envconfig:"CONVOY_HCP_SECRET_NAME"`
+}
+
+type BillingConfiguration struct {
+	Enabled         bool                         `json:"enabled" envconfig:"CONVOY_BILLING_ENABLED"`
+	URL             string                       `json:"url" envconfig:"CONVOY_BILLING_URL"`
+	APIKey          string                       `json:"api_key" envconfig:"CONVOY_BILLING_API_KEY"`
+	PaymentProvider PaymentProviderConfiguration `json:"payment_provider"`
+	Plans           []interface{}                `json:"plans,omitempty"`
+}
+
+type PaymentProviderConfiguration struct {
+	Type           string `json:"type" envconfig:"CONVOY_PAYMENT_PROVIDER_TYPE"`
+	PublishableKey string `json:"publishable_key" envconfig:"CONVOY_PAYMENT_PROVIDER_PUBLISHABLE_KEY"`
+}
+
+// Validate checks if the billing configuration is valid when enabled
+func (b *BillingConfiguration) Validate() error {
+	if !b.Enabled {
+		return nil // No validation needed if disabled
+	}
+
+	if b.URL == "" {
+		return fmt.Errorf("billing URL is required when billing is enabled")
+	}
+
+	if b.APIKey == "" {
+		return fmt.Errorf("billing API key is required when billing is enabled")
+	}
+
+	return nil
 }
 
 type GoogleOAuthOptions struct {
@@ -620,6 +656,11 @@ func validate(c *Configuration) error {
 	}
 
 	if err := ensureRootPath(c); err != nil {
+		return err
+	}
+
+	// Validate billing configuration
+	if err := c.Billing.Validate(); err != nil {
 		return err
 	}
 

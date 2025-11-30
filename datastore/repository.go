@@ -88,6 +88,7 @@ type OrganisationRepository interface {
 	FetchOrganisationByID(context.Context, string) (*Organisation, error)
 	FetchOrganisationByCustomDomain(context.Context, string) (*Organisation, error)
 	FetchOrganisationByAssignedDomain(context.Context, string) (*Organisation, error)
+	CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*OrganisationUsage, error)
 }
 
 type OrganisationInviteRepository interface {

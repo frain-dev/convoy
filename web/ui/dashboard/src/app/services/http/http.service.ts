@@ -151,7 +151,17 @@ export class HttpService {
 		return `${insertRootPath(this.APIURL)}${requestPath}${requestDetails.url}${queryString}`;
 	}
 
-	async request(requestDetails: { url: string; body?: any; method: 'get' | 'post' | 'delete' | 'put'; isPortal?: boolean; hideNotification?: boolean; query?: { [param: string]: any }; level?: 'org' | 'org_project'; isOut?: boolean }): Promise<HTTP_RESPONSE> {
+	async request(requestDetails: {
+		url: string;
+		body?: any;
+		method: 'get' | 'post' | 'delete' | 'put';
+		isPortal?: boolean;
+		hideNotification?: boolean;
+		query?: { [param: string]: any };
+		level?: 'org' | 'org_project';
+		isOut?: boolean;
+		returnFullError?: boolean;
+	}): Promise<HTTP_RESPONSE> {
 		requestDetails.hideNotification = !!requestDetails.hideNotification;
 
 		return new Promise(async (resolve, reject) => {
@@ -188,21 +198,27 @@ export class HttpService {
 				// console.log("headers:", requestHeader)
 				// console.log("request deet", requestDetails)
 
-				// make request
+                // make request
 				const { data } = await http.request({
-					method: requestDetails.method,
-					headers: requestHeader,
-					url,
-					data: requestDetails.body
-				});
-				resolve(data);
-			} catch (error) {
-				if (axios.isAxiosError(error)) {
-					const msg = error.response?.data?.message;
-					if ('project not found' === msg) {
-						localStorage.removeItem('CONVOY_PROJECT');
-					}
-					return reject(error);
+                    method: requestDetails.method,
+                    headers: requestHeader,
+                    url,
+                    data: requestDetails.body
+                });
+                resolve(data);
+            } catch (error) {
+                if (axios.isAxiosError(error)) {
+                    const msg = error.response?.data?.message;
+                    if ('project not found' === msg) {
+                        localStorage.removeItem('CONVOY_PROJECT');
+                    }
+                    if (requestDetails.returnFullError) {
+                        return reject(error);
+                    } else {
+                        // Return the API error message if available, otherwise fall back to error.message
+                        const errorMessage = msg || error.message || 'An unexpected error occurred';
+                        return reject(errorMessage);
+                    }
 				} else {
 					console.log('unexpected error: ', error);
 					return reject('An unexpected error occurred');

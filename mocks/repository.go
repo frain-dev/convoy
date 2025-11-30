@@ -1032,6 +1032,21 @@ func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(arg0, arg1 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisation), arg0, arg1)
 }
 
+// CalculateUsage mocks base method.
+func (m *MockOrganisationRepository) CalculateUsage(arg0 context.Context, arg1 string, arg2, arg3 time.Time) (*datastore.OrganisationUsage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CalculateUsage", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(*datastore.OrganisationUsage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CalculateUsage indicates an expected call of CalculateUsage.
+func (mr *MockOrganisationRepositoryMockRecorder) CalculateUsage(arg0, arg1, arg2, arg3 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateUsage", reflect.TypeOf((*MockOrganisationRepository)(nil).CalculateUsage), arg0, arg1, arg2, arg3)
+}
+
 // MockOrganisationInviteRepository is a mock of OrganisationInviteRepository interface.
 type MockOrganisationInviteRepository struct {
 	ctrl     *gomock.Controller

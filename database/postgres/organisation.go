@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 
@@ -81,6 +82,43 @@ const (
 	SELECT COUNT(*) AS count
 	FROM convoy.organisations
 	WHERE deleted_at IS NULL`
+
+	calculateIngressBytes = `
+	SELECT COALESCE(SUM(LENGTH(e.raw)), 0) AS raw_bytes,
+	       COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS data_bytes
+	FROM convoy.events e
+	JOIN convoy.projects p ON p.id = e.project_id
+	WHERE p.organisation_id = $1
+	  AND e.created_at >= $2 AND e.created_at <= $3
+	  AND e.deleted_at IS NULL AND p.deleted_at IS NULL`
+
+	calculateEgressBytes = `
+	SELECT COALESCE(SUM(LENGTH(e.raw)), 0) + COALESCE(SUM(OCTET_LENGTH(e.data::text)), 0) AS bytes
+	FROM convoy.event_deliveries d
+	JOIN convoy.events e ON e.id = d.event_id
+	JOIN convoy.projects p ON p.id = e.project_id
+	WHERE p.organisation_id = $1
+	  AND d.status = 'Success'
+	  AND d.created_at >= $2 AND d.created_at <= $3
+	  AND p.deleted_at IS NULL`
+
+	countOrgEvents = `
+	SELECT COUNT(*)
+	FROM convoy.events e
+	JOIN convoy.projects p ON p.id = e.project_id
+	WHERE p.organisation_id = $1
+	  AND e.created_at >= $2 AND e.created_at <= $3
+	  AND e.deleted_at IS NULL AND p.deleted_at IS NULL`
+
+	countOrgDeliveries = `
+	SELECT COUNT(*)
+	FROM convoy.event_deliveries d
+	JOIN convoy.events e ON e.id = d.event_id
+	JOIN convoy.projects p ON p.id = e.project_id
+	WHERE p.organisation_id = $1
+	  AND d.status = 'Success'
+	  AND d.created_at >= $2 AND d.created_at <= $3
+	  AND p.deleted_at IS NULL`
 )
 
 type orgRepo struct {
@@ -281,4 +319,44 @@ func (o *orgRepo) FetchOrganisationByCustomDomain(ctx context.Context, domain st
 	}
 
 	return org, nil
+}
+
+func (o *orgRepo) CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*datastore.OrganisationUsage, error) {
+	usage := &datastore.OrganisationUsage{
+		OrganisationID: orgID,
+		CreatedAt:      time.Now(),
+	}
+
+	// Calculate ingress bytes
+	var orgRawBytes, orgDataBytes sql.NullInt64
+	err := o.db.GetReadDB().QueryRowxContext(ctx, calculateIngressBytes, orgID, startTime, endTime).Scan(&orgRawBytes, &orgDataBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate ingress bytes: %w", err)
+	}
+	usage.Received.Bytes = orgRawBytes.Int64 + orgDataBytes.Int64
+
+	// Calculate egress bytes
+	var orgEgressBytes sql.NullInt64
+	err = o.db.GetReadDB().QueryRowxContext(ctx, calculateEgressBytes, orgID, startTime, endTime).Scan(&orgEgressBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to calculate egress bytes: %w", err)
+	}
+	usage.Sent.Bytes = orgEgressBytes.Int64
+
+	// Count events
+	err = o.db.GetReadDB().QueryRowxContext(ctx, countOrgEvents, orgID, startTime, endTime).Scan(&usage.Received.Volume)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count events: %w", err)
+	}
+
+	// Count deliveries
+	err = o.db.GetReadDB().QueryRowxContext(ctx, countOrgDeliveries, orgID, startTime, endTime).Scan(&usage.Sent.Volume)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count deliveries: %w", err)
+	}
+
+	// Format period as YYYY-MM
+	usage.Period = startTime.Format("2006-01")
+
+	return usage, nil
 }

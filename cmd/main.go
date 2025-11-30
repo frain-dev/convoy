@@ -87,10 +87,20 @@ func main() {
 
 	var configFile string
 
+	// Billing configuration flags
+	var enableBilling bool
+	var billingURL string
+	var billingAPIKey string
+
 	c.Flags().StringVar(&configFile, "config", "./convoy.json", "Configuration file for convoy")
 	c.Flags().StringVar(&licenseKey, "license-key", "", "Convoy license key")
 	c.Flags().StringVar(&logLevel, "log-level", "", "Log level")
 	c.Flags().StringVar(&rootPath, "root-path", "", "Root path for routing behind load balancers (e.g., /convoy)")
+
+	// Billing flags
+	c.Flags().BoolVar(&enableBilling, "enable-billing", false, "Enable billing functionality")
+	c.Flags().StringVar(&billingURL, "billing-url", "", "Billing service URL (required when billing is enabled)")
+	c.Flags().StringVar(&billingAPIKey, "billing-api-key", "", "Billing service API key (required when billing is enabled)")
 
 	// db config
 	c.Flags().StringVar(&dbHost, "db-host", "", "Database Host")
