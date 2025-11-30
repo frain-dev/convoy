@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -40,10 +41,11 @@ const (
 )
 
 type ApplicationHandler struct {
-	Router http.Handler
-	rm     *requestmigrations.RequestMigration
-	A      *types.APIOptions
-	cfg    config.Configuration
+	Router        http.Handler
+	rm            *requestmigrations.RequestMigration
+	A             *types.APIOptions
+	cfg           config.Configuration
+	billingClient billing.Client
 }
 
 func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
@@ -176,10 +178,14 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 
 	// Initialize billing service if enabled
 	if cfg.Billing.Enabled {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
 		billingClient := billing.NewClient(cfg.Billing)
-		if err := billingClient.HealthCheck(context.Background()); err != nil {
+		if err := billingClient.HealthCheck(ctx); err != nil {
 			return nil, fmt.Errorf("billing service health check failed: %w", err)
 		}
+		appHandler.billingClient = billingClient
 	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
@@ -625,10 +631,9 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 		// Billing routes - only registered when billing is enabled
 		if a.cfg.Billing.Enabled {
-			billingClient := billing.NewClient(a.cfg.Billing)
 			billingHandler := &handlers.BillingHandler{
 				Handler:       handler,
-				BillingClient: billingClient,
+				BillingClient: a.billingClient,
 			}
 
 			uiRouter.Route("/billing", func(billingRouter chi.Router) {
