@@ -244,7 +244,7 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 }
 
 func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler *handlers.Handler) {
-	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
 
@@ -748,7 +748,7 @@ func (a *ApplicationHandler) BuildDataPlaneRoutes() *chi.Mux {
 func (a *ApplicationHandler) mountDataPlaneRoutes(router chi.Router, handler *handlers.Handler) {
 	router.HandleFunc("/metrics", a.metricsHandler())
 
-	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		_ = render.Render(w, r, util.NewServerResponse(fmt.Sprintf("Convoy %v", convoy.GetVersion()), nil, http.StatusOK))
 	})
 
