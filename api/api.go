@@ -1001,6 +1001,21 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 		return po
 	}())
 
+	if err != nil {
+		return err
+	}
+
+	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
+		bp := &policies.BillingPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		bp.SetRule(string(policies.PermissionManage), authz.RuleFunc(bp.Manage))
+
+		return bp
+	}())
+
 	return err
 }
 

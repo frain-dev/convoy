@@ -17,6 +17,7 @@ type Permission string
 const (
 	PermissionOrganisationBase Permission = "organisation"
 	PermissionProjectBase      Permission = "project"
+	PermissionBillingBase      Permission = "billing"
 	PermissionManage           Permission = "manage"
 	PermissionAdd              Permission = "add"
 	PermissionView             Permission = "view"
@@ -29,4 +30,5 @@ const (
 	PermissionOrganisationManageAll = PermissionOrganisationBase + "." + PermissionManageAll
 	PermissionProjectManage         = PermissionProjectBase + "." + PermissionManage
 	PermissionProjectView           = PermissionProjectBase + "." + PermissionView
+	PermissionBillingManage         = PermissionBillingBase + "." + PermissionManage
 )

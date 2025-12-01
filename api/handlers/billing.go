@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
+	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
@@ -18,6 +19,29 @@ import (
 type BillingHandler struct {
 	*Handler
 	BillingClient billing.Client
+}
+
+// checkBillingAccess verifies that the user has billing admin or organisation admin role
+func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Request, orgID string) bool {
+	org, err := h.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation not found", http.StatusNotFound))
+		return false
+	}
+
+	// Verify the orgID matches
+	if org.UID != orgID {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID mismatch", http.StatusForbidden))
+		return false
+	}
+
+	// Check if user has billing access using the billing policy
+	if err := h.A.Authz.Authorize(r.Context(), string(policies.PermissionBillingManage), org); err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing access requires billing admin or organisation admin role", http.StatusForbidden))
+		return false
+	}
+
+	return true
 }
 
 func (h *BillingHandler) GetBillingEnabled(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +68,10 @@ func (h *BillingHandler) GetUsage(w http.ResponseWriter, r *http.Request) {
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
 		return
 	}
 
@@ -85,6 +113,10 @@ func (h *BillingHandler) GetInvoices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
 	resp, err := h.BillingClient.GetInvoices(r.Context(), orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
@@ -98,6 +130,10 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
 		return
 	}
 
@@ -153,6 +189,10 @@ func (h *BillingHandler) GetPaymentMethods(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
 	resp, err := h.BillingClient.GetPaymentMethods(r.Context(), orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
@@ -170,6 +210,10 @@ func (h *BillingHandler) SetDefaultPaymentMethod(w http.ResponseWriter, r *http.
 		return
 	}
 
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
 	resp, err := h.BillingClient.SetDefaultPaymentMethod(r.Context(), orgID, pmID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
@@ -184,6 +228,10 @@ func (h *BillingHandler) DeletePaymentMethod(w http.ResponseWriter, r *http.Requ
 	pmID := chi.URLParam(r, "pmID")
 	if orgID == "" || pmID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID and payment method ID are required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
 		return
 	}
 
@@ -242,6 +290,10 @@ func (h *BillingHandler) GetOrganisation(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
 	resp, err := h.BillingClient.GetOrganisation(r.Context(), orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
@@ -255,6 +307,10 @@ func (h *BillingHandler) UpdateOrganisation(w http.ResponseWriter, r *http.Reque
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
 		return
 	}
 
@@ -280,6 +336,10 @@ func (h *BillingHandler) UpdateOrganisationTaxID(w http.ResponseWriter, r *http.
 		return
 	}
 
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
 	var taxData map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&taxData); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request body", http.StatusBadRequest))
@@ -299,6 +359,10 @@ func (h *BillingHandler) UpdateOrganisationAddress(w http.ResponseWriter, r *htt
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
 		return
 	}
 
@@ -325,6 +389,10 @@ func (h *BillingHandler) GetSubscriptions(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
 	resp, err := h.BillingClient.GetSubscriptions(r.Context(), orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
@@ -338,6 +406,10 @@ func (h *BillingHandler) CreateSubscription(w http.ResponseWriter, r *http.Reque
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
 		return
 	}
 
@@ -364,6 +436,10 @@ func (h *BillingHandler) GetSetupIntent(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
 	resp, err := h.BillingClient.GetSetupIntent(r.Context(), orgID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
@@ -382,6 +458,10 @@ func (h *BillingHandler) GetInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !h.checkBillingAccess(w, r, orgID) {
+		return
+	}
+
 	resp, err := h.BillingClient.GetInvoice(r.Context(), orgID, invoiceID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse(err.Error(), http.StatusInternalServerError))
@@ -396,6 +476,10 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 	orgID := chi.URLParam(r, "orgID")
 	if orgID == "" {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	if !h.checkBillingAccess(w, r, orgID) {
 		return
 	}
 
