@@ -644,6 +644,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 
 				billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
 					orgBillingRouter.Get("/", billingHandler.GetOrganisation)
+					orgBillingRouter.Put("/", billingHandler.UpdateOrganisation)
 					orgBillingRouter.Get("/usage", billingHandler.GetUsage)
 					orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
 					orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
