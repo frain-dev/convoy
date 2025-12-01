@@ -21,21 +21,23 @@ type BillingHandler struct {
 	BillingClient billing.Client
 }
 
-// checkBillingAccess verifies that the user has billing admin or organisation admin role
 func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Request, orgID string) bool {
+	if !h.A.Licenser.BillingModule() {
+		_ = render.Render(w, r, util.NewErrorResponse("Billing module is not available in your license plan", http.StatusForbidden))
+		return false
+	}
+
 	org, err := h.retrieveOrganisation(r)
 	if err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation not found", http.StatusNotFound))
 		return false
 	}
 
-	// Verify the orgID matches
 	if org.UID != orgID {
 		_ = render.Render(w, r, util.NewErrorResponse("organisation ID mismatch", http.StatusForbidden))
 		return false
 	}
 
-	// Check if user has billing access using the billing policy
 	if err := h.A.Authz.Authorize(r.Context(), string(policies.PermissionBillingManage), org); err != nil {
 		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: billing access requires billing admin or organisation admin role", http.StatusForbidden))
 		return false
@@ -46,7 +48,7 @@ func (h *BillingHandler) checkBillingAccess(w http.ResponseWriter, r *http.Reque
 
 func (h *BillingHandler) GetBillingEnabled(w http.ResponseWriter, r *http.Request) {
 	response := map[string]bool{
-		"enabled": h.A.Cfg.Billing.Enabled,
+		"enabled": h.A.Cfg.Billing.Enabled && h.A.Licenser.BillingModule(),
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Billing status retrieved", response, http.StatusOK))

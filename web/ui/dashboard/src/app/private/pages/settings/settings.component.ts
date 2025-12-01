@@ -46,6 +46,9 @@ export class SettingsComponent implements OnInit {
 				hideNotification: true
 			});
 			this.billingEnabled = response.data?.enabled || false;
+			if (this.billingEnabled && !this.licenseService.hasLicense('BILLING_MODULE')) {
+				this.billingEnabled = false;
+			}
 			this.updateSettingsMenu();
 		} catch (error) {
 			console.warn('Failed to check billing status:', error);
@@ -57,10 +60,8 @@ export class SettingsComponent implements OnInit {
 	private async checkBillingAccess() {
 		try {
 			const userRole = await this.rbacService.getUserRole();
-			// Show billing sidebar only to billing admin and organisation admin
 			this.canAccessBilling = userRole === 'BILLING_ADMIN' || userRole === 'ORGANISATION_ADMIN';
-			// Show early adopter features only to organisation admin
-			this.canAccessEarlyAdopterFeatures = userRole === 'ORGANISATION_ADMIN';
+			this.canAccessEarlyAdopterFeatures = true;
 		} catch (error) {
 			console.warn('Failed to check billing access:', error);
 			this.canAccessBilling = false;
@@ -74,12 +75,10 @@ export class SettingsComponent implements OnInit {
 			{ name: 'team', icon: 'team', svg: 'stroke' }
 		];
 
-		// Only show billing menu if billing is enabled AND user has appropriate role (3rd position)
 		if (this.billingEnabled && this.canAccessBilling) {
 			this.settingsMenu.push({ name: 'usage and billing', icon: 'status', svg: 'stroke' });
 		}
 
-		// Only show early adopter features to organisation admin (last position)
 		if (this.canAccessEarlyAdopterFeatures) {
 			this.settingsMenu.push({ name: 'early adopter features', icon: 'settings', svg: 'fill' });
 		}
@@ -94,28 +93,16 @@ export class SettingsComponent implements OnInit {
 	}
 
 	setActivePageWithLicenseCheck(requestedPage: string) {
-		// Validate license requirements for specific pages
 		if (requestedPage === 'team' && !this.licenseService.hasLicense('CREATE_USER')) {
-			// Redirect to organisation settings if user doesn't have team management license
 			this.toggleActivePage('organisation settings');
 			return;
 		}
 
-		// Validate role requirements for billing page
 		if (requestedPage === 'usage and billing' && !this.canAccessBilling) {
-			// Redirect to organisation settings if user doesn't have billing access
 			this.toggleActivePage('organisation settings');
 			return;
 		}
 
-		// Validate role requirements for early adopter features page
-		if (requestedPage === 'early adopter features' && !this.canAccessEarlyAdopterFeatures) {
-			// Redirect to organisation settings if user doesn't have organisation admin role
-			this.toggleActivePage('organisation settings');
-			return;
-		}
-
-		// For other pages, allow navigation (they have their own license checks)
 		this.toggleActivePage(requestedPage as SETTINGS);
 	}
 
