@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+#MISE description="Start Convoy server"
+#MISE dir="{{ config_root }}"
+#MISE depends=["build"]
+
+set -e
+
+echo "🚀 Starting backend server on: http://localhost:5050"
+
+exec ./bin/convoy server

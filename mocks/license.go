@@ -137,6 +137,20 @@ func (mr *MockLicenserMockRecorder) AsynqMonitoring() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AsynqMonitoring", reflect.TypeOf((*MockLicenser)(nil).AsynqMonitoring))
 }
 
+// BillingModule mocks base method.
+func (m *MockLicenser) BillingModule() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BillingModule")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// BillingModule indicates an expected call of BillingModule.
+func (mr *MockLicenserMockRecorder) BillingModule() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BillingModule", reflect.TypeOf((*MockLicenser)(nil).BillingModule))
+}
+
 // CanExportPrometheusMetrics mocks base method.
 func (m *MockLicenser) CanExportPrometheusMetrics() bool {
 	m.ctrl.T.Helper()
@@ -379,6 +393,20 @@ func (mr *MockLicenserMockRecorder) MutualTLS() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MutualTLS", reflect.TypeOf((*MockLicenser)(nil).MutualTLS))
 }
 
+// OAuth2EndpointAuth mocks base method.
+func (m *MockLicenser) OAuth2EndpointAuth() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "OAuth2EndpointAuth")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// OAuth2EndpointAuth indicates an expected call of OAuth2EndpointAuth.
+func (mr *MockLicenserMockRecorder) OAuth2EndpointAuth() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OAuth2EndpointAuth", reflect.TypeOf((*MockLicenser)(nil).OAuth2EndpointAuth))
+}
+
 // PortalLinks mocks base method.
 func (m *MockLicenser) PortalLinks() bool {
 	m.ctrl.T.Helper()
@@ -501,18 +529,4 @@ func (m *MockLicenser) WebhookAnalytics() bool {
 func (mr *MockLicenserMockRecorder) WebhookAnalytics() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WebhookAnalytics", reflect.TypeOf((*MockLicenser)(nil).WebhookAnalytics))
-}
-
-// OAuth2EndpointAuth mocks base method.
-func (m *MockLicenser) OAuth2EndpointAuth() bool {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OAuth2EndpointAuth")
-	ret0, _ := ret[0].(bool)
-	return ret0
-}
-
-// OAuth2EndpointAuth indicates an expected call of OAuth2EndpointAuth.
-func (mr *MockLicenserMockRecorder) OAuth2EndpointAuth() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OAuth2EndpointAuth", reflect.TypeOf((*MockLicenser)(nil).OAuth2EndpointAuth))
 }

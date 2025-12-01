@@ -914,6 +914,21 @@ func (m *MockOrganisationRepository) EXPECT() *MockOrganisationRepositoryMockRec
 	return m.recorder
 }
 
+// CalculateUsage mocks base method.
+func (m *MockOrganisationRepository) CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*datastore.OrganisationUsage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CalculateUsage", ctx, orgID, startTime, endTime)
+	ret0, _ := ret[0].(*datastore.OrganisationUsage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CalculateUsage indicates an expected call of CalculateUsage.
+func (mr *MockOrganisationRepositoryMockRecorder) CalculateUsage(ctx, orgID, startTime, endTime any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateUsage", reflect.TypeOf((*MockOrganisationRepository)(nil).CalculateUsage), ctx, orgID, startTime, endTime)
+}
+
 // CountOrganisations mocks base method.
 func (m *MockOrganisationRepository) CountOrganisations(ctx context.Context) (int64, error) {
 	m.ctrl.T.Helper()
@@ -1030,21 +1045,6 @@ func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, ar
 func (mr *MockOrganisationRepositoryMockRecorder) UpdateOrganisation(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrganisation", reflect.TypeOf((*MockOrganisationRepository)(nil).UpdateOrganisation), arg0, arg1)
-}
-
-// CalculateUsage mocks base method.
-func (m *MockOrganisationRepository) CalculateUsage(arg0 context.Context, arg1 string, arg2, arg3 time.Time) (*datastore.OrganisationUsage, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CalculateUsage", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(*datastore.OrganisationUsage)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CalculateUsage indicates an expected call of CalculateUsage.
-func (mr *MockOrganisationRepositoryMockRecorder) CalculateUsage(arg0, arg1, arg2, arg3 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CalculateUsage", reflect.TypeOf((*MockOrganisationRepository)(nil).CalculateUsage), arg0, arg1, arg2, arg3)
 }
 
 // MockOrganisationInviteRepository is a mock of OrganisationInviteRepository interface.
@@ -2650,17 +2650,17 @@ func (m *MockPortalLinkRepository) EXPECT() *MockPortalLinkRepositoryMockRecorde
 }
 
 // CreatePortalLink mocks base method.
-func (m *MockPortalLinkRepository) CreatePortalLink(arg0 context.Context, arg1 *datastore.PortalLink) error {
+func (m *MockPortalLinkRepository) CreatePortalLink(ctx context.Context, portal *datastore.PortalLink) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreatePortalLink", arg0, arg1)
+	ret := m.ctrl.Call(m, "CreatePortalLink", ctx, portal)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreatePortalLink indicates an expected call of CreatePortalLink.
-func (mr *MockPortalLinkRepositoryMockRecorder) CreatePortalLink(arg0, arg1 any) *gomock.Call {
+func (mr *MockPortalLinkRepositoryMockRecorder) CreatePortalLink(ctx, portal any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePortalLink", reflect.TypeOf((*MockPortalLinkRepository)(nil).CreatePortalLink), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreatePortalLink", reflect.TypeOf((*MockPortalLinkRepository)(nil).CreatePortalLink), ctx, portal)
 }
 
 // FindPortalLinkByID mocks base method.

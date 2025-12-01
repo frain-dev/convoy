@@ -2,7 +2,6 @@
 
 #MISE description="Build Convoy binary"
 #MISE dir="{{ config_root }}"
-#MISE sources=["go.mod", "go.sum", "**/*.go", "VERSION"]
 #MISE depends=["dashboard:build"]
 #MISE outputs=["bin/convoy"]
 

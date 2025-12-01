@@ -29,6 +29,8 @@ buildConvoy() {
 	cd ../../../
 	mv web/ui/dashboard/dist/* $UIDIR
 
+	echo -n "" > $UIDIR/go_test_stub.txt
+
 	# Build Binary
 	go build -o convoy ./cmd/*.go
 }

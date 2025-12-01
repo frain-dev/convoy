@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+#MISE description="Start Convoy Agent"
+#MISE dir="{{ config_root }}"
+#MISE depends=["build"]
+
+set -e
+
+echo "🚀 Starting Agent"
+exec ./bin/convoy server
