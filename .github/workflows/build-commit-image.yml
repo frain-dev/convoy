@@ -1,0 +1,131 @@
+name: Build and Push Docker Images Using Commit SHA
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
+  DOCKER_HUB_TOKEN: ${{ secrets.DOCKER_HUB_TOKEN }}
+  IMAGE_NAME: getconvoy/convoy
+
+jobs:
+  build_ui:
+    name: Build UI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build Artifact
+        run: "make ui_install type=ce"
+
+      - name: Archive Build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-without-markdown
+          path: |
+            web/ui/dashboard/dist
+            !web/ui/dashboard/dist/**/*.md
+
+  build-and-push-arch:
+    runs-on: ubuntu-latest
+    needs: [build_ui]
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            dockerfile: release.Dockerfile
+          - arch: arm64
+            platform: linux/arm64
+            dockerfile: release.Dockerfile
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set truncated commit SHA
+        run: echo "COMMIT_SHA=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: dist-without-markdown
+          path: api/ui/build
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: 1.24
+
+      - name: Get and verify dependencies
+        run: go mod tidy && go mod download && go mod verify
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Build app to make sure there are zero issues
+        run: |
+          export CGO_ENABLED=0
+          export GOOS=linux
+          export GOARCH=${{ matrix.arch }}
+          go build -o convoy ./cmd
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ env.DOCKER_HUB_TOKEN }}
+
+      - name: Build and push arch specific images
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}-${{ matrix.arch }}
+          build-args: |
+            ARCH=${{ matrix.arch }}
+            IMAGE_SHA=${{ env.COMMIT_SHA }}
+
+  build-and-push-default:
+    runs-on: ubuntu-latest
+    needs: [build-and-push-arch]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set truncated commit SHA
+        run: echo "COMMIT_SHA=$(git rev-parse --short=7 HEAD)" >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKER_HUB_USERNAME }}
+          password: ${{ env.DOCKER_HUB_TOKEN }}
+
+      - name: Create and push manifest for commit SHA
+        run: |
+          docker buildx imagetools create -t ${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }} \
+            ${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}-amd64 \
+            ${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}-arm64
