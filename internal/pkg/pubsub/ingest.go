@@ -235,9 +235,12 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 	messageType := headers[common.ConvoyMessageTypeHeader]
 	switch messageType {
 	case "single":
+		id := ulid.Make().String()
+		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: id}.SingleJobId()
 		ce := task.CreateEvent{
+			JobID: jobId,
 			Params: task.CreateEventTaskParams{
-				UID:            ulid.Make().String(),
+				UID:            id,
 				SourceID:       source.UID,
 				ProjectID:      source.ProjectID,
 				EndpointID:     convoyEvent.EndpointID,
@@ -269,7 +272,6 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 			return err
 		}
 
-		jobId := fmt.Sprintf("single:%s:%s", ce.Params.ProjectID, ce.Params.UID)
 		job := &queue.Job{
 			ID:      jobId,
 			Payload: eventByte,
@@ -281,9 +283,11 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 			return err
 		}
 	case "fanout":
+		id := ulid.Make().String()
+		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: id}.FanOutJobId()
 		ce := task.CreateEvent{
 			Params: task.CreateEventTaskParams{
-				UID:            ulid.Make().String(),
+				UID:            id,
 				CustomHeaders:  headers,
 				SourceID:       source.UID,
 				Data:           convoyEvent.Data,
@@ -307,7 +311,6 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 			return err
 		}
 
-		jobId := fmt.Sprintf("fanout:%s:%s", source.ProjectID, ce.Params.UID)
 		job := &queue.Job{
 			ID:      jobId,
 			Payload: eventByte,
@@ -320,8 +323,9 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		}
 	case "broadcast":
 		eventId := ulid.Make().String()
-		jobId := fmt.Sprintf("broadcast:%s:%s", source.ProjectID, eventId)
+		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: eventId}.BroadcastJobId()
 		broadcastEvent := models.BroadcastEvent{
+			JobID:          jobId,
 			EventID:        eventId,
 			ProjectID:      source.ProjectID,
 			SourceID:       source.UID,

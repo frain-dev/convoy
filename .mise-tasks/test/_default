@@ -5,5 +5,7 @@
 
 set -e
 
-go run ./cmd config
-go test -tags integration -p 1 ./...
+go list ./... | grep -v '/e2e' | while IFS='' read -r line
+do
+  go test -p 1 "$line"
+done

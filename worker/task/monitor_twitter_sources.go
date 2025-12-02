@@ -8,6 +8,7 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/hibiken/asynq"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/database"
@@ -115,8 +116,8 @@ func sendNotificationEmail(source datastore.Source, endpoint *datastore.Endpoint
 	}
 
 	job := &queue.Job{
+		ID:      ulid.Make().String(),
 		Payload: bytes,
-		Delay:   0,
 	}
 
 	err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)

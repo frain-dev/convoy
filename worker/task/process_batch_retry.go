@@ -154,8 +154,8 @@ func ProcessBatchRetry(
 				}
 
 				job := &queue.Job{
+					ID:      delivery.UID,
 					Payload: data,
-					Delay:   0,
 				}
 
 				err2 = queuer.Write(convoy.EventProcessor, convoy.EventQueue, job)

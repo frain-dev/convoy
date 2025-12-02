@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
 	"github.com/frain-dev/convoy/util"
+	"github.com/oklog/ulid/v2"
 )
 
 type NotificationType string
@@ -104,7 +105,10 @@ func SendEndpointNotification(
 			continue
 		}
 
-		job := &queue.Job{Payload: buf}
+		job := &queue.Job{
+			ID:      ulid.Make().String(),
+			Payload: buf,
+		}
 
 		err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 		if err != nil {

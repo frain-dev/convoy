@@ -96,14 +96,18 @@ func (s *RedisQueueIntegrationTestSuite) TestWrite() {
 
 	for _, tc := range tests {
 		s.Run(tc.name, func() {
+			id := ulid.Make().String()
+
 			eventDelivery := &datastore.EventDelivery{
 				UID: tc.eventDeliveryID,
 			}
+
 			job := &queue.Job{
+				ID:      id,
 				Payload: json.RawMessage(eventDelivery.UID),
 			}
 
-			taskName := convoy.TaskName(ulid.Make().String())
+			taskName := convoy.TaskName(id)
 			err := s.eventQueue.Write(taskName, convoy.EventQueue, job)
 			s.Require().NoError(err, "Failed to write to queue")
 		})

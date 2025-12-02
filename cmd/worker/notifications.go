@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/oklog/ulid/v2"
 )
 
 // EnqueueCircuitBreakerEmails enqueues notification emails to endpoint support email and project owner.
@@ -82,6 +83,9 @@ func enqueueEmail(q queue.Queuer, emailMsg *email.Message) error {
 	if err != nil {
 		return err
 	}
-	job := &queue.Job{Payload: bytes, Delay: 0}
+	job := &queue.Job{
+		ID:      ulid.Make().String(),
+		Payload: bytes,
+	}
 	return q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 }
