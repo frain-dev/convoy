@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -23,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -38,10 +41,11 @@ const (
 )
 
 type ApplicationHandler struct {
-	Router http.Handler
-	rm     *requestmigrations.RequestMigration
-	A      *types.APIOptions
-	cfg    config.Configuration
+	Router        http.Handler
+	rm            *requestmigrations.RequestMigration
+	A             *types.APIOptions
+	cfg           config.Configuration
+	billingClient billing.Client
 }
 
 func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
@@ -171,6 +175,18 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 	}
 
 	appHandler.cfg = cfg
+
+	// Initialize billing service if enabled
+	if cfg.Billing.Enabled {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		billingClient := billing.NewClient(cfg.Billing)
+		if err := billingClient.HealthCheck(ctx); err != nil {
+			return nil, fmt.Errorf("billing service health check failed: %w", err)
+		}
+		appHandler.billingClient = billingClient
+	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
 		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
@@ -612,6 +628,54 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			configRouter.Get("/", handler.GetConfiguration)
 			configRouter.Get("/auth", handler.GetAuthConfiguration)
 		})
+
+		// Billing routes - only registered when billing is enabled
+		if a.cfg.Billing.Enabled {
+			billingHandler := &handlers.BillingHandler{
+				Handler:       handler,
+				BillingClient: a.billingClient,
+			}
+
+			uiRouter.Route("/billing", func(billingRouter chi.Router) {
+				billingRouter.Get("/enabled", billingHandler.GetBillingEnabled)
+				billingRouter.Get("/config", billingHandler.GetBillingConfig)
+				billingRouter.Get("/plans", billingHandler.GetPlans)
+				billingRouter.Get("/tax_id_types", billingHandler.GetTaxIDTypes)
+
+				billingRouter.Route("/organisations/{orgID}", func(orgBillingRouter chi.Router) {
+					orgBillingRouter.Get("/", billingHandler.GetOrganisation)
+					orgBillingRouter.Put("/", billingHandler.UpdateOrganisation)
+					orgBillingRouter.Get("/usage", billingHandler.GetUsage)
+					orgBillingRouter.Get("/invoices", billingHandler.GetInvoices)
+					orgBillingRouter.Get("/payment_methods", billingHandler.GetPaymentMethods)
+					orgBillingRouter.Get("/subscription", billingHandler.GetSubscription)
+					orgBillingRouter.Get("/internal_id", billingHandler.GetInternalOrganisationID)
+					orgBillingRouter.Put("/tax_id", billingHandler.UpdateOrganisationTaxID)
+					orgBillingRouter.Put("/address", billingHandler.UpdateOrganisationAddress)
+				})
+
+				billingRouter.Route("/organisations", func(billingOrgRouter chi.Router) {
+					billingOrgRouter.Post("/", billingHandler.CreateOrganisation)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/subscriptions", func(billingSubRouter chi.Router) {
+					billingSubRouter.Get("/", billingHandler.GetSubscriptions)
+					billingSubRouter.Post("/", billingHandler.CreateSubscription)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/payment_methods", func(billingPmRouter chi.Router) {
+					billingPmRouter.Get("/", billingHandler.GetPaymentMethods)
+					billingPmRouter.Get("/setup_intent", billingHandler.GetSetupIntent)
+					billingPmRouter.Put("/{pmID}/default", billingHandler.SetDefaultPaymentMethod)
+					billingPmRouter.Delete("/{pmID}", billingHandler.DeletePaymentMethod)
+				})
+
+				billingRouter.Route("/organisations/{orgID}/invoices", func(billingInvoiceRouter chi.Router) {
+					billingInvoiceRouter.Get("/", billingHandler.GetInvoices)
+					billingInvoiceRouter.Get("/{invoiceID}", billingHandler.GetInvoice)
+				})
+			})
+		}
 	})
 
 	// Portal Link API.
@@ -936,6 +1000,21 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 		po.SetRule(string(policies.PermissionView), authz.RuleFunc(po.View))
 
 		return po
+	}())
+
+	if err != nil {
+		return err
+	}
+
+	err = a.A.Authz.RegisterPolicy(func() authz.Policy {
+		bp := &policies.BillingPolicy{
+			BasePolicy:             authz.NewBasePolicy(),
+			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
+		}
+
+		bp.SetRule(string(policies.PermissionManage), authz.RuleFunc(bp.Manage))
+
+		return bp
 	}())
 
 	return err

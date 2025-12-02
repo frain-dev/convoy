@@ -1,18 +1,28 @@
-import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, EventEmitter, inject, Input, OnInit, Output, QueryList, ViewChild, ViewChildren } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { APP, ENDPOINT } from 'src/app/models/endpoint.model';
-import { SOURCE } from 'src/app/models/source.model';
-import { PrivateService } from '../../private.service';
-import { CreateEndpointComponent } from '../create-endpoint/create-endpoint.component';
-import { CreateSourceComponent } from '../create-source/create-source.component';
-import { CreateSubscriptionService } from './create-subscription.service';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { SUBSCRIPTION, SUBSCRIPTION_CONFIG } from 'src/app/models/subscription';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
-import { EVENT_TYPE } from 'src/app/models/event.model';
-import { FILTER } from 'src/app/models/filter.model';
-import { FilterService } from './filter.service';
+import {
+    ChangeDetectorRef,
+    Component,
+    ElementRef,
+    EventEmitter,
+    inject,
+    Input,
+    OnInit,
+    Output,
+    ViewChild
+} from '@angular/core';
+import {FormBuilder, FormGroup, Validators} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
+import {APP, ENDPOINT} from 'src/app/models/endpoint.model';
+import {SOURCE} from 'src/app/models/source.model';
+import {PrivateService} from '../../private.service';
+import {CreateEndpointComponent} from '../create-endpoint/create-endpoint.component';
+import {CreateSourceComponent} from '../create-source/create-source.component';
+import {CreateSubscriptionService} from './create-subscription.service';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {SUBSCRIPTION, SUBSCRIPTION_CONFIG} from 'src/app/models/subscription';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
+import {EVENT_TYPE} from 'src/app/models/event.model';
+import {FILTER} from 'src/app/models/filter.model';
+import {FilterService} from './filter.service';
 
 @Component({
 	selector: 'convoy-create-subscription',

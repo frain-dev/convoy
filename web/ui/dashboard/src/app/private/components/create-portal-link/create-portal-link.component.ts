@@ -1,26 +1,29 @@
-import { Component, OnInit, inject, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { DialogHeaderComponent } from 'src/app/components/dialog/dialog.directive';
-import { InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent } from 'src/app/components/input/input.component';
-import { SelectComponent } from 'src/app/components/select/select.component';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { PrivateService } from '../../private.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { ActivatedRoute, Router } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { CreatePortalLinkService } from './create-portal-link.service';
-import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { RbacService } from 'src/app/services/rbac/rbac.service';
-import { RadioComponent } from 'src/app/components/radio/radio.component';
-import { ToggleComponent } from 'src/app/components/toggle/toggle.component';
-import { NotificationComponent } from 'src/app/components/notification/notification.component';
+import {Component, inject, Input, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {DialogHeaderComponent} from 'src/app/components/dialog/dialog.directive';
+import {
+    InputDirective,
+    InputErrorComponent,
+    InputFieldDirective,
+    LabelComponent
+} from 'src/app/components/input/input.component';
+import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
+import {CardComponent} from 'src/app/components/card/card.component';
+import {PrivateService} from '../../private.service';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {ActivatedRoute, Router} from '@angular/router';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {CreatePortalLinkService} from './create-portal-link.service';
+import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
+import {RbacService} from 'src/app/services/rbac/rbac.service';
+import {RadioComponent} from 'src/app/components/radio/radio.component';
+import {ToggleComponent} from 'src/app/components/toggle/toggle.component';
+import {NotificationComponent} from 'src/app/components/notification/notification.component';
 
 @Component({
 	selector: 'convoy-create-portal-link',
 	standalone: true,
-	imports: [CommonModule, DialogHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, SelectComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent, NotificationComponent],
+    imports: [CommonModule, DialogHeaderComponent, InputDirective, InputErrorComponent, InputFieldDirective, LabelComponent, CardComponent, ButtonComponent, ReactiveFormsModule, CopyButtonComponent, RadioComponent, ToggleComponent, NotificationComponent],
 	templateUrl: './create-portal-link.component.html',
 	styleUrls: ['./create-portal-link.component.scss']
 })

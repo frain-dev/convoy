@@ -1,0 +1,45 @@
+<div class="billing-overview">
+  <h2 class="billing-section-title">Billing overview</h2>
+  <div class="billing-overview-cards flex gap-12px">
+    <div class="billing-card">
+      <div class="billing-card-header">
+        <div class="billing-card-label">Your plan</div>
+        <div class="billing-card-value">
+          <convoy-skeleton-loader className="w-20 h-16px" *ngIf="isLoading"></convoy-skeleton-loader>
+          <span *ngIf="!isLoading">{{ overview?.plan?.name || 'No plan data' }}</span>
+        </div>
+      </div>
+      <a class="billing-card-link" href="#" (click)="onManagePlan($event)">Manage plan</a>
+    </div>
+
+    <div class="billing-card">
+      <div class="billing-card-header">
+        <div class="billing-card-label">Usage period</div>
+        <div class="billing-card-value">
+          <convoy-skeleton-loader className="w-20 h-16px" *ngIf="isLoading"></convoy-skeleton-loader>
+          <span *ngIf="!isLoading">{{ overview?.usage?.period || 'No usage data' }}</span>
+        </div>
+      </div>
+      <div class="billing-card-subtext billing-card-reset-text" *ngIf="overview?.usage?.daysUntilReset !== undefined">
+        Resets in {{ overview?.usage?.daysUntilReset }} days
+      </div>
+    </div>
+
+    <div class="billing-card">
+      <div class="billing-card-header">
+        <div class="billing-card-label">Payment details</div>
+        <div class="billing-card-payment flex items-center gap-8px" *ngIf="overview?.payment as payment">
+          <div [innerHTML]="getCardIconSvg()"></div>
+          <div class="billing-card-value">{{ payment.last4 }}</div>
+        </div>
+        <div class="billing-card-value" *ngIf="!overview?.payment">
+          <convoy-skeleton-loader className="w-20 h-16px" *ngIf="isLoading"></convoy-skeleton-loader>
+          <span *ngIf="!isLoading">No payment method</span>
+        </div>
+      </div>
+      <a class="billing-card-link" href="#" (click)="onOpenPaymentDetails(); $event.preventDefault()">
+        {{ isLoading ? 'Loading...' : (overview?.payment ? 'Manage' : 'Add payment method') }}
+      </a>
+    </div>
+  </div>
+</div> 

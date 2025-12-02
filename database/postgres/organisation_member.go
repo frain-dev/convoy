@@ -249,17 +249,54 @@ const (
 
 	// Note: ORDER BY is not needed here because MIN() is deterministic and always returns the same value for the same data.
 	// The query checks if the given user is the first instance admin by created_at timestamp.
+	// It handles two cases:
+	// 1. User is the first local instance admin (prioritizes local users over SSO users)
+	// 2. User is the first local organisation_admin when no local instance admins exist (fallback for unlicensed systems)
 	checkFirstInstanceAdmin = `
 	SELECT EXISTS (
 		SELECT 1 FROM convoy.organisation_members o1
 		WHERE o1.user_id = $1
-		AND o1.role_type = 'instance_admin'
 		AND o1.deleted_at IS NULL
-		AND o1.created_at = (
-			SELECT MIN(o2.created_at)
-			FROM convoy.organisation_members o2
-			WHERE o2.role_type = 'instance_admin'
-			AND o2.deleted_at IS NULL
+		AND (
+			-- Case 1: User is first local instance admin
+			(o1.role_type = 'instance_admin' 
+			 AND EXISTS (
+				 SELECT 1 FROM convoy.users u 
+				 WHERE u.id = o1.user_id 
+				 AND (u.auth_type = 'local' OR u.auth_type IS NULL OR u.auth_type = '')
+			 )
+			 AND o1.created_at = (
+				 SELECT MIN(o2.created_at)
+				 FROM convoy.organisation_members o2
+				 JOIN convoy.users u2 ON o2.user_id = u2.id
+				 WHERE o2.role_type = 'instance_admin'
+				 AND o2.deleted_at IS NULL
+				 AND (u2.auth_type = 'local' OR u2.auth_type IS NULL OR u2.auth_type = '')
+			 ))
+			OR
+			-- Case 2: User is first local organisation_admin when no local instance admins exist
+			(o1.role_type = 'organisation_admin' 
+			 AND EXISTS (
+				 SELECT 1 FROM convoy.users u 
+				 WHERE u.id = o1.user_id 
+				 AND (u.auth_type = 'local' OR u.auth_type IS NULL OR u.auth_type = '')
+			 )
+			 AND NOT EXISTS (
+				 SELECT 1 FROM convoy.organisation_members o3
+				 JOIN convoy.users u3 ON o3.user_id = u3.id
+				 WHERE o3.role_type = 'instance_admin'
+				 AND o3.deleted_at IS NULL
+				 AND (u3.auth_type = 'local' OR u3.auth_type IS NULL OR u3.auth_type = '')
+			 )
+			 AND o1.created_at = (
+				 SELECT MIN(o4.created_at)
+				 FROM convoy.organisation_members o4
+				 JOIN convoy.users u2 ON o4.user_id = u2.id
+				 WHERE o4.role_type = 'organisation_admin'
+				 AND o4.deleted_at IS NULL
+				 AND (u2.auth_type = 'local' OR u2.auth_type IS NULL OR u2.auth_type = '')
+			 )
+			)
 		)
 	);
 	`

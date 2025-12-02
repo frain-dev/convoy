@@ -2,7 +2,6 @@
 
 #MISE description="Build the Angular dashboard application"
 #MISE dir="{{ config_root }}"
-#MISE sources=["/web/ui/dashboard/**/*"]
 
 set -e
 
@@ -27,3 +26,5 @@ cd ../../../
 
 # Copy build artifacts
 mv web/ui/dashboard/dist/* ./api/ui/build
+
+echo -n "" > ./api/ui/build/go_test_stub.txt

@@ -1,20 +1,20 @@
-import { inject, NgModule } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ProjectComponent } from './project.component';
-import { Routes, RouterModule, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { GithubStarComponent } from 'src/app/components/github-star/github-star.component';
-import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { TagComponent } from 'src/app/components/tag/tag.component';
-import { TooltipComponent } from 'src/app/components/tooltip/tooltip.component';
-import { SkeletonLoaderComponent } from 'src/app/components/skeleton-loader/skeleton-loader.component';
-import { PrivateService } from '../../private.service';
-import { ProjectService } from './project.service';
-import { BadgeComponent } from 'src/app/components/badge/badge.component';
-import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
-import { DropdownContainerComponent } from 'src/app/components/dropdown-container/dropdown-container.component';
-import { LoaderModule } from '../../components/loader/loader.module';
-import { PermissionDirective } from '../../components/permission/permission.directive';
+import {inject, NgModule} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {ProjectComponent} from './project.component';
+import {ActivatedRouteSnapshot, Router, RouterModule, RouterStateSnapshot, Routes} from '@angular/router';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {GithubStarComponent} from 'src/app/components/github-star/github-star.component';
+import {ListItemComponent} from 'src/app/components/list-item/list-item.component';
+import {TagComponent} from 'src/app/components/tag/tag.component';
+import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
+import {SkeletonLoaderComponent} from 'src/app/components/skeleton-loader/skeleton-loader.component';
+import {PrivateService} from '../../private.service';
+import {ProjectService} from './project.service';
+import {BadgeComponent} from 'src/app/components/badge/badge.component';
+import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
+import {DropdownContainerComponent} from 'src/app/components/dropdown-container/dropdown-container.component';
+import {LoaderModule} from '../../components/loader/loader.module';
+import {PermissionDirective} from '../../components/permission/permission.directive';
 
 export const projectResolver = async (route: ActivatedRouteSnapshot, _state: RouterStateSnapshot, privateService = inject(PrivateService), projectService = inject(ProjectService), router = inject(Router)) => {
 	try {

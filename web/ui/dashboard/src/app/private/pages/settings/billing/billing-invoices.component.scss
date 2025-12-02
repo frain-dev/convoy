@@ -1,0 +1,77 @@
+.billing-invoices {
+  margin-top: 24px;
+}
+
+:host ::ng-deep .status-success {
+  background: #dcfce7;
+  color: #166534;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  display: inline-block;
+}
+
+:host ::ng-deep .status-warning {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  display: inline-block;
+}
+
+:host ::ng-deep .status-error {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  display: inline-block;
+}
+
+:host ::ng-deep .status-neutral {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  display: inline-block;
+}
+
+:host ::ng-deep .download-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+
+  .icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: currentColor;
+    transition: fill 0.2s;
+    display: block;
+  }
+
+  &:hover .icon {
+    fill: #007bff;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+
+    .icon {
+      fill: #6b7280;
+    }
+
+    &:hover .icon {
+      fill: #6b7280;
+    }
+  }
+}

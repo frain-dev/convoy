@@ -410,6 +410,14 @@ func (k *Licenser) OAuth2EndpointAuth() bool {
 	return ok
 }
 
+func (k *Licenser) BillingModule() bool {
+	if checkExpiry(k.license) != nil {
+		return false
+	}
+	_, ok := k.featureList[BillingModule]
+	return ok
+}
+
 func (k *Licenser) AsynqMonitoring() bool {
 	if checkExpiry(k.license) != nil {
 		return false

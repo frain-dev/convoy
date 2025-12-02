@@ -1,37 +1,29 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import {CommonModule, Location, NgOptimizedImage} from '@angular/common';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
-import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
-import { ENDPOINT, PORTAL_LINK } from 'src/app/models/endpoint.model';
-import { SUBSCRIPTION } from 'src/app/models/subscription';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { EndpointsService } from 'src/app/private/pages/project/endpoints/endpoints.service';
-import { DialogDirective } from 'src/app/components/dialog/dialog.directive';
+import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
+import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
+import {ENDPOINT, PORTAL_LINK} from 'src/app/models/endpoint.model';
+import {SUBSCRIPTION} from 'src/app/models/subscription';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {EndpointsService} from 'src/app/private/pages/project/endpoints/endpoints.service';
+import {DialogDirective} from 'src/app/components/dialog/dialog.directive';
 import {
     EndpointSecretComponent
 } from 'src/app/private/pages/project/endpoints/endpoint-secret/endpoint-secret.component';
-import { PortalService } from '../portal.service';
-import { PrivateService } from 'src/app/private/private.service';
-import { TagComponent } from 'src/app/components/tag/tag.component';
-import { StatusColorModule } from 'src/app/pipes/status-color/status-color.module';
-import { CardComponent } from 'src/app/components/card/card.component';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { PaginationComponent } from 'src/app/private/components/pagination/pagination.component';
-import { CURSOR, PAGINATION } from 'src/app/models/global.model';
-import {
-    ControlContainer,
-    FormBuilder,
-    FormGroup,
-    FormGroupDirective,
-    FormsModule,
-    ReactiveFormsModule,
-    Validators
-} from '@angular/forms';
-import { CopyButtonComponent } from 'src/app/components/copy-button/copy-button.component';
-import { CreatePortalEndpointComponent } from '../create-portal-endpoint/create-portal-endpoint.component';
-import { EventCatalogComponent, EventType } from '../event-catalog/event-catalog.component';
-import { ListItemComponent } from '../../components/list-item/list-item.component';
-import { PrismModule } from '../../private/components/prism/prism.module';
+import {PortalService} from '../portal.service';
+import {PrivateService} from 'src/app/private/private.service';
+import {TagComponent} from 'src/app/components/tag/tag.component';
+import {StatusColorModule} from 'src/app/pipes/status-color/status-color.module';
+import {CardComponent} from 'src/app/components/card/card.component';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {PaginationComponent} from 'src/app/private/components/pagination/pagination.component';
+import {CURSOR, PAGINATION} from 'src/app/models/global.model';
+import {ControlContainer, FormBuilder, FormGroupDirective, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {CopyButtonComponent} from 'src/app/components/copy-button/copy-button.component';
+import {CreatePortalEndpointComponent} from '../create-portal-endpoint/create-portal-endpoint.component';
+import {EventCatalogComponent, EventType} from '../event-catalog/event-catalog.component';
+import {ListItemComponent} from '../../components/list-item/list-item.component';
+import {PrismModule} from '../../private/components/prism/prism.module';
 import {LicensesService} from "../../services/licenses/licenses.service";
 
 interface PORTAL_ENDPOINT extends ENDPOINT {

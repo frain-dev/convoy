@@ -1559,6 +1559,19 @@ type Organisation struct {
 	DeletedAt      null.Time   `json:"deleted_at,omitempty" db:"deleted_at" swaggertype:"string"`
 }
 
+type OrganisationUsage struct {
+	OrganisationID string
+	Period         string
+	Received       UsageMetrics
+	Sent           UsageMetrics
+	CreatedAt      time.Time
+}
+
+type UsageMetrics struct {
+	Volume int64
+	Bytes  int64
+}
+
 type Configuration struct {
 	UID                string `json:"uid" db:"id"`
 	IsAnalyticsEnabled bool   `json:"is_analytics_enabled" db:"is_analytics_enabled"`

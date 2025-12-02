@@ -30,6 +30,7 @@ import {TeamsModule} from './teams/teams.module';
 import {ConfigButtonComponent} from '../../components/config-button/config-button.component';
 import {TooltipComponent} from 'src/app/components/tooltip/tooltip.component';
 import {PermissionDirective} from '../../components/permission/permission.directive';
+import {BillingModule} from './billing/billing.module';
 import {LoaderModule} from '../../components/loader/loader.module';
 
 const routes: Routes = [{ path: '', component: SettingsComponent }];
@@ -63,6 +64,7 @@ const routes: Routes = [{ path: '', component: SettingsComponent }];
 		TeamsModule,
 		TooltipComponent,
 		PermissionDirective,
+		BillingModule,
 		LoaderModule
 	]
 })

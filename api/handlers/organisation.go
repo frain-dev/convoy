@@ -197,8 +197,9 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err = h.A.Authz.Authorize(r.Context(), string(policies.PermissionOrganisationManage), org); err != nil {
-		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized", http.StatusForbidden))
+	_, err = h.retrieveMembership(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: must be a member of the organisation", http.StatusForbidden))
 		return
 	}
 

@@ -36,6 +36,7 @@ const (
 	ReadReplica                Feature = "READ_REPLICA"
 	CredentialEncryption       Feature = "CREDENTIAL_ENCRYPTION"
 	CustomCertificateAuthority Feature = "CUSTOM_CERTIFICATE_AUTHORITY"
+	BillingModule              Feature = "BILLING_MODULE"
 )
 
 const (

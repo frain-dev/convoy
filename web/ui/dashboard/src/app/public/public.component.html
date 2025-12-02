@@ -1,8 +1,17 @@
 <div class="flex w-full">
-	<aside class="bg-primary-100 bg-[url('/assets/img/public-layout.png')] bg-no-repeat bg-right-top min-w-[374px] desktop:w-0 h-screen transition-all duration-300 px-36px pt-70px">
+	<aside class="bg-new.primary-400 bg-[url('/assets/img/login-panel-background.svg')] bg-no-repeat bg-center bg-cover min-w-[374px] desktop:w-0 h-screen transition-all duration-300 px-36px pt-70px relative">
 		<!-- <a href="https://getconvoy.io" target="_blank">
 			<img src="/assets/img/white-logo.svg" alt="Convoy Logo" />
 		</a> -->
+		
+		<!-- Testimonial Section -->
+		<div class="testimonial-container">
+			<p class="testimonial-text">{{ currentTestimonial.text }}</p>
+			<div class="testimonial-author">
+				<span class="testimonial-name">{{ currentTestimonial.name }}</span>
+				<span class="testimonial-role">{{ currentTestimonial.role }}</span>
+			</div>
+		</div>
 	</aside>
 	<div class="bg-[url('/assets/img/Pattern.svg')] bg-center bg-cover min-h-screen w-full">
         <router-outlet></router-outlet>

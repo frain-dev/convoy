@@ -40,6 +40,7 @@ type Licenser interface {
 	MutualTLS() bool
 	OAuth2EndpointAuth() bool
 	SynchronousWebhooks() bool
+	BillingModule() bool
 	FeatureListJSON(ctx context.Context) (json.RawMessage, error)
 
 	RemoveEnabledProject(projectID string)

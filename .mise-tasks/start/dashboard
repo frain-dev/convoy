@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+#MISE description="Start the dashboard (UI)"
+#MISE dir="{{ config_root }}"
+#MISE depends=["dashboard:build"]
+
+set -e
+
+echo "🚀 Starting the dashboard (UI)..."
+echo ""
+echo "The dashboard will run on: http://localhost:4200"
+echo ""
+
+cd motherapp
+
+exec npm run dev

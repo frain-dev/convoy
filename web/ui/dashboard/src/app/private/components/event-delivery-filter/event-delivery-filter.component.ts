@@ -1,19 +1,19 @@
-import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { ButtonComponent } from 'src/app/components/button/button.component';
-import { DatePickerComponent } from 'src/app/components/date-picker/date-picker.component';
-import { EndpointFilterComponent } from '../endpoints-filter/endpoints-filter.component';
-import { DropdownComponent, DropdownOptionDirective } from 'src/app/components/dropdown/dropdown.component';
-import { EVENT_TYPE, FILTER_QUERY_PARAM } from 'src/app/models/event.model';
-import { ActivatedRoute } from '@angular/router';
-import { ListItemComponent } from 'src/app/components/list-item/list-item.component';
-import { ProjectService } from '../../pages/project/project.service';
-import { SOURCE } from 'src/app/models/source.model';
-import { PrivateService } from '../../private.service';
-import { ENDPOINT } from 'src/app/models/endpoint.model';
-import { FormsModule } from '@angular/forms';
-import { GeneralService } from 'src/app/services/general/general.service';
-import { LicensesService } from 'src/app/services/licenses/licenses.service';
+import {Component, EventEmitter, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {CommonModule, Location} from '@angular/common';
+import {ButtonComponent} from 'src/app/components/button/button.component';
+import {DatePickerComponent} from 'src/app/components/date-picker/date-picker.component';
+import {EndpointFilterComponent} from '../endpoints-filter/endpoints-filter.component';
+import {DropdownComponent, DropdownOptionDirective} from 'src/app/components/dropdown/dropdown.component';
+import {EVENT_TYPE, FILTER_QUERY_PARAM} from 'src/app/models/event.model';
+import {ActivatedRoute} from '@angular/router';
+import {ListItemComponent} from 'src/app/components/list-item/list-item.component';
+import {ProjectService} from '../../pages/project/project.service';
+import {SOURCE} from 'src/app/models/source.model';
+import {PrivateService} from '../../private.service';
+import {ENDPOINT} from 'src/app/models/endpoint.model';
+import {FormsModule} from '@angular/forms';
+import {GeneralService} from 'src/app/services/general/general.service';
+import {LicensesService} from 'src/app/services/licenses/licenses.service';
 
 @Component({
 	selector: 'convoy-event-delivery-filter',

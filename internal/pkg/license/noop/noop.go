@@ -132,12 +132,19 @@ func (Licenser) GoogleOAuth() bool {
 func (k *Licenser) DatadogTracing() bool {
 	return true
 }
+
 func (k *Licenser) ReadReplica() bool {
 	return true
 }
+
 func (k *Licenser) CredentialEncryption() bool {
 	return true
 }
+
 func (k *Licenser) CustomCertificateAuthority() bool {
+	return true
+}
+
+func (k Licenser) BillingModule() bool {
 	return true
 }

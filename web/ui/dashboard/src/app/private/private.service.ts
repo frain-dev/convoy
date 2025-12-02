@@ -1,10 +1,10 @@
-import { EventEmitter, Injectable } from '@angular/core';
-import { HTTP_RESPONSE } from 'src/app/models/global.model';
-import { HttpService } from 'src/app/services/http/http.service';
-import { FLIPT_API_RESPONSE } from '../models/flipt.model';
-import { CURSOR } from '../models/global.model';
-import { ORGANIZATION_DATA } from '../models/organisation.model';
-import { USER } from '../models/user.model';
+import {EventEmitter, Injectable} from '@angular/core';
+import {HTTP_RESPONSE} from 'src/app/models/global.model';
+import {HttpService} from 'src/app/services/http/http.service';
+import {FLIPT_API_RESPONSE} from '../models/flipt.model';
+import {CURSOR} from '../models/global.model';
+import {ORGANIZATION_DATA} from '../models/organisation.model';
+import {USER} from '../models/user.model';
 
 @Injectable({
 	providedIn: 'root'

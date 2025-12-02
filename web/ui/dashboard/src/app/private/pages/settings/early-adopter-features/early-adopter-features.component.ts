@@ -37,7 +37,8 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 			this.organisationId = organisationDetails.uid;
 		}
 
-		this.canManage = await this.rbacService.userCanAccess('Organisations|MANAGE');
+		const userRole = await this.rbacService.getUserRole();
+		this.canManage = userRole === 'ORGANISATION_ADMIN';
 		await this.getEarlyAdopterFeatures();
 	}
 
