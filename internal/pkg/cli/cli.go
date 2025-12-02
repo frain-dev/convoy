@@ -27,6 +27,10 @@ type App struct {
 	Licenser license.Licenser
 
 	TracerBackend tracer.Backend
+
+	// JobTracker is an optional field used only in E2E tests
+	// to capture job IDs for verification
+	JobTracker interface{}
 }
 
 type ConvoyCli struct {
