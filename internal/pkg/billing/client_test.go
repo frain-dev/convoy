@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/frain-dev/convoy/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/frain-dev/convoy/config"
 )
 
 func setupTestClient(t *testing.T) (*HTTPClient, *httptest.Server) {

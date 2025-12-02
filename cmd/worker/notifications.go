@@ -3,6 +3,8 @@ package worker
 import (
 	"fmt"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
@@ -10,7 +12,6 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
-	"github.com/oklog/ulid/v2"
 )
 
 // EnqueueCircuitBreakerEmails enqueues notification emails to endpoint support email and project owner.
