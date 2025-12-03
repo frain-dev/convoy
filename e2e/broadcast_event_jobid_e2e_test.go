@@ -12,8 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
-
-	"github.com/frain-dev/convoy/testenv"
 )
 
 func TestE2E_BroadcastEvent_JobID_Format(t *testing.T) {
@@ -21,8 +19,8 @@ func TestE2E_BroadcastEvent_JobID_Format(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 
@@ -85,7 +83,7 @@ func TestE2E_BroadcastEvent_JobID_Format(t *testing.T) {
 	t.Logf("Captured broadcast job IDs: %v", jobIDs)
 
 	// Verify job ID format: broadcast:{projectID}:{eventID}
-	testenv.VerifyJobIDFormat(t, jobIDs[0], "broadcast", env.Project.UID)
+	VerifyJobIDFormat(t, jobIDs[0], "broadcast", env.Project.UID)
 
 	t.Logf("✅ Job ID format verified: %s", jobIDs[0])
 
@@ -97,8 +95,8 @@ func TestE2E_BroadcastEvent_AllSubscribers(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 
@@ -163,7 +161,7 @@ func TestE2E_BroadcastEvent_AllSubscribers(t *testing.T) {
 	require.NotEmpty(t, jobIDs, "Should have captured at least one broadcast job ID")
 
 	// Verify job ID format
-	testenv.VerifyJobIDFormat(t, jobIDs[0], "broadcast", env.Project.UID)
+	VerifyJobIDFormat(t, jobIDs[0], "broadcast", env.Project.UID)
 	t.Logf("✅ Broadcast job found: %s", jobIDs[0])
 
 	t.Log("✅ E2E test passed: Broadcast event reached all subscribers")

@@ -1,4 +1,4 @@
-package testenv
+package e2e
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
+	"github.com/frain-dev/convoy/testenv"
 	"github.com/frain-dev/convoy/worker"
 )
 
@@ -77,7 +78,7 @@ type TestWorker struct {
 
 // NewTestWorker creates a test worker that validates job IDs
 func NewTestWorker(ctx context.Context, t *testing.T, q queue.Queuer, validator *JobIDValidator) *TestWorker {
-	logger := NewLogger(t)
+	logger := testenv.NewLogger(t)
 	logger.SetLevel(log.ErrorLevel)
 
 	workerCtx, cancel := context.WithCancel(ctx)
@@ -127,4 +128,14 @@ func (tw *TestWorker) Start() {
 func (tw *TestWorker) Stop() {
 	tw.cancel()
 	tw.consumer.Stop()
+}
+
+// VerifyJobIDFormat verifies that a job ID has the expected format
+func VerifyJobIDFormat(t *testing.T, jobID, expectedPrefix, projectID string) {
+	t.Helper()
+
+	expected := fmt.Sprintf("%s:%s:", expectedPrefix, projectID)
+	if !strings.HasPrefix(jobID, expected) {
+		t.Errorf("Job ID %s should start with %s", jobID, expected)
+	}
 }

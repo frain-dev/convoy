@@ -11,7 +11,6 @@ import (
 
 	"github.com/frain-dev/convoy/api/testdb"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/testenv"
 )
 
 func TestE2E_ReplayEvent_JobID_Format(t *testing.T) {
@@ -19,8 +18,8 @@ func TestE2E_ReplayEvent_JobID_Format(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 
@@ -75,7 +74,7 @@ func TestE2E_ReplayEvent_JobID_Format(t *testing.T) {
 
 	// Verify replay job ID format if captured
 	if len(jobIDs) > 0 {
-		testenv.VerifyJobIDFormat(t, jobIDs[0], "replay", env.Project.UID)
+		VerifyJobIDFormat(t, jobIDs[0], "replay", env.Project.UID)
 		t.Logf("✅ Replay job ID format verified: %s", jobIDs[0])
 	}
 
@@ -87,8 +86,8 @@ func TestE2E_ReplayEvent_MultipleReplays(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 

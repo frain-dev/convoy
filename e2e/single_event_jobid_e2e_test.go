@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
-
-	"github.com/frain-dev/convoy/testenv"
 )
 
 func TestE2E_SingleEvent_JobID_Format(t *testing.T) {
@@ -18,8 +16,8 @@ func TestE2E_SingleEvent_JobID_Format(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 
@@ -66,7 +64,7 @@ func TestE2E_SingleEvent_JobID_Format(t *testing.T) {
 	t.Logf("Captured job IDs: %v", jobIDs)
 
 	// Verify job ID format: single:{projectID}:{eventUID}
-	testenv.VerifyJobIDFormat(t, jobIDs[0], "single", env.Project.UID)
+	VerifyJobIDFormat(t, jobIDs[0], "single", env.Project.UID)
 
 	t.Logf("✅ Job ID format verified: %s", jobIDs[0])
 
@@ -78,8 +76,8 @@ func TestE2E_SingleEvent_JobID_Deduplication(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 
@@ -138,7 +136,7 @@ func TestE2E_SingleEvent_JobID_Deduplication(t *testing.T) {
 
 	// Verify all captured job IDs have correct format
 	for _, jobID := range jobIDs {
-		testenv.VerifyJobIDFormat(t, jobID, "single", env.Project.UID)
+		VerifyJobIDFormat(t, jobID, "single", env.Project.UID)
 	}
 
 	t.Logf("✅ Verified %d job ID(s) with correct format", len(jobIDs))

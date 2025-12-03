@@ -10,8 +10,6 @@ import (
 
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
-
-	"github.com/frain-dev/convoy/testenv"
 )
 
 func TestE2E_DynamicEvent_JobID_Format(t *testing.T) {
@@ -19,8 +17,8 @@ func TestE2E_DynamicEvent_JobID_Format(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 
@@ -73,7 +71,7 @@ func TestE2E_DynamicEvent_JobID_Format(t *testing.T) {
 	t.Logf("Captured dynamic job IDs: %v", jobIDs)
 
 	// Verify job ID format: dynamic:{projectID}:{eventID}
-	testenv.VerifyJobIDFormat(t, jobIDs[0], "dynamic", env.Project.UID)
+	VerifyJobIDFormat(t, jobIDs[0], "dynamic", env.Project.UID)
 
 	t.Logf("✅ Job ID format verified: %s", jobIDs[0])
 
@@ -85,8 +83,8 @@ func TestE2E_DynamicEvent_MultipleEventTypes(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 

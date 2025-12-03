@@ -8,8 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	convoy "github.com/frain-dev/convoy-go/v2"
-
-	"github.com/frain-dev/convoy/testenv"
 )
 
 func TestE2E_FanoutEvent_JobID_Format(t *testing.T) {
@@ -17,8 +15,8 @@ func TestE2E_FanoutEvent_JobID_Format(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 
@@ -58,7 +56,7 @@ func TestE2E_FanoutEvent_JobID_Format(t *testing.T) {
 	t.Logf("Captured fanout job IDs: %v", jobIDs)
 
 	// Verify job ID format: fanout:{projectID}:{eventUID}
-	testenv.VerifyJobIDFormat(t, jobIDs[0], "fanout", env.Project.UID)
+	VerifyJobIDFormat(t, jobIDs[0], "fanout", env.Project.UID)
 
 	t.Logf("✅ Job ID format verified: %s", jobIDs[0])
 
@@ -70,8 +68,8 @@ func TestE2E_FanoutEvent_MultipleOwners(t *testing.T) {
 	env := SetupE2EWithoutWorker(t)
 
 	// Create job ID validator and custom test worker
-	validator := testenv.NewJobIDValidator(t)
-	testWorker := testenv.NewTestWorker(env.ctx, t, env.App.Queue, validator)
+	validator := NewJobIDValidator(t)
+	testWorker := NewTestWorker(env.ctx, t, env.App.Queue, validator)
 	testWorker.Start()
 	defer testWorker.Stop()
 
@@ -112,7 +110,7 @@ func TestE2E_FanoutEvent_MultipleOwners(t *testing.T) {
 	require.NotEmpty(t, jobIDs, "Should have captured at least one fanout job ID")
 
 	// Verify job ID format
-	testenv.VerifyJobIDFormat(t, jobIDs[0], "fanout", env.Project.UID)
+	VerifyJobIDFormat(t, jobIDs[0], "fanout", env.Project.UID)
 	t.Logf("✅ Found fanout job: %s", jobIDs[0])
 
 	t.Log("✅ E2E test passed: Fanout event correctly targets owner's endpoints only")
