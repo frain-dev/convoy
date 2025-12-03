@@ -122,6 +122,11 @@ export class LoginComponent implements OnInit, AfterViewInit {
 		try {
 			const response: any = await this.loginService.login(this.loginForm.value);
 
+			// Check if response has the expected structure
+			if (!response || !response.data) {
+				throw new Error('Invalid response structure from login API - response or response.data is missing');
+			}
+
 			const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
 
             let refresh = true;

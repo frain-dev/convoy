@@ -194,10 +194,6 @@ export class HttpService {
 				const url = this.buildURL(requestDetails);
 				if (url === 'error') return;
 
-				// console.log("request url: ", url)
-				// console.log("headers:", requestHeader)
-				// console.log("request deet", requestDetails)
-
                 // make request
 				const { data } = await http.request({
                     method: requestDetails.method,

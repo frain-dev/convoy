@@ -248,6 +248,10 @@ func (a *ApplicationHandler) BuildControlPlaneRoutes() *chi.Mux {
 		a.mountControlPlaneRoutes(subRouter, handler)
 		subRouter.HandleFunc("/*", a.reactRootHandler)
 		router.Mount(a.cfg.RootPath, subRouter)
+
+		// Also mount API routes at root level so they work with or without root path prefix
+		// This allows the frontend to work regardless of how URLs are constructed
+		a.mountControlPlaneRoutes(router, handler)
 	} else {
 		a.mountControlPlaneRoutes(router, handler)
 	}
