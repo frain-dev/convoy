@@ -19,6 +19,12 @@
 /api/ui/build/*
 !/api/ui/build/go_test_stub.txt
 !/api/ui/build/index.html
+!/api/ui/build/*.js
+!/api/ui/build/*.css
+!/api/ui/build/*.woff
+!/api/ui/build/*.woff2
+!/api/ui/build/*.ttf
+!/api/ui/build/assets
 /data/mongo/
 .DS_Store
 *.db
