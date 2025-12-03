@@ -7,4 +7,5 @@ set -e
 
 echo "Linting server"
 
+go vet ./...
 exec gofmt -s -l .

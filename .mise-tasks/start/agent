@@ -7,4 +7,4 @@
 set -e
 
 echo "🚀 Starting Agent"
-exec ./bin/convoy server
+exec ./bin/convoy agent

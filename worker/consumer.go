@@ -14,11 +14,17 @@ import (
 	"github.com/frain-dev/convoy/worker/task"
 )
 
+// JobTracker is an optional interface for capturing job IDs during tests
+type JobTracker interface {
+	RecordJob(task *asynq.Task)
+}
+
 type Consumer struct {
-	queue queue.Queuer
-	mux   *asynq.ServeMux
-	srv   *asynq.Server
-	log   log.StdLogger
+	queue      queue.Queuer
+	mux        *asynq.ServeMux
+	srv        *asynq.Server
+	log        log.StdLogger
+	jobTracker JobTracker // optional, used only in E2E tests
 }
 
 func NewConsumer(ctx context.Context, consumerPoolSize int, q queue.Queuer, lo log.StdLogger, level log.Level) *Consumer {
@@ -84,8 +90,18 @@ func (c *Consumer) Stop() {
 	c.srv.Shutdown()
 }
 
+// SetJobTracker sets an optional job tracker for E2E tests
+func (c *Consumer) SetJobTracker(tracker JobTracker) {
+	c.jobTracker = tracker
+}
+
 func (c *Consumer) loggingMiddleware(h asynq.Handler, tel *telemetry.Telemetry) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
+		// Record job ID if tracker is set (for E2E tests)
+		if c.jobTracker != nil {
+			c.jobTracker.RecordJob(t)
+		}
+
 		traceProvider := otel.GetTracerProvider()
 		tracer := traceProvider.Tracer("asynq.workers")
 

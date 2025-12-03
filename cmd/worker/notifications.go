@@ -3,6 +3,8 @@ package worker
 import (
 	"fmt"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
@@ -82,6 +84,9 @@ func enqueueEmail(q queue.Queuer, emailMsg *email.Message) error {
 	if err != nil {
 		return err
 	}
-	job := &queue.Job{Payload: bytes, Delay: 0}
+	job := &queue.Job{
+		ID:      ulid.Make().String(),
+		Payload: bytes,
+	}
 	return q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 }

@@ -2,11 +2,10 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
@@ -28,10 +27,12 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 	if e.Project == nil {
 		return &ServiceError{ErrMsg: "an error occurred while creating dynamic event - invalid project"}
 	}
+	id := ulid.Make().String()
+	jobId := queue.JobId{ProjectID: e.Project.UID, ResourceID: id}.DynamicJobId()
 
-	e.DynamicEvent.EventID = uuid.NewString()
+	e.DynamicEvent.EventID = id
+	e.DynamicEvent.JobID = jobId
 	e.DynamicEvent.ProjectID = e.Project.UID
-	jobId := fmt.Sprintf("dynamic:%s:%s", e.DynamicEvent.ProjectID, e.DynamicEvent.EventID)
 	e.DynamicEvent.AcknowledgedAt = time.Now()
 
 	if len(e.DynamicEvent.EventTypes) == 0 {
@@ -48,7 +49,6 @@ func (e *CreateDynamicEventService) Run(ctx context.Context) error {
 	job := &queue.Job{
 		ID:      jobId,
 		Payload: eventByte,
-		Delay:   0,
 	}
 
 	err = e.Queue.Write(taskName, convoy.CreateEventQueue, job)

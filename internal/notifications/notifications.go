@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/oklog/ulid/v2"
+
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/email"
@@ -104,7 +106,10 @@ func SendEndpointNotification(
 			continue
 		}
 
-		job := &queue.Job{Payload: buf}
+		job := &queue.Job{
+			ID:      ulid.Make().String(),
+			Payload: buf,
+		}
 
 		err = q.Write(convoy.NotificationProcessor, convoy.DefaultQueue, job)
 		if err != nil {

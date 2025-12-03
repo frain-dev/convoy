@@ -66,7 +66,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 		var lastEvent, lastRunErrored, err = getLastTaskInfo(ctx, t, channel, eventQueue, eventRepo)
 		if err != nil {
 			log.WithError(err).Error("failed to get last task info")
-			// return err
+			return err
 		}
 
 		if lastEvent != nil && lastEvent.IsDuplicateEvent && !lastRunErrored {
@@ -117,7 +117,7 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 			return err
 		}
 
-		jobId := fmt.Sprintf("match_subs:%s:%s", event.ProjectID, event.UID)
+		jobId := queue.JobId{ProjectID: event.ProjectID, ResourceID: event.UID}.MatchSubsJobId()
 		job := &queue.Job{
 			ID:      jobId,
 			Payload: payload,
@@ -272,15 +272,6 @@ func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQ
 			return nil, false, err
 		}
 		jobID = broadcastEvent.JobID
-
-	case "default":
-		var createEvent CreateEvent
-		err := getTaskPayload(t, &createEvent)
-		if err != nil {
-			return nil, false, err
-		}
-		jobID = createEvent.JobID
-
 	case "dynamic":
 		var dynamicEvent models.DynamicEvent
 		err := getTaskPayload(t, &dynamicEvent)
@@ -288,7 +279,15 @@ func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQ
 			return nil, false, err
 		}
 		jobID = dynamicEvent.JobID
+	default:
+		var createEvent CreateEvent
+		err := getTaskPayload(t, &createEvent)
+		if err != nil {
+			return nil, false, err
+		}
+		jobID = createEvent.JobID
 	}
+
 	if util.IsStringEmpty(jobID) || !strings.Contains(jobID, ":") {
 		return nil, false, &EndpointError{Err: fmt.Errorf("cannot deduce jobID: %s", jobID)}
 	}
@@ -321,10 +320,10 @@ func getLastTaskInfo(ctx context.Context, t *asynq.Task, ch EventChannel, eventQ
 	return lastEvent, lastRunErrored, err
 }
 
-func getTaskPayload(t *asynq.Task, pojo interface{}) error {
-	err := msgpack.DecodeMsgPack(t.Payload(), &pojo)
+func getTaskPayload(t *asynq.Task, pogo interface{}) error {
+	err := msgpack.DecodeMsgPack(t.Payload(), &pogo)
 	if err != nil {
-		err := json.Unmarshal(t.Payload(), &pojo)
+		err = json.Unmarshal(t.Payload(), &pogo)
 		if err != nil {
 			return err
 		}
