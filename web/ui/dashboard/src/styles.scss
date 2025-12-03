@@ -1,38 +1,5 @@
 @import './scss/font';
 
-/* Open Sauce Sans Font Faces */
-@font-face {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('./assets/fonts/OpenSauceSans-Regular.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('./assets/fonts/OpenSauceSans-Medium.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('./assets/fonts/OpenSauceSans-SemiBold.ttf') format('truetype');
-}
-
-@font-face {
-  font-family: 'Open Sauce Sans';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url('./assets/fonts/OpenSauceSans-Bold.ttf') format('truetype');
-}
-
 @import './scss/forms';
 @import './scss/prism';
 @import './scss/material-design-reset';
@@ -101,8 +68,15 @@
 	}
 
 	/* Apply font family to common text elements without overriding sizes */
+	/* Exclude Monaco Editor and code elements - they should use monospace fonts */
 	p, span, div, h1, h2, h3, h4, h5, h6, a, button, input, textarea, select, label, td, th, li {
 		font-family: 'Open Sauce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+	}
+
+	/* Monaco Editor should use monospace fonts, not Open Sauce Sans */
+	.monaco-editor,
+	.monaco-editor * {
+		font-family: 'Menlo Regular', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace !important;
 	}
 
 	h1 {
