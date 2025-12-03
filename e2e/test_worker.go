@@ -25,6 +25,7 @@ type JobIDValidator struct {
 
 // NewJobIDValidator creates a new validator
 func NewJobIDValidator(t *testing.T) *JobIDValidator {
+	t.Helper()
 	return &JobIDValidator{
 		jobIDs: make([]string, 0),
 		t:      t,
@@ -78,6 +79,8 @@ type TestWorker struct {
 
 // NewTestWorker creates a test worker that validates job IDs
 func NewTestWorker(ctx context.Context, t *testing.T, q queue.Queuer, validator *JobIDValidator) *TestWorker {
+	t.Helper()
+
 	logger := testenv.NewLogger(t)
 	logger.SetLevel(log.ErrorLevel)
 
