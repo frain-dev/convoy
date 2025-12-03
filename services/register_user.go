@@ -137,8 +137,8 @@ func queueEmail(ctx context.Context, em *email.Message, q queue.Queuer) error {
 	}
 
 	job := &queue.Job{
+		ID:      ulid.Make().String(),
 		Payload: bytes,
-		Delay:   0,
 	}
 
 	err = q.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)

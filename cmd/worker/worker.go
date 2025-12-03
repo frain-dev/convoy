@@ -133,6 +133,15 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 
 	// register worker.
 	consumer := worker.NewConsumer(ctx, cfg.ConsumerPoolSize, q, lo, lvl)
+
+	// Inject job tracker if set (for E2E tests)
+	if a.JobTracker != nil {
+		if tracker, ok := a.JobTracker.(worker.JobTracker); ok {
+			consumer.SetJobTracker(tracker)
+			lo.Info("Job tracker injected into worker consumer")
+		}
+	}
+
 	projectRepo := postgres.NewProjectRepo(a.DB)
 	metaEventRepo := postgres.NewMetaEventRepo(a.DB)
 	endpointRepo := postgres.NewEndpointRepo(a.DB)

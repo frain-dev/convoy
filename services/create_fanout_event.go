@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -102,13 +101,14 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 	return event, nil
 }
 
-func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *newEvent, g *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
+func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage *newEvent, project *datastore.Project, queuer queue.Queuer) (*datastore.Event, error) {
 	endpointIDs := make([]string, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
 		endpointIDs = append(endpointIDs, endpoint.UID)
 	}
 
+	jobId := queue.JobId{ProjectID: project.UID, ResourceID: newMessage.UID}.FanOutJobId()
 	event := &datastore.Event{
 		UID:              newMessage.UID,
 		EventType:        datastore.EventType(newMessage.EventType),
@@ -118,16 +118,17 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		IsDuplicateEvent: newMessage.IsDuplicate,
 		Headers:          getCustomHeaders(newMessage.CustomHeaders),
 		Endpoints:        endpointIDs,
-		ProjectID:        g.UID,
+		ProjectID:        project.UID,
 		AcknowledgedAt:   null.TimeFrom(time.Now()),
 	}
 
-	if (g.Config == nil || g.Config.Strategy == nil) ||
-		(g.Config.Strategy != nil && g.Config.Strategy.Type != datastore.LinearStrategyProvider && g.Config.Strategy.Type != datastore.ExponentialStrategyProvider) {
+	if (project.Config == nil || project.Config.Strategy == nil) ||
+		(project.Config.Strategy != nil && project.Config.Strategy.Type != datastore.LinearStrategyProvider && project.Config.Strategy.Type != datastore.ExponentialStrategyProvider) {
 		return nil, &ServiceError{ErrMsg: "retry strategy not defined in configuration"}
 	}
 
 	e := task.CreateEvent{
+		JobID:              jobId,
 		Event:              event,
 		CreateSubscription: !util.IsStringEmpty(newMessage.EndpointID),
 	}
@@ -137,11 +138,9 @@ func createEvent(ctx context.Context, endpoints []datastore.Endpoint, newMessage
 		return nil, &ServiceError{ErrMsg: err.Error()}
 	}
 
-	jobId := fmt.Sprintf("fanout:%s:%s", event.ProjectID, event.UID)
 	job := &queue.Job{
 		ID:      jobId,
 		Payload: eventByte,
-		Delay:   0,
 	}
 	err = queuer.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
 	if err != nil {

@@ -607,7 +607,7 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 //	@Id				TestOAuth2Connection
 //	@Accept			json
 //	@Produce		json
-//	@Param			projectID	path		string					true	"Project ID"
+//	@Param			projectID	path		string						true	"Project ID"
 //	@Param			oauth2		body		models.TestOAuth2Request	true	"OAuth2 Configuration"
 //	@Success		200			{object}	util.ServerResponse{data=models.TestOAuth2Response}
 //	@Failure		400,401,404	{object}	util.ServerResponse{data=Stub}

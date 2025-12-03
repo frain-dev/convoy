@@ -111,8 +111,8 @@ func sendInviteEmail(iv *datastore.OrganisationInvite, user *datastore.User, org
 	}
 
 	job := &queue.Job{
+		ID:      iv.UID,
 		Payload: bytes,
-		Delay:   0,
 	}
 
 	err = queuer.Write(convoy.EmailProcessor, convoy.DefaultQueue, job)

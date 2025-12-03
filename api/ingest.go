@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -223,7 +222,9 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 
 	event.Headers["X-Convoy-Source-Id"] = []string{source.MaskID}
 
+	jobId := queue.JobId{ProjectID: event.ProjectID, ResourceID: event.UID}.SingleJobId()
 	createEvent := task.CreateEvent{
+		JobID: jobId,
 		Event: event,
 	}
 
@@ -234,7 +235,6 @@ func (a *ApplicationHandler) IngestEvent(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	jobId := fmt.Sprintf("single:%s:%s", event.ProjectID, event.UID)
 	job := &queue.Job{
 		ID:      jobId,
 		Payload: eventByte,

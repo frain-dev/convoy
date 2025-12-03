@@ -233,6 +233,24 @@ func SendEventViaSDK(t *testing.T, c *convoy.Client, endpointUID, eventType, tra
 	require.NoError(t, err)
 }
 
+// SendEventWithIdempotencyKey sends an event with a specific idempotency key using the Convoy Go SDK
+func SendEventWithIdempotencyKey(t *testing.T, c *convoy.Client, endpointUID, eventType, traceID, idempotencyKey string) {
+	t.Helper()
+
+	event := fmt.Sprintf(`{"traceId": %q}`, traceID)
+	payload := []byte(event)
+
+	body := &convoy.CreateEventRequest{
+		EventType:      eventType,
+		EndpointID:     endpointUID,
+		IdempotencyKey: idempotencyKey,
+		Data:           payload,
+	}
+
+	err := c.Events.Create(t.Context(), body)
+	require.NoError(t, err)
+}
+
 // SendFanoutEventViaSDK sends a fanout event using the Convoy Go SDK
 func SendFanoutEventViaSDK(t *testing.T, c *convoy.Client, ownerID, eventType, traceID string) {
 	t.Helper()

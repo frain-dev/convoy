@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
@@ -24,12 +23,14 @@ type ReplayEventService struct {
 }
 
 func (e *ReplayEventService) Run(ctx context.Context) error {
-	createEvent := task.CreateEvent{
+	jobId := queue.JobId{ProjectID: e.Event.ProjectID, ResourceID: e.Event.UID}.ReplayJobId()
+	createReplayEvent := task.CreateEvent{
+		JobID: jobId,
 		Event: e.Event,
 	}
-	createEvent.Event.AcknowledgedAt = null.TimeFrom(time.Now())
+	createReplayEvent.Event.AcknowledgedAt = null.TimeFrom(time.Now())
 
-	eventByte, err := msgpack.EncodeMsgPack(createEvent)
+	eventByte, err := msgpack.EncodeMsgPack(createReplayEvent)
 	if err != nil {
 		return &ServiceError{ErrMsg: err.Error()}
 	}
@@ -37,12 +38,10 @@ func (e *ReplayEventService) Run(ctx context.Context) error {
 	if util.IsStringEmpty(e.Event.UID) || util.IsStringEmpty(e.Event.ProjectID) {
 		return &ServiceError{ErrMsg: "missing event or project id"}
 	}
-	jobId := fmt.Sprintf("replay:%s:%s", e.Event.ProjectID, e.Event.UID)
 
 	job := &queue.Job{
 		ID:      jobId,
 		Payload: eventByte,
-		Delay:   0,
 	}
 
 	err = e.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)

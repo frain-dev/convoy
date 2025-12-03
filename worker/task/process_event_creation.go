@@ -414,16 +414,10 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 				Payload: data,
 			}
 
-			switch s.Type {
-			case datastore.SubscriptionTypeAPI:
+			if s.Type == datastore.SubscriptionTypeAPI {
 				err = opts.EventQueue.Write(convoy.EventProcessor, convoy.EventQueue, job)
 				if err != nil {
 					log.FromContext(ctx).WithError(err).Errorf("[asynq]: an error occurred sending event delivery to be dispatched")
-				}
-			case datastore.SubscriptionTypeCLI:
-				err = opts.EventQueue.Write(convoy.StreamCliEventsProcessor, convoy.StreamQueue, job)
-				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("[asynq]: an error occurred sending event delivery to the stream queue")
 				}
 			}
 		}

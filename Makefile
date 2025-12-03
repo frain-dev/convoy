@@ -20,7 +20,7 @@ test:
 
 # E2E Tests - Run individually for reliability and reproducibility
 test_e2e:
-	@echo "Running E2E tests individually for maximum reliability..."
+	@echo "Running E2E tests individually..."
 	@go test -v ./e2e/... -run TestE2E_DirectEvent_AllSubscriptions -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_DirectEvent_MustMatchSubscription -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_FanOutEvent_AllSubscriptions -timeout 2m
@@ -29,6 +29,17 @@ test_e2e:
 	@go test -v ./e2e/... -run TestE2E_FormEndpoint_WithCustomHeaders -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_OAuth2_SharedSecret -timeout 2m
 	@go test -v ./e2e/... -run TestE2E_OAuth2_ClientAssertion -timeout 2m
+	@echo "Running Job ID E2E tests..."
+	@go test -v ./e2e/... -run TestE2E_SingleEvent_JobID_Format -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_SingleEvent_JobID_Deduplication -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_FanoutEvent_JobID_Format -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_FanoutEvent_MultipleOwners -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_BroadcastEvent_JobID_Format -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_BroadcastEvent_AllSubscribers -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_DynamicEvent_JobID_Format -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_DynamicEvent_MultipleEventTypes -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_ReplayEvent_JobID_Format -timeout 2m
+	@go test -v ./e2e/... -run TestE2E_ReplayEvent_MultipleReplays -timeout 2m
 	@echo "✅ All E2E tests passed!"
 
 # Run all E2E tests together (may be flaky, use test_e2e for CI)

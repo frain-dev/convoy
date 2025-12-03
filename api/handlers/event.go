@@ -68,9 +68,12 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	id := ulid.Make().String()
+	jobId := queue.JobId{ProjectID: projectID, ResourceID: id}.SingleJobId()
 	e := task.CreateEvent{
+		JobID: jobId,
 		Params: task.CreateEventTaskParams{
-			UID:            ulid.Make().String(),
+			UID:            id,
 			ProjectID:      projectID,
 			EndpointID:     newMessage.EndpointID,
 			EventType:      newMessage.EventType,
@@ -88,11 +91,9 @@ func (h *Handler) CreateEndpointEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jobId := fmt.Sprintf("single:%s:%s", e.Params.ProjectID, e.Params.UID)
 	job := &queue.Job{
 		ID:      jobId,
 		Payload: eventByte,
-		Delay:   0,
 	}
 
 	err = h.A.Queue.Write(convoy.CreateEventProcessor, convoy.CreateEventQueue, job)
