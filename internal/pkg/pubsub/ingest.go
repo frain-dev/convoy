@@ -286,6 +286,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 		id := ulid.Make().String()
 		jobId := queue.JobId{ProjectID: source.ProjectID, ResourceID: id}.FanOutJobId()
 		ce := task.CreateEvent{
+			JobID: jobId,
 			Params: task.CreateEventTaskParams{
 				UID:            id,
 				CustomHeaders:  headers,
@@ -352,7 +353,7 @@ func (i *Ingest) handler(ctx context.Context, source *datastore.Source, msg stri
 			return err
 		}
 	default:
-		err := fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single, fanout or broadcast", messageType)
+		err = fmt.Errorf("%s isn't a valid pubsub message type, it should be one of single, fanout or broadcast", messageType)
 		log.Error(err)
 		return err
 	}
