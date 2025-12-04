@@ -38,16 +38,10 @@ func (e *RetryEventDeliveryService) Run(ctx context.Context) error {
 	}
 
 	switch endpoint.Status {
-	case datastore.PendingEndpointStatus:
-		return &ServiceError{ErrMsg: "endpoint is being re-activated"}
 	case datastore.PausedEndpointStatus:
-		return &ServiceError{ErrMsg: "endpoint is currently paused"}
+		return &ServiceError{ErrMsg: "the endpoint is currently paused"}
 	case datastore.InactiveEndpointStatus:
-		err = e.EndpointRepo.UpdateEndpointStatus(context.Background(), e.EventDelivery.ProjectID, e.EventDelivery.EndpointID, datastore.PendingEndpointStatus)
-		if err != nil {
-			log.FromContext(ctx).WithError(err).Error("failed to update endpoint status")
-			return &ServiceError{ErrMsg: "failed to update endpoint status", Err: err}
-		}
+		return &ServiceError{ErrMsg: "the endpoint is currently inactive"}
 	}
 
 	return requeueEventDelivery(ctx, e.EventDelivery, e.Project, e.EventDeliveryRepo, e.Queue)

@@ -435,7 +435,7 @@ func (p *projectRepo) UpdateProject(ctx context.Context, project *datastore.Proj
 	}
 
 	if !project.Config.DisableEndpoint {
-		status := []datastore.EndpointStatus{datastore.InactiveEndpointStatus, datastore.PendingEndpointStatus}
+		status := []datastore.EndpointStatus{datastore.InactiveEndpointStatus}
 		query, args, err := sqlx.In(updateProjectEndpointStatus, datastore.ActiveEndpointStatus, project.UID, status)
 		if err != nil {
 			return err

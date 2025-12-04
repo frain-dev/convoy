@@ -7831,13 +7831,11 @@
             "enum": [
                 "active",
                 "inactive",
-                "pending",
                 "paused"
             ],
             "x-enum-varnames": [
                 "ActiveEndpointStatus",
                 "InactiveEndpointStatus",
-                "PendingEndpointStatus",
                 "PausedEndpointStatus"
             ]
         },

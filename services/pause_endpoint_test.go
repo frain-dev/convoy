@@ -103,22 +103,6 @@ func TestPauseEndpointService_Run(t *testing.T) {
 			wantErr:    true,
 			wantErrMsg: "failed to update endpoint status",
 		},
-		{
-			name: "should_fail_to_pause_pending_endpoint",
-			args: args{
-				ctx:        ctx,
-				endpointID: "123",
-				projectID:  "abc",
-			},
-			dbFn: func(es *PauseEndpointService) {
-				e, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
-				e.EXPECT().FindEndpointByID(gomock.Any(), "123", "abc").Times(1).Return(
-					&datastore.Endpoint{UID: "123", Status: datastore.PendingEndpointStatus}, nil,
-				)
-			},
-			wantErr:    true,
-			wantErrMsg: "current endpoint status - pending, does not support pausing or unpausing",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -206,7 +206,6 @@ components:
       enum:
       - active
       - inactive
-      - pending
       - paused
       type: string
     datastore.Event:

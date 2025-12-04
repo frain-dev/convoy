@@ -351,30 +351,6 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			deps.TracerBackend.Capture(ctx, "event.retry.delivery.success", attributes, traceStartTime, time.Now())
 		}
 
-		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
-			endpointStatus := datastore.ActiveEndpointStatus
-			err = deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-			if err != nil {
-				log.WithError(err).Error("Failed to reactivate endpoint after successful retry")
-			}
-
-			if deps.Licenser.AdvancedEndpointMgmt() {
-				// send endpoint reactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, deps.Queue, false, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("failed to send notification")
-				}
-			}
-		}
-
-		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
-			endpointStatus := datastore.InactiveEndpointStatus
-			err := deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-			if err != nil {
-				log.FromContext(ctx).Errorf("Failed to reactivate endpoint after successful retry")
-			}
-		}
-
 		attempt = parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
 
 		eventDelivery.Metadata.NumTrials++
@@ -391,7 +367,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
 
-			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
+			if project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
 				endpointStatus := datastore.InactiveEndpointStatus
 
 				err := deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
