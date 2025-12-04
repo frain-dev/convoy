@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/datastore"
@@ -26,20 +27,75 @@ func (u *LoginUserService) isPrimaryInstanceAdmin(ctx context.Context, userID st
 		return true, nil
 	}
 
+	// Check if there are any instance admins
 	count, err := u.OrgMemberRepo.CountInstanceAdminUsers(ctx)
 	if err != nil {
 		return false, err
 	}
+
+	// If no instance admins exist, check if user is first org admin in any of their organisations
 	if count == 0 {
-		return true, nil
+		return u.isFirstOrgAdminInAnyOrg(ctx, userID)
 	}
 
+	// If instance admins exist, check if user is first instance admin
 	isFirst, err := u.OrgMemberRepo.IsFirstInstanceAdmin(ctx, userID)
 	if err != nil {
 		return false, err
 	}
 
 	return isFirst, nil
+}
+
+func (u *LoginUserService) isFirstOrgAdminInAnyOrg(ctx context.Context, userID string) (bool, error) {
+	// Get user's organisations
+	orgs, _, err := u.OrgMemberRepo.LoadUserOrganisationsPaged(ctx, userID, datastore.Pageable{
+		PerPage: 100, // Get all orgs (reasonable limit)
+	})
+	if err != nil {
+		return false, err
+	}
+
+	// Check if user is first org admin in any of their organisations
+	for _, org := range orgs {
+		member, err := u.OrgMemberRepo.FetchOrganisationMemberByUserID(ctx, userID, org.UID)
+		if err != nil {
+			if errors.Is(err, datastore.ErrOrgMemberNotFound) {
+				continue
+			}
+			return false, err
+		}
+
+		// Check if user is org admin
+		if member.Role.Type != auth.RoleOrganisationAdmin {
+			continue
+		}
+
+		// Get all org admins for this organisation to check if this user is the first
+		members, _, err := u.OrgMemberRepo.LoadOrganisationMembersPaged(ctx, org.UID, "", datastore.Pageable{
+			PerPage: 100,
+		})
+		if err != nil {
+			return false, err
+		}
+
+		// Find the first org admin by created_at
+		var firstOrgAdmin *datastore.OrganisationMember
+		for _, m := range members {
+			if m.Role.Type == auth.RoleOrganisationAdmin {
+				if firstOrgAdmin == nil || m.CreatedAt.Before(firstOrgAdmin.CreatedAt) {
+					firstOrgAdmin = m
+				}
+			}
+		}
+
+		// If this user is the first org admin in this org, allow access
+		if firstOrgAdmin != nil && firstOrgAdmin.UserID == userID {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token, error) {
@@ -70,7 +126,7 @@ func (u *LoginUserService) Run(ctx context.Context) (*datastore.User, *jwt.Token
 	if !canAccess {
 		return nil, nil, &ServiceError{
 			Code:   ErrCodeLicenseExpired,
-			ErrMsg: "License expired. Only the primary instance administrator can access the system"}
+			ErrMsg: "License expired. Only the first organization administrator can access the system"}
 	}
 
 	token, err := u.JWT.GenerateToken(user)

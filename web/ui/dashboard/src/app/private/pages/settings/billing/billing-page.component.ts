@@ -54,6 +54,8 @@ export class BillingPageComponent implements OnInit {
 
   countries: { code: string; name: string }[] = [];
   vatCountries: { code: string; name: string }[] = []; // Countries with tax ID types from billing service
+  taxIdTypes: any[] = []; // Store tax ID types with examples
+  vatPlaceholder = 'Enter VAT number'; // Dynamic placeholder based on selected country
   cities: string[] = [];
   isLoadingCountries = false;
   isLoadingVatCountries = false;
@@ -96,6 +98,10 @@ export class BillingPageComponent implements OnInit {
 
     this.billingAddressForm.get('country')?.valueChanges.subscribe(countryCode => {
       this.onCountryChange(countryCode);
+    });
+
+    this.vatForm.get('country')?.valueChanges.subscribe(countryCode => {
+      this.onVatCountryChange(countryCode);
     });
   }
 
@@ -178,6 +184,7 @@ export class BillingPageComponent implements OnInit {
     this.billingPaymentDetailsService.getTaxIDTypes().subscribe({
       next: (response) => {
         const taxIdTypes = response.data || [];
+        this.taxIdTypes = taxIdTypes; // Store tax ID types with examples
         this.vatCountries = [];
 
         taxIdTypes.forEach((taxType: any) => {
@@ -199,8 +206,34 @@ export class BillingPageComponent implements OnInit {
         console.error('Failed to load VAT countries:', error);
         this.isLoadingVatCountries = false;
         this.vatCountries = [];
+        this.taxIdTypes = [];
       }
     });
+  }
+
+  onVatCountryChange(countryCode: string) {
+    if (!countryCode) {
+      this.vatPlaceholder = 'Enter VAT number';
+      return;
+    }
+
+    // Find the tax ID type for the selected country
+    const countryCodeLower = countryCode.toLowerCase();
+    const taxIdType = this.taxIdTypes.find((taxType: any) => {
+      const type = taxType.type;
+      if (type) {
+        const typeCountryCode = type.split('_')[0].toLowerCase();
+        return typeCountryCode === countryCodeLower;
+      }
+      return false;
+    });
+
+    // Set placeholder to the example if found, otherwise default
+    if (taxIdType && taxIdType.example) {
+      this.vatPlaceholder = taxIdType.example;
+    } else {
+      this.vatPlaceholder = 'Enter VAT number';
+    }
   }
 
   onCountryChange(countryCode: string) {

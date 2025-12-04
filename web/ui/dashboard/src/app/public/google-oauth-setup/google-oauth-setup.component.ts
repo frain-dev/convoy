@@ -70,16 +70,27 @@ export class GoogleOAuthSetupComponent implements OnInit {
 			const response = await this.googleOAuthSetupService.completeSetup(idToken, businessName);
 
 			if (response.data) {
+				// Check if this is a different user
+				const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+				let refresh = false;
+				if (lastUserId && lastUserId !== response.data.uid) {
+					localStorage.clear();
+					refresh = true;
+				}
+
 				this.generalService.showNotification({
 					message: 'Setup completed successfully! Welcome to Convoy.',
 					style: 'success'
 				});
+				localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 				localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 				localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
-				localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 				localStorage.removeItem('GOOGLE_OAUTH_USER_INFO');
 				localStorage.removeItem('GOOGLE_OAUTH_ID_TOKEN');
 				await this.router.navigateByUrl('/');
+				if (refresh) {
+					window.location.reload();
+				}
 			}
 		} catch (error: any) {
 			this.generalService.showNotification({

@@ -238,19 +238,29 @@ export class LoginComponent implements OnInit, AfterViewInit {
                         return;
                     }
 
-                    // Show success notification
+                    // Check if this is a different user
+					const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+					let refresh = false;
+					if (lastUserId && lastUserId !== response.data.uid) {
+						localStorage.clear();
+						refresh = true;
+					}
+
+					// Show success notification
 					this.generalService.showNotification({
 						message: 'Google login successful! Welcome back.',
 						style: 'success'
 					});
 
+					localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 					localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 					localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
-					localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 
-					// await this.getOrganisations();
+					await this.getOrganisations();
 					await this.router.navigateByUrl('/');
-					// window.location.reload();
+					if (refresh) {
+						window.location.reload();
+					}
                 }
             }
         } catch (error: any) {

@@ -63,7 +63,7 @@ export class PrivateComponent implements OnInit {
 
 	async logout() {
 		await this.privateService.logout();
-		localStorage.removeItem('CONVOY_AUTH');
+		localStorage.clear();
 		this.router.navigateByUrl('/login');
 	}
 
