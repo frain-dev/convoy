@@ -54,7 +54,6 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 					Times(1).Return(nil)
 
 				om, _ := os.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				om.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(0), nil)
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
@@ -77,7 +76,6 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 					Times(1).Return(nil)
 
 				om, _ := os.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				om.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(1), nil)
 				om.EXPECT().CreateOrganisationMember(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := os.Licenser.(*mocks.MockLicenser)
@@ -131,27 +129,6 @@ func TestCreateOrganisationService_Run(t *testing.T) {
 			},
 			wantErr:    true,
 			wantErrMsg: ErrOrgLimit.Error(),
-		},
-		{
-			name: "should_fail_to_count_instance_admin_users",
-			args: args{
-				ctx:    ctx,
-				newOrg: &models.Organisation{Name: "new_org"},
-				user:   &datastore.User{UID: "1234"},
-			},
-			dbFn: func(os *CreateOrganisationService) {
-				a, _ := os.OrgRepo.(*mocks.MockOrganisationRepository)
-				a.EXPECT().CreateOrganisation(gomock.Any(), gomock.Any()).
-					Times(1).Return(nil)
-
-				om, _ := os.OrgMemberRepo.(*mocks.MockOrganisationMemberRepository)
-				om.EXPECT().CountInstanceAdminUsers(gomock.Any()).Times(1).Return(int64(0), errors.New("db error"))
-
-				licenser, _ := os.Licenser.(*mocks.MockLicenser)
-				licenser.EXPECT().CreateOrg(gomock.Any()).Times(1).Return(true, nil)
-			},
-			wantErr:    true,
-			wantErrMsg: "failed to create organisation",
 		},
 	}
 	for _, tt := range tests {
