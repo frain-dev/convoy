@@ -7,6 +7,8 @@ import (
 	"os"
 	"sort"
 	"text/tabwriter"
+
+	"github.com/frain-dev/convoy/pkg/log"
 )
 
 var ErrCircuitBreakerNotEnabled = errors.New("[feature flag] circuit breaker is not enabled")
@@ -132,7 +134,8 @@ func (c *FFlag) CanAccessOrgFeature(ctx context.Context, key FeatureFlagKey, fet
 
 	var overrideInfo *FeatureFlagOverrideInfo
 	if flagInfo.AllowOverride {
-		overrideInfo, _ = fetcher.FetchFeatureFlagOverride(ctx, "organisation", orgID, flagInfo.UID)
+		overrideInfo, err = fetcher.FetchFeatureFlagOverride(ctx, "organisation", orgID, flagInfo.UID)
+		log.Errorf("failed to fetch feature flag override: %v", err)
 	}
 
 	data := &FeatureFlagData{

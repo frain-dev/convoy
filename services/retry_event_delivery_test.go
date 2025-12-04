@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -167,12 +166,12 @@ func TestRetryEventDeliveryService_Run(t *testing.T) {
 			wantErrMsg: "endpoint not found",
 		},
 		{
-			name: "should_error_for_pending_subscription_status",
+			name: "should_fail_to_retry_event_delivery_with_inactive_endpoint",
 			dbFn: func(es *RetryEventDeliveryService) {
 				s, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
 				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
-					Status: datastore.PendingEndpointStatus,
+					Status: datastore.InactiveEndpointStatus,
 				}, nil)
 			},
 			args: args{
@@ -184,47 +183,16 @@ func TestRetryEventDeliveryService_Run(t *testing.T) {
 				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
-			wantErrMsg: "endpoint is being re-activated",
+			wantErrMsg: "the endpoint is currently inactive",
 		},
 		{
-			name: "should_retry_event_delivery_with_inactive_subscription",
+			name: "should_fail_to_retry_event_delivery_with_paused_endpoint",
 			dbFn: func(es *RetryEventDeliveryService) {
 				s, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
 				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
 					Times(1).Return(&datastore.Endpoint{
-					Status: datastore.InactiveEndpointStatus,
+					Status: datastore.PausedEndpointStatus,
 				}, nil)
-
-				s.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.PendingEndpointStatus).
-					Times(1).Return(nil)
-
-				ed, _ := es.EventDeliveryRepo.(*mocks.MockEventDeliveryRepository)
-				ed.EXPECT().UpdateStatusOfEventDelivery(gomock.Any(), gomock.Any(), gomock.Any(), datastore.ScheduledEventStatus)
-
-				q, _ := es.Queue.(*mocks.MockQueuer)
-				q.EXPECT().Write(gomock.Any(), gomock.Any(), gomock.Any()).
-					Times(1).Return(nil)
-			},
-			args: args{
-				ctx: ctx,
-				eventDelivery: &datastore.EventDelivery{
-					UID:    "123",
-					Status: datastore.FailureEventStatus,
-				},
-				g: &datastore.Project{UID: "abc"},
-			},
-		},
-		{
-			name: "should_fail_to_retry_event_delivery_with_inactive_subscription",
-			dbFn: func(es *RetryEventDeliveryService) {
-				s, _ := es.EndpointRepo.(*mocks.MockEndpointRepository)
-				s.EXPECT().FindEndpointByID(gomock.Any(), gomock.Any(), "abc").
-					Times(1).Return(&datastore.Endpoint{
-					Status: datastore.InactiveEndpointStatus,
-				}, nil)
-
-				s.EXPECT().UpdateEndpointStatus(gomock.Any(), gomock.Any(), gomock.Any(), datastore.PendingEndpointStatus).
-					Times(1).Return(errors.New("failed"))
 			},
 			args: args{
 				ctx: ctx,
@@ -235,7 +203,7 @@ func TestRetryEventDeliveryService_Run(t *testing.T) {
 				g: &datastore.Project{UID: "abc"},
 			},
 			wantErr:    true,
-			wantErrMsg: "failed to update endpoint status",
+			wantErrMsg: "the endpoint is currently paused",
 		},
 	}
 	for _, tc := range tests {

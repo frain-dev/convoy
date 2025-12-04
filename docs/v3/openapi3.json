@@ -313,7 +313,6 @@
 				"enum": [
 					"active",
 					"inactive",
-					"pending",
 					"paused"
 				],
 				"type": "string"

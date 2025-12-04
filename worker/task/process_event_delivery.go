@@ -361,7 +361,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			attributes["response.size_bytes"] = len(resp.Body)
 		}
 
-		// Request failed but statusCode is 200 <= x <= 299
+		// The request failed, but the statusCode is 200 <= x <= 299
 		if err != nil {
 			log.FromContext(ctx).Errorf("%s failed. Reason: %s", eventDelivery.UID, err)
 			deps.TracerBackend.Capture(ctx, "event.delivery.error", attributes, traceStartTime, time.Now())
@@ -377,32 +377,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		deps.TracerBackend.Capture(ctx, "event.delivery.info", attributes, time.Now(), time.Now())
 
-		if done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
-			endpointStatus := datastore.ActiveEndpointStatus
-			err = deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-			if err != nil {
-				log.FromContext(ctx).WithError(err).Error("Failed to reactivate endpoint after successful retry")
-			}
-
-			if deps.Licenser.AdvancedEndpointMgmt() {
-				// send endpoint reactivation notification
-				err = notifications.SendEndpointNotification(ctx, endpoint, project, endpointStatus, deps.Queue, false, resp.Error, string(resp.Body), resp.StatusCode)
-				if err != nil {
-					log.FromContext(ctx).WithError(err).Error("failed to send notification")
-				}
-			}
-		}
-
-		if !done && endpoint.Status == datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
-			endpointStatus := datastore.InactiveEndpointStatus
-			err = deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)
-			if err != nil {
-				log.FromContext(ctx).Errorf("Failed to reactivate endpoint after successful retry")
-			}
-		}
-
 		attempt := parseAttemptFromResponse(eventDelivery, endpoint, resp, attemptStatus)
-
 		eventDelivery.Metadata.NumTrials++
 
 		if eventDelivery.Metadata.NumTrials >= eventDelivery.Metadata.RetryLimit {
@@ -417,7 +392,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 				eventDelivery.Status = datastore.FailureEventStatus
 			}
 
-			if endpoint.Status != datastore.PendingEndpointStatus && project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
+			if project.Config.DisableEndpoint && !deps.Licenser.CircuitBreaking() {
 				endpointStatus := datastore.InactiveEndpointStatus
 
 				err = deps.EndpointRepo.UpdateEndpointStatus(ctx, project.UID, endpoint.UID, endpointStatus)

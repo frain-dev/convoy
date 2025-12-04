@@ -219,13 +219,11 @@ definitions:
     enum:
     - active
     - inactive
-    - pending
     - paused
     type: string
     x-enum-varnames:
     - ActiveEndpointStatus
     - InactiveEndpointStatus
-    - PendingEndpointStatus
     - PausedEndpointStatus
   datastore.Event:
     properties:
