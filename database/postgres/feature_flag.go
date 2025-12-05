@@ -136,6 +136,18 @@ const (
 	DELETE FROM convoy.feature_flag_overrides
 	WHERE owner_type = $1 AND owner_id = $2 AND feature_flag_id = $3;
 	`
+
+	updateFeatureFlag = `
+	UPDATE convoy.feature_flags
+	SET enabled = $1, updated_at = NOW()
+	WHERE id = $2;
+	`
+
+	updateFeatureFlagAllowOverride = `
+	UPDATE convoy.feature_flags
+	SET allow_override = $1, updated_at = NOW()
+	WHERE id = $2;
+	`
 )
 
 // UpsertFeatureFlagOverride creates or updates a feature flag override
@@ -173,5 +185,17 @@ func UpsertFeatureFlagOverride(ctx context.Context, db database.Database, overri
 // DeleteFeatureFlagOverride deletes a feature flag override
 func DeleteFeatureFlagOverride(ctx context.Context, db database.Database, ownerType, ownerID, featureFlagID string) error {
 	_, err := db.GetDB().ExecContext(ctx, deleteFeatureFlagOverride, ownerType, ownerID, featureFlagID)
+	return err
+}
+
+// UpdateFeatureFlag updates the enabled state of a feature flag
+func UpdateFeatureFlag(ctx context.Context, db database.Database, featureFlagID string, enabled bool) error {
+	_, err := db.GetDB().ExecContext(ctx, updateFeatureFlag, enabled, featureFlagID)
+	return err
+}
+
+// UpdateFeatureFlagAllowOverride updates the allow_override state of a feature flag
+func UpdateFeatureFlagAllowOverride(ctx context.Context, db database.Database, featureFlagID string, allowOverride bool) error {
+	_, err := db.GetDB().ExecContext(ctx, updateFeatureFlagAllowOverride, allowOverride, featureFlagID)
 	return err
 }

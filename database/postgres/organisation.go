@@ -34,6 +34,12 @@ const (
 	SELECT * FROM convoy.organisations WHERE deleted_at IS NULL
 	`
 
+	fetchOrganisationsPagedWithSearch = `
+	SELECT * FROM convoy.organisations 
+	WHERE deleted_at IS NULL 
+	AND (LOWER(name) LIKE LOWER(:search) OR LOWER(id) LIKE LOWER(:search))
+	`
+
 	updateOrganizationById = `
 	UPDATE convoy.organisations SET
 	name = $2,
@@ -73,6 +79,16 @@ const (
 	SELECT COUNT(DISTINCT(id)) AS count
 	FROM convoy.organisations
 	WHERE deleted_at IS NULL
+	AND id > :cursor
+	GROUP BY id
+	ORDER BY id DESC
+	LIMIT 1`
+
+	countPrevOrganizationsWithSearch = `
+	SELECT COUNT(DISTINCT(id)) AS count
+	FROM convoy.organisations
+	WHERE deleted_at IS NULL
+	AND (LOWER(name) LIKE LOWER(:search) OR LOWER(id) LIKE LOWER(:search))
 	AND id > :cursor
 	GROUP BY id
 	ORDER BY id DESC
@@ -148,6 +164,17 @@ func (o *orgRepo) CreateOrganisation(ctx context.Context, org *datastore.Organis
 }
 
 func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore.Pageable) ([]datastore.Organisation, datastore.PaginationData, error) {
+	return o.LoadOrganisationsPagedWithSearch(ctx, pageable, "")
+}
+
+func (o *orgRepo) LoadOrganisationsPagedWithSearch(ctx context.Context, pageable datastore.Pageable, search string) ([]datastore.Organisation, datastore.PaginationData, error) {
+	var baseQuery string
+	if search != "" {
+		baseQuery = fetchOrganisationsPagedWithSearch
+	} else {
+		baseQuery = fetchOrganisationsPaged
+	}
+
 	var query string
 	if pageable.Direction == datastore.Next {
 		query = baseFetchOrganizationsPagedForward
@@ -155,11 +182,15 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 		query = baseFetchOrganizationsPagedBackward
 	}
 
-	query = fmt.Sprintf(query, fetchOrganisationsPaged)
+	query = fmt.Sprintf(query, baseQuery)
 
 	arg := map[string]interface{}{
 		"limit":  pageable.Limit(),
 		"cursor": pageable.Cursor(),
+	}
+
+	if search != "" {
+		arg["search"] = "%" + search + "%"
 	}
 
 	query, args, err := sqlx.Named(query, arg)
@@ -199,7 +230,11 @@ func (o *orgRepo) LoadOrganisationsPaged(ctx context.Context, pageable datastore
 
 		arg["cursor"] = organizations[0].UID
 
-		countQuery, qargs, err = sqlx.Named(countPrevOrganizations, arg)
+		if search != "" {
+			countQuery, qargs, err = sqlx.Named(countPrevOrganizationsWithSearch, arg)
+		} else {
+			countQuery, qargs, err = sqlx.Named(countPrevOrganizations, arg)
+		}
 		if err != nil {
 			return nil, datastore.PaginationData{}, err
 		}

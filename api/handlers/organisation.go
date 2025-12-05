@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/policies"
+	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
@@ -348,4 +350,276 @@ func (h *Handler) isEarlyAdopterFeatureLicensed(featureKey fflag.FeatureFlagKey)
 	default:
 		return false
 	}
+}
+
+// isInstanceAdmin checks if the current user is an instance admin
+func (h *Handler) isInstanceAdmin(r *http.Request) bool {
+	user, err := h.retrieveUser(r)
+	if err != nil {
+		return false
+	}
+
+	member, err := postgres.NewOrgMemberRepo(h.A.DB).FetchInstanceAdminByUserID(r.Context(), user.UID)
+	if err != nil {
+		return false
+	}
+
+	return member.Role.Type == auth.RoleInstanceAdmin
+}
+
+// GetAllFeatureFlags returns all system feature flags (instance admin only)
+func (h *Handler) GetAllFeatureFlags(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	flags, err := postgres.LoadFeatureFlags(r.Context(), h.A.DB)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Feature flags fetched successfully", flags, http.StatusOK))
+}
+
+// GetAllOrganisations returns all organizations (instance admin only)
+func (h *Handler) GetAllOrganisations(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	pageable := m.GetPageableFromContext(r.Context())
+	// Set a higher default limit for admin (1000 records)
+	if pageable.PerPage == 0 {
+		pageable.PerPage = 1000
+	}
+	pageable.SetCursors()
+
+	// Get search query parameter
+	search := r.URL.Query().Get("search")
+
+	orgRepo := postgres.NewOrgRepo(h.A.DB)
+	var organisations []datastore.Organisation
+	var paginationData datastore.PaginationData
+	var err error
+
+	if search != "" {
+		organisations, paginationData, err = orgRepo.LoadOrganisationsPagedWithSearch(r.Context(), pageable, search)
+	} else {
+		organisations, paginationData, err = orgRepo.LoadOrganisationsPaged(r.Context(), pageable)
+	}
+
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
+		models.PagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
+}
+
+// GetOrganisationOverrides returns all feature flag overrides for a specific organization (instance admin only)
+func (h *Handler) GetOrganisationOverrides(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	orgID := chi.URLParam(r, "orgID")
+	if orgID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	overrides, err := postgres.LoadFeatureFlagOverridesByOwner(r.Context(), h.A.DB, "organisation", orgID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	// Enrich overrides with feature flag keys for easier frontend mapping
+	type OverrideWithKey struct {
+		datastore.FeatureFlagOverride
+		FeatureKey string `json:"feature_key"`
+	}
+
+	enrichedOverrides := make([]OverrideWithKey, 0, len(overrides))
+	for i := range overrides {
+		featureFlag, err := postgres.FetchFeatureFlagByID(r.Context(), h.A.DB, overrides[i].FeatureFlagID)
+		if err != nil {
+			log.FromContext(r.Context()).WithError(err).Warnf("Failed to fetch feature flag for override: %s", overrides[i].FeatureFlagID)
+			continue
+		}
+
+		enrichedOverrides = append(enrichedOverrides, OverrideWithKey{
+			FeatureFlagOverride: overrides[i],
+			FeatureKey:          featureFlag.FeatureKey,
+		})
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Feature flag overrides fetched successfully", enrichedOverrides, http.StatusOK))
+}
+
+// UpdateOrganisationOverride creates or updates a feature flag override for any organization (instance admin only)
+func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	orgID := chi.URLParam(r, "orgID")
+	if orgID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	var overrideRequest models.UpdateOrganisationOverride
+	err := util.ReadJSON(r, &overrideRequest)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		return
+	}
+
+	user, err := h.retrieveUser(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	// Fetch the feature flag
+	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, overrideRequest.FeatureKey)
+	if err != nil {
+		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+overrideRequest.FeatureKey, http.StatusBadRequest))
+			return
+		}
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if !featureFlag.AllowOverride {
+		_ = render.Render(w, r, util.NewErrorResponse(
+			"Feature flag "+overrideRequest.FeatureKey+" does not allow overrides", http.StatusBadRequest))
+		return
+	}
+
+	override := &datastore.FeatureFlagOverride{
+		FeatureFlagID: featureFlag.UID,
+		OwnerType:     "organisation",
+		OwnerID:       orgID,
+		Enabled:       overrideRequest.Enabled,
+		EnabledBy:     null.StringFrom(user.UID),
+	}
+
+	if overrideRequest.Enabled {
+		override.EnabledAt = null.TimeFrom(time.Now())
+	}
+
+	err = postgres.UpsertFeatureFlagOverride(r.Context(), h.A.DB, override)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Feature flag override updated successfully", override, http.StatusOK))
+}
+
+// DeleteOrganisationOverride deletes a feature flag override for any organization (instance admin only)
+func (h *Handler) DeleteOrganisationOverride(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	orgID := chi.URLParam(r, "orgID")
+	if orgID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	featureKey := chi.URLParam(r, "featureKey")
+	if featureKey == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("feature key is required", http.StatusBadRequest))
+		return
+	}
+
+	// Fetch the feature flag to get its ID
+	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
+	if err != nil {
+		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
+			return
+		}
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	err = postgres.DeleteFeatureFlagOverride(r.Context(), h.A.DB, "organisation", orgID, featureFlag.UID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Feature flag override deleted successfully", nil, http.StatusOK))
+}
+
+// UpdateFeatureFlag updates the default enabled state or allow_override of a system feature flag (instance admin only)
+func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	featureKey := chi.URLParam(r, "featureKey")
+	if featureKey == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("feature key is required", http.StatusBadRequest))
+		return
+	}
+
+	var updateRequest models.UpdateFeatureFlagRequest
+	err := util.ReadJSON(r, &updateRequest)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		return
+	}
+
+	// Fetch the feature flag
+	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
+	if err != nil {
+		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
+			return
+		}
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	// Update enabled state if provided
+	if updateRequest.Enabled != nil {
+		err = postgres.UpdateFeatureFlag(r.Context(), h.A.DB, featureFlag.UID, *updateRequest.Enabled)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+	}
+
+	// Update allow_override state if provided
+	if updateRequest.AllowOverride != nil {
+		err = postgres.UpdateFeatureFlagAllowOverride(r.Context(), h.A.DB, featureFlag.UID, *updateRequest.AllowOverride)
+		if err != nil {
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+	}
+
+	// Fetch updated feature flag
+	updatedFlag, err := postgres.FetchFeatureFlagByID(r.Context(), h.A.DB, featureFlag.UID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Feature flag updated successfully", updatedFlag, http.StatusOK))
 }
