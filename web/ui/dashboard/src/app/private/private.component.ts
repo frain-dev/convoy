@@ -53,17 +53,60 @@ export class PrivateComponent implements OnInit {
 	async ngOnInit() {
 		this.shouldShowOrgModal();
 
+		// Check if user changed and clear cache if needed
+		const currentUserId = this.authDetails()?.uid;
+		const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+		if (lastUserId && currentUserId && lastUserId !== currentUserId) {
+			// User changed, clear cache and localStorage items
+			this.privateService.clearCache(true);
+		}
+		if (currentUserId) {
+			localStorage.setItem('CONVOY_LAST_USER_ID', currentUserId);
+		}
+
 		this.checkIfTokenIsExpired();
 		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations()]);
 	}
 
 	ngOnDestroy() {
-		if (this.shouldShowOrgSubscription) this.shouldShowOrgSubscription.unsubscribe();
+		if (this.shouldShowOrgSubscription) {
+			this.shouldShowOrgSubscription.unsubscribe();
+			this.shouldShowOrgSubscription = undefined;
+		}
+		if (this.checkTokenInterval) {
+			clearTimeout(this.checkTokenInterval);
+			this.checkTokenInterval = undefined;
+		}
 	}
 
 	async logout() {
-		await this.privateService.logout();
+		// Clear intervals and subscriptions first to prevent any ongoing operations
+		if (this.checkTokenInterval) {
+			clearTimeout(this.checkTokenInterval);
+			this.checkTokenInterval = undefined;
+		}
+		if (this.shouldShowOrgSubscription) {
+			this.shouldShowOrgSubscription.unsubscribe();
+			this.shouldShowOrgSubscription = undefined;
+		}
+
+		// Clear cache and localStorage immediately
+		this.privateService.clearCache();
 		localStorage.clear();
+
+		// Attempt logout API call but don't block on it
+		// Use Promise.race with timeout to prevent hanging
+		try {
+			await Promise.race([
+				this.privateService.logout(),
+				new Promise((_, reject) => setTimeout(() => reject(new Error('Logout timeout')), 5000))
+			]);
+		} catch (error) {
+			// Ignore errors - we've already cleared local data
+			console.log('Logout API call completed with error or timeout, continuing with navigation');
+		}
+
+		// Navigate to login regardless of API call result
 		this.router.navigateByUrl('/login');
 	}
 
@@ -109,7 +152,15 @@ export class PrivateComponent implements OnInit {
 		this.isLoadingOrganisations = true;
 		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
-		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
+		
+		// Save to per-user storage
+		const userId = this.authDetails()?.uid;
+		if (userId) {
+			this.privateService.setUserOrg(userId, organisation);
+		} else {
+			localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
+		}
+		
 		await this.privateService.getProjects({ refresh: true });
 		this.showOrgDropdown = false;
 
@@ -139,7 +190,14 @@ export class PrivateComponent implements OnInit {
 
 		this.privateService.organisationDetails = this.organisations[0];
 		this.userOrganization = this.organisations[0];
-		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
+		
+		// Save to per-user storage
+		const userId = this.authDetails()?.uid;
+		if (userId) {
+			this.privateService.setUserOrg(userId, this.organisations[0]);
+		} else {
+			localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
+		}
 	}
 
 	get showHelpCard() {

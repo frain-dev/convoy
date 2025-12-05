@@ -128,11 +128,17 @@ export class LoginComponent implements OnInit, AfterViewInit {
 			}
 
 			const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+			const isDifferentUser = lastUserId && lastUserId !== response.data.uid;
 
-            let refresh = true;
-            if (lastUserId && lastUserId !== response.data.uid) {
-				localStorage.clear();
-                refresh = true;
+			if (isDifferentUser) {
+				// Clear all cached data when switching users
+				// Clear the previous user's session data but preserve their per-user storage
+				localStorage.removeItem('CONVOY_AUTH');
+				localStorage.removeItem('CONVOY_AUTH_TOKENS');
+				localStorage.removeItem('CONVOY_ORG');
+				localStorage.removeItem('CONVOY_PROJECT');
+				// Clear cache for the previous user
+				this.privateService.clearCache(true, lastUserId);
 			}
 
 			localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
@@ -148,8 +154,6 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
 			await this.getOrganisations();
 			await this.router.navigateByUrl('/');
-			if (refresh)
-				window.location.reload();
 		} catch (error: any) {
 			console.error('Login failed:', error);
 
@@ -240,10 +244,17 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
                     // Check if this is a different user
 					const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
-					let refresh = false;
-					if (lastUserId && lastUserId !== response.data.uid) {
-						localStorage.clear();
-						refresh = true;
+					const isDifferentUser = lastUserId && lastUserId !== response.data.uid;
+
+					if (isDifferentUser) {
+						// Clear all cached data when switching users
+						// Clear the previous user's session data but preserve their per-user storage
+						localStorage.removeItem('CONVOY_AUTH');
+						localStorage.removeItem('CONVOY_AUTH_TOKENS');
+						localStorage.removeItem('CONVOY_ORG');
+						localStorage.removeItem('CONVOY_PROJECT');
+						// Clear cache for the previous user
+						this.privateService.clearCache(true, lastUserId);
 					}
 
 					// Show success notification
@@ -258,9 +269,6 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
 					await this.getOrganisations();
 					await this.router.navigateByUrl('/');
-					if (refresh) {
-						window.location.reload();
-					}
                 }
             }
         } catch (error: any) {
