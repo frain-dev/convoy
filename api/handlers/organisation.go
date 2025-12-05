@@ -250,6 +250,44 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	_ = render.Render(w, r, util.NewServerResponse("Early adopter features fetched successfully", responseFeatures, http.StatusOK))
 }
 
+func (h *Handler) GetOrganisationFeatureFlags(w http.ResponseWriter, r *http.Request) {
+	org, err := h.retrieveOrganisation(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	_, err = h.retrieveMembership(r)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: must be a member of the organisation", http.StatusForbidden))
+		return
+	}
+
+	// Get all system feature flags
+	allFeatureFlags := []fflag.FeatureFlagKey{
+		fflag.IpRules,
+		fflag.Prometheus,
+		fflag.CircuitBreaker,
+		fflag.FullTextSearch,
+		fflag.RetentionPolicy,
+		fflag.ReadReplicas,
+		fflag.CredentialEncryption,
+		fflag.MTLS,
+		fflag.OAuthTokenExchange,
+	}
+
+	// Build response map using CanAccessOrgFeature for consistency
+	featureFlags := make(map[string]bool)
+
+	for _, featureKey := range allFeatureFlags {
+		enabled := h.A.FFlag.CanAccessOrgFeature(
+			r.Context(), featureKey, h.A.FeatureFlagFetcher, org.UID)
+		featureFlags[string(featureKey)] = enabled
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Feature flags fetched successfully", featureFlags, http.StatusOK))
+}
+
 func (h *Handler) updateFeatureFlag(w http.ResponseWriter, r *http.Request, featureKey string, enabled bool, org *datastore.Organisation, user *datastore.User) error {
 	flagKey := fflag.FeatureFlagKey(featureKey)
 	if !fflag.IsEarlyAdopterFeature(flagKey) {

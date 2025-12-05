@@ -320,10 +320,19 @@
 
 				<div class="text-12 text-neutral-11 mb-24px">
 					Circuit breaker settings control how endpoints are automatically disabled when they fail too frequently.
-					These settings are read-only and can only be modified via the CLI.
 				</div>
 
-				<div class="grid grid-cols-2 gap-24px">
+				<div *ngIf="!circuitBreakerFeatureEnabled" class="p-12px bg-neutral-50 rounded-8px border border-neutral-200 mb-24px">
+					<div class="flex items-center gap-8px mb-6px">
+						<svg width="14" height="14" class="fill-new.primary-400">
+							<use xlink:href="#lock-icon"></use>
+						</svg>
+						<p class="text-10 font-semibold text-neutral-12">Circuit Breaker Feature Flag Disabled</p>
+					</div>
+					<p class="text-10 text-neutral-10">Circuit breaker configuration feature flag is not enabled for your organization.</p>
+				</div>
+
+				<div *ngIf="circuitBreakerFeatureEnabled" class="grid grid-cols-2 gap-24px">
 					<div>
 						<label class="text-12 font-medium text-neutral-11 mb-8px block">Sample Rate (seconds)</label>
 						<div class="h-50px bg-[#F7F9FC] border border-neutral-a3 rounded-[6px] px-16px flex items-center">
@@ -378,18 +387,6 @@
                             <span class="text-12 text-neutral-11 font-normal">{{ circuitBreakerView.consecutive_failure_threshold }}</span>
 						</div>
 						<small class="text-10 text-neutral-9">Consecutive failures before disabling endpoint</small>
-					</div>
-				</div>
-
-				<div class="mt-24px p-16px bg-blue-50 border border-blue-200 rounded-[6px]">
-					<div class="flex items-start">
-						<svg width="16" height="16" class="fill-blue-500 mr-8px mt-1px">
-							<use xlink:href="#info-icon"></use>
-						</svg>
-						<div class="text-12 text-blue-700">
-							<strong>Note:</strong> Circuit breaker configuration can only be modified using the CLI command:<br>
-							<code class="bg-blue-100 px-8px py-4px rounded text-10">convoy util circuit-breakers update [endpoint-id] --failure_threshold=70 --success_threshold=5</code>
-						</div>
 					</div>
 				</div>
 			</ng-container>
