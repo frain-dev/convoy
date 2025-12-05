@@ -132,9 +132,7 @@ func (c *FFlag) CanAccessOrgFeature(ctx context.Context, key FeatureFlagKey, fet
 
 	var overrideInfo *FeatureFlagOverrideInfo
 	if flagInfo.AllowOverride {
-		overrideInfo, err = fetcher.FetchFeatureFlagOverride(ctx, "organisation", orgID, flagInfo.UID)
-		// Note: err may be "feature flag override not found" which is expected when no override exists
-		// The code handles this gracefully by using nil for overrideInfo
+		overrideInfo, _ = fetcher.FetchFeatureFlagOverride(ctx, "organisation", orgID, flagInfo.UID)
 	}
 
 	data := &FeatureFlagData{
