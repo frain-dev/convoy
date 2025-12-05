@@ -119,7 +119,7 @@ var DefaultConfiguration = Configuration{
 		InsecureSkipVerify: false,
 		AllowList:          []string{"0.0.0.0/0", "::/0"},
 		BlockList:          []string{"127.0.0.0/8", "::1/128"},
-		PingMethods:        []string{"HEAD", "GET", "POST"},
+		PingMethods:        []string{"HEAD", "OPTIONS"},
 		SkipPingValidation: false,
 	},
 	InstanceIngestRate:  1000,

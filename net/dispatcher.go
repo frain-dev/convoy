@@ -620,11 +620,11 @@ func (d *Dispatcher) Ping(ctx context.Context, opts PingOptions) error {
 	cfg, err := config.Get()
 	if err != nil {
 		d.logger.WithError(err).Warn("Failed to get config, using default ping methods")
-		methods = []string{"HEAD", "GET", "POST"}
+		methods = []string{"HEAD", "OPTIONS"}
 	} else {
 		methods = cfg.Dispatcher.PingMethods
 		if len(methods) == 0 {
-			methods = []string{"HEAD", "GET", "POST"}
+			methods = []string{"HEAD", "OPTIONS"}
 		}
 	}
 
