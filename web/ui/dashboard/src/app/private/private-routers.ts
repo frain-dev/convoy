@@ -2,6 +2,7 @@ import { inject } from '@angular/core';
 import { Routes } from '@angular/router';
 import { PrivateComponent } from './private.component';
 import { PrivateService } from './private.service';
+import { InstanceAdminGuard } from '../guards/instance-admin.guard';
 
 export const fetchOrganisations = async (privateService = inject(PrivateService)) => await privateService.getOrganizations();
 export const fetchMembership = async (privateService = inject(PrivateService)) => await privateService.getOrganizationMembership();
@@ -44,6 +45,11 @@ const routes: Routes = [
 			{
 				path: 'settings',
 				loadChildren: () => import('./pages/settings/settings.module').then(m => m.SettingsModule)
+			},
+			{
+				path: 'admin',
+				loadChildren: () => import('./pages/admin/admin.module').then(m => m.AdminModule),
+				canActivate: [InstanceAdminGuard]
 			},
 			{
 				path: 'get-started',

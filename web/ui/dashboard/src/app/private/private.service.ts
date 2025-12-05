@@ -35,6 +35,40 @@ export class PrivateService {
 		return authDetails ? JSON.parse(authDetails) : false;
 	}
 
+	// Per-user organization storage
+	getUserOrg(userId: string): ORGANIZATION_DATA | null {
+		const key = `CONVOY_ORG_${userId}`;
+		const org = localStorage.getItem(key);
+		return org ? JSON.parse(org) : null;
+	}
+
+	setUserOrg(userId: string, org: ORGANIZATION_DATA): void {
+		const key = `CONVOY_ORG_${userId}`;
+		localStorage.setItem(key, JSON.stringify(org));
+		// Also set current session org for compatibility
+		localStorage.setItem('CONVOY_ORG', JSON.stringify(org));
+	}
+
+	// Per-user project storage
+	getUserProject(userId: string): any | null {
+		const key = `CONVOY_PROJECT_${userId}`;
+		const project = localStorage.getItem(key);
+		return project ? JSON.parse(project) : null;
+	}
+
+	setUserProject(userId: string, project: any): void {
+		const key = `CONVOY_PROJECT_${userId}`;
+		localStorage.setItem(key, JSON.stringify(project));
+		// Also set current session project for compatibility
+		localStorage.setItem('CONVOY_PROJECT', JSON.stringify(project));
+	}
+
+	// Clear per-user data when switching users
+	clearUserData(userId: string): void {
+		localStorage.removeItem(`CONVOY_ORG_${userId}`);
+		localStorage.removeItem(`CONVOY_PROJECT_${userId}`);
+	}
+
 	setShowOrgModal(value: boolean) {
 		this.showOrgModal.emit(value);
 	}
@@ -106,6 +140,15 @@ export class PrivateService {
 	}
 
 	get getProjectDetails() {
+		// Try to get from per-user storage first
+		const user = this.getUserProfile;
+		const userId = user?.uid;
+		if (userId) {
+			const userProject = this.getUserProject(userId);
+			if (userProject) return userProject;
+		}
+		
+		// Fallback to current session
 		const localProject = localStorage.getItem('CONVOY_PROJECT');
 		if (localProject) return JSON.parse(localProject);
 
@@ -115,6 +158,15 @@ export class PrivateService {
 	}
 
     getProjectDetailsHideNotification() {
+		// Try to get from per-user storage first
+		const user = this.getUserProfile;
+		const userId = user?.uid;
+		if (userId) {
+			const userProject = this.getUserProject(userId);
+			if (userProject) return userProject;
+		}
+		
+		// Fallback to current session
 		const localProject = localStorage.getItem('CONVOY_PROJECT');
 		if (localProject) return JSON.parse(localProject);
 
@@ -136,7 +188,16 @@ export class PrivateService {
 				});
 
 				this.projectDetails = projectResponse;
-				localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projectResponse.data));
+				
+				// Save to per-user storage
+				const user = this.getUserProfile;
+				const userId = user?.uid;
+				if (userId) {
+					this.setUserProject(userId, projectResponse.data);
+				} else {
+					localStorage.setItem('CONVOY_PROJECT', JSON.stringify(projectResponse.data));
+				}
+				
 				return resolve(projectResponse);
 			} catch (error) {
 				return reject(error);
@@ -147,11 +208,40 @@ export class PrivateService {
 	async organisationConfig(organisations: ORGANIZATION_DATA[]) {
 		if (!organisations || (organisations && organisations?.length == 0)) return;
 
-		const existingOrg = organisations.find((org: { uid: string }) => org.uid === this.getOrganisation?.uid);
-		if (existingOrg) return localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+		const user = this.getUserProfile;
+		const userId = user?.uid;
 
+		// First, try to restore user's last selected org from per-user storage
+		if (userId) {
+			const userLastOrg = this.getUserOrg(userId);
+			if (userLastOrg) {
+				const existingOrg = organisations.find((org: { uid: string }) => org.uid === userLastOrg.uid);
+				if (existingOrg) {
+					this.organisationDetails = existingOrg;
+					this.setUserOrg(userId, existingOrg);
+					return;
+				}
+			}
+		}
+
+		// Fallback to current session org if it exists
+		const existingOrg = organisations.find((org: { uid: string }) => org.uid === this.getOrganisation?.uid);
+		if (existingOrg) {
+			if (userId) {
+				this.setUserOrg(userId, existingOrg);
+			} else {
+				localStorage.setItem('CONVOY_ORG', JSON.stringify(existingOrg));
+			}
+			return;
+		}
+
+		// Default to first org
 		this.organisationDetails = organisations[0];
-		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisations[0]));
+		if (userId) {
+			this.setUserOrg(userId, organisations[0]);
+		} else {
+			localStorage.setItem('CONVOY_ORG', JSON.stringify(organisations[0]));
+		}
 		return;
 	}
 
@@ -393,6 +483,30 @@ export class PrivateService {
 				return reject(error);
 			}
 		});
+	}
+
+	clearCache(clearLocalStorage: boolean = false, userId?: string): void {
+		// Clear all in-memory cached data
+		this.projects = undefined as any;
+		this.organisations = undefined as any;
+		this.projectDetails = undefined as any;
+		this.membership = undefined as any;
+		this.organisationDetails = undefined;
+		this.profileDetails = undefined as any;
+		this.projectStats = undefined as any;
+		this.configutation = undefined as any;
+		this.apiFlagResponse = undefined as any;
+		
+		// Only clear localStorage items when explicitly requested (e.g., when switching users)
+		if (clearLocalStorage) {
+			// Clear current session data
+			localStorage.removeItem('CONVOY_ORG');
+			localStorage.removeItem('CONVOY_PROJECT');
+			// If userId provided, also clear that user's per-user data (when switching away from them)
+			if (userId) {
+				this.clearUserData(userId);
+			}
+		}
 	}
 
 	deleteProject(): Promise<HTTP_RESPONSE> {

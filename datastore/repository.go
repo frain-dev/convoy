@@ -81,6 +81,7 @@ type ProjectRepository interface {
 
 type OrganisationRepository interface {
 	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
+	LoadOrganisationsPagedWithSearch(context.Context, Pageable, string) ([]Organisation, PaginationData, error)
 	CountOrganisations(ctx context.Context) (int64, error)
 	CreateOrganisation(context.Context, *Organisation) error
 	UpdateOrganisation(context.Context, *Organisation) error

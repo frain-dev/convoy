@@ -108,4 +108,18 @@ export class SettingsService {
 			}
 		});
 	}
+
+	getOrganisationFeatureFlags(requestDetails: { org_id: string }): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/organisations/${requestDetails.org_id}/feature-flags`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

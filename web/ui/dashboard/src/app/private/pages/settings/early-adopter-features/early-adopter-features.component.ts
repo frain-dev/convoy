@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {ChangeDetectionStrategy, ChangeDetectorRef, Component, inject, OnInit} from '@angular/core';
 import {SettingsService} from '../settings.service';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {RbacService} from 'src/app/services/rbac/rbac.service';
@@ -14,7 +14,8 @@ interface EarlyAdopterFeature {
 @Component({
 	selector: 'early-adopter-features',
 	templateUrl: './early-adopter-features.component.html',
-	styleUrls: ['./early-adopter-features.component.scss']
+	styleUrls: ['./early-adopter-features.component.scss'],
+	changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EarlyAdopterFeaturesComponent implements OnInit {
 	organisationId!: string;
@@ -27,7 +28,8 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 	constructor(
 		private settingService: SettingsService,
 		private generalService: GeneralService,
-		private licenseService: LicensesService
+		private licenseService: LicensesService,
+		private cdr: ChangeDetectorRef
 	) {}
 
 	async ngOnInit() {
@@ -43,7 +45,7 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 	}
 
 	async getEarlyAdopterFeatures() {
-		if (!this.organisationId) return;
+		if (!this.organisationId || this.isLoadingFeatures) return;
 		this.isLoadingFeatures = true;
 		try {
 			const response = await this.settingService.getEarlyAdopterFeatures({ org_id: this.organisationId });
@@ -55,9 +57,11 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 			});
 
 			this.isLoadingFeatures = false;
+			this.cdr.markForCheck();
 		} catch (error) {
 			console.error('Error fetching features:', error);
 			this.isLoadingFeatures = false;
+			this.cdr.markForCheck();
 		}
 	}
 
@@ -129,9 +133,11 @@ export class EarlyAdopterFeaturesComponent implements OnInit {
 			const message = `${featureName} has been ${action}`;
 			this.generalService.showNotification({ style: 'success', message });
 			this.isUpdatingFeatures = false;
+			this.cdr.markForCheck();
 		} catch (error) {
 			console.error('Error toggling feature:', error);
 			this.isUpdatingFeatures = false;
+			this.cdr.markForCheck();
 		}
 	}
 }

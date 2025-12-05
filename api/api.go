@@ -469,6 +469,16 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			})
 		})
 
+		// Admin routes (instance admin only)
+		uiRouter.Route("/admin", func(adminRouter chi.Router) {
+			adminRouter.Get("/feature-flags", handler.GetAllFeatureFlags)
+			adminRouter.Put("/feature-flags/{featureKey}", handler.UpdateFeatureFlag)
+			adminRouter.With(middleware.Pagination).Get("/organisations", handler.GetAllOrganisations)
+			adminRouter.Get("/organisations/{orgID}/overrides", handler.GetOrganisationOverrides)
+			adminRouter.Put("/organisations/{orgID}/overrides", handler.UpdateOrganisationOverride)
+			adminRouter.Delete("/organisations/{orgID}/overrides/{featureKey}", handler.DeleteOrganisationOverride)
+		})
+
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Post("/", handler.CreateOrganisation)
 			orgRouter.With(middleware.Pagination).Get("/", handler.GetOrganisationsPaged)
@@ -477,6 +487,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				orgSubRouter.Get("/", handler.GetOrganisation)
 				orgSubRouter.Put("/", handler.UpdateOrganisation)
 				orgSubRouter.Delete("/", handler.DeleteOrganisation)
+				orgSubRouter.Get("/feature-flags", handler.GetOrganisationFeatureFlags)
 				orgSubRouter.Put("/feature-flags", handler.UpdateOrganisationFeatureFlags)
 				orgSubRouter.Get("/early-adopter-features", handler.GetEarlyAdopterFeatures)
 

@@ -16,6 +16,7 @@ import {CreateProjectComponentService} from './create-project-component.service'
 import {RbacService} from 'src/app/services/rbac/rbac.service';
 import {LicensesService} from 'src/app/services/licenses/licenses.service';
 import {EVENT_TYPE} from 'src/app/models/event.model';
+import {SettingsService} from '../../pages/settings/settings.service';
 
 
 interface TAB {
@@ -132,6 +133,8 @@ export class CreateProjectComponent implements OnInit {
 	eventTypes: EVENT_TYPE[] = [];
 	selectedEventType: EVENT_TYPE | null = null;
     rateLimitDeleted = false;
+	circuitBreakerFeatureEnabled = false;
+	organisationId!: string;
 
 	constructor(
 		private formBuilder: FormBuilder,
@@ -140,7 +143,8 @@ export class CreateProjectComponent implements OnInit {
 		private privateService: PrivateService,
 		public router: Router,
 		private route: ActivatedRoute,
-		public licenseService: LicensesService
+		public licenseService: LicensesService,
+		private settingsService: SettingsService
 	) {}
 
 	// Normalized view model for circuit breaker with hard defaults to 0
@@ -169,9 +173,28 @@ export class CreateProjectComponent implements OnInit {
 
 	async ngOnInit() {
 		this.getEventTypes();
-		if (this.action === 'update') this.getProjectDetails();
+		if (this.action === 'update') {
+			await this.getProjectDetails();
+			await this.checkCircuitBreakerFeatureFlag();
+		}
 		if (!(await this.rbacService.userCanAccess('Project Settings|MANAGE'))) this.projectForm.disable();
 		if (this.action === 'update') this.switchTab(this.tabs.find(tab => tab.label == this.route.snapshot.queryParams?.activePage) ?? this.tabs[0]);
+	}
+
+	async checkCircuitBreakerFeatureFlag() {
+		const org = localStorage.getItem('CONVOY_ORG');
+		if (!org) return;
+		try {
+			const organisationDetails = JSON.parse(org);
+			this.organisationId = organisationDetails.uid;
+			const response = await this.settingsService.getOrganisationFeatureFlags({
+				org_id: this.organisationId
+			});
+			const featureFlags = response.data || {};
+			this.circuitBreakerFeatureEnabled = featureFlags['circuit-breaker'] || false;
+		} catch (error) {
+			this.circuitBreakerFeatureEnabled = false;
+		}
 	}
 
 	get versions(): FormArray {

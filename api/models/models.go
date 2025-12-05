@@ -260,6 +260,17 @@ type UpdateOrganisationFeatureFlags struct {
 	FeatureFlags map[string]bool `json:"feature_flags" valid:"required"`
 }
 
+type UpdateOrganisationOverride struct {
+	FeatureKey string `json:"feature_key" valid:"required"`
+	Enabled    bool   `json:"enabled"`
+}
+
+type UpdateFeatureFlagRequest struct {
+	FeatureKey    string `json:"feature_key" valid:"required"`
+	Enabled       *bool  `json:"enabled,omitempty"`
+	AllowOverride *bool  `json:"allow_override,omitempty"`
+}
+
 type EarlyAdopterFeature struct {
 	Key         string `json:"key"`
 	Name        string `json:"name"`

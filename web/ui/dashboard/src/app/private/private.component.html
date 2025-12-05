@@ -12,6 +12,11 @@
 					<img src="/assets/img/doc-icon-primary.svg" class="w-14px" alt="doc icon" />
 					<span class="font-medium text-12 text-primary-100 ml-2">Go to docs</span>
 				</a>
+				<a convoy-button fill="soft" class="py-4px !px-8px mr-24px" routerLink="/admin" *ngIf="isInstanceAdmin">
+					<svg width="18" height="18" class="fill-neutral-10">
+						<use xlink:href="#settings-icon"></use>
+					</svg>
+				</a>
 
 				<div convoy-dropdown size="lg" #organisationDropdown *ngIf="organisations?.length">
 					<button dropdownTrigger convoy-button color="neutral" fill="soft" size="sm" class="py-10px px-20px rounded-8px mr-12px">

@@ -21,8 +21,10 @@ export class DropdownOptionDirective {
 
     onSelectOption() {
         this.onSelect.emit();
+        if (this.value !== undefined) {
+            this.parent.onSelect.emit(this.value);
+        }
         this.parent.show = false;
-        this.parent.onSelect.emit(this.value);
     }
 }
 

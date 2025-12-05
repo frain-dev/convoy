@@ -1,0 +1,49 @@
+<div class="flex justify-between items-center mb-28px">
+	<div>
+		<h3 class="font-semibold">System Feature Flags</h3>
+		<p class="text-12 text-neutral-10">Manage system feature flags and their default states</p>
+	</div>
+</div>
+
+<div *ngIf="isLoadingFeatureFlags" class="flex items-center justify-center py-40px">
+	<convoy-loader></convoy-loader>
+</div>
+
+<div *ngIf="!isLoadingFeatureFlags && featureFlags.length === 0" class="p-24px bg-neutral-a2 rounded-8px">
+	<p class="text-14 text-neutral-10">No feature flags available</p>
+</div>
+
+<div *ngIf="!isLoadingFeatureFlags && featureFlags.length > 0" class="space-y-16px">
+	<div *ngFor="let flag of featureFlags; trackBy: trackByFeatureKey" convoy-card class="p-24px">
+		<div class="flex items-start justify-between">
+			<div class="flex-1 mr-24px">
+				<label convoy-label>{{ getFeatureFlagDisplayName(flag.feature_key) }}</label>
+				<p class="text-12 text-neutral-10 mt-4px">Key: {{ flag.feature_key }}</p>
+			</div>
+		</div>
+		<div class="flex items-center justify-between mt-16px pt-16px border-t border-neutral-5">
+			<div class="flex-1">
+				<label convoy-label class="text-12">Default State</label>
+				<p class="text-11 text-neutral-11 mt-4px">System-wide default enabled/disabled state</p>
+			</div>
+			<convoy-toggle
+				[isChecked]="flag.enabled"
+				[name]="'feature-flag-enabled-' + flag.feature_key"
+				[className]="isUpdatingFeatureFlag ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+				(onChange)="toggleFeatureFlag(flag, $event)"
+			></convoy-toggle>
+		</div>
+		<div class="flex items-center justify-between mt-12px">
+			<div class="flex-1">
+				<label convoy-label class="text-12">Allow Override</label>
+				<p class="text-11 text-neutral-11 mt-4px">Allow organisations to override this flag</p>
+			</div>
+			<convoy-toggle
+				[isChecked]="flag.allow_override"
+				[name]="'feature-flag-allow-override-' + flag.feature_key"
+				[className]="isUpdatingFeatureFlag ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+				(onChange)="toggleAllowOverride(flag, $event)"
+			></convoy-toggle>
+		</div>
+	</div>
+</div>

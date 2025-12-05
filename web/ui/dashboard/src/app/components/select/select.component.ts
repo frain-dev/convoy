@@ -61,6 +61,7 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();
 	@Output('searchString') searchString = new EventEmitter<any>();
 	@ViewChild('searchFilter', { static: false }) searchFilter!: ElementRef;
+	@ViewChild('dropdownRef', { static: false }) dropdownRef!: DropdownComponent;
 	selectedValue: any;
 	selectedOptions: any = [];
 
@@ -106,6 +107,14 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 		} else {
 			this.selectedValue = option;
 			this.selectedOption.emit(option?.uid || option);
+			// Update form control value
+			if (this.control) {
+				this.control.setValue(option?.uid || option);
+			}
+			// Close dropdown
+			if (this.dropdownRef) {
+				this.dropdownRef.show = false;
+			}
 		}
 	}
 
