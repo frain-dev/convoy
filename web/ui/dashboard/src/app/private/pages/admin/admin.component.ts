@@ -12,8 +12,8 @@ export class AdminComponent implements OnInit {
 	activePage: ADMIN_PAGE = 'feature flags';
 	adminMenu: { name: ADMIN_PAGE; icon: string; svg: 'stroke' | 'fill' }[] = [
 		{ name: 'feature flags', icon: 'settings', svg: 'fill' },
-		{ name: 'circuit breaker config', icon: 'settings', svg: 'fill' },
-		{ name: 'resend events', icon: 'settings', svg: 'fill' }
+		{ name: 'circuit breaker config', icon: 'shield', svg: 'fill' },
+		{ name: 'resend events', icon: 'retry', svg: 'fill' }
 	];
 
 	constructor(private route: ActivatedRoute) {}

@@ -261,7 +261,7 @@ func TestDispatcher_PingWithDefaultMethods(t *testing.T) {
 	dispatcher, err := NewDispatcher(mockLicenser, fflag, LoggerOption(log.NewLogger(os.Stdout)))
 	require.NoError(t, err)
 
-	// Test with default ping methods (HEAD, OPTIONS)
+	// Test with default ping methods (HEAD, GET, POST)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "HEAD" {
 			w.WriteHeader(http.StatusOK)

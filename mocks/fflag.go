@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	ErrFeatureFlagNotFound = errors.New("feature flag not found")
-	ErrOverrideNotFound    = errors.New("override not found")
+	ErrFeatureFlagNotFound         = errors.New("feature flag not found")
+	ErrOverrideNotFound            = errors.New("override not found")
+	ErrEarlyAdopterFeatureNotFound = errors.New("early adopter feature not found")
 )
 
 // MockFeatureFlagFetcher is a mock implementation of fflag.FeatureFlagFetcher
@@ -57,7 +58,7 @@ func (m *MockEarlyAdopterFeatureFetcher) FetchEarlyAdopterFeature(ctx context.Co
 	if m.FetchEarlyAdopterFeatureFunc != nil {
 		return m.FetchEarlyAdopterFeatureFunc(ctx, orgID, featureKey)
 	}
-	return nil, errors.New("early adopter feature not found")
+	return nil, ErrEarlyAdopterFeatureNotFound
 }
 
 // NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled returns a mock fetcher that returns mTLS as enabled
@@ -69,7 +70,7 @@ func NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled() *MockEarlyAdopterFeature
 					Enabled: true,
 				}, nil
 			}
-			return nil, errors.New("early adopter feature not found")
+			return nil, ErrEarlyAdopterFeatureNotFound
 		},
 	}
 }
@@ -83,7 +84,7 @@ func NewMockEarlyAdopterFeatureFetcherWithMTLSDisabled() *MockEarlyAdopterFeatur
 					Enabled: false,
 				}, nil
 			}
-			return nil, errors.New("early adopter feature not found")
+			return nil, ErrEarlyAdopterFeatureNotFound
 		},
 	}
 }
