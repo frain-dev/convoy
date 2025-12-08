@@ -94,23 +94,25 @@ export class PrivateComponent implements OnInit {
 			this.shouldShowOrgSubscription = undefined;
 		}
 
-		// Clear cache and localStorage immediately
-		this.privateService.clearCache();
-		localStorage.clear();
-
-		// Attempt logout API call but don't block on it
-		// Use Promise.race with timeout to prevent hanging
 		try {
 			await Promise.race([
 				this.privateService.logout(),
 				new Promise((_, reject) => setTimeout(() => reject(new Error('Logout timeout')), 5000))
 			]);
 		} catch (error) {
-			// Ignore errors - we've already cleared local data
-			console.log('Logout API call completed with error or timeout, continuing with navigation');
+			// Error handled silently - cleanup continues
 		}
 
-		// Navigate to login regardless of API call result
+		this.privateService.clearCache();
+
+		localStorage.removeItem('CONVOY_AUTH');
+		localStorage.removeItem('CONVOY_AUTH_TOKENS');
+		localStorage.removeItem('CONVOY_LAST_USER_ID');
+		localStorage.removeItem('CONVOY_PORTAL_LINK_AUTH_TOKEN');
+		localStorage.removeItem('GOOGLE_OAUTH_ID_TOKEN');
+		localStorage.removeItem('GOOGLE_OAUTH_USER_INFO');
+		localStorage.removeItem('AUTH_TYPE');
+
 		this.router.navigateByUrl('/login');
 	}
 
@@ -156,7 +158,7 @@ export class PrivateComponent implements OnInit {
 		this.isLoadingOrganisations = true;
 		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
-		
+
 		// Save to per-user storage
 		const userId = this.authDetails()?.uid;
 		if (userId) {
@@ -164,9 +166,8 @@ export class PrivateComponent implements OnInit {
 		} else {
 			localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
 		}
-		
+
 		await this.privateService.getProjects({ refresh: true });
-		// Re-check instance admin access after organization is selected
 		await this.checkInstanceAdminAccess();
 		this.showOrgDropdown = false;
 
@@ -189,7 +190,6 @@ export class PrivateComponent implements OnInit {
 		if (this.organisations.find(org => org.uid === organisationDetails.uid)) {
 			this.privateService.organisationDetails = organisationDetails;
 			this.userOrganization = organisationDetails;
-			// Check instance admin access after organization is set
 			await this.checkInstanceAdminAccess();
 		} else {
 			await this.updateOrganisationDetails();
@@ -201,7 +201,7 @@ export class PrivateComponent implements OnInit {
 
 		this.privateService.organisationDetails = this.organisations[0];
 		this.userOrganization = this.organisations[0];
-		
+
 		// Save to per-user storage
 		const userId = this.authDetails()?.uid;
 		if (userId) {
@@ -209,8 +209,7 @@ export class PrivateComponent implements OnInit {
 		} else {
 			localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
 		}
-		
-		// Check instance admin access after organization is set
+
 		await this.checkInstanceAdminAccess();
 	}
 
@@ -292,9 +291,7 @@ export class PrivateComponent implements OnInit {
 		try {
 			const userRole = await this.rbacService.getUserRole();
 			this.isInstanceAdmin = userRole === 'INSTANCE_ADMIN';
-			console.log('Instance admin check:', { userRole, isInstanceAdmin: this.isInstanceAdmin });
 		} catch (error) {
-			console.error('Error checking instance admin access:', error);
 			this.isInstanceAdmin = false;
 		}
 	}

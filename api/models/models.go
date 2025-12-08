@@ -266,9 +266,8 @@ type UpdateOrganisationOverride struct {
 }
 
 type UpdateFeatureFlagRequest struct {
-	FeatureKey    string `json:"feature_key" valid:"required"`
-	Enabled       *bool  `json:"enabled,omitempty"`
-	AllowOverride *bool  `json:"allow_override,omitempty"`
+	FeatureKey string `json:"feature_key" valid:"required"`
+	Enabled    *bool  `json:"enabled,omitempty"`
 }
 
 type EarlyAdopterFeature struct {

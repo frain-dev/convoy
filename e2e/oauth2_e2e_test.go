@@ -436,20 +436,12 @@ func generateTestJWK(t *testing.T) *datastore.OAuth2SigningKey {
 func enableOAuth2FeatureFlag(t *testing.T, db database.Database, orgID string) error {
 	t.Helper()
 
-	// Fetch feature flag
-	featureFlag, err := postgres.FetchFeatureFlagByKey(context.Background(), db, string(fflag.OAuthTokenExchange))
-	if err != nil {
-		return fmt.Errorf("failed to fetch feature flag: %w", err)
+	feature := &datastore.EarlyAdopterFeature{
+		OrganisationID: orgID,
+		FeatureKey:     string(fflag.OAuthTokenExchange),
+		Enabled:        true,
+		EnabledAt:      null.TimeFrom(time.Now()),
 	}
 
-	// Create or update override
-	override := &datastore.FeatureFlagOverride{
-		FeatureFlagID: featureFlag.UID,
-		OwnerType:     "organisation",
-		OwnerID:       orgID,
-		Enabled:       true,
-		EnabledAt:     null.TimeFrom(time.Now()),
-	}
-
-	return postgres.UpsertFeatureFlagOverride(context.Background(), db, override)
+	return postgres.UpsertEarlyAdopterFeature(context.Background(), db, feature)
 }

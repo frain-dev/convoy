@@ -6,7 +6,6 @@ interface FeatureFlag {
 	uid: string;
 	feature_key: string;
 	enabled: boolean;
-	allow_override: boolean;
 	created_at?: string;
 	updated_at?: string;
 }
@@ -100,38 +99,4 @@ export class FeatureFlagsComponent implements OnInit {
 		}
 	}
 
-	async toggleAllowOverride(featureFlag: FeatureFlag, event: Event) {
-		const input = event?.target as HTMLInputElement | null;
-		if (!input) {
-			console.error('Toggle event missing target', event);
-			return;
-		}
-
-		const allowOverride = input.checked;
-		const previousValue = featureFlag.allow_override;
-
-		// Optimistically update UI
-		featureFlag.allow_override = allowOverride;
-
-		this.isUpdatingFeatureFlag = true;
-		try {
-			const response = await this.adminService.updateFeatureFlag(featureFlag.feature_key, undefined, allowOverride);
-			// Update with server response to ensure consistency
-			if (response.data) {
-				const index = this.featureFlags.findIndex(f => f.feature_key === featureFlag.feature_key);
-				if (index !== -1) {
-					this.featureFlags[index] = { ...this.featureFlags[index], ...response.data };
-				}
-			}
-			this.generalService.showNotification({ style: 'success', message: 'Feature flag updated successfully' });
-		} catch (error) {
-			console.error('Error updating feature flag:', error);
-			// Revert on error
-			featureFlag.allow_override = previousValue;
-			input.checked = previousValue;
-			this.generalService.showNotification({ style: 'error', message: 'Failed to update feature flag' });
-		} finally {
-			this.isUpdatingFeatureFlag = false;
-		}
-	}
 }

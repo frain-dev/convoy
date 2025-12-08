@@ -1527,12 +1527,11 @@ func (o OAuth2) Value() (driver.Value, error) {
 }
 
 type FeatureFlag struct {
-	UID           string    `json:"uid" db:"id"`
-	FeatureKey    string    `json:"feature_key" db:"feature_key"`
-	Enabled       bool      `json:"enabled" db:"enabled"`
-	AllowOverride bool      `json:"allow_override" db:"allow_override"`
-	CreatedAt     time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
-	UpdatedAt     time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+	UID        string    `json:"uid" db:"id"`
+	FeatureKey string    `json:"feature_key" db:"feature_key"`
+	Enabled    bool      `json:"enabled" db:"enabled"`
+	CreatedAt  time.Time `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt  time.Time `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 }
 
 type FeatureFlagOverride struct {
@@ -1545,6 +1544,17 @@ type FeatureFlagOverride struct {
 	EnabledBy     null.String `json:"enabled_by,omitempty" db:"enabled_by"`
 	CreatedAt     time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
 	UpdatedAt     time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
+}
+
+type EarlyAdopterFeature struct {
+	UID            string      `json:"uid" db:"id"`
+	OrganisationID string      `json:"organisation_id" db:"organisation_id"`
+	FeatureKey     string      `json:"feature_key" db:"feature_key"`
+	Enabled        bool        `json:"enabled" db:"enabled"`
+	EnabledBy      null.String `json:"enabled_by,omitempty" db:"enabled_by"`
+	EnabledAt      null.Time   `json:"enabled_at,omitempty" db:"enabled_at" swaggertype:"string"`
+	CreatedAt      time.Time   `json:"created_at,omitempty" db:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt      time.Time   `json:"updated_at,omitempty" db:"updated_at,omitempty" swaggertype:"string"`
 }
 
 type Organisation struct {

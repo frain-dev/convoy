@@ -90,12 +90,11 @@ export class AdminService {
 		});
 	}
 
-	updateFeatureFlag(featureKey: string, enabled?: boolean, allowOverride?: boolean): Promise<HTTP_RESPONSE> {
+	updateFeatureFlag(featureKey: string, enabled?: boolean): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
 				const body: any = { feature_key: featureKey };
 				if (enabled !== undefined) body.enabled = enabled;
-				if (allowOverride !== undefined) body.allow_override = allowOverride;
 
 				const response = await this.http.request({
 					url: `/admin/feature-flags/${featureKey}`,

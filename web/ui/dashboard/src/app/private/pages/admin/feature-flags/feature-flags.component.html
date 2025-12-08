@@ -33,17 +33,5 @@
 				(onChange)="toggleFeatureFlag(flag, $event)"
 			></convoy-toggle>
 		</div>
-		<div class="flex items-center justify-between mt-12px">
-			<div class="flex-1">
-				<label convoy-label class="text-12">Allow Override</label>
-				<p class="text-11 text-neutral-11 mt-4px">Allow organisations to override this flag</p>
-			</div>
-			<convoy-toggle
-				[isChecked]="flag.allow_override"
-				[name]="'feature-flag-allow-override-' + flag.feature_key"
-				[className]="isUpdatingFeatureFlag ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
-				(onChange)="toggleAllowOverride(flag, $event)"
-			></convoy-toggle>
-		</div>
 	</div>
 </div>

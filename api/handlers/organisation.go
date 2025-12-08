@@ -208,15 +208,15 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	features := fflag.GetEarlyAdopterFeatures()
 	responseFeatures := make([]models.EarlyAdopterFeature, 0, len(features))
 
-	overrides, err := postgres.LoadFeatureFlagOverridesByOwner(r.Context(), h.A.DB, "organisation", org.UID)
+	earlyAdopterFeatures, err := postgres.LoadEarlyAdopterFeaturesByOrg(r.Context(), h.A.DB, org.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
-	overrideMap := make(map[string]*datastore.FeatureFlagOverride)
-	for i := range overrides {
-		overrideMap[overrides[i].FeatureFlagID] = &overrides[i]
+	featureMap := make(map[string]*datastore.EarlyAdopterFeature)
+	for i := range earlyAdopterFeatures {
+		featureMap[earlyAdopterFeatures[i].FeatureKey] = &earlyAdopterFeatures[i]
 	}
 
 	featureNames := map[fflag.FeatureFlagKey]string{
@@ -230,15 +230,9 @@ func (h *Handler) GetEarlyAdopterFeatures(w http.ResponseWriter, r *http.Request
 	}
 
 	for _, featureKey := range features {
-		featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, string(featureKey))
-		if err != nil {
-			log.FromContext(r.Context()).Warnf("Feature flag not found in database: %s, error: %v", string(featureKey), err)
-			continue
-		}
-
-		enabled := featureFlag.Enabled
-		if override, ok := overrideMap[featureFlag.UID]; ok {
-			enabled = override.Enabled
+		enabled := false
+		if feature, ok := featureMap[string(featureKey)]; ok {
+			enabled = feature.Enabled
 		}
 
 		responseFeatures = append(responseFeatures, models.EarlyAdopterFeature{
@@ -265,25 +259,11 @@ func (h *Handler) GetOrganisationFeatureFlags(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Get all system feature flags
-	allFeatureFlags := []fflag.FeatureFlagKey{
-		fflag.IpRules,
-		fflag.Prometheus,
-		fflag.CircuitBreaker,
-		fflag.FullTextSearch,
-		fflag.RetentionPolicy,
-		fflag.ReadReplicas,
-		fflag.CredentialEncryption,
-		fflag.MTLS,
-		fflag.OAuthTokenExchange,
-	}
-
-	// Build response map using CanAccessOrgFeature for consistency
 	featureFlags := make(map[string]bool)
 
-	for _, featureKey := range allFeatureFlags {
+	for featureKey := range fflag.DefaultFeaturesState {
 		enabled := h.A.FFlag.CanAccessOrgFeature(
-			r.Context(), featureKey, h.A.FeatureFlagFetcher, org.UID)
+			r.Context(), featureKey, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, org.UID)
 		featureFlags[string(featureKey)] = enabled
 	}
 
@@ -298,41 +278,24 @@ func (h *Handler) updateFeatureFlag(w http.ResponseWriter, r *http.Request, feat
 		return ErrNotEarlyAdopterFeature
 	}
 
-	featureFlag, err := postgres.FetchFeatureFlagByKey(r.Context(), h.A.DB, featureKey)
-	if err != nil {
-		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
-			_ = render.Render(w, r, util.NewErrorResponse("Feature flag not found: "+featureKey, http.StatusBadRequest))
-			return err
-		}
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
-		return err
-	}
-
-	if !featureFlag.AllowOverride {
-		_ = render.Render(w, r, util.NewErrorResponse(
-			"Feature flag "+featureKey+" does not allow overrides", http.StatusBadRequest))
-		return ErrOverrideNotAllowed
-	}
-
 	if !h.isEarlyAdopterFeatureLicensed(flagKey) {
 		_ = render.Render(w, r, util.NewErrorResponse(
 			"Feature flag "+featureKey+" is not available in your license plan", http.StatusForbidden))
 		return ErrNotLicensed
 	}
 
-	override := &datastore.FeatureFlagOverride{
-		FeatureFlagID: featureFlag.UID,
-		OwnerType:     "organisation",
-		OwnerID:       org.UID,
-		Enabled:       enabled,
-		EnabledBy:     null.StringFrom(user.UID),
+	feature := &datastore.EarlyAdopterFeature{
+		OrganisationID: org.UID,
+		FeatureKey:     featureKey,
+		Enabled:        enabled,
+		EnabledBy:      null.StringFrom(user.UID),
 	}
 
 	if enabled {
-		override.EnabledAt = null.TimeFrom(time.Now())
+		feature.EnabledAt = null.TimeFrom(time.Now())
 	}
 
-	err = postgres.UpsertFeatureFlagOverride(r.Context(), h.A.DB, override)
+	err := postgres.UpsertEarlyAdopterFeature(r.Context(), h.A.DB, feature)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return err
@@ -499,9 +462,9 @@ func (h *Handler) UpdateOrganisationOverride(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if !featureFlag.AllowOverride {
+	if overrideRequest.FeatureKey != "circuit-breaker" {
 		_ = render.Render(w, r, util.NewErrorResponse(
-			"Feature flag "+overrideRequest.FeatureKey+" does not allow overrides", http.StatusBadRequest))
+			"Feature flag "+overrideRequest.FeatureKey+" does not support org overrides. Use the early adopter features API for user-controlled features.", http.StatusBadRequest))
 		return
 	}
 
@@ -605,16 +568,6 @@ func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Update allow_override state if provided
-	if updateRequest.AllowOverride != nil {
-		err = postgres.UpdateFeatureFlagAllowOverride(r.Context(), h.A.DB, featureFlag.UID, *updateRequest.AllowOverride)
-		if err != nil {
-			_ = render.Render(w, r, util.NewServiceErrResponse(err))
-			return
-		}
-	}
-
-	// Fetch updated feature flag
 	updatedFlag, err := postgres.FetchFeatureFlagByID(r.Context(), h.A.DB, featureFlag.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

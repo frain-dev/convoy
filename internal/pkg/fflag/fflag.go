@@ -115,12 +115,22 @@ func (c *FFlag) CanAccessFeature(key FeatureFlagKey) bool {
 	return bool(state)
 }
 
-// CanAccessOrgFeature checks if an org-level feature flag is enabled for an organization
-func (c *FFlag) CanAccessOrgFeature(ctx context.Context, key FeatureFlagKey, fetcher FeatureFlagFetcher, orgID string) bool {
-	if key == Prometheus || key == ReadReplicas {
+func (c *FFlag) CanAccessOrgFeature(ctx context.Context, key FeatureFlagKey, fetcher FeatureFlagFetcher, earlyAdopterFetcher EarlyAdopterFeatureFetcher, orgID string) bool {
+	if key == Prometheus || key == ReadReplicas || key == IpRules || key == RetentionPolicy || key == FullTextSearch {
 		return c.CanAccessFeature(key)
 	}
 
+	if IsEarlyAdopterFeature(key) {
+		if earlyAdopterFetcher == nil {
+			return c.CanAccessFeature(key)
+		}
+
+		feature, err := earlyAdopterFetcher.FetchEarlyAdopterFeature(ctx, orgID, string(key))
+		if err != nil {
+			return false
+		}
+		return feature.Enabled
+	}
 	if fetcher == nil {
 		return c.CanAccessFeature(key)
 	}
@@ -130,10 +140,8 @@ func (c *FFlag) CanAccessOrgFeature(ctx context.Context, key FeatureFlagKey, fet
 		return c.CanAccessFeature(key)
 	}
 
-	var overrideInfo *FeatureFlagOverrideInfo
-	if flagInfo.AllowOverride {
-		overrideInfo, _ = fetcher.FetchFeatureFlagOverride(ctx, "organisation", orgID, flagInfo.UID)
-	}
+	// Check for org override
+	overrideInfo, _ := fetcher.FetchFeatureFlagOverride(ctx, "organisation", orgID, flagInfo.UID)
 
 	data := &FeatureFlagData{
 		FeatureFlag: flagInfo,
@@ -151,9 +159,8 @@ type FeatureFlagData struct {
 
 // FeatureFlagInfo contains feature flag information from the database
 type FeatureFlagInfo struct {
-	UID           string
-	Enabled       bool
-	AllowOverride bool
+	UID     string
+	Enabled bool
 }
 
 // FeatureFlagOverrideInfo contains override information from the database
@@ -161,32 +168,29 @@ type FeatureFlagOverrideInfo struct {
 	Enabled bool
 }
 
-// FeatureFlagFetcher is an interface for fetching feature flags from the database
+// FeatureFlagFetcher is an interface for fetching system-controlled org feature flags from the database
 type FeatureFlagFetcher interface {
 	FetchFeatureFlag(ctx context.Context, key string) (*FeatureFlagInfo, error)
 	FetchFeatureFlagOverride(ctx context.Context, ownerType, ownerID, featureFlagID string) (*FeatureFlagOverrideInfo, error)
 }
 
-// CanAccessFeatureWithOrg checks if a feature is enabled for an organization
-func CanAccessFeatureWithOrg(systemFFlag *FFlag, key FeatureFlagKey, data *FeatureFlagData) bool {
-	if key == Prometheus || key == ReadReplicas {
-		state, ok := systemFFlag.Features[key]
-		if !ok {
-			return false
-		}
-		return bool(state)
-	}
+// EarlyAdopterFeatureInfo contains early adopter feature information from the database
+type EarlyAdopterFeatureInfo struct {
+	Enabled bool
+}
 
+// EarlyAdopterFeatureFetcher is an interface for fetching early adopter features from the database
+type EarlyAdopterFeatureFetcher interface {
+	FetchEarlyAdopterFeature(ctx context.Context, orgID, featureKey string) (*EarlyAdopterFeatureInfo, error)
+}
+
+func CanAccessFeatureWithOrg(systemFFlag *FFlag, key FeatureFlagKey, data *FeatureFlagData) bool {
 	if data == nil || data.FeatureFlag == nil {
 		state, ok := systemFFlag.Features[key]
 		if !ok {
 			return false
 		}
 		return bool(state)
-	}
-
-	if !data.FeatureFlag.AllowOverride {
-		return data.FeatureFlag.Enabled
 	}
 
 	if data.Override != nil {

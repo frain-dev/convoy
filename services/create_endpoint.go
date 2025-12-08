@@ -64,16 +64,17 @@ func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL,
 }
 
 type CreateEndpointService struct {
-	PortalLinkRepo     datastore.PortalLinkRepository
-	EndpointRepo       datastore.EndpointRepository
-	ProjectRepo        datastore.ProjectRepository
-	Licenser           license.Licenser
-	FeatureFlag        *fflag.FFlag
-	FeatureFlagFetcher fflag.FeatureFlagFetcher
-	DB                 database.Database
-	Logger             log.StdLogger
-	E                  models.CreateEndpoint
-	ProjectID          string
+	PortalLinkRepo             datastore.PortalLinkRepository
+	EndpointRepo               datastore.EndpointRepository
+	ProjectRepo                datastore.ProjectRepository
+	Licenser                   license.Licenser
+	FeatureFlag                *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	DB                         database.Database
+	Logger                     log.StdLogger
+	E                          models.CreateEndpoint
+	ProjectID                  string
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -186,7 +187,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 
 		// Validate both fields provided together
-		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, project.OrganisationID)
+		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !mtlsEnabled {
 			log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
 		} else {

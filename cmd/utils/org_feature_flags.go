@@ -15,6 +15,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
+	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
@@ -106,7 +107,6 @@ func processFeatureFlags(ctx context.Context, db database.Database, orgID string
 }
 
 func updateOrgFeatureFlag(ctx context.Context, db database.Database, orgID, flagKey string, enabled bool) error {
-	// Fetch feature flag from database
 	featureFlag, err := postgres.FetchFeatureFlagByKey(ctx, db, flagKey)
 	if err != nil {
 		if errors.Is(err, postgres.ErrFeatureFlagNotFound) {
@@ -115,12 +115,19 @@ func updateOrgFeatureFlag(ctx context.Context, db database.Database, orgID, flag
 		return err
 	}
 
-	// Check if allow_override is true
-	if !featureFlag.AllowOverride {
-		return fmt.Errorf("%w: %s (allow_override=false)", ErrOverrideNotAllowed, flagKey)
+	flagKeyEnum := fflag.FeatureFlagKey(flagKey)
+	if fflag.IsEarlyAdopterFeature(flagKeyEnum) {
+		feature := &datastore.EarlyAdopterFeature{
+			OrganisationID: orgID,
+			FeatureKey:     flagKey,
+			Enabled:        enabled,
+		}
+		if enabled {
+			feature.EnabledAt = null.TimeFrom(time.Now())
+		}
+		return postgres.UpsertEarlyAdopterFeature(ctx, db, feature)
 	}
 
-	// Create or update override
 	override := &datastore.FeatureFlagOverride{
 		FeatureFlagID: featureFlag.UID,
 		OwnerType:     "organisation",

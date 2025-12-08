@@ -34,17 +34,11 @@ func (m *MockFeatureFlagFetcher) FetchFeatureFlagOverride(ctx context.Context, o
 	return nil, ErrOverrideNotFound
 }
 
-// NewMockFeatureFlagFetcherWithMTLSEnabled returns a mock fetcher that returns mTLS as enabled
-func NewMockFeatureFlagFetcherWithMTLSEnabled() *MockFeatureFlagFetcher {
+// NewMockFeatureFlagFetcher returns a simple mock fetcher that returns "not found" for everything
+// This makes the code fall back to system config, which is fine for most tests
+func NewMockFeatureFlagFetcher() *MockFeatureFlagFetcher {
 	return &MockFeatureFlagFetcher{
 		FetchFeatureFlagFunc: func(ctx context.Context, key string) (*fflag.FeatureFlagInfo, error) {
-			if key == "mtls" {
-				return &fflag.FeatureFlagInfo{
-					UID:           "test-uid",
-					Enabled:       true,
-					AllowOverride: true,
-				}, nil
-			}
 			return nil, ErrFeatureFlagNotFound
 		},
 		FetchFeatureFlagOverrideFunc: func(ctx context.Context, ownerType, ownerID, featureFlagID string) (*fflag.FeatureFlagOverrideInfo, error) {
@@ -53,21 +47,43 @@ func NewMockFeatureFlagFetcherWithMTLSEnabled() *MockFeatureFlagFetcher {
 	}
 }
 
-// NewMockFeatureFlagFetcherWithMTLSDisabled returns a mock fetcher that returns mTLS as disabled
-func NewMockFeatureFlagFetcherWithMTLSDisabled() *MockFeatureFlagFetcher {
-	return &MockFeatureFlagFetcher{
-		FetchFeatureFlagFunc: func(ctx context.Context, key string) (*fflag.FeatureFlagInfo, error) {
-			if key == "mtls" {
-				return &fflag.FeatureFlagInfo{
-					UID:           "test-uid",
-					Enabled:       false,
-					AllowOverride: true,
+// MockEarlyAdopterFeatureFetcher is a mock implementation of fflag.EarlyAdopterFeatureFetcher
+type MockEarlyAdopterFeatureFetcher struct {
+	FetchEarlyAdopterFeatureFunc func(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error)
+}
+
+// FetchEarlyAdopterFeature calls the mock function if set, otherwise returns an error
+func (m *MockEarlyAdopterFeatureFetcher) FetchEarlyAdopterFeature(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
+	if m.FetchEarlyAdopterFeatureFunc != nil {
+		return m.FetchEarlyAdopterFeatureFunc(ctx, orgID, featureKey)
+	}
+	return nil, errors.New("early adopter feature not found")
+}
+
+// NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled returns a mock fetcher that returns mTLS as enabled
+func NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled() *MockEarlyAdopterFeatureFetcher {
+	return &MockEarlyAdopterFeatureFetcher{
+		FetchEarlyAdopterFeatureFunc: func(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
+			if featureKey == "mtls" {
+				return &fflag.EarlyAdopterFeatureInfo{
+					Enabled: true,
 				}, nil
 			}
-			return nil, ErrFeatureFlagNotFound
+			return nil, errors.New("early adopter feature not found")
 		},
-		FetchFeatureFlagOverrideFunc: func(ctx context.Context, ownerType, ownerID, featureFlagID string) (*fflag.FeatureFlagOverrideInfo, error) {
-			return nil, ErrOverrideNotFound
+	}
+}
+
+// NewMockEarlyAdopterFeatureFetcherWithMTLSDisabled returns a mock fetcher that returns mTLS as disabled
+func NewMockEarlyAdopterFeatureFetcherWithMTLSDisabled() *MockEarlyAdopterFeatureFetcher {
+	return &MockEarlyAdopterFeatureFetcher{
+		FetchEarlyAdopterFeatureFunc: func(ctx context.Context, orgID, featureKey string) (*fflag.EarlyAdopterFeatureInfo, error) {
+			if featureKey == "mtls" {
+				return &fflag.EarlyAdopterFeatureInfo{
+					Enabled: false,
+				}, nil
+			}
+			return nil, errors.New("early adopter feature not found")
 		},
 	}
 }
