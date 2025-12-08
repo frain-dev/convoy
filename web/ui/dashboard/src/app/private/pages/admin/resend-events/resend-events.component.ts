@@ -70,7 +70,7 @@ export class ResendEventsComponent implements OnInit {
 		}
 		// Go duration format: optional number (can be decimal), followed by unit (h, m, s, ms, us, µs, ns)
 		// Can have multiple units like "2h30m" or "1h2m3s"
-		const timePattern = /^(\d+\.?\d*[hmsµ]?s?|\d+[hmsµ]?s?)+$/;
+		const timePattern = /^(\d+(\.\d+)?(h|m|s|ms|us|µs|ns))+$/;
 		if (!timePattern.test(control.value.trim())) {
 			return { invalidFormat: true };
 		}
