@@ -31,12 +31,12 @@ CREATE INDEX IF NOT EXISTS idx_feature_flag_overrides_feature_flag ON convoy.fea
 
 -- Insert initial org-level feature flags
 INSERT INTO convoy.feature_flags (id, feature_key, enabled, allow_override) VALUES
-    (generate_ulid(), 'circuit-breaker', false, false),     -- System-controlled, binding (no overrides)
-    (generate_ulid(), 'mtls', false, true),                -- User-controlled, can toggle per org
-    (generate_ulid(), 'oauth-token-exchange', false, true), -- User-controlled, can toggle per org
-    (generate_ulid(), 'ip-rules', false, true),            -- System-controlled, can exclude orgs
-    (generate_ulid(), 'retention-policy', false, true),     -- System-controlled, can exclude orgs
-    (generate_ulid(), 'full-text-search', false, true)       -- System-controlled, can exclude orgs
+    (convoy.generate_ulid(), 'circuit-breaker', false, false),     -- System-controlled, binding (no overrides)
+    (convoy.generate_ulid(), 'mtls', false, true),                -- User-controlled, can toggle per org
+    (convoy.generate_ulid(), 'oauth-token-exchange', false, true), -- User-controlled, can toggle per org
+    (convoy.generate_ulid(), 'ip-rules', false, true),            -- System-controlled, can exclude orgs
+    (convoy.generate_ulid(), 'retention-policy', false, true),     -- System-controlled, can exclude orgs
+    (convoy.generate_ulid(), 'full-text-search', false, true)       -- System-controlled, can exclude orgs
 ON CONFLICT (feature_key) DO NOTHING;
 
 -- +migrate Down

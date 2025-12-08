@@ -18,7 +18,7 @@ CREATE INDEX IF NOT EXISTS idx_early_adopter_features_key ON convoy.early_adopte
 
 INSERT INTO convoy.early_adopter_features (id, organisation_id, feature_key, enabled, enabled_by, enabled_at, created_at, updated_at)
 SELECT 
-    generate_ulid(),
+    convoy.generate_ulid(),
     ffo.owner_id,
     ff.feature_key,
     ffo.enabled,
@@ -52,16 +52,16 @@ ALTER TABLE convoy.feature_flags DROP COLUMN IF EXISTS allow_override;
 ALTER TABLE convoy.feature_flags ADD COLUMN IF NOT EXISTS allow_override BOOLEAN NOT NULL DEFAULT false;
 
 INSERT INTO convoy.feature_flags (id, feature_key, enabled, allow_override) VALUES
-    (generate_ulid(), 'mtls', false, true),
-    (generate_ulid(), 'oauth-token-exchange', false, true),
-    (generate_ulid(), 'ip-rules', false, true),
-    (generate_ulid(), 'retention-policy', false, true),
-    (generate_ulid(), 'full-text-search', false, true)
+    (convoy.generate_ulid(), 'mtls', false, true),
+    (convoy.generate_ulid(), 'oauth-token-exchange', false, true),
+    (convoy.generate_ulid(), 'ip-rules', false, true),
+    (convoy.generate_ulid(), 'retention-policy', false, true),
+    (convoy.generate_ulid(), 'full-text-search', false, true)
 ON CONFLICT (feature_key) DO NOTHING;
 
 INSERT INTO convoy.feature_flag_overrides (id, feature_flag_id, owner_type, owner_id, enabled, enabled_at, enabled_by, created_at, updated_at)
 SELECT 
-    generate_ulid(),
+    convoy.generate_ulid(),
     ff.id,
     'organisation',
     eaf.organisation_id,
