@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
@@ -70,14 +71,8 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		ctx = migrations.SetUpdateEndpointOwnerID(ctx, true, newPortalLink.Endpoints)
 	}
 
-	cp := services.CreatePortalLinkService{
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
-		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
-		Portal:         &newPortalLink,
-		Project:        project,
-	}
-
-	portalLink, err := cp.Run(ctx)
+	cp := portal_links.New(h.A.Logger, h.A.DB.GetConn())
+	portalLink, err := cp.CreatePortalLink(ctx, project.UID, &newPortalLink)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return

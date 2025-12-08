@@ -16,6 +16,7 @@ postgres = "15.1"
 "go:github.com/ogen-go/ogen/cmd/ogen" = "v1.16.0"
 "go:github.com/swaggo/swag/cmd/swag" = "latest"
 "go:go.uber.org/mock/mockgen" = "latest"
+"go:github.com/sqlc-dev/sqlc/cmd/sqlc" = "latest"
 
 # ℹ️ The settings below are sensible defaults for local development. When
 # deploying to production, you will want to configure these more carefully.

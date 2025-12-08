@@ -9,6 +9,8 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type PagedResponse struct {
@@ -194,6 +196,15 @@ type CreatePortalLinkRequest struct {
 }
 
 func (p *CreatePortalLinkRequest) Validate() error {
+	err := validation.ValidateStruct(p,
+		validation.Field(&p.Name, validation.Required),
+		validation.Field(&p.OwnerID, validation.Required),
+	)
+
+	if err != nil {
+		return err
+	}
+
 	validAuthTypes := []datastore.PortalAuthType{
 		datastore.PortalAuthTypeRefreshToken,
 		datastore.PortalAuthTypeStaticToken,
