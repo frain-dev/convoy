@@ -265,9 +265,26 @@ type UpdateOrganisationOverride struct {
 	Enabled    bool   `json:"enabled"`
 }
 
+type UpdateOrganisationCircuitBreakerConfig struct {
+	SampleRate                  uint64 `json:"sample_rate" valid:"required,min(1)"`
+	ErrorTimeout                uint64 `json:"error_timeout" valid:"required,min(1)"`
+	FailureThreshold            uint64 `json:"failure_threshold" valid:"required,range(0|100)"`
+	SuccessThreshold            uint64 `json:"success_threshold" valid:"required,range(0|100)"`
+	ObservabilityWindow         uint64 `json:"observability_window" valid:"required,min(1)"`
+	MinimumRequestCount         uint64 `json:"minimum_request_count" valid:"required,min(0)"`
+	ConsecutiveFailureThreshold uint64 `json:"consecutive_failure_threshold" valid:"required,min(0)"`
+}
+
 type UpdateFeatureFlagRequest struct {
 	FeatureKey string `json:"feature_key" valid:"required"`
 	Enabled    *bool  `json:"enabled,omitempty"`
+}
+
+type RetryEventDeliveriesRequest struct {
+	Status    string `json:"status" valid:"required"`
+	Time      string `json:"time" valid:"required"`
+	EventID   string `json:"event_id,omitempty"`
+	ProjectID string `json:"project_id,omitempty"`
 }
 
 type EarlyAdopterFeature struct {

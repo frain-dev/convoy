@@ -211,7 +211,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 		}
 
 		// Check feature flag for OAuth2 using project's organisation ID
-		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.Project.OrganisationID)
+		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, a.Project.OrganisationID)
 		if !oauth2Enabled {
 			log.FromContext(ctx).Warn("OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
 			// Remove OAuth2 authentication if feature flag is disabled

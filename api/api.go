@@ -477,6 +477,12 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Get("/organisations/{orgID}/overrides", handler.GetOrganisationOverrides)
 			adminRouter.Put("/organisations/{orgID}/overrides", handler.UpdateOrganisationOverride)
 			adminRouter.Delete("/organisations/{orgID}/overrides/{featureKey}", handler.DeleteOrganisationOverride)
+			adminRouter.Get("/organisations/{orgID}/circuit-breaker-config", handler.GetOrganisationCircuitBreakerConfig)
+			adminRouter.Put("/organisations/{orgID}/circuit-breaker-config", handler.UpdateOrganisationCircuitBreakerConfig)
+			adminRouter.Get("/organisations/{orgID}/projects", handler.GetProjects)
+			adminRouter.Get("/projects/{projectID}/circuit-breaker-config", handler.GetProjectCircuitBreakerConfig)
+			adminRouter.Put("/projects/{projectID}/circuit-breaker-config", handler.UpdateProjectCircuitBreakerConfig)
+			adminRouter.Post("/retry-event-deliveries", handler.RetryEventDeliveries)
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {

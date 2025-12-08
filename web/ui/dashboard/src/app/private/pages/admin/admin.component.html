@@ -32,8 +32,12 @@
 				<app-feature-flags></app-feature-flags>
 			</ng-container>
 
-			<ng-container *ngIf="activePage === 'organisation overrides'">
-				<app-organisation-overrides></app-organisation-overrides>
+			<ng-container *ngIf="activePage === 'circuit breaker config'">
+				<app-circuit-breaker-config></app-circuit-breaker-config>
+			</ng-container>
+
+			<ng-container *ngIf="activePage === 'resend events'">
+				<app-resend-events></app-resend-events>
 			</ng-container>
 		</div>
 	</div>

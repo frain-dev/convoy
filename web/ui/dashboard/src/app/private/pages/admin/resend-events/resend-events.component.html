@@ -1,0 +1,88 @@
+<div class="flex justify-between items-center mb-28px">
+	<div>
+		<h3 class="font-semibold">Resend Events</h3>
+		<p class="text-12 text-neutral-10">Retry event deliveries with a particular status within a specified time frame across all projects. This will requeue matching event deliveries for processing.</p>
+	</div>
+</div>
+
+<!-- Resend Events Form -->
+<div class="mb-24px">
+	<div convoy-card class="p-24px">
+
+		<form [formGroup]="resendForm" (ngSubmit)="retryEventDeliveries()">
+			<div class="grid grid-cols-2 gap-24px">
+				<convoy-input-field>
+					<label for="status" convoy-label>Status</label>
+					<convoy-select
+						[options]="statusOptions"
+						name="status"
+						formControlName="status"
+						placeholder="Select status"
+						[searchable]="false"
+					></convoy-select>
+					<small class="text-10 text-neutral-9">Status of event deliveries to requeue</small>
+					<convoy-input-error *ngIf="resendForm.get('status')?.touched && resendForm.get('status')?.invalid">
+						Status is required
+					</convoy-input-error>
+				</convoy-input-field>
+
+				<convoy-input-field>
+					<label for="time" convoy-label>Time Interval</label>
+					<convoy-select
+						[options]="timePresets"
+						name="time"
+						formControlName="time"
+						placeholder="Select time interval"
+						[searchable]="false"
+					></convoy-select>
+					<small class="text-10 text-neutral-9">Lookback duration for event deliveries</small>
+					<convoy-input-error *ngIf="resendForm.get('time')?.touched && resendForm.get('time')?.invalid">
+						Time interval is required
+					</convoy-input-error>
+					
+					<!-- Custom time input (shown when "Custom" is selected) -->
+					<div *ngIf="resendForm.get('time')?.value === 'custom'" class="mt-12px">
+						<input 
+							type="text" 
+							id="customTime" 
+							convoy-input 
+							formControlName="customTime" 
+							placeholder="e.g., 30m, 1h, 2h30m"
+						/>
+						<small class="text-10 text-neutral-9">Enter duration in Go format (e.g., 30m, 1h, 2h30m)</small>
+						<convoy-input-error *ngIf="resendForm.get('customTime')?.touched && resendForm.get('customTime')?.invalid">
+							<span *ngIf="resendForm.get('customTime')?.errors?.['required']">Custom time is required</span>
+							<span *ngIf="resendForm.get('customTime')?.errors?.['invalidFormat']">Invalid format. Use format like: 30m, 1h, 2h30m</span>
+						</convoy-input-error>
+					</div>
+				</convoy-input-field>
+
+				<convoy-input-field class="col-span-2">
+					<label for="event_id" convoy-label>Event ID (Optional)</label>
+					<input 
+						type="text" 
+						id="event_id" 
+						convoy-input 
+						formControlName="event_id" 
+						placeholder="Leave empty to retry all matching events"
+					/>
+					<small class="text-10 text-neutral-9">Optional: Specify an event ID to retry only deliveries for that event</small>
+				</convoy-input-field>
+			</div>
+
+			<div class="flex justify-end gap-12px mt-24px">
+				<button 
+					convoy-button 
+					type="submit" 
+					size="sm" 
+					color="primary"
+					fill="solid"
+					[disabled]="isSubmitting || !resendForm.valid"
+				>
+					<span *ngIf="!isSubmitting" class="text-white-100">Retry Event Deliveries</span>
+					<span *ngIf="isSubmitting" class="text-white-100">Retrying...</span>
+				</button>
+			</div>
+		</form>
+	</div>
+</div>

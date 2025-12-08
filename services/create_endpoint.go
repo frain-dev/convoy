@@ -169,7 +169,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 
 		// Check feature flag for OAuth2 using project's organisation ID
-		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, project.OrganisationID)
+		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !oauth2Enabled {
 			log.FromContext(ctx).Warn("OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
 			// Remove OAuth2 authentication if feature flag is disabled

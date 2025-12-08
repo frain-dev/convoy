@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"
+	"github.com/frain-dev/convoy/worker/task"
 )
 
 var (
@@ -528,6 +529,276 @@ func (h *Handler) DeleteOrganisationOverride(w http.ResponseWriter, r *http.Requ
 	_ = render.Render(w, r, util.NewServerResponse("Feature flag override deleted successfully", nil, http.StatusOK))
 }
 
+// GetOrganisationCircuitBreakerConfig returns the circuit breaker configuration for an organization (instance admin only)
+// It gets the config from the first project in the organization, or returns defaults if no projects exist
+func (h *Handler) GetOrganisationCircuitBreakerConfig(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	orgID := chi.URLParam(r, "orgID")
+	if orgID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projects, err := projectRepo.LoadProjects(r.Context(), &datastore.ProjectFilter{OrgID: orgID})
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if len(projects) == 0 {
+		defaults := datastore.DefaultCircuitBreakerConfiguration
+		response := map[string]interface{}{
+			"sample_rate":                   defaults.SampleRate,
+			"error_timeout":                 defaults.ErrorTimeout,
+			"failure_threshold":             defaults.FailureThreshold,
+			"success_threshold":             defaults.SuccessThreshold,
+			"observability_window":          defaults.ObservabilityWindow,
+			"minimum_request_count":         defaults.MinimumRequestCount,
+			"consecutive_failure_threshold": defaults.ConsecutiveFailureThreshold,
+		}
+		_ = render.Render(w, r, util.NewServerResponse("Circuit breaker configuration fetched successfully", response, http.StatusOK))
+		return
+	}
+
+	project := projects[0]
+	config := project.Config.GetCircuitBreakerConfig()
+
+	response := map[string]interface{}{
+		"sample_rate":                   config.SampleRate,
+		"error_timeout":                 config.ErrorTimeout,
+		"failure_threshold":             config.FailureThreshold,
+		"success_threshold":             config.SuccessThreshold,
+		"observability_window":          config.ObservabilityWindow,
+		"minimum_request_count":         config.MinimumRequestCount,
+		"consecutive_failure_threshold": config.ConsecutiveFailureThreshold,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Circuit breaker configuration fetched successfully", response, http.StatusOK))
+}
+
+// UpdateOrganisationCircuitBreakerConfig updates the circuit breaker configuration for all projects in an organization (instance admin only)
+func (h *Handler) UpdateOrganisationCircuitBreakerConfig(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	orgID := chi.URLParam(r, "orgID")
+	if orgID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("organisation ID is required", http.StatusBadRequest))
+		return
+	}
+
+	var configRequest models.UpdateOrganisationCircuitBreakerConfig
+	err := util.ReadJSON(r, &configRequest)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		return
+	}
+
+	// Validate thresholds
+	if configRequest.FailureThreshold > 100 {
+		_ = render.Render(w, r, util.NewErrorResponse("failure_threshold must be between 0 and 100", http.StatusBadRequest))
+		return
+	}
+	if configRequest.SuccessThreshold > 100 {
+		_ = render.Render(w, r, util.NewErrorResponse("success_threshold must be between 0 and 100", http.StatusBadRequest))
+		return
+	}
+	if configRequest.ObservabilityWindow == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("observability_window must be greater than 0", http.StatusBadRequest))
+		return
+	}
+
+	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	projects, err := projectRepo.LoadProjects(r.Context(), &datastore.ProjectFilter{OrgID: orgID})
+	if err != nil {
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if len(projects) == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("No projects found for this organization", http.StatusBadRequest))
+		return
+	}
+
+	if configRequest.SampleRate == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("sample_rate must be greater than 0", http.StatusBadRequest))
+		return
+	}
+	if configRequest.ErrorTimeout == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("error_timeout must be greater than 0", http.StatusBadRequest))
+		return
+	}
+
+	// Convert to datastore model
+	config := &datastore.CircuitBreakerConfiguration{
+		SampleRate:                  configRequest.SampleRate,
+		ErrorTimeout:                configRequest.ErrorTimeout,
+		FailureThreshold:            configRequest.FailureThreshold,
+		SuccessThreshold:            configRequest.SuccessThreshold,
+		ObservabilityWindow:         configRequest.ObservabilityWindow,
+		MinimumRequestCount:         configRequest.MinimumRequestCount,
+		ConsecutiveFailureThreshold: configRequest.ConsecutiveFailureThreshold,
+	}
+
+	for _, project := range projects {
+		if project.Config == nil {
+			project.Config = &datastore.ProjectConfig{}
+		}
+		project.Config.CircuitBreaker = config
+		err = projectRepo.UpdateProject(r.Context(), project)
+		if err != nil {
+			log.FromContext(r.Context()).WithError(err).Errorf("Failed to update circuit breaker config for project %s", project.UID)
+			_ = render.Render(w, r, util.NewServiceErrResponse(err))
+			return
+		}
+	}
+
+	response := map[string]interface{}{
+		"sample_rate":                   config.SampleRate,
+		"error_timeout":                 config.ErrorTimeout,
+		"failure_threshold":             config.FailureThreshold,
+		"success_threshold":             config.SuccessThreshold,
+		"observability_window":          config.ObservabilityWindow,
+		"minimum_request_count":         config.MinimumRequestCount,
+		"consecutive_failure_threshold": config.ConsecutiveFailureThreshold,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Circuit breaker configuration updated successfully for all projects", response, http.StatusOK))
+}
+
+// GetProjectCircuitBreakerConfig returns the circuit breaker configuration for a specific project (instance admin only)
+func (h *Handler) GetProjectCircuitBreakerConfig(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	projectID := chi.URLParam(r, "projectID")
+	if projectID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("project ID is required", http.StatusBadRequest))
+		return
+	}
+
+	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	project, err := projectRepo.FetchProjectByID(r.Context(), projectID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrProjectNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusNotFound))
+			return
+		}
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	config := project.Config.GetCircuitBreakerConfig()
+
+	response := map[string]interface{}{
+		"sample_rate":                   config.SampleRate,
+		"error_timeout":                 config.ErrorTimeout,
+		"failure_threshold":             config.FailureThreshold,
+		"success_threshold":             config.SuccessThreshold,
+		"observability_window":          config.ObservabilityWindow,
+		"minimum_request_count":         config.MinimumRequestCount,
+		"consecutive_failure_threshold": config.ConsecutiveFailureThreshold,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Circuit breaker configuration fetched successfully", response, http.StatusOK))
+}
+
+// UpdateProjectCircuitBreakerConfig updates the circuit breaker configuration for a specific project (instance admin only)
+func (h *Handler) UpdateProjectCircuitBreakerConfig(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	projectID := chi.URLParam(r, "projectID")
+	if projectID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("project ID is required", http.StatusBadRequest))
+		return
+	}
+
+	var configRequest models.UpdateOrganisationCircuitBreakerConfig
+	err := util.ReadJSON(r, &configRequest)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		return
+	}
+
+	if configRequest.FailureThreshold > 100 {
+		_ = render.Render(w, r, util.NewErrorResponse("failure_threshold must be between 0 and 100", http.StatusBadRequest))
+		return
+	}
+	if configRequest.SuccessThreshold > 100 {
+		_ = render.Render(w, r, util.NewErrorResponse("success_threshold must be between 0 and 100", http.StatusBadRequest))
+		return
+	}
+	if configRequest.ObservabilityWindow == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("observability_window must be greater than 0", http.StatusBadRequest))
+		return
+	}
+
+	projectRepo := postgres.NewProjectRepo(h.A.DB)
+	project, err := projectRepo.FetchProjectByID(r.Context(), projectID)
+	if err != nil {
+		if errors.Is(err, datastore.ErrProjectNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("Project not found", http.StatusNotFound))
+			return
+		}
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	if configRequest.SampleRate == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("sample_rate must be greater than 0", http.StatusBadRequest))
+		return
+	}
+	if configRequest.ErrorTimeout == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("error_timeout must be greater than 0", http.StatusBadRequest))
+		return
+	}
+
+	config := &datastore.CircuitBreakerConfiguration{
+		SampleRate:                  configRequest.SampleRate,
+		ErrorTimeout:                configRequest.ErrorTimeout,
+		FailureThreshold:            configRequest.FailureThreshold,
+		SuccessThreshold:            configRequest.SuccessThreshold,
+		ObservabilityWindow:         configRequest.ObservabilityWindow,
+		MinimumRequestCount:         configRequest.MinimumRequestCount,
+		ConsecutiveFailureThreshold: configRequest.ConsecutiveFailureThreshold,
+	}
+
+	if project.Config == nil {
+		project.Config = &datastore.ProjectConfig{}
+	}
+	project.Config.CircuitBreaker = config
+	err = projectRepo.UpdateProject(r.Context(), project)
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Errorf("Failed to update circuit breaker config for project %s", project.UID)
+		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		return
+	}
+
+	response := map[string]interface{}{
+		"sample_rate":                   config.SampleRate,
+		"error_timeout":                 config.ErrorTimeout,
+		"failure_threshold":             config.FailureThreshold,
+		"success_threshold":             config.SuccessThreshold,
+		"observability_window":          config.ObservabilityWindow,
+		"minimum_request_count":         config.MinimumRequestCount,
+		"consecutive_failure_threshold": config.ConsecutiveFailureThreshold,
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Circuit breaker configuration updated successfully", response, http.StatusOK))
+}
+
 // UpdateFeatureFlag updates the default enabled state or allow_override of a system feature flag (instance admin only)
 func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 	if !h.isInstanceAdmin(r) {
@@ -575,4 +846,54 @@ func (h *Handler) UpdateFeatureFlag(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Feature flag updated successfully", updatedFlag, http.StatusOK))
+}
+
+// RetryEventDeliveries retries event deliveries with a particular status in a timeframe (instance admin only)
+func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	var retryRequest models.RetryEventDeliveriesRequest
+	err := util.ReadJSON(r, &retryRequest)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
+		return
+	}
+
+	if retryRequest.Status == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("status is required", http.StatusBadRequest))
+		return
+	}
+	if retryRequest.Time == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("time is required", http.StatusBadRequest))
+		return
+	}
+
+	status := datastore.EventDeliveryStatus(retryRequest.Status)
+	if !status.IsValid() {
+		_ = render.Render(w, r, util.NewErrorResponse("invalid status: must be one of Scheduled, Processing, Retry, Failure, Success, Discarded", http.StatusBadRequest))
+		return
+	}
+
+	_, err = time.ParseDuration(retryRequest.Time)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("invalid time format: must be a valid duration (e.g., 1h, 30m, 5h)", http.StatusBadRequest))
+		return
+	}
+
+	if h.A.Queue == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Queue not configured: retry is only available with Redis queue", http.StatusBadRequest))
+		return
+	}
+
+	statuses := []datastore.EventDeliveryStatus{status}
+	task.RetryEventDeliveries(h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID)
+
+	_ = render.Render(w, r, util.NewServerResponse("Event deliveries retry initiated successfully", map[string]interface{}{
+		"status":   retryRequest.Status,
+		"time":     retryRequest.Time,
+		"event_id": retryRequest.EventID,
+	}, http.StatusOK))
 }

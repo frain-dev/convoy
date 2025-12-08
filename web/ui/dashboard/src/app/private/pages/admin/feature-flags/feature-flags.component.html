@@ -5,6 +5,96 @@
 	</div>
 </div>
 
+<!-- Global Circuit Breaker Toggle (before org selector) -->
+<div *ngIf="!isLoadingFeatureFlags && getCircuitBreakerFlag()" class="mb-24px">
+	<div convoy-card class="p-24px">
+		<div class="flex items-start justify-between">
+			<div class="flex-1 mr-24px">
+				<label convoy-label>{{ getFeatureFlagDisplayName(getCircuitBreakerFlag()!.feature_key) }}</label>
+			</div>
+			<convoy-toggle
+				[isChecked]="getCircuitBreakerFlag()!.enabled"
+				[name]="'feature-flag-enabled-circuit-breaker'"
+				[className]="isUpdatingFeatureFlag ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+				(onChange)="toggleFeatureFlag(getCircuitBreakerFlag()!, $event)"
+			></convoy-toggle>
+		</div>
+	</div>
+</div>
+
+<!-- Organization Selector -->
+<div class="mb-24px" [formGroup]="organisationForm">
+	<convoy-select
+		[options]="getOrganisationOptions()"
+		name="organisation"
+		formControlName="organisation"
+		label="Select Organisation"
+		placeholder="Select an organisation to manage overrides"
+		[searchable]="true"
+		(selectedOption)="onOrganisationSelected($event)"
+		(searchString)="filterOrganisations($event)"
+	></convoy-select>
+</div>
+
+<!-- Banner when no organization is selected -->
+<div *ngIf="!selectedOrganisation" class="p-24px bg-neutral-a2 rounded-8px text-center mb-24px">
+	<p class="text-14 text-neutral-10">Select an organisation to manage feature flag overrides</p>
+</div>
+
+<!-- Org override section for circuit-breaker (below dropdown, only when org is selected) -->
+<div *ngIf="!isLoadingFeatureFlags && getCircuitBreakerFlag() && selectedOrganisation" class="mb-24px">
+	<div class="flex items-start justify-between gap-24px">
+		<div class="flex-1">
+			<label convoy-label class="text-12 mb-8px block">{{ selectedOrganisation.name }}</label>
+			<p *ngIf="hasOrgOverride(getCircuitBreakerFlag()!)" class="text-10 text-neutral-11">
+				This setting allows this organization to override the global default
+			</p>
+		</div>
+		<div class="flex flex-col items-end gap-12px">
+			<div *ngIf="hasOrgOverride(getCircuitBreakerFlag()!)">
+				<button
+					convoy-button
+					size="sm"
+					color="error"
+					fill="text"
+					[disabled]="isUpdatingOverride"
+					(click)="removeOrgOverride(getCircuitBreakerFlag()!)"
+					class="flex items-center gap-8px"
+				>
+					<svg width="20" height="20" class="fill-error-400">
+						<use xlink:href="#minus-icon"></use>
+					</svg>
+					<span>Remove Override</span>
+				</button>
+			</div>
+			<div *ngIf="!hasOrgOverride(getCircuitBreakerFlag()!)">
+				<button
+					convoy-button
+					size="sm"
+					color="primary"
+					fill="text"
+					[disabled]="isUpdatingOverride"
+					(click)="addOrgOverride(getCircuitBreakerFlag()!)"
+					class="flex items-center gap-8px"
+				>
+					<svg width="20" height="20" class="fill-new.primary-400">
+						<use xlink:href="#plus-icon"></use>
+					</svg>
+					<span>Add Override</span>
+				</button>
+			</div>
+			<div *ngIf="hasOrgOverride(getCircuitBreakerFlag()!)">
+				<convoy-toggle
+					[isChecked]="getOrgOverrideState(getCircuitBreakerFlag()!)"
+					[name]="'org-override-circuit-breaker'"
+					[className]="isUpdatingOverride ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+					(onChange)="toggleOrgOverride(getCircuitBreakerFlag()!, $event)"
+				></convoy-toggle>
+			</div>
+		</div>
+	</div>
+</div>
+
 <div *ngIf="isLoadingFeatureFlags" class="flex items-center justify-center py-40px">
 	<convoy-loader></convoy-loader>
 </div>
@@ -13,18 +103,13 @@
 	<p class="text-14 text-neutral-10">No feature flags available</p>
 </div>
 
-<div *ngIf="!isLoadingFeatureFlags && featureFlags.length > 0" class="space-y-16px">
-	<div *ngFor="let flag of featureFlags; trackBy: trackByFeatureKey" convoy-card class="p-24px">
+<!-- Other Feature Flags -->
+<div *ngIf="!isLoadingFeatureFlags && getOtherFeatureFlags().length > 0" class="space-y-16px">
+	<div *ngFor="let flag of getOtherFeatureFlags(); trackBy: trackByFeatureKey" convoy-card class="p-24px">
+		<!-- Top row: Feature name + Global toggle -->
 		<div class="flex items-start justify-between">
 			<div class="flex-1 mr-24px">
 				<label convoy-label>{{ getFeatureFlagDisplayName(flag.feature_key) }}</label>
-				<p class="text-12 text-neutral-10 mt-4px">Key: {{ flag.feature_key }}</p>
-			</div>
-		</div>
-		<div class="flex items-center justify-between mt-16px pt-16px border-t border-neutral-5">
-			<div class="flex-1">
-				<label convoy-label class="text-12">Default State</label>
-				<p class="text-11 text-neutral-11 mt-4px">System-wide default enabled/disabled state</p>
 			</div>
 			<convoy-toggle
 				[isChecked]="flag.enabled"

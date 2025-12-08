@@ -90,6 +90,92 @@ export class AdminService {
 		});
 	}
 
+	getOrganisationCircuitBreakerConfig(orgID: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/organisations/${orgID}/circuit-breaker-config`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getOrganisationProjects(orgID: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/organisations/${orgID}/projects`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getProjectCircuitBreakerConfig(projectID: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/projects/${projectID}/circuit-breaker-config`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	updateProjectCircuitBreakerConfig(projectID: string, config: {
+		sample_rate: number;
+		error_timeout: number;
+		failure_threshold: number;
+		success_threshold: number;
+		observability_window: number;
+		minimum_request_count: number;
+		consecutive_failure_threshold: number;
+	}): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/projects/${projectID}/circuit-breaker-config`,
+					method: 'put',
+					body: config
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	updateOrganisationCircuitBreakerConfig(orgID: string, config: {
+		failure_threshold: number;
+		success_threshold: number;
+		observability_window: number;
+		minimum_request_count: number;
+		consecutive_failure_threshold: number;
+	}): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/organisations/${orgID}/circuit-breaker-config`,
+					method: 'put',
+					body: config
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
 	updateFeatureFlag(featureKey: string, enabled?: boolean): Promise<HTTP_RESPONSE> {
 		return new Promise(async (resolve, reject) => {
 			try {
@@ -99,6 +185,35 @@ export class AdminService {
 				const response = await this.http.request({
 					url: `/admin/feature-flags/${featureKey}`,
 					method: 'put',
+					body: body
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	retryEventDeliveries(request: {
+		project_id: string;
+		status: string;
+		time: string;
+		event_id?: string;
+	}): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const body: any = {
+					project_id: request.project_id,
+					status: request.status,
+					time: request.time
+				};
+				if (request.event_id) {
+					body.event_id = request.event_id;
+				}
+
+				const response = await this.http.request({
+					url: `/admin/retry-event-deliveries`,
+					method: 'post',
 					body: body
 				});
 				return resolve(response);
