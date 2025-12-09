@@ -100,7 +100,7 @@ func parseDBConfig(dbConfig config.DatabaseConfiguration, src ...string) (*Postg
 	sqlDB := stdlib.OpenDBFromPool(pool)
 	db := sqlx.NewDb(sqlDB, "pgx")
 
-	return &Postgres{dbx: db, pool: pool}, nil
+	return &Postgres{dbx: db, pool: pool, conn: pool}, nil
 }
 
 func (p *Postgres) GetDB() *sqlx.DB {

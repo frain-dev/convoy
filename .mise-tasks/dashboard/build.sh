@@ -6,7 +6,6 @@
 
 set -e
 
-
 echo -e "Building Convoy ..."
 
 # Remove build folder
