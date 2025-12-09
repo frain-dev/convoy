@@ -38,7 +38,7 @@ func (q *Queries) BulkWritePortalAuthTokens(ctx context.Context, arg BulkWritePo
 }
 
 const countPrevPortalLinks = `-- name: CountPrevPortalLinks :one
-SELECT COUNT(DISTINCT(p.id)) AS count
+SELECT COALESCE(COUNT(DISTINCT p.id), 0) AS count
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
@@ -47,48 +47,31 @@ LEFT JOIN convoy.endpoints e
 WHERE p.deleted_at IS NULL
     AND (p.project_id = $1 OR $1 = '')
     AND p.id > $2
-GROUP BY p.id
-ORDER BY p.id DESC
-LIMIT 1
+    -- Optional endpoint filter: apply only if has_endpoint_filter is true
+    AND (
+        CASE
+            WHEN $3::boolean THEN pe.endpoint_id = ANY($4::text[])
+            ELSE true
+        END
+    )
 `
 
 type CountPrevPortalLinksParams struct {
-	ProjectID string
-	Cursor    string
+	ProjectID         string
+	Cursor            string
+	HasEndpointFilter bool
+	EndpointIds       []string
 }
 
-func (q *Queries) CountPrevPortalLinks(ctx context.Context, arg CountPrevPortalLinksParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countPrevPortalLinks, arg.ProjectID, arg.Cursor)
-	var count int64
-	err := row.Scan(&count)
-	return count, err
-}
-
-const countPrevPortalLinksWithEndpointFilter = `-- name: CountPrevPortalLinksWithEndpointFilter :one
-SELECT COUNT(DISTINCT(p.id)) AS count
-FROM convoy.portal_links p
-LEFT JOIN convoy.portal_links_endpoints pe
-    ON p.id = pe.portal_link_id
-LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
-WHERE p.deleted_at IS NULL
-    AND (p.project_id = $1 OR $1 = '')
-    AND pe.endpoint_id = ANY($2::text[])
-    AND p.id > $3
-GROUP BY p.id
-ORDER BY p.id DESC
-LIMIT 1
-`
-
-type CountPrevPortalLinksWithEndpointFilterParams struct {
-	ProjectID   string
-	EndpointIds []string
-	Cursor      string
-}
-
-func (q *Queries) CountPrevPortalLinksWithEndpointFilter(ctx context.Context, arg CountPrevPortalLinksWithEndpointFilterParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countPrevPortalLinksWithEndpointFilter, arg.ProjectID, arg.EndpointIds, arg.Cursor)
-	var count int64
+// Unified count query for pagination prev row count
+func (q *Queries) CountPrevPortalLinks(ctx context.Context, arg CountPrevPortalLinksParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, countPrevPortalLinks,
+		arg.ProjectID,
+		arg.Cursor,
+		arg.HasEndpointFilter,
+		arg.EndpointIds,
+	)
+	var count pgtype.Int8
 	err := row.Scan(&count)
 	return count, err
 }
@@ -540,8 +523,9 @@ func (q *Queries) FetchPortalLinksByOwnerID(ctx context.Context, ownerID pgtype.
 	return items, nil
 }
 
-const fetchPortalLinksPaginatedBackward = `-- name: FetchPortalLinksPaginatedBackward :many
-WITH portal_links AS (
+const fetchPortalLinksPaginated = `-- name: FetchPortalLinksPaginated :many
+
+WITH filtered_portal_links AS (
     SELECT
         p.id,
         p.project_id,
@@ -568,115 +552,53 @@ WITH portal_links AS (
     LEFT JOIN convoy.endpoints e
         ON e.id = pe.endpoint_id
     WHERE p.deleted_at IS NULL
-        AND (p.project_id = $1 OR $1 = '')
-        AND p.id >= $2
-    GROUP BY p.id
-    ORDER BY p.id ASC
-    LIMIT $3
-)
-SELECT id, project_id, name, token, endpoints, auth_type, can_manage_endpoint, owner_id, endpoint_count, created_at, updated_at, endpoints_metadata FROM portal_links ORDER BY id DESC
-`
-
-type FetchPortalLinksPaginatedBackwardParams struct {
-	ProjectID string
-	Cursor    string
-	LimitVal  int64
-}
-
-type FetchPortalLinksPaginatedBackwardRow struct {
-	ID                string
-	ProjectID         string
-	Name              string
-	Token             string
-	Endpoints         pgtype.Text
-	AuthType          ConvoyPortalAuthTypes
-	CanManageEndpoint bool
-	OwnerID           string
-	EndpointCount     pgtype.Int8
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-	EndpointsMetadata []byte
-}
-
-func (q *Queries) FetchPortalLinksPaginatedBackward(ctx context.Context, arg FetchPortalLinksPaginatedBackwardParams) ([]FetchPortalLinksPaginatedBackwardRow, error) {
-	rows, err := q.db.Query(ctx, fetchPortalLinksPaginatedBackward, arg.ProjectID, arg.Cursor, arg.LimitVal)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FetchPortalLinksPaginatedBackwardRow
-	for rows.Next() {
-		var i FetchPortalLinksPaginatedBackwardRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ProjectID,
-			&i.Name,
-			&i.Token,
-			&i.Endpoints,
-			&i.AuthType,
-			&i.CanManageEndpoint,
-			&i.OwnerID,
-			&i.EndpointCount,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.EndpointsMetadata,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const fetchPortalLinksPaginatedBackwardWithEndpointFilter = `-- name: FetchPortalLinksPaginatedBackwardWithEndpointFilter :many
-WITH portal_links AS (
-    SELECT
-        p.id,
-        p.project_id,
-        p.name,
-        p.token,
-        p.endpoints,
-        p.auth_type,
-        COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
-        COALESCE(p.owner_id, '') AS owner_id,
-        CASE
-            WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-            ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
-        END AS endpoint_count,
-        p.created_at,
-        p.updated_at,
-        ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-            CASE WHEN e.id IS NOT NULL THEN
-                cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+        AND (p.project_id = $2 OR $2 = '')
+        -- Cursor comparison: <= for forward (next), >= for backward (prev)
+        AND (
+            CASE
+                WHEN $1::text = 'next' THEN p.id <= $3
+                WHEN $1::text = 'prev' THEN p.id >= $3
+                ELSE true
             END
-        )) AS endpoints_metadata
-    FROM convoy.portal_links p
-    LEFT JOIN convoy.portal_links_endpoints pe
-        ON p.id = pe.portal_link_id
-    LEFT JOIN convoy.endpoints e
-        ON e.id = pe.endpoint_id
-    WHERE p.deleted_at IS NULL
-        AND (p.project_id = $1 OR $1 = '')
-        AND pe.endpoint_id = ANY($2::text[])
-        AND p.id >= $3
+        )
+        -- Optional endpoint filter: apply only if has_endpoint_filter is true
+        AND (
+            CASE
+                WHEN $4::boolean THEN pe.endpoint_id = ANY($5::text[])
+                ELSE true
+            END
+        )
     GROUP BY p.id
-    ORDER BY p.id ASC
-    LIMIT $4
+    -- Sort order: DESC for forward, ASC for backward (will be reversed in outer query for backward)
+    ORDER BY
+        CASE
+            WHEN $1::text = 'next' THEN p.id
+        END DESC,
+        CASE
+            WHEN $1::text = 'prev' THEN p.id
+        END ASC
+    LIMIT $6
 )
-SELECT id, project_id, name, token, endpoints, auth_type, can_manage_endpoint, owner_id, endpoint_count, created_at, updated_at, endpoints_metadata FROM portal_links ORDER BY id DESC
+SELECT id, project_id, name, token, endpoints, auth_type, can_manage_endpoint, owner_id, endpoint_count, created_at, updated_at, endpoints_metadata FROM filtered_portal_links
+ORDER BY
+    CASE
+        WHEN $1::text = 'prev' THEN id
+    END DESC,
+    CASE
+        WHEN $1::text = 'next' THEN id
+    END DESC
 `
 
-type FetchPortalLinksPaginatedBackwardWithEndpointFilterParams struct {
-	ProjectID   string
-	EndpointIds []string
-	Cursor      string
-	LimitVal    int64
+type FetchPortalLinksPaginatedParams struct {
+	Direction         string
+	ProjectID         string
+	Cursor            string
+	HasEndpointFilter bool
+	EndpointIds       []string
+	LimitVal          int64
 }
 
-type FetchPortalLinksPaginatedBackwardWithEndpointFilterRow struct {
+type FetchPortalLinksPaginatedRow struct {
 	ID                string
 	ProjectID         string
 	Name              string
@@ -691,207 +613,27 @@ type FetchPortalLinksPaginatedBackwardWithEndpointFilterRow struct {
 	EndpointsMetadata []byte
 }
 
-func (q *Queries) FetchPortalLinksPaginatedBackwardWithEndpointFilter(ctx context.Context, arg FetchPortalLinksPaginatedBackwardWithEndpointFilterParams) ([]FetchPortalLinksPaginatedBackwardWithEndpointFilterRow, error) {
-	rows, err := q.db.Query(ctx, fetchPortalLinksPaginatedBackwardWithEndpointFilter,
+// Unified Paginated queries using CASE and COALESCE for dynamic filtering
+// These queries handle both forward/backward pagination and optional endpoint filtering
+// @direction: 'next' for forward pagination, 'prev' for backward pagination
+// @has_endpoint_filter: true to filter by endpoint_ids, false to skip filtering
+// Final select: reverse order for backward pagination to get DESC order
+func (q *Queries) FetchPortalLinksPaginated(ctx context.Context, arg FetchPortalLinksPaginatedParams) ([]FetchPortalLinksPaginatedRow, error) {
+	rows, err := q.db.Query(ctx, fetchPortalLinksPaginated,
+		arg.Direction,
 		arg.ProjectID,
-		arg.EndpointIds,
 		arg.Cursor,
+		arg.HasEndpointFilter,
+		arg.EndpointIds,
 		arg.LimitVal,
 	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []FetchPortalLinksPaginatedBackwardWithEndpointFilterRow
+	var items []FetchPortalLinksPaginatedRow
 	for rows.Next() {
-		var i FetchPortalLinksPaginatedBackwardWithEndpointFilterRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ProjectID,
-			&i.Name,
-			&i.Token,
-			&i.Endpoints,
-			&i.AuthType,
-			&i.CanManageEndpoint,
-			&i.OwnerID,
-			&i.EndpointCount,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.EndpointsMetadata,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const fetchPortalLinksPaginatedForward = `-- name: FetchPortalLinksPaginatedForward :many
-
-SELECT
-    p.id,
-    p.project_id,
-    p.name,
-    p.token,
-    p.endpoints,
-    p.auth_type,
-    COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
-    COALESCE(p.owner_id, '') AS owner_id,
-    CASE
-        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
-    END AS endpoint_count,
-    p.created_at,
-    p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
-FROM convoy.portal_links p
-LEFT JOIN convoy.portal_links_endpoints pe
-    ON p.id = pe.portal_link_id
-LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
-WHERE p.deleted_at IS NULL
-    AND (p.project_id = $1 OR $1 = '')
-    AND p.id <= $2
-GROUP BY p.id
-ORDER BY p.id DESC
-LIMIT $3
-`
-
-type FetchPortalLinksPaginatedForwardParams struct {
-	ProjectID string
-	Cursor    string
-	LimitVal  int64
-}
-
-type FetchPortalLinksPaginatedForwardRow struct {
-	ID                string
-	ProjectID         string
-	Name              string
-	Token             string
-	Endpoints         pgtype.Text
-	AuthType          ConvoyPortalAuthTypes
-	CanManageEndpoint bool
-	OwnerID           string
-	EndpointCount     pgtype.Int8
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-	EndpointsMetadata []byte
-}
-
-// Paginated queries
-// Note: These queries are complex and may need dynamic construction in the application layer
-// The following are base queries that can be used with dynamic filtering
-func (q *Queries) FetchPortalLinksPaginatedForward(ctx context.Context, arg FetchPortalLinksPaginatedForwardParams) ([]FetchPortalLinksPaginatedForwardRow, error) {
-	rows, err := q.db.Query(ctx, fetchPortalLinksPaginatedForward, arg.ProjectID, arg.Cursor, arg.LimitVal)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FetchPortalLinksPaginatedForwardRow
-	for rows.Next() {
-		var i FetchPortalLinksPaginatedForwardRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.ProjectID,
-			&i.Name,
-			&i.Token,
-			&i.Endpoints,
-			&i.AuthType,
-			&i.CanManageEndpoint,
-			&i.OwnerID,
-			&i.EndpointCount,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.EndpointsMetadata,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const fetchPortalLinksPaginatedForwardWithEndpointFilter = `-- name: FetchPortalLinksPaginatedForwardWithEndpointFilter :many
-SELECT
-    p.id,
-    p.project_id,
-    p.name,
-    p.token,
-    p.endpoints,
-    p.auth_type,
-    COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
-    COALESCE(p.owner_id, '') AS owner_id,
-    CASE
-        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
-    END AS endpoint_count,
-    p.created_at,
-    p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
-FROM convoy.portal_links p
-LEFT JOIN convoy.portal_links_endpoints pe
-    ON p.id = pe.portal_link_id
-LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
-WHERE p.deleted_at IS NULL
-    AND (p.project_id = $1 OR $1 = '')
-    AND pe.endpoint_id = ANY($2::text[])
-    AND p.id <= $3
-GROUP BY p.id
-ORDER BY p.id DESC
-LIMIT $4
-`
-
-type FetchPortalLinksPaginatedForwardWithEndpointFilterParams struct {
-	ProjectID   string
-	EndpointIds []string
-	Cursor      string
-	LimitVal    int64
-}
-
-type FetchPortalLinksPaginatedForwardWithEndpointFilterRow struct {
-	ID                string
-	ProjectID         string
-	Name              string
-	Token             string
-	Endpoints         pgtype.Text
-	AuthType          ConvoyPortalAuthTypes
-	CanManageEndpoint bool
-	OwnerID           string
-	EndpointCount     pgtype.Int8
-	CreatedAt         pgtype.Timestamptz
-	UpdatedAt         pgtype.Timestamptz
-	EndpointsMetadata []byte
-}
-
-func (q *Queries) FetchPortalLinksPaginatedForwardWithEndpointFilter(ctx context.Context, arg FetchPortalLinksPaginatedForwardWithEndpointFilterParams) ([]FetchPortalLinksPaginatedForwardWithEndpointFilterRow, error) {
-	rows, err := q.db.Query(ctx, fetchPortalLinksPaginatedForwardWithEndpointFilter,
-		arg.ProjectID,
-		arg.EndpointIds,
-		arg.Cursor,
-		arg.LimitVal,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []FetchPortalLinksPaginatedForwardWithEndpointFilterRow
-	for rows.Next() {
-		var i FetchPortalLinksPaginatedForwardWithEndpointFilterRow
+		var i FetchPortalLinksPaginatedRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.ProjectID,

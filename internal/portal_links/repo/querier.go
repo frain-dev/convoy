@@ -12,8 +12,8 @@ import (
 
 type Querier interface {
 	BulkWritePortalAuthTokens(ctx context.Context, arg BulkWritePortalAuthTokensParams) error
-	CountPrevPortalLinks(ctx context.Context, arg CountPrevPortalLinksParams) (int64, error)
-	CountPrevPortalLinksWithEndpointFilter(ctx context.Context, arg CountPrevPortalLinksWithEndpointFilterParams) (int64, error)
+	// Unified count query for pagination prev row count
+	CountPrevPortalLinks(ctx context.Context, arg CountPrevPortalLinksParams) (pgtype.Int8, error)
 	// Portal Links Queries
 	CreatePortalLink(ctx context.Context, arg CreatePortalLinkParams) error
 	CreatePortalLinkAuthToken(ctx context.Context, arg CreatePortalLinkAuthTokenParams) error
@@ -25,13 +25,12 @@ type Querier interface {
 	FetchPortalLinkByOwnerID(ctx context.Context, arg FetchPortalLinkByOwnerIDParams) (FetchPortalLinkByOwnerIDRow, error)
 	FetchPortalLinkByToken(ctx context.Context, token string) (FetchPortalLinkByTokenRow, error)
 	FetchPortalLinksByOwnerID(ctx context.Context, ownerID pgtype.Text) ([]FetchPortalLinksByOwnerIDRow, error)
-	FetchPortalLinksPaginatedBackward(ctx context.Context, arg FetchPortalLinksPaginatedBackwardParams) ([]FetchPortalLinksPaginatedBackwardRow, error)
-	FetchPortalLinksPaginatedBackwardWithEndpointFilter(ctx context.Context, arg FetchPortalLinksPaginatedBackwardWithEndpointFilterParams) ([]FetchPortalLinksPaginatedBackwardWithEndpointFilterRow, error)
-	// Paginated queries
-	// Note: These queries are complex and may need dynamic construction in the application layer
-	// The following are base queries that can be used with dynamic filtering
-	FetchPortalLinksPaginatedForward(ctx context.Context, arg FetchPortalLinksPaginatedForwardParams) ([]FetchPortalLinksPaginatedForwardRow, error)
-	FetchPortalLinksPaginatedForwardWithEndpointFilter(ctx context.Context, arg FetchPortalLinksPaginatedForwardWithEndpointFilterParams) ([]FetchPortalLinksPaginatedForwardWithEndpointFilterRow, error)
+	// Unified Paginated queries using CASE and COALESCE for dynamic filtering
+	// These queries handle both forward/backward pagination and optional endpoint filtering
+	// @direction: 'next' for forward pagination, 'prev' for backward pagination
+	// @has_endpoint_filter: true to filter by endpoint_ids, false to skip filtering
+	// Final select: reverse order for backward pagination to get DESC order
+	FetchPortalLinksPaginated(ctx context.Context, arg FetchPortalLinksPaginatedParams) ([]FetchPortalLinksPaginatedRow, error)
 	UpdateEndpointOwnerID(ctx context.Context, arg UpdateEndpointOwnerIDParams) error
 	UpdatePortalLink(ctx context.Context, arg UpdatePortalLinkParams) error
 }

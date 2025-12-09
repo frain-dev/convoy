@@ -17,6 +17,7 @@ import (
 	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
 	"github.com/xdg-go/pbkdf2"
+	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database"
@@ -477,13 +478,153 @@ func (s *Service) RevokePortalLink(ctx context.Context, projectID, portalLinkID 
 }
 
 func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, filter *datastore.FilterBy, pageable datastore.Pageable) ([]datastore.PortalLink, datastore.PaginationData, error) {
-	// For now, delegate to the old repo as pagination is complex
-	// This can be migrated later
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.legacyDB)
-	portalLinks, paginationData, err := portalLinkRepo.LoadPortalLinksPaged(ctx, projectID, filter, pageable)
+	// Consolidate endpoint IDs from filter
+	var endpointIDs []string
+	if !util.IsStringEmpty(filter.EndpointID) {
+		endpointIDs = append(endpointIDs, filter.EndpointID)
+	}
+	if len(filter.EndpointIDs) > 0 {
+		endpointIDs = append(endpointIDs, filter.EndpointIDs...)
+	}
+
+	// Determine direction for query
+	direction := "next"
+	if pageable.Direction == datastore.Prev {
+		direction = "prev"
+	}
+
+	// Query portal links with pagination
+	rows, err := s.repo.FetchPortalLinksPaginated(ctx, repo.FetchPortalLinksPaginatedParams{
+		Direction:         direction,
+		ProjectID:         projectID,
+		Cursor:            pageable.Cursor(),
+		HasEndpointFilter: len(endpointIDs) > 0,
+		EndpointIds:       endpointIDs,
+		LimitVal:          int64(pageable.Limit()),
+	})
 	if err != nil {
 		s.logger.WithError(err).Error("failed to load portal links paged")
 		return nil, datastore.PaginationData{}, &services.ServiceError{ErrMsg: "an error occurred while fetching portal links", Err: err}
 	}
-	return portalLinks, paginationData, nil
+
+	// Convert rows to portal links
+	portalLinks := make([]datastore.PortalLink, 0, len(rows))
+	for _, row := range rows {
+		endpoints := pgTextToStrings(row.Endpoints)
+		if endpoints == nil {
+			endpoints = []string{}
+		}
+
+		portalLinks = append(portalLinks, datastore.PortalLink{
+			UID:               row.ID,
+			ProjectID:         row.ProjectID,
+			Name:              row.Name,
+			Token:             row.Token,
+			Endpoints:         endpoints,
+			AuthType:          datastore.PortalAuthType(row.AuthType),
+			CanManageEndpoint: row.CanManageEndpoint,
+			OwnerID:           row.OwnerID,
+			EndpointCount:     int(row.EndpointCount.Int64),
+			CreatedAt:         row.CreatedAt.Time,
+			UpdatedAt:         row.UpdatedAt.Time,
+			EndpointsMetadata: bytesToEndpointMetadata(row.EndpointsMetadata),
+		})
+	}
+
+	// Build IDs for pagination
+	ids := make([]string, len(portalLinks))
+	for i := range portalLinks {
+		ids[i] = portalLinks[i].UID
+	}
+
+	// If we got more results than requested, trim the extra one (used for hasNext detection)
+	if len(portalLinks) > pageable.PerPage {
+		portalLinks = portalLinks[:len(portalLinks)-1]
+	}
+
+	// Count previous rows for pagination
+	var prevRowCount datastore.PrevRowCount
+	if len(portalLinks) > 0 {
+		first := portalLinks[0]
+		count, err := s.repo.CountPrevPortalLinks(ctx, repo.CountPrevPortalLinksParams{
+			ProjectID:         projectID,
+			Cursor:            first.UID,
+			HasEndpointFilter: len(endpointIDs) > 0,
+			EndpointIds:       endpointIDs,
+		})
+		if err != nil {
+			s.logger.WithError(err).Error("failed to count prev portal links")
+			return nil, datastore.PaginationData{}, &services.ServiceError{ErrMsg: "an error occurred while counting portal links", Err: err}
+		}
+		prevRowCount.Count = int(count.Int64)
+	}
+
+	// Build pagination data
+	pagination := &datastore.PaginationData{PrevRowCount: prevRowCount}
+	pagination = pagination.Build(pageable, ids)
+
+	// Generate auth tokens for portal links that need them (non-static token types)
+	if len(portalLinks) > 0 {
+		var authTokens []datastore.PortalToken
+		for i := range portalLinks {
+			if portalLinks[i].AuthType == datastore.PortalAuthTypeStaticToken {
+				continue
+			}
+
+			// Generate auth token
+			maskId, key := generateAuthKey()
+			salt, err := util.GenerateSecret()
+			if err != nil {
+				s.logger.WithError(err).Error("failed to generate salt for auth token")
+				return nil, datastore.PaginationData{}, &services.ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
+			}
+
+			dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+			encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+			authToken := datastore.PortalToken{
+				UID:          ulid.Make().String(),
+				PortalLinkID: portalLinks[i].UID,
+				MaskId:       maskId,
+				Hash:         encodedKey,
+				Salt:         salt,
+				AuthKey:      key,
+				ExpiresAt:    null.NewTime(time.Now().Add(time.Hour), true),
+			}
+			authTokens = append(authTokens, authToken)
+		}
+
+		// Bulk insert auth tokens if any were generated
+		if len(authTokens) > 0 {
+			tx, err := s.db.Begin(ctx)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to start transaction for auth tokens")
+				return nil, datastore.PaginationData{}, &services.ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
+			}
+			defer tx.Rollback(ctx)
+
+			qtx := repo.New(tx)
+			for _, token := range authTokens {
+				err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
+					ID:             token.UID,
+					PortalLinkID:   token.PortalLinkID,
+					TokenMaskID:    pgtype.Text{String: token.MaskId, Valid: true},
+					TokenHash:      pgtype.Text{String: token.Hash, Valid: true},
+					TokenSalt:      pgtype.Text{String: token.Salt, Valid: true},
+					TokenExpiresAt: pgtype.Timestamptz{Time: token.ExpiresAt.Time, Valid: token.ExpiresAt.Valid},
+				})
+				if err != nil {
+					s.logger.WithError(err).Error("failed to create portal link auth token")
+					return nil, datastore.PaginationData{}, &services.ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
+				}
+			}
+
+			if err = tx.Commit(ctx); err != nil {
+				s.logger.WithError(err).Error("failed to commit auth tokens transaction")
+				return nil, datastore.PaginationData{}, &services.ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
+			}
+		}
+	}
+
+	return portalLinks, *pagination, nil
 }

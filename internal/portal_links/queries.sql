@@ -179,79 +179,13 @@ UPDATE convoy.portal_links
 SET deleted_at = NOW()
 WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;
 
--- Paginated queries
--- Note: These queries are complex and may need dynamic construction in the application layer
--- The following are base queries that can be used with dynamic filtering
+-- Unified Paginated queries using CASE and COALESCE for dynamic filtering
+-- These queries handle both forward/backward pagination and optional endpoint filtering
 
--- name: FetchPortalLinksPaginatedForward :many
-SELECT
-    p.id,
-    p.project_id,
-    p.name,
-    p.token,
-    p.endpoints,
-    p.auth_type,
-    COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
-    COALESCE(p.owner_id, '') AS owner_id,
-    CASE
-        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
-    END AS endpoint_count,
-    p.created_at,
-    p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
-FROM convoy.portal_links p
-LEFT JOIN convoy.portal_links_endpoints pe
-    ON p.id = pe.portal_link_id
-LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
-WHERE p.deleted_at IS NULL
-    AND (p.project_id = @project_id OR @project_id = '')
-    AND p.id <= @cursor
-GROUP BY p.id
-ORDER BY p.id DESC
-LIMIT @limit_val;
-
--- name: FetchPortalLinksPaginatedForwardWithEndpointFilter :many
-SELECT
-    p.id,
-    p.project_id,
-    p.name,
-    p.token,
-    p.endpoints,
-    p.auth_type,
-    COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
-    COALESCE(p.owner_id, '') AS owner_id,
-    CASE
-        WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-        ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
-    END AS endpoint_count,
-    p.created_at,
-    p.updated_at,
-    ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-        CASE WHEN e.id IS NOT NULL THEN
-            cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
-        END
-    )) AS endpoints_metadata
-FROM convoy.portal_links p
-LEFT JOIN convoy.portal_links_endpoints pe
-    ON p.id = pe.portal_link_id
-LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
-WHERE p.deleted_at IS NULL
-    AND (p.project_id = @project_id OR @project_id = '')
-    AND pe.endpoint_id = ANY(@endpoint_ids::text[])
-    AND p.id <= @cursor
-GROUP BY p.id
-ORDER BY p.id DESC
-LIMIT @limit_val;
-
--- name: FetchPortalLinksPaginatedBackward :many
-WITH portal_links AS (
+-- name: FetchPortalLinksPaginated :many
+-- @direction: 'next' for forward pagination, 'prev' for backward pagination
+-- @has_endpoint_filter: true to filter by endpoint_ids, false to skip filtering
+WITH filtered_portal_links AS (
     SELECT
         p.id,
         p.project_id,
@@ -279,52 +213,45 @@ WITH portal_links AS (
         ON e.id = pe.endpoint_id
     WHERE p.deleted_at IS NULL
         AND (p.project_id = @project_id OR @project_id = '')
-        AND p.id >= @cursor
-    GROUP BY p.id
-    ORDER BY p.id ASC
-    LIMIT @limit_val
-)
-SELECT * FROM portal_links ORDER BY id DESC;
-
--- name: FetchPortalLinksPaginatedBackwardWithEndpointFilter :many
-WITH portal_links AS (
-    SELECT
-        p.id,
-        p.project_id,
-        p.name,
-        p.token,
-        p.endpoints,
-        p.auth_type,
-        COALESCE(p.can_manage_endpoint, FALSE) AS can_manage_endpoint,
-        COALESCE(p.owner_id, '') AS owner_id,
-        CASE
-            WHEN p.owner_id != '' THEN (SELECT count(id) FROM convoy.endpoints WHERE owner_id = p.owner_id)
-            ELSE (SELECT count(portal_link_id) FROM convoy.portal_links_endpoints WHERE portal_link_id = p.id)
-        END AS endpoint_count,
-        p.created_at,
-        p.updated_at,
-        ARRAY_TO_JSON(ARRAY_AGG(DISTINCT
-            CASE WHEN e.id IS NOT NULL THEN
-                cast(JSON_BUILD_OBJECT('uid', e.id, 'name', e.name, 'project_id', e.project_id, 'url', e.url, 'secrets', e.secrets) as jsonb)
+        -- Cursor comparison: <= for forward (next), >= for backward (prev)
+        AND (
+            CASE
+                WHEN @direction::text = 'next' THEN p.id <= @cursor
+                WHEN @direction::text = 'prev' THEN p.id >= @cursor
+                ELSE true
             END
-        )) AS endpoints_metadata
-    FROM convoy.portal_links p
-    LEFT JOIN convoy.portal_links_endpoints pe
-        ON p.id = pe.portal_link_id
-    LEFT JOIN convoy.endpoints e
-        ON e.id = pe.endpoint_id
-    WHERE p.deleted_at IS NULL
-        AND (p.project_id = @project_id OR @project_id = '')
-        AND pe.endpoint_id = ANY(@endpoint_ids::text[])
-        AND p.id >= @cursor
+        )
+        -- Optional endpoint filter: apply only if has_endpoint_filter is true
+        AND (
+            CASE
+                WHEN @has_endpoint_filter::boolean THEN pe.endpoint_id = ANY(@endpoint_ids::text[])
+                ELSE true
+            END
+        )
     GROUP BY p.id
-    ORDER BY p.id ASC
+    -- Sort order: DESC for forward, ASC for backward (will be reversed in outer query for backward)
+    ORDER BY
+        CASE
+            WHEN @direction::text = 'next' THEN p.id
+        END DESC,
+        CASE
+            WHEN @direction::text = 'prev' THEN p.id
+        END ASC
     LIMIT @limit_val
 )
-SELECT * FROM portal_links ORDER BY id DESC;
+-- Final select: reverse order for backward pagination to get DESC order
+SELECT * FROM filtered_portal_links
+ORDER BY
+    CASE
+        WHEN @direction::text = 'prev' THEN id
+    END DESC,
+    CASE
+        WHEN @direction::text = 'next' THEN id
+    END DESC;
 
 -- name: CountPrevPortalLinks :one
-SELECT COUNT(DISTINCT(p.id)) AS count
+-- Unified count query for pagination prev row count
+SELECT COALESCE(COUNT(DISTINCT p.id), 0) AS count
 FROM convoy.portal_links p
 LEFT JOIN convoy.portal_links_endpoints pe
     ON p.id = pe.portal_link_id
@@ -333,21 +260,10 @@ LEFT JOIN convoy.endpoints e
 WHERE p.deleted_at IS NULL
     AND (p.project_id = @project_id OR @project_id = '')
     AND p.id > @cursor
-GROUP BY p.id
-ORDER BY p.id DESC
-LIMIT 1;
-
--- name: CountPrevPortalLinksWithEndpointFilter :one
-SELECT COUNT(DISTINCT(p.id)) AS count
-FROM convoy.portal_links p
-LEFT JOIN convoy.portal_links_endpoints pe
-    ON p.id = pe.portal_link_id
-LEFT JOIN convoy.endpoints e
-    ON e.id = pe.endpoint_id
-WHERE p.deleted_at IS NULL
-    AND (p.project_id = @project_id OR @project_id = '')
-    AND pe.endpoint_id = ANY(@endpoint_ids::text[])
-    AND p.id > @cursor
-GROUP BY p.id
-ORDER BY p.id DESC
-LIMIT 1;
+    -- Optional endpoint filter: apply only if has_endpoint_filter is true
+    AND (
+        CASE
+            WHEN @has_endpoint_filter::boolean THEN pe.endpoint_id = ANY(@endpoint_ids::text[])
+            ELSE true
+        END
+    );
