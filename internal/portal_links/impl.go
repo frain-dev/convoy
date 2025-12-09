@@ -2,9 +2,13 @@ package portal_links
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/dchest/uniuri"
 	"github.com/jackc/pgx/v5"
@@ -12,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lib/pq"
 	"github.com/oklog/ulid/v2"
+	"github.com/xdg-go/pbkdf2"
 
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database"
@@ -82,6 +87,22 @@ func bytesToEndpointMetadata(b []byte) datastore.EndpointMetadata {
 		return datastore.EndpointMetadata{}
 	}
 	return metadata
+}
+
+// generateAuthKey generates a masked auth key for portal links
+// Returns (maskId, fullKey) where fullKey is in format "PRT.maskId.secretKey"
+func generateAuthKey() (string, string) {
+	mask := uniuri.NewLen(16)
+	key := uniuri.NewLen(64)
+
+	var builder strings.Builder
+	builder.WriteString(util.PortalAuthTokenPrefix)
+	builder.WriteString(util.Separator)
+	builder.WriteString(mask)
+	builder.WriteString(util.Separator)
+	builder.WriteString(key)
+
+	return mask, builder.String()
 }
 
 // updateEndpointOwnerIDs updates the owner_id for the given endpoints and links them to the portal link
@@ -385,17 +406,61 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 }
 
 func (s *Service) RefreshPortalLinkAuthToken(ctx context.Context, projectID, portalLinkID string) (*datastore.PortalLink, error) {
-	// For now, delegate to the old repo as this requires complex token generation logic
-	// This can be migrated later
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.legacyDB)
-	portalLink, err := portalLinkRepo.RefreshPortalLinkAuthToken(ctx, projectID, portalLinkID)
+	// Fetch the portal link to ensure it exists
+	portalLink, err := s.GetPortalLink(ctx, projectID, portalLinkID)
 	if err != nil {
-		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
-			return nil, &services.ServiceError{ErrMsg: "portal link not found", Err: datastore.ErrPortalLinkNotFound}
-		}
-		s.logger.WithError(err).Error("failed to refresh portal link auth token")
-		return nil, &services.ServiceError{ErrMsg: "error refreshing portal link auth token", Err: err}
+		return nil, err
 	}
+
+	// Generate new auth key
+	maskId, key := generateAuthKey()
+
+	// Generate salt
+	salt, err := util.GenerateSecret()
+	if err != nil {
+		s.logger.WithError(err).Error("failed to generate salt")
+		return nil, &services.ServiceError{ErrMsg: "failed to generate auth token", Err: err}
+	}
+
+	// Create hash using PBKDF2
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+	// Set expiry time (1 hour from now)
+	expiresAt := time.Now().Add(time.Hour)
+
+	// Start transaction to insert auth token
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to start transaction")
+		return nil, &services.ServiceError{ErrMsg: "failed to refresh auth token", Err: err}
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := repo.New(tx)
+
+	// Create a portal link auth token
+	err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
+		ID:             ulid.Make().String(),
+		PortalLinkID:   portalLinkID,
+		TokenMaskID:    pgtype.Text{String: maskId, Valid: true},
+		TokenHash:      pgtype.Text{String: encodedKey, Valid: true},
+		TokenSalt:      pgtype.Text{String: salt, Valid: true},
+		TokenExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
+	})
+	if err != nil {
+		s.logger.WithError(err).Error("failed to create portal link auth token")
+		return nil, &services.ServiceError{ErrMsg: "failed to refresh auth token", Err: err}
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		s.logger.WithError(err).Error("failed to commit transaction")
+		return nil, &services.ServiceError{ErrMsg: "failed to refresh auth token", Err: err}
+	}
+
+	// Set the auth key on the portal link (this is the plain text key to return to the user)
+	portalLink.AuthKey = key
+
 	return portalLink, nil
 }
 
