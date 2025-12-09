@@ -64,16 +64,17 @@ func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL,
 }
 
 type CreateEndpointService struct {
-	PortalLinkRepo     datastore.PortalLinkRepository
-	EndpointRepo       datastore.EndpointRepository
-	ProjectRepo        datastore.ProjectRepository
-	Licenser           license.Licenser
-	FeatureFlag        *fflag.FFlag
-	FeatureFlagFetcher fflag.FeatureFlagFetcher
-	DB                 database.Database
-	Logger             log.StdLogger
-	E                  models.CreateEndpoint
-	ProjectID          string
+	PortalLinkRepo             datastore.PortalLinkRepository
+	EndpointRepo               datastore.EndpointRepository
+	ProjectRepo                datastore.ProjectRepository
+	Licenser                   license.Licenser
+	FeatureFlag                *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	DB                         database.Database
+	Logger                     log.StdLogger
+	E                          models.CreateEndpoint
+	ProjectID                  string
 }
 
 func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -168,7 +169,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 
 		// Check feature flag for OAuth2 using project's organisation ID
-		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, project.OrganisationID)
+		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !oauth2Enabled {
 			log.FromContext(ctx).Warn("OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
 			// Remove OAuth2 authentication if feature flag is disabled
@@ -186,7 +187,7 @@ func (a *CreateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, e
 		}
 
 		// Validate both fields provided together
-		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, project.OrganisationID)
+		mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, project.OrganisationID)
 		if !mtlsEnabled {
 			log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
 		} else {

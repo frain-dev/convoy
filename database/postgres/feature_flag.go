@@ -15,6 +15,7 @@ import (
 var (
 	ErrFeatureFlagNotFound         = errors.New("feature flag not found")
 	ErrFeatureFlagOverrideNotFound = errors.New("feature flag override not found")
+	ErrEarlyAdopterFeatureNotFound = errors.New("early adopter feature not found")
 )
 
 const (
@@ -136,6 +137,37 @@ const (
 	DELETE FROM convoy.feature_flag_overrides
 	WHERE owner_type = $1 AND owner_id = $2 AND feature_flag_id = $3;
 	`
+
+	updateFeatureFlag = `
+	UPDATE convoy.feature_flags
+	SET enabled = $1, updated_at = NOW()
+	WHERE id = $2;
+	`
+)
+
+const (
+	fetchEarlyAdopterFeature = `
+	SELECT * FROM convoy.early_adopter_features
+	WHERE organisation_id = $1 AND feature_key = $2;
+	`
+
+	loadEarlyAdopterFeaturesByOrg = `
+	SELECT * FROM convoy.early_adopter_features
+	WHERE organisation_id = $1
+	ORDER BY feature_key;
+	`
+
+	upsertEarlyAdopterFeature = `
+	INSERT INTO convoy.early_adopter_features (id, organisation_id, feature_key, enabled, enabled_by, enabled_at)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	ON CONFLICT (organisation_id, feature_key) 
+	DO UPDATE SET enabled = $4, enabled_by = $5, enabled_at = $6, updated_at = NOW();
+	`
+
+	deleteEarlyAdopterFeature = `
+	DELETE FROM convoy.early_adopter_features
+	WHERE organisation_id = $1 AND feature_key = $2;
+	`
 )
 
 // UpsertFeatureFlagOverride creates or updates a feature flag override
@@ -173,5 +205,74 @@ func UpsertFeatureFlagOverride(ctx context.Context, db database.Database, overri
 // DeleteFeatureFlagOverride deletes a feature flag override
 func DeleteFeatureFlagOverride(ctx context.Context, db database.Database, ownerType, ownerID, featureFlagID string) error {
 	_, err := db.GetDB().ExecContext(ctx, deleteFeatureFlagOverride, ownerType, ownerID, featureFlagID)
+	return err
+}
+
+// UpdateFeatureFlag updates the enabled state of a feature flag
+func UpdateFeatureFlag(ctx context.Context, db database.Database, featureFlagID string, enabled bool) error {
+	_, err := db.GetDB().ExecContext(ctx, updateFeatureFlag, enabled, featureFlagID)
+	return err
+}
+
+// FetchEarlyAdopterFeature fetches an early adopter feature for an organisation
+func FetchEarlyAdopterFeature(ctx context.Context, db database.Database, orgID, featureKey string) (*datastore.EarlyAdopterFeature, error) {
+	feature := &datastore.EarlyAdopterFeature{}
+	err := db.GetDB().QueryRowxContext(ctx, fetchEarlyAdopterFeature, orgID, featureKey).StructScan(feature)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrEarlyAdopterFeatureNotFound
+		}
+		return nil, err
+	}
+
+	return feature, nil
+}
+
+// LoadEarlyAdopterFeaturesByOrg fetches all early adopter features for an organisation
+func LoadEarlyAdopterFeaturesByOrg(ctx context.Context, db database.Database, orgID string) ([]datastore.EarlyAdopterFeature, error) {
+	features := []datastore.EarlyAdopterFeature{}
+	err := db.GetDB().SelectContext(ctx, &features, loadEarlyAdopterFeaturesByOrg, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	return features, nil
+}
+
+// UpsertEarlyAdopterFeature creates or updates an early adopter feature
+func UpsertEarlyAdopterFeature(ctx context.Context, db database.Database, feature *datastore.EarlyAdopterFeature) error {
+	if feature.UID == "" {
+		feature.UID = ulid.Make().String()
+	}
+
+	var enabledAt interface{}
+	if feature.EnabledAt.Valid {
+		enabledAt = feature.EnabledAt.Time
+	} else if feature.Enabled {
+		enabledAt = time.Now()
+	} else {
+		enabledAt = nil
+	}
+
+	var enabledBy interface{}
+	if feature.EnabledBy.Valid {
+		enabledBy = feature.EnabledBy.String
+	} else {
+		enabledBy = nil
+	}
+
+	_, err := db.GetDB().ExecContext(ctx, upsertEarlyAdopterFeature,
+		feature.UID, feature.OrganisationID, feature.FeatureKey,
+		feature.Enabled, enabledBy, enabledAt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteEarlyAdopterFeature deletes an early adopter feature
+func DeleteEarlyAdopterFeature(ctx context.Context, db database.Database, orgID, featureKey string) error {
+	_, err := db.GetDB().ExecContext(ctx, deleteEarlyAdopterFeature, orgID, featureKey)
 	return err
 }

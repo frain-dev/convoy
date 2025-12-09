@@ -198,7 +198,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 		// Refresh OAuth2 token if endpoint uses OAuth2 authentication
 		if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
 			// Check feature flag for OAuth2 using project's organisation ID
-			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, project.OrganisationID)
+			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
 			if !oauth2Enabled {
 				log.FromContext(ctx).Warn("Endpoint has OAuth2 configured but feature flag is disabled, continuing without OAuth2 authentication")
 				// Continue without OAuth2 authentication if feature flag is disabled
@@ -249,7 +249,7 @@ func ProcessRetryEventDelivery(deps EventDeliveryProcessorDeps) func(context.Con
 			}
 
 			// Check feature flag for mTLS using project's organisation ID
-			mtlsEnabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, deps.FeatureFlagFetcher, project.OrganisationID)
+			mtlsEnabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
 			if !mtlsEnabled {
 				log.FromContext(ctx).Warn("Endpoint has mTLS configured but feature flag is disabled, continuing without mTLS")
 				// Continue without mTLS if feature flag is disabled

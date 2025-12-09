@@ -1,4 +1,4 @@
-<div convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control">
+<div convoy-dropdown size="full" position="center" [className]="control.touched && control.invalid ? 'top-[85%]' : ''" *ngIf="control" #dropdownRef>
     <div class="w-full" [ngClass]="{ 'pointer-events-none': readonly }" dropdownTrigger>
         <label convoy-label [required]="required ? 'true' : 'false'" [for]="name" [tooltip]="tooltipContent">{{ label }}</label>
 
@@ -58,8 +58,8 @@
             </ng-container>
 
             <ng-container *ngIf="!multiple">
-                <li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option>
-                    <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option)" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
+                <li *ngFor="let option of options" class="list-none py-10px border-b border-new.primary-25" convoy-dropdown-option [value]="option">
+                    <button convoy-button color="neutral" type="button" fill="text" (click)="selectOption(option); $event.stopPropagation()" class="text-12 w-full !justify-start">{{ option?.name || option }}</button>
                 </li>
             </ng-container>
         </ul>

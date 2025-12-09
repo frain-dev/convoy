@@ -134,20 +134,21 @@ func ProcessEventCreationByChannel(channel EventChannel, endpointRepo datastore.
 }
 
 type MatchSubscriptionsDeps struct {
-	Channels           map[string]EventChannel
-	EndpointRepo       datastore.EndpointRepository
-	EventRepo          datastore.EventRepository
-	ProjectRepo        datastore.ProjectRepository
-	EventDeliveryRepo  datastore.EventDeliveryRepository
-	EventQueue         queue.Queuer
-	SubRepo            datastore.SubscriptionRepository
-	FilterRepo         datastore.FilterRepository
-	DeviceRepo         datastore.DeviceRepository
-	Licenser           license.Licenser
-	TracerBackend      tracer.Backend
-	OAuth2TokenService OAuth2TokenService
-	FeatureFlag        *fflag.FFlag
-	FeatureFlagFetcher fflag.FeatureFlagFetcher
+	Channels                   map[string]EventChannel
+	EndpointRepo               datastore.EndpointRepository
+	EventRepo                  datastore.EventRepository
+	ProjectRepo                datastore.ProjectRepository
+	EventDeliveryRepo          datastore.EventDeliveryRepository
+	EventQueue                 queue.Queuer
+	SubRepo                    datastore.SubscriptionRepository
+	FilterRepo                 datastore.FilterRepository
+	DeviceRepo                 datastore.DeviceRepository
+	Licenser                   license.Licenser
+	TracerBackend              tracer.Backend
+	OAuth2TokenService         OAuth2TokenService
+	FeatureFlag                *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 }
 
 func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) func(context.Context, *asynq.Task) error {
@@ -229,17 +230,18 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 
 		// no need for a separate queue
 		err = writeEventDeliveriesToQueue(ctx, WriteEventDeliveriesToQueueOptions{
-			Subscriptions:      subResponse.Subscriptions,
-			Event:              subResponse.Event,
-			Project:            subResponse.Project,
-			EventDeliveryRepo:  deps.EventDeliveryRepo,
-			EventQueue:         deps.EventQueue,
-			DeviceRepo:         deps.DeviceRepo,
-			EndpointRepo:       deps.EndpointRepo,
-			Licenser:           deps.Licenser,
-			OAuth2TokenService: deps.OAuth2TokenService,
-			FeatureFlag:        deps.FeatureFlag,
-			FeatureFlagFetcher: deps.FeatureFlagFetcher,
+			Subscriptions:              subResponse.Subscriptions,
+			Event:                      subResponse.Event,
+			Project:                    subResponse.Project,
+			EventDeliveryRepo:          deps.EventDeliveryRepo,
+			EventQueue:                 deps.EventQueue,
+			DeviceRepo:                 deps.DeviceRepo,
+			EndpointRepo:               deps.EndpointRepo,
+			Licenser:                   deps.Licenser,
+			OAuth2TokenService:         deps.OAuth2TokenService,
+			FeatureFlag:                deps.FeatureFlag,
+			FeatureFlagFetcher:         deps.FeatureFlagFetcher,
+			EarlyAdopterFeatureFetcher: deps.EarlyAdopterFeatureFetcher,
 		})
 		if err != nil {
 			log.WithError(err).Error(ErrFailedToWriteToQueue)
