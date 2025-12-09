@@ -472,6 +472,11 @@ func (p *portalLinkRepo) FindPortalLinkByID(ctx context.Context, projectID, port
 		return nil, err
 	}
 
+	// Ensure endpoints is never nil
+	if portalLink.Endpoints == nil {
+		portalLink.Endpoints = []string{}
+	}
+
 	if portalLink.AuthType == datastore.PortalAuthTypeStaticToken {
 		return &portalLink, nil
 	}

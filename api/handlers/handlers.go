@@ -82,7 +82,7 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 		}
 	case h.IsReqWithPortalLinkToken(authUser):
 		if len(authUser.Credential.Token) > 0 { // this is the legacy static token type
-			svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
+			svc := portal_links.New(h.A.Logger, h.A.DB)
 			pLink, err2 := svc.GetPortalLinkByToken(r.Context(), authUser.Credential.Token)
 			if err2 != nil {
 				//  authUser.Credential.Token should be the owner id at this point
@@ -177,7 +177,7 @@ func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.Porta
 
 	authUser := middleware.GetAuthUserFromContext(r.Context())
 	if len(authUser.Credential.Token) > 0 { // this is the legacy static token type
-		svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
+		svc := portal_links.New(h.A.Logger, h.A.DB)
 		pLink, err = svc.GetPortalLinkByToken(r.Context(), authUser.Credential.Token)
 		if err != nil {
 			//  authUser.Credential.Token should be the owner id at this point

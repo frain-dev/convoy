@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
-	"github.com/frain-dev/convoy/api/migrations"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -63,21 +62,15 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set context if endpoints are provided - business logic will update endpoint owner_ids
-	ctx := r.Context()
-	if len(newPortalLink.Endpoints) > 0 {
-		ctx = migrations.SetUpdateEndpointOwnerID(ctx, true, newPortalLink.Endpoints)
-	}
-
-	svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
-	portalLink, err := svc.CreatePortalLink(ctx, project.UID, &newPortalLink)
+	svc := portal_links.New(h.A.Logger, h.A.DB)
+	portalLink, err := svc.CreatePortalLink(r.Context(), project.UID, &newPortalLink)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	// Fetch the portal link to populate calculated fields like EndpointCount
-	portalLink, err = svc.GetPortalLink(ctx, project.UID, portalLink.UID)
+	portalLink, err = svc.GetPortalLink(r.Context(), project.UID, portalLink.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -114,7 +107,7 @@ func (h *Handler) GeneratePortalToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
+	svc := portal_links.New(h.A.Logger, h.A.DB)
 
 	var pLink *datastore.PortalLink
 	authUser := middleware.GetAuthUserFromContext(r.Context())
@@ -178,7 +171,7 @@ func (h *Handler) GetPortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
+	svc := portal_links.New(h.A.Logger, h.A.DB)
 
 	var pLink *datastore.PortalLink
 	pLink, err = h.retrievePortalLinkFromToken(r)
@@ -252,7 +245,7 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
+	svc := portal_links.New(h.A.Logger, h.A.DB)
 
 	portalLink, err := svc.GetPortalLink(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
@@ -265,20 +258,14 @@ func (h *Handler) UpdatePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set context if endpoints are provided - business logic will update endpoint owner_ids
-	ctx := r.Context()
-	if len(updatePortalLink.Endpoints) > 0 {
-		ctx = migrations.SetUpdateEndpointOwnerID(ctx, true, updatePortalLink.Endpoints)
-	}
-
-	portalLink, err = svc.UpdatePortalLink(ctx, project.UID, portalLink, &updatePortalLink)
+	portalLink, err = svc.UpdatePortalLink(r.Context(), project.UID, portalLink, &updatePortalLink)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}
 
 	// Fetch the portal link to populate calculated fields like EndpointCount
-	portalLink, err = svc.GetPortalLink(ctx, project.UID, portalLink.UID)
+	portalLink, err = svc.GetPortalLink(r.Context(), project.UID, portalLink.UID)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
@@ -315,7 +302,7 @@ func (h *Handler) RefreshPortalLinkAuthToken(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
+	svc := portal_links.New(h.A.Logger, h.A.DB)
 
 	pLink, err := svc.RefreshPortalLinkAuthToken(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
@@ -347,7 +334,7 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
+	svc := portal_links.New(h.A.Logger, h.A.DB)
 
 	err = svc.RevokePortalLink(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
@@ -383,7 +370,7 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 	var q *models.QueryListPortalLink
 	data := q.Transform(r)
 
-	svc := portal_links.NewWithPostgresRepo(h.A.Logger, h.A.DB.GetConn(), h.A.DB)
+	svc := portal_links.New(h.A.Logger, h.A.DB)
 	portalLinks, paginationData, err := svc.LoadPortalLinksPaged(r.Context(), project.UID, data.FilterBy, pageable)
 	if err != nil {
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))

@@ -631,6 +631,7 @@ func SeedPortalLink(db database.Database, g *datastore.Project, ownerId string) 
 		Token:     ulid.Make().String(),
 		AuthType:  datastore.PortalAuthTypeStaticToken,
 		OwnerID:   ownerId,
+		Endpoints: []string{}, // Initialize as empty slice instead of nil
 	}
 
 	portalLinkRepo := postgres.NewPortalLinkRepo(db)

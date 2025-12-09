@@ -7,10 +7,10 @@ import (
 
 	"gopkg.in/guregu/null.v4"
 
+	validation "github.com/go-ozzo/ozzo-validation/v4"
+
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-
-	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
 type PagedResponse struct {
