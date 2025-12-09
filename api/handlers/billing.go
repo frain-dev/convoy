@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/policies"
-    "github.com/frain-dev/convoy/config"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
