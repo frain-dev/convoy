@@ -107,7 +107,7 @@ func (bt *BatchTracker) CompleteBatch(ctx context.Context, batchID string) error
 }
 
 // FailBatch marks a batch as failed with an error message
-func (bt *BatchTracker) FailBatch(ctx context.Context, batchID string, errMsg string) error {
+func (bt *BatchTracker) FailBatch(ctx context.Context, batchID, errMsg string) error {
 	progress, err := bt.GetBatch(ctx, batchID)
 	if err != nil {
 		return err
