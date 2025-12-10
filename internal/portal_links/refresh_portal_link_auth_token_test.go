@@ -14,7 +14,7 @@ import (
 
 func TestRefreshPortalLinkAuthToken_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -43,7 +43,7 @@ func TestRefreshPortalLinkAuthToken_Success(t *testing.T) {
 
 func TestRefreshPortalLinkAuthToken_MultipleRefreshes(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -75,7 +75,7 @@ func TestRefreshPortalLinkAuthToken_MultipleRefreshes(t *testing.T) {
 
 func TestRefreshPortalLinkAuthToken_VerifyExpiryTime(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -112,7 +112,7 @@ func TestRefreshPortalLinkAuthToken_VerifyExpiryTime(t *testing.T) {
 
 func TestRefreshPortalLinkAuthToken_PortalLinkNotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -127,7 +127,7 @@ func TestRefreshPortalLinkAuthToken_PortalLinkNotFound(t *testing.T) {
 
 func TestRefreshPortalLinkAuthToken_WrongProject(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)

@@ -14,7 +14,7 @@ import (
 
 func TestUpdatePortalLink_ValidRequest(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -53,7 +53,7 @@ func TestUpdatePortalLink_ValidRequest(t *testing.T) {
 
 func TestUpdatePortalLink_WithNewEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -108,7 +108,7 @@ func TestUpdatePortalLink_WithNewEndpoints(t *testing.T) {
 
 func TestUpdatePortalLink_WithEndpoints_AlreadyHaveOwnerID(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -148,7 +148,7 @@ func TestUpdatePortalLink_WithEndpoints_AlreadyHaveOwnerID(t *testing.T) {
 
 func TestUpdatePortalLink_WithEndpoints_DifferentOwnerID_ShouldFail(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -189,7 +189,7 @@ func TestUpdatePortalLink_WithEndpoints_DifferentOwnerID_ShouldFail(t *testing.T
 
 func TestUpdatePortalLink_RemoveAllEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -234,7 +234,7 @@ func TestUpdatePortalLink_RemoveAllEndpoints(t *testing.T) {
 
 func TestUpdatePortalLink_ChangeOwnerID_AutoLinkEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -282,7 +282,7 @@ func TestUpdatePortalLink_ChangeOwnerID_AutoLinkEndpoints(t *testing.T) {
 
 func TestUpdatePortalLink_InvalidRequest_InvalidAuthType(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -317,7 +317,7 @@ func TestUpdatePortalLink_InvalidRequest_InvalidAuthType(t *testing.T) {
 
 func TestUpdatePortalLink_EndpointNotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -352,7 +352,7 @@ func TestUpdatePortalLink_EndpointNotFound(t *testing.T) {
 
 func TestUpdatePortalLink_MultipleEndpoints_SomeInvalid(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -392,7 +392,7 @@ func TestUpdatePortalLink_MultipleEndpoints_SomeInvalid(t *testing.T) {
 
 func TestUpdatePortalLink_VerifyDatabasePersistence(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -433,7 +433,7 @@ func TestUpdatePortalLink_VerifyDatabasePersistence(t *testing.T) {
 
 func TestUpdatePortalLink_ChangeAuthType(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -472,7 +472,7 @@ func TestUpdatePortalLink_ChangeAuthType(t *testing.T) {
 
 func TestUpdatePortalLink_AddEndpointsToExisting(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)

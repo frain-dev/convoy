@@ -13,7 +13,7 @@ import (
 
 func TestLoadPortalLinksPaged_Success_EmptyList(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -36,7 +36,7 @@ func TestLoadPortalLinksPaged_Success_EmptyList(t *testing.T) {
 
 func TestLoadPortalLinksPaged_Success_MultiplePortalLinks(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -81,7 +81,7 @@ func TestLoadPortalLinksPaged_Success_MultiplePortalLinks(t *testing.T) {
 
 func TestLoadPortalLinksPaged_WithPagination(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -138,7 +138,7 @@ func TestLoadPortalLinksPaged_WithPagination(t *testing.T) {
 
 func TestLoadPortalLinksPaged_FilterByEndpoint(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -191,7 +191,7 @@ func TestLoadPortalLinksPaged_FilterByEndpoint(t *testing.T) {
 
 func TestLoadPortalLinksPaged_FilterByMultipleEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -262,7 +262,7 @@ func TestLoadPortalLinksPaged_FilterByMultipleEndpoints(t *testing.T) {
 
 func TestLoadPortalLinksPaged_WithRefreshTokenAuthType_GeneratesAuthTokens(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -313,7 +313,7 @@ func TestLoadPortalLinksPaged_WithRefreshTokenAuthType_GeneratesAuthTokens(t *te
 
 func TestLoadPortalLinksPaged_PreviousPage(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -373,7 +373,7 @@ func TestLoadPortalLinksPaged_PreviousPage(t *testing.T) {
 
 func TestLoadPortalLinksPaged_EmptyFilter(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)

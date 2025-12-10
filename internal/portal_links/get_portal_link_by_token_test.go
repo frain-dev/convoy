@@ -13,7 +13,7 @@ import (
 
 func TestGetPortalLinkByToken_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -47,7 +47,7 @@ func TestGetPortalLinkByToken_Success(t *testing.T) {
 
 func TestGetPortalLinkByToken_WithEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)

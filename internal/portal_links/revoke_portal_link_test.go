@@ -14,7 +14,7 @@ import (
 
 func TestRevokePortalLink_Success(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -45,7 +45,7 @@ func TestRevokePortalLink_Success(t *testing.T) {
 
 func TestRevokePortalLink_WithEndpoints(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -89,7 +89,7 @@ func TestRevokePortalLink_WithEndpoints(t *testing.T) {
 
 func TestRevokePortalLink_NotFound(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
@@ -103,7 +103,7 @@ func TestRevokePortalLink_NotFound(t *testing.T) {
 
 func TestRevokePortalLink_WrongProject(t *testing.T) {
 	db, ctx := setupTestDB(t)
-	project, _, _ := seedTestData(t, db)
+	project := seedTestData(t, db)
 
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
