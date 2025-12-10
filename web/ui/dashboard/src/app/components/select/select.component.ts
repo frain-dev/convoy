@@ -145,7 +145,17 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 
 	registerOnTouched() {}
 
-	writeValue(value: string | Array<any>) {
+	writeValue(value: string | Array<any> | null | undefined) {
+		if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
+			// Clear selected value when value is null, undefined, or empty array
+			if (!this.multiple) {
+				this.selectedValue = null;
+			} else {
+				this.selectedOptions = [];
+			}
+			return;
+		}
+		
 		if (value) {
 			if (this.options?.length && typeof this.options[0] !== 'string' && !this.multiple) return (this.selectedValue = this.options?.find(option => option.uid === value));
 			if (this.multiple && typeof value !== 'string' && this.selectedValues?.length) this.selectedOptions = this.selectedValues;

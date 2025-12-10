@@ -186,6 +186,7 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 			return nil, fmt.Errorf("billing service health check failed: %w", err)
 		}
 		appHandler.billingClient = billingClient
+		a.BillingClient = billingClient
 	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{

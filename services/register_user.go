@@ -90,6 +90,7 @@ func (u *RegisterUserService) Run(ctx context.Context) (*datastore.User, *jwt.To
 		Licenser:      u.Licenser,
 		NewOrg:        &models.Organisation{Name: u.Data.OrganisationName},
 		User:          user,
+		BillingClient: nil,
 	}
 
 	_, err = co.Run(ctx)

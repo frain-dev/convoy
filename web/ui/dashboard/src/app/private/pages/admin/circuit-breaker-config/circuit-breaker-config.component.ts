@@ -108,7 +108,9 @@ export class CircuitBreakerConfigComponent implements OnInit {
 		}
 		this.selectedOrganisation = org;
 		this.selectedProject = null;
-		this.projectForm.patchValue({ project: null });
+		this.projects = [];
+		// Clear project form - reset to ensure select component properly clears
+		this.projectForm.reset({ project: null });
 		this.circuitBreakerForm = null;
 		this.circuitBreakerConfig = null;
 		await this.loadProjects(org.uid);
