@@ -81,26 +81,29 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	}
 
 	if cfg.Billing.Enabled && co.Licenser.BillingModule() {
-		billingClient := billing.NewClient(cfg.Billing)
+		go func() {
+			billingCtx := context.Background()
+			billingClient := billing.NewClient(cfg.Billing)
 
-		if cfg.Host != "" {
-			orgData := map[string]interface{}{
-				"name":          org.Name,
-				"external_id":   org.UID,
-				"billing_email": "",
-				"host":          cfg.Host,
-			}
+			if cfg.Host != "" {
+				orgData := map[string]interface{}{
+					"name":          org.Name,
+					"external_id":   org.UID,
+					"billing_email": "",
+					"host":          cfg.Host,
+				}
 
-			_, createErr := billingClient.CreateOrganisation(ctx, orgData)
-			if createErr != nil {
-				// Log error but don't fail organisation creation if billing creation fails
-				log.FromContext(ctx).WithError(createErr).Warn("failed to create organisation in billing service")
+				_, createErr := billingClient.CreateOrganisation(billingCtx, orgData)
+				if createErr != nil {
+					// Log error but don't fail organisation creation if billing creation fails
+					log.FromContext(billingCtx).WithError(createErr).Warn("failed to create organisation in billing service")
+				} else {
+					log.FromContext(billingCtx).Info("organisation created in billing service")
+				}
 			} else {
-				log.FromContext(ctx).Info("organisation created in billing service")
+				log.FromContext(billingCtx).Warn("billing organisation creation skipped: host not configured")
 			}
-		} else {
-			log.FromContext(ctx).Warn("billing organisation creation skipped: host not configured")
-		}
+		}()
 	}
 
 	return org, nil
