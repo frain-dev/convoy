@@ -482,6 +482,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Get("/projects/{projectID}/circuit-breaker-config", handler.GetProjectCircuitBreakerConfig)
 			adminRouter.Put("/projects/{projectID}/circuit-breaker-config", handler.UpdateProjectCircuitBreakerConfig)
 			adminRouter.Post("/retry-event-deliveries", handler.RetryEventDeliveries)
+			adminRouter.Get("/retry-event-deliveries/count", handler.CountRetryEventDeliveries)
+			adminRouter.Get("/retry-event-deliveries/batch/{batchID}", handler.GetBatchProgress)
+			adminRouter.Get("/retry-event-deliveries/batches", handler.ListBatchProgress)
+			adminRouter.Delete("/retry-event-deliveries/batch/{batchID}", handler.DeleteBatchProgress)
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {

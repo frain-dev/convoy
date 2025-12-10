@@ -222,4 +222,74 @@ export class AdminService {
 			}
 		});
 	}
+
+	countRetryEventDeliveries(request: {
+		status: string;
+		time: string;
+		event_id?: string;
+	}): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const params = new URLSearchParams();
+				params.append('status', request.status);
+				params.append('time', request.time);
+				if (request.event_id) {
+					params.append('event_id', request.event_id);
+				}
+
+				const queryString = params.toString();
+				const url = `/admin/retry-event-deliveries/count?${queryString}`;
+
+				const response = await this.http.request({
+					url: url,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	getBatchProgress(batchID: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/retry-event-deliveries/batch/${batchID}`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	listBatchProgress(): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/retry-event-deliveries/batches`,
+					method: 'get'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
+
+	deleteBatchProgress(batchID: string): Promise<HTTP_RESPONSE> {
+		return new Promise(async (resolve, reject) => {
+			try {
+				const response = await this.http.request({
+					url: `/admin/retry-event-deliveries/batch/${batchID}`,
+					method: 'delete'
+				});
+				return resolve(response);
+			} catch (error) {
+				return reject(error);
+			}
+		});
+	}
 }

@@ -124,16 +124,28 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 	}
 
 	updateSelectedOptions() {
-		if (!this.selectedOptions?.length) return;
+		if (!this.selectedOptions?.length) {
+			// Clear form control if no options selected
+			if (this.control) {
+				this.control.setValue([], { emitEvent: true });
+			}
+			return;
+		}
+		
+		// Update form control with full option objects (not just IDs)
+		// This allows the parent component to access both uid and name
+		if (this.control) {
+			this.control.setValue(this.selectedOptions, { emitEvent: true });
+		}
+		
+		// Also emit the IDs for backward compatibility
 		let selectedIds: any = [];
-
 		this.selectedOptions.forEach((option: any) => {
 			if (typeof option !== 'string') {
 				if (this.selectionType === 'default') selectedIds.push(option.uid);
 				else selectedIds.push(option.name);
 			} else selectedIds.push(option);
 		});
-
 		this.selectedOption.emit(selectedIds);
 	}
 

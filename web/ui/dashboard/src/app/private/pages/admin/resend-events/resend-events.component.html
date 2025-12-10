@@ -24,6 +24,22 @@
 					<convoy-input-error *ngIf="resendForm.get('status')?.touched && resendForm.get('status')?.invalid">
 						Status is required
 					</convoy-input-error>
+					
+					<!-- Multiple statuses selection (shown when "Multiple" is selected) -->
+					<div *ngIf="resendForm.get('status')?.value === 'multiple'" class="mt-12px">
+						<convoy-select
+							[options]="multipleStatusOptions"
+							name="multipleStatuses"
+							formControlName="multipleStatuses"
+							placeholder="Select one or more statuses"
+							[multiple]="true"
+							[searchable]="false"
+						></convoy-select>
+						<small class="text-10 text-neutral-9">Select one or more statuses to retry</small>
+						<convoy-input-error *ngIf="resendForm.get('multipleStatuses')?.touched && resendForm.get('multipleStatuses')?.invalid">
+							At least one status is required
+						</convoy-input-error>
+					</div>
 				</convoy-input-field>
 
 				<convoy-input-field>
@@ -70,6 +86,17 @@
 				</convoy-input-field>
 			</div>
 
+			<!-- Event Count Display -->
+			<div *ngIf="eventCount !== null || isLoadingCount" class="mt-24px p-16px bg-neutral-a2 rounded-8px">
+				<div class="flex items-center gap-12px">
+					<convoy-loader *ngIf="isLoadingCount" class="w-16px h-16px"></convoy-loader>
+					<span *ngIf="!isLoadingCount && eventCount !== null" class="text-14 font-medium text-neutral-10">
+						<span class="font-semibold text-new.primary-400">{{ eventCount | number }}</span> event {{ eventCount === 1 ? 'delivery' : 'deliveries' }} found with status <span class="font-semibold">{{ getStatusDisplayText() }}</span> in the selected time period
+					</span>
+					<span *ngIf="isLoadingCount" class="text-14 text-neutral-10">Loading event count...</span>
+				</div>
+			</div>
+
 			<div class="flex justify-end gap-12px mt-24px">
 				<button 
 					convoy-button 
@@ -77,12 +104,108 @@
 					size="sm" 
 					color="primary"
 					fill="solid"
-					[disabled]="isSubmitting || !resendForm.valid"
+					[disabled]="isSubmitting || !resendForm.valid || isLoadingCount || eventCount === 0"
 				>
 					<span *ngIf="!isSubmitting" class="text-white-100">Retry Event Deliveries</span>
 					<span *ngIf="isSubmitting" class="text-white-100">Retrying...</span>
 				</button>
 			</div>
 		</form>
+	</div>
+</div>
+
+<!-- Batch Progress Display -->
+<div *ngIf="batchProgressList.length > 0" class="mb-24px">
+	<div *ngFor="let batch of batchProgressList" class="mb-16px">
+		<div convoy-card class="p-24px">
+			<div class="flex items-center justify-between mb-16px">
+				<div>
+				<h4 class="font-semibold text-16 mb-4px">Batch Retry Progress</h4>
+				<p class="text-12 text-neutral-10">Batch ID: {{ batch.batch_id }}</p>
+				<div class="flex items-center gap-12px mt-4px">
+					<span *ngIf="batch.status_filter" class="text-10 text-neutral-9">
+						Status: <span class="font-medium">{{ batch.status_filter }}</span>
+					</span>
+					<span *ngIf="batch.time_period" class="text-10 text-neutral-9">
+						Period: <span class="font-medium">{{ batch.time_period }}</span>
+					</span>
+					<span *ngIf="batch.event_id" class="text-10 text-neutral-9">
+						Event: <span class="font-medium font-mono">{{ batch.event_id.substring(0, 8) }}...</span>
+					</span>
+				</div>
+				<p class="text-10 text-neutral-9 mt-4px">Started: {{ batch.start_time | date:'short' }}</p>
+			</div>
+			<div class="flex items-center gap-8px">
+				<convoy-loader *ngIf="batch.status === 'running' && isPolling" class="w-16px h-16px"></convoy-loader>
+				<span class="text-12 font-medium" [ngClass]="{
+					'text-new.primary-400': batch.status === 'running',
+					'text-green-500': batch.status === 'completed',
+					'text-red-500': batch.status === 'failed'
+				}">
+					{{ batch.status === 'running' ? 'Processing...' : batch.status === 'completed' ? 'Completed' : 'Failed' }}
+				</span>
+				<button 
+					convoy-button 
+					size="sm" 
+					color="neutral"
+					fill="outline"
+					(click)="dismissBatchProgress(batch.batch_id)"
+					class="ml-8px"
+				>
+					Dismiss
+				</button>
+			</div>
+		</div>
+
+		<!-- Progress Bar -->
+		<div class="mb-16px">
+			<div class="w-full bg-neutral-a2 rounded-full h-8px overflow-hidden">
+				<div 
+					class="h-full transition-all duration-300"
+					[ngClass]="{
+						'bg-new.primary-400': batch.status === 'running',
+						'bg-green-500': batch.status === 'completed',
+						'bg-red-500': batch.status === 'failed'
+					}"
+					[style.width.%]="getProgressPercentage(batch)"
+				></div>
+			</div>
+			<div class="flex justify-between items-center mt-8px">
+				<span class="text-12 text-neutral-10">
+					{{ batch.processed_count | number }} / {{ batch.total_count | number }} processed
+				</span>
+				<span class="text-12 font-medium text-neutral-10">{{ getProgressPercentage(batch) }}%</span>
+			</div>
+		</div>
+
+		<!-- Status Details -->
+		<div class="grid grid-cols-3 gap-16px mt-16px">
+			<div>
+				<div class="text-12 text-neutral-9 mb-4px">Total</div>
+				<div class="text-16 font-semibold text-neutral-10">{{ batch.total_count | number }}</div>
+			</div>
+			<div>
+				<div class="text-12 text-neutral-9 mb-4px">Processed</div>
+				<div class="text-16 font-semibold text-new.primary-400">{{ batch.processed_count | number }}</div>
+			</div>
+			<div>
+				<div class="text-12 text-neutral-9 mb-4px">Failed</div>
+				<div class="text-16 font-semibold text-red-500">{{ batch.failed_count | number }}</div>
+			</div>
+		</div>
+
+		<!-- Error Message -->
+		<div *ngIf="batch.status === 'failed' && batch.error" class="mt-16px p-12px bg-red-50 rounded-8px">
+			<p class="text-12 text-red-600">{{ batch.error }}</p>
+		</div>
+
+		<!-- Completion Message -->
+		<div *ngIf="batch.status === 'completed'" class="mt-16px p-12px bg-green-50 rounded-8px">
+			<p class="text-12 text-green-600">
+				Batch completed successfully
+				<span *ngIf="batch.end_time"> at {{ batch.end_time | date:'short' }}</span>
+			</p>
+		</div>
+		</div>
 	</div>
 </div>
