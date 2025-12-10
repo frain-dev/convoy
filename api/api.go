@@ -18,7 +18,6 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/handlers"
@@ -29,6 +28,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -41,10 +41,10 @@ const (
 )
 
 type ApplicationHandler struct {
-	Router        http.Handler
-	rm            *requestmigrations.RequestMigration
-	A             *types.APIOptions
-	cfg           config.Configuration
+	Router http.Handler
+	rm     *requestmigrations.RequestMigration
+	A      *types.APIOptions
+	cfg    config.Configuration
 }
 
 func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
