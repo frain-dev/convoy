@@ -18,6 +18,7 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
+	redisqueue "github.com/frain-dev/convoy/queue/redis"
 
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/handlers"
@@ -29,8 +30,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/util"
-
-	redisqueue "github.com/frain-dev/convoy/queue/redis"
 )
 
 //go:embed ui/build
