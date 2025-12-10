@@ -87,7 +87,6 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 				OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB),
 				NewOrg:        &models.Organisation{Name: "Default Organisation"},
 				User:          user,
-				BillingClient: nil,
 			}
 
 			_, err = co.Run(context.Background())

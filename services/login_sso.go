@@ -237,7 +237,6 @@ func (u *LoginUserSSOService) RegisterSSOUser(ctx context.Context, a *types.APIO
 		Licenser:      u.Licenser,
 		NewOrg:        &models.Organisation{Name: t.Data.Payload.OrganizationExternalID},
 		User:          user,
-		BillingClient: nil,
 	}
 
 	_, err = co.Run(ctx)

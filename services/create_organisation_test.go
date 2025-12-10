@@ -21,7 +21,6 @@ func provideCreateOrganisationService(ctrl *gomock.Controller, newOrg *models.Or
 		Licenser:      mocks.NewMockLicenser(ctrl),
 		NewOrg:        newOrg,
 		User:          user,
-		BillingClient: nil,
 	}
 }
 

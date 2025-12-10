@@ -168,7 +168,6 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 		Licenser:      g.Licenser,
 		NewOrg:        &models.Organisation{Name: businessName},
 		User:          user,
-		BillingClient: nil,
 	}
 
 	_, err = co.Run(ctx)
