@@ -41,11 +41,10 @@ const (
 )
 
 type ApplicationHandler struct {
-	Router        http.Handler
-	rm            *requestmigrations.RequestMigration
-	A             *types.APIOptions
-	cfg           config.Configuration
-	billingClient billing.Client
+	Router http.Handler
+	rm     *requestmigrations.RequestMigration
+	A      *types.APIOptions
+	cfg    config.Configuration
 }
 
 func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
@@ -185,7 +184,7 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		if err := billingClient.HealthCheck(ctx); err != nil {
 			return nil, fmt.Errorf("billing service health check failed: %w", err)
 		}
-		appHandler.billingClient = billingClient
+		a.BillingClient = billingClient
 	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
@@ -483,6 +482,10 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			adminRouter.Get("/projects/{projectID}/circuit-breaker-config", handler.GetProjectCircuitBreakerConfig)
 			adminRouter.Put("/projects/{projectID}/circuit-breaker-config", handler.UpdateProjectCircuitBreakerConfig)
 			adminRouter.Post("/retry-event-deliveries", handler.RetryEventDeliveries)
+			adminRouter.Get("/retry-event-deliveries/count", handler.CountRetryEventDeliveries)
+			adminRouter.Get("/retry-event-deliveries/batch/{batchID}", handler.GetBatchProgress)
+			adminRouter.Get("/retry-event-deliveries/batches", handler.ListBatchProgress)
+			adminRouter.Delete("/retry-event-deliveries/batch/{batchID}", handler.DeleteBatchProgress)
 		})
 
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
@@ -654,7 +657,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		if a.cfg.Billing.Enabled {
 			billingHandler := &handlers.BillingHandler{
 				Handler:       handler,
-				BillingClient: a.billingClient,
+				BillingClient: a.A.BillingClient,
 			}
 
 			uiRouter.Route("/billing", func(billingRouter chi.Router) {

@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -77,6 +78,29 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create super_user member for organisation owner")
+	}
+
+	if cfg.Billing.Enabled && co.Licenser.BillingModule() {
+		billingClient := billing.NewClient(cfg.Billing)
+
+		if cfg.Host != "" {
+			orgData := map[string]interface{}{
+				"name":          org.Name,
+				"external_id":   org.UID,
+				"billing_email": "",
+				"host":          cfg.Host,
+			}
+
+			_, createErr := billingClient.CreateOrganisation(ctx, orgData)
+			if createErr != nil {
+				// Log error but don't fail organisation creation if billing creation fails
+				log.FromContext(ctx).WithError(createErr).Warn("failed to create organisation in billing service")
+			} else {
+				log.FromContext(ctx).Info("organisation created in billing service")
+			}
+		} else {
+			log.FromContext(ctx).Warn("billing organisation creation skipped: host not configured")
+		}
 	}
 
 	return org, nil

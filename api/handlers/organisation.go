@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -14,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -871,9 +874,25 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status := datastore.EventDeliveryStatus(retryRequest.Status)
-	if !status.IsValid() {
-		_ = render.Render(w, r, util.NewErrorResponse("invalid status: must be one of Scheduled, Processing, Retry, Failure, Success, Discarded", http.StatusBadRequest))
+	// Parse status(es) - can be single status or comma-separated multiple statuses
+	statusStrings := strings.Split(retryRequest.Status, ",")
+	statuses := make([]datastore.EventDeliveryStatus, 0, len(statusStrings))
+
+	for _, statusStr := range statusStrings {
+		statusStr = strings.TrimSpace(statusStr)
+		if statusStr == "" {
+			continue
+		}
+		status := datastore.EventDeliveryStatus(statusStr)
+		if !status.IsValid() {
+			_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("invalid status '%s': must be one of Scheduled, Processing, Retry, Failure, Success, Discarded", statusStr), http.StatusBadRequest))
+			return
+		}
+		statuses = append(statuses, status)
+	}
+
+	if len(statuses) == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("at least one valid status is required", http.StatusBadRequest))
 		return
 	}
 
@@ -888,12 +907,210 @@ func (h *Handler) RetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	statuses := []datastore.EventDeliveryStatus{status}
-	task.RetryEventDeliveries(h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID)
+	if h.A.Redis == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusBadRequest))
+		return
+	}
+
+	// Generate batch ID and create tracker
+	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+	batchID := tracker.GenerateBatchID()
+
+	// Run retry in background goroutine - don't block the response
+	go func() {
+		task.RetryEventDeliveriesWithTracker(h.A.DB, h.A.Queue, statuses, retryRequest.Time, retryRequest.EventID, batchID, tracker)
+	}()
 
 	_ = render.Render(w, r, util.NewServerResponse("Event deliveries retry initiated successfully", map[string]interface{}{
+		"batch_id": batchID,
 		"status":   retryRequest.Status,
 		"time":     retryRequest.Time,
 		"event_id": retryRequest.EventID,
+		"message":  "Retry process started in background",
 	}, http.StatusOK))
+}
+
+// CountRetryEventDeliveries counts event deliveries with a particular status in a timeframe (instance admin only)
+func (h *Handler) CountRetryEventDeliveries(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	status := r.URL.Query().Get("status")
+	timeStr := r.URL.Query().Get("time")
+	eventID := r.URL.Query().Get("event_id")
+
+	if status == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("status is required", http.StatusBadRequest))
+		return
+	}
+	if timeStr == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("time is required", http.StatusBadRequest))
+		return
+	}
+
+	// Parse status(es) - can be single status or comma-separated multiple statuses
+	statusStrings := strings.Split(status, ",")
+	statuses := make([]datastore.EventDeliveryStatus, 0, len(statusStrings))
+
+	for _, statusStr := range statusStrings {
+		statusStr = strings.TrimSpace(statusStr)
+		if statusStr == "" {
+			continue
+		}
+		deliveryStatus := datastore.EventDeliveryStatus(statusStr)
+		if !deliveryStatus.IsValid() {
+			_ = render.Render(w, r, util.NewErrorResponse(fmt.Sprintf("invalid status '%s': must be one of Scheduled, Processing, Retry, Failure, Success, Discarded", statusStr), http.StatusBadRequest))
+			return
+		}
+		statuses = append(statuses, deliveryStatus)
+	}
+
+	if len(statuses) == 0 {
+		_ = render.Render(w, r, util.NewErrorResponse("at least one valid status is required", http.StatusBadRequest))
+		return
+	}
+
+	duration, err := time.ParseDuration(timeStr)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("invalid time format: must be a valid duration (e.g., 1h, 30m, 5h)", http.StatusBadRequest))
+		return
+	}
+
+	now := time.Now()
+	then := now.Add(-duration)
+
+	searchParams := datastore.SearchParams{
+		CreatedAtStart: then.Unix(),
+		CreatedAtEnd:   now.Unix(),
+	}
+
+	eventDeliveryRepo := postgres.NewEventDeliveryRepo(h.A.DB)
+
+	// Count across all statuses
+	var totalCount int64
+	if eventID != "" {
+		// If eventID is provided, use CountEventDeliveries which supports eventID filter
+		// This method accepts multiple statuses, so we can pass all at once
+		totalCount, err = eventDeliveryRepo.CountEventDeliveries(r.Context(), "", []string{}, eventID, statuses, searchParams)
+		if err != nil {
+			log.FromContext(r.Context()).WithError(err).Error("failed to count event deliveries")
+			_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
+			return
+		}
+	} else {
+		// Otherwise, count each status separately and sum them
+		for _, deliveryStatus := range statuses {
+			count, err := eventDeliveryRepo.CountDeliveriesByStatus(r.Context(), "", deliveryStatus, searchParams)
+			if err != nil {
+				log.FromContext(r.Context()).WithError(err).Error("failed to count event deliveries")
+				_ = render.Render(w, r, util.NewErrorResponse("failed to count event deliveries", http.StatusInternalServerError))
+				return
+			}
+			totalCount += count
+		}
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Event deliveries count successful", map[string]interface{}{
+		"num": totalCount,
+	}, http.StatusOK))
+}
+
+// GetBatchProgress retrieves the progress of a batch retry operation (instance admin only)
+func (h *Handler) GetBatchProgress(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	batchID := chi.URLParam(r, "batchID")
+	if batchID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("batch_id is required", http.StatusBadRequest))
+		return
+	}
+
+	if h.A.Redis == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+		return
+	}
+
+	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+
+	// Sync counters before retrieving to get latest progress
+	if err := tracker.SyncCounters(r.Context(), batchID); err != nil {
+		log.FromContext(r.Context()).WithError(err).Warn("failed to sync batch counters, continuing with cached data")
+	}
+
+	progress, err := tracker.GetBatch(r.Context(), batchID)
+	if err != nil {
+		_ = render.Render(w, r, util.NewErrorResponse("batch not found: "+err.Error(), http.StatusNotFound))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Batch progress retrieved successfully", progress, http.StatusOK))
+}
+
+// ListBatchProgress retrieves all batch retry operations (instance admin only)
+func (h *Handler) ListBatchProgress(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	if h.A.Redis == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+		return
+	}
+
+	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+
+	batches, err := tracker.ListBatches(r.Context())
+	if err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to list batches")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to list batches: "+err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	// Sync counters for all batches to get latest progress
+	for _, batch := range batches {
+		if err := tracker.SyncCounters(r.Context(), batch.BatchID); err != nil {
+			log.FromContext(r.Context()).WithError(err).Warnf("failed to sync counters for batch %s", batch.BatchID)
+		}
+		// Re-fetch to get synced data
+		if syncedBatch, err := tracker.GetBatch(r.Context(), batch.BatchID); err == nil {
+			*batch = *syncedBatch
+		}
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Batches retrieved successfully", batches, http.StatusOK))
+}
+
+// DeleteBatchProgress deletes a batch from Redis (instance admin only)
+func (h *Handler) DeleteBatchProgress(w http.ResponseWriter, r *http.Request) {
+	if !h.isInstanceAdmin(r) {
+		_ = render.Render(w, r, util.NewErrorResponse("Unauthorized: instance admin access required", http.StatusForbidden))
+		return
+	}
+
+	batchID := chi.URLParam(r, "batchID")
+	if batchID == "" {
+		_ = render.Render(w, r, util.NewErrorResponse("batch_id is required", http.StatusBadRequest))
+		return
+	}
+
+	if h.A.Redis == nil {
+		_ = render.Render(w, r, util.NewErrorResponse("Redis not configured: batch tracking requires Redis", http.StatusInternalServerError))
+		return
+	}
+
+	tracker := batch_tracker.NewBatchTracker(h.A.Redis)
+
+	if err := tracker.DeleteBatch(r.Context(), batchID); err != nil {
+		log.FromContext(r.Context()).WithError(err).Error("failed to delete batch")
+		_ = render.Render(w, r, util.NewErrorResponse("failed to delete batch: "+err.Error(), http.StatusInternalServerError))
+		return
+	}
+
+	_ = render.Render(w, r, util.NewServerResponse("Batch deleted successfully", nil, http.StatusOK))
 }
