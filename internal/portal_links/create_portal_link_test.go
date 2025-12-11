@@ -302,6 +302,10 @@ func TestCreatePortalLink_WithOwnerID_NoEndpoints(t *testing.T) {
 	require.NotNil(t, portalLink.Endpoints)
 	require.Empty(t, portalLink.Endpoints) // Endpoints should be empty in response
 
+	// Verify that auth_key is set when refresh token type is used
+	require.NotEmpty(t, portalLink.AuthKey, "auth_key should be set for refresh token auth type")
+	require.Contains(t, portalLink.AuthKey, "PRT.", "auth_key should have the correct prefix")
+
 	// Verify portal link was created and endpoints are linked
 	fetchedPortalLink, err := service.GetPortalLink(ctx, project.UID, portalLink.UID)
 	require.NoError(t, err)
@@ -328,6 +332,35 @@ func TestCreatePortalLink_WithRefreshTokenAuthType(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, portalLink)
 	require.Equal(t, datastore.PortalAuthTypeRefreshToken, portalLink.AuthType)
+
+	// Verify that auth_key is set when refresh token type is used
+	require.NotEmpty(t, portalLink.AuthKey, "auth_key should be set for refresh token auth type")
+	require.Contains(t, portalLink.AuthKey, "PRT.", "auth_key should have the correct prefix")
+}
+
+func TestCreatePortalLink_WithStaticTokenAuthType_NoAuthKey(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	project := seedTestData(t, db)
+
+	logger := log.NewLogger(nil)
+	service := New(logger, db)
+
+	request := &models.CreatePortalLinkRequest{
+		Name:              "Static Token Portal Link",
+		OwnerID:           ulid.Make().String(),
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		CanManageEndpoint: true,
+		Endpoints:         []string{},
+	}
+
+	portalLink, err := service.CreatePortalLink(ctx, project.UID, request)
+
+	require.NoError(t, err)
+	require.NotNil(t, portalLink)
+	require.Equal(t, datastore.PortalAuthTypeStaticToken, portalLink.AuthType)
+
+	// Verify that auth_key is NOT set for static token auth type
+	require.Empty(t, portalLink.AuthKey, "auth_key should not be set for static token auth type")
 }
 
 func TestCreatePortalLink_EmptyOwnerID_ShouldFail(t *testing.T) {

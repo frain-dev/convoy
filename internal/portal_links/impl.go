@@ -212,6 +212,32 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 		}
 	}
 
+	// Generate auth key if auth type is refresh token
+	var authKey string
+	if datastore.PortalAuthType(request.AuthType) == datastore.PortalAuthTypeRefreshToken {
+		portalToken, err := generateToken(uid)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to generate auth token")
+			return nil, &ServiceError{ErrMsg: "failed to generate auth token", Err: err}
+		}
+
+		// Create a portal link auth token
+		err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
+			ID:             portalToken.UID,
+			PortalLinkID:   uid,
+			TokenMaskID:    pgtype.Text{String: portalToken.MaskId, Valid: true},
+			TokenHash:      pgtype.Text{String: portalToken.Hash, Valid: true},
+			TokenSalt:      pgtype.Text{String: portalToken.Salt, Valid: true},
+			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
+		})
+		if err != nil {
+			s.logger.WithError(err).Error("failed to create portal link auth token")
+			return nil, &ServiceError{ErrMsg: "failed to create auth token", Err: err}
+		}
+
+		authKey = portalToken.AuthKey
+	}
+
 	if err = tx.Commit(ctx); err != nil {
 		s.logger.WithError(err).Error("failed to commit transaction")
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
@@ -232,6 +258,7 @@ func (s *Service) CreatePortalLink(ctx context.Context, projectId string, reques
 		Endpoints:         endpoints,
 		AuthType:          datastore.PortalAuthType(request.AuthType),
 		CanManageEndpoint: request.CanManageEndpoint,
+		AuthKey:           authKey,
 	}, nil
 }
 
@@ -585,26 +612,16 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 			}
 
 			// Generate auth token
-			maskId, key := generateAuthKey()
-			salt, err := util.GenerateSecret()
+			portalToken, err := generateToken(portalLinks[i].UID)
 			if err != nil {
-				s.logger.WithError(err).Error("failed to generate salt for auth token")
+				s.logger.WithError(err).Error("failed to generate auth token")
 				return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
 			}
 
-			dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
-			encodedKey := base64.URLEncoding.EncodeToString(dk)
+			authTokens = append(authTokens, *portalToken)
 
-			authToken := datastore.PortalToken{
-				UID:          ulid.Make().String(),
-				PortalLinkID: portalLinks[i].UID,
-				MaskId:       maskId,
-				Hash:         encodedKey,
-				Salt:         salt,
-				AuthKey:      key,
-				ExpiresAt:    null.NewTime(time.Now().Add(time.Hour), true),
-			}
-			authTokens = append(authTokens, authToken)
+			// Set the auth key on the portal link so it's returned to the caller
+			portalLinks[i].AuthKey = portalToken.AuthKey
 		}
 
 		// Bulk insert auth tokens if any were generated
@@ -676,6 +693,59 @@ func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) 
 		})
 	}
 
+	// Generate auth tokens for portal links that need them (non-static token types)
+	if len(portalLinks) > 0 {
+		var authTokens []datastore.PortalToken
+		for i := range portalLinks {
+			if portalLinks[i].AuthType == datastore.PortalAuthTypeStaticToken {
+				continue
+			}
+
+			// Generate auth token
+			portalToken, err := generateToken(portalLinks[i].UID)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to generate auth token")
+				return nil, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
+			}
+
+			authTokens = append(authTokens, *portalToken)
+
+			// Set the auth key on the portal link so it's returned to the caller
+			portalLinks[i].AuthKey = portalToken.AuthKey
+		}
+
+		// Bulk insert auth tokens if any were generated
+		if len(authTokens) > 0 {
+			tx, err := s.db.Begin(ctx)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to start transaction for auth tokens")
+				return nil, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
+			}
+			defer tx.Rollback(ctx)
+
+			qtx := repo.New(tx)
+			for _, token := range authTokens {
+				err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
+					ID:             token.UID,
+					PortalLinkID:   token.PortalLinkID,
+					TokenMaskID:    pgtype.Text{String: token.MaskId, Valid: true},
+					TokenHash:      pgtype.Text{String: token.Hash, Valid: true},
+					TokenSalt:      pgtype.Text{String: token.Salt, Valid: true},
+					TokenExpiresAt: pgtype.Timestamptz{Time: token.ExpiresAt.Time, Valid: token.ExpiresAt.Valid},
+				})
+				if err != nil {
+					s.logger.WithError(err).Error("failed to create portal link auth token")
+					return nil, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
+				}
+			}
+
+			if err = tx.Commit(ctx); err != nil {
+				s.logger.WithError(err).Error("failed to commit auth tokens transaction")
+				return nil, &ServiceError{ErrMsg: "failed to generate auth tokens", Err: err}
+			}
+		}
+	}
+
 	return portalLinks, nil
 }
 
@@ -709,4 +779,29 @@ func (s *Service) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*d
 		TokenHash:      row.TokenHash.String,
 		TokenExpiresAt: null.NewTime(row.TokenExpiresAt.Time, row.TokenExpiresAt.Valid),
 	}, nil
+}
+
+func generateToken(portalLinkId string) (*datastore.PortalToken, error) {
+	maskId, key := generateAuthKey()
+	salt, err := util.GenerateSecret()
+	if err != nil {
+		return nil, err
+	}
+
+	dk := pbkdf2.Key([]byte(key), []byte(salt), 4096, 32, sha256.New)
+	encodedKey := base64.URLEncoding.EncodeToString(dk)
+
+	portalToken := &datastore.PortalToken{
+		UID:          ulid.Make().String(),
+		PortalLinkID: portalLinkId,
+		MaskId:       maskId,
+		Hash:         encodedKey,
+		Salt:         salt,
+		AuthKey:      key,
+		ExpiresAt:    null.NewTime(time.Now().Add(time.Hour), true),
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	return portalToken, nil
 }
