@@ -61,6 +61,7 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 	@Output('selectedOption') selectedOption = new EventEmitter<any>();
 	@Output('searchString') searchString = new EventEmitter<any>();
 	@ViewChild('searchFilter', { static: false }) searchFilter!: ElementRef;
+	@ViewChild('dropdownRef', { static: false }) dropdownRef!: DropdownComponent;
 	selectedValue: any;
 	selectedOptions: any = [];
 
@@ -106,6 +107,14 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 		} else {
 			this.selectedValue = option;
 			this.selectedOption.emit(option?.uid || option);
+			// Update form control value
+			if (this.control) {
+				this.control.setValue(option?.uid || option);
+			}
+			// Close dropdown
+			if (this.dropdownRef) {
+				this.dropdownRef.show = false;
+			}
 		}
 	}
 
@@ -115,16 +124,28 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 	}
 
 	updateSelectedOptions() {
-		if (!this.selectedOptions?.length) return;
+		if (!this.selectedOptions?.length) {
+			// Clear form control if no options selected
+			if (this.control) {
+				this.control.setValue([], { emitEvent: true });
+			}
+			return;
+		}
+		
+		// Update form control with full option objects (not just IDs)
+		// This allows the parent component to access both uid and name
+		if (this.control) {
+			this.control.setValue(this.selectedOptions, { emitEvent: true });
+		}
+		
+		// Also emit the IDs for backward compatibility
 		let selectedIds: any = [];
-
 		this.selectedOptions.forEach((option: any) => {
 			if (typeof option !== 'string') {
 				if (this.selectionType === 'default') selectedIds.push(option.uid);
 				else selectedIds.push(option.name);
 			} else selectedIds.push(option);
 		});
-
 		this.selectedOption.emit(selectedIds);
 	}
 
@@ -136,7 +157,17 @@ export class SelectComponent implements OnInit, AfterViewChecked, ControlValueAc
 
 	registerOnTouched() {}
 
-	writeValue(value: string | Array<any>) {
+	writeValue(value: string | Array<any> | null | undefined) {
+		if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) {
+			// Clear selected value when value is null, undefined, or empty array
+			if (!this.multiple) {
+				this.selectedValue = null;
+			} else {
+				this.selectedOptions = [];
+			}
+			return;
+		}
+		
 		if (value) {
 			if (this.options?.length && typeof this.options[0] !== 'string' && !this.multiple) return (this.selectedValue = this.options?.find(option => option.uid === value));
 			if (this.multiple && typeof value !== 'string' && this.selectedValues?.length) this.selectedOptions = this.selectedValues;

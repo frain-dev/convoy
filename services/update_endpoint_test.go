@@ -21,16 +21,17 @@ import (
 
 func provideUpdateEndpointService(ctrl *gomock.Controller, e models.UpdateEndpoint, Endpoint *datastore.Endpoint, Project *datastore.Project) *UpdateEndpointService {
 	return &UpdateEndpointService{
-		Cache:              mocks.NewMockCache(ctrl),
-		EndpointRepo:       mocks.NewMockEndpointRepository(ctrl),
-		ProjectRepo:        mocks.NewMockProjectRepository(ctrl),
-		Licenser:           mocks.NewMockLicenser(ctrl),
-		FeatureFlag:        fflag.NoopFflag(),
-		FeatureFlagFetcher: mocks.NewMockFeatureFlagFetcherWithMTLSEnabled(),
-		Logger:             log.NewLogger(os.Stdout),
-		E:                  e,
-		Endpoint:           Endpoint,
-		Project:            Project,
+		Cache:                      mocks.NewMockCache(ctrl),
+		EndpointRepo:               mocks.NewMockEndpointRepository(ctrl),
+		ProjectRepo:                mocks.NewMockProjectRepository(ctrl),
+		Licenser:                   mocks.NewMockLicenser(ctrl),
+		FeatureFlag:                fflag.NoopFflag(),
+		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
+		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),
+		Logger:                     log.NewLogger(os.Stdout),
+		E:                          e,
+		Endpoint:                   Endpoint,
+		Project:                    Project,
 	}
 }
 
@@ -559,7 +560,8 @@ func TestUpdateEndpointService_Run(t *testing.T) {
 
 			// Override fetcher for feature flag disabled test
 			if tc.name == "should_ignore_mtls_when_feature_flag_disabled" {
-				as.FeatureFlagFetcher = mocks.NewMockFeatureFlagFetcherWithMTLSDisabled()
+				as.FeatureFlagFetcher = mocks.NewMockFeatureFlagFetcher()
+				as.EarlyAdopterFeatureFetcher = mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSDisabled()
 			}
 
 			err := config.LoadConfig("")

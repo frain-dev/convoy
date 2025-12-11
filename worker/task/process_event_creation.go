@@ -58,17 +58,18 @@ type DefaultEventChannel struct {
 }
 
 type EventProcessorDeps struct {
-	EndpointRepo       datastore.EndpointRepository
-	EventRepo          datastore.EventRepository
-	ProjectRepo        datastore.ProjectRepository
-	EventQueue         queue.Queuer
-	SubRepo            datastore.SubscriptionRepository
-	FilterRepo         datastore.FilterRepository
-	Licenser           license.Licenser
-	TracerBackend      tracer.Backend
-	OAuth2TokenService OAuth2TokenService
-	FeatureFlag        *fflag.FFlag
-	FeatureFlagFetcher fflag.FeatureFlagFetcher
+	EndpointRepo               datastore.EndpointRepository
+	EventRepo                  datastore.EventRepository
+	ProjectRepo                datastore.ProjectRepository
+	EventQueue                 queue.Queuer
+	SubRepo                    datastore.SubscriptionRepository
+	FilterRepo                 datastore.FilterRepository
+	Licenser                   license.Licenser
+	TracerBackend              tracer.Backend
+	OAuth2TokenService         OAuth2TokenService
+	FeatureFlag                *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 }
 
 func NewDefaultEventChannel() *DefaultEventChannel {
@@ -238,17 +239,18 @@ func ProcessEventCreation(deps EventProcessorDeps) func(context.Context, *asynq.
 }
 
 type WriteEventDeliveriesToQueueOptions struct {
-	Subscriptions      []datastore.Subscription
-	Event              *datastore.Event
-	Project            *datastore.Project
-	EventDeliveryRepo  datastore.EventDeliveryRepository
-	EventQueue         queue.Queuer
-	DeviceRepo         datastore.DeviceRepository
-	EndpointRepo       datastore.EndpointRepository
-	Licenser           license.Licenser
-	OAuth2TokenService OAuth2TokenService
-	FeatureFlag        *fflag.FFlag
-	FeatureFlagFetcher fflag.FeatureFlagFetcher
+	Subscriptions              []datastore.Subscription
+	Event                      *datastore.Event
+	Project                    *datastore.Project
+	EventDeliveryRepo          datastore.EventDeliveryRepository
+	EventQueue                 queue.Queuer
+	DeviceRepo                 datastore.DeviceRepository
+	EndpointRepo               datastore.EndpointRepository
+	Licenser                   license.Licenser
+	OAuth2TokenService         OAuth2TokenService
+	FeatureFlag                *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
 }
 
 func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesToQueueOptions) error {
@@ -290,7 +292,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 					headers.MergeHeaders(opts.Event.Headers)
 				case datastore.OAuth2Authentication:
 					// Check feature flag for OAuth2 using project's organisation ID
-					oauth2Enabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, opts.FeatureFlagFetcher, opts.Project.OrganisationID)
+					oauth2Enabled := opts.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, opts.FeatureFlagFetcher, opts.EarlyAdopterFeatureFetcher, opts.Project.OrganisationID)
 					if !oauth2Enabled {
 						log.FromContext(ctx).Warn("Endpoint has OAuth2 configured but feature flag is disabled, skipping OAuth2 authentication")
 						// Continue without OAuth2 authentication if feature flag is disabled

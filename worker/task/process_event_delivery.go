@@ -36,19 +36,20 @@ const (
 
 //nolint:cyclop // Large function handling complex event delivery logic with many conditional branches
 type EventDeliveryProcessorDeps struct {
-	EndpointRepo          datastore.EndpointRepository
-	EventDeliveryRepo     datastore.EventDeliveryRepository
-	Licenser              license.Licenser
-	ProjectRepo           datastore.ProjectRepository
-	Queue                 queue.Queuer
-	RateLimiter           limiter.RateLimiter
-	Dispatcher            *net.Dispatcher
-	AttemptsRepo          datastore.DeliveryAttemptsRepository
-	CircuitBreakerManager *circuit_breaker.CircuitBreakerManager
-	FeatureFlag           *fflag.FFlag
-	FeatureFlagFetcher    fflag.FeatureFlagFetcher
-	TracerBackend         tracer.Backend
-	OAuth2TokenService    OAuth2TokenService
+	EndpointRepo               datastore.EndpointRepository
+	EventDeliveryRepo          datastore.EventDeliveryRepository
+	Licenser                   license.Licenser
+	ProjectRepo                datastore.ProjectRepository
+	Queue                      queue.Queuer
+	RateLimiter                limiter.RateLimiter
+	Dispatcher                 *net.Dispatcher
+	AttemptsRepo               datastore.DeliveryAttemptsRepository
+	CircuitBreakerManager      *circuit_breaker.CircuitBreakerManager
+	FeatureFlag                *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	TracerBackend              tracer.Backend
+	OAuth2TokenService         OAuth2TokenService
 }
 
 func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context, *asynq.Task) error {
@@ -223,7 +224,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 
 		// Check feature flag for OAuth2 if endpoint uses OAuth2 authentication
 		if endpoint.Authentication != nil && endpoint.Authentication.Type == datastore.OAuth2Authentication {
-			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, project.OrganisationID)
+			oauth2Enabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
 			if !oauth2Enabled {
 				log.FromContext(ctx).Warn("Endpoint has OAuth2 configured but feature flag is disabled, removing OAuth2 authorization header")
 				// Remove OAuth2 authorization header if feature flag is disabled
@@ -262,7 +263,7 @@ func ProcessEventDelivery(deps EventDeliveryProcessorDeps) func(context.Context,
 			}
 
 			// Check feature flag for mTLS using project's organisation ID
-			mtlsEnabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, deps.FeatureFlagFetcher, project.OrganisationID)
+			mtlsEnabled := deps.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, deps.FeatureFlagFetcher, deps.EarlyAdopterFeatureFetcher, project.OrganisationID)
 			if !mtlsEnabled {
 				log.FromContext(ctx).Warn("Endpoint has mTLS configured but feature flag is disabled, continuing without mTLS")
 				// Continue without mTLS if feature flag is disabled

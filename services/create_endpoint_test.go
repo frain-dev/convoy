@@ -28,14 +28,15 @@ import (
 
 func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoint, projectID string) *CreateEndpointService {
 	return &CreateEndpointService{
-		EndpointRepo:       mocks.NewMockEndpointRepository(ctrl),
-		ProjectRepo:        mocks.NewMockProjectRepository(ctrl),
-		Licenser:           mocks.NewMockLicenser(ctrl),
-		Logger:             log.NewLogger(os.Stdout),
-		FeatureFlag:        fflag.NoopFflag(),
-		FeatureFlagFetcher: mocks.NewMockFeatureFlagFetcherWithMTLSEnabled(),
-		E:                  e,
-		ProjectID:          projectID,
+		EndpointRepo:               mocks.NewMockEndpointRepository(ctrl),
+		ProjectRepo:                mocks.NewMockProjectRepository(ctrl),
+		Licenser:                   mocks.NewMockLicenser(ctrl),
+		Logger:                     log.NewLogger(os.Stdout),
+		FeatureFlag:                fflag.NoopFflag(),
+		FeatureFlagFetcher:         mocks.NewMockFeatureFlagFetcher(),
+		EarlyAdopterFeatureFetcher: mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSEnabled(),
+		E:                          e,
+		ProjectID:                  projectID,
 	}
 }
 
@@ -467,7 +468,8 @@ func TestCreateEndpointService_Run(t *testing.T) {
 
 			// Override fetcher for feature flag disabled test
 			if tc.name == "should_ignore_mtls_when_feature_flag_disabled" {
-				as.FeatureFlagFetcher = mocks.NewMockFeatureFlagFetcherWithMTLSDisabled()
+				as.FeatureFlagFetcher = mocks.NewMockFeatureFlagFetcher()
+				as.EarlyAdopterFeatureFetcher = mocks.NewMockEarlyAdopterFeatureFetcherWithMTLSDisabled()
 			}
 
 			// Load config and set SkipPingValidation via ConfigFunc

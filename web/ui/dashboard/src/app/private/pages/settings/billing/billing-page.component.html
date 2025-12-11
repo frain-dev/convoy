@@ -305,7 +305,7 @@
 
             <convoy-input-field>
               <label for="vatNumber" convoy-label required="true">VAT number</label>
-              <input type="text" id="vatNumber" convoy-input formControlName="vatNumber" placeholder="Enter VAT number" />
+              <input type="text" id="vatNumber" convoy-input formControlName="vatNumber" [placeholder]="vatPlaceholder" />
               <convoy-input-error *ngIf="vatForm.get('vatNumber')?.touched && vatForm.get('vatNumber')?.invalid">
               <span *ngIf="vatForm.get('vatNumber')?.errors?.['required']">Please enter VAT number</span>
               <span *ngIf="vatForm.get('vatNumber')?.errors?.['invalidVatNumber']">Please enter a valid VAT number format</span>

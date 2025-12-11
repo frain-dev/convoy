@@ -1,0 +1,101 @@
+<div class="flex justify-between items-center mb-28px">
+	<div>
+		<h3 class="font-semibold">Organisation Overrides</h3>
+		<p class="text-12 text-neutral-10">Manage feature flag overrides for organisations</p>
+	</div>
+</div>
+
+<!-- Organisation Selector -->
+<div class="mb-24px" [formGroup]="organisationForm">
+	<convoy-select
+		[options]="getOrganisationOptions()"
+		name="organisation"
+		formControlName="organisation"
+		label="Select Organisation"
+		placeholder="Select an organisation"
+		[searchable]="true"
+		(selectedOption)="onOrganisationSelected($event)"
+		(searchString)="filterOrganisations($event)"
+	></convoy-select>
+</div>
+
+<!-- Overrides for Selected Organisation -->
+<div *ngIf="selectedOrganisation && !isLoadingOverrides">
+	<div class="mb-16px">
+		<label convoy-label>Overrides for: {{ selectedOrganisation.name }}</label>
+	</div>
+
+	<div *ngIf="featureFlags.length === 0" class="p-24px bg-neutral-a2 rounded-8px">
+		<p class="text-14 text-neutral-10">No feature flags available</p>
+	</div>
+
+	<div *ngIf="featureFlags.length > 0" class="space-y-16px">
+		<div *ngFor="let flag of featureFlags; trackBy: trackByFeatureKey" convoy-card class="p-24px">
+			<div class="flex items-start justify-between mb-16px">
+				<div class="flex-1 mr-24px">
+					<div class="flex items-center gap-8px mb-8px">
+						<label convoy-label>{{ getFeatureFlagDisplayName(flag.feature_key) }}</label>
+						<convoy-tag *ngIf="isFeatureFlagOverridden(flag)" size="sm" color="primary">Overridden</convoy-tag>
+						<convoy-tag *ngIf="!flag.allow_override" size="sm" color="warning">No Override</convoy-tag>
+					</div>
+					<p class="text-12 text-neutral-10 mt-4px">Key: {{ flag.feature_key }}</p>
+					<div class="flex items-center gap-12px mt-8px">
+						<div class="flex items-center gap-4px">
+							<span class="text-11 text-neutral-11">Default:</span>
+							<convoy-tag [color]="flag.enabled ? 'success' : 'error'" size="sm">
+								{{ flag.enabled ? 'Enabled' : 'Disabled' }}
+							</convoy-tag>
+						</div>
+						<div class="flex items-center gap-4px">
+							<span class="text-11 text-neutral-11">Effective:</span>
+							<convoy-tag [color]="getEffectiveState(flag) ? 'success' : 'error'" size="sm">
+								{{ getEffectiveState(flag) ? 'Enabled' : 'Disabled' }}
+							</convoy-tag>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="flex items-center justify-between pt-16px border-t border-neutral-5">
+				<div class="flex-1">
+					<label convoy-label class="text-12">Override State</label>
+					<p class="text-11 text-neutral-11 mt-4px">
+						<span *ngIf="!flag.allow_override">This feature flag does not allow overrides</span>
+						<span *ngIf="flag.allow_override && !isFeatureFlagOverridden(flag)">No override set - using default</span>
+						<span *ngIf="flag.allow_override && isFeatureFlagOverridden(flag)">Override active</span>
+					</p>
+				</div>
+				<div *ngIf="flag.allow_override" class="flex items-center gap-8px">
+					<convoy-toggle
+						[isChecked]="getEffectiveState(flag)"
+						[name]="'override-' + flag.feature_key"
+						[className]="isUpdatingOverride ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''"
+						(onChange)="toggleOverride(flag, $event)"
+					></convoy-toggle>
+					<button
+						*ngIf="isFeatureFlagOverridden(flag)"
+						convoy-button
+						size="sm"
+						color="error"
+						fill="text"
+						[disabled]="isUpdatingOverride"
+						(click)="removeOverride(flag)"
+						class="!px-8px"
+					>
+						Remove
+					</button>
+				</div>
+				<div *ngIf="!flag.allow_override" class="text-11 text-neutral-11 italic">
+					Not available
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div *ngIf="isLoadingOverrides" class="flex items-center justify-center py-40px">
+	<convoy-loader></convoy-loader>
+</div>
+
+<div *ngIf="!selectedOrganisation" class="p-24px bg-neutral-a2 rounded-8px text-center">
+	<p class="text-14 text-neutral-10">Select an organisation to manage feature flag overrides</p>
+</div>

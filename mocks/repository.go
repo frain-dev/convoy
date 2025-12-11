@@ -1033,6 +1033,22 @@ func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisationsPaged(arg0, a
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationsPaged", reflect.TypeOf((*MockOrganisationRepository)(nil).LoadOrganisationsPaged), arg0, arg1)
 }
 
+// LoadOrganisationsPagedWithSearch mocks base method.
+func (m *MockOrganisationRepository) LoadOrganisationsPagedWithSearch(arg0 context.Context, arg1 datastore.Pageable, arg2 string) ([]datastore.Organisation, datastore.PaginationData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LoadOrganisationsPagedWithSearch", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]datastore.Organisation)
+	ret1, _ := ret[1].(datastore.PaginationData)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// LoadOrganisationsPagedWithSearch indicates an expected call of LoadOrganisationsPagedWithSearch.
+func (mr *MockOrganisationRepositoryMockRecorder) LoadOrganisationsPagedWithSearch(arg0, arg1, arg2 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadOrganisationsPagedWithSearch", reflect.TypeOf((*MockOrganisationRepository)(nil).LoadOrganisationsPagedWithSearch), arg0, arg1, arg2)
+}
+
 // UpdateOrganisation mocks base method.
 func (m *MockOrganisationRepository) UpdateOrganisation(arg0 context.Context, arg1 *datastore.Organisation) error {
 	m.ctrl.T.Helper()

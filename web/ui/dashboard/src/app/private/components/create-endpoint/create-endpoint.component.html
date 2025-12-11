@@ -168,10 +168,12 @@
 							<div class="flex items-center gap-12px">
 								<div class="flex-1">
 									<convoy-select
-										[options]="[
-											{ uid: 'api_key', name: 'API Key' },
-											{ uid: 'oauth2', name: 'OAuth2' }
-										]"
+										[options]="privateService.getProjectDetails?.type === 'incoming' 
+											? [{ uid: 'api_key', name: 'API Key' }]
+											: [
+												{ uid: 'api_key', name: 'API Key' },
+												{ uid: 'oauth2', name: 'OAuth2' }
+											]"
 										name="auth_type"
 										formControlName="type"
 										placeholder="Select authentication type"

@@ -21,17 +21,18 @@ import (
 )
 
 type UpdateEndpointService struct {
-	Cache              cache.Cache
-	EndpointRepo       datastore.EndpointRepository
-	ProjectRepo        datastore.ProjectRepository
-	Licenser           license.Licenser
-	FeatureFlag        *fflag.FFlag
-	FeatureFlagFetcher fflag.FeatureFlagFetcher
-	DB                 database.Database
-	Logger             log.StdLogger
-	E                  models.UpdateEndpoint
-	Endpoint           *datastore.Endpoint
-	Project            *datastore.Project
+	Cache                      cache.Cache
+	EndpointRepo               datastore.EndpointRepository
+	ProjectRepo                datastore.ProjectRepository
+	Licenser                   license.Licenser
+	FeatureFlag                *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	DB                         database.Database
+	Logger                     log.StdLogger
+	E                          models.UpdateEndpoint
+	Endpoint                   *datastore.Endpoint
+	Project                    *datastore.Project
 }
 
 func (a *UpdateEndpointService) Run(ctx context.Context) (*datastore.Endpoint, error) {
@@ -210,7 +211,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 		}
 
 		// Check feature flag for OAuth2 using project's organisation ID
-		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.Project.OrganisationID)
+		oauth2Enabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.OAuthTokenExchange, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, a.Project.OrganisationID)
 		if !oauth2Enabled {
 			log.FromContext(ctx).Warn("OAuth2 configuration provided but feature flag not enabled, ignoring OAuth2 config")
 			// Remove OAuth2 authentication if feature flag is disabled
@@ -236,7 +237,7 @@ func (a *UpdateEndpointService) updateEndpoint(ctx context.Context, endpoint *da
 			}
 
 			// Updating or setting new mTLS cert - both fields required
-			mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.Project.OrganisationID)
+			mtlsEnabled := a.FeatureFlag.CanAccessOrgFeature(ctx, fflag.MTLS, a.FeatureFlagFetcher, a.EarlyAdopterFeatureFetcher, a.Project.OrganisationID)
 			if !mtlsEnabled {
 				log.FromContext(ctx).Warn("mTLS configuration provided but feature flag not enabled, ignoring mTLS config")
 				endpoint.MtlsClientCert = nil

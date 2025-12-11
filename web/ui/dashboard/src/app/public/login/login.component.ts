@@ -128,11 +128,17 @@ export class LoginComponent implements OnInit, AfterViewInit {
 			}
 
 			const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+			const isDifferentUser = lastUserId && lastUserId !== response.data.uid;
 
-            let refresh = true;
-            if (lastUserId && lastUserId !== response.data.uid) {
-				localStorage.clear();
-                refresh = true;
+			if (isDifferentUser) {
+				// Clear all cached data when switching users
+				// Clear the previous user's session data but preserve their per-user storage
+				localStorage.removeItem('CONVOY_AUTH');
+				localStorage.removeItem('CONVOY_AUTH_TOKENS');
+				localStorage.removeItem('CONVOY_ORG');
+				localStorage.removeItem('CONVOY_PROJECT');
+				// Clear cache for the previous user
+				this.privateService.clearCache(true, lastUserId);
 			}
 
 			localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
@@ -148,8 +154,6 @@ export class LoginComponent implements OnInit, AfterViewInit {
 
 			await this.getOrganisations();
 			await this.router.navigateByUrl('/');
-			if (refresh)
-				window.location.reload();
 		} catch (error: any) {
 			console.error('Login failed:', error);
 
@@ -238,19 +242,33 @@ export class LoginComponent implements OnInit, AfterViewInit {
                         return;
                     }
 
-                    // Show success notification
+                    // Check if this is a different user
+					const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+					const isDifferentUser = lastUserId && lastUserId !== response.data.uid;
+
+					if (isDifferentUser) {
+						// Clear all cached data when switching users
+						// Clear the previous user's session data but preserve their per-user storage
+						localStorage.removeItem('CONVOY_AUTH');
+						localStorage.removeItem('CONVOY_AUTH_TOKENS');
+						localStorage.removeItem('CONVOY_ORG');
+						localStorage.removeItem('CONVOY_PROJECT');
+						// Clear cache for the previous user
+						this.privateService.clearCache(true, lastUserId);
+					}
+
+					// Show success notification
 					this.generalService.showNotification({
 						message: 'Google login successful! Welcome back.',
 						style: 'success'
 					});
 
+					localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 					localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 					localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
-					localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 
-					// await this.getOrganisations();
+					await this.getOrganisations();
 					await this.router.navigateByUrl('/');
-					// window.location.reload();
                 }
             }
         } catch (error: any) {

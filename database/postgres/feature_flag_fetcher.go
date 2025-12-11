@@ -29,9 +29,8 @@ func (f *FeatureFlagFetcherImpl) FetchFeatureFlag(ctx context.Context, key strin
 	}
 
 	return &fflag.FeatureFlagInfo{
-		UID:           flag.UID,
-		Enabled:       flag.Enabled,
-		AllowOverride: flag.AllowOverride,
+		UID:     flag.UID,
+		Enabled: flag.Enabled,
 	}, nil
 }
 

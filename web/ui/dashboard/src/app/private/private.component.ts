@@ -8,6 +8,7 @@ import { JwtHelperService } from '@auth0/angular-jwt';
 import { differenceInSeconds } from 'date-fns';
 import { Observable, Subscription } from 'rxjs';
 import { LicensesService } from '../services/licenses/licenses.service';
+import { RbacService } from '../services/rbac/rbac.service';
 
 @Component({
 	selector: 'app-private',
@@ -34,6 +35,7 @@ export class PrivateComponent implements OnInit {
 	});
 	creatingOrganisation = false;
 	checkTokenInterval: any;
+	isInstanceAdmin = false;
 	onboardingSteps = [
 		{ step: 'Create an Organization', id: 'organisation', description: 'Add your organization details and get set up.', stepColor: 'bg-[#416FF4] shadow-[0_22px_24px_0px_rgba(65,111,244,0.2)]', class: 'border-[rgba(65,111,244,0.2)]', currentStage: 'current' },
 		{
@@ -48,22 +50,69 @@ export class PrivateComponent implements OnInit {
 	private jwtHelper: JwtHelperService = new JwtHelperService();
 	private shouldShowOrgSubscription: Subscription | undefined;
 
-	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService) {}
+	constructor(private generalService: GeneralService, public router: Router, public privateService: PrivateService, private formBuilder: FormBuilder, public licenseService: LicensesService, private rbacService: RbacService) {}
 
 	async ngOnInit() {
 		this.shouldShowOrgModal();
 
+		// Check if user changed and clear cache if needed
+		const currentUserId = this.authDetails()?.uid;
+		const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+		if (lastUserId && currentUserId && lastUserId !== currentUserId) {
+			// User changed, clear cache and localStorage items
+			this.privateService.clearCache(true);
+		}
+		if (currentUserId) {
+			localStorage.setItem('CONVOY_LAST_USER_ID', currentUserId);
+		}
+
 		this.checkIfTokenIsExpired();
 		await Promise.all([this.getConfiguration(), this.licenseService.setLicenses(), this.getUserDetails(), this.getOrganizations()]);
+		// Check instance admin access after organizations are loaded
+		await this.checkInstanceAdminAccess();
 	}
 
 	ngOnDestroy() {
-		if (this.shouldShowOrgSubscription) this.shouldShowOrgSubscription.unsubscribe();
+		if (this.shouldShowOrgSubscription) {
+			this.shouldShowOrgSubscription.unsubscribe();
+			this.shouldShowOrgSubscription = undefined;
+		}
+		if (this.checkTokenInterval) {
+			clearTimeout(this.checkTokenInterval);
+			this.checkTokenInterval = undefined;
+		}
 	}
 
 	async logout() {
-		await this.privateService.logout();
+		// Clear intervals and subscriptions first to prevent any ongoing operations
+		if (this.checkTokenInterval) {
+			clearTimeout(this.checkTokenInterval);
+			this.checkTokenInterval = undefined;
+		}
+		if (this.shouldShowOrgSubscription) {
+			this.shouldShowOrgSubscription.unsubscribe();
+			this.shouldShowOrgSubscription = undefined;
+		}
+
+		try {
+			await Promise.race([
+				this.privateService.logout(),
+				new Promise((_, reject) => setTimeout(() => reject(new Error('Logout timeout')), 5000))
+			]);
+		} catch (error) {
+			// Error handled silently - cleanup continues
+		}
+
+		this.privateService.clearCache();
+
 		localStorage.removeItem('CONVOY_AUTH');
+		localStorage.removeItem('CONVOY_AUTH_TOKENS');
+		localStorage.removeItem('CONVOY_LAST_USER_ID');
+		localStorage.removeItem('CONVOY_PORTAL_LINK_AUTH_TOKEN');
+		localStorage.removeItem('GOOGLE_OAUTH_ID_TOKEN');
+		localStorage.removeItem('GOOGLE_OAUTH_USER_INFO');
+		localStorage.removeItem('AUTH_TYPE');
+
 		this.router.navigateByUrl('/login');
 	}
 
@@ -109,8 +158,17 @@ export class PrivateComponent implements OnInit {
 		this.isLoadingOrganisations = true;
 		this.privateService.organisationDetails = organisation;
 		this.userOrganization = organisation;
-		localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
+
+		// Save to per-user storage
+		const userId = this.authDetails()?.uid;
+		if (userId) {
+			this.privateService.setUserOrg(userId, organisation);
+		} else {
+			localStorage.setItem('CONVOY_ORG', JSON.stringify(organisation));
+		}
+
 		await this.privateService.getProjects({ refresh: true });
+		await this.checkInstanceAdminAccess();
 		this.showOrgDropdown = false;
 
 		this.router.navigateByUrl('/projects');
@@ -119,27 +177,40 @@ export class PrivateComponent implements OnInit {
 		}, 1000);
 	}
 
-	checkForSelectedOrganisation() {
+	async checkForSelectedOrganisation() {
 		if (!this.organisations?.length) return;
 
 		const selectedOrganisation = localStorage.getItem('CONVOY_ORG');
-		if (!selectedOrganisation || selectedOrganisation === 'undefined') return this.updateOrganisationDetails();
+		if (!selectedOrganisation || selectedOrganisation === 'undefined') {
+			await this.updateOrganisationDetails();
+			return;
+		}
 
 		const organisationDetails = JSON.parse(selectedOrganisation);
 		if (this.organisations.find(org => org.uid === organisationDetails.uid)) {
 			this.privateService.organisationDetails = organisationDetails;
 			this.userOrganization = organisationDetails;
+			await this.checkInstanceAdminAccess();
 		} else {
-			this.updateOrganisationDetails();
+			await this.updateOrganisationDetails();
 		}
 	}
 
-	updateOrganisationDetails() {
+	async updateOrganisationDetails() {
 		if (!this.organisations?.length) return;
 
 		this.privateService.organisationDetails = this.organisations[0];
 		this.userOrganization = this.organisations[0];
-		localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
+
+		// Save to per-user storage
+		const userId = this.authDetails()?.uid;
+		if (userId) {
+			this.privateService.setUserOrg(userId, this.organisations[0]);
+		} else {
+			localStorage.setItem('CONVOY_ORG', JSON.stringify(this.organisations[0]));
+		}
+
+		await this.checkInstanceAdminAccess();
 	}
 
 	get showHelpCard() {
@@ -214,5 +285,14 @@ export class PrivateComponent implements OnInit {
 		this.checkTokenInterval = setTimeout(() => {
 			this.checkIfTokenIsExpired();
 		}, time * 1000 + 1000);
+	}
+
+	async checkInstanceAdminAccess() {
+		try {
+			const userRole = await this.rbacService.getUserRole();
+			this.isInstanceAdmin = userRole === 'INSTANCE_ADMIN';
+		} catch (error) {
+			this.isInstanceAdmin = false;
+		}
 	}
 }

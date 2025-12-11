@@ -8,6 +8,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/internal/pkg/limiter"
@@ -16,15 +17,17 @@ import (
 )
 
 type APIOptions struct {
-	FFlag              *fflag.FFlag
-	FeatureFlagFetcher fflag.FeatureFlagFetcher
-	DB                 database.Database
-	Redis              redis.UniversalClient
-	Queue              queue.Queuer
-	Logger             log.StdLogger
-	Cache              cache.Cache
-	Authz              *authz.Authz
-	Rate               limiter.RateLimiter
-	Licenser           license.Licenser
-	Cfg                config.Configuration
+	FFlag                      *fflag.FFlag
+	FeatureFlagFetcher         fflag.FeatureFlagFetcher
+	EarlyAdopterFeatureFetcher fflag.EarlyAdopterFeatureFetcher
+	DB                         database.Database
+	Redis                      redis.UniversalClient
+	Queue                      queue.Queuer
+	Logger                     log.StdLogger
+	Cache                      cache.Cache
+	Authz                      *authz.Authz
+	Rate                       limiter.RateLimiter
+	Licenser                   license.Licenser
+	Cfg                        config.Configuration
+	BillingClient              billing.Client
 }

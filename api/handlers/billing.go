@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -11,10 +12,13 @@ import (
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/policies"
+	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/util"
 )
+
+var ErrHostRequiredForBilling = errors.New("organisation host (assigned domain) is required for billing. Please set the assigned domain in the configuration")
 
 type BillingHandler struct {
 	*Handler
@@ -148,9 +152,15 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
+		cfg, err := config.Get()
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch config", http.StatusInternalServerError))
+			return
+		}
+
 		// Check if host is set - required by billing service
-		if org.AssignedDomain.String == "" {
-			_ = render.Render(w, r, util.NewErrorResponse("Organisation host (assigned domain) is required for billing. Please set the assigned domain for this organisation.", http.StatusBadRequest))
+		if cfg.Host == "" {
+			_ = render.Render(w, r, util.NewErrorResponse(ErrHostRequiredForBilling.Error(), http.StatusBadRequest))
 			return
 		}
 
@@ -158,7 +168,7 @@ func (h *BillingHandler) GetSubscription(w http.ResponseWriter, r *http.Request)
 			"name":          org.Name,
 			"external_id":   orgID,
 			"billing_email": "",
-			"host":          org.AssignedDomain.String,
+			"host":          cfg.Host,
 		}
 
 		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)
@@ -496,9 +506,15 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 			return
 		}
 
+		cfg, err := config.Get()
+		if err != nil {
+			_ = render.Render(w, r, util.NewErrorResponse("failed to fetch config", http.StatusInternalServerError))
+			return
+		}
+
 		// Check if host is set - required by billing service
-		if org.AssignedDomain.String == "" {
-			_ = render.Render(w, r, util.NewErrorResponse("Organisation host (assigned domain) is required for billing. Please set the assigned domain for this organisation.", http.StatusBadRequest))
+		if cfg.Host == "" {
+			_ = render.Render(w, r, util.NewErrorResponse(ErrHostRequiredForBilling.Error(), http.StatusBadRequest))
 			return
 		}
 
@@ -506,7 +522,7 @@ func (h *BillingHandler) GetInternalOrganisationID(w http.ResponseWriter, r *htt
 			"name":          org.Name,
 			"external_id":   orgID,
 			"billing_email": "",
-			"host":          org.AssignedDomain.String,
+			"host":          cfg.Host,
 		}
 
 		_, createErr := h.BillingClient.CreateOrganisation(r.Context(), orgData)

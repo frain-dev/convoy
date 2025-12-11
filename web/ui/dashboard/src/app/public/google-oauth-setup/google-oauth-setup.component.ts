@@ -11,6 +11,7 @@ import {
 } from 'src/app/components/input/input.component';
 import {GeneralService} from 'src/app/services/general/general.service';
 import {GoogleOAuthSetupService} from './google-oauth-setup.service';
+import {PrivateService} from 'src/app/private/private.service';
 
 @Component({
 	selector: 'app-google-oauth-setup',
@@ -30,7 +31,8 @@ export class GoogleOAuthSetupComponent implements OnInit {
 		private formBuilder: FormBuilder,
 		private googleOAuthSetupService: GoogleOAuthSetupService,
 		private router: Router,
-		private generalService: GeneralService
+		private generalService: GeneralService,
+		private privateService: PrivateService
 	) {}
 
 	ngOnInit(): void {
@@ -70,13 +72,28 @@ export class GoogleOAuthSetupComponent implements OnInit {
 			const response = await this.googleOAuthSetupService.completeSetup(idToken, businessName);
 
 			if (response.data) {
+				// Check if this is a different user
+				const lastUserId = localStorage.getItem('CONVOY_LAST_USER_ID');
+				const isDifferentUser = lastUserId && lastUserId !== response.data.uid;
+
+				if (isDifferentUser) {
+					// Clear all cached data when switching users
+					// Clear the previous user's session data but preserve their per-user storage
+					localStorage.removeItem('CONVOY_AUTH');
+					localStorage.removeItem('CONVOY_AUTH_TOKENS');
+					localStorage.removeItem('CONVOY_ORG');
+					localStorage.removeItem('CONVOY_PROJECT');
+					// Clear cache for the previous user
+					this.privateService.clearCache(true, lastUserId);
+				}
+
 				this.generalService.showNotification({
 					message: 'Setup completed successfully! Welcome to Convoy.',
 					style: 'success'
 				});
+				localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 				localStorage.setItem('CONVOY_AUTH', JSON.stringify(response.data));
 				localStorage.setItem('CONVOY_AUTH_TOKENS', JSON.stringify(response.data.token));
-				localStorage.setItem('CONVOY_LAST_USER_ID', response.data.uid);
 				localStorage.removeItem('GOOGLE_OAUTH_USER_INFO');
 				localStorage.removeItem('GOOGLE_OAUTH_ID_TOKEN');
 				await this.router.navigateByUrl('/');

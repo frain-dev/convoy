@@ -340,19 +340,20 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	oauth2TokenService := services.NewOAuth2TokenService(a.Cache, lo)
 
 	eventDeliveryProcessorDeps := task.EventDeliveryProcessorDeps{
-		EndpointRepo:          endpointRepo,
-		EventDeliveryRepo:     eventDeliveryRepo,
-		Licenser:              a.Licenser,
-		ProjectRepo:           projectRepo,
-		Queue:                 a.Queue,
-		RateLimiter:           rateLimiter,
-		Dispatcher:            dispatcher,
-		AttemptsRepo:          attemptRepo,
-		CircuitBreakerManager: circuitBreakerManager,
-		FeatureFlag:           featureFlag,
-		FeatureFlagFetcher:    postgres.NewFeatureFlagFetcher(a.DB),
-		TracerBackend:         a.TracerBackend,
-		OAuth2TokenService:    oauth2TokenService,
+		EndpointRepo:               endpointRepo,
+		EventDeliveryRepo:          eventDeliveryRepo,
+		Licenser:                   a.Licenser,
+		ProjectRepo:                projectRepo,
+		Queue:                      a.Queue,
+		RateLimiter:                rateLimiter,
+		Dispatcher:                 dispatcher,
+		AttemptsRepo:               attemptRepo,
+		CircuitBreakerManager:      circuitBreakerManager,
+		FeatureFlag:                featureFlag,
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
+		TracerBackend:              a.TracerBackend,
+		OAuth2TokenService:         oauth2TokenService,
 	}
 
 	consumer.RegisterHandlers(convoy.EventProcessor, task.ProcessEventDelivery(eventDeliveryProcessorDeps), newTelemetry)
@@ -385,20 +386,21 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	}
 
 	matchSubscriptionsDeps := task.MatchSubscriptionsDeps{
-		Channels:           channels,
-		EndpointRepo:       endpointRepo,
-		EventRepo:          eventRepo,
-		ProjectRepo:        projectRepo,
-		EventDeliveryRepo:  eventDeliveryRepo,
-		EventQueue:         a.Queue,
-		SubRepo:            subRepo,
-		FilterRepo:         filterRepo,
-		DeviceRepo:         deviceRepo,
-		Licenser:           a.Licenser,
-		TracerBackend:      a.TracerBackend,
-		OAuth2TokenService: oauth2TokenService,
-		FeatureFlag:        featureFlag,
-		FeatureFlagFetcher: postgres.NewFeatureFlagFetcher(a.DB),
+		Channels:                   channels,
+		EndpointRepo:               endpointRepo,
+		EventRepo:                  eventRepo,
+		ProjectRepo:                projectRepo,
+		EventDeliveryRepo:          eventDeliveryRepo,
+		EventQueue:                 a.Queue,
+		SubRepo:                    subRepo,
+		FilterRepo:                 filterRepo,
+		DeviceRepo:                 deviceRepo,
+		Licenser:                   a.Licenser,
+		TracerBackend:              a.TracerBackend,
+		OAuth2TokenService:         oauth2TokenService,
+		FeatureFlag:                featureFlag,
+		FeatureFlagFetcher:         postgres.NewFeatureFlagFetcher(a.DB),
+		EarlyAdopterFeatureFetcher: postgres.NewEarlyAdopterFeatureFetcher(a.DB),
 	}
 	consumer.RegisterHandlers(convoy.MatchEventSubscriptionsProcessor, task.MatchSubscriptionsAndCreateEventDeliveries(matchSubscriptionsDeps), newTelemetry)
 

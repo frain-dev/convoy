@@ -41,11 +41,10 @@ const (
 )
 
 type ApplicationHandler struct {
-	Router        http.Handler
-	rm            *requestmigrations.RequestMigration
-	A             *types.APIOptions
-	cfg           config.Configuration
-	billingClient billing.Client
+	Router http.Handler
+	rm     *requestmigrations.RequestMigration
+	A      *types.APIOptions
+	cfg    config.Configuration
 }
 
 func (a *ApplicationHandler) reactRootHandler(rw http.ResponseWriter, req *http.Request) {
@@ -185,7 +184,7 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 		if err := billingClient.HealthCheck(ctx); err != nil {
 			return nil, fmt.Errorf("billing service health check failed: %w", err)
 		}
-		appHandler.billingClient = billingClient
+		a.BillingClient = billingClient
 	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
@@ -469,6 +468,26 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 			})
 		})
 
+		// Admin routes (instance admin only)
+		uiRouter.Route("/admin", func(adminRouter chi.Router) {
+			adminRouter.Get("/feature-flags", handler.GetAllFeatureFlags)
+			adminRouter.Put("/feature-flags/{featureKey}", handler.UpdateFeatureFlag)
+			adminRouter.With(middleware.Pagination).Get("/organisations", handler.GetAllOrganisations)
+			adminRouter.Get("/organisations/{orgID}/overrides", handler.GetOrganisationOverrides)
+			adminRouter.Put("/organisations/{orgID}/overrides", handler.UpdateOrganisationOverride)
+			adminRouter.Delete("/organisations/{orgID}/overrides/{featureKey}", handler.DeleteOrganisationOverride)
+			adminRouter.Get("/organisations/{orgID}/circuit-breaker-config", handler.GetOrganisationCircuitBreakerConfig)
+			adminRouter.Put("/organisations/{orgID}/circuit-breaker-config", handler.UpdateOrganisationCircuitBreakerConfig)
+			adminRouter.Get("/organisations/{orgID}/projects", handler.GetProjects)
+			adminRouter.Get("/projects/{projectID}/circuit-breaker-config", handler.GetProjectCircuitBreakerConfig)
+			adminRouter.Put("/projects/{projectID}/circuit-breaker-config", handler.UpdateProjectCircuitBreakerConfig)
+			adminRouter.Post("/retry-event-deliveries", handler.RetryEventDeliveries)
+			adminRouter.Get("/retry-event-deliveries/count", handler.CountRetryEventDeliveries)
+			adminRouter.Get("/retry-event-deliveries/batch/{batchID}", handler.GetBatchProgress)
+			adminRouter.Get("/retry-event-deliveries/batches", handler.ListBatchProgress)
+			adminRouter.Delete("/retry-event-deliveries/batch/{batchID}", handler.DeleteBatchProgress)
+		})
+
 		uiRouter.Route("/organisations", func(orgRouter chi.Router) {
 			orgRouter.Post("/", handler.CreateOrganisation)
 			orgRouter.With(middleware.Pagination).Get("/", handler.GetOrganisationsPaged)
@@ -477,6 +496,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 				orgSubRouter.Get("/", handler.GetOrganisation)
 				orgSubRouter.Put("/", handler.UpdateOrganisation)
 				orgSubRouter.Delete("/", handler.DeleteOrganisation)
+				orgSubRouter.Get("/feature-flags", handler.GetOrganisationFeatureFlags)
 				orgSubRouter.Put("/feature-flags", handler.UpdateOrganisationFeatureFlags)
 				orgSubRouter.Get("/early-adopter-features", handler.GetEarlyAdopterFeatures)
 
@@ -637,7 +657,7 @@ func (a *ApplicationHandler) mountControlPlaneRoutes(router chi.Router, handler 
 		if a.cfg.Billing.Enabled {
 			billingHandler := &handlers.BillingHandler{
 				Handler:       handler,
-				BillingClient: a.billingClient,
+				BillingClient: a.A.BillingClient,
 			}
 
 			uiRouter.Route("/billing", func(billingRouter chi.Router) {

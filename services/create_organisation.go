@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -74,24 +75,35 @@ func (co *CreateOrganisationService) Run(ctx context.Context) (*datastore.Organi
 		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
 	}
 
-	// Check if this is the first user (no instance admins exist yet)
-	count, err := co.OrgMemberRepo.CountInstanceAdminUsers(ctx)
-	if err != nil {
-		log.FromContext(ctx).WithError(err).Error("failed to count instance admin users")
-		return nil, &ServiceError{ErrMsg: "failed to create organisation", Err: err}
-	}
-
-	// Only assign RoleInstanceAdmin to the first user, otherwise assign RoleOrganisationAdmin
-	var roleType auth.RoleType
-	if count == 0 {
-		roleType = auth.RoleInstanceAdmin
-	} else {
-		roleType = auth.RoleOrganisationAdmin
-	}
-
-	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: roleType})
+	_, err = NewOrganisationMemberService(co.OrgMemberRepo, co.Licenser).CreateOrganisationMember(ctx, org, co.User, &auth.Role{Type: auth.RoleOrganisationAdmin})
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to create super_user member for organisation owner")
+	}
+
+	if cfg.Billing.Enabled && co.Licenser.BillingModule() {
+		go func() {
+			billingCtx := context.Background()
+			billingClient := billing.NewClient(cfg.Billing)
+
+			if cfg.Host != "" {
+				orgData := map[string]interface{}{
+					"name":          org.Name,
+					"external_id":   org.UID,
+					"billing_email": "",
+					"host":          cfg.Host,
+				}
+
+				_, createErr := billingClient.CreateOrganisation(billingCtx, orgData)
+				if createErr != nil {
+					// Log error but don't fail organisation creation if billing creation fails
+					log.FromContext(billingCtx).WithError(createErr).Warn("failed to create organisation in billing service")
+				} else {
+					log.FromContext(billingCtx).Info("organisation created in billing service")
+				}
+			} else {
+				log.FromContext(billingCtx).Warn("billing organisation creation skipped: host not configured")
+			}
+		}()
 	}
 
 	return org, nil

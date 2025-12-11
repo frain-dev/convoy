@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
-	"unsafe"
 
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -45,12 +43,7 @@ func (s *BillingIntegrationTestSuite) SetupSuite() {
 	s.ConvoyApp.cfg = cfg
 
 	mockClient := &billing.MockBillingClient{}
-	rv := reflect.ValueOf(s.ConvoyApp).Elem()
-	billingClientField := rv.FieldByName("billingClient")
-	if billingClientField.IsValid() {
-		rf := reflect.NewAt(billingClientField.Type(), unsafe.Pointer(billingClientField.UnsafeAddr())).Elem()
-		rf.Set(reflect.ValueOf(mockClient))
-	}
+	s.ConvoyApp.A.BillingClient = mockClient
 
 	s.Router = s.ConvoyApp.BuildControlPlaneRoutes()
 }
