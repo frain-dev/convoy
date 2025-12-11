@@ -308,12 +308,13 @@ func TestLoadPortalLinksPaged_WithRefreshTokenAuthType_GeneratesAuthTokens(t *te
 		require.NotEmpty(t, pl.UID)
 		require.NotEmpty(t, pl.Name)
 
-		if pl.UID == portalLink1.UID {
+		switch pl.UID {
+		case portalLink1.UID:
 			// Refresh token portal link should have auth_key
 			require.Equal(t, datastore.PortalAuthTypeRefreshToken, pl.AuthType)
 			require.NotEmpty(t, pl.AuthKey, "auth_key should be provisioned for refresh token auth type when fetching list")
 			require.Contains(t, pl.AuthKey, "PRT.", "auth_key should have the correct prefix")
-		} else if pl.UID == portalLink2.UID {
+		case portalLink2.UID:
 			// Static token portal link should NOT have auth_key
 			require.Equal(t, datastore.PortalAuthTypeStaticToken, pl.AuthType)
 			require.Empty(t, pl.AuthKey, "auth_key should not be provisioned for static token auth type")
@@ -463,12 +464,13 @@ func TestFindPortalLinksByOwnerID_WithRefreshTokenAuthType_GeneratesAuthTokens(t
 		require.NotEmpty(t, pl.Name)
 		require.Equal(t, ownerID, pl.OwnerID)
 
-		if pl.AuthType == datastore.PortalAuthTypeRefreshToken {
+		switch pl.AuthType {
+		case datastore.PortalAuthTypeRefreshToken:
 			foundRefreshToken = true
 			// Refresh token portal link should have auth_key
 			require.NotEmpty(t, pl.AuthKey, "auth_key should be provisioned for refresh token auth type when fetching list")
 			require.Contains(t, pl.AuthKey, "PRT.", "auth_key should have the correct prefix")
-		} else if pl.AuthType == datastore.PortalAuthTypeStaticToken {
+		case datastore.PortalAuthTypeStaticToken:
 			foundStaticToken = true
 			// Static token portal link should NOT have auth_key
 			require.Empty(t, pl.AuthKey, "auth_key should not be provisioned for static token auth type")
