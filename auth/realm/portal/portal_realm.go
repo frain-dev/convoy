@@ -14,32 +14,33 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
 )
 
 type PortalRealm struct {
-	portalLinkRepo datastore.PortalLinkRepository
-	logger         log.StdLogger
+	portalLinkService portal_links.PortalLinkRepository
+	logger            log.StdLogger
 }
 
 func (p *PortalRealm) GetName() string {
 	return auth.PortalRealmName
 }
 
-func NewPortalRealm(portalLinkRepo datastore.PortalLinkRepository, logger log.StdLogger) *PortalRealm {
+func NewPortalRealm(portalLinkService portal_links.PortalLinkRepository, logger log.StdLogger) *PortalRealm {
 	return &PortalRealm{
-		portalLinkRepo: portalLinkRepo,
-		logger:         logger,
+		portalLinkService: portalLinkService,
+		logger:            logger,
 	}
 }
 
 func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {
 	// this is where we'll switch portal auth types
 	if len(cred.Token) > 0 { // this is the legacy static token type
-		pLink, err := p.portalLinkRepo.FindPortalLinkByToken(ctx, cred.Token)
+		pLink, err := p.portalLinkService.GetPortalLinkByToken(ctx, cred.Token)
 		if err != nil {
 			// cred.Token should be the owner id at this point
-			pLinks, innerErr := p.portalLinkRepo.FindPortalLinksByOwnerID(ctx, cred.Token)
+			pLinks, innerErr := p.portalLinkService.FindPortalLinksByOwnerID(ctx, cred.Token)
 			if innerErr != nil {
 				return nil, innerErr
 			}
@@ -69,7 +70,7 @@ func (p *PortalRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	maskID := keySplit[1]
 
 	// check if the api key is a portal link auth token
-	pLink, innerErr := p.portalLinkRepo.FindPortalLinkByMaskId(ctx, maskID)
+	pLink, innerErr := p.portalLinkService.FindPortalLinkByMaskId(ctx, maskID)
 	if innerErr != nil {
 		p.logger.Warnf("failed to find portal link: %v", innerErr)
 		return nil, fmt.Errorf("failed to find portal link: %v", innerErr)

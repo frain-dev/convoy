@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
 	"github.com/frain-dev/convoy/queue"
@@ -190,7 +191,7 @@ func (h *Handler) CreateEndpointFanoutEvent(w http.ResponseWriter, r *http.Reque
 	cf := services.CreateFanoutEventService{
 		EndpointRepo:   postgres.NewEndpointRepo(h.A.DB),
 		EventRepo:      postgres.NewEventRepo(h.A.DB),
-		PortalLinkRepo: postgres.NewPortalLinkRepo(h.A.DB),
+		PortalLinkRepo: portal_links.New(h.A.Logger, h.A.DB),
 		Queue:          h.A.Queue,
 		NewMessage:     &newMessage,
 		Project:        project,

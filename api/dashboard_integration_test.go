@@ -25,6 +25,8 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/portal_links"
+	plinkModels "github.com/frain-dev/convoy/internal/portal_links/models"
 )
 
 type pagedResponse struct {
@@ -55,7 +57,7 @@ func (u *AuthIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(u.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(u.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	initRealmChain(u.T(), apiRepo, userRepo, portalLinkRepo, u.ConvoyApp.A.Cache)
 }
 
@@ -334,7 +336,7 @@ func (s *DashboardIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -540,7 +542,7 @@ func (s *DashboardIntegrationTestSuite) TestGetDashboardSummary() {
 			}
 			apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 			userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-			portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+			portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 			initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 
 			req := httptest.NewRequest(tc.method, fmt.Sprintf("/ui/organisations/%s/projects/%s/dashboard/summary?startDate=%s&endDate=%s&type=%s", s.DefaultOrg.UID, tc.urlQuery.projectID, tc.urlQuery.startDate, tc.urlQuery.endDate, tc.urlQuery.Type), nil)
@@ -614,7 +616,7 @@ func (s *EndpointIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -1054,7 +1056,7 @@ func (s *EventIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -1607,7 +1609,7 @@ func (s *OrganisationIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -1906,7 +1908,7 @@ func (s *OrganisationInviteIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -2343,7 +2345,7 @@ func (s *OrganisationMemberIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -2648,7 +2650,7 @@ func (s *PortalLinkIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -2683,11 +2685,11 @@ func (s *PortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
@@ -2731,11 +2733,11 @@ func (s *PortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPortalLink(
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 
 	require.NoError(s.T(), err)
 
@@ -2838,11 +2840,11 @@ func (s *PortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	require.Equal(s.T(), http.StatusAccepted, w.Code)
 
 	// Deep Assert
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 
 	require.NoError(s.T(), err)
 
@@ -2871,8 +2873,8 @@ func (s *PortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	plRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	_, err = plRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
+	plRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	_, err = plRepo.GetPortalLink(context.Background(), s.DefaultProject.UID, portalLink.UID)
 	require.ErrorIs(s.T(), err, datastore.ErrPortalLinkNotFound)
 }
 
@@ -2919,7 +2921,7 @@ func (s *ProjectIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -3225,7 +3227,7 @@ func (s *SourceIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -3545,7 +3547,7 @@ func (s *SubscriptionIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -4016,7 +4018,7 @@ func (u *UserIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(u.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(u.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(u.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(u.ConvoyApp.A.Logger, u.ConvoyApp.A.DB)
 	initRealmChain(u.T(), apiRepo, userRepo, portalLinkRepo, u.ConvoyApp.A.Cache)
 }
 
@@ -4505,7 +4507,7 @@ func (s *MetaEventIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 

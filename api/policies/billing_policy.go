@@ -6,6 +6,7 @@ import (
 
 	authz "github.com/Subomi/go-authz"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 )
@@ -16,7 +17,7 @@ type BillingPolicy struct {
 }
 
 func (bp *BillingPolicy) Manage(ctx context.Context, res interface{}) error {
-	authCtx := ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+	authCtx := ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 
 	org, ok := res.(*datastore.Organisation)
 	if !ok {

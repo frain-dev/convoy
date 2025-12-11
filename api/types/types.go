@@ -15,8 +15,6 @@ import (
 	"github.com/frain-dev/convoy/queue"
 )
 
-type ContextKey string
-
 type APIOptions struct {
 	FFlag              *fflag.FFlag
 	FeatureFlagFetcher fflag.FeatureFlagFetcher

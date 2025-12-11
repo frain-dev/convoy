@@ -24,6 +24,8 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/portal_links"
+	plinkModels "github.com/frain-dev/convoy/internal/portal_links/models"
 )
 
 type PublicEndpointIntegrationTestSuite struct {
@@ -75,7 +77,7 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -784,7 +786,7 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -1351,7 +1353,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -1381,11 +1383,11 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink() {
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert.
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
@@ -1426,11 +1428,11 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_GetPortalLinkByID_ValidPorta
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 
 	require.NoError(s.T(), err)
 
@@ -1526,11 +1528,11 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLinks() {
 	require.Equal(s.T(), http.StatusAccepted, w.Code)
 
 	// Deep Assert
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 
 	require.NoError(s.T(), err)
 
@@ -1583,7 +1585,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpoin
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert - Parse response from w
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	// Assert all response fields from create
@@ -1604,8 +1606,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpoin
 	// EndpointsMetadata may be populated with endpoint details
 
 	// Verify against database
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 	require.NoError(s.T(), err)
 
 	// Assert response matches database
@@ -1666,7 +1668,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithoutEndp
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert - Parse response from w
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	// Assert all response fields from create
@@ -1685,8 +1687,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithoutEndp
 	require.False(s.T(), resp.DeletedAt.Valid, "DeletedAt should not be set")
 
 	// Verify against database
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 	require.NoError(s.T(), err)
 
 	// Assert response matches database
@@ -1751,7 +1753,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_ListPortalLinks_WithEndpoint
 	// Assert - Portal link created successfully
 	require.Equal(s.T(), http.StatusCreated, w.Code)
 
-	var createResp models.PortalLinkResponse
+	var createResp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &createResp)
 	require.Equal(s.T(), 1, createResp.EndpointCount, "Create response should show 1 endpoint")
 
@@ -1773,11 +1775,11 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_ListPortalLinks_WithEndpoint
 	parseResponse(s.T(), listW.Result(), &listResp)
 
 	// Find the portal link we just created in the list
-	var foundPortalLink *models.PortalLinkResponse
+	var foundPortalLink *plinkModels.PortalLinkResponse
 	content := listResp.Content.([]interface{})
 	for _, item := range content {
 		itemBytes, _ := json.Marshal(item)
-		var pl models.PortalLinkResponse
+		var pl plinkModels.PortalLinkResponse
 		json.Unmarshal(itemBytes, &pl)
 		if pl.UID == createResp.UID {
 			foundPortalLink = &pl
@@ -1840,8 +1842,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_CreatePortalLink_WithEndpoin
 	require.Empty(s.T(), updatedEndpoint.OwnerID, "Endpoint owner_id should remain empty after rollback")
 
 	// Verify portal link was NOT created (transaction rolled back)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	_, err = portalLinkRepo.FindPortalLinkByOwnerID(context.Background(), s.DefaultProject.UID, ownerID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	_, err = portalLinkRepo.GetPortalLinkByOwnerID(context.Background(), s.DefaultProject.UID, ownerID)
 	require.ErrorIs(s.T(), err, datastore.ErrPortalLinkNotFound, "Portal link should not be created due to validation error")
 }
 
@@ -1891,7 +1893,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpoin
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
 	// Deep Assert
-	var resp models.PortalLinkResponse
+	var resp plinkModels.PortalLinkResponse
 	parseResponse(s.T(), w.Result(), &resp)
 
 	// Assert response fields
@@ -1902,8 +1904,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpoin
 	require.Equal(s.T(), 1, resp.EndpointCount, "Update response should show correct EndpointCount (1)")
 
 	// Verify against database
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), resp.ProjectID, resp.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), resp.ProjectID, resp.UID)
 	require.NoError(s.T(), err)
 
 	require.Equal(s.T(), resp.UID, pl.UID)
@@ -1970,8 +1972,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_UpdatePortalLink_WithEndpoin
 	require.Empty(s.T(), updatedEndpoint.OwnerID, "Endpoint owner_id should remain empty after rollback")
 
 	// Verify portal link was NOT updated (transaction rolled back)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	pl, err := portalLinkRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	pl, err := portalLinkRepo.GetPortalLink(context.Background(), s.DefaultProject.UID, portalLink.UID)
 	require.NoError(s.T(), err)
 	// Portal link should still have original values
 	require.Equal(s.T(), portalLink.Name, pl.Name, "Portal link name should not be updated due to validation error")
@@ -1994,8 +1996,8 @@ func (s *PublicPortalLinkIntegrationTestSuite) Test_RevokePortalLink() {
 	require.Equal(s.T(), http.StatusOK, w.Code)
 
 	// Deep Assert.
-	plRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
-	_, err := plRepo.FindPortalLinkByID(context.Background(), s.DefaultProject.UID, portalLink.UID)
+	plRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
+	_, err := plRepo.GetPortalLink(context.Background(), s.DefaultProject.UID, portalLink.UID)
 	require.ErrorIs(s.T(), err, datastore.ErrPortalLinkNotFound)
 }
 
@@ -2044,7 +2046,7 @@ func (s *PublicProjectIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -2381,7 +2383,7 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	// orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -2707,7 +2709,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -3311,7 +3313,7 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 
@@ -3417,7 +3419,7 @@ func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
 	// Initialize realm chain
 	apiKeyRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(s.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiKeyRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
 }
 

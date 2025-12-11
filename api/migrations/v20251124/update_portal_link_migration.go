@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/frain-dev/convoy/api/models"
+	"github.com/frain-dev/convoy/internal/portal_links/models"
 )
 
 type UpdatePortalLinkRequestMigration struct{}

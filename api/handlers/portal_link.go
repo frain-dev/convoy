@@ -8,11 +8,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 
-	"github.com/frain-dev/convoy/api/models"
+	apiModels "github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/internal/portal_links"
+	"github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -39,7 +40,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var newPortalLink models.CreatePortalLinkRequest
-	if err := util.ReadJSON(r, &newPortalLink); err != nil {
+	if err = util.ReadJSON(r, &newPortalLink); err != nil {
 		h.A.Logger.WithError(err).Errorf("Failed to parse portal link creation request: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid request format", http.StatusBadRequest))
 		return
@@ -50,7 +51,7 @@ func (h *Handler) CreatePortalLink(w http.ResponseWriter, r *http.Request) {
 		newPortalLink.SetDefaultAuthType()
 	}
 
-	if err := newPortalLink.Validate(); err != nil {
+	if err = newPortalLink.Validate(); err != nil {
 		h.A.Logger.WithError(err).Errorf("Portal link creation validation failed: %v", err)
 		_ = render.Render(w, r, util.NewErrorResponse("Invalid input provided", http.StatusBadRequest))
 		return
@@ -367,7 +368,7 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var q *models.QueryListPortalLink
+	var q *apiModels.QueryListPortalLink
 	data := q.Transform(r)
 
 	svc := portal_links.New(h.A.Logger, h.A.DB)
@@ -389,10 +390,10 @@ func (h *Handler) LoadPortalLinksPaged(w http.ResponseWriter, r *http.Request) {
 		plResponse = append(plResponse, pl)
 	}
 
-	resp := models.NewListResponse(plResponse, func(p models.PortalLinkResponse) models.PortalLinkResponse {
+	resp := apiModels.NewListResponse(plResponse, func(p models.PortalLinkResponse) models.PortalLinkResponse {
 		return p
 	})
-	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", models.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
+	_ = render.Render(w, r, util.NewServerResponse("Portal links fetched successfully", apiModels.PagedResponse{Content: resp, Pagination: &paginationData}, http.StatusOK))
 }
 
 func portalLinkResponse(pl *datastore.PortalLink, baseUrl string) models.PortalLinkResponse {

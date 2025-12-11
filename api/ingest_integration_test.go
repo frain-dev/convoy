@@ -18,6 +18,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
+	"github.com/frain-dev/convoy/internal/portal_links"
 )
 
 type IngestIntegrationTestSuite struct {
@@ -50,7 +51,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 
 	apiRepo := postgres.NewAPIKeyRepo(i.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(i.ConvoyApp.A.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(i.ConvoyApp.A.DB)
+	portalLinkRepo := portal_links.New(i.ConvoyApp.A.Logger, i.ConvoyApp.A.DB)
 	initRealmChain(i.T(), apiRepo, userRepo, portalLinkRepo, i.ConvoyApp.A.Cache)
 }
 

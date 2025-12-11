@@ -212,19 +212,6 @@ type ConfigurationRepository interface {
 	UpdateConfiguration(context.Context, *Configuration) error
 }
 
-type PortalLinkRepository interface {
-	CreatePortalLink(ctx context.Context, portal *PortalLink) error
-	UpdatePortalLink(ctx context.Context, projectID string, portal *PortalLink) error
-	FindPortalLinkByID(ctx context.Context, projectID string, id string) (*PortalLink, error)
-	FindPortalLinkByOwnerID(ctx context.Context, projectID string, id string) (*PortalLink, error)
-	FindPortalLinkByToken(ctx context.Context, token string) (*PortalLink, error)
-	LoadPortalLinksPaged(ctx context.Context, projectID string, f *FilterBy, pageable Pageable) ([]PortalLink, PaginationData, error)
-	RevokePortalLink(ctx context.Context, projectID string, id string) error
-	FindPortalLinksByOwnerID(ctx context.Context, ownerID string) ([]PortalLink, error)
-	FindPortalLinkByMaskId(ctx context.Context, maskId string) (*PortalLink, error)
-	RefreshPortalLinkAuthToken(ctx context.Context, projectID string, portalLinkId string) (*PortalLink, error)
-}
-
 type MetaEventRepository interface {
 	CreateMetaEvent(context.Context, *MetaEvent) error
 	FindMetaEventByID(ctx context.Context, projectID string, id string) (*MetaEvent, error)

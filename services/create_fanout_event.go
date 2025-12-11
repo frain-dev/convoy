@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/httpheader"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/pkg/msgpack"
@@ -23,7 +24,7 @@ import (
 type CreateFanoutEventService struct {
 	EndpointRepo   datastore.EndpointRepository
 	EventRepo      datastore.EventRepository
-	PortalLinkRepo datastore.PortalLinkRepository
+	PortalLinkRepo portal_links.PortalLinkRepository
 	Queue          queue.Queuer
 
 	NewMessage *models.FanoutEvent
@@ -74,7 +75,7 @@ func (e *CreateFanoutEventService) Run(ctx context.Context) (event *datastore.Ev
 	}
 
 	if len(endpoints) == 0 {
-		_, err = e.PortalLinkRepo.FindPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
+		_, err = e.PortalLinkRepo.GetPortalLinkByOwnerID(ctx, e.Project.UID, e.NewMessage.OwnerID)
 		if err != nil {
 			if !errors.Is(err, datastore.ErrPortalLinkNotFound) {
 				return nil, &ServiceError{ErrMsg: err.Error()}

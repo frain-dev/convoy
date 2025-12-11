@@ -86,9 +86,8 @@ func (h *Handler) retrieveProject(r *http.Request) (*datastore.Project, error) {
 			pLink, err2 := svc.GetPortalLinkByToken(r.Context(), authUser.Credential.Token)
 			if err2 != nil {
 				//  authUser.Credential.Token should be the owner id at this point
-				// Try to find by owner ID using legacy repo for now (FindPortalLinksByOwnerID returns array)
-				portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
-				pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
+				// Try to find by owner ID (FindPortalLinksByOwnerID returns array)
+				pLinks, innerErr := svc.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
 				if innerErr != nil {
 					return nil, innerErr
 				}
@@ -181,9 +180,8 @@ func (h *Handler) retrievePortalLinkFromToken(r *http.Request) (*datastore.Porta
 		pLink, err = svc.GetPortalLinkByToken(r.Context(), authUser.Credential.Token)
 		if err != nil {
 			//  authUser.Credential.Token should be the owner id at this point
-			// Try to find by owner ID using legacy repo for now (FindPortalLinksByOwnerID returns array)
-			portalLinkRepo := postgres.NewPortalLinkRepo(h.A.DB)
-			pLinks, innerErr := portalLinkRepo.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
+			// Try to find by owner ID (FindPortalLinksByOwnerID returns array)
+			pLinks, innerErr := svc.FindPortalLinksByOwnerID(r.Context(), authUser.Credential.Token)
 			if innerErr != nil {
 				return nil, innerErr
 			}

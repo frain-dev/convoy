@@ -64,7 +64,6 @@ func createOAuth2TokenGetterFromDatastore(oauth2 *datastore.OAuth2, endpointURL,
 }
 
 type CreateEndpointService struct {
-	PortalLinkRepo     datastore.PortalLinkRepository
 	EndpointRepo       datastore.EndpointRepository
 	ProjectRepo        datastore.ProjectRepository
 	Licenser           license.Licenser

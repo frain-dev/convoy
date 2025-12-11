@@ -28,7 +28,6 @@ import (
 
 func provideCreateEndpointService(ctrl *gomock.Controller, e models.CreateEndpoint, projectID string) *CreateEndpointService {
 	return &CreateEndpointService{
-		PortalLinkRepo:     nil,
 		EndpointRepo:       mocks.NewMockEndpointRepository(ctrl),
 		ProjectRepo:        mocks.NewMockProjectRepository(ctrl),
 		Licenser:           mocks.NewMockLicenser(ctrl),

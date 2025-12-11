@@ -34,6 +34,7 @@ import (
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
 	rlimiter "github.com/frain-dev/convoy/internal/pkg/limiter/redis"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisqueue "github.com/frain-dev/convoy/queue/redis"
@@ -197,7 +198,7 @@ func buildServer(t *testing.T) *ApplicationHandler {
 	return ah
 }
 
-func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, portalLinkRepo datastore.PortalLinkRepository, cache cache.Cache) {
+func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, portalLinkRepo *portal_links.Service, cache cache.Cache) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)

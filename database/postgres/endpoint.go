@@ -574,7 +574,9 @@ func (e *endpointRepo) DeleteEndpoint(ctx context.Context, endpoint *datastore.E
 		return err
 	}
 
-	_, err = tx.ExecContext(ctx, deletePortalLinkEndpoints, nil, endpoint.UID)
+	// Delete portal link endpoint relationships
+	deletePortalLinkEndpointsQuery := `DELETE FROM convoy.portal_links_endpoints WHERE portal_link_id = $1 OR endpoint_id = $2`
+	_, err = tx.ExecContext(ctx, deletePortalLinkEndpointsQuery, nil, endpoint.UID)
 	if err != nil {
 		return err
 	}
