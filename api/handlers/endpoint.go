@@ -544,13 +544,6 @@ func (h *Handler) ActivateEndpoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	circuitBreakerEnabled := h.A.FFlag.CanAccessOrgFeature(
-		r.Context(), fflag.CircuitBreaker, h.A.FeatureFlagFetcher, h.A.EarlyAdopterFeatureFetcher, project.OrganisationID)
-	if !h.A.Licenser.CircuitBreaking() || !circuitBreakerEnabled {
-		_ = render.Render(w, r, util.NewErrorResponse("feature not enabled", http.StatusBadRequest))
-		return
-	}
-
 	aes := services.ActivateEndpointService{
 		EndpointRepo: postgres.NewEndpointRepo(h.A.DB),
 		ProjectID:    project.UID,
