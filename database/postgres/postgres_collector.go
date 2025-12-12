@@ -244,7 +244,7 @@ func (p *Postgres) Collect(ch chan<- prometheus.Metric) {
 
 // collectMetrics gathers essential metrics from the DB
 func (p *Postgres) collectMetrics() (*Metrics, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(metricsConfig.Prometheus.SampleTime)*time.Second)
 	defer cancel()
 
 	metrics := &Metrics{}
