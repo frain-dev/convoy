@@ -119,3 +119,68 @@ func TestGetPortalLink_WrongProject(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, portalLink)
 }
+
+func TestGetPortalLink_WithRefreshTokenAuthType_GeneratesAuthToken(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	project := seedTestData(t, db)
+
+	logger := log.NewLogger(nil)
+	service := New(logger, db)
+
+	ownerID := ulid.Make().String()
+
+	// Create a portal link with refresh token auth type
+	createRequest := &models.CreatePortalLinkRequest{
+		Name:              "Portal Link With Refresh Token",
+		OwnerID:           ownerID,
+		AuthType:          string(datastore.PortalAuthTypeRefreshToken),
+		CanManageEndpoint: true,
+		Endpoints:         []string{},
+	}
+
+	createdPortalLink, err := service.CreatePortalLink(ctx, project.UID, createRequest)
+	require.NoError(t, err)
+
+	// Fetch the portal link - should provision a new auth token
+	portalLink, err := service.GetPortalLink(ctx, project.UID, createdPortalLink.UID)
+
+	require.NoError(t, err)
+	require.NotNil(t, portalLink)
+	require.Equal(t, datastore.PortalAuthTypeRefreshToken, portalLink.AuthType)
+
+	// Verify that auth_key is provisioned when fetching a refresh token portal link
+	require.NotEmpty(t, portalLink.AuthKey, "auth_key should be provisioned for refresh token auth type")
+	require.Contains(t, portalLink.AuthKey, "PRT.", "auth_key should have the correct prefix")
+}
+
+func TestGetPortalLink_WithStaticTokenAuthType_NoAuthKey(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	project := seedTestData(t, db)
+
+	logger := log.NewLogger(nil)
+	service := New(logger, db)
+
+	ownerID := ulid.Make().String()
+
+	// Create a portal link with static token auth type
+	createRequest := &models.CreatePortalLinkRequest{
+		Name:              "Portal Link With Static Token",
+		OwnerID:           ownerID,
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		CanManageEndpoint: true,
+		Endpoints:         []string{},
+	}
+
+	createdPortalLink, err := service.CreatePortalLink(ctx, project.UID, createRequest)
+	require.NoError(t, err)
+
+	// Fetch the portal link
+	portalLink, err := service.GetPortalLink(ctx, project.UID, createdPortalLink.UID)
+
+	require.NoError(t, err)
+	require.NotNil(t, portalLink)
+	require.Equal(t, datastore.PortalAuthTypeStaticToken, portalLink.AuthType)
+
+	// Verify that auth_key is NOT provisioned for static token types
+	require.Empty(t, portalLink.AuthKey, "auth_key should not be provisioned for static token auth type")
+}

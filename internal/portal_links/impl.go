@@ -357,6 +357,47 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 		return nil, &ServiceError{ErrMsg: "error retrieving portal link", Err: err}
 	}
 
+	// Start transaction
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to start transaction")
+		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := repo.New(tx)
+
+	// Generate auth key if auth type is refresh token
+	var authKey string
+	if datastore.PortalAuthType(row.AuthType) == datastore.PortalAuthTypeRefreshToken {
+		portalToken, err := generateToken(portalLinkID)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to generate auth token")
+			return nil, &ServiceError{ErrMsg: "failed to generate auth token", Err: err}
+		}
+
+		// Create a portal link auth token
+		err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
+			ID:             portalToken.UID,
+			PortalLinkID:   portalLinkID,
+			TokenMaskID:    pgtype.Text{String: portalToken.MaskId, Valid: true},
+			TokenHash:      pgtype.Text{String: portalToken.Hash, Valid: true},
+			TokenSalt:      pgtype.Text{String: portalToken.Salt, Valid: true},
+			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
+		})
+		if err != nil {
+			s.logger.WithError(err).Error("failed to create portal link auth token")
+			return nil, &ServiceError{ErrMsg: "failed to create auth token", Err: err}
+		}
+
+		authKey = portalToken.AuthKey
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		s.logger.WithError(err).Error("failed to commit transaction")
+		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
+	}
+
 	// Ensure endpoints is never nil
 	endpoints := pgTextToStrings(row.Endpoints)
 	if endpoints == nil {
@@ -369,6 +410,7 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 		Name:              row.Name,
 		Token:             row.Token,
 		Endpoints:         endpoints,
+		AuthKey:           authKey,
 		AuthType:          datastore.PortalAuthType(row.AuthType),
 		CanManageEndpoint: row.CanManageEndpoint,
 		OwnerID:           row.OwnerID,
@@ -424,6 +466,47 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 		return nil, &ServiceError{ErrMsg: "error retrieving portal link", Err: err}
 	}
 
+	// Start transaction
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to start transaction")
+		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
+	}
+	defer tx.Rollback(ctx)
+
+	qtx := repo.New(tx)
+
+	// Generate auth key if auth type is refresh token
+	var authKey string
+	if datastore.PortalAuthType(row.AuthType) == datastore.PortalAuthTypeRefreshToken {
+		portalToken, err := generateToken(row.ID)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to generate auth token")
+			return nil, &ServiceError{ErrMsg: "failed to generate auth token", Err: err}
+		}
+
+		// Create a portal link auth token
+		err = qtx.CreatePortalLinkAuthToken(ctx, repo.CreatePortalLinkAuthTokenParams{
+			ID:             portalToken.UID,
+			PortalLinkID:   row.ID,
+			TokenMaskID:    pgtype.Text{String: portalToken.MaskId, Valid: true},
+			TokenHash:      pgtype.Text{String: portalToken.Hash, Valid: true},
+			TokenSalt:      pgtype.Text{String: portalToken.Salt, Valid: true},
+			TokenExpiresAt: pgtype.Timestamptz{Time: portalToken.ExpiresAt.Time, Valid: portalToken.ExpiresAt.Valid},
+		})
+		if err != nil {
+			s.logger.WithError(err).Error("failed to create portal link auth token")
+			return nil, &ServiceError{ErrMsg: "failed to create auth token", Err: err}
+		}
+
+		authKey = portalToken.AuthKey
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		s.logger.WithError(err).Error("failed to commit transaction")
+		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
+	}
+
 	// Ensure endpoints is never nil
 	endpoints := pgTextToStrings(row.Endpoints)
 	if endpoints == nil {
@@ -436,6 +519,7 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 		Name:              row.Name,
 		Token:             row.Token,
 		Endpoints:         endpoints,
+		AuthKey:           authKey,
 		AuthType:          datastore.PortalAuthType(row.AuthType),
 		CanManageEndpoint: row.CanManageEndpoint,
 		OwnerID:           row.OwnerID,
@@ -766,18 +850,19 @@ func (s *Service) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*d
 	}
 
 	return &datastore.PortalLink{
-		UID:            row.ID,
-		ProjectID:      row.ProjectID,
-		Name:           row.Name,
-		Token:          row.Token,
-		Endpoints:      endpoints,
-		AuthType:       datastore.PortalAuthType(row.AuthType),
-		OwnerID:        row.OwnerID,
-		EndpointCount:  int(row.EndpointCount.Int64),
-		TokenSalt:      row.TokenSalt.String,
-		TokenMaskId:    row.TokenMaskID.String,
-		TokenHash:      row.TokenHash.String,
-		TokenExpiresAt: null.NewTime(row.TokenExpiresAt.Time, row.TokenExpiresAt.Valid),
+		UID:               row.ID,
+		ProjectID:         row.ProjectID,
+		Name:              row.Name,
+		Token:             row.Token,
+		Endpoints:         endpoints,
+		AuthType:          datastore.PortalAuthType(row.AuthType),
+		OwnerID:           row.OwnerID,
+		EndpointCount:     int(row.EndpointCount.Int64),
+		TokenSalt:         row.TokenSalt.String,
+		TokenMaskId:       row.TokenMaskID.String,
+		TokenHash:         row.TokenHash.String,
+		CanManageEndpoint: row.CanManageEndpoint,
+		TokenExpiresAt:    null.NewTime(row.TokenExpiresAt.Time, row.TokenExpiresAt.Valid),
 	}, nil
 }
 
