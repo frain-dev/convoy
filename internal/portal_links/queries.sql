@@ -174,7 +174,7 @@ LEFT JOIN convoy.endpoints e
 WHERE p.owner_id = @owner_id AND p.deleted_at IS NULL
 GROUP BY p.id;
 
--- name: DeletePortalLink :exec
+-- name: DeletePortalLink :execresult
 UPDATE convoy.portal_links
 SET deleted_at = NOW()
 WHERE id = @id AND project_id = @project_id AND deleted_at IS NULL;

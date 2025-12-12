@@ -94,11 +94,12 @@ func TestRevokePortalLink_NotFound(t *testing.T) {
 	logger := log.NewLogger(nil)
 	service := New(logger, db)
 
-	// Try to revoke non-existent portal link (should not error)
+	// Try to revoke non-existent portal link (should return error)
 	err := service.RevokePortalLink(ctx, project.UID, "non-existent-id")
 
-	// The implementation doesn't error on non-existent portal links
-	require.NoError(t, err)
+	// Should return "portal link not found" error
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "portal link not found")
 }
 
 func TestRevokePortalLink_WrongProject(t *testing.T) {
@@ -120,12 +121,42 @@ func TestRevokePortalLink_WrongProject(t *testing.T) {
 	createdPortalLink, err := service.CreatePortalLink(ctx, project.UID, createRequest)
 	require.NoError(t, err)
 
-	// Try to revoke with wrong project ID (should not delete)
+	// Try to revoke with wrong project ID (should return error)
 	err = service.RevokePortalLink(ctx, "wrong-project-id", createdPortalLink.UID)
-	require.NoError(t, err)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "portal link not found")
 
 	// Verify it still exists in the correct project
 	portalLink, err := service.GetPortalLink(ctx, project.UID, createdPortalLink.UID)
 	require.NoError(t, err)
 	require.NotNil(t, portalLink)
+}
+
+func TestRevokePortalLink_AlreadyDeleted(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	project := seedTestData(t, db)
+
+	logger := log.NewLogger(nil)
+	service := New(logger, db)
+
+	// Create a portal link
+	createRequest := &models.CreatePortalLinkRequest{
+		Name:              "Test Portal Link",
+		OwnerID:           ulid.Make().String(),
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		CanManageEndpoint: true,
+		Endpoints:         []string{},
+	}
+
+	createdPortalLink, err := service.CreatePortalLink(ctx, project.UID, createRequest)
+	require.NoError(t, err)
+
+	// Revoke the portal link once
+	err = service.RevokePortalLink(ctx, project.UID, createdPortalLink.UID)
+	require.NoError(t, err)
+
+	// Try to revoke again (should return error)
+	err = service.RevokePortalLink(ctx, project.UID, createdPortalLink.UID)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "portal link not found")
 }

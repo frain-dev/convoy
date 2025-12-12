@@ -590,7 +590,7 @@ func (s *Service) RefreshPortalLinkAuthToken(ctx context.Context, projectID, por
 }
 
 func (s *Service) RevokePortalLink(ctx context.Context, projectID, portalLinkID string) error {
-	err := s.repo.DeletePortalLink(ctx, repo.DeletePortalLinkParams{
+	result, err := s.repo.DeletePortalLink(ctx, repo.DeletePortalLinkParams{
 		ID:        portalLinkID,
 		ProjectID: projectID,
 	})
@@ -598,6 +598,11 @@ func (s *Service) RevokePortalLink(ctx context.Context, projectID, portalLinkID 
 		s.logger.WithError(err).Error("failed to revoke portal link")
 		return &ServiceError{ErrMsg: "failed to revoke portal link", Err: err}
 	}
+
+	if result.RowsAffected() == 0 {
+		return &ServiceError{ErrMsg: "portal link not found", Err: datastore.ErrPortalLinkNotFound}
+	}
+
 	return nil
 }
 

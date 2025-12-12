@@ -8,6 +8,7 @@ package repo
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -149,7 +150,7 @@ func (q *Queries) CreatePortalLinkEndpoint(ctx context.Context, arg CreatePortal
 	return err
 }
 
-const deletePortalLink = `-- name: DeletePortalLink :exec
+const deletePortalLink = `-- name: DeletePortalLink :execresult
 UPDATE convoy.portal_links
 SET deleted_at = NOW()
 WHERE id = $1 AND project_id = $2 AND deleted_at IS NULL
@@ -160,9 +161,8 @@ type DeletePortalLinkParams struct {
 	ProjectID string
 }
 
-func (q *Queries) DeletePortalLink(ctx context.Context, arg DeletePortalLinkParams) error {
-	_, err := q.db.Exec(ctx, deletePortalLink, arg.ID, arg.ProjectID)
-	return err
+func (q *Queries) DeletePortalLink(ctx context.Context, arg DeletePortalLinkParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, deletePortalLink, arg.ID, arg.ProjectID)
 }
 
 const deletePortalLinkEndpoints = `-- name: DeletePortalLinkEndpoints :exec

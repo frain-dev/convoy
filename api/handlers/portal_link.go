@@ -243,7 +243,7 @@ func (h *Handler) RefreshPortalLinkAuthToken(w http.ResponseWriter, r *http.Requ
 
 	pLink, err := svc.RefreshPortalLinkAuthToken(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
-		_ = render.Render(w, r, util.NewServiceErrResponse(err))
+		_ = render.Render(w, r, util.NewErrorResponse("portal link not found", http.StatusBadRequest))
 		return
 	}
 
@@ -275,6 +275,10 @@ func (h *Handler) RevokePortalLink(w http.ResponseWriter, r *http.Request) {
 
 	err = svc.RevokePortalLink(r.Context(), project.UID, chi.URLParam(r, "portalLinkID"))
 	if err != nil {
+		if errors.Is(err, datastore.ErrPortalLinkNotFound) {
+			_ = render.Render(w, r, util.NewErrorResponse("Resource not found", http.StatusNotFound))
+			return
+		}
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
 		return
 	}

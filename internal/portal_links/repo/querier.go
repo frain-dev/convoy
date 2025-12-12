@@ -7,6 +7,7 @@ package repo
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -18,7 +19,7 @@ type Querier interface {
 	CreatePortalLink(ctx context.Context, arg CreatePortalLinkParams) error
 	CreatePortalLinkAuthToken(ctx context.Context, arg CreatePortalLinkAuthTokenParams) error
 	CreatePortalLinkEndpoint(ctx context.Context, arg CreatePortalLinkEndpointParams) error
-	DeletePortalLink(ctx context.Context, arg DeletePortalLinkParams) error
+	DeletePortalLink(ctx context.Context, arg DeletePortalLinkParams) (pgconn.CommandTag, error)
 	DeletePortalLinkEndpoints(ctx context.Context, arg DeletePortalLinkEndpointsParams) error
 	FetchPortalLinkById(ctx context.Context, arg FetchPortalLinkByIdParams) (FetchPortalLinkByIdRow, error)
 	FetchPortalLinkByMaskId(ctx context.Context, tokenMaskID pgtype.Text) (FetchPortalLinkByMaskIdRow, error)
