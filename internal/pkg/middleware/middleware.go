@@ -20,6 +20,7 @@ import (
 
 	sdktrace "go.opentelemetry.io/otel/trace"
 
+	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/auth/realm_chain"
@@ -32,11 +33,6 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
-)
-
-const (
-	AuthUserCtx types.ContextKey = "authUser"
-	pageableCtx types.ContextKey = "pageable"
 )
 
 var (
@@ -213,7 +209,7 @@ func RequireAuth() func(next http.Handler) http.Handler {
 				return
 			}
 
-			authCtx := context.WithValue(r.Context(), AuthUserCtx, authUser)
+			authCtx := context.WithValue(r.Context(), convoy.AuthUserCtx, authUser)
 
 			r = r.WithContext(setAuthUserInContext(authCtx, authUser))
 			next.ServeHTTP(w, r)
@@ -479,11 +475,11 @@ func EnsurePeriod(start, end time.Time) error {
 }
 
 func setPageableInContext(ctx context.Context, pageable datastore.Pageable) context.Context {
-	return context.WithValue(ctx, pageableCtx, pageable)
+	return context.WithValue(ctx, convoy.PageableCtx, pageable)
 }
 
 func GetPageableFromContext(ctx context.Context) datastore.Pageable {
-	v := ctx.Value(pageableCtx)
+	v := ctx.Value(convoy.PageableCtx)
 	if v != nil {
 		return v.(datastore.Pageable)
 	}
@@ -491,11 +487,11 @@ func GetPageableFromContext(ctx context.Context) datastore.Pageable {
 }
 
 func setAuthUserInContext(ctx context.Context, a *auth.AuthenticatedUser) context.Context {
-	return context.WithValue(ctx, AuthUserCtx, a)
+	return context.WithValue(ctx, convoy.AuthUserCtx, a)
 }
 
 func GetAuthUserFromContext(ctx context.Context) *auth.AuthenticatedUser {
-	return ctx.Value(AuthUserCtx).(*auth.AuthenticatedUser)
+	return ctx.Value(convoy.AuthUserCtx).(*auth.AuthenticatedUser)
 }
 
 func RequireValidEnterpriseSSOLicense(l license.Licenser) func(http.Handler) http.Handler {

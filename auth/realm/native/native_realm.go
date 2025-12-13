@@ -14,18 +14,19 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/portal_links"
 )
 
 type NativeRealm struct {
-	apiKeyRepo     datastore.APIKeyRepository
-	userRepo       datastore.UserRepository
-	portalLinkRepo datastore.PortalLinkRepository
+	apiKeyRepo        datastore.APIKeyRepository
+	userRepo          datastore.UserRepository
+	portalLinkService portal_links.PortalLinkRepository
 }
 
 func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
 	userRepo datastore.UserRepository,
-	portalLinkRepo datastore.PortalLinkRepository) *NativeRealm {
-	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkRepo: portalLinkRepo}
+	portalLinkService portal_links.PortalLinkRepository) *NativeRealm {
+	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkService: portalLinkService}
 }
 
 func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (*auth.AuthenticatedUser, error) {

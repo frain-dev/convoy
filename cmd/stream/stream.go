@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/server"
 	"github.com/frain-dev/convoy/internal/pkg/socket"
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 	redisQueue "github.com/frain-dev/convoy/queue/redis"
@@ -58,7 +59,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
 			userRepo := postgres.NewUserRepo(a.DB)
 			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)
-			portalLinkRepo := postgres.NewPortalLinkRepo(a.DB)
+			portalLinkRepo := portal_links.New(a.Logger, a.DB)
 
 			// enable only the native auth realm
 			authCfg := &config.AuthConfiguration{

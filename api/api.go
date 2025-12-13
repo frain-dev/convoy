@@ -188,7 +188,7 @@ func NewApplicationHandler(a *types.APIOptions) (*ApplicationHandler, error) {
 	}
 
 	az, err := authz.NewAuthz(&authz.AuthzOpts{
-		AuthCtxKey: authz.AuthCtxType(middleware.AuthUserCtx),
+		AuthCtxKey: authz.AuthCtxType(convoy.AuthUserCtx),
 	})
 	if err != nil {
 		return nil, err

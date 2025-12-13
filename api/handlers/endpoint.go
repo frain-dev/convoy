@@ -89,7 +89,6 @@ func (h *Handler) CreateEndpoint(w http.ResponseWriter, r *http.Request) {
 	ce := services.CreateEndpointService{
 		EndpointRepo:               postgres.NewEndpointRepo(h.A.DB),
 		ProjectRepo:                postgres.NewProjectRepo(h.A.DB),
-		PortalLinkRepo:             postgres.NewPortalLinkRepo(h.A.DB),
 		Licenser:                   h.A.Licenser,
 		E:                          e,
 		ProjectID:                  project.UID,

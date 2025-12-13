@@ -6,6 +6,6 @@
 
 set -e
 
-echo "🚀 Starting backend server on: http://localhost:5050"
+echo "🚀 Starting backend server on: $CONVOY_HOST"
 
 exec ./bin/convoy server

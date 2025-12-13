@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"gopkg.in/guregu/null.v4"
@@ -124,124 +123,6 @@ type CreateEndpointApiKey struct {
 	BaseUrl    string
 	KeyType    datastore.KeyType `json:"key_type"`
 	Expiration int               `json:"expiration"`
-}
-
-type UpdatePortalLinkRequest struct {
-	// Portal Link Name
-	Name string `json:"name" valid:"required~please provide the name field"`
-
-	// Deprecated
-	// IDs of endpoints in this portal link
-	Endpoints []string `json:"endpoints"`
-
-	AuthType string `json:"auth_type"`
-
-	// OwnerID, the portal link will inherit all the endpoints with this owner ID
-	OwnerID string `json:"owner_id"`
-
-	// Specify whether endpoint management can be done through the Portal Link UI
-	CanManageEndpoint bool `json:"can_manage_endpoint"`
-}
-
-func (p *UpdatePortalLinkRequest) Validate() error {
-	validAuthTypes := []datastore.PortalAuthType{
-		datastore.PortalAuthTypeRefreshToken,
-		datastore.PortalAuthTypeStaticToken,
-	}
-
-	// Check if the auth type is valid
-	for _, validType := range validAuthTypes {
-		if validType == datastore.PortalAuthType(p.AuthType) {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("invalid auth type: %s", p.AuthType)
-}
-
-func (p *UpdatePortalLinkRequest) SetDefaultAuthType() {
-	validAuthTypes := []datastore.PortalAuthType{
-		datastore.PortalAuthTypeRefreshToken,
-		datastore.PortalAuthTypeStaticToken,
-	}
-
-	// Check if the auth type is valid
-	for _, validType := range validAuthTypes {
-		if validType == datastore.PortalAuthType(p.AuthType) {
-			return
-		}
-	}
-
-	// Default to refresh token
-	p.AuthType = string(datastore.PortalAuthTypeStaticToken)
-}
-
-type CreatePortalLinkRequest struct {
-	// Portal Link Name
-	Name string `json:"name" valid:"required~please provide the name field"`
-
-	// Deprecated
-	// IDs of endpoints in this portal link
-	Endpoints []string `json:"endpoints"`
-
-	AuthType string `json:"auth_type"`
-
-	// OwnerID, the portal link will inherit all the endpoints with this owner ID
-	OwnerID string `json:"owner_id" valid:"required~please provide the owner id field"`
-
-	// Specify whether endpoint management can be done through the Portal Link UI
-	CanManageEndpoint bool `json:"can_manage_endpoint"`
-}
-
-func (p *CreatePortalLinkRequest) Validate() error {
-	validAuthTypes := []datastore.PortalAuthType{
-		datastore.PortalAuthTypeRefreshToken,
-		datastore.PortalAuthTypeStaticToken,
-	}
-
-	// Check if the auth type is valid
-	for _, validType := range validAuthTypes {
-		if validType == datastore.PortalAuthType(p.AuthType) {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("invalid auth type: %s", p.AuthType)
-}
-
-func (p *CreatePortalLinkRequest) SetDefaultAuthType() {
-	validAuthTypes := []datastore.PortalAuthType{
-		datastore.PortalAuthTypeRefreshToken,
-		datastore.PortalAuthTypeStaticToken,
-	}
-
-	// Check if the auth type is valid
-	for _, validType := range validAuthTypes {
-		if validType == datastore.PortalAuthType(p.AuthType) {
-			return
-		}
-	}
-
-	// Default to refresh token
-	p.AuthType = string(datastore.PortalAuthTypeStaticToken)
-}
-
-type PortalLinkResponse struct {
-	UID               string                     `json:"uid"`
-	Name              string                     `json:"name"`
-	ProjectID         string                     `json:"project_id"`
-	OwnerID           string                     `json:"owner_id"`
-	Endpoints         []string                   `json:"endpoints"`
-	EndpointCount     int                        `json:"endpoint_count"`
-	CanManageEndpoint bool                       `json:"can_manage_endpoint"`
-	Token             string                     `json:"token"`
-	EndpointsMetadata datastore.EndpointMetadata `json:"endpoints_metadata"`
-	URL               string                     `json:"url"`
-	AuthType          datastore.PortalAuthType   `json:"auth_type"`
-	AuthKey           string                     `json:"auth_key"`
-	CreatedAt         time.Time                  `json:"created_at,omitempty"`
-	UpdatedAt         time.Time                  `json:"updated_at,omitempty"`
-	DeletedAt         null.Time                  `json:"deleted_at,omitempty"`
 }
 
 // NewListResponse is a generic function for looping over

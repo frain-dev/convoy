@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	hooks "github.com/frain-dev/convoy/database/hooks"
+	pgxpool "github.com/jackc/pgx/v5/pgxpool"
 	sqlx "github.com/jmoiron/sqlx"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -69,6 +70,20 @@ func (m *MockDatabase) Close() error {
 func (mr *MockDatabaseMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDatabase)(nil).Close))
+}
+
+// GetConn mocks base method.
+func (m *MockDatabase) GetConn() *pgxpool.Pool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConn")
+	ret0, _ := ret[0].(*pgxpool.Pool)
+	return ret0
+}
+
+// GetConn indicates an expected call of GetConn.
+func (mr *MockDatabaseMockRecorder) GetConn() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConn", reflect.TypeOf((*MockDatabase)(nil).GetConn))
 }
 
 // GetDB mocks base method.

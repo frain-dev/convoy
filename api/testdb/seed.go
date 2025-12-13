@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -19,7 +20,10 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/portal_links"
+	portal_links_models "github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/pkg/httpheader"
+	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -623,23 +627,23 @@ func SeedDevice(db database.Database, g *datastore.Project, endpointID string) e
 	return nil
 }
 
-func SeedPortalLink(db database.Database, g *datastore.Project, ownerId string) (*datastore.PortalLink, error) {
-	portalLink := &datastore.PortalLink{
-		UID:       ulid.Make().String(),
-		ProjectID: g.UID,
-		Name:      fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),
-		Token:     ulid.Make().String(),
-		AuthType:  datastore.PortalAuthTypeStaticToken,
-		OwnerID:   ownerId,
+func SeedPortalLink(db database.Database, project *datastore.Project, ownerId string) (*datastore.PortalLink, error) {
+	portalLink := &portal_links_models.CreatePortalLinkRequest{
+		Name:              fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),
+		Endpoints:         []string{}, // Initialize as an empty slice instead of nil
+		AuthType:          string(datastore.PortalAuthTypeStaticToken),
+		OwnerID:           ownerId,
+		CanManageEndpoint: true,
 	}
 
-	portalLinkRepo := postgres.NewPortalLinkRepo(db)
-	err := portalLinkRepo.CreatePortalLink(context.TODO(), portalLink)
+	logger := log.NewLogger(os.Stdout)
+	portalLinkRepo := portal_links.New(logger, db)
+	p, err := portalLinkRepo.CreatePortalLink(context.TODO(), project.UID, portalLink)
 	if err != nil {
 		return nil, err
 	}
 
-	return portalLink, nil
+	return p, nil
 }
 
 func SeedMetaEvent(db database.Database, project *datastore.Project) (*datastore.MetaEvent, error) {

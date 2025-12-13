@@ -19,6 +19,7 @@ import (
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/server"
+	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 	"github.com/frain-dev/convoy/worker"
@@ -115,7 +116,7 @@ func StartConvoyServer(a *cli.App) error {
 
 	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
 	userRepo := postgres.NewUserRepo(a.DB)
-	portalLinkRepo := postgres.NewPortalLinkRepo(a.DB)
+	portalLinkRepo := portal_links.New(a.Logger, a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
 	if err != nil {
 		a.Logger.WithError(err).Fatal("failed to initialize realm chain")

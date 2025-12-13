@@ -1,0 +1,34 @@
+version: "2"
+
+servers:
+  - engine: postgresql
+    uri: postgres://${CONVOY_DB_USERNAME}:${CONVOY_DB_PASSWORD}@${CONVOY_DB_HOST}:${CONVOY_DB_PORT}/${CONVOY_DB_DATABASE}?sslmode=disable
+
+# nice to have but we'd need to sort out the UUIDv4 in prod
+#overrides:
+#  go:
+#    overrides:
+#      - column: convoy.portal_links.id
+#        go_type:
+#          import: github.com/oklog/ulid/v2
+#          type: ULID
+#          pointer: false
+#      - column: convoy.portal_links.project_id
+#        go_type:
+#          import: github.com/oklog/ulid/v2
+#          type: ULID
+#          pointer: false
+
+sql:
+  - schema: ./sql
+    queries: ./internal/portal_links/queries.sql
+    engine: postgresql
+    database:
+      managed: true
+    gen:
+      go:
+        package: "repo"
+        out: "./internal/portal_links/repo"
+        sql_package: "pgx/v5"
+        omit_unused_structs: true
+        emit_interface: true

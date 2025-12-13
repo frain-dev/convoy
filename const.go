@@ -2,10 +2,7 @@ package convoy
 
 import "time"
 
-const (
-	HttpPost HttpMethod = "POST"
-	HttpGet  HttpMethod = "GET"
-)
+const HttpPost HttpMethod = "POST"
 
 const (
 	HTTP_RATE_LIMIT         = 25
