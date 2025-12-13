@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	portal_links_models "github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -320,7 +321,7 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 		UpdatedAt: time.Now(),
 	}
 
-	apiRepo := postgres.NewAPIKeyRepo(db)
+	apiRepo := api_keys.New(nil, db)
 	err = apiRepo.CreateAPIKey(context.Background(), apiKey)
 	if err != nil {
 		return nil, "", err

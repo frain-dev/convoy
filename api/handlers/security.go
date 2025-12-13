@@ -11,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -34,7 +35,7 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	cpk := &services.CreatePersonalAPIKeyService{
 		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
 		UserRepo:    postgres.NewUserRepo(h.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
+		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		User:        user,
 		NewApiKey:   &newApiKey,
 	}
@@ -75,7 +76,7 @@ func (h *Handler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	rvk := &services.RevokePersonalAPIKeyService{
 		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
 		UserRepo:    postgres.NewUserRepo(h.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
+		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		UID:         chi.URLParam(r, "keyID"),
 		User:        user,
 	}
@@ -110,7 +111,7 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 	rgp := &services.RegenerateProjectAPIKeyService{
 		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
 		UserRepo:    postgres.NewUserRepo(h.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
+		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		Project:     project,
 		Member:      member,
 	}
@@ -157,7 +158,7 @@ func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(h.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)
+	apiKeys, paginationData, err := api_keys.New(h.A.Logger, h.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load api keys", http.StatusBadRequest))

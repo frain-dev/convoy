@@ -23,6 +23,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	plinkModels "github.com/frain-dev/convoy/internal/portal_links/models"
@@ -75,7 +76,7 @@ func (s *PublicEndpointIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
@@ -784,7 +785,7 @@ func (s *PublicEventIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
@@ -1351,7 +1352,7 @@ func (s *PublicPortalLinkIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
@@ -2044,7 +2045,7 @@ func (s *PublicProjectIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy-with-all-realms.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
@@ -2380,7 +2381,7 @@ func (s *PublicSourceIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	// orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
@@ -2706,7 +2707,7 @@ func (s *PublicSubscriptionIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
@@ -3310,7 +3311,7 @@ func (s *PublicMetaEventIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(s.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
@@ -3417,7 +3418,7 @@ func (s *PublicEventTypeIntegrationTestSuite) SetupTest() {
 	_, s.APIKey, _ = testdb.SeedAPIKey(s.ConvoyApp.A.DB, role, "", "test", "", "")
 
 	// Initialize realm chain
-	apiKeyRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiKeyRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiKeyRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)
