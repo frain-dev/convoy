@@ -79,6 +79,7 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 }
 
 func createAPIKeyService(t *testing.T, db database.Database) Service {
+	t.Helper()
 	return New(log.NewLogger(os.Stdout), db)
 }
 

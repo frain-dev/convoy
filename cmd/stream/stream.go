@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/pkg/server"
@@ -56,7 +57,7 @@ func AddStreamCommand(a *cli.App) *cobra.Command {
 			sourceRepo := postgres.NewSourceRepo(a.DB)
 			subRepo := postgres.NewSubscriptionRepo(a.DB)
 			deviceRepo := postgres.NewDeviceRepo(a.DB)
-			apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
+			apiKeyRepo := api_keys.New(a.Logger, a.DB)
 			userRepo := postgres.NewUserRepo(a.DB)
 			orgMemberRepo := postgres.NewOrgMemberRepo(a.DB)
 			portalLinkRepo := portal_links.New(a.Logger, a.DB)

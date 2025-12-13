@@ -50,7 +50,7 @@ func TestLoadAPIKeysPaged_ForwardFirstPage(t *testing.T) {
 	}
 	pageable.SetCursors()
 
-	keys, pagination, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys, pagination, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 
 	require.NoError(t, err)
 	require.Len(t, keys, 5)
@@ -90,7 +90,7 @@ func TestLoadAPIKeysPaged_ForwardSecondPage(t *testing.T) {
 	pageable1.SetCursors()
 	filter := &datastore.ApiKeyFilter{ProjectID: project.UID}
 
-	keys1, pagination1, err := service.LoadAPIKeysPaged(ctx, filter, pageable1)
+	keys1, pagination1, err := service.LoadAPIKeysPaged(ctx, filter, &pageable1)
 	require.NoError(t, err)
 	require.Len(t, keys1, 5)
 
@@ -101,7 +101,7 @@ func TestLoadAPIKeysPaged_ForwardSecondPage(t *testing.T) {
 		NextCursor: pagination1.NextPageCursor,
 	}
 
-	keys2, pagination2, err := service.LoadAPIKeysPaged(ctx, filter, pageable2)
+	keys2, pagination2, err := service.LoadAPIKeysPaged(ctx, filter, &pageable2)
 
 	require.NoError(t, err)
 	require.Len(t, keys2, 5)
@@ -132,7 +132,7 @@ func TestLoadAPIKeysPaged_EmptyResults(t *testing.T) {
 	}
 	pageable.SetCursors()
 
-	keys, pagination, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys, pagination, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 
 	require.NoError(t, err)
 	require.Empty(t, keys)
@@ -174,7 +174,7 @@ func TestLoadAPIKeysPaged_SinglePage(t *testing.T) {
 	}
 	pageable.SetCursors()
 
-	keys, pagination, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys, pagination, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 
 	require.NoError(t, err)
 	require.Len(t, keys, 3)
@@ -249,7 +249,7 @@ func TestLoadAPIKeysPaged_FilterByProject(t *testing.T) {
 	}
 	pageable.SetCursors()
 
-	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 
 	require.NoError(t, err)
 	require.Len(t, keys, 5)
@@ -325,7 +325,7 @@ func TestLoadAPIKeysPaged_FilterByUser(t *testing.T) {
 	}
 	pageable.SetCursors()
 
-	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 
 	require.NoError(t, err)
 	require.Len(t, keys, 5)
@@ -389,7 +389,7 @@ func TestLoadAPIKeysPaged_FilterByKeyType(t *testing.T) {
 	}
 	pageable.SetCursors()
 
-	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 
 	require.NoError(t, err)
 	require.Len(t, keys, 3)
@@ -482,7 +482,7 @@ func TestLoadAPIKeysPaged_MultipleFilters(t *testing.T) {
 	}
 	pageable.SetCursors()
 
-	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 
 	require.NoError(t, err)
 	require.Len(t, keys, 3) // Only user1's personal keys
@@ -528,11 +528,11 @@ func TestLoadAPIKeysPaged_NoOverlap(t *testing.T) {
 		Direction: datastore.Next,
 	}
 	pageable1.SetCursors()
-	page1, pagination1, err := service.LoadAPIKeysPaged(ctx, filter, pageable1)
+	page1, pagination1, err := service.LoadAPIKeysPaged(ctx, filter, &pageable1)
 	require.NoError(t, err)
 
 	// Fetch page 2
-	page2, pagination2, err := service.LoadAPIKeysPaged(ctx, filter, datastore.Pageable{
+	page2, pagination2, err := service.LoadAPIKeysPaged(ctx, filter, &datastore.Pageable{
 		PerPage:    5,
 		Direction:  datastore.Next,
 		NextCursor: pagination1.NextPageCursor,
@@ -540,7 +540,7 @@ func TestLoadAPIKeysPaged_NoOverlap(t *testing.T) {
 	require.NoError(t, err)
 
 	// Fetch page 3
-	page3, _, err := service.LoadAPIKeysPaged(ctx, filter, datastore.Pageable{
+	page3, _, err := service.LoadAPIKeysPaged(ctx, filter, &datastore.Pageable{
 		PerPage:    5,
 		Direction:  datastore.Next,
 		NextCursor: pagination2.NextPageCursor,
@@ -590,10 +590,10 @@ func TestLoadAPIKeysPaged_ConsistentOrdering(t *testing.T) {
 	pageable.SetCursors()
 
 	// Fetch twice
-	keys1, _, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys1, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 	require.NoError(t, err)
 
-	keys2, _, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys2, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 	require.NoError(t, err)
 
 	// Verify same order
@@ -637,7 +637,7 @@ func TestLoadAPIKeysPaged_BackwardPagination(t *testing.T) {
 		Direction: datastore.Next,
 	}
 	pageable1.SetCursors()
-	page1Forward, pagination1, err := service.LoadAPIKeysPaged(ctx, filter, pageable1)
+	page1Forward, pagination1, err := service.LoadAPIKeysPaged(ctx, filter, &pageable1)
 	require.NoError(t, err)
 	require.Len(t, page1Forward, 5)
 
@@ -647,7 +647,7 @@ func TestLoadAPIKeysPaged_BackwardPagination(t *testing.T) {
 		Direction:  datastore.Next,
 		NextCursor: pagination1.NextPageCursor,
 	}
-	page2Forward, pagination2, err := service.LoadAPIKeysPaged(ctx, filter, pageable2)
+	page2Forward, pagination2, err := service.LoadAPIKeysPaged(ctx, filter, &pageable2)
 	require.NoError(t, err)
 	require.Len(t, page2Forward, 5)
 
@@ -657,7 +657,7 @@ func TestLoadAPIKeysPaged_BackwardPagination(t *testing.T) {
 		Direction:  datastore.Prev,
 		PrevCursor: pagination2.PrevPageCursor,
 	}
-	page1Backward, _, err := service.LoadAPIKeysPaged(ctx, filter, pageable3)
+	page1Backward, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable3)
 	require.NoError(t, err)
 	require.Len(t, page1Backward, 5)
 

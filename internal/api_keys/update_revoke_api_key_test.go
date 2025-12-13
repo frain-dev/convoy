@@ -429,7 +429,7 @@ func TestRevokeAPIKeys_NotReturnedInPagination(t *testing.T) {
 		PerPage: 10,
 	}
 
-	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, pageable)
+	keys, _, err := service.LoadAPIKeysPaged(ctx, filter, &pageable)
 
 	require.NoError(t, err)
 	// Should only return 2 keys (excluding the revoked one)

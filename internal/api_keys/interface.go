@@ -30,5 +30,5 @@ type Service interface {
 	RevokeAPIKeys(ctx context.Context, ids []string) error
 
 	// LoadAPIKeysPaged retrieves API keys with pagination and filtering
-	LoadAPIKeysPaged(ctx context.Context, filter *datastore.ApiKeyFilter, pageable datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error)
+	LoadAPIKeysPaged(ctx context.Context, filter *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error)
 }

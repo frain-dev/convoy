@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/auth/realm_chain"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
@@ -114,7 +115,7 @@ func StartConvoyServer(a *cli.App) error {
 		return err
 	}
 
-	apiKeyRepo := postgres.NewAPIKeyRepo(a.DB)
+	apiKeyRepo := api_keys.New(a.Logger, a.DB)
 	userRepo := postgres.NewUserRepo(a.DB)
 	portalLinkRepo := portal_links.New(a.Logger, a.DB)
 	err = realm_chain.Init(&cfg.Auth, apiKeyRepo, userRepo, portalLinkRepo, a.Cache, a.Logger)
