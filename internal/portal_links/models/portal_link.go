@@ -80,7 +80,7 @@ type PortalLinkResponse struct {
 
 type UpdatePortalLinkRequest struct {
 	// Portal Link Name
-	Name string `json:"name" valid:"required~please provide the name field"`
+	Name string `json:"name"`
 
 	// Deprecated
 	// IDs of endpoints in this portal link
@@ -96,6 +96,14 @@ type UpdatePortalLinkRequest struct {
 }
 
 func (p *UpdatePortalLinkRequest) Validate() error {
+	err := validation.ValidateStruct(p,
+		validation.Field(&p.Name, validation.Required),
+	)
+
+	if err != nil {
+		return err
+	}
+
 	validAuthTypes := []datastore.PortalAuthType{
 		datastore.PortalAuthTypeRefreshToken,
 		datastore.PortalAuthTypeStaticToken,
@@ -130,7 +138,7 @@ func (p *UpdatePortalLinkRequest) SetDefaultAuthType() {
 
 type CreatePortalLinkRequest struct {
 	// Portal Link Name
-	Name string `json:"name" valid:"required~please provide the name field"`
+	Name string `json:"name"`
 
 	// Deprecated
 	// IDs of endpoints in this portal link
@@ -139,7 +147,7 @@ type CreatePortalLinkRequest struct {
 	AuthType string `json:"auth_type"`
 
 	// OwnerID, the portal link will inherit all the endpoints with this owner ID
-	OwnerID string `json:"owner_id" valid:"required~please provide the owner id field"`
+	OwnerID string `json:"owner_id"`
 
 	// Specify whether endpoint management can be done through the Portal Link UI
 	CanManageEndpoint bool `json:"can_manage_endpoint"`
