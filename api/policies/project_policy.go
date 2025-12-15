@@ -9,7 +9,6 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	api_key_models "github.com/frain-dev/convoy/internal/api_keys/models"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 )
 
@@ -70,7 +69,7 @@ func (pp *ProjectPolicy) checkAccess(ctx context.Context, res interface{}, check
 	}
 
 	// API Key Access.
-	apiKey, ok := authCtx.APIKey.(*api_key_models.APIKey)
+	apiKey, ok := authCtx.APIKey.(*datastore.APIKey)
 	if !ok {
 		return ErrNotAllowed
 	}
