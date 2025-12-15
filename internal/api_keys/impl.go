@@ -401,28 +401,3 @@ func (s *service) LoadAPIKeysPaged(ctx context.Context, filter *api_key_models.A
 
 	return apiKeys, *pagination, nil
 }
-
-// ============================================================================
-// Adapter Methods for datastore.APIKeyRepository Interface
-// These methods provide compatibility with the legacy datastore interface
-// ============================================================================
-
-// FindAPIKeyByID is an adapter method that wraps GetAPIKeyByID
-func (s *service) FindAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
-	return s.GetAPIKeyByID(ctx, id)
-}
-
-// FindAPIKeyByMaskID is an adapter method that wraps GetAPIKeyByMaskID
-func (s *service) FindAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
-	return s.GetAPIKeyByMaskID(ctx, maskID)
-}
-
-// FindAPIKeyByHash is an adapter method that wraps GetAPIKeyByHash
-func (s *service) FindAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
-	return s.GetAPIKeyByHash(ctx, hash)
-}
-
-// FindAPIKeyByProjectID is an adapter method that wraps GetAPIKeyByProjectID
-func (s *service) FindAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
-	return s.GetAPIKeyByProjectID(ctx, projectID)
-}

@@ -293,7 +293,7 @@ func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, e
 	return iv, nil
 }
 
-// SeedAPIKey creates random api key for integration tests.
+// SeedAPIKey creates a random api key for integration tests.
 func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
@@ -321,7 +321,8 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 		UpdatedAt: time.Now(),
 	}
 
-	apiRepo := api_keys.New(nil, db)
+	logger := log.NewLogger(os.Stdout)
+	apiRepo := api_keys.New(logger, db)
 	err = apiRepo.CreateAPIKey(context.Background(), apiKey)
 	if err != nil {
 		return nil, "", err
