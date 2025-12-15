@@ -51,7 +51,8 @@ SELECT
     COALESCE(user_id, '') AS user_id,
     created_at,
     updated_at,
-    expires_at
+    expires_at,
+    deleted_at
 FROM convoy.api_keys
 WHERE id = @id AND deleted_at IS NULL;
 
@@ -70,9 +71,10 @@ SELECT
     COALESCE(user_id, '') AS user_id,
     created_at,
     updated_at,
-    expires_at
+    expires_at,
+    deleted_at
 FROM convoy.api_keys
-WHERE mask_id = @mask_id AND deleted_at IS NULL;
+WHERE mask_id = @mask_id;
 
 -- name: FindAPIKeyByHash :one
 SELECT
@@ -88,7 +90,8 @@ SELECT
     COALESCE(user_id, '') AS user_id,
     created_at,
     updated_at,
-    expires_at
+    expires_at,
+    deleted_at
 FROM convoy.api_keys
 WHERE hash = @hash AND deleted_at IS NULL;
 
@@ -106,7 +109,8 @@ SELECT
     COALESCE(user_id, '') AS user_id,
     created_at,
     updated_at,
-    expires_at
+    expires_at,
+    deleted_at
 FROM convoy.api_keys
 WHERE role_project = @role_project AND deleted_at IS NULL;
 
@@ -156,7 +160,8 @@ WITH filtered_api_keys AS (
         COALESCE(user_id, '') AS user_id,
         created_at,
         updated_at,
-        expires_at
+        expires_at,
+        deleted_at
     FROM convoy.api_keys
     WHERE deleted_at IS NULL
         -- Cursor-based pagination: < for forward (next), > for backward (prev)

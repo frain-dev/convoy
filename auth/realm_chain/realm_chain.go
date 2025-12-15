@@ -44,7 +44,7 @@ func Get() (*RealmChain, error) {
 }
 
 func Init(authConfig *config.AuthConfiguration,
-	apiKeyRepo api_keys.Service,
+	apiKeyRepo api_keys.APIKeyRepository,
 	userRepo datastore.UserRepository,
 	portalLinkService portal_links.PortalLinkRepository,
 	cache cache.Cache, logger log.StdLogger) error {

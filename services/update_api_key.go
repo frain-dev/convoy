@@ -13,7 +13,7 @@ import (
 type UpdateAPIKeyService struct {
 	ProjectRepo datastore.ProjectRepository
 	UserRepo    datastore.UserRepository
-	APIKeyRepo  api_keys.Service
+	APIKeyRepo  api_keys.APIKeyRepository
 
 	UID  string
 	Role *auth.Role

@@ -18,7 +18,7 @@ import (
 func provideCreateAPIKeyService(ctrl *gomock.Controller, member *datastore.OrganisationMember, newApiKey *datastore.APIKey) *CreateAPIKeyService {
 	return &CreateAPIKeyService{
 		ProjectRepo: mocks.NewMockProjectRepository(ctrl),
-		APIKeyRepo:  mocks.NewMockService(ctrl),
+		APIKeyRepo:  mocks.NewMockAPIKeyRepository(ctrl),
 		Member:      member,
 		NewApiKey:   newApiKey,
 	}
@@ -72,7 +72,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				g, _ := ss.ProjectRepo.(*mocks.MockProjectRepository)
 				g.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
@@ -222,7 +222,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
 					Times(1).Return(&datastore.Project{UID: "1234", OrganisationID: "1234"}, nil)
 
-				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},

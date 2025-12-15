@@ -7,8 +7,8 @@ import (
 	"github.com/frain-dev/convoy/internal/api_keys/models"
 )
 
-// Service defines the interface for API key operations
-type Service interface {
+// APIKeyRepository defines the interface for API key operations
+type APIKeyRepository interface {
 	// CreateAPIKey creates a new API key
 	CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error
 

@@ -13,7 +13,7 @@ import (
 type RegenerateProjectAPIKeyService struct {
 	ProjectRepo datastore.ProjectRepository
 	UserRepo    datastore.UserRepository
-	APIKeyRepo  api_keys.Service
+	APIKeyRepo  api_keys.APIKeyRepository
 
 	Project *datastore.Project
 	Member  *datastore.OrganisationMember

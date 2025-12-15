@@ -20,7 +20,7 @@ import (
 type CreatePersonalAPIKeyService struct {
 	ProjectRepo datastore.ProjectRepository
 	UserRepo    datastore.UserRepository
-	APIKeyRepo  api_keys.Service
+	APIKeyRepo  api_keys.APIKeyRepository
 
 	User      *datastore.User
 	NewApiKey *models.PersonalAPIKey

@@ -200,7 +200,7 @@ func buildServer(t *testing.T) *ApplicationHandler {
 	return ah
 }
 
-func initRealmChain(t *testing.T, apiKeyRepo api_keys.Service, userRepo datastore.UserRepository, portalLinkRepo *portal_links.Service, cache cache.Cache) {
+func initRealmChain(t *testing.T, apiKeyRepo api_keys.APIKeyRepository, userRepo datastore.UserRepository, portalLinkRepo *portal_links.Service, cache cache.Cache) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)

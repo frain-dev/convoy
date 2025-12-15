@@ -18,7 +18,7 @@ import (
 
 type CreateAPIKeyService struct {
 	ProjectRepo datastore.ProjectRepository
-	APIKeyRepo  api_keys.Service
+	APIKeyRepo  api_keys.APIKeyRepository
 
 	Member    *datastore.OrganisationMember
 	NewApiKey *datastore.APIKey

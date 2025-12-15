@@ -19,17 +19,17 @@ import (
 	"github.com/frain-dev/convoy/util"
 )
 
-// Service implements the API key service using SQLc-generated queries
-type service struct {
+// Service implements the API key Service using SQLc-generated queries
+type Service struct {
 	logger   log.StdLogger
 	repo     repo.Querier      // SQLc-generated interface
 	db       *pgxpool.Pool     // Connection pool
 	legacyDB database.Database // For gradual migration if needed
 }
 
-// New creates a new API key service
-func New(logger log.StdLogger, db database.Database) *service {
-	return &service{
+// New creates a new API key Service
+func New(logger log.StdLogger, db database.Database) *Service {
+	return &Service{
 		logger:   logger,
 		repo:     repo.New(db.GetConn()),
 		db:       db.GetConn(),
@@ -82,83 +82,65 @@ func stringToPgTextFilter(s string) pgtype.Text {
 	return pgtype.Text{String: s, Valid: true}
 }
 
-// rowToAPIKey converts a Find query row to datastore.APIKey
-func (s *service) rowToAPIKey(row interface{}) datastore.APIKey {
-	// Handle different row types from SQLc
+// rowToAPIKey converts any SQLc-generated row struct to datastore.APIKey
+func (s *Service) rowToAPIKey(row interface{}) datastore.APIKey {
+	// Extract fields using a helper that works with all row types
+	var (
+		id, name, keyType, maskID           string
+		roleType, roleProject, roleEndpoint string
+		hash, salt, userID                  string
+		createdAt, updatedAt                pgtype.Timestamptz
+		expiresAt, deletedAt                pgtype.Timestamptz
+	)
+
 	switch r := row.(type) {
 	case repo.FindAPIKeyByIDRow:
-		return datastore.APIKey{
-			UID:       r.ID,
-			Name:      r.Name,
-			Type:      datastore.KeyType(r.KeyType),
-			MaskID:    r.MaskID,
-			Role:      paramsToRole(r.RoleType, r.RoleProject, r.RoleEndpoint),
-			Hash:      r.Hash,
-			Salt:      r.Salt,
-			UserID:    r.UserID,
-			ExpiresAt: pgTimestamptzToNullTime(r.ExpiresAt),
-			CreatedAt: r.CreatedAt.Time,
-			UpdatedAt: r.UpdatedAt.Time,
-		}
+		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
+		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
+		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByMaskIDRow:
-		return datastore.APIKey{
-			UID:       r.ID,
-			Name:      r.Name,
-			Type:      datastore.KeyType(r.KeyType),
-			MaskID:    r.MaskID,
-			Role:      paramsToRole(r.RoleType, r.RoleProject, r.RoleEndpoint),
-			Hash:      r.Hash,
-			Salt:      r.Salt,
-			UserID:    r.UserID,
-			ExpiresAt: pgTimestamptzToNullTime(r.ExpiresAt),
-			CreatedAt: r.CreatedAt.Time,
-			UpdatedAt: r.UpdatedAt.Time,
-		}
+		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
+		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
+		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByHashRow:
-		return datastore.APIKey{
-			UID:       r.ID,
-			Name:      r.Name,
-			Type:      datastore.KeyType(r.KeyType),
-			MaskID:    r.MaskID,
-			Role:      paramsToRole(r.RoleType, r.RoleProject, r.RoleEndpoint),
-			Hash:      r.Hash,
-			Salt:      r.Salt,
-			UserID:    r.UserID,
-			ExpiresAt: pgTimestamptzToNullTime(r.ExpiresAt),
-			CreatedAt: r.CreatedAt.Time,
-			UpdatedAt: r.UpdatedAt.Time,
-		}
+		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
+		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
+		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FindAPIKeyByProjectIDRow:
-		return datastore.APIKey{
-			UID:       r.ID,
-			Name:      r.Name,
-			Type:      datastore.KeyType(r.KeyType),
-			MaskID:    r.MaskID,
-			Role:      paramsToRole(r.RoleType, r.RoleProject, r.RoleEndpoint),
-			Hash:      r.Hash,
-			Salt:      r.Salt,
-			UserID:    r.UserID,
-			ExpiresAt: pgTimestamptzToNullTime(r.ExpiresAt),
-			CreatedAt: r.CreatedAt.Time,
-			UpdatedAt: r.UpdatedAt.Time,
-		}
+		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
+		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
+		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	case repo.FetchAPIKeysPaginatedRow:
-		return datastore.APIKey{
-			UID:       r.ID,
-			Name:      r.Name,
-			Type:      datastore.KeyType(r.KeyType),
-			MaskID:    r.MaskID,
-			Role:      paramsToRole(r.RoleType, r.RoleProject, r.RoleEndpoint),
-			Hash:      r.Hash,
-			Salt:      r.Salt,
-			UserID:    r.UserID,
-			ExpiresAt: pgTimestamptzToNullTime(r.ExpiresAt),
-			CreatedAt: r.CreatedAt.Time,
-			UpdatedAt: r.UpdatedAt.Time,
-		}
+		id, name, keyType, maskID = r.ID, r.Name, r.KeyType, r.MaskID
+		roleType, roleProject, roleEndpoint = r.RoleType, r.RoleProject, r.RoleEndpoint
+		hash, salt, userID = r.Hash, r.Salt, r.UserID
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		expiresAt, deletedAt = r.ExpiresAt, r.DeletedAt
 	default:
-		// Return empty APIKey if type is not recognized
 		return datastore.APIKey{}
+	}
+
+	return datastore.APIKey{
+		UID:       id,
+		Name:      name,
+		Type:      datastore.KeyType(keyType),
+		MaskID:    maskID,
+		Role:      paramsToRole(roleType, roleProject, roleEndpoint),
+		Hash:      hash,
+		Salt:      salt,
+		UserID:    userID,
+		ExpiresAt: pgTimestamptzToNullTime(expiresAt),
+		DeletedAt: pgTimestamptzToNullTime(deletedAt),
+		CreatedAt: createdAt.Time,
+		UpdatedAt: updatedAt.Time,
 	}
 }
 
@@ -167,7 +149,7 @@ func (s *service) rowToAPIKey(row interface{}) datastore.APIKey {
 // ============================================================================
 
 // CreateAPIKey creates a new API key
-func (s *service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
+func (s *Service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
 	if apiKey == nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("api key cannot be nil"))
 	}
@@ -205,7 +187,7 @@ func (s *service) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 }
 
 // UpdateAPIKey updates an existing API key
-func (s *service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
+func (s *Service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
 	if apiKey == nil {
 		return util.NewServiceError(http.StatusBadRequest, errors.New("api key cannot be nil"))
 	}
@@ -231,7 +213,7 @@ func (s *service) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) er
 }
 
 // GetAPIKeyByID retrieves an API key by its ID
-func (s *service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
+func (s *Service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
 	row, err := s.repo.FindAPIKeyByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -247,7 +229,7 @@ func (s *service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIK
 
 // GetAPIKeyByMaskID retrieves an API key by its mask ID
 // CRITICAL: This method is used for API key authentication in NativeRealm
-func (s *service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
+func (s *Service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
 	row, err := s.repo.FindAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -262,7 +244,7 @@ func (s *service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datast
 }
 
 // GetAPIKeyByHash retrieves an API key by its hash
-func (s *service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
+func (s *Service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
 	row, err := s.repo.FindAPIKeyByHash(ctx, hash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -277,7 +259,7 @@ func (s *service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.
 }
 
 // GetAPIKeyByProjectID retrieves an API key by its project ID
-func (s *service) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
+func (s *Service) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
 	row, err := s.repo.FindAPIKeyByProjectID(ctx, stringToPgTextFilter(projectID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -292,7 +274,7 @@ func (s *service) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*
 }
 
 // RevokeAPIKeys revokes (soft deletes) multiple API keys
-func (s *service) RevokeAPIKeys(ctx context.Context, ids []string) error {
+func (s *Service) RevokeAPIKeys(ctx context.Context, ids []string) error {
 	if len(ids) == 0 {
 		return nil // No-op for empty array
 	}
@@ -307,14 +289,14 @@ func (s *service) RevokeAPIKeys(ctx context.Context, ids []string) error {
 }
 
 // LoadAPIKeysPaged retrieves API keys with pagination and filtering
-func (s *service) LoadAPIKeysPaged(ctx context.Context, filter *api_key_models.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+func (s *Service) LoadAPIKeysPaged(ctx context.Context, filter *api_key_models.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	// Determine direction for SQL query
 	direction := "next"
 	if pageable.Direction == datastore.Prev {
 		direction = "prev"
 	}
 
-	// Check if we have endpoint_ids filter
+	// Check if we have an endpoint_ids filter
 	hasEndpointIdsFilter := len(filter.EndpointIDs) > 0
 
 	// Convert filter strings to pgtype.Text

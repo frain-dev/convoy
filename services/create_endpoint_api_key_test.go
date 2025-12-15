@@ -19,7 +19,7 @@ import (
 
 func provideCreateEndpointAPIKeyService(ctrl *gomock.Controller, d *models.CreateEndpointApiKey) *CreateEndpointAPIKeyService {
 	return &CreateEndpointAPIKeyService{
-		APIKeyRepo: mocks.NewMockService(ctrl),
+		APIKeyRepo: mocks.NewMockAPIKeyRepository(ctrl),
 		D:          d,
 	}
 }
@@ -70,7 +70,7 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				ExpiresAt: null.NewTime(time.Now().Add(time.Minute*30), true),
 			},
 			dbFn: func(ss *CreateEndpointAPIKeyService) {
-				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
@@ -101,7 +101,7 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				ExpiresAt: null.NewTime(time.Now().Add(time.Hour*24*7), true),
 			},
 			dbFn: func(ss *CreateEndpointAPIKeyService) {
-				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
@@ -129,7 +129,7 @@ func TestCreateEndpointAPIKeyService_Run(t *testing.T) {
 				},
 			},
 			dbFn: func(ss *CreateEndpointAPIKeyService) {
-				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},

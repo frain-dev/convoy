@@ -130,7 +130,8 @@ WITH filtered_api_keys AS (
         COALESCE(user_id, '') AS user_id,
         created_at,
         updated_at,
-        expires_at
+        expires_at,
+        deleted_at
     FROM convoy.api_keys
     WHERE deleted_at IS NULL
         -- Cursor-based pagination: < for forward (next), > for backward (prev)
@@ -163,7 +164,7 @@ WITH filtered_api_keys AS (
         CASE WHEN $1::text = 'prev' THEN id END ASC
     LIMIT $9
 )
-SELECT id, name, key_type, mask_id, role_type, role_project, role_endpoint, hash, salt, user_id, created_at, updated_at, expires_at FROM filtered_api_keys
+SELECT id, name, key_type, mask_id, role_type, role_project, role_endpoint, hash, salt, user_id, created_at, updated_at, expires_at, deleted_at FROM filtered_api_keys
 ORDER BY
     CASE WHEN $1::text = 'prev' THEN id END DESC,
     CASE WHEN $1::text = 'next' THEN id END DESC
@@ -195,6 +196,7 @@ type FetchAPIKeysPaginatedRow struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	ExpiresAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 }
 
 // ============================================================================
@@ -250,6 +252,7 @@ func (q *Queries) FetchAPIKeysPaginated(ctx context.Context, arg FetchAPIKeysPag
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ExpiresAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -275,7 +278,8 @@ SELECT
     COALESCE(user_id, '') AS user_id,
     created_at,
     updated_at,
-    expires_at
+    expires_at,
+    deleted_at
 FROM convoy.api_keys
 WHERE hash = $1 AND deleted_at IS NULL
 `
@@ -294,6 +298,7 @@ type FindAPIKeyByHashRow struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	ExpiresAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 }
 
 func (q *Queries) FindAPIKeyByHash(ctx context.Context, hash string) (FindAPIKeyByHashRow, error) {
@@ -313,6 +318,7 @@ func (q *Queries) FindAPIKeyByHash(ctx context.Context, hash string) (FindAPIKey
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ExpiresAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -332,7 +338,8 @@ SELECT
     COALESCE(user_id, '') AS user_id,
     created_at,
     updated_at,
-    expires_at
+    expires_at,
+    deleted_at
 FROM convoy.api_keys
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -351,6 +358,7 @@ type FindAPIKeyByIDRow struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	ExpiresAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 }
 
 // ============================================================================
@@ -373,6 +381,7 @@ func (q *Queries) FindAPIKeyByID(ctx context.Context, id string) (FindAPIKeyByID
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ExpiresAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -391,9 +400,10 @@ SELECT
     COALESCE(user_id, '') AS user_id,
     created_at,
     updated_at,
-    expires_at
+    expires_at,
+    deleted_at
 FROM convoy.api_keys
-WHERE mask_id = $1 AND deleted_at IS NULL
+WHERE mask_id = $1
 `
 
 type FindAPIKeyByMaskIDRow struct {
@@ -410,6 +420,7 @@ type FindAPIKeyByMaskIDRow struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	ExpiresAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 }
 
 // CRITICAL: Used for API key authentication in NativeRealm
@@ -430,6 +441,7 @@ func (q *Queries) FindAPIKeyByMaskID(ctx context.Context, maskID string) (FindAP
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ExpiresAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -448,7 +460,8 @@ SELECT
     COALESCE(user_id, '') AS user_id,
     created_at,
     updated_at,
-    expires_at
+    expires_at,
+    deleted_at
 FROM convoy.api_keys
 WHERE role_project = $1 AND deleted_at IS NULL
 `
@@ -467,6 +480,7 @@ type FindAPIKeyByProjectIDRow struct {
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
 	ExpiresAt    pgtype.Timestamptz
+	DeletedAt    pgtype.Timestamptz
 }
 
 func (q *Queries) FindAPIKeyByProjectID(ctx context.Context, roleProject pgtype.Text) (FindAPIKeyByProjectIDRow, error) {
@@ -486,6 +500,7 @@ func (q *Queries) FindAPIKeyByProjectID(ctx context.Context, roleProject pgtype.
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ExpiresAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }

@@ -19,7 +19,7 @@ import (
 )
 
 type CreateEndpointAPIKeyService struct {
-	APIKeyRepo api_keys.Service
+	APIKeyRepo api_keys.APIKeyRepository
 	D          *models.CreateEndpointApiKey
 }
 

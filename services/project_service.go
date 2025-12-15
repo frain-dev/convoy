@@ -20,7 +20,7 @@ import (
 )
 
 type ProjectService struct {
-	apiKeyRepo        api_keys.Service
+	apiKeyRepo        api_keys.APIKeyRepository
 	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -28,7 +28,7 @@ type ProjectService struct {
 	Licenser          license.Licenser
 }
 
-func NewProjectService(apiKeyRepo api_keys.Service, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
+func NewProjectService(apiKeyRepo api_keys.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,

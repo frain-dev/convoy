@@ -12,7 +12,7 @@ func TestRevokePersonalAPIKeyService_Run(t *testing.T) {
 	type fields struct {
 		ProjectRepo datastore.ProjectRepository
 		UserRepo    datastore.UserRepository
-		APIKeyRepo  api_keys.Service
+		APIKeyRepo  api_keys.APIKeyRepository
 		UID         string
 		User        *datastore.User
 	}

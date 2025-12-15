@@ -18,32 +18,32 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockService is a mock of Service interface.
-type MockService struct {
+// MockAPIKeyRepository is a mock of APIKeyRepository interface.
+type MockAPIKeyRepository struct {
 	ctrl     *gomock.Controller
-	recorder *MockServiceMockRecorder
+	recorder *MockAPIKeyRepositoryMockRecorder
 	isgomock struct{}
 }
 
-// MockServiceMockRecorder is the mock recorder for MockService.
-type MockServiceMockRecorder struct {
-	mock *MockService
+// MockAPIKeyRepositoryMockRecorder is the mock recorder for MockAPIKeyRepository.
+type MockAPIKeyRepositoryMockRecorder struct {
+	mock *MockAPIKeyRepository
 }
 
-// NewMockService creates a new mock instance.
-func NewMockService(ctrl *gomock.Controller) *MockService {
-	mock := &MockService{ctrl: ctrl}
-	mock.recorder = &MockServiceMockRecorder{mock}
+// NewMockAPIKeyRepository creates a new mock instance.
+func NewMockAPIKeyRepository(ctrl *gomock.Controller) *MockAPIKeyRepository {
+	mock := &MockAPIKeyRepository{ctrl: ctrl}
+	mock.recorder = &MockAPIKeyRepositoryMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockService) EXPECT() *MockServiceMockRecorder {
+func (m *MockAPIKeyRepository) EXPECT() *MockAPIKeyRepositoryMockRecorder {
 	return m.recorder
 }
 
 // CreateAPIKey mocks base method.
-func (m *MockService) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
+func (m *MockAPIKeyRepository) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateAPIKey", ctx, apiKey)
 	ret0, _ := ret[0].(error)
@@ -51,13 +51,13 @@ func (m *MockService) CreateAPIKey(ctx context.Context, apiKey *datastore.APIKey
 }
 
 // CreateAPIKey indicates an expected call of CreateAPIKey.
-func (mr *MockServiceMockRecorder) CreateAPIKey(ctx, apiKey any) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) CreateAPIKey(ctx, apiKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAPIKey", reflect.TypeOf((*MockService)(nil).CreateAPIKey), ctx, apiKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAPIKey", reflect.TypeOf((*MockAPIKeyRepository)(nil).CreateAPIKey), ctx, apiKey)
 }
 
 // GetAPIKeyByHash mocks base method.
-func (m *MockService) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
+func (m *MockAPIKeyRepository) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.APIKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAPIKeyByHash", ctx, hash)
 	ret0, _ := ret[0].(*datastore.APIKey)
@@ -66,13 +66,13 @@ func (m *MockService) GetAPIKeyByHash(ctx context.Context, hash string) (*datast
 }
 
 // GetAPIKeyByHash indicates an expected call of GetAPIKeyByHash.
-func (mr *MockServiceMockRecorder) GetAPIKeyByHash(ctx, hash any) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) GetAPIKeyByHash(ctx, hash any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIKeyByHash", reflect.TypeOf((*MockService)(nil).GetAPIKeyByHash), ctx, hash)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIKeyByHash", reflect.TypeOf((*MockAPIKeyRepository)(nil).GetAPIKeyByHash), ctx, hash)
 }
 
 // GetAPIKeyByID mocks base method.
-func (m *MockService) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
+func (m *MockAPIKeyRepository) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAPIKeyByID", ctx, id)
 	ret0, _ := ret[0].(*datastore.APIKey)
@@ -81,13 +81,13 @@ func (m *MockService) GetAPIKeyByID(ctx context.Context, id string) (*datastore.
 }
 
 // GetAPIKeyByID indicates an expected call of GetAPIKeyByID.
-func (mr *MockServiceMockRecorder) GetAPIKeyByID(ctx, id any) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) GetAPIKeyByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIKeyByID", reflect.TypeOf((*MockService)(nil).GetAPIKeyByID), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIKeyByID", reflect.TypeOf((*MockAPIKeyRepository)(nil).GetAPIKeyByID), ctx, id)
 }
 
 // GetAPIKeyByMaskID mocks base method.
-func (m *MockService) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
+func (m *MockAPIKeyRepository) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datastore.APIKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAPIKeyByMaskID", ctx, maskID)
 	ret0, _ := ret[0].(*datastore.APIKey)
@@ -96,13 +96,13 @@ func (m *MockService) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*da
 }
 
 // GetAPIKeyByMaskID indicates an expected call of GetAPIKeyByMaskID.
-func (mr *MockServiceMockRecorder) GetAPIKeyByMaskID(ctx, maskID any) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) GetAPIKeyByMaskID(ctx, maskID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIKeyByMaskID", reflect.TypeOf((*MockService)(nil).GetAPIKeyByMaskID), ctx, maskID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIKeyByMaskID", reflect.TypeOf((*MockAPIKeyRepository)(nil).GetAPIKeyByMaskID), ctx, maskID)
 }
 
 // GetAPIKeyByProjectID mocks base method.
-func (m *MockService) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
+func (m *MockAPIKeyRepository) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*datastore.APIKey, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAPIKeyByProjectID", ctx, projectID)
 	ret0, _ := ret[0].(*datastore.APIKey)
@@ -111,13 +111,13 @@ func (m *MockService) GetAPIKeyByProjectID(ctx context.Context, projectID string
 }
 
 // GetAPIKeyByProjectID indicates an expected call of GetAPIKeyByProjectID.
-func (mr *MockServiceMockRecorder) GetAPIKeyByProjectID(ctx, projectID any) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) GetAPIKeyByProjectID(ctx, projectID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIKeyByProjectID", reflect.TypeOf((*MockService)(nil).GetAPIKeyByProjectID), ctx, projectID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAPIKeyByProjectID", reflect.TypeOf((*MockAPIKeyRepository)(nil).GetAPIKeyByProjectID), ctx, projectID)
 }
 
 // LoadAPIKeysPaged mocks base method.
-func (m *MockService) LoadAPIKeysPaged(ctx context.Context, filter *models.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+func (m *MockAPIKeyRepository) LoadAPIKeysPaged(ctx context.Context, filter *models.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LoadAPIKeysPaged", ctx, filter, pageable)
 	ret0, _ := ret[0].([]datastore.APIKey)
@@ -127,13 +127,13 @@ func (m *MockService) LoadAPIKeysPaged(ctx context.Context, filter *models.ApiKe
 }
 
 // LoadAPIKeysPaged indicates an expected call of LoadAPIKeysPaged.
-func (mr *MockServiceMockRecorder) LoadAPIKeysPaged(ctx, filter, pageable any) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) LoadAPIKeysPaged(ctx, filter, pageable any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockService)(nil).LoadAPIKeysPaged), ctx, filter, pageable)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LoadAPIKeysPaged", reflect.TypeOf((*MockAPIKeyRepository)(nil).LoadAPIKeysPaged), ctx, filter, pageable)
 }
 
 // RevokeAPIKeys mocks base method.
-func (m *MockService) RevokeAPIKeys(ctx context.Context, ids []string) error {
+func (m *MockAPIKeyRepository) RevokeAPIKeys(ctx context.Context, ids []string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RevokeAPIKeys", ctx, ids)
 	ret0, _ := ret[0].(error)
@@ -141,13 +141,13 @@ func (m *MockService) RevokeAPIKeys(ctx context.Context, ids []string) error {
 }
 
 // RevokeAPIKeys indicates an expected call of RevokeAPIKeys.
-func (mr *MockServiceMockRecorder) RevokeAPIKeys(ctx, ids any) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) RevokeAPIKeys(ctx, ids any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAPIKeys", reflect.TypeOf((*MockService)(nil).RevokeAPIKeys), ctx, ids)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAPIKeys", reflect.TypeOf((*MockAPIKeyRepository)(nil).RevokeAPIKeys), ctx, ids)
 }
 
 // UpdateAPIKey mocks base method.
-func (m *MockService) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
+func (m *MockAPIKeyRepository) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAPIKey", ctx, apiKey)
 	ret0, _ := ret[0].(error)
@@ -155,7 +155,7 @@ func (m *MockService) UpdateAPIKey(ctx context.Context, apiKey *datastore.APIKey
 }
 
 // UpdateAPIKey indicates an expected call of UpdateAPIKey.
-func (mr *MockServiceMockRecorder) UpdateAPIKey(ctx, apiKey any) *gomock.Call {
+func (mr *MockAPIKeyRepositoryMockRecorder) UpdateAPIKey(ctx, apiKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAPIKey", reflect.TypeOf((*MockService)(nil).UpdateAPIKey), ctx, apiKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAPIKey", reflect.TypeOf((*MockAPIKeyRepository)(nil).UpdateAPIKey), ctx, apiKey)
 }

@@ -19,12 +19,12 @@ import (
 )
 
 type NativeRealm struct {
-	apiKeyRepo        api_keys.Service
+	apiKeyRepo        api_keys.APIKeyRepository
 	userRepo          datastore.UserRepository
 	portalLinkService portal_links.PortalLinkRepository
 }
 
-func NewNativeRealm(apiKeyRepo api_keys.Service,
+func NewNativeRealm(apiKeyRepo api_keys.APIKeyRepository,
 	userRepo datastore.UserRepository,
 	portalLinkService portal_links.PortalLinkRepository) *NativeRealm {
 	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkService: portalLinkService}

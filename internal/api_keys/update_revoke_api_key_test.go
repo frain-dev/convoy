@@ -381,13 +381,18 @@ func TestRevokeAPIKeys_VerifySoftDelete(t *testing.T) {
 	err = service.RevokeAPIKeys(ctx, []string{apiKey.UID})
 	require.NoError(t, err)
 
-	// Verify key is not returned by any get method
+	// Verify key is not returned by GetAPIKeyByID (filters deleted keys)
 	_, err = service.GetAPIKeyByID(ctx, apiKey.UID)
 	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
 
-	_, err = service.GetAPIKeyByMaskID(ctx, apiKey.MaskID)
-	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
+	// IMPORTANT: GetAPIKeyByMaskID IS special - it returns revoked keys with DeletedAt populated
+	// This is needed for authentication flow to distinguish "not found" from "revoked"
+	maskIDKey, err := service.GetAPIKeyByMaskID(ctx, apiKey.MaskID)
+	require.NoError(t, err, "GetAPIKeyByMaskID should return revoked keys")
+	require.NotNil(t, maskIDKey)
+	require.False(t, maskIDKey.DeletedAt.IsZero(), "DeletedAt should be populated for revoked key")
 
+	// Verify key is not returned by GetAPIKeyByHash (filters deleted keys)
 	_, err = service.GetAPIKeyByHash(ctx, apiKey.Hash)
 	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
 }
