@@ -18,7 +18,6 @@ import (
 	"github.com/frain-dev/convoy/cmd/openapi"
 	"github.com/frain-dev/convoy/cmd/retry"
 	"github.com/frain-dev/convoy/cmd/server"
-	"github.com/frain-dev/convoy/cmd/stream"
 	"github.com/frain-dev/convoy/cmd/utils"
 	"github.com/frain-dev/convoy/cmd/version"
 	"github.com/frain-dev/convoy/database/postgres"
@@ -160,7 +159,6 @@ func main() {
 	c.AddCommand(retry.AddRetryCommand(app))
 	c.AddCommand(migrate.AddMigrateCommand(app))
 	c.AddCommand(configCmd.AddConfigCommand())
-	c.AddCommand(stream.AddStreamCommand(app))
 	c.AddCommand(bootstrap.AddBootstrapCommand(app))
 	c.AddCommand(agent.AddAgentCommand(app))
 	c.AddCommand(ff.AddFeatureFlagsCommand())
