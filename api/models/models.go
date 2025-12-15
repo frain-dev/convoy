@@ -25,22 +25,9 @@ type OrganisationInvite struct {
 	Role         auth.Role `json:"role" bson:"role"`
 }
 
-type APIKey struct {
-	Name      string            `json:"name"`
-	Role      Role              `json:"role"`
-	Type      datastore.KeyType `json:"key_type"`
-	ExpiresAt null.Time         `json:"expires_at"`
-}
-
 type PersonalAPIKey struct {
 	Name       string `json:"name"`
 	Expiration int    `json:"expiration"`
-}
-
-type Role struct {
-	Type    auth.RoleType `json:"type"`
-	Project string        `json:"project"`
-	App     string        `json:"app,omitempty"`
 }
 
 type UpdateOrganisationMember struct {
@@ -55,23 +42,6 @@ type APIKeyByIDResponse struct {
 	ExpiresAt null.Time         `json:"expires_at,omitempty"`
 	CreatedAt time.Time         `json:"created_at,omitempty"`
 	UpdatedAt time.Time         `json:"updated_at,omitempty"`
-}
-
-type APIKeyResponse struct {
-	APIKey
-	Key       string    `json:"key"`
-	UID       string    `json:"uid"`
-	UserID    string    `json:"user_id,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type PortalAPIKeyResponse struct {
-	Key        string    `json:"key"`
-	Role       auth.Role `json:"role"`
-	Url        string    `json:"url,omitempty"`
-	Type       string    `json:"key_type"`
-	EndpointID string    `json:"endpoint_id,omitempty"`
-	ProjectID  string    `json:"project_id,omitempty"`
 }
 
 type UserInviteTokenResponse struct {

@@ -10,6 +10,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys/models"
 )
 
 // ============================================================================
@@ -41,7 +42,7 @@ func TestLoadAPIKeysPaged_ForwardFirstPage(t *testing.T) {
 	}
 
 	// Fetch first page
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		ProjectID: project.UID,
 	}
 	pageable := datastore.Pageable{
@@ -88,7 +89,7 @@ func TestLoadAPIKeysPaged_ForwardSecondPage(t *testing.T) {
 		Direction: datastore.Next,
 	}
 	pageable1.SetCursors()
-	filter := &datastore.ApiKeyFilter{ProjectID: project.UID}
+	filter := &models.ApiKeyFilter{ProjectID: project.UID}
 
 	keys1, pagination1, err := service.LoadAPIKeysPaged(ctx, filter, &pageable1)
 	require.NoError(t, err)
@@ -123,7 +124,7 @@ func TestLoadAPIKeysPaged_EmptyResults(t *testing.T) {
 
 	// Don't create any keys
 
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		ProjectID: project.UID,
 	}
 	pageable := datastore.Pageable{
@@ -165,7 +166,7 @@ func TestLoadAPIKeysPaged_SinglePage(t *testing.T) {
 	}
 
 	// Fetch with per_page = 10 (more than available)
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		ProjectID: project.UID,
 	}
 	pageable := datastore.Pageable{
@@ -240,7 +241,7 @@ func TestLoadAPIKeysPaged_FilterByProject(t *testing.T) {
 	}
 
 	// Fetch only project1 keys
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		ProjectID: project1.UID,
 	}
 	pageable := datastore.Pageable{
@@ -316,7 +317,7 @@ func TestLoadAPIKeysPaged_FilterByUser(t *testing.T) {
 	}
 
 	// Fetch only user1 keys
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		UserID: user1.UID,
 	}
 	pageable := datastore.Pageable{
@@ -380,7 +381,7 @@ func TestLoadAPIKeysPaged_FilterByKeyType(t *testing.T) {
 	}
 
 	// Fetch only personal keys
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		KeyType: datastore.PersonalKey,
 	}
 	pageable := datastore.Pageable{
@@ -472,7 +473,7 @@ func TestLoadAPIKeysPaged_MultipleFilters(t *testing.T) {
 	require.NoError(t, err)
 
 	// Filter: user1 + personal keys
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		UserID:  user1.UID,
 		KeyType: datastore.PersonalKey,
 	}
@@ -518,7 +519,7 @@ func TestLoadAPIKeysPaged_NoOverlap(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		ProjectID: project.UID,
 	}
 
@@ -580,7 +581,7 @@ func TestLoadAPIKeysPaged_ConsistentOrdering(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		ProjectID: project.UID,
 	}
 	pageable := datastore.Pageable{
@@ -627,7 +628,7 @@ func TestLoadAPIKeysPaged_BackwardPagination(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	filter := &datastore.ApiKeyFilter{
+	filter := &models.ApiKeyFilter{
 		ProjectID: project.UID,
 	}
 

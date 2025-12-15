@@ -149,7 +149,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 	jobRepo := postgres.NewJobRepo(a.DB)
 	eventDeliveryRepo := postgres.NewEventDeliveryRepo(a.DB)
 	subRepo := postgres.NewSubscriptionRepo(a.DB)
-	deviceRepo := postgres.NewDeviceRepo(a.DB)
 	configRepo := postgres.NewConfigRepo(a.DB)
 	attemptRepo := postgres.NewDeliveryAttemptRepo(a.DB)
 	filterRepo := postgres.NewFilterRepo(a.DB)
@@ -394,7 +393,6 @@ func StartWorker(ctx context.Context, a *cli.App, cfg config.Configuration) erro
 		EventQueue:                 a.Queue,
 		SubRepo:                    subRepo,
 		FilterRepo:                 filterRepo,
-		DeviceRepo:                 deviceRepo,
 		Licenser:                   a.Licenser,
 		TracerBackend:              a.TracerBackend,
 		OAuth2TokenService:         oauth2TokenService,

@@ -22,7 +22,7 @@ func provideProjectService(ctrl *gomock.Controller) (*ProjectService, error) {
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventTypesRepo := mocks.NewMockEventTypesRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-	apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+	apiKeyRepo := mocks.NewMockService(ctrl)
 
 	l := mocks.NewMockLicenser(ctrl)
 
@@ -85,7 +85,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockService)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -162,7 +162,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockService)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -223,7 +223,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockService)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -284,7 +284,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockService)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)
@@ -360,7 +360,7 @@ func TestProjectService_CreateProject(t *testing.T) {
 
 				a.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockAPIKeyRepository)
+				apiKeyRepo, _ := gs.apiKeyRepo.(*mocks.MockService)
 				apiKeyRepo.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).Times(1).Return(nil)
 
 				licenser, _ := gs.Licenser.(*mocks.MockLicenser)

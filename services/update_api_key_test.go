@@ -17,7 +17,7 @@ func provideUpdateAPIKeyService(ctrl *gomock.Controller, uid string, role *auth.
 	return &UpdateAPIKeyService{
 		ProjectRepo: mocks.NewMockProjectRepository(ctrl),
 		UserRepo:    mocks.NewMockUserRepository(ctrl),
-		APIKeyRepo:  mocks.NewMockAPIKeyRepository(ctrl),
+		APIKeyRepo:  mocks.NewMockService(ctrl),
 		UID:         uid,
 		Role:        role,
 	}
@@ -55,8 +55,8 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					Times(1).Return(&datastore.Project{UID: "1234"},
 					nil)
 
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a.EXPECT().GetAPIKeyByID(gomock.Any(), "1234").
 					Times(1).Return(
 					&datastore.APIKey{
 						UID: "ref",
@@ -137,8 +137,8 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					Times(1).Return(&datastore.Project{UID: "1234"},
 					nil)
 
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a.EXPECT().GetAPIKeyByID(gomock.Any(), "1234").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:    true,
@@ -160,8 +160,8 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					Times(1).Return(&datastore.Project{UID: "1234"},
 					nil)
 
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a.EXPECT().GetAPIKeyByID(gomock.Any(), "1234").
 					Times(1).Return(
 					&datastore.APIKey{
 						UID: "ref",

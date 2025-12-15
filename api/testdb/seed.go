@@ -610,24 +610,6 @@ func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	return c, nil
 }
 
-func SeedDevice(db database.Database, g *datastore.Project, endpointID string) error {
-	device := &datastore.Device{
-		UID:        ulid.Make().String(),
-		ProjectID:  g.UID,
-		EndpointID: endpointID,
-		HostName:   "",
-		Status:     datastore.DeviceStatusOnline,
-	}
-
-	deviceRepo := postgres.NewDeviceRepo(db)
-	err := deviceRepo.CreateDevice(context.TODO(), device)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func SeedPortalLink(db database.Database, project *datastore.Project, ownerId string) (*datastore.PortalLink, error) {
 	portalLink := &portal_links_models.CreatePortalLinkRequest{
 		Name:              fmt.Sprintf("TestPortalLink-%s", ulid.Make().String()),

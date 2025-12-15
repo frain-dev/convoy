@@ -14,16 +14,17 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/portal_links"
 )
 
 type NativeRealm struct {
-	apiKeyRepo        datastore.APIKeyRepository
+	apiKeyRepo        api_keys.Service
 	userRepo          datastore.UserRepository
 	portalLinkService portal_links.PortalLinkRepository
 }
 
-func NewNativeRealm(apiKeyRepo datastore.APIKeyRepository,
+func NewNativeRealm(apiKeyRepo api_keys.Service,
 	userRepo datastore.UserRepository,
 	portalLinkService portal_links.PortalLinkRepository) *NativeRealm {
 	return &NativeRealm{apiKeyRepo: apiKeyRepo, userRepo: userRepo, portalLinkService: portalLinkService}
@@ -41,7 +42,7 @@ func (n *NativeRealm) Authenticate(ctx context.Context, cred *auth.Credential) (
 	}
 
 	maskID := keySplit[1]
-	apiKey, err := n.apiKeyRepo.FindAPIKeyByMaskID(ctx, maskID)
+	apiKey, err := n.apiKeyRepo.GetAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash api key: %v", err)
 	}

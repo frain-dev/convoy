@@ -7,6 +7,7 @@ import (
 
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys/models"
 	"github.com/frain-dev/convoy/util"
 )
 
@@ -203,8 +204,8 @@ type ProjectResponse struct {
 }
 
 type CreateProjectResponse struct {
-	APIKey  *APIKeyResponse  `json:"api_key"`
-	Project *ProjectResponse `json:"project"`
+	APIKey  *models.APIKeyResponse `json:"api_key"`
+	Project *ProjectResponse       `json:"project"`
 }
 
 func NewListProjectResponse(projects []*datastore.Project) []*ProjectResponse {

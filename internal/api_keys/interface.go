@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys/models"
 )
 
 // Service defines the interface for API key operations
@@ -30,5 +31,5 @@ type Service interface {
 	RevokeAPIKeys(ctx context.Context, ids []string) error
 
 	// LoadAPIKeysPaged retrieves API keys with pagination and filtering
-	LoadAPIKeysPaged(ctx context.Context, filter *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error)
+	LoadAPIKeysPaged(ctx context.Context, filter *models.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error)
 }

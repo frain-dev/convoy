@@ -10,16 +10,15 @@ import (
 	"go.uber.org/mock/gomock"
 	"gopkg.in/guregu/null.v4"
 
-	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/mocks"
 )
 
-func provideCreateAPIKeyService(ctrl *gomock.Controller, member *datastore.OrganisationMember, newApiKey *models.APIKey) *CreateAPIKeyService {
+func provideCreateAPIKeyService(ctrl *gomock.Controller, member *datastore.OrganisationMember, newApiKey *datastore.APIKey) *CreateAPIKeyService {
 	return &CreateAPIKeyService{
 		ProjectRepo: mocks.NewMockProjectRepository(ctrl),
-		APIKeyRepo:  mocks.NewMockAPIKeyRepository(ctrl),
+		APIKeyRepo:  mocks.NewMockService(ctrl),
 		Member:      member,
 		NewApiKey:   newApiKey,
 	}
@@ -29,7 +28,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 	ctx := context.Background()
 	type args struct {
 		ctx       context.Context
-		newApiKey *models.APIKey
+		newApiKey *datastore.APIKey
 		member    *datastore.OrganisationMember
 	}
 	expires := null.NewTime(time.Now().Add(time.Hour), true)
@@ -45,10 +44,10 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 			name: "should_create_api_key",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.APIKey{
+				newApiKey: &datastore.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: models.Role{
+					Role: auth.Role{
 						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
 					},
@@ -73,7 +72,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				g, _ := ss.ProjectRepo.(*mocks.MockProjectRepository)
 				g.EXPECT().FetchProjectByID(gomock.Any(), gomock.Any()).Times(1).Return(&datastore.Project{UID: "abc", OrganisationID: "1234"}, nil)
 
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(nil)
 			},
@@ -82,13 +81,12 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 			name: "should_error_for_invalid_expiry",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.APIKey{
+				newApiKey: &datastore.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: models.Role{
+					Role: auth.Role{
 						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
-						App:     "1234",
 					},
 					ExpiresAt: null.NewTime(expires.ValueOrZero().Add(-2*time.Hour), true),
 				},
@@ -105,13 +103,12 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 			name: "should_error_for_invalid_api_key_role",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.APIKey{
+				newApiKey: &datastore.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: models.Role{
+					Role: auth.Role{
 						Type:    "abc",
 						Project: "1234",
-						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -124,13 +121,12 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 			name: "should_fail_to_fetch_project",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.APIKey{
+				newApiKey: &datastore.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: models.Role{
+					Role: auth.Role{
 						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
-						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -152,13 +148,12 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 			name: "should_error_for_organisation_id_mismatch",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.APIKey{
+				newApiKey: &datastore.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: models.Role{
+					Role: auth.Role{
 						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
-						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -180,13 +175,12 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 			name: "should_error_for_member_not_authorized_to_access_project",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.APIKey{
+				newApiKey: &datastore.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: models.Role{
+					Role: auth.Role{
 						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
-						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -208,13 +202,12 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 			name: "should_fail_to_create_api_key",
 			args: args{
 				ctx: ctx,
-				newApiKey: &models.APIKey{
+				newApiKey: &datastore.APIKey{
 					Name: "test_api_key",
 					Type: "api",
-					Role: models.Role{
+					Role: auth.Role{
 						Type:    auth.RoleProjectAdmin,
 						Project: "1234",
-						App:     "1234",
 					},
 					ExpiresAt: expires,
 				},
@@ -229,7 +222,7 @@ func TestCreateAPIKeyService_Run(t *testing.T) {
 				g.EXPECT().FetchProjectByID(gomock.Any(), "1234").
 					Times(1).Return(&datastore.Project{UID: "1234", OrganisationID: "1234"}, nil)
 
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
 				a.EXPECT().CreateAPIKey(gomock.Any(), gomock.Any()).
 					Times(1).Return(errors.New("failed"))
 			},

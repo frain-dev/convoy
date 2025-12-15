@@ -313,7 +313,7 @@ func TestInit(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockAPIKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			mockAPIKeyRepo := mocks.NewMockService(ctrl)
 			userRepo := mocks.NewMockUserRepository(ctrl)
 			portalLinkRepo := mocks.NewMockPortalLinkRepository(ctrl)
 			cache := mocks.NewMockCache(ctrl)

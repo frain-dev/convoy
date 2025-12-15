@@ -1147,7 +1147,7 @@ func TestProcessRetryEventDelivery(t *testing.T) {
 			projectRepo := mocks.NewMockProjectRepository(ctrl)
 			endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 			msgRepo := mocks.NewMockEventDeliveryRepository(ctrl)
-			apiKeyRepo := mocks.NewMockAPIKeyRepository(ctrl)
+			apiKeyRepo := mocks.NewMockService(ctrl)
 			userRepo := mocks.NewMockUserRepository(ctrl)
 			cache := mocks.NewMockCache(ctrl)
 			portalLinkRepo := mocks.NewMockPortalLinkRepository(ctrl)

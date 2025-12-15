@@ -8,6 +8,7 @@ import (
 
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys/models"
 )
 
 func TestGetAPIKeyByID_Found(t *testing.T) {
@@ -52,7 +53,7 @@ func TestGetAPIKeyByID_NotFound(t *testing.T) {
 
 	require.Error(t, err)
 	require.Nil(t, fetched)
-	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
 }
 
 func TestGetAPIKeyByMaskID_Found(t *testing.T) {
@@ -99,7 +100,7 @@ func TestGetAPIKeyByMaskID_NotFound(t *testing.T) {
 
 	require.Error(t, err)
 	require.Nil(t, fetched)
-	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
 }
 
 func TestGetAPIKeyByHash_Found(t *testing.T) {
@@ -146,7 +147,7 @@ func TestGetAPIKeyByHash_NotFound(t *testing.T) {
 
 	require.Error(t, err)
 	require.Nil(t, fetched)
-	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
 }
 
 func TestGetAPIKeyByProjectID_Found(t *testing.T) {
@@ -191,7 +192,7 @@ func TestGetAPIKeyByProjectID_NotFound(t *testing.T) {
 
 	require.Error(t, err)
 	require.Nil(t, fetched)
-	require.ErrorIs(t, err, datastore.ErrAPIKeyNotFound)
+	require.ErrorIs(t, err, models.ErrAPIKeyNotFound)
 }
 
 func TestGetAPIKey_VerifyAllFields(t *testing.T) {

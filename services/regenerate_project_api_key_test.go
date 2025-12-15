@@ -18,7 +18,7 @@ func provideRegenerateProjectAPIKeyService(ctrl *gomock.Controller, project *dat
 	return &RegenerateProjectAPIKeyService{
 		ProjectRepo: mocks.NewMockProjectRepository(ctrl),
 		UserRepo:    mocks.NewMockUserRepository(ctrl),
-		APIKeyRepo:  mocks.NewMockAPIKeyRepository(ctrl),
+		APIKeyRepo:  mocks.NewMockService(ctrl),
 		Project:     project,
 		Member:      member,
 	}
@@ -43,8 +43,8 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 		{
 			name: "should_regenerate_project_api_key",
 			dbFn: func(ss *RegenerateProjectAPIKeyService) {
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a.EXPECT().GetAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
 					UID: "45678",
 					Role: auth.Role{
 						Type:     auth.RoleProjectAdmin,
@@ -97,8 +97,8 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 		{
 			name: "should_fail_to_find_api_key",
 			dbFn: func(ss *RegenerateProjectAPIKeyService) {
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a.EXPECT().GetAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(nil, errors.New("failed"))
 			},
 			args: args{
 				ctx: ctx,
@@ -148,8 +148,8 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 		{
 			name: "should_fail_to_revoke_api_key",
 			dbFn: func(ss *RegenerateProjectAPIKeyService) {
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a.EXPECT().GetAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
 					UID: "45678",
 					Role: auth.Role{
 						Type:     auth.RoleProjectAdmin,
@@ -184,8 +184,8 @@ func TestRegenerateProjectAPIKeyService_Run(t *testing.T) {
 		{
 			name: "should_fail_to_create_new_api_key",
 			dbFn: func(ss *RegenerateProjectAPIKeyService) {
-				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
+				a, _ := ss.APIKeyRepo.(*mocks.MockService)
+				a.EXPECT().GetAPIKeyByProjectID(gomock.Any(), "1234").Times(1).Return(&datastore.APIKey{
 					UID: "45678",
 					Role: auth.Role{
 						Type:     auth.RoleProjectAdmin,

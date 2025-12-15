@@ -13,6 +13,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/datastore"
+	api_key_models "github.com/frain-dev/convoy/internal/api_keys/models"
 	"github.com/frain-dev/convoy/internal/api_keys/repo"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -234,7 +235,7 @@ func (s *service) GetAPIKeyByID(ctx context.Context, id string) (*datastore.APIK
 	row, err := s.repo.FindAPIKeyByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, datastore.ErrAPIKeyNotFound
+			return nil, api_key_models.ErrAPIKeyNotFound
 		}
 		s.logger.WithError(err).Error("failed to find api key by id")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -250,7 +251,7 @@ func (s *service) GetAPIKeyByMaskID(ctx context.Context, maskID string) (*datast
 	row, err := s.repo.FindAPIKeyByMaskID(ctx, maskID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, datastore.ErrAPIKeyNotFound
+			return nil, api_key_models.ErrAPIKeyNotFound
 		}
 		s.logger.WithError(err).Error("failed to find api key by mask id")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -265,7 +266,7 @@ func (s *service) GetAPIKeyByHash(ctx context.Context, hash string) (*datastore.
 	row, err := s.repo.FindAPIKeyByHash(ctx, hash)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, datastore.ErrAPIKeyNotFound
+			return nil, api_key_models.ErrAPIKeyNotFound
 		}
 		s.logger.WithError(err).Error("failed to find api key by hash")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -280,7 +281,7 @@ func (s *service) GetAPIKeyByProjectID(ctx context.Context, projectID string) (*
 	row, err := s.repo.FindAPIKeyByProjectID(ctx, stringToPgTextFilter(projectID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, datastore.ErrAPIKeyNotFound
+			return nil, api_key_models.ErrAPIKeyNotFound
 		}
 		s.logger.WithError(err).Error("failed to find api key by project id")
 		return nil, util.NewServiceError(http.StatusInternalServerError, err)
@@ -306,7 +307,7 @@ func (s *service) RevokeAPIKeys(ctx context.Context, ids []string) error {
 }
 
 // LoadAPIKeysPaged retrieves API keys with pagination and filtering
-func (s *service) LoadAPIKeysPaged(ctx context.Context, filter *datastore.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
+func (s *service) LoadAPIKeysPaged(ctx context.Context, filter *api_key_models.ApiKeyFilter, pageable *datastore.Pageable) ([]datastore.APIKey, datastore.PaginationData, error) {
 	// Determine direction for SQL query
 	direction := "next"
 	if pageable.Direction == datastore.Prev {

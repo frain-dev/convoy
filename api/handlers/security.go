@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	api_key_models "github.com/frain-dev/convoy/internal/api_keys/models"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -47,10 +48,10 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &models.APIKeyResponse{
-		APIKey: models.APIKey{
+	resp := &api_key_models.APIKeyResponse{
+		APIKey: api_key_models.APIKey{
 			Name: apiKey.Name,
-			Role: models.Role{
+			Role: api_key_models.Role{
 				Type:    apiKey.Role.Type,
 				Project: apiKey.Role.Project,
 			},
@@ -122,10 +123,10 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp := &models.APIKeyResponse{
-		APIKey: models.APIKey{
+	resp := &api_key_models.APIKeyResponse{
+		APIKey: api_key_models.APIKey{
 			Name: apiKey.Name,
-			Role: models.Role{
+			Role: api_key_models.Role{
 				Type:    apiKey.Role.Type,
 				Project: apiKey.Role.Project,
 			},
@@ -143,7 +144,7 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 
-	f := &datastore.ApiKeyFilter{}
+	f := &api_key_models.ApiKeyFilter{}
 	keyType := datastore.KeyType(r.URL.Query().Get("keyType"))
 	if keyType.IsValid() {
 		f.KeyType = keyType
@@ -171,7 +172,7 @@ func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse {
-	apiKeyByIDResponse := make([]models.APIKeyByIDResponse, 0)
+	response := make([]models.APIKeyByIDResponse, 0)
 
 	for _, apiKey := range apiKeys {
 		resp := models.APIKeyByIDResponse{
@@ -184,8 +185,8 @@ func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse 
 			CreatedAt: apiKey.CreatedAt,
 		}
 
-		apiKeyByIDResponse = append(apiKeyByIDResponse, resp)
+		response = append(response, resp)
 	}
 
-	return apiKeyByIDResponse
+	return response
 }

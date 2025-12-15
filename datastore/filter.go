@@ -3,7 +3,6 @@ package datastore
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 )
 
 type Filter struct {
@@ -49,14 +48,6 @@ type SourceFilter struct {
 	Query    string
 }
 
-type ApiKeyFilter struct {
-	ProjectID   string
-	EndpointID  string
-	EndpointIDs []string
-	UserID      string
-	KeyType     KeyType
-}
-
 type FilterBy struct {
 	OwnerID          string
 	EndpointID       string
@@ -65,30 +56,4 @@ type FilterBy struct {
 	ProjectID        string
 	SourceID         string
 	SearchParams     SearchParams
-}
-
-func (f *FilterBy) String() string {
-	var s string
-	filterByBuilder := new(strings.Builder)
-	// TODO(daniel, raymond): how to work around this?
-	fmt.Fprintf(filterByBuilder, "project_id:=%s", f.ProjectID)
-	fmt.Fprintf(filterByBuilder, " && created_at:[%d..%d]", f.SearchParams.CreatedAtStart, f.SearchParams.CreatedAtEnd)
-
-	if len(f.EndpointID) > 0 {
-		fmt.Fprintf(filterByBuilder, " && app_id:=%s", f.EndpointID)
-	}
-
-	if len(f.SourceID) > 0 {
-		fmt.Fprintf(filterByBuilder, " && source_id:=%s", f.SourceID)
-	}
-
-	s = filterByBuilder.String()
-
-	return s
-}
-
-type SearchFilter struct {
-	Query    string
-	FilterBy FilterBy
-	Pageable Pageable
 }

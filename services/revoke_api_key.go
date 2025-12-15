@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -11,7 +12,7 @@ import (
 type RevokePersonalAPIKeyService struct {
 	ProjectRepo datastore.ProjectRepository
 	UserRepo    datastore.UserRepository
-	APIKeyRepo  datastore.APIKeyRepository
+	APIKeyRepo  api_keys.Service
 
 	UID  string
 	User *datastore.User
@@ -22,7 +23,7 @@ func (ss *RevokePersonalAPIKeyService) Run(ctx context.Context) error {
 		return &ServiceError{ErrMsg: "key id is empty"}
 	}
 
-	apiKey, err := ss.APIKeyRepo.FindAPIKeyByID(ctx, ss.UID)
+	apiKey, err := ss.APIKeyRepo.GetAPIKeyByID(ctx, ss.UID)
 	if err != nil {
 		log.FromContext(ctx).WithError(err).Error("failed to fetch api key")
 		return &ServiceError{ErrMsg: "failed to fetch api key", Err: err}
