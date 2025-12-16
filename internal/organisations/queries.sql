@@ -16,7 +16,7 @@ INSERT INTO convoy.organisations (
     $5
 );
 
--- name: UpdateOrganisation :exec
+-- name: UpdateOrganisation :execresult
 UPDATE convoy.organisations
 SET
     name = $2,

@@ -141,7 +141,7 @@ func (s *Service) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 		return util.NewServiceError(http.StatusBadRequest, errors.New("organisation cannot be nil"))
 	}
 
-	err := s.repo.UpdateOrganisation(ctx, repo.UpdateOrganisationParams{
+	result, err := s.repo.UpdateOrganisation(ctx, repo.UpdateOrganisationParams{
 		ID:             org.UID,
 		Name:           org.Name,
 		CustomDomain:   nullStringToPgText(org.CustomDomain),
@@ -151,6 +151,10 @@ func (s *Service) UpdateOrganisation(ctx context.Context, org *datastore.Organis
 	if err != nil {
 		s.logger.WithError(err).Error("failed to update organisation")
 		return util.NewServiceError(http.StatusInternalServerError, err)
+	}
+
+	if result.RowsAffected() == 0 {
+		return util.NewServiceError(http.StatusNotFound, datastore.ErrOrgNotFound)
 	}
 
 	return nil

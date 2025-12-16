@@ -78,6 +78,41 @@ func TestUpdateOrganisation_ClearCustomDomain(t *testing.T) {
 	require.False(t, fetched.CustomDomain.Valid)
 }
 
+func TestUpdateOrganisation_NotFound(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.NewLogger(os.Stdout), db)
+
+	// Try to update non-existent organisation
+	org := &datastore.Organisation{
+		UID:  "non-existent-id",
+		Name: "Some Name",
+	}
+
+	err := service.UpdateOrganisation(ctx, org)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "organisation not found")
+}
+
+func TestUpdateOrganisation_DeletedOrganisation(t *testing.T) {
+	db, ctx := setupTestDB(t)
+	defer db.Close()
+
+	service := New(log.NewLogger(os.Stdout), db)
+
+	// Seed and then delete organisation
+	org := seedOrganisation(t, db, "", "")
+	err := service.DeleteOrganisation(ctx, org.UID)
+	require.NoError(t, err)
+
+	// Try to update the deleted organisation
+	org.Name = "Updated Name"
+	err = service.UpdateOrganisation(ctx, org)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "organisation not found")
+}
+
 func TestUpdateOrganisation_NilOrganisation(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()

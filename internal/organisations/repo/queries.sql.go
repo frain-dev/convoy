@@ -432,7 +432,7 @@ func (q *Queries) FetchOrganisationsPaginated(ctx context.Context, arg FetchOrga
 	return items, nil
 }
 
-const updateOrganisation = `-- name: UpdateOrganisation :exec
+const updateOrganisation = `-- name: UpdateOrganisation :execresult
 UPDATE convoy.organisations
 SET
     name = $2,
@@ -450,12 +450,11 @@ type UpdateOrganisationParams struct {
 	AssignedDomain pgtype.Text
 }
 
-func (q *Queries) UpdateOrganisation(ctx context.Context, arg UpdateOrganisationParams) error {
-	_, err := q.db.Exec(ctx, updateOrganisation,
+func (q *Queries) UpdateOrganisation(ctx context.Context, arg UpdateOrganisationParams) (pgconn.CommandTag, error) {
+	return q.db.Exec(ctx, updateOrganisation,
 		arg.ID,
 		arg.Name,
 		arg.CustomDomain,
 		arg.AssignedDomain,
 	)
-	return err
 }
