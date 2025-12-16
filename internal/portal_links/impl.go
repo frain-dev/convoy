@@ -398,27 +398,11 @@ func (s *Service) GetPortalLink(ctx context.Context, projectID, portalLinkID str
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 
-	// Ensure endpoints is never nil
-	endpoints := pgTextToStrings(row.Endpoints)
-	if endpoints == nil {
-		endpoints = []string{}
-	}
+	// Convert row to portal link using helper
+	portalLink := rowToPortalLink(row)
+	portalLink.AuthKey = authKey
 
-	return &datastore.PortalLink{
-		UID:               row.ID,
-		ProjectID:         row.ProjectID,
-		Name:              row.Name,
-		Token:             row.Token,
-		Endpoints:         endpoints,
-		AuthKey:           authKey,
-		AuthType:          datastore.PortalAuthType(row.AuthType),
-		CanManageEndpoint: row.CanManageEndpoint,
-		OwnerID:           row.OwnerID,
-		EndpointCount:     int(row.EndpointCount.Int64),
-		CreatedAt:         row.CreatedAt.Time,
-		UpdatedAt:         row.UpdatedAt.Time,
-		EndpointsMetadata: bytesToEndpointMetadata(row.EndpointsMetadata),
-	}, nil
+	return &portalLink, nil
 }
 
 func (s *Service) GetPortalLinkByToken(ctx context.Context, token string) (*datastore.PortalLink, error) {
@@ -431,26 +415,9 @@ func (s *Service) GetPortalLinkByToken(ctx context.Context, token string) (*data
 		return nil, &ServiceError{ErrMsg: "error retrieving portal link", Err: err}
 	}
 
-	// Ensure endpoints is never nil
-	endpoints := pgTextToStrings(row.Endpoints)
-	if endpoints == nil {
-		endpoints = []string{}
-	}
-
-	return &datastore.PortalLink{
-		UID:               row.ID,
-		ProjectID:         row.ProjectID,
-		Name:              row.Name,
-		Token:             row.Token,
-		Endpoints:         endpoints,
-		AuthType:          datastore.PortalAuthType(row.AuthType),
-		CanManageEndpoint: row.CanManageEndpoint,
-		OwnerID:           row.OwnerID,
-		EndpointCount:     int(row.EndpointCount.Int64),
-		CreatedAt:         row.CreatedAt.Time,
-		UpdatedAt:         row.UpdatedAt.Time,
-		EndpointsMetadata: bytesToEndpointMetadata(row.EndpointsMetadata),
-	}, nil
+	// Convert row to portal link using helper
+	portalLink := rowToPortalLink(row)
+	return &portalLink, nil
 }
 
 func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID string) (*datastore.PortalLink, error) {
@@ -507,27 +474,11 @@ func (s *Service) GetPortalLinkByOwnerID(ctx context.Context, projectID, ownerID
 		return nil, &ServiceError{ErrMsg: "failed to create portal link", Err: err}
 	}
 
-	// Ensure endpoints is never nil
-	endpoints := pgTextToStrings(row.Endpoints)
-	if endpoints == nil {
-		endpoints = []string{}
-	}
+	// Convert row to portal link using helper
+	portalLink := rowToPortalLink(row)
+	portalLink.AuthKey = authKey
 
-	return &datastore.PortalLink{
-		UID:               row.ID,
-		ProjectID:         row.ProjectID,
-		Name:              row.Name,
-		Token:             row.Token,
-		Endpoints:         endpoints,
-		AuthKey:           authKey,
-		AuthType:          datastore.PortalAuthType(row.AuthType),
-		CanManageEndpoint: row.CanManageEndpoint,
-		OwnerID:           row.OwnerID,
-		EndpointCount:     int(row.EndpointCount.Int64),
-		CreatedAt:         row.CreatedAt.Time,
-		UpdatedAt:         row.UpdatedAt.Time,
-		EndpointsMetadata: bytesToEndpointMetadata(row.EndpointsMetadata),
-	}, nil
+	return &portalLink, nil
 }
 
 func (s *Service) RefreshPortalLinkAuthToken(ctx context.Context, projectID, portalLinkID string) (*datastore.PortalLink, error) {
@@ -636,28 +587,11 @@ func (s *Service) LoadPortalLinksPaged(ctx context.Context, projectID string, fi
 		return nil, datastore.PaginationData{}, &ServiceError{ErrMsg: "an error occurred while fetching portal links", Err: err}
 	}
 
-	// Convert rows to portal links
+	// Convert rows to portal links using helper
 	portalLinks := make([]datastore.PortalLink, 0, len(rows))
 	for _, row := range rows {
-		endpoints := pgTextToStrings(row.Endpoints)
-		if endpoints == nil {
-			endpoints = []string{}
-		}
-
-		portalLinks = append(portalLinks, datastore.PortalLink{
-			UID:               row.ID,
-			ProjectID:         row.ProjectID,
-			Name:              row.Name,
-			Token:             row.Token,
-			Endpoints:         endpoints,
-			AuthType:          datastore.PortalAuthType(row.AuthType),
-			CanManageEndpoint: row.CanManageEndpoint,
-			OwnerID:           row.OwnerID,
-			EndpointCount:     int(row.EndpointCount.Int64),
-			CreatedAt:         row.CreatedAt.Time,
-			UpdatedAt:         row.UpdatedAt.Time,
-			EndpointsMetadata: bytesToEndpointMetadata(row.EndpointsMetadata),
-		})
+		portalLink := rowToPortalLink(row)
+		portalLinks = append(portalLinks, portalLink)
 	}
 
 	// Build IDs for pagination
@@ -758,28 +692,11 @@ func (s *Service) FindPortalLinksByOwnerID(ctx context.Context, ownerID string) 
 		return nil, &ServiceError{ErrMsg: "error retrieving portal links", Err: err}
 	}
 
-	// Convert rows to portal links
+	// Convert rows to portal links using helper
 	portalLinks := make([]datastore.PortalLink, 0, len(rows))
 	for _, row := range rows {
-		endpoints := pgTextToStrings(row.Endpoints)
-		if endpoints == nil {
-			endpoints = []string{}
-		}
-
-		portalLinks = append(portalLinks, datastore.PortalLink{
-			UID:               row.ID,
-			ProjectID:         row.ProjectID,
-			Name:              row.Name,
-			Token:             row.Token,
-			Endpoints:         endpoints,
-			AuthType:          datastore.PortalAuthType(row.AuthType),
-			CanManageEndpoint: row.CanManageEndpoint,
-			OwnerID:           row.OwnerID,
-			EndpointCount:     int(row.EndpointCount.Int64),
-			CreatedAt:         row.CreatedAt.Time,
-			UpdatedAt:         row.UpdatedAt.Time,
-			EndpointsMetadata: bytesToEndpointMetadata(row.EndpointsMetadata),
-		})
+		portalLink := rowToPortalLink(row)
+		portalLinks = append(portalLinks, portalLink)
 	}
 
 	// Generate auth tokens for portal links that need them (non-static token types)
@@ -869,6 +786,82 @@ func (s *Service) FindPortalLinkByMaskId(ctx context.Context, maskId string) (*d
 		CanManageEndpoint: row.CanManageEndpoint,
 		TokenExpiresAt:    null.NewTime(row.TokenExpiresAt.Time, row.TokenExpiresAt.Valid),
 	}, nil
+}
+
+// rowToPortalLink converts common row types to datastore.PortalLink
+// Handles most row types that share the same field structure
+func rowToPortalLink(row interface{}) datastore.PortalLink {
+	// Extract fields based on row type
+	var (
+		id, projectID, name, token, ownerID string
+		endpoints                           pgtype.Text
+		authType                            repo.ConvoyPortalAuthTypes
+		canManageEndpoint                   bool
+		endpointCount                       pgtype.Int8
+		createdAt, updatedAt                pgtype.Timestamptz
+		endpointsMetadata                   []byte
+	)
+
+	switch r := row.(type) {
+	case repo.FetchPortalLinkByIdRow:
+		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
+		endpoints, authType = r.Endpoints, r.AuthType
+		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		endpointCount = r.EndpointCount
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		endpointsMetadata = r.EndpointsMetadata
+	case repo.FetchPortalLinkByTokenRow:
+		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
+		endpoints, authType = r.Endpoints, r.AuthType
+		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		endpointCount = r.EndpointCount
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		endpointsMetadata = r.EndpointsMetadata
+	case repo.FetchPortalLinkByOwnerIDRow:
+		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
+		endpoints, authType = r.Endpoints, r.AuthType
+		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		endpointCount = r.EndpointCount
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		endpointsMetadata = r.EndpointsMetadata
+	case repo.FetchPortalLinksPaginatedRow:
+		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
+		endpoints, authType = r.Endpoints, r.AuthType
+		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		endpointCount = r.EndpointCount
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		endpointsMetadata = r.EndpointsMetadata
+	case repo.FetchPortalLinksByOwnerIDRow:
+		id, projectID, name, token = r.ID, r.ProjectID, r.Name, r.Token
+		endpoints, authType = r.Endpoints, r.AuthType
+		canManageEndpoint, ownerID = r.CanManageEndpoint, r.OwnerID
+		endpointCount = r.EndpointCount
+		createdAt, updatedAt = r.CreatedAt, r.UpdatedAt
+		endpointsMetadata = r.EndpointsMetadata
+	default:
+		return datastore.PortalLink{}
+	}
+
+	// Convert endpoints
+	endpointsSlice := pgTextToStrings(endpoints)
+	if endpointsSlice == nil {
+		endpointsSlice = []string{}
+	}
+
+	return datastore.PortalLink{
+		UID:               id,
+		ProjectID:         projectID,
+		Name:              name,
+		Token:             token,
+		Endpoints:         endpointsSlice,
+		AuthType:          datastore.PortalAuthType(authType),
+		CanManageEndpoint: canManageEndpoint,
+		OwnerID:           ownerID,
+		EndpointCount:     int(endpointCount.Int64),
+		CreatedAt:         createdAt.Time,
+		UpdatedAt:         updatedAt.Time,
+		EndpointsMetadata: bytesToEndpointMetadata(endpointsMetadata),
+	}
 }
 
 func generateToken(portalLinkId string) (*datastore.PortalToken, error) {

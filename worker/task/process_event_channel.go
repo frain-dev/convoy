@@ -142,7 +142,6 @@ type MatchSubscriptionsDeps struct {
 	EventQueue                 queue.Queuer
 	SubRepo                    datastore.SubscriptionRepository
 	FilterRepo                 datastore.FilterRepository
-	DeviceRepo                 datastore.DeviceRepository
 	Licenser                   license.Licenser
 	TracerBackend              tracer.Backend
 	OAuth2TokenService         OAuth2TokenService
@@ -235,7 +234,6 @@ func MatchSubscriptionsAndCreateEventDeliveries(deps MatchSubscriptionsDeps) fun
 			Project:                    subResponse.Project,
 			EventDeliveryRepo:          deps.EventDeliveryRepo,
 			EventQueue:                 deps.EventQueue,
-			DeviceRepo:                 deps.DeviceRepo,
 			EndpointRepo:               deps.EndpointRepo,
 			Licenser:                   deps.Licenser,
 			OAuth2TokenService:         deps.OAuth2TokenService,

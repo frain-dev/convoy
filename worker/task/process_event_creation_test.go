@@ -33,7 +33,6 @@ type testArgs struct {
 	eventQueue         queue.Queuer
 	subRepo            datastore.SubscriptionRepository
 	filterRepo         datastore.FilterRepository
-	deviceRepo         datastore.DeviceRepository
 	subTable           memorystore.ITable
 	licenser           license.Licenser
 	tracer             tracer.Backend
@@ -44,7 +43,6 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 	mockCache := mocks.NewMockCache(ctrl)
 	mockQueuer := mocks.NewMockQueuer(ctrl)
 	projectRepo := mocks.NewMockProjectRepository(ctrl)
-	deviceRepo := mocks.NewMockDeviceRepository(ctrl)
 	endpointRepo := mocks.NewMockEndpointRepository(ctrl)
 	eventRepo := mocks.NewMockEventRepository(ctrl)
 	eventDeliveryRepo := mocks.NewMockEventDeliveryRepository(ctrl)
@@ -59,7 +57,6 @@ func provideArgs(ctrl *gomock.Controller) *testArgs {
 
 	return &testArgs{
 		endpointRepo:       endpointRepo,
-		deviceRepo:         deviceRepo,
 		eventRepo:          eventRepo,
 		projectRepo:        projectRepo,
 		db:                 db,

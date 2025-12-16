@@ -5,13 +5,14 @@ import (
 	"testing"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 )
 
 func TestRevokePersonalAPIKeyService_Run(t *testing.T) {
 	type fields struct {
 		ProjectRepo datastore.ProjectRepository
 		UserRepo    datastore.UserRepository
-		APIKeyRepo  datastore.APIKeyRepository
+		APIKeyRepo  api_keys.APIKeyRepository
 		UID         string
 		User        *datastore.User
 	}

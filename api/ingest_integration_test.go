@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
 )
@@ -49,7 +50,7 @@ func (i *IngestIntegrationTestSuite) SetupTest() {
 	err = config.LoadConfig("./testdata/Auth_Config/full-convoy.json")
 	require.NoError(i.T(), err)
 
-	apiRepo := postgres.NewAPIKeyRepo(i.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, i.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(i.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(i.ConvoyApp.A.Logger, i.ConvoyApp.A.DB)
 	initRealmChain(i.T(), apiRepo, userRepo, portalLinkRepo, i.ConvoyApp.A.Cache)

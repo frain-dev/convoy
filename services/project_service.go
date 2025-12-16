@@ -12,13 +12,15 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
+	api_key_models "github.com/frain-dev/convoy/internal/api_keys/models"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
 type ProjectService struct {
-	apiKeyRepo        datastore.APIKeyRepository
+	apiKeyRepo        api_keys.APIKeyRepository
 	projectRepo       datastore.ProjectRepository
 	eventRepo         datastore.EventRepository
 	eventDeliveryRepo datastore.EventDeliveryRepository
@@ -26,7 +28,7 @@ type ProjectService struct {
 	Licenser          license.Licenser
 }
 
-func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
+func NewProjectService(apiKeyRepo api_keys.APIKeyRepository, projectRepo datastore.ProjectRepository, eventRepo datastore.EventRepository, eventDeliveryRepo datastore.EventDeliveryRepository, licenser license.Licenser, eventTypesRepo datastore.EventTypesRepository) (*ProjectService, error) {
 	return &ProjectService{
 		apiKeyRepo:        apiKeyRepo,
 		projectRepo:       projectRepo,
@@ -39,7 +41,7 @@ func NewProjectService(apiKeyRepo datastore.APIKeyRepository, projectRepo datast
 
 var ErrProjectLimit = errors.New("your instance has reached it's project limit, upgrade to create more projects")
 
-func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *models.APIKeyResponse, error) {
+func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.CreateProject, org *datastore.Organisation, member *datastore.OrganisationMember) (*datastore.Project, *api_key_models.APIKeyResponse, error) {
 	ok, err := ps.Licenser.CreateProject(ctx)
 	if err != nil {
 		return nil, nil, util.NewServiceError(http.StatusBadRequest, err)
@@ -116,9 +118,9 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		log.FromContext(ctx).WithError(err).Error("failed to create default event types")
 	}
 
-	newAPIKey := &models.APIKey{
+	newAPIKey := &datastore.APIKey{
 		Name: fmt.Sprintf("%s's default key", project.Name),
-		Role: models.Role{
+		Role: auth.Role{
 			Type:    auth.RoleProjectAdmin,
 			Project: project.UID,
 		},
@@ -136,10 +138,10 @@ func (ps *ProjectService) CreateProject(ctx context.Context, newProject *models.
 		return nil, nil, err
 	}
 
-	resp := &models.APIKeyResponse{
-		APIKey: models.APIKey{
+	resp := &api_key_models.APIKeyResponse{
+		APIKey: api_key_models.APIKey{
 			Name: apiKey.Name,
-			Role: models.Role{
+			Role: api_key_models.Role{
 				Type:    apiKey.Role.Type,
 				Project: apiKey.Role.Project,
 			},

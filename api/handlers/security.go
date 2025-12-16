@@ -11,6 +11,8 @@ import (
 	"github.com/frain-dev/convoy/api/policies"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
+	api_key_models "github.com/frain-dev/convoy/internal/api_keys/models"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -34,7 +36,7 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	cpk := &services.CreatePersonalAPIKeyService{
 		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
 		UserRepo:    postgres.NewUserRepo(h.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
+		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		User:        user,
 		NewApiKey:   &newApiKey,
 	}
@@ -46,10 +48,10 @@ func (h *Handler) CreatePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := &models.APIKeyResponse{
-		APIKey: models.APIKey{
+	resp := &api_key_models.APIKeyResponse{
+		APIKey: api_key_models.APIKey{
 			Name: apiKey.Name,
-			Role: models.Role{
+			Role: api_key_models.Role{
 				Type:    apiKey.Role.Type,
 				Project: apiKey.Role.Project,
 			},
@@ -75,7 +77,7 @@ func (h *Handler) RevokePersonalAPIKey(w http.ResponseWriter, r *http.Request) {
 	rvk := &services.RevokePersonalAPIKeyService{
 		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
 		UserRepo:    postgres.NewUserRepo(h.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
+		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		UID:         chi.URLParam(r, "keyID"),
 		User:        user,
 	}
@@ -110,7 +112,7 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 	rgp := &services.RegenerateProjectAPIKeyService{
 		ProjectRepo: postgres.NewProjectRepo(h.A.DB),
 		UserRepo:    postgres.NewUserRepo(h.A.DB),
-		APIKeyRepo:  postgres.NewAPIKeyRepo(h.A.DB),
+		APIKeyRepo:  api_keys.New(h.A.Logger, h.A.DB),
 		Project:     project,
 		Member:      member,
 	}
@@ -121,10 +123,10 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp := &models.APIKeyResponse{
-		APIKey: models.APIKey{
+	resp := &api_key_models.APIKeyResponse{
+		APIKey: api_key_models.APIKey{
 			Name: apiKey.Name,
-			Role: models.Role{
+			Role: api_key_models.Role{
 				Type:    apiKey.Role.Type,
 				Project: apiKey.Role.Project,
 			},
@@ -142,7 +144,7 @@ func (h *Handler) RegenerateProjectAPIKey(w http.ResponseWriter, r *http.Request
 func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 	pageable := m.GetPageableFromContext(r.Context())
 
-	f := &datastore.ApiKeyFilter{}
+	f := &api_key_models.ApiKeyFilter{}
 	keyType := datastore.KeyType(r.URL.Query().Get("keyType"))
 	if keyType.IsValid() {
 		f.KeyType = keyType
@@ -157,7 +159,7 @@ func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	apiKeys, paginationData, err := postgres.NewAPIKeyRepo(h.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)
+	apiKeys, paginationData, err := api_keys.New(h.A.Logger, h.A.DB).LoadAPIKeysPaged(r.Context(), f, &pageable)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to load api keys")
 		_ = render.Render(w, r, util.NewErrorResponse("failed to load api keys", http.StatusBadRequest))
@@ -170,7 +172,7 @@ func (h *Handler) GetAPIKeys(w http.ResponseWriter, r *http.Request) {
 }
 
 func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse {
-	apiKeyByIDResponse := make([]models.APIKeyByIDResponse, 0)
+	response := make([]models.APIKeyByIDResponse, 0)
 
 	for _, apiKey := range apiKeys {
 		resp := models.APIKeyByIDResponse{
@@ -183,8 +185,8 @@ func apiKeyByIDResponse(apiKeys []datastore.APIKey) []models.APIKeyByIDResponse 
 			CreatedAt: apiKey.CreatedAt,
 		}
 
-		apiKeyByIDResponse = append(apiKeyByIDResponse, resp)
+		response = append(response, resp)
 	}
 
-	return apiKeyByIDResponse
+	return response
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
@@ -62,7 +63,7 @@ func (s *BillingIntegrationTestSuite) SetupTest() {
 		Password: testdb.DefaultUserPassword,
 	})
 
-	apiRepo := postgres.NewAPIKeyRepo(s.ConvoyApp.A.DB)
+	apiRepo := api_keys.New(nil, s.ConvoyApp.A.DB)
 	userRepo := postgres.NewUserRepo(s.ConvoyApp.A.DB)
 	portalLinkRepo := portal_links.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	initRealmChain(s.T(), apiRepo, userRepo, portalLinkRepo, s.ConvoyApp.A.Cache)

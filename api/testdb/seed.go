@@ -20,6 +20,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	portal_links_models "github.com/frain-dev/convoy/internal/portal_links/models"
 	"github.com/frain-dev/convoy/pkg/httpheader"
@@ -292,7 +293,7 @@ func SeedOrganisationInvite(db database.Database, org *datastore.Organisation, e
 	return iv, nil
 }
 
-// SeedAPIKey creates random api key for integration tests.
+// SeedAPIKey creates a random api key for integration tests.
 func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID string) (*datastore.APIKey, string, error) {
 	if util.IsStringEmpty(uid) {
 		uid = ulid.Make().String()
@@ -320,7 +321,8 @@ func SeedAPIKey(db database.Database, role auth.Role, uid, name, keyType, userID
 		UpdatedAt: time.Now(),
 	}
 
-	apiRepo := postgres.NewAPIKeyRepo(db)
+	logger := log.NewLogger(os.Stdout)
+	apiRepo := api_keys.New(logger, db)
 	err = apiRepo.CreateAPIKey(context.Background(), apiKey)
 	if err != nil {
 		return nil, "", err
@@ -607,24 +609,6 @@ func SeedConfiguration(db database.Database) (*datastore.Configuration, error) {
 	}
 
 	return c, nil
-}
-
-func SeedDevice(db database.Database, g *datastore.Project, endpointID string) error {
-	device := &datastore.Device{
-		UID:        ulid.Make().String(),
-		ProjectID:  g.UID,
-		EndpointID: endpointID,
-		HostName:   "",
-		Status:     datastore.DeviceStatusOnline,
-	}
-
-	deviceRepo := postgres.NewDeviceRepo(db)
-	err := deviceRepo.CreateDevice(context.TODO(), device)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func SeedPortalLink(db database.Database, project *datastore.Project, ownerId string) (*datastore.PortalLink, error) {

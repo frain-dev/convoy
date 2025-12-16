@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/cache"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	"github.com/frain-dev/convoy/pkg/log"
 )
@@ -43,7 +44,7 @@ func Get() (*RealmChain, error) {
 }
 
 func Init(authConfig *config.AuthConfiguration,
-	apiKeyRepo datastore.APIKeyRepository,
+	apiKeyRepo api_keys.APIKeyRepository,
 	userRepo datastore.UserRepository,
 	portalLinkService portal_links.PortalLinkRepository,
 	cache cache.Cache, logger log.StdLogger) error {

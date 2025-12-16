@@ -244,7 +244,6 @@ type WriteEventDeliveriesToQueueOptions struct {
 	Project                    *datastore.Project
 	EventDeliveryRepo          datastore.EventDeliveryRepository
 	EventQueue                 queue.Queuer
-	DeviceRepo                 datastore.DeviceRepository
 	EndpointRepo               datastore.EndpointRepository
 	Licenser                   license.Licenser
 	OAuth2TokenService         OAuth2TokenService
@@ -377,7 +376,7 @@ func writeEventDeliveriesToQueue(ctx context.Context, opts WriteEventDeliveriesT
 			Headers:        headers,
 			IdempotencyKey: opts.Event.IdempotencyKey,
 			URLQueryParams: opts.Event.URLQueryParams,
-			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint, opts.DeviceRepo),
+			Status:         getEventDeliveryStatus(ctx, &s, s.Endpoint),
 			AcknowledgedAt: null.TimeFrom(time.Now()),
 			DeliveryMode:   s.DeliveryMode,
 		}
@@ -664,20 +663,10 @@ func matchSubscriptions(ctx context.Context, eventType string, subscriptions []d
 }
 
 func getEventDeliveryStatus(ctx context.Context, subscription *datastore.Subscription, endpoint *datastore.Endpoint,
-	deviceRepo datastore.DeviceRepository,
 ) datastore.EventDeliveryStatus {
 	switch subscription.Type {
 	case datastore.SubscriptionTypeAPI:
 		if endpoint.Status != datastore.ActiveEndpointStatus {
-			return datastore.DiscardedEventStatus
-		}
-	case datastore.SubscriptionTypeCLI:
-		device, err := deviceRepo.FetchDeviceByID(ctx, subscription.DeviceID, "", subscription.ProjectID)
-		if err != nil {
-			return datastore.DiscardedEventStatus
-		}
-
-		if device.Status != datastore.DeviceStatusOnline {
 			return datastore.DiscardedEventStatus
 		}
 	default:

@@ -13,12 +13,13 @@ import (
 	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
 
 type CreateEndpointAPIKeyService struct {
-	APIKeyRepo datastore.APIKeyRepository
+	APIKeyRepo api_keys.APIKeyRepository
 	D          *models.CreateEndpointApiKey
 }
 

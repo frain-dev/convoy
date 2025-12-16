@@ -29,6 +29,7 @@ import (
 	"github.com/frain-dev/convoy/database/hooks"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/api_keys"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/internal/pkg/keys"
 	noopLicenser "github.com/frain-dev/convoy/internal/pkg/license/noop"
@@ -199,7 +200,7 @@ func buildServer(t *testing.T) *ApplicationHandler {
 	return ah
 }
 
-func initRealmChain(t *testing.T, apiKeyRepo datastore.APIKeyRepository, userRepo datastore.UserRepository, portalLinkRepo *portal_links.Service, cache cache.Cache) {
+func initRealmChain(t *testing.T, apiKeyRepo api_keys.APIKeyRepository, userRepo datastore.UserRepository, portalLinkRepo *portal_links.Service, cache cache.Cache) {
 	cfg, err := config.Get()
 	if err != nil {
 		t.Errorf("failed to get config: %v", err)

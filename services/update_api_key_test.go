@@ -56,7 +56,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					nil)
 
 				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
+				a.EXPECT().GetAPIKeyByID(gomock.Any(), "1234").
 					Times(1).Return(
 					&datastore.APIKey{
 						UID: "ref",
@@ -138,7 +138,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					nil)
 
 				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
+				a.EXPECT().GetAPIKeyByID(gomock.Any(), "1234").
 					Times(1).Return(nil, errors.New("failed"))
 			},
 			wantErr:    true,
@@ -161,7 +161,7 @@ func TestUpdateAPIKeyService_Run(t *testing.T) {
 					nil)
 
 				a, _ := ss.APIKeyRepo.(*mocks.MockAPIKeyRepository)
-				a.EXPECT().FindAPIKeyByID(gomock.Any(), "1234").
+				a.EXPECT().GetAPIKeyByID(gomock.Any(), "1234").
 					Times(1).Return(
 					&datastore.APIKey{
 						UID: "ref",
