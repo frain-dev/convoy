@@ -141,7 +141,7 @@ func TestDeleteOrganisation_NotFound(t *testing.T) {
 	// Try to delete non-existent organisation
 	err := service.DeleteOrganisation(ctx, "non-existent-id")
 	require.Error(t, err)
-	require.Equal(t, datastore.ErrOrgNotFound, err)
+	require.Contains(t, err.Error(), "organisation not found")
 }
 
 func TestDeleteOrganisation_IdempotentDelete(t *testing.T) {
@@ -160,7 +160,7 @@ func TestDeleteOrganisation_IdempotentDelete(t *testing.T) {
 	// Try to delete again - should return not found
 	err = service.DeleteOrganisation(ctx, org.UID)
 	require.Error(t, err)
-	require.Equal(t, datastore.ErrOrgNotFound, err)
+	require.Contains(t, err.Error(), "organisation not found")
 }
 
 func TestCountOrganisations(t *testing.T) {

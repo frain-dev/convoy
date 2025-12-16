@@ -2,6 +2,7 @@ package organisations
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 
@@ -56,11 +57,33 @@ func setupTestDB(t *testing.T) (database.Database, context.Context) {
 	return db, ctx
 }
 
+func seedUser(t *testing.T, db database.Database) *datastore.User {
+	t.Helper()
+
+	userRepo := postgres.NewUserRepo(db)
+	user := &datastore.User{
+		UID:       ulid.Make().String(),
+		FirstName: "Test",
+		LastName:  "User",
+		Email:     fmt.Sprintf("test-%s@example.com", ulid.Make().String()),
+	}
+
+	err := userRepo.CreateUser(context.Background(), user)
+	require.NoError(t, err)
+
+	return user
+}
+
 func seedOrganisation(t *testing.T, db database.Database, customDomain, assignedDomain string) *datastore.Organisation {
+	t.Helper()
+
+	// Create a user first (organisations require a valid owner_id)
+	user := seedUser(t, db)
+
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),
 		Name:    "Test Organisation",
-		OwnerID: ulid.Make().String(),
+		OwnerID: user.UID,
 	}
 
 	if customDomain != "" {
@@ -84,12 +107,15 @@ func TestCreateOrganisation_ValidRequest(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
+	// Create a user first (organisations require a valid owner_id)
+	user := seedUser(t, db)
+
 	service := New(log.NewLogger(os.Stdout), db)
 
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),
 		Name:    "Test Organisation",
-		OwnerID: ulid.Make().String(),
+		OwnerID: user.UID,
 	}
 
 	err := service.CreateOrganisation(ctx, org)
@@ -107,12 +133,15 @@ func TestCreateOrganisation_WithCustomDomain(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
+	// Create a user first (organisations require a valid owner_id)
+	user := seedUser(t, db)
+
 	service := New(log.NewLogger(os.Stdout), db)
 
 	org := &datastore.Organisation{
 		UID:          ulid.Make().String(),
 		Name:         "Test Organisation",
-		OwnerID:      ulid.Make().String(),
+		OwnerID:      user.UID,
 		CustomDomain: null.StringFrom("custom.example.com"),
 	}
 
@@ -131,12 +160,15 @@ func TestCreateOrganisation_WithAssignedDomain(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
+	// Create a user first (organisations require a valid owner_id)
+	user := seedUser(t, db)
+
 	service := New(log.NewLogger(os.Stdout), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
 		Name:           "Test Organisation",
-		OwnerID:        ulid.Make().String(),
+		OwnerID:        user.UID,
 		AssignedDomain: null.StringFrom("assigned.convoy.io"),
 	}
 
@@ -155,12 +187,15 @@ func TestCreateOrganisation_WithBothDomains(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
+	// Create a user first (organisations require a valid owner_id)
+	user := seedUser(t, db)
+
 	service := New(log.NewLogger(os.Stdout), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
 		Name:           "Test Organisation",
-		OwnerID:        ulid.Make().String(),
+		OwnerID:        user.UID,
 		CustomDomain:   null.StringFrom("custom.example.com"),
 		AssignedDomain: null.StringFrom("assigned.convoy.io"),
 	}
@@ -190,12 +225,15 @@ func TestCreateOrganisation_VerifyDatabasePersistence(t *testing.T) {
 	db, ctx := setupTestDB(t)
 	defer db.Close()
 
+	// Create a user first (organisations require a valid owner_id)
+	user := seedUser(t, db)
+
 	service := New(log.NewLogger(os.Stdout), db)
 
 	org := &datastore.Organisation{
 		UID:            ulid.Make().String(),
 		Name:           "Persistence Test Org",
-		OwnerID:        ulid.Make().String(),
+		OwnerID:        user.UID,
 		CustomDomain:   null.StringFrom("persist.test.com"),
 		AssignedDomain: null.StringFrom("persist.convoy.io"),
 	}

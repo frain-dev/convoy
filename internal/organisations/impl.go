@@ -27,6 +27,9 @@ type Service struct {
 	legacy database.Database // For gradual migration if needed
 }
 
+// Ensure Service implements datastore.OrganisationRepository at compile time
+var _ datastore.OrganisationRepository = (*Service)(nil)
+
 // New creates a new Organisation Service
 func New(logger log.StdLogger, db database.Database) *Service {
 	return &Service{
