@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/subomi/requestmigrations"
@@ -141,7 +142,7 @@ func (h *Handler) retrieveOrganisation(r *http.Request) (*datastore.Organisation
 		orgID = r.URL.Query().Get("orgID")
 	}
 
-	orgRepo := postgres.NewOrgRepo(h.A.DB)
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	return orgRepo.FetchOrganisationByID(r.Context(), orgID)
 }
 

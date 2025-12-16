@@ -15,6 +15,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
 )
@@ -26,7 +27,7 @@ type Licenser struct {
 	machineFingerprint string
 	featureList        map[Feature]*Properties
 
-	orgRepo     datastore.OrganisationRepository
+	orgRepo     organisations.OrganisationRepository
 	userRepo    datastore.UserRepository
 	projectRepo datastore.ProjectRepository
 
@@ -37,7 +38,7 @@ type Licenser struct {
 
 type Config struct {
 	LicenseKey  string
-	OrgRepo     datastore.OrganisationRepository
+	OrgRepo     organisations.OrganisationRepository
 	ProjectRepo datastore.ProjectRepository
 	UserRepo    datastore.UserRepository
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/frain-dev/convoy/internal/organisations"
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -13,7 +14,7 @@ import (
 )
 
 type UpdateOrganisationService struct {
-	OrgRepo       datastore.OrganisationRepository
+	OrgRepo       organisations.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	Org           *datastore.Organisation
 	Update        *models.Organisation

@@ -25,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/billing"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -1016,7 +1017,7 @@ func (a *ApplicationHandler) RegisterPolicy() error {
 		po := &policies.ProjectPolicy{
 			BasePolicy:             authz.NewBasePolicy(),
 			Licenser:               a.A.Licenser,
-			OrganisationRepo:       postgres.NewOrgRepo(a.A.DB),
+			OrganisationRepo:       organisations.New(a.A.Logger, a.A.DB),
 			OrganisationMemberRepo: postgres.NewOrgMemberRepo(a.A.DB),
 		}
 

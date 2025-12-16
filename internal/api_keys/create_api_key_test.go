@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/guregu/null.v4"
@@ -98,7 +99,8 @@ func seedTestData(t *testing.T, db database.Database) (*datastore.User, *datasto
 	require.NoError(t, err)
 
 	// Create organisation
-	orgRepo := postgres.NewOrgRepo(db)
+	logger := log.NewLogger(os.Stdout)
+	orgRepo := organisations.New(logger, db)
 	org := &datastore.Organisation{
 		UID:     ulid.Make().String(),
 		Name:    "Test Org",

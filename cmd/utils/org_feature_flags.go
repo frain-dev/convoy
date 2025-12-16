@@ -14,6 +14,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/internal/pkg/fflag"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -44,7 +45,7 @@ func AddUpdateOrgFeatureFlagsCommand(a *cli.App) *cobra.Command {
 
 			db := a.DB
 
-			orgRepo := postgres.NewOrgRepo(db)
+			orgRepo := organisations.New(a.Logger, db)
 			org, err := orgRepo.FetchOrganisationByID(context.Background(), orgID)
 			if err != nil {
 				return fmt.Errorf("failed to fetch organisation: %w", err)

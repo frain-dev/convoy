@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -45,7 +46,7 @@ func (h *Handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 
 	rs := services.RegisterUserService{
 		UserRepo:      postgres.NewUserRepo(h.A.DB),
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgRepo:       organisations.New(h.A.Logger, h.A.DB),
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		Queue:         h.A.Queue,
 		JWT:           jwt.NewJwt(&config.Auth.Jwt, h.A.Cache),

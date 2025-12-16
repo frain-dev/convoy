@@ -25,6 +25,7 @@ import (
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/api_keys"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/metrics"
 	"github.com/frain-dev/convoy/internal/portal_links"
 	plinkModels "github.com/frain-dev/convoy/internal/portal_links/models"
@@ -1640,7 +1641,7 @@ func (s *OrganisationIntegrationTestSuite) Test_CreateOrganisation() {
 	var organisation datastore.Organisation
 	parseResponse(s.T(), w.Result(), &organisation)
 
-	orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB)
+	orgRepo := organisations.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	org, err := orgRepo.FetchOrganisationByID(context.Background(), organisation.UID)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), "new_org", org.Name)
@@ -1724,7 +1725,7 @@ func (s *OrganisationIntegrationTestSuite) Test_UpdateOrganisation() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB)
+	orgRepo := organisations.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	organisation, err := orgRepo.FetchOrganisationByID(context.Background(), uid)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), "update_org", organisation.Name)
@@ -1758,7 +1759,7 @@ func (s *OrganisationIntegrationTestSuite) Test_GetOrganisation() {
 	var organisation datastore.Organisation
 	parseResponse(s.T(), w.Result(), &organisation)
 
-	orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB)
+	orgRepo := organisations.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	org, err := orgRepo.FetchOrganisationByID(context.Background(), uid)
 	require.NoError(s.T(), err)
 	require.Equal(s.T(), seedOrg.Name, org.Name)
@@ -1862,7 +1863,7 @@ func (s *OrganisationIntegrationTestSuite) Test_DeleteOrganisation() {
 	// Assert.
 	require.Equal(s.T(), expectedStatusCode, w.Code)
 
-	orgRepo := postgres.NewOrgRepo(s.ConvoyApp.A.DB)
+	orgRepo := organisations.New(s.ConvoyApp.A.Logger, s.ConvoyApp.A.DB)
 	_, err = orgRepo.FetchOrganisationByID(context.Background(), uid)
 	require.Equal(s.T(), datastore.ErrOrgNotFound, err)
 }

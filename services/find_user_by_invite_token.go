@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/queue"
 )
@@ -11,7 +12,7 @@ import (
 type FindUserByInviteTokenService struct {
 	Queue      queue.Queuer
 	InviteRepo datastore.OrganisationInviteRepository
-	OrgRepo    datastore.OrganisationRepository
+	OrgRepo    organisations.OrganisationRepository
 	UserRepo   datastore.UserRepository
 
 	Token string

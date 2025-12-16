@@ -16,6 +16,7 @@ import (
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/batch_tracker"
 	fflag "github.com/frain-dev/convoy/internal/pkg/fflag"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
@@ -85,8 +86,9 @@ func (h *Handler) CreateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	co := services.CreateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgRepo:       orgRepo,
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		NewOrg:        &newOrg,
 		User:          user,
@@ -122,8 +124,9 @@ func (h *Handler) UpdateOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
 	us := services.UpdateOrganisationService{
-		OrgRepo:       postgres.NewOrgRepo(h.A.DB),
+		OrgRepo:       orgRepo,
 		OrgMemberRepo: postgres.NewOrgMemberRepo(h.A.DB),
 		Org:           org,
 		Update:        &orgUpdate,
@@ -150,7 +153,8 @@ func (h *Handler) DeleteOrganisation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = postgres.NewOrgRepo(h.A.DB).DeleteOrganisation(r.Context(), org.UID)
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	err = orgRepo.DeleteOrganisation(r.Context(), org.UID)
 	if err != nil {
 		log.FromContext(r.Context()).WithError(err).Error("failed to delete organisation")
 		_ = render.Render(w, r, util.NewServiceErrResponse(err))
@@ -367,15 +371,15 @@ func (h *Handler) GetAllOrganisations(w http.ResponseWriter, r *http.Request) {
 	// Get search query parameter
 	search := r.URL.Query().Get("search")
 
-	orgRepo := postgres.NewOrgRepo(h.A.DB)
-	var organisations []datastore.Organisation
+	orgRepo := organisations.New(h.A.Logger, h.A.DB)
+	var orgs []datastore.Organisation
 	var paginationData datastore.PaginationData
 	var err error
 
 	if search != "" {
-		organisations, paginationData, err = orgRepo.LoadOrganisationsPagedWithSearch(r.Context(), pageable, search)
+		orgs, paginationData, err = orgRepo.LoadOrganisationsPagedWithSearch(r.Context(), pageable, search)
 	} else {
-		organisations, paginationData, err = orgRepo.LoadOrganisationsPaged(r.Context(), pageable)
+		orgs, paginationData, err = orgRepo.LoadOrganisationsPaged(r.Context(), pageable)
 	}
 
 	if err != nil {
@@ -384,7 +388,7 @@ func (h *Handler) GetAllOrganisations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = render.Render(w, r, util.NewServerResponse("Organisations fetched successfully",
-		models.PagedResponse{Content: &organisations, Pagination: &paginationData}, http.StatusOK))
+		models.PagedResponse{Content: &orgs, Pagination: &paginationData}, http.StatusOK))
 }
 
 // GetOrganisationOverrides returns all feature flag overrides for a specific organization (instance admin only)

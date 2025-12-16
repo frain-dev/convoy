@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
 
@@ -83,7 +84,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			}
 
 			co := services.CreateOrganisationService{
-				OrgRepo:       postgres.NewOrgRepo(a.DB),
+				OrgRepo:       organisations.New(a.Logger, a.DB),
 				OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB),
 				NewOrg:        &models.Organisation{Name: "Default Organisation"},
 				User:          user,

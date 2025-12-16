@@ -6,6 +6,7 @@ import (
 	"github.com/keygen-sh/keygen-go/v3"
 
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 	userLimit    = 1
 )
 
-func communityLicenser(ctx context.Context, orgRepo datastore.OrganisationRepository, userRepo datastore.UserRepository, projectRepo datastore.ProjectRepository) (*Licenser, error) {
+func communityLicenser(ctx context.Context, orgRepo organisations.OrganisationRepository, userRepo datastore.UserRepository, projectRepo datastore.ProjectRepository) (*Licenser, error) {
 	m, err := enforceProjectLimit(ctx, projectRepo)
 	if err != nil {
 		return nil, err

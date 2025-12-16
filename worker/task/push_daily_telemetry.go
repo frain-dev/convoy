@@ -12,6 +12,7 @@ import (
 	"github.com/frain-dev/convoy/database"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/rdb"
 	"github.com/frain-dev/convoy/internal/telemetry"
 	"github.com/frain-dev/convoy/pkg/log"
@@ -53,7 +54,7 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) fu
 			}
 		}()
 
-		orgRepo := postgres.NewOrgRepo(db)
+		orgRepo := organisations.New(log, db)
 		orgs, err := getAllOrganisations(ctx, orgRepo)
 		if err != nil {
 			return err
@@ -90,7 +91,7 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) fu
 	}
 }
 
-func getAllOrganisations(ctx context.Context, orgRepo datastore.OrganisationRepository) ([]datastore.Organisation, error) {
+func getAllOrganisations(ctx context.Context, orgRepo organisations.OrganisationRepository) ([]datastore.Organisation, error) {
 	var cursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
 	var orgs []datastore.Organisation
 

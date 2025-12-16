@@ -68,19 +68,6 @@ type ProjectRepository interface {
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
-type OrganisationRepository interface {
-	LoadOrganisationsPaged(context.Context, Pageable) ([]Organisation, PaginationData, error)
-	LoadOrganisationsPagedWithSearch(context.Context, Pageable, string) ([]Organisation, PaginationData, error)
-	CountOrganisations(ctx context.Context) (int64, error)
-	CreateOrganisation(context.Context, *Organisation) error
-	UpdateOrganisation(context.Context, *Organisation) error
-	DeleteOrganisation(context.Context, string) error
-	FetchOrganisationByID(context.Context, string) (*Organisation, error)
-	FetchOrganisationByCustomDomain(context.Context, string) (*Organisation, error)
-	FetchOrganisationByAssignedDomain(context.Context, string) (*Organisation, error)
-	CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*OrganisationUsage, error)
-}
-
 type OrganisationInviteRepository interface {
 	LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus InviteStatus, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
 	CreateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error

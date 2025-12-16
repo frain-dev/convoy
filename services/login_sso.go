@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -23,7 +24,7 @@ import (
 
 type LoginUserSSOService struct {
 	UserRepo      datastore.UserRepository
-	OrgRepo       datastore.OrganisationRepository
+	OrgRepo       organisations.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	JWT           *jwt.Jwt
 	ConfigRepo    datastore.ConfigurationRepository
