@@ -68,6 +68,39 @@ type ProjectRepository interface {
 	FillProjectsStatistics(ctx context.Context, project *Project) error
 }
 
+// OrganisationRepository defines the interface for organisation operations using SQLc
+type OrganisationRepository interface {
+	// CreateOrganisation creates a new organisation
+	CreateOrganisation(ctx context.Context, org *Organisation) error
+
+	// UpdateOrganisation updates an existing organisation
+	UpdateOrganisation(ctx context.Context, org *Organisation) error
+
+	// DeleteOrganisation soft deletes an organisation by ID
+	DeleteOrganisation(ctx context.Context, id string) error
+
+	// FetchOrganisationByID retrieves an organisation by its ID
+	FetchOrganisationByID(ctx context.Context, id string) (*Organisation, error)
+
+	// FetchOrganisationByCustomDomain retrieves an organisation by its custom domain
+	FetchOrganisationByCustomDomain(ctx context.Context, domain string) (*Organisation, error)
+
+	// FetchOrganisationByAssignedDomain retrieves an organisation by its assigned domain
+	FetchOrganisationByAssignedDomain(ctx context.Context, domain string) (*Organisation, error)
+
+	// LoadOrganisationsPaged retrieves organisations with pagination
+	LoadOrganisationsPaged(ctx context.Context, pageable Pageable) ([]Organisation, PaginationData, error)
+
+	// LoadOrganisationsPagedWithSearch retrieves organisations with pagination and search
+	LoadOrganisationsPagedWithSearch(ctx context.Context, pageable Pageable, search string) ([]Organisation, PaginationData, error)
+
+	// CountOrganisations returns the total count of organisations
+	CountOrganisations(ctx context.Context) (int64, error)
+
+	// CalculateUsage calculates usage metrics for an organisation
+	CalculateUsage(ctx context.Context, orgID string, startTime, endTime time.Time) (*OrganisationUsage, error)
+}
+
 type OrganisationInviteRepository interface {
 	LoadOrganisationsInvitesPaged(ctx context.Context, orgID string, inviteStatus InviteStatus, pageable Pageable) ([]OrganisationInvite, PaginationData, error)
 	CreateOrganisationInvite(ctx context.Context, iv *OrganisationInvite) error

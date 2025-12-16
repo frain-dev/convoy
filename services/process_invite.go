@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
@@ -22,7 +21,7 @@ type ProcessInviteService struct {
 	Queue         queue.Queuer
 	InviteRepo    datastore.OrganisationInviteRepository
 	UserRepo      datastore.UserRepository
-	OrgRepo       organisations.OrganisationRepository
+	OrgRepo       datastore.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	Licenser      license.Licenser
 

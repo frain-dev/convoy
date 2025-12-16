@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/oklog/ulid/v2"
 
 	"github.com/frain-dev/convoy"
@@ -22,7 +21,7 @@ import (
 
 type RegisterUserService struct {
 	UserRepo      datastore.UserRepository
-	OrgRepo       organisations.OrganisationRepository
+	OrgRepo       datastore.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	Queue         queue.Queuer
 	JWT           *jwt.Jwt

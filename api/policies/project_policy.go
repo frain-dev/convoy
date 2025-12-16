@@ -9,13 +9,12 @@ import (
 	"github.com/frain-dev/convoy"
 	"github.com/frain-dev/convoy/auth"
 	"github.com/frain-dev/convoy/datastore"
-	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 )
 
 type ProjectPolicy struct {
 	*authz.BasePolicy
-	OrganisationRepo       organisations.OrganisationRepository
+	OrganisationRepo       datastore.OrganisationRepository
 	OrganisationMemberRepo datastore.OrganisationMemberRepository
 	Licenser               license.Licenser
 }

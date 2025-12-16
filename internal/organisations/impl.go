@@ -50,14 +50,6 @@ func stringToPgText(s string) pgtype.Text {
 	return pgtype.Text{String: s, Valid: true}
 }
 
-// pgTextToString converts pgtype.Text to string
-func pgTextToString(t pgtype.Text) string {
-	if !t.Valid {
-		return ""
-	}
-	return t.String
-}
-
 // pgTextToNullString converts pgtype.Text to null.String
 func pgTextToNullString(t pgtype.Text) null.String {
 	return null.NewString(t.String, t.Valid)

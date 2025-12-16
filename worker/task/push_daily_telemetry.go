@@ -91,7 +91,7 @@ func PushDailyTelemetry(log *log.Logger, db database.Database, rd *rdb.Redis) fu
 	}
 }
 
-func getAllOrganisations(ctx context.Context, orgRepo organisations.OrganisationRepository) ([]datastore.Organisation, error) {
+func getAllOrganisations(ctx context.Context, orgRepo datastore.OrganisationRepository) ([]datastore.Organisation, error) {
 	var cursor = "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF"
 	var orgs []datastore.Organisation
 

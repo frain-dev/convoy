@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/go-chi/render"
 
 	"github.com/frain-dev/convoy/api/models"
@@ -12,6 +11,7 @@ import (
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
+	"github.com/frain-dev/convoy/internal/organisations"
 	m "github.com/frain-dev/convoy/internal/pkg/middleware"
 	"github.com/frain-dev/convoy/services"
 	"github.com/frain-dev/convoy/util"

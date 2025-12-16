@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/dchest/uniuri"
-	"github.com/frain-dev/convoy/internal/organisations"
 	"github.com/oklog/ulid/v2"
 	"gopkg.in/guregu/null.v4"
 
@@ -22,7 +21,7 @@ import (
 )
 
 type CreateOrganisationService struct {
-	OrgRepo       organisations.OrganisationRepository
+	OrgRepo       datastore.OrganisationRepository
 	OrgMemberRepo datastore.OrganisationMemberRepository
 	NewOrg        *models.Organisation
 	User          *datastore.User
