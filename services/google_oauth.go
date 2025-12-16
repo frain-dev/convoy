@@ -16,11 +16,11 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/api/types"
 	"github.com/frain-dev/convoy/auth/realm/jwt"
 	"github.com/frain-dev/convoy/config"
 	"github.com/frain-dev/convoy/datastore"
+	orgmodels "github.com/frain-dev/convoy/internal/organisations/models"
 	"github.com/frain-dev/convoy/internal/pkg/license"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/util"
@@ -166,7 +166,7 @@ func (g *GoogleOAuthService) CompleteGoogleOAuthSetup(ctx context.Context, idTok
 		OrgRepo:       g.OrgRepo,
 		OrgMemberRepo: g.OrgMemberRepo,
 		Licenser:      g.Licenser,
-		NewOrg:        &models.Organisation{Name: businessName},
+		NewOrg:        &orgmodels.Organisation{Name: businessName},
 		User:          user,
 	}
 

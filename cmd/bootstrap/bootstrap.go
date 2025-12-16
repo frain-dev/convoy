@@ -10,10 +10,10 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/cobra"
 
-	"github.com/frain-dev/convoy/api/models"
 	"github.com/frain-dev/convoy/database/postgres"
 	"github.com/frain-dev/convoy/datastore"
 	"github.com/frain-dev/convoy/internal/organisations"
+	orgmodels "github.com/frain-dev/convoy/internal/organisations/models"
 	"github.com/frain-dev/convoy/internal/pkg/cli"
 	"github.com/frain-dev/convoy/pkg/log"
 	"github.com/frain-dev/convoy/services"
@@ -86,7 +86,7 @@ func AddBootstrapCommand(a *cli.App) *cobra.Command {
 			co := services.CreateOrganisationService{
 				OrgRepo:       organisations.New(a.Logger, a.DB),
 				OrgMemberRepo: postgres.NewOrgMemberRepo(a.DB),
-				NewOrg:        &models.Organisation{Name: "Default Organisation"},
+				NewOrg:        &orgmodels.Organisation{Name: "Default Organisation"},
 				User:          user,
 			}
 
